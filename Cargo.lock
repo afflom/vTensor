@@ -328,10 +328,15 @@ dependencies = [
  "serde",
  "uor-matmul",
  "verdant_matrix_shape",
+ "verdant_scalar_f32",
 ]
 
 [[package]]
 name = "verdant_matrix_shape"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_scalar_f32"
 version = "2.4.0"
 
 [[package]]

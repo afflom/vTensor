@@ -2,6 +2,7 @@
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{TensorIndex}
+\importmodule{MatrixGraph}
 \title{Natural number}
 \begin{semanticmodule}
 inductive{
@@ -11,7 +12,8 @@ inductive{
   constructors: [
     {name: unsupported, fields: []},
     {name: invalidShape, fields: []},
-    {name: execute, fields: [Nat, Bool, Nat, Nat, Nat, Nat, Nat]}
+    {name: execute, fields: [Nat, Bool, Nat, Nat, Nat, Nat, Nat]},
+    {name: product, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -66,7 +68,10 @@ definition{
   ],
   result: PointwiseDecision,
   body: (match (scalarKind operation variant)
-    | Option.none => (ctor PointwiseDecision.unsupported)
+    | Option.none => (if rightPresent then (match (MatrixGraph::planMatrix operation leftType rightType outputType n0 n1 n2 n3 r0 r1 r2 r3 o0 o1 o2 o3)
+      | MatrixGraph::MatrixDecision.unsupported => (ctor PointwiseDecision.unsupported)
+      | MatrixGraph::MatrixDecision.invalidShape => (ctor PointwiseDecision.invalidShape)
+      | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor PointwiseDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount)) else (ctor PointwiseDecision.invalidShape))
     | Option.some kind => (let unary : Bool := (4 <=? kind); (if (((((leftType =? 0) && (outputType =? 0)) && ((n0 =? o0) && (n1 =? o1))) && ((n2 =? o2) && (n3 =? o3))) && (unary || ((rightPresent && (rightType =? 0)) && (repeatValid n0 n1 n2 n3 r0 r1 r2 r3)))) then (ctor PointwiseDecision.execute kind unary n0 n1 n2 n3 (prim multiply (prim multiply n0 n1 : Nat) (prim multiply n2 n3 : Nat) : Nat)) else (ctor PointwiseDecision.invalidShape)))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -105,6 +110,13 @@ theorem{
   name: missingBinaryOperandRefused,
   parameters: [],
   statement: ((planPointwise 2 0 0 0 0 false 1 1 1 1 1 1 1 1 1 1 1 1) = (ctor PointwiseDecision.invalidShape)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: scalarProductAdmitted,
+  parameters: [],
+  statement: ((planPointwise 28 0 0 0 0 true 1 1 1 1 1 1 1 1 1 1 1 1) = (ctor PointwiseDecision.product 1 1 1 1 1 1 1 1 1 1)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

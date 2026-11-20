@@ -111,10 +111,16 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xb2ac2691 }]
+license-files = [{ path = "src/lib.rs", hash = 0xdd7e075c }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x356a2d30 }]
+
+[[licenses.clarify]]
+name = "verdant_scalar_f32"
+version = "=2.4.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x78d9cd18 }]

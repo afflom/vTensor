@@ -5,6 +5,7 @@ use std::cell::UnsafeCell;
 use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
+use vtensor_pointwise::Adt0 as GraphPlan;
 
 /// Typed refusals at the native tensor boundary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -250,24 +251,25 @@ fn require<T>(result: Result<T, BackendError>) -> T {
     }
 }
 
-unsafe extern "C" fn reg_name(_: Reg) -> *const c_char {
-    state().name.as_ptr().cast()
+// Bind Prism configuration values to GGML's typed query callbacks.
+macro_rules! configuration_queries {
+    ($($name:ident($owner:ty) -> $result:ty = $value:expr;)*) => {$(
+        unsafe extern "C" fn $name(_: $owner) -> $result { $value }
+    )*};
 }
-unsafe extern "C" fn device_name(_: Dev) -> *const c_char {
-    state().name.as_ptr().cast()
+configuration_queries! {
+    reg_name(Reg) -> *const c_char = state().name.as_ptr().cast();
+    device_name(Dev) -> *const c_char = state().name.as_ptr().cast();
+    buft_name(Buft) -> *const c_char = state().name.as_ptr().cast();
+    backend_name(BackendPtr) -> *const c_char = state().name.as_ptr().cast();
+    description_name(Dev) -> *const c_char = state().description.as_ptr().cast();
+    device_count(Reg) -> usize = state().device_count;
+    device_type(Dev) -> c_int = state().device_type;
+    buffer_type(Dev) -> Buft = state().buft.get();
+    alignment_of(Buft) -> usize = state().alignment;
+    is_host(Buft) -> bool = true;
 }
-unsafe extern "C" fn buft_name(_: Buft) -> *const c_char {
-    state().name.as_ptr().cast()
-}
-unsafe extern "C" fn backend_name(_: BackendPtr) -> *const c_char {
-    state().name.as_ptr().cast()
-}
-unsafe extern "C" fn description_name(_: Dev) -> *const c_char {
-    state().description.as_ptr().cast()
-}
-unsafe extern "C" fn device_count(_: Reg) -> usize {
-    state().device_count
-}
+
 unsafe extern "C" fn device_at(_: Reg, index: usize) -> Dev {
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C0(index as u64)) {
         state().dev.get()
@@ -275,18 +277,7 @@ unsafe extern "C" fn device_at(_: Reg, index: usize) -> Dev {
         null_mut()
     }
 }
-unsafe extern "C" fn device_type(_: Dev) -> c_int {
-    state().device_type
-}
-unsafe extern "C" fn buffer_type(_: Dev) -> Buft {
-    state().buft.get()
-}
-unsafe extern "C" fn alignment_of(_: Buft) -> usize {
-    state().alignment
-}
-unsafe extern "C" fn is_host(_: Buft) -> bool {
-    true
-}
+
 unsafe extern "C" fn supports_buffer_type(_: Dev, buft: Buft) -> bool {
     buft == state().buft.get()
 }
@@ -521,33 +512,37 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
     }
 }
 
-fn plan_operation(tensor: &Tensor) -> Result<Option<vtensor_matrix::Adt0>, BackendError> {
+fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
     tensor_span(tensor)?;
     let operation = u64::try_from(tensor.op).map_err(|_| BackendError::InvalidTensor)?;
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation)) {
         return Ok(None);
     }
-    if tensor.src[0].is_null() || tensor.src[1].is_null() {
+    if tensor.src[0].is_null() {
         return Err(BackendError::InvalidTensor);
     }
     // SAFETY: GGML retains every non-null source descriptor during queries and execution.
-    let (left, right) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
+    let (left, right) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
     tensor_span(left)?;
-    tensor_span(right)?;
+    if let Some(right) = right {
+        tensor_span(right)?;
+    }
     let [Ok(k), Ok(m), Ok(l2), Ok(l3)] = left.ne.map(u64::try_from) else {
         return Err(BackendError::InvalidTensor);
     };
-    let [Ok(rk), Ok(n), Ok(b2), Ok(b3)] = right.ne.map(u64::try_from) else {
+    let [Ok(rk), Ok(n), Ok(b2), Ok(b3)] = right.map_or([1; 4], |r| r.ne).map(u64::try_from) else {
         return Err(BackendError::InvalidTensor);
     };
     let [Ok(om), Ok(on), Ok(o2), Ok(o3)] = tensor.ne.map(u64::try_from) else {
         return Err(BackendError::InvalidTensor);
     };
-    let plan = vtensor_matrix::run(
+    let pointwise = vtensor_pointwise::run(
         operation,
+        tensor.op_params[0] as u64,
         left.ty as u64,
-        right.ty as u64,
+        right.map_or(0, |r| r.ty as u64),
         tensor.ty as u64,
+        right.is_some(),
         k,
         m,
         l2,
@@ -562,8 +557,8 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<vtensor_matrix::Adt0>, Backe
         o3,
     )
     .map_err(|_| BackendError::Overflow)?;
-    match plan {
-        vtensor_matrix::Adt0::C2(..) => Ok(Some(plan)),
+    match pointwise {
+        GraphPlan::C2(..) | GraphPlan::C3(..) => Ok(Some(pointwise)),
         _ => Err(BackendError::InvalidTensor),
     }
 }
@@ -602,10 +597,8 @@ fn element_offset(tensor: &Tensor, indices: [usize; 4]) -> Result<usize, Backend
     usize::try_from(offset).map_err(|_| BackendError::Overflow)
 }
 
-fn execute_matrix(tensor: &Tensor, plan: vtensor_matrix::Adt0) -> Result<(), BackendError> {
-    let vtensor_matrix::Adt0::C2(m, k, n, b2, b3, r2, r3, left_count, right_count, output_count) =
-        plan
-    else {
+fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
+    let GraphPlan::C3(m, k, n, b2, b3, r2, r3, left_count, right_count, output_count) = plan else {
         return Err(BackendError::InvalidTensor);
     };
     // SAFETY: plan_operation admitted both retained source descriptors.
@@ -666,6 +659,57 @@ fn execute_matrix(tensor: &Tensor, plan: vtensor_matrix::Adt0) -> Result<(), Bac
     Ok(())
 }
 
+fn execute_pointwise(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
+    let GraphPlan::C2(kind, unary, n0, n1, n2, n3, _) = plan else {
+        return Err(BackendError::InvalidTensor);
+    };
+    // SAFETY: the admitted plan requires a live left source and, for binary operations, a right source.
+    let left = unsafe { &*tensor.src[0] };
+    let left_data = graph_tensor_data(left)?;
+    let output_data = graph_tensor_data(tensor)?;
+    let right = if unary {
+        None
+    } else {
+        // SAFETY: Prism admitted a binary operation with a retained right source.
+        Some(unsafe { &*tensor.src[1] })
+    };
+    let right_data = right.map(graph_tensor_data).transpose()?;
+    for i3 in 0..n3 {
+        for i2 in 0..n2 {
+            for i1 in 0..n1 {
+                for i0 in 0..n0 {
+                    let indices = [i0 as usize, i1 as usize, i2 as usize, i3 as usize];
+                    let left_offset = element_offset(left, indices)?;
+                    let output_offset = element_offset(tensor, indices)?;
+                    // SAFETY: modeled extents and byte spans bound every unaligned F32 read.
+                    let a =
+                        unsafe { ptr::read_unaligned(left_data.add(left_offset).cast::<f32>()) };
+                    let b = if let (Some(right), Some(data)) = (right, right_data) {
+                        let [r0, r1, r2, r3] = right.ne.map(|n| n as u64);
+                        let [s0, s1, s2, s3] = right.nb.map(|n| n as u64);
+                        let offset = vtensor_repeat_offset::run(
+                            i0, i1, i2, i3, r0, r1, r2, r3, s0, s1, s2, s3,
+                        )
+                        .map_err(|_| BackendError::Overflow)?;
+                        let offset = usize::try_from(offset).map_err(|_| BackendError::Overflow)?;
+                        // SAFETY: Prism's repeat planner bounds these coordinates by the right extents.
+                        unsafe { ptr::read_unaligned(data.add(offset).cast::<f32>()) }
+                    } else {
+                        0.0
+                    };
+                    let value = verdant_tensor::linear::evaluate_f32_scalar(kind, a, b)
+                        .map_err(|_| BackendError::InvalidTensor)?;
+                    // SAFETY: the admitted output span bounds this modeled address.
+                    unsafe {
+                        ptr::write_unaligned(output_data.add(output_offset).cast::<f32>(), value);
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 unsafe extern "C" fn supports_operation(_: Dev, tensor: *const Tensor) -> bool {
     // SAFETY: GGML supplies a live tensor descriptor for this query.
     plan_operation(unsafe { &*tensor }).is_ok()
@@ -690,7 +734,12 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
             }
         }
         for (tensor, plan) in plans {
-            if execute_matrix(&*tensor, plan).is_err() {
+            let result = match plan {
+                GraphPlan::C3(..) => execute_matrix(&*tensor, plan),
+                GraphPlan::C2(..) => execute_pointwise(&*tensor, plan),
+                _ => Err(BackendError::InvalidTensor),
+            };
+            if result.is_err() {
                 return GGML_STATUS_FAILED;
             }
         }

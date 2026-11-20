@@ -11,11 +11,12 @@ Numerical graph execution is under development and does **not** yet provide
 full GGML backend support. The imported source and oracle are pinned in
 [`vendor/llama.cpp-oracle`](vendor/llama.cpp-oracle/README.md).
 
-The current F32 matrix graph implementation uses an isolated Verdant extension
+The current F32 matrix and arithmetic graph implementations use an isolated Verdant extension
 reproduced by `just verdant-prepare` from the hash-bound Git bundle in this
 repository. The checkout lives at `.verdant-engine`. This override is explicit in
 `Cargo.toml`; the unchanged exact-source guard rejects it as release evidence.
-The declared upstream base is Verdant v2.4.0 commit `87c3256326b9`.
+The declared upstream base is Verdant v2.4.0 commit `87c3256326b9`; the
+reproducible matrix/scalar extension checkpoint is `ce916e894509`.
 
 ## Architecture
 
@@ -36,7 +37,7 @@ The declared upstream base is Verdant v2.4.0 commit `87c3256326b9`.
 | `VT-01` | build | Pins and checks the imported GGML contract and oracle source. |
 | `VT-02` | build | Checks the fifteen kernel descriptors and requires the pinned source; currently rejects the local development override. |
 | `VT-03` | build | Delegates one fixed 4×4 F64 matrix primitive to Verdant. |
-| `VT-04` | build | Inventories GGML operation and storage-type declarations without claiming their implementation. |
+| `VT-04` | build | Inventories GGML operations, nested unary variants and storage-type declarations without claiming their implementation. |
 | `VT-05` | build | Executes upstream storage-size functions from the pinned source. |
 | `VT-06` | build | Compares certified Prism byte spans against upstream. |
 | `VT-07` | build | Compares the certified storage catalog against every declared live type. |
@@ -45,16 +46,20 @@ The declared upstream base is Verdant v2.4.0 commit `87c3256326b9`.
 | `VT-10` | build | Compares certified aligned tensor placement with upstream’s linear allocator. |
 | `VT-11` | build | Loads the native device and validates buffer lifetimes, transfers, ABI layouts and metadata graphs through upstream GGML. |
 | `VT-12` | build | Development graph path matches 640 upstream CPU matrix cases, including empty dimensions, padding, broadcasting and IEEE edge values. |
+| `VT-13` | build | Development graph path matches 120 CPU arithmetic/unary graphs with padding, broadcasting and IEEE edge values; malformed descriptors fail before writes. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
-matrix graphs to Verdant. Other numerical operations and complete numeric type
-coverage remain unfinished. Storage coverage for all 36 live types does not
+matrix products, ADD, SUB, MUL, DIV, SQRT, SQR, NEG and ABS graphs to Verdant.
+Prism selects and plans the numerical graph operations; scalar arithmetic is
+itself generated from a certified Prism bit model inside Verdant. Other
+operations and complete numeric type coverage remain unfinished. Storage coverage for all 36 live types does not
 establish their numerical behavior.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes eleven contract tests; VT-02 refuses the
-unpublished local dependency. No release gate has been weakened to admit it.
+The current development tree passes twelve contract tests; VT-02 refuses the
+unpublished local dependency. Formatting, model/source audits, workspace Clippy
+and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in
 [`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
 

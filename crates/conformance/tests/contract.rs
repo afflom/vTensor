@@ -155,18 +155,17 @@ fn buffer_allocation_vt_10() {
         Ok(vtensor_allocation::Adt0::C1)
     ));
     assert!(vtensor_allocation::run(u64::MAX, 0, u64::MAX, 2).is_err());
-    assert_eq!(
-        outcome(vtensor_allocation::run(u64::MAX, u64::MAX, 0, 1).unwrap()),
-        [0, u64::MAX, 0, u64::MAX]
-    );
-    assert_eq!(
-        outcome(vtensor_allocation::run(u64::MAX, u64::MAX, 1, 1).unwrap()),
-        [1, 0, 0, 0]
-    );
-    assert_eq!(
-        outcome(vtensor_allocation::run(u64::MAX, 0, 1, 1_u64 << 63).unwrap()),
-        [0, 0, 1_u64 << 63, 1_u64 << 63]
-    );
+    for ((capacity, offset, size, alignment), expected) in [
+        ((u64::MAX, u64::MAX, 0, 1), [0, u64::MAX, 0, u64::MAX]),
+        ((u64::MAX, u64::MAX, 1, 1), [1, 0, 0, 0]),
+        (
+            (u64::MAX, 0, 1, 1_u64 << 63),
+            [0, 0, 1_u64 << 63, 1_u64 << 63],
+        ),
+    ] {
+        let decision = vtensor_allocation::run(capacity, offset, size, alignment).unwrap();
+        assert_eq!(outcome(decision), expected);
+    }
 }
 
 /// `VT-11`: GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior
@@ -367,7 +366,7 @@ mod ggml_oracle {
                     .split_once("\nmod ggml_oracle {")
                     .expect("oracle module")
                     .1
-                    .split_once("\nmod verdant_adapter {")
+                    .split_once("\nmod ggml_inventory {")
                     .expect("module boundary")
                     .0,
             ),
@@ -740,42 +739,9 @@ int main() {
 "##;
 }
 
-mod verdant_adapter {
-
-    pub use verdant_tensor::{TensorComputeError, VerifiedTensorKernel};
-
-    /// Returns the unified tensor kernels validated by Verdant's Prism-generated checks.
-    pub fn unified_kernel_inventory() -> Result<Vec<VerifiedTensorKernel>, TensorComputeError> {
-        verdant_tensor::verified_unified_tensor_kernels()
-    }
-
-    /// Reports whether Prism's generated contract admits the fixed F64 4x4 matrix case.
-    #[must_use]
-    pub fn supports_matrix4_f64_matmul() -> bool {
-        prism_kernel::supportsF64Matmul4(true, true, true)
-    }
-
-    /// Multiplies two column-major 4x4 F64 matrices using Verdant Tensor's verified linear kernel.
-    ///
-    /// This is the fixed-shape kernel primitive for a corresponding vTensor `MUL_MAT` case; it does
-    /// not imply support for arbitrary GGML matrix shapes or other GGML operations.
-    pub fn multiply_matrix4_f64_cols(
-        lhs_cols: &[[f64; 4]; 4],
-        rhs_cols: &[[f64; 4]; 4],
-    ) -> Result<[[f64; 4]; 4], TensorComputeError> {
-        if !supports_matrix4_f64_matmul() {
-            return Err(TensorComputeError::InvalidKernelSpecification {
-                kernel_name: "GGML MUL_MAT F64 4x4".to_string(),
-            });
-        }
-        verdant_tensor::linear::multiply_mat4_cols_exact(lhs_cols, rhs_cols)
-    }
-}
-
 mod ggml_inventory {
 
     use std::collections::BTreeSet;
-    use std::path::PathBuf;
 
     // Refuse unfamiliar enum syntax rather than silently dropping declarations.
     fn declarations(header: &str, name: &str, prefix: &str) -> Vec<(String, i64)> {
@@ -847,7 +813,7 @@ mod ggml_inventory {
     /// `VT-04`: The imported GGML operation and tensor type declarations are inventoried exactly without implementation claims
     #[test]
     fn ggml_inventory_vt_04() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let root = super::root();
         let header =
             std::fs::read_to_string(root.join("vendor/llama.cpp-oracle/ggml/include/ggml.h"))
                 .expect("pinned header");
@@ -973,28 +939,11 @@ mod ggml_storage_oracle {
 
 mod oracle_import {
 
+    use super::{ggml_oracle::digest as hex, root};
     use std::collections::BTreeSet;
-    use std::path::PathBuf;
 
     use repo_model::Model;
     use sha2::{Digest, Sha256};
-
-    fn hex(bytes: &[u8]) -> String {
-        use std::fmt::Write as _;
-
-        bytes.iter().fold(String::new(), |mut output, byte| {
-            write!(&mut output, "{byte:02x}").expect("writing to a string cannot fail");
-            output
-        })
-    }
-
-    fn root() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .ancestors()
-            .nth(2)
-            .expect("crates/conformance is two below the root")
-            .to_path_buf()
-    }
 
     /// `VT-01`: The imported GGML backend contract, implementation interface, and operator oracle match their pinned upstream source
     #[test]
@@ -1107,30 +1056,22 @@ mod tensor_layout {
     use vtensor_layout::{run, Adt0, Adt1, Overflow};
 
     pub(super) fn certified_current_model(root: &std::path::Path, name: &str) {
-        let (project, model_lock, primary) = match name {
-            "layout" => ("app/lexlean.toml", "app/lexlean.lock", "vtensor_layout"),
-            "native" => (
-                "app/native.lexlean.toml",
-                "app/native.lexlean.lock",
-                "vtensor_native_config",
-            ),
-            "matrix" => (
-                "app/matrix.lexlean.toml",
-                "app/matrix.lexlean.lock",
-                "vtensor_matrix",
-            ),
-            "index" => (
-                "app/index.lexlean.toml",
-                "app/index.lexlean.lock",
-                "vtensor_index",
-            ),
-            "pointwise" => (
-                "app/pointwise.lexlean.toml",
-                "app/pointwise.lexlean.lock",
-                "vtensor_pointwise",
-            ),
-            _ => panic!("unknown production closure"),
+        assert!(matches!(
+            name,
+            "layout" | "native" | "matrix" | "index" | "pointwise"
+        ));
+        let scope = if name == "layout" {
+            String::new()
+        } else {
+            format!("{name}.")
         };
+        let project = format!("app/{scope}lexlean.toml");
+        let model_lock = format!("app/{scope}lexlean.lock");
+        let suffix = match name {
+            "native" => "native_config",
+            _ => name,
+        };
+        let primary = format!("vtensor_{suffix}");
         let bundle = format!("generated/{name}");
         let result: serde_json::Value = serde_json::from_slice(
             &std::fs::read(root.join(format!("{bundle}/result.json"))).expect("certified bundle"),
@@ -1138,7 +1079,13 @@ mod tensor_layout {
         .expect("production result");
         let checked = std::process::Command::new("lexlean")
             .current_dir(root)
-            .args(["--project", project, "--diagnostic-format", "json", "check"])
+            .args([
+                "--project",
+                &project,
+                "--diagnostic-format",
+                "json",
+                "check",
+            ])
             .output()
             .expect("run in the pinned SDK with lexlean available");
         assert!(
@@ -1154,10 +1101,9 @@ mod tensor_layout {
         );
         assert_eq!(current["semantic_id"], result["source"]["semantic_id"]);
         use sha2::{Digest, Sha256};
-        let lock_digest = Sha256::digest(std::fs::read(root.join(model_lock)).expect("model lock"))
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
+        let lock_digest = ggml_oracle::digest(&Sha256::digest(
+            std::fs::read(root.join(model_lock)).expect("model lock"),
+        ));
         assert_eq!(
             result["source"]["lock_sha256"].as_str(),
             Some(lock_digest.as_str())
@@ -1196,10 +1142,7 @@ mod tensor_layout {
                 .expect("generated code");
         assert_eq!(
             kernel_lock["output"]["sha256"],
-            Sha256::digest(bytes)
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>()
+            ggml_oracle::digest(&Sha256::digest(bytes))
         );
         let certified_files: Vec<_> = result["roots"].as_array().expect("roots").iter()
         .flat_map(|root| root["outputs"].as_array().expect("outputs"))
@@ -1334,18 +1277,13 @@ mod tensor_layout {
             }
         }
         assert!(matches!(run(layout([1; 4], [4; 4], 0, 4)), Ok(Adt1::C0)));
-        assert!(matches!(
-            run(layout([u64::MAX, 1, 1, 1], [8; 4], 1, 8)),
-            Err(Overflow)
-        ));
-        assert!(matches!(
-            run(layout([u64::MAX, 1, 1, 1], [18; 4], 32, 18)),
-            Err(Overflow)
-        ));
-        assert!(matches!(
-            run(layout([2, 2, 1, 1], [1, u64::MAX, 1, 1], 1, 1)),
-            Err(Overflow)
-        ));
+        for (ne, nb, block, bytes) in [
+            ([u64::MAX, 1, 1, 1], [8; 4], 1, 8),
+            ([u64::MAX, 1, 1, 1], [18; 4], 32, 18),
+            ([2, 2, 1, 1], [1, u64::MAX, 1, 1], 1, 1),
+        ] {
+            assert!(matches!(run(layout(ne, nb, block, bytes)), Err(Overflow)));
+        }
         // Empty dimensions must short circuit unsafe arithmetic.
         assert!(matches!(
             run(layout([u64::MAX, 0, 1, 1], [u64::MAX; 4], 1, 8)),
@@ -1384,24 +1322,16 @@ mod tensor_layout {
 
 mod verdant_api {
 
-    use std::path::PathBuf;
-
-    use super::verdant_adapter::{
-        multiply_matrix4_f64_cols, supports_matrix4_f64_matmul, unified_kernel_inventory,
-        TensorComputeError,
-    };
     use prism_kernel::supportsF64Matmul4;
+    use verdant_tensor::linear::multiply_mat4_cols_exact;
+    use verdant_tensor::{verified_unified_tensor_kernels, TensorComputeError};
 
     const VERDANT_ENGINE_REVISION: &str = "87c3256326b9ec9f8d591855394c0bd0265588ef";
 
     /// `VT-02`: The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API
     #[test]
     fn verdant_api_vt_02() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .ancestors()
-            .nth(2)
-            .expect("crates/conformance is two levels below the workspace root")
-            .to_path_buf();
+        let root = super::root();
         let lock_text =
             std::fs::read_to_string(root.join("Cargo.lock")).expect("workspace lockfile exists");
         let lock: toml::Value = toml::from_str(&lock_text).expect("workspace lockfile is valid");
@@ -1419,7 +1349,7 @@ mod verdant_api {
             "Verdant Engine must resolve to the pinned origin/main revision: {source}"
         );
 
-        let kernels = unified_kernel_inventory().expect("Verdant verified kernel inventory");
+        let kernels = verified_unified_tensor_kernels().expect("Verdant verified kernel inventory");
         assert_eq!(kernels.len(), 15);
         for (index, kernel) in kernels.iter().enumerate() {
             assert_eq!(kernel.index, index as u64);
@@ -1437,7 +1367,6 @@ mod verdant_api {
         ] {
             assert!(!supportsF64Matmul4(type_is_f64, lhs_is_4x4, rhs_is_4x4));
         }
-        assert!(supports_matrix4_f64_matmul());
 
         let lhs = [
             [1.0, 2.0, 0.0, 1.0],
@@ -1460,13 +1389,13 @@ mod verdant_api {
         });
 
         assert_eq!(
-            multiply_matrix4_f64_cols(&lhs, &rhs).expect("Verdant matrix multiplication"),
+            multiply_mat4_cols_exact(&lhs, &rhs).expect("Verdant matrix multiplication"),
             expected
         );
 
         let non_finite = [[f64::NAN; 4]; 4];
         assert!(matches!(
-            multiply_matrix4_f64_cols(&non_finite, &rhs),
+            multiply_mat4_cols_exact(&non_finite, &rhs),
             Err(TensorComputeError::NonFiniteTensorEntry { operand: "mat4" })
         ));
     }
@@ -1583,7 +1512,7 @@ mod native_backend_oracle {
         driver.push_str(BODY);
         let mut identity = Sha256::new();
         identity.update(library.as_os_str().as_encoded_bytes());
-        identity.update(std::fs::read(&library).unwrap());
+        // The host dynamically loads this path; live provenance checks bind its contents.
         identity.update(driver.as_bytes());
         identity.update(common.as_os_str().as_encoded_bytes());
         identity.update(super::ggml_oracle::source_tokens(
@@ -1908,6 +1837,9 @@ int main(int argc, char **argv) {
       ggml_backend_t reference = ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference, 1);
       size_t cases = 0;
+      const ggml_op expected_ops[] = {
+        GGML_OP_ADD, GGML_OP_SUB, GGML_OP_MUL, GGML_OP_DIV, GGML_OP_SQRT, GGML_OP_SQR, GGML_OP_UNARY, GGML_OP_UNARY
+      };
       const uint32_t edges[] = {0,0x80000000,0x3F800000,0xBF800000,0x7F800000,0xFF800000,0x7FC00001,1,
         0x7F7FFFFF,0x00800000,0x007FFFFF,0x3F800001,0x3F000000,0x00800001,0x80000001,0x7F800001};
       for (int kind=0; kind<8; kind++) for (int width : {1,17,257}) for (int padded : {0,1})
@@ -1924,31 +1856,23 @@ int main(int argc, char **argv) {
           operand->nb[2]=operand->nb[1]*operand->ne[1]+padded*sizeof(float);
           operand->nb[3]=operand->nb[2]*operand->ne[2]+padded*sizeof(float);
         }
-        ggml_tensor *result=nullptr;
-        switch(kind) {
-          case 0: result=ggml_add(ctx,left,right); break;
-          case 1: result=ggml_sub(ctx,left,right); break;
-          case 2: result=ggml_mul(ctx,left,right); break;
-          case 3: result=ggml_div(ctx,left,right); break;
-          case 4: result=ggml_sqrt(ctx,left); break;
-          case 5: result=ggml_sqr(ctx,left); break;
-          case 6: result=ggml_neg(ctx,left); break;
-          case 7: result=ggml_abs(ctx,left); break;
-        }
-        ggml_tensor *contiguous_left=ggml_cont(ctx,left);
-        ggml_tensor *contiguous_right=right?ggml_cont(ctx,right):nullptr;
-        ggml_tensor *reference_result=nullptr;
-        switch(kind) {
-          case 0: reference_result=ggml_add(ctx,contiguous_left,contiguous_right); break;
-          case 1: reference_result=ggml_sub(ctx,contiguous_left,contiguous_right); break;
-          case 2: reference_result=ggml_mul(ctx,contiguous_left,contiguous_right); break;
-          case 3: reference_result=ggml_div(ctx,contiguous_left,contiguous_right); break;
-          case 4: reference_result=ggml_sqrt(ctx,contiguous_left); break;
-          case 5: reference_result=ggml_sqr(ctx,contiguous_left); break;
-          case 6: reference_result=ggml_neg(ctx,contiguous_left); break;
-          case 7: reference_result=ggml_abs(ctx,contiguous_left); break;
-        }
-        CHECK(result);
+        auto operation = [&](ggml_tensor *a, ggml_tensor *b) -> ggml_tensor * {
+          switch(kind) {
+            case 0: return ggml_add(ctx,a,b);
+            case 1: return ggml_sub(ctx,a,b);
+            case 2: return ggml_mul(ctx,a,b);
+            case 3: return ggml_div(ctx,a,b);
+            case 4: return ggml_sqrt(ctx,a);
+            case 5: return ggml_sqr(ctx,a);
+            case 6: return ggml_neg(ctx,a);
+            case 7: return ggml_abs(ctx,a);
+            default: return nullptr;
+          }
+        };
+        ggml_tensor *result=operation(left,right);
+        ggml_tensor *reference_result=operation(ggml_cont(ctx,left),right?ggml_cont(ctx,right):nullptr);
+        CHECK(result && result->op==expected_ops[kind]);
+        if (kind>=6) CHECK(ggml_get_unary_op(result)==(kind==6?GGML_UNARY_OP_NEG:GGML_UNARY_OP_ABS));
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
         for (ggml_tensor *operand : {left,right}) if (operand) {
           std::vector<unsigned char> bytes(ggml_nbytes(operand),0xA5);
@@ -1974,6 +1898,28 @@ int main(int argc, char **argv) {
           float e,a; memcpy(&e,&expected[i],4); memcpy(&a,&actual[i],4);
           if (!(std::isnan(e)&&std::isnan(a)) && expected[i]!=actual[i]) {
             fprintf(stderr,"elementwise mismatch kind=%d width=%d padded=%d repeat=%d element=%zu expected=%08x actual=%08x\n",kind,width,padded,broadcast,i,expected[i],actual[i]); return 2;
+          }
+        }
+        if (width==1 && padded==0 && broadcast==0 && (kind==0 || kind==6)) {
+          auto refused_without_writes = [&]() -> bool {
+            if (ggml_backend_dev_supports_op(dev,result)) return false;
+            ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
+            if (ggml_backend_graph_compute(backend,graph)!=GGML_STATUS_FAILED) return false;
+            std::vector<unsigned char> bytes(ggml_nbytes(result));
+            ggml_backend_tensor_get(result,bytes.data(),0,bytes.size());
+            return std::all_of(bytes.begin(),bytes.end(),[](unsigned char b){ return b==0xA5; });
+          };
+          if (kind==0) {
+            result->src[1]=nullptr; CHECK(refused_without_writes()); result->src[1]=right;
+            right->ne[1]=2; CHECK(refused_without_writes()); right->ne[1]=3;
+            result->ne[1]=2; CHECK(!ggml_backend_dev_supports_op(dev,result)); result->ne[1]=3;
+            const auto saved_type=left->type; left->type=GGML_TYPE_COUNT;
+            CHECK(refused_without_writes()); left->type=saved_type;
+          } else {
+            const int32_t bad_variant=GGML_UNARY_OP_COUNT;
+            int32_t saved_variant; memcpy(&saved_variant,result->op_params,sizeof(saved_variant));
+            memcpy(result->op_params,&bad_variant,sizeof(bad_variant)); CHECK(refused_without_writes());
+            memcpy(result->op_params,&saved_variant,sizeof(saved_variant));
           }
         }
         ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;

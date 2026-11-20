@@ -697,9 +697,9 @@ matrix test passed after the broadcast and source-cache defects, and the
 comment-only cache probe reused the exact native executable. These results
 remain development evidence, not a new full `just vv` acceptance checkpoint.
 
-## Reproducible GitHub checkpoint
+## Initial reproducible GitHub checkpoint
 
-The Matrix-only Verdant source checkpoint is preserved as Git commit
+The initial Matrix-only Verdant source checkpoint was preserved as Git commit
 `8e4e4ed670f3ea8337e7f66ae971f7b37d8cc2b2` in
 `vendor/verdant-development.bundle`, based on upstream
 `87c3256326b9ec9f8d591855394c0bd0265588ef`. Its SHA-256 and source metadata
@@ -709,14 +709,14 @@ second invocation verified the existing checkout without changing it. Cargo
 explicitly excludes that nested workspace from vTensor's own workspace.
 
 This removes the machine-specific `/tmp` dependency from the repository.
-The bundle includes the source, imported reference, Prism model and exact
-certified output needed to reproduce the Matrix primitive; unfinished scalar
-work and unaccepted Wasm binaries are excluded. The development override
+That initial bundle included the source, imported reference, Prism model and
+exact certified output needed to reproduce the Matrix primitive; unfinished
+scalar work and unaccepted Wasm binaries were excluded. The development override
 remains visible and the exact-source release guard remains enforced.
 
-## Pointwise model checkpoint (implementation pending)
+## Initial pointwise model checkpoint
 
-VT-13 now has its registered requirement, scenario and executable imported-oracle
+VT-13 initially received its registered requirement, scenario and executable imported-oracle
 comparison before runtime implementation. The fixture covers 120 F32 graphs
 across eight operations, contiguous and padded storage, ordinary and exceptional
 bit patterns, and binary broadcasting. The independent CPU reference uses
@@ -730,12 +730,98 @@ result `3b2823fd4173282753c1e08b4ff1de1b4baa2a8969340a4ba3a285c0b0084ae6`,
 attestation `3a34ab6ffdc535b81871c419bd415dd331d12fca4e42604136099ad82eaa7245`.
 The generated packages and evidence are preserved unchanged and bound by
 pointwise-kernel.lock. Live source identity, artifact replay and compilation
-passed in the VT-13 test; the test then fails at the intended native
-supports-operation assertion because arithmetic execution is still pending.
+passed in the VT-13 test; the test then failed at the intended native
+supports-operation assertion before arithmetic execution was implemented.
 `cargo check -p vtensor-backend`, formatting and `just model` passed.
-This is an implementation checkpoint, not a passing capability or release.
+That was an implementation checkpoint, not a passing capability or release.
 
 The pointwise packages also pass `cargo deny --all-features check`. As for
 the existing certified packages, their omitted SDK license metadata is
 clarified under this repository's license using exact generated-source
 hashes; the certified package bytes remain unchanged.
+
+## Certified F32 arithmetic graph checkpoint
+
+The current Verdant extension source is Git commit
+`ce916e89450986f78c2ba13df1d6954a39e2ffa3`, preserved in the hash-bound
+`vendor/verdant-development.bundle`. It contains the Matrix primitive and the
+new ScalarF32 model, certified export, thin bit-conversion binding and imported
+GGML scalar reference tests. The prepared `.verdant-engine` checkout is clean
+and matches that commit. The checkpoint excludes the unaccepted Wasm changes
+in the isolated development worktree. Its upstream base remains the explicit
+v2.4.0 revision; upstream main `c57a687722204d5e1c0153eae45bf1d73e3dc8b5`
+was inspected for newer lifecycle facilities. Integration IDs VTK-01/VTK-02
+avoid upstream's independently allocated VE-60/VE-61.
+
+Verdant's ScalarF32.evaluate result is
+`9f40d825356dc94901322a57f4c442ad8c0d3cd35ecf7c6eaae7daf679193e79`,
+attestation `5f4a83fe7dcdbcf3eafc7c3fac709485773a8bcc00bef0e8e53d3f8ceedf9514`.
+All scalar arithmetic is emitted from Prism's integer encoding: classification,
+normalization, guard/round/sticky bits, nearest-even rounding, subnormals,
+signed zeros, infinities and NaNs. Native binding code converts bits and typed
+failures. Four theorem examples remain checked. Initial constant/dispatch
+representations exceeded the SDK preservation kernel's recursion bound;
+inlining constants and introducing a typed operation enum resolved this
+without raising limits, removing a theorem or disabling an operation.
+
+The independent primitive reference compiles the pinned, unmodified GGML vector
+functions. It compares 10,592 scalar cases, including every pairing of 24 edge
+encodings for binary operations and deterministic bit-pattern samples. Matrix
+and scalar tests share one memoized reference executable. Its identity binds
+the imported archive, transport, compiler/flags, SDK, architecture and normalized
+builder tokens. Executable hashes are checked and comparisons always run live.
+The explicit 624 and 10,592 counts reject shortened corpora. Eight Verdant crate
+tests, both VTK conformance cases, model validation, Tensor/Core Clippy and all
+dependency checks passed. The fresh frontier projection remains 203 lifted,
+1192 residue, 73 foreign and 78 effect functions, within unchanged ceilings.
+Full Engine acceptance and final ratchet synchronization remain unproven.
+
+The final vTensor planner composes MatrixGraph and pointwise admission in Prism.
+It returns a single typed graph plan; native code no longer selects between
+independent handwritten planner branches. The updated pointwise result is
+`7c5c1c018e71a9afcb285c2a328db8442538cf8a354a2fd3d5ad21a3c2f66815`,
+attestation `8e97d6f7b213f7b75a9fd25e284f28a5fac01d2e77d2bcccc0fd2d3511c4c066`.
+The bundle and generated packages are byte-bound by pointwise-kernel.lock and
+replayed through the official SDK. Unchanged ScalarF32, layout, native, matrix
+and index roots were not re-exported during the planner composition.
+
+VT-13 executes 120 actual GGML graphs for ADD, SUB, MUL, DIV, SQRT, SQR, NEG and
+ABS. Cases vary dimensions, padded input strides and binary broadcasting, with
+ordinary and exceptional encodings. The upstream reference uses its own CONT
+nodes where CPU unary kernels require contiguous inputs. A shared constructor
+creates actual and reference operations; explicit imported opcode and unary
+variant checks ensure every intended operation is present. Missing binary
+operands, incompatible repeats, inconsistent output dimensions, invalid types
+and invalid unary variants are refused; exercised failures preserve sentinel
+output bytes. Only the vTensor device is registered as selectable. Finite values
+and signed zeros compare by encoding; NaNs compare by class.
+
+Falsifiability checks observed and restored:
+
+- Adding one bit to Verdant's returned encoding failed the direct scalar oracle
+  at positive-zero addition (actual 1, expected 0).
+- A canonical model admission change refused the final valid operation; the
+  compiled export was rejected as `stale scalar model: source_id`.
+- Forcing the right tensor's row coordinate to zero failed the actual graph
+  oracle with an elementwise ADD mismatch.
+- Tampering one byte of the loaded native source snapshot failed the reused
+  C++ host's live memcmp provenance guard. Original library bytes were restored.
+
+Backend code edits no longer rebuild the C++ oracle host: its key binds the
+loaded library path, ABI observations and verification implementation, while
+the executable verifies that path and live source snapshot on every run. The
+restored graph run reused unchanged oracle executables after the planted
+broadcast defect. This removes a redundant rebuild without bypassing the
+wrong/stale-library checks.
+
+The source ratchet initially rejected native-glue growth. Moving dispatch into
+Prism, sharing configuration callback bindings, removing redundant test-only
+adapters and sharing duplicate fixture/metadata helpers preserved all cases
+within 10,592 handwritten lines and 51 files, exactly the parent ceiling.
+The final full workspace observation reports twelve passed contract tests and
+one explicit failure: VT-02 refuses the unpublished development dependency.
+All other workspace targets passed. Formatting, model/source audits, frame
+synchronization, workspace Clippy and dependency checks passed. The full
+`just vv` acceptance boundary remains unmet; the production-source guard and
+Engine gate have not been weakened. These are finite component observations,
+not full GGML conformance or exhaustive IEEE equivalence claims.
