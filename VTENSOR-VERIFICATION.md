@@ -1180,3 +1180,86 @@ Handwritten source is 10,577 lines in the same 51 files, below the preceding
 checkpoint. The changed model was certified once; the unchanged main-app
 proof and Engine release gates were not rerun for this component checkpoint.
 The complete backend and production dependency requirements remain open.
+
+
+## VT-19: bounded SET and ACC update views
+
+The ID and scenario preceded execution support. The initial graph comparison
+failed at `ggml_backend_dev_supports_op(dev,result)` after the pinned CPU
+accepted the graph. The implementation covers CPU SET with F32/I32 left and
+right storage (including raw mixed-type copies), and CPU ACC with F32 operands.
+It includes copied and in-place results, aliased update sources, empty patches,
+noncontiguous source rows, sparse/overlapping target rows and backward strides.
+
+The descriptor model now records the data address. SET/ACC admission checks
+matching output shape/type, contiguous left/output storage as required by
+GGML, four-byte source words, constructor element-count/offset bounds and
+in-place address equality. Signed update strides are interpreted from the
+raw int32 parameter words. The model bounds the minimum and maximum addresses
+across every view corner, and retains the CPU's strict ACC/non-strict SET
+last-address condition for empty patches. Full scalar writes must fit their
+allocations; the model does not reproduce unsafe one-byte-only bounds checks.
+
+A shared copy mode first initializes out-of-place outputs from the left tensor,
+then applies right-source updates in logical row order. SET moves opaque words
+through Verdant's certified storage transfer. ACC reads the original left
+source at each modeled update address and invokes Verdant's certified F32 ADD.
+For in-place results that source aliases the destination, so later overlapping
+updates observe earlier writes. Out-of-place results continue reading the
+unchanged left allocation. This preserves GGML's serial alias behavior without
+an alternate arithmetic implementation.
+
+The 4,608 graph cases cover the supported type pairs, both output ownership
+modes, standalone and aliased right sources, three offsets, four target stride
+patterns and varying four-dimensional patch shapes (including zero leading
+extent). Backward views use negative int32 strides with a bounded positive
+base. Finite binary-fraction inputs isolate addressing and alias effects;
+the unchanged Verdant scalar certificate/oracle already exercises IEEE edge
+behavior. Invalid bounds, backward views below the base, absent right sources
+and false in-place declarations are checked before writes.
+
+A shared mutation guard snapshots the full valid output, applies one invalid
+field, checks refusal, restores the descriptor and compares all output bytes.
+It replaces duplicated refusal code across matrix, arithmetic and storage
+graphs, preserving their cases and strengthening checks after each mutation.
+Typed ABI record and interface declarations now share their struct expansion.
+The source-bound oracle builder also shares executable linking/publication,
+retaining exact object and executable digest checks. Its storage object was
+renamed consistently with its executable stem; changing the builder invalidates
+the affected cache identity once. SHA-256 formatting uses its fixed 32-byte
+output type and two padded native integer formatters without per-byte allocation.
+
+The corrected MCP draft is
+`prism-app/a38069f3ed9f6dcd23f58cdc90bdf61a348d080983a41bfc34546f3b9b7825ff`.
+Remote checking returned `engine.check failed: project-refused`. The pinned SDK
+accepted and exported the model with result
+`905a72c45769b2894924480a262b6b10840a0ed80f8aa4b27db859d1cf7644a5`
+and attestation
+`99f0054a6f7527d01ebf31b328a9dd948f1b41fb7b54e6a7f3b76c584907e5c2`.
+The actual emitted eleven-field descriptor and update-mode/response variants
+were inspected before binding them. All 4,608 scenarios pass; the final
+source-bound fixture observed a 37.34-second cold reference build and run.
+Handwritten source is 10,576 lines in the existing 51 files.
+
+A disk-full write interrupted the test-file edit before export started. The
+file was restored from Git plus the saved exact R3 edit, and the diff was
+checked before continuing. Only owned, rebuildable package outputs were
+cleaned; committed sources, reference sources and proof evidence were retained.
+Subsequent source edits used temporary files and atomic replacement.
+
+Three independent planted defects were rejected. Skipping the out-of-place
+initialization prefix failed the empty-patch SET case at shape `[0,1,1,1]`.
+Reading ACC's destination instead of its original left source failed the
+out-of-place overlapping-row case at shape `[1,2,1,1]`. Binding every descriptor
+address to zero failed the false in-place-declaration refusal. Each experiment
+used bounded memory or stopped at capability refusal, and the adapter was
+restored before the complete regression.
+
+The final workspace run passed every other target and eighteen contract tests
+in 8.10 seconds. VT-02 alone retained its explicit refusal of the unpublished
+Verdant development dependency. Formatting, model/source audits, frame
+synchronization, workspace Clippy and dependency checks passed. Handwritten
+source is 10,576 lines in the existing 51 files, below the preceding checkpoint.
+The expanded shared refusal guard also passed all existing matrix, arithmetic,
+copy, repeat, concat and spatial regression cases. Full backend conformance
+and production dependency acceptance remain unfinished.

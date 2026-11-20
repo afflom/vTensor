@@ -216,6 +216,7 @@ fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
         return Err(BackendError::InvalidTensor);
     };
     let nb = tensor.nb.map(|n| n as u64);
+    let address = tensor.data as usize as u64;
     match vtensor_layout::run(vtensor_layout::Adt0::C0(
         n0, n1, n2, n3, nb[0], nb[1], nb[2], nb[3], block, element,
     ))
@@ -224,7 +225,7 @@ fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
         vtensor_layout::Adt1::C1(size) => {
             usize::try_from(size).map_err(|_| BackendError::Overflow)?;
             Ok(TensorDescriptor::C0(
-                ty, n0, n1, n2, n3, nb[0], nb[1], nb[2], nb[3], size,
+                ty, n0, n1, n2, n3, nb[0], nb[1], nb[2], nb[3], size, address,
             ))
         }
         _ => Err(BackendError::InvalidTensor),
@@ -232,7 +233,7 @@ fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
 }
 
 fn tensor_span(tensor: &Tensor) -> Result<usize, BackendError> {
-    let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span) = tensor_metadata(tensor)?;
+    let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span, _) = tensor_metadata(tensor)?;
     Ok(span as usize)
 }
 
@@ -509,7 +510,7 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
 
 fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
     let output = tensor_metadata(tensor)?;
-    let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span) = &output;
+    let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span, _) = &output;
     let operation = u64::try_from(tensor.op).map_err(|_| BackendError::InvalidTensor)?;
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
         return Ok(None);
@@ -699,7 +700,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         Vec::new()
     };
     let right = match mode {
-        CopyMode::C2(..) => Some(source_data(1)?),
+        CopyMode::C2(..) | CopyMode::C6(..) => Some(source_data(1)?),
         CopyMode::C3(_, _, _, _, false) => Some(zeros.as_ptr().cast_mut()),
         _ => None,
     };
@@ -709,6 +710,18 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     for index in 0..count {
         let request = GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone());
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
+        if let GraphResponse::C2(from, to) = response {
+            // SAFETY: the admitted update view bounds both the original left
+            // value and right value. Reading both before writing preserves aliases.
+            unsafe {
+                let left = ptr::read_unaligned(sources[0].add(to as usize).cast::<f32>());
+                let right = ptr::read_unaligned(sources[1].add(from as usize).cast::<f32>());
+                let value = verdant_tensor::linear::evaluate_f32_scalar(0, left, right)
+                    .map_err(|_| BackendError::InvalidTensor)?;
+                ptr::write_unaligned(destination_data.add(to as usize).cast::<f32>(), value);
+            }
+            continue;
+        }
         let GraphResponse::C1(second, from, to) = response else {
             return Err(BackendError::InvalidTensor);
         };

@@ -17,18 +17,17 @@ pub(crate) const GGML_STATUS_FAILED: c_int = -1;
 
 // Shared declarations preserve GGML field order and C layout.
 macro_rules! record {
-    ($name:ident { $($field:ident: $ty:ty),* $(,)? }) => {
+    ($(#[$attribute:meta])* $name:ident { $($field:ident: $ty:ty),* $(,)? }) => {
+        $(#[$attribute])*
         #[repr(C)]
         pub(crate) struct $name { $(pub $field: $ty,)* }
     };
 }
 macro_rules! interface {
     ($name:ident { $($field:ident($($arg:ty),* $(,)?) -> $out:ty;)* }) => {
-        #[repr(C)]
-        #[derive(Default)]
-        pub(crate) struct $name {
-            $(pub $field: Option<unsafe extern "C" fn($($arg),*) -> $out>,)*
-        }
+        record! { #[derive(Default)] $name {
+            $($field: Option<unsafe extern "C" fn($($arg),*) -> $out>,)*
+        } }
     };
 }
 

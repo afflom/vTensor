@@ -44,7 +44,8 @@ structure{
     {name: s1, type: Nat},
     {name: s2, type: Nat},
     {name: s3, type: Nat},
-    {name: span, type: Nat}
+    {name: span, type: Nat},
+    {name: address, type: Nat}
   ]
 }
 
@@ -74,7 +75,8 @@ inductive{
     {name: concatenated, fields: [Nat, IndexContext]},
     {name: padded, fields: [Nat, Nat, Nat, Nat, Bool]},
     {name: reflected, fields: [Nat]},
-    {name: rolled, fields: [Nat, Nat, Nat, Nat]}
+    {name: rolled, fields: [Nat, Nat, Nat, Nat]},
+    {name: updated, fields: [Nat, Nat, Bool]}
   ]
 }
 
@@ -215,7 +217,8 @@ inductive{
   parameters: [],
   constructors: [
     {name: planned, fields: [PointwiseDecision]},
-    {name: offsets, fields: [Bool, Nat, Nat]}
+    {name: offsets, fields: [Bool, Nat, Nat]},
+    {name: addOffsets, fields: [Nat, Nat]}
   ]
 }
 
@@ -458,6 +461,85 @@ definition{
 }
 
 definition{
+  name: sameShape,
+  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  result: Bool,
+  body: (((((project left n0) =? (project output n0)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))),
+  executable: true
+}
+
+definition{
+  name: contiguousWords,
+  parameters: [tensor : TensorDescriptor],
+  result: Bool,
+  body: ((((((project tensor n0) =? 1) || ((project tensor s0) =? 4)) && (((project tensor n1) =? 1) || ((project tensor s1) =? (prim multiply (project tensor n0) 4 : Nat)))) && (((project tensor n2) =? 1) || ((project tensor s2) =? (prim multiply (prim multiply (project tensor n0) (project tensor n1) : Nat) 4 : Nat)))) && (((project tensor n3) =? 1) || ((project tensor s3) =? (prim multiply (prim multiply (prim multiply (project tensor n0) (project tensor n1) : Nat) (project tensor n2) : Nat) 4 : Nat)))),
+  executable: true
+}
+
+definition{
+  name: signedDisplacement,
+  parameters: [context : IndexContext, i0 : Nat, i1 : Nat, i2 : Nat, i3 : Nat, negative : Bool],
+  result: Nat,
+  body: ((((prim multiply i0 (if negative then (negativeWord (project context s0)) else (positiveWord (project context s0))) : Nat) + (prim multiply i1 (if negative then (negativeWord (project context s1)) else (positiveWord (project context s1))) : Nat)) + (prim multiply i2 (if negative then (negativeWord (project context s2)) else (positiveWord (project context s2))) : Nat)) + (prim multiply i3 (if negative then (negativeWord (project context s3)) else (positiveWord (project context s3))) : Nat)),
+  executable: true
+}
+
+definition{
+  name: maximumDisplacement,
+  parameters: [context : IndexContext, negative : Bool],
+  result: Nat,
+  body: (signedDisplacement context (prim subtract (project context u0) 1 : Nat) (prim subtract (project context n1) 1 : Nat) (prim subtract (project context n2) 1 : Nat) (prim subtract (project context n3) 1 : Nat) negative),
+  executable: true
+}
+
+definition{
+  name: signedViewOffset,
+  parameters: [index : Nat, context : IndexContext, base : Nat],
+  result: Nat,
+  body: (prim subtract (base + (signedDisplacement context (decodedCoordinate index context 0) (decodedCoordinate index context 1) (decodedCoordinate index context 2) (decodedCoordinate index context 3) false)) (signedDisplacement context (decodedCoordinate index context 0) (decodedCoordinate index context 1) (decodedCoordinate index context 2) (decodedCoordinate index context 3) true) : Nat),
+  executable: true
+}
+
+definition{
+  name: updateBounds,
+  parameters: [context : IndexContext, base : Nat, bytes : Nat, count : Nat, adding : Bool],
+  result: Bool,
+  body: (let positive : Nat := (maximumDisplacement context false); (let negative : Nat := (maximumDisplacement context true); (((negative <=? base) && (((base + positive) + (if (count =? 0) then 0 else 4)) <=? bytes)) && (if adding then ((prim subtract (base + positive) negative : Nat) <? bytes) else ((prim subtract (base + positive) negative : Nat) <=? bytes))))),
+  executable: true
+}
+
+definition{
+  name: planUpdate,
+  parameters: [
+    operation : Nat,
+    options : OperationParameters,
+    left : TensorDescriptor,
+    right : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (match right
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some value => (let adding : Bool := (operation =? 4); (let inplace : Bool := (0 <? (project options p4)); (let count : Nat := (blockCount value 1); (let view : IndexContext := (record IndexContext {u0 := (project value n0), n1 := (project value n1), n2 := (project value n2), n3 := (project value n3), s0 := 4, s1 := (project options p0), s2 := (project options p1), s3 := (project options p2)}); (if (((((((((((if adding then (((project left ty) =? 0) && ((project value ty) =? 0)) else ((((project left ty) =? 0) || ((project left ty) =? 26)) && (((project value ty) =? 0) || ((project value ty) =? 26)))) && ((project left ty) =? (project output ty))) && (sameShape left output)) && (contiguousWords left)) && (contiguousWords output)) && ((project value s0) =? 4)) && (count <=? (blockCount left 1))) && ((project options p3) <? 1073741824)) && ((((((project options p0) <=? 4294967295) && ((project options p1) <=? 4294967295)) && ((project options p2) <=? 4294967295)) && ((project options p3) <=? 4294967295)) && ((project options p4) <=? 4294967295))) && (if inplace then ((project left address) =? (project output address)) else true)) && (updateBounds view (project options p3) (project output span) count adding)) then (let initial : Nat := (if inplace then 0 else (blockCount left 1)); (ctor PointwiseDecision.copyBlocks (initial + count) 4 (indexContext value 1) view (ctor CopyMode.updated initial (project options p3) adding))) else (ctor PointwiseDecision.invalidShape))))))),
+  executable: true
+}
+
+definition{
+  name: updatedOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    initial : Nat,
+    base : Nat,
+    adding : Bool
+  ],
+  result: GraphResponse,
+  body: (if (index <? initial) then (ctor GraphResponse.offsets false (prim multiply index 4 : Nat) (prim multiply index 4 : Nat)) else (let step : Nat := (prim subtract index initial : Nat); (let from : Nat := (blockOffset step source); (let target : Nat := (signedViewOffset step destination base); (if adding then (ctor GraphResponse.addOffsets from target) else (ctor GraphResponse.offsets true from target)))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -467,7 +549,8 @@ definition{
     | CopyMode.concatenated axis right => (concatenatedOffsets index source right destination axis)
     | CopyMode.padded p0 p1 p2 p3 circular => (paddedOffsets index source destination p0 p1 p2 p3 circular)
     | CopyMode.reflected left => (reflectedOffsets index source destination left)
-    | CopyMode.rolled p0 p1 p2 p3 => (paddedOffsets index source destination p0 p1 p2 p3 true)),
+    | CopyMode.rolled p0 p1 p2 p3 => (paddedOffsets index source destination p0 p1 p2 p3 true)
+    | CopyMode.updated initial base adding => (updatedOffsets index source destination initial base adding)),
   executable: true
 }
 
@@ -478,7 +561,7 @@ definition{
   body: (match request
     | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (numericPlan operation variant left right output)))))))
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (numericPlan operation variant left right output))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -558,6 +641,27 @@ theorem{
   name: reflectRightEdge,
   parameters: [],
   statement: ((reflectedCoordinate 6 2 3) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: backwardUpdateAddress,
+  parameters: [],
+  statement: ((signedViewOffset 3 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 4294967292, s2 := 0, s3 := 0}) 20) = 16),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: backwardUpdateAdmitted,
+  parameters: [],
+  statement: ((updateBounds (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 4294967292, s2 := 0, s3 := 0}) 20 64 6 true) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: backwardUpdateBelowBaseRefused,
+  parameters: [],
+  statement: ((updateBounds (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 4294967292, s2 := 0, s3 := 0}) 0 64 6 false) = false),
   proof: reflexivity{}
 }
 \end{semanticmodule}

@@ -274,6 +274,12 @@ fn spatial_graphs_vt_18() {
     native_backend_oracle::verify(&root(), "spatial");
 }
 
+/// `VT-19`: Prism plans SET and ACC initialization, bounded update views and aliases and Verdant execution matches the imported GGML CPU oracle for supported float and integer storage
+#[test]
+fn update_graphs_vt_19() {
+    native_backend_oracle::verify(&root(), "update");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -306,12 +312,9 @@ mod ggml_oracle {
         ))
     }
 
-    pub(super) fn digest(bytes: &[u8]) -> String {
-        use std::fmt::Write;
-        bytes.iter().fold(String::new(), |mut out, byte| {
-            write!(&mut out, "{byte:02x}").expect("string write");
-            out
-        })
+    pub(super) fn digest(bytes: &sha2::digest::Output<Sha256>) -> String {
+        let word = |slice: &[u8]| u128::from_be_bytes(slice.try_into().unwrap());
+        format!("{:032x}{:032x}", word(&bytes[..16]), word(&bytes[16..]))
     }
 
     pub(super) fn compile(root: &Path, source: impl AsRef<Path>, output: impl AsRef<Path>) {
@@ -478,7 +481,7 @@ mod ggml_oracle {
             (source.join("ggml.c"), "ggml.o"),
             (source.join("ggml-quants.c"), "quants.o"),
             (source.join("ggml-alloc.c"), "alloc.o"),
-            (cache.join("storage_oracle.c"), "transport.o"),
+            (cache.join("storage_oracle.c"), "storage.o"),
         ] {
             compile(&cache, input, cache.join(object));
         }
@@ -494,63 +497,44 @@ mod ggml_oracle {
         ] {
             compile(&cache, input, cache.join(object));
         }
-        run(Command::new("c++")
-            .arg("-Wl,--gc-sections")
-            .arg(cache.join("transfer.o"))
-            .arg(cache.join("backend.o"))
-            .arg(cache.join("ggml.o"))
-            .arg(cache.join("quants.o"))
-            .arg("-lm")
-            .arg("-o")
-            .arg(cache.join("transfer-oracle")));
-        std::fs::write(
-            cache.join("transfer.sha256"),
-            file_digest(cache.join("transfer-oracle")),
-        )
-        .expect("transfer digest");
-        run(Command::new("c++")
-            .arg("-Wl,--gc-sections")
-            .arg(cache.join("allocation.o"))
-            .arg(cache.join("meta.o"))
-            .arg(cache.join("alloc.o"))
-            .arg(cache.join("backend.o"))
-            .arg(cache.join("ggml.o"))
-            .arg(cache.join("quants.o"))
-            .arg("-lm")
-            .arg("-o")
-            .arg(cache.join("allocation-oracle")));
-        std::fs::write(
-            cache.join("allocation.sha256"),
-            file_digest(cache.join("allocation-oracle")),
-        )
-        .expect("allocation digest");
         let objects: serde_json::Map<String, serde_json::Value> =
             ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"]
                 .into_iter()
-                .map(|name| {
-                    (
-                        name.to_string(),
-                        serde_json::json!(file_digest(cache.join(name))),
-                    )
-                })
+                .map(|name| (name.into(), file_digest(cache.join(name)).into()))
                 .collect();
         std::fs::write(
             cache.join("objects.json"),
             serde_json::to_vec(&objects).unwrap(),
         )
         .expect("object bindings");
-        let candidate = cache.join("storage-oracle.new");
-        run(Command::new("c++")
-            .arg("-Wl,--gc-sections")
-            .arg(cache.join("transport.o"))
-            .arg(cache.join("ggml.o"))
-            .arg(cache.join("quants.o"))
-            .arg("-lm")
-            .arg("-o")
-            .arg(&candidate));
-        std::fs::write(cache.join("executable.sha256"), file_digest(&candidate))
+        let programs: [(&str, &[&str]); 3] = [
+            ("transfer", &["backend", "ggml", "quants"]),
+            (
+                "allocation",
+                &["meta", "alloc", "backend", "ggml", "quants"],
+            ),
+            ("storage", &["ggml", "quants"]),
+        ];
+        for (name, shared) in programs {
+            let destination = cache.join(format!("{name}-oracle"));
+            let candidate = destination.with_extension("new");
+            let objects = std::iter::once(name).chain(shared.iter().copied());
+            run(Command::new("c++")
+                .arg("-Wl,--gc-sections")
+                .args(objects.map(|object| cache.join(format!("{object}.o"))))
+                .args(["-lm", "-o"])
+                .arg(&candidate));
+            let stamp = match name {
+                "storage" => "executable",
+                other => other,
+            };
+            std::fs::write(
+                cache.join(format!("{stamp}.sha256")),
+                file_digest(&candidate),
+            )
             .expect("cache digest");
-        std::fs::rename(candidate, &executable).expect("publish built oracle");
+            std::fs::rename(candidate, destination).expect("publish built oracle");
+        }
         executable
     }
 
@@ -1668,6 +1652,7 @@ mod native_backend_oracle {
                     "repeat" => 160,
                     "concat" => kinds.len() * 288,
                     "spatial" => 2256,
+                    "update" => 4608,
                     _ => panic!("unknown oracle mode"),
                 })
             )
@@ -1706,6 +1691,15 @@ extern "C" size_t vtensor_build_sources_size();
 static void refusal(const char *message) { _exit(strstr(message, "out of bounds") ? 12 : 99); }
 static int current_kind = -1, current_layout = -1;
 static void unexpected_abort(const char *message) { fprintf(stderr, "upstream abort at type %d layout %d: %s\n", current_kind, current_layout, message); _exit(99); }
+template<class T, class U>
+static bool refuses_change(ggml_backend_t backend, ggml_backend_dev_t dev, ggml_cgraph *graph, ggml_tensor *result, T &field, U bad, bool capability=true) {
+    std::vector<unsigned char> before(ggml_nbytes(result)),after(before.size());
+    ggml_backend_tensor_get(result,before.data(),0,before.size());
+    const T saved=field;field=bad;
+    const bool refused=(!capability || !ggml_backend_dev_supports_op(dev,result)) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED;
+    field=saved;ggml_backend_tensor_get(result,after.data(),0,after.size());
+    return refused && before==after;
+}
 static ggml_tensor * canonical_copy(ggml_context *ctx, ggml_tensor *input) {
     const int64_t block=ggml_blck_size(input->type), count=ggml_nelements(input)/block;
     ggml_tensor *target=ggml_new_tensor_2d(ctx,input->type,block,count); target->nb[1]*=2; target->nb[2]=target->nb[1]*count; target->nb[3]=target->nb[2];
@@ -1745,6 +1739,46 @@ int main(int argc, char **argv) {
     ggml_backend_buffer_type_t buft = ggml_backend_dev_buffer_type(dev);
     CHECK(ggml_backend_buft_is_host(buft) && ggml_backend_dev_supports_buft(dev, buft));
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
+    if (!strcmp(argv[4], "update")) {
+      ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference); ggml_backend_cpu_set_n_threads(reference,1);
+      size_t cases=0;
+      for(ggml_type type : {GGML_TYPE_F32,GGML_TYPE_I32}) for(ggml_type patch_type : {GGML_TYPE_F32,GGML_TYPE_I32}) for(int add : {0,1})
+      for(int inplace : {0,1}) for(int alias : {0,1}) for(int layout=0;layout<4;layout++) for(size_t offset : {size_t(0),size_t(4),size_t(20)})
+      for(int width : {0,1,3}) for(int rows : {1,2}) for(int planes : {1,2}) for(int batches : {1,2}) {
+        if((add && (type!=GGML_TYPE_F32 || patch_type!=GGML_TYPE_F32)) || (alias && type!=patch_type)) continue;
+        ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
+        ggml_tensor *left=ggml_new_tensor_4d(ctx,type,8,4,3,2);
+        const size_t s1=layout==2?16:width*4+(layout?4:0),s2=layout==2?64:s1*rows+(layout?4:0),s3=layout==2?128:s2*planes+(layout?4:0);
+        ggml_tensor *right=alias?ggml_view_4d(ctx,left,width,rows,planes,batches,s1,s2,s3,16):ggml_new_tensor_4d(ctx,patch_type,width,rows,planes,batches);
+        right->nb[1]=s1;right->nb[2]=s2;right->nb[3]=s3;
+        const size_t n1=layout==3?size_t(-4):layout==2?0:layout?16:width*4,n2=layout==3?size_t(-16):layout==2?4:layout?64:n1*rows,n3=layout==3?size_t(-64):layout==2?8:layout?256:n2*planes;
+        const size_t base=offset+(layout==3?100:0);
+        ggml_tensor *result=add?(inplace?ggml_acc_inplace(ctx,left,right,n1,n2,n3,base):ggml_acc(ctx,left,right,n1,n2,n3,base)):(inplace?ggml_set_inplace(ctx,left,right,n1,n2,n3,base):ggml_set(ctx,left,right,n1,n2,n3,base));
+        ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
+        std::vector<uint32_t> initial(ggml_nelements(left)), expected(initial.size()),actual(initial.size());
+        for(ggml_tensor *input : {left,right}) {
+          std::vector<uint32_t> data(ggml_nbytes(input)/4);
+          for(size_t i=0;i<data.size();i++) {const int value=int((i*11+(input==right?7:0))%47)-23; const float f=float(value)/8;
+            if(input->type==GGML_TYPE_F32) memcpy(&data[i],&f,4); else data[i]=uint32_t(value);}
+          if(!data.empty()) ggml_backend_tensor_set(input,data.data(),0,data.size()*4);
+        }
+        ggml_backend_tensor_get(left,initial.data(),0,initial.size()*4);
+        ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
+        CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS); ggml_backend_tensor_get(result,expected.data(),0,expected.size()*4);
+        ggml_backend_tensor_set(left,initial.data(),0,initial.size()*4); if(!inplace) ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
+        if(layout==0 && offset==0 && width==3 && rows==2 && planes==2 && batches==2) {
+          CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
+          CHECK(refuses_change(backend,dev,graph,result,result->op_params[3],int32_t(ggml_nbytes(result))));
+          CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],-INT32_MAX));
+          if(!inplace) CHECK(refuses_change(backend,dev,graph,result,result->op_params[4],int32_t(1)));
+        }
+        CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+        ggml_backend_tensor_get(result,actual.data(),0,actual.size()*4);
+        if(actual!=expected) {fprintf(stderr,"update mismatch add=%d type=%d patch=%d inplace=%d alias=%d layout=%d offset=%zu shape=%d,%d,%d,%d\n",add,type,patch_type,inplace,alias,layout,base,width,rows,planes,batches);return 2;}
+        ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
+      }
+      ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases); return 0;
+    }
     const bool repeating=!strcmp(argv[4], "repeat"), concatenating=!strcmp(argv[4], "concat");
     const bool spatial=!strcmp(argv[4], "spatial");
     if (!strcmp(argv[4], "copy") || repeating || concatenating || spatial) {
@@ -1812,19 +1846,14 @@ int main(int argc, char **argv) {
         CHECK(ggml_backend_graph_compute(reference,oracle_graph)==GGML_STATUS_SUCCESS);
         if(!expected.empty()) ggml_backend_tensor_get(expected_tensor,expected.data(),0,expected.size());
         if(kind==0 && pattern==0 && units==(spatial && operation?2:repeating?3:1) && rows==(spatial && operation?2:1) && batches==(spatial && operation==2?2:1) && layout==0) {
-          const int64_t saved_extent=result->ne[0]; result->ne[0]=saved_extent+(repeating?1:block); CHECK(!ggml_backend_dev_supports_op(dev,result));
-          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->ne[0]=saved_extent;
-          ggml_tensor *saved=result->src[concatenating || (!spatial && operation==2)?1:0]; result->src[concatenating || (!spatial && operation==2)?1:0]=nullptr;
-          CHECK(!ggml_backend_dev_supports_op(dev,result));
-          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->src[concatenating || (!spatial && operation==2)?1:0]=saved;
-          if(concatenating) {const int32_t axis=4; memcpy(result->op_params,&axis,4); CHECK(!ggml_backend_dev_supports_op(dev,result));
-            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); memcpy(result->op_params,&operation,4);
-            right->type=GGML_TYPE_F16; CHECK(!ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); right->type=type;
-            const int other=(operation+1)%4; right->ne[other]++; CHECK(!ggml_backend_dev_supports_op(dev,result));
-            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); right->ne[other]--; }
-          if(spatial) {const int32_t bad=operation==2?input->ne[0]:-1; memcpy(result->op_params,&bad,4); CHECK(!ggml_backend_dev_supports_op(dev,result));
-            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); memset(result->op_params,0,4);}
-          std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
+          CHECK(refuses_change(backend,dev,graph,result,result->ne[0],result->ne[0]+(repeating?1:block)));
+          CHECK(refuses_change(backend,dev,graph,result,result->src[concatenating || (!spatial && operation==2)?1:0],nullptr));
+          if(concatenating) {
+            CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(4)));
+            CHECK(refuses_change(backend,dev,graph,result,right->type,GGML_TYPE_F16));
+            CHECK(refuses_change(backend,dev,graph,result,right->ne[(operation+1)%4],right->ne[(operation+1)%4]+1));
+          }
+          if(spatial) CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(operation==2?input->ne[0]:-1)));
         }
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
         std::vector<unsigned char> actual(output.size()); if(!actual.empty()) ggml_backend_tensor_get(result,actual.data(),0,actual.size());
@@ -1892,19 +1921,9 @@ int main(int argc, char **argv) {
           operand->nb[2]=operand->nb[1]*operand->ne[1]+padded*sizeof(float);
           operand->nb[3]=operand->nb[2]*operand->ne[2]+padded*sizeof(float);
         }
-        auto operation = [&](ggml_tensor *a, ggml_tensor *b) -> ggml_tensor * {
-          switch(kind) {
-            case 0: return ggml_add(ctx,a,b);
-            case 1: return ggml_sub(ctx,a,b);
-            case 2: return ggml_mul(ctx,a,b);
-            case 3: return ggml_div(ctx,a,b);
-            case 4: return ggml_sqrt(ctx,a);
-            case 5: return ggml_sqr(ctx,a);
-            case 6: return ggml_neg(ctx,a);
-            case 7: return ggml_abs(ctx,a);
-            default: return nullptr;
-          }
-        };
+        ggml_tensor *(*binary[])(ggml_context *,ggml_tensor *,ggml_tensor *)={ggml_add,ggml_sub,ggml_mul,ggml_div};
+        ggml_tensor *(*unary[])(ggml_context *,ggml_tensor *)={ggml_sqrt,ggml_sqr,ggml_neg,ggml_abs};
+        auto operation = [&](ggml_tensor *a, ggml_tensor *b) { return kind<4?binary[kind](ctx,a,b):unary[kind-4](ctx,a); };
         ggml_tensor *result=operation(left,right);
         ggml_tensor *reference_result=operation(ggml_cont(ctx,left),right?ggml_cont(ctx,right):nullptr);
         CHECK(result && result->op==expected_ops[kind]);
@@ -1937,26 +1956,12 @@ int main(int argc, char **argv) {
           }
         }
         if (width==1 && padded==0 && broadcast==0 && (kind==0 || kind==6)) {
-          auto refused_without_writes = [&]() -> bool {
-            if (ggml_backend_dev_supports_op(dev,result)) return false;
-            ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
-            if (ggml_backend_graph_compute(backend,graph)!=GGML_STATUS_FAILED) return false;
-            std::vector<unsigned char> bytes(ggml_nbytes(result));
-            ggml_backend_tensor_get(result,bytes.data(),0,bytes.size());
-            return std::all_of(bytes.begin(),bytes.end(),[](unsigned char b){ return b==0xA5; });
-          };
           if (kind==0) {
-            result->src[1]=nullptr; CHECK(refused_without_writes()); result->src[1]=right;
-            right->ne[1]=2; CHECK(refused_without_writes()); right->ne[1]=3;
-            result->ne[1]=2; CHECK(!ggml_backend_dev_supports_op(dev,result)); result->ne[1]=3;
-            const auto saved_type=left->type; left->type=GGML_TYPE_COUNT;
-            CHECK(refused_without_writes()); left->type=saved_type;
-          } else {
-            const int32_t bad_variant=GGML_UNARY_OP_COUNT;
-            int32_t saved_variant; memcpy(&saved_variant,result->op_params,sizeof(saved_variant));
-            memcpy(result->op_params,&bad_variant,sizeof(bad_variant)); CHECK(refused_without_writes());
-            memcpy(result->op_params,&saved_variant,sizeof(saved_variant));
-          }
+            CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
+            CHECK(refuses_change(backend,dev,graph,result,right->ne[1],int64_t(2)));
+            CHECK(refuses_change(backend,dev,graph,result,result->ne[1],int64_t(2)));
+            CHECK(refuses_change(backend,dev,graph,result,left->type,GGML_TYPE_COUNT));
+          } else CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(GGML_UNARY_OP_COUNT)));
         }
         ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
       }
@@ -2006,28 +2011,14 @@ int main(int argc, char **argv) {
         }
         if (!negatives_checked && ggml_nbytes(product) && ggml_nbytes(left)) {
           negatives_checked = true;
-          product->ne[0]++;
-          CHECK(!ggml_backend_dev_supports_op(dev, product));
-          CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_FAILED);
-          product->ne[0]--;
-          ggml_tensor *saved_left = product->src[0]; product->src[0] = nullptr;
-          CHECK(!ggml_backend_dev_supports_op(dev, product));
-          CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_FAILED);
-          product->src[0] = saved_left;
-          ggml_backend_buffer_t saved_buffer = product->buffer; product->buffer = nullptr;
-          CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_FAILED);
-          product->buffer = saved_buffer;
-          ggml_backend_buffer_t foreign = ggml_backend_cpu_buffer_from_ptr(left->data, ggml_nbytes(left)); CHECK(foreign);
-          saved_buffer = left->buffer; left->buffer = foreign;
-          CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_FAILED);
-          left->buffer = saved_buffer; ggml_backend_buffer_free(foreign);
-          ggml_tensor *unsupported = ggml_dup(ctx, product);
-          ggml_cgraph *bad_graph = ggml_new_graph(ctx); ggml_build_forward_expand(bad_graph, unsupported);
-          unsupported->op = GGML_OP_COUNT;
-          CHECK(ggml_backend_graph_compute(backend, bad_graph) == GGML_STATUS_FAILED);
-          std::vector<unsigned char> unchanged(ggml_nbytes(product));
-          ggml_backend_tensor_get(product, unchanged.data(), 0, unchanged.size());
-          CHECK(std::all_of(unchanged.begin(), unchanged.end(), [](unsigned char b){return b==0xA5;}));
+          CHECK(refuses_change(backend,dev,graph,product,product->ne[0],product->ne[0]+1));
+          CHECK(refuses_change(backend,dev,graph,product,product->src[0],nullptr));
+          CHECK(refuses_change(backend,dev,graph,product,product->buffer,nullptr,false));
+          ggml_backend_buffer_t foreign=ggml_backend_cpu_buffer_from_ptr(left->data,ggml_nbytes(left)); CHECK(foreign);
+          CHECK(refuses_change(backend,dev,graph,product,left->buffer,foreign,false)); ggml_backend_buffer_free(foreign);
+          ggml_tensor *unsupported=ggml_dup(ctx,product);
+          ggml_cgraph *bad_graph=ggml_new_graph(ctx); ggml_build_forward_expand(bad_graph,unsupported);
+          CHECK(refuses_change(backend,dev,bad_graph,product,unsupported->op,GGML_OP_COUNT,false));
         }
         CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_SUCCESS);
         if (ggml_nbytes(product)) ggml_backend_tensor_get(product, actual.data(), 0, ggml_nbytes(product));

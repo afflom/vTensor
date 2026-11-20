@@ -52,6 +52,7 @@ reproducible matrix/scalar/storage extension checkpoint is `26ba1eaa1369`.
 | `VT-16` | build | Matches 160 REPEAT graphs for all five CPU-oracle types, with four-axis repetition, strided inputs and preserved output padding. |
 | `VT-17` | build | Matches 10,368 CONCAT graphs across all 36 types and four axes, including strided inputs, empty operands and preserved padding. |
 | `VT-18` | build | Checks 2,056 F32 padding/reflection/roll CPU comparisons and 200 circular empty-source refusals, including signed crops, extreme words and padded output. |
+| `VT-19` | build | Matches 4,608 SET/ACC graphs with copied/in-place outputs, aliased sources, empty patches and overlapping/backward update strides. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -59,13 +60,15 @@ matrix products, ADD, SUB, MUL, DIV, SQRT, SQR, NEG and ABS graphs to Verdant.
 Prism selects and plans the numerical graph operations; scalar arithmetic is
 itself generated from a certified Prism bit model inside Verdant. Same-type
 DUP, CONT, CPY, CONCAT, admitted REPEAT graphs and F32 PAD, PAD_REFLECT_1D
-and ROLL use Prism address plans and Verdant byte transfers.
+and ROLL use Prism address plans and Verdant byte transfers. SET uses the same
+transfer path; ACC delegates addition to Verdant and preserves original-source
+versus in-place alias behavior.
 Copy conversions and other
 operations and complete numeric type coverage remain unfinished. Storage and empty-graph coverage for all 36 live types do not
 establish their nonempty numerical behavior.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes seventeen contract tests; VT-02 refuses the
+The current development tree passes eighteen contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy
 and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in
