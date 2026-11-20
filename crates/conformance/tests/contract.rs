@@ -256,6 +256,12 @@ fn copy_graphs_vt_15() {
     native_backend_oracle::verify(&root(), "copy");
 }
 
+/// `VT-16`: Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle
+#[test]
+fn repeat_graphs_vt_16() {
+    native_backend_oracle::verify(&root(), "repeat");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -1647,7 +1653,7 @@ mod native_backend_oracle {
             .collect();
         let input = kinds
             .iter()
-            .filter(|_| matches!(mode, "buffers" | "empty" | "copy"))
+            .filter(|_| matches!(mode, "buffers" | "empty" | "copy" | "repeat"))
             .map(|kind| format!("{kind}\n"))
             .collect::<String>();
         let snapshot = cache.join("loaded-source.snapshot");
@@ -1715,6 +1721,7 @@ mod native_backend_oracle {
                     "buffers" => kinds.len() * 3,
                     "empty" => kinds.len() * 24,
                     "copy" => kinds.len() * 96,
+                    "repeat" => 160,
                     _ => panic!("unknown oracle mode"),
                 })
             )
@@ -1787,12 +1794,14 @@ int main(int argc, char **argv) {
     ggml_backend_buffer_type_t buft = ggml_backend_dev_buffer_type(dev);
     CHECK(ggml_backend_buft_is_host(buft) && ggml_backend_dev_supports_buft(dev, buft));
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
-    if (!strcmp(argv[4], "copy")) {
+    const bool repeating=!strcmp(argv[4], "repeat");
+    if (!strcmp(argv[4], "copy") || repeating) {
       ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference,1);
       size_t cases=0; int kind;
-      while (scanf("%d",&kind)==1) for(int operation=0;operation<3;operation++) for(int layout=0;layout<4;layout++)
+      while (scanf("%d",&kind)==1) for(int operation=0;operation<(repeating?1:3);operation++) for(int layout=0;layout<4;layout++)
       for(int units : {1,3}) for(int rows : {1,3}) for(int batches : {1,2}) {
+        if(repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32) continue;
         ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
         const auto type=(ggml_type)kind; const int64_t block=ggml_blck_size(type); const size_t bytes=ggml_type_size(type);
         ggml_tensor *input=ggml_new_tensor_4d(ctx,type,block*units,rows,2,batches);
@@ -1803,12 +1812,14 @@ int main(int argc, char **argv) {
         const int64_t blocks=ggml_nelements(input)/block;
         ggml_tensor *target=layout==3?ggml_new_tensor_4d(ctx,type,block,blocks,1,1):ggml_dup_tensor(ctx,input);
         target->nb[1]+=bytes; target->nb[2]=target->nb[1]*target->ne[1]+bytes; target->nb[3]=target->nb[2]*target->ne[2]+bytes;
-        ggml_tensor *result=operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
+        if(repeating) target=ggml_new_tensor_4d(ctx,type,input->ne[0]*2,input->ne[1]*(layout&1?3:1),input->ne[2]*(layout&2?2:1),input->ne[3]*2);
+        ggml_tensor *result=repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
         ggml_tensor *reference_target=ggml_new_tensor_2d(ctx,type,block,blocks);
         reference_target->nb[1]=bytes*2; reference_target->nb[2]=reference_target->nb[1]*blocks; reference_target->nb[3]=reference_target->nb[2];
-        ggml_tensor *expected_tensor=ggml_cont(ctx,ggml_cpy(ctx,input,reference_target));
+        ggml_tensor *expected_tensor=repeating?ggml_repeat(ctx,ggml_cont(ctx,input),target):ggml_cont(ctx,ggml_cpy(ctx,input,reference_target));
+        if(repeating) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
-        std::vector<unsigned char> initial(ggml_nbytes(input)),output(ggml_nbytes(result),0xA5), expected(blocks*bytes);
+        std::vector<unsigned char> initial(ggml_nbytes(input)),output(ggml_nbytes(result),0xA5), expected(ggml_nbytes(expected_tensor));
         for(size_t i=0;i<initial.size();i++) initial[i]=(i*37+kind*13+layout)%256;
         ggml_backend_tensor_set(input,initial.data(),0,initial.size());
         ggml_cgraph *oracle_graph=ggml_new_graph(ctx); ggml_build_forward_expand(oracle_graph,expected_tensor);
@@ -1816,9 +1827,9 @@ int main(int argc, char **argv) {
         ggml_backend_tensor_get(expected_tensor,expected.data(),0,expected.size());
         ggml_backend_tensor_set(result,output.data(),0,output.size());
         ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
-        if(kind==0 && units==1 && rows==1 && batches==1 && layout==0) {
-          result->ne[1]++; CHECK(!ggml_backend_dev_supports_op(dev,result));
-          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->ne[1]--;
+        if(kind==0 && units==(repeating?3:1) && rows==1 && batches==1 && layout==0) {
+          const int64_t saved_extent=result->ne[0]; result->ne[0]=saved_extent+(repeating?1:block); CHECK(!ggml_backend_dev_supports_op(dev,result));
+          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->ne[0]=saved_extent;
           ggml_tensor *saved=result->src[operation==2?1:0]; result->src[operation==2?1:0]=nullptr;
           CHECK(!ggml_backend_dev_supports_op(dev,result));
           CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->src[operation==2?1:0]=saved;

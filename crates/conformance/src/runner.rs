@@ -138,12 +138,7 @@ impl BufferContext {
     fn allocate(size: usize) -> Result<Self, BackendError> {
         let physical = vtensor_native_memory::run(vtensor_native_memory::Adt0::C0(size as u64))
             .map_err(|_| BackendError::Overflow)?;
-        let physical = usize::try_from(physical).map_err(|_| BackendError::Overflow)?;
-        let mut owned = Vec::new();
-        owned
-            .try_reserve_exact(physical)
-            .map_err(|_| BackendError::Allocation)?;
-        owned.resize(physical, state().initial_byte);
+        let mut owned = workspace(physical, state().initial_byte)?;
         let base = if size == 0 {
             null_mut()
         } else {
@@ -328,12 +323,13 @@ fn buffer_interface() -> BufferInterface {
     }
 }
 
-unsafe extern "C" fn buffer_allocate(buft: Buft, size: usize) -> Buf {
-    let Ok(context) = BufferContext::allocate(size) else {
+fn wrap_buffer(buft: Buft, context: Result<BufferContext, BackendError>) -> Buf {
+    let Ok(context) = context else {
         return null_mut();
     };
-    // SAFETY: GGML allocates its own wrapper; the free callback releases only
-    // our Rust context. This preserves ownership across the two allocators.
+    let size = context.size;
+    // SAFETY: both callers supply GGML's live buffer type and a validated
+    // context. GGML owns the wrapper; buffer_free releases only this Rust Box.
     unsafe {
         ggml_backend_buffer_init(
             buft,
@@ -344,20 +340,12 @@ unsafe extern "C" fn buffer_allocate(buft: Buft, size: usize) -> Buf {
     }
 }
 
+unsafe extern "C" fn buffer_allocate(buft: Buft, size: usize) -> Buf {
+    wrap_buffer(buft, BufferContext::allocate(size))
+}
+
 unsafe extern "C" fn from_host(_: Dev, pointer: *mut c_void, size: usize, _: usize) -> Buf {
-    let Ok(context) = BufferContext::borrowed(pointer, size) else {
-        return null_mut();
-    };
-    // SAFETY: the caller owns a writable host region until buffer destruction.
-    // Its bytes are borrowed and are neither initialized nor freed here.
-    unsafe {
-        ggml_backend_buffer_init(
-            state().buft.get(),
-            buffer_interface(),
-            Box::into_raw(Box::new(context)).cast(),
-            size,
-        )
-    }
+    wrap_buffer(state().buft.get(), BufferContext::borrowed(pointer, size))
 }
 
 unsafe extern "C" fn buffer_free(buffer: Buf) {
@@ -572,13 +560,13 @@ fn graph_tensor_data(tensor: &Tensor) -> Result<*mut u8, BackendError> {
     }
 }
 
-fn workspace<T: Default>(size: u64) -> Result<Vec<T>, BackendError> {
+fn workspace<T: Clone>(size: u64, initial: T) -> Result<Vec<T>, BackendError> {
     let count = usize::try_from(size).map_err(|_| BackendError::Overflow)?;
     let mut result = Vec::new();
     result
         .try_reserve_exact(count)
         .map_err(|_| BackendError::Allocation)?;
-    result.resize_with(count, T::default);
+    result.resize(count, initial);
     Ok(result)
 }
 
@@ -601,9 +589,9 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
         graph_tensor_data(right)?,
         graph_tensor_data(tensor)?,
     );
-    let mut left_values = workspace(left_count)?;
-    let mut right_values = workspace(right_count)?;
-    let mut output_values = workspace(output_count)?;
+    let mut left_values = workspace(left_count, 0.0)?;
+    let mut right_values = workspace(right_count, 0.0)?;
+    let mut output_values = workspace(output_count, 0.0)?;
     let (m, k, n) = (m as usize, k as usize, n as usize);
     for i3 in 0..b3 as usize {
         for i2 in 0..b2 as usize {
@@ -704,17 +692,16 @@ fn execute_pointwise(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendErro
 }
 
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
-    let GraphPlan::C4(count, bytes, source, destination) = plan else {
+    let GraphPlan::C4(count, bytes, source, destination, repeated) = plan else {
         return Err(BackendError::InvalidTensor);
     };
     // SAFETY: the admitted copy plan retains a live source descriptor.
     let source_data = graph_tensor_data(unsafe { &*tensor.src[0] })?;
     let destination_data = graph_tensor_data(tensor)?;
-    let mut block = workspace::<u8>(bytes)?;
+    let mut block = workspace(bytes, 0_u8)?;
     for index in 0..count {
-        let response =
-            vtensor_pointwise::run(GraphRequest::C1(index, source.clone(), destination.clone()))
-                .map_err(|_| BackendError::Overflow)?;
+        let request = GraphRequest::C1(index, source.clone(), destination.clone(), repeated);
+        let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
         let GraphResponse::C1(from, to) = response else {
             return Err(BackendError::InvalidTensor);
         };

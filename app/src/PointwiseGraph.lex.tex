@@ -32,6 +32,7 @@ structure{
     {name: u0, type: Nat},
     {name: n1, type: Nat},
     {name: n2, type: Nat},
+    {name: n3, type: Nat},
     {name: s0, type: Nat},
     {name: s1, type: Nat},
     {name: s2, type: Nat},
@@ -48,7 +49,7 @@ inductive{
     {name: invalidShape, fields: []},
     {name: execute, fields: [Nat, Bool, Nat, Nat, Nat, Nat, Nat]},
     {name: product, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: copyBlocks, fields: [Nat, Nat, IndexContext, IndexContext]}
+    {name: copyBlocks, fields: [Nat, Nat, IndexContext, IndexContext, Bool]}
   ]
 }
 
@@ -157,7 +158,7 @@ inductive{
   parameters: [],
   constructors: [
     {name: plan, fields: [Nat, Nat, TensorDescriptor, (Option TensorDescriptor), TensorDescriptor]},
-    {name: offsets, fields: [Nat, IndexContext, IndexContext]}
+    {name: offsets, fields: [Nat, IndexContext, IndexContext, Bool]}
   ]
 }
 
@@ -188,7 +189,7 @@ definition{
   name: indexContext,
   parameters: [tensor : TensorDescriptor, block : Nat],
   result: IndexContext,
-  body: (record IndexContext {u0 := (prim quotient (project tensor n0) block 0 : Nat), n1 := (project tensor n1), n2 := (project tensor n2), s0 := (project tensor s0), s1 := (project tensor s1), s2 := (project tensor s2), s3 := (project tensor s3)}),
+  body: (record IndexContext {u0 := (prim quotient (project tensor n0) block 0 : Nat), n1 := (project tensor n1), n2 := (project tensor n2), n3 := (project tensor n3), s0 := (project tensor s0), s1 := (project tensor s1), s2 := (project tensor s2), s3 := (project tensor s3)}),
   executable: true
 }
 
@@ -203,7 +204,17 @@ definition{
   result: PointwiseDecision,
   body: (if (((project left ty) =? (project output ty)) && (if (operation =? 33) then rightPresent else true)) then (match (TensorTypes::tensorTypeStorage (project left ty))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
-    | TensorTypes::TypeStorageDecision.knownType spec => (let block : Nat := (project spec blockSize); (let count : Nat := (blockCount left block); (if ((((prim remainder (project left n0) block 1 : Nat) =? 0) && ((prim remainder (project output n0) block 1 : Nat) =? 0)) && (count =? (blockCount output block))) then (ctor PointwiseDecision.copyBlocks count (project spec typeSize) (indexContext left block) (indexContext output block)) else (ctor PointwiseDecision.invalidShape))))) else (ctor PointwiseDecision.invalidShape)),
+    | TensorTypes::TypeStorageDecision.knownType spec => (let block : Nat := (project spec blockSize); (let count : Nat := (blockCount left block); (if ((((prim remainder (project left n0) block 1 : Nat) =? 0) && ((prim remainder (project output n0) block 1 : Nat) =? 0)) && (count =? (blockCount output block))) then (ctor PointwiseDecision.copyBlocks count (project spec typeSize) (indexContext left block) (indexContext output block) false) else (ctor PointwiseDecision.invalidShape))))) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
+  name: planRepeat,
+  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if (((((project left ty) =? 0) || ((project left ty) =? 1)) || (((project left ty) =? 25) || ((project left ty) =? 26))) || ((project left ty) =? 30)) then (if (((project left ty) =? (project output ty)) && (repeatValid (project output n0) (project output n1) (project output n2) (project output n3) (project left n0) (project left n1) (project left n2) (project left n3))) then (match (TensorTypes::tensorTypeStorage (project left ty))
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
+    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) true)) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
   executable: true
 }
 
@@ -232,14 +243,22 @@ definition{
 }
 
 definition{
+  name: repeatedBlockOffset,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext],
+  result: Nat,
+  body: (let q0 : Nat := (prim quotient index (project destination u0) 0 : Nat); (let q1 : Nat := (prim quotient q0 (project destination n1) 0 : Nat); (rightOffset (prim remainder index (project destination u0) 0 : Nat) (prim remainder q0 (project destination n1) 0 : Nat) (prim remainder q1 (project destination n2) 0 : Nat) (prim quotient q1 (project destination n2) 0 : Nat) (project source u0) (project source n1) (project source n2) (project source n3) (project source s0) (project source s1) (project source s2) (project source s3)))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
     | GraphRequest.plan operation variant left right output => (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (numericPlan operation variant left right output)))
-    | GraphRequest.offsets index source destination => (ctor GraphResponse.offsets (blockOffset index source) (blockOffset index destination))),
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (numericPlan operation variant left right output))))
+    | GraphRequest.offsets index source destination repeated => (ctor GraphResponse.offsets (if repeated then (repeatedBlockOffset index source destination) else (blockOffset index source)) (blockOffset index destination))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -247,14 +266,21 @@ definition{
 theorem{
   name: paddedSourceOffset,
   parameters: [],
-  statement: ((blockOffset 5 (record IndexContext {u0 := 2, n1 := 3, n2 := 1, s0 := 4, s1 := 12, s2 := 36, s3 := 36})) = 28),
+  statement: ((blockOffset 5 (record IndexContext {u0 := 2, n1 := 3, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 36, s3 := 36})) = 28),
   proof: reflexivity{}
 }
 
 theorem{
   name: reshapedDestinationOffset,
   parameters: [],
-  statement: ((blockOffset 5 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, s0 := 8, s1 := 32, s2 := 64, s3 := 64})) = 48),
+  statement: ((blockOffset 5 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 8, s1 := 32, s2 := 64, s3 := 64})) = 48),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: repeatedFourAxisOffset,
+  parameters: [],
+  statement: ((repeatedBlockOffset 251 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 4, s1 := 12, s2 := 40, s3 := 96}) (record IndexContext {u0 := 4, n1 := 9, n2 := 4, n3 := 4, s0 := 4, s1 := 16, s2 := 144, s3 := 576})) = 124),
   proof: reflexivity{}
 }
 \end{semanticmodule}

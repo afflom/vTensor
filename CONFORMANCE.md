@@ -94,6 +94,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-01` | `build` | The imported GGML backend contract, implementation interface, and operator oracle match their pinned upstream source |
 
+## repeat-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-16` | `build` | Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle |
+
 ## source-accounting
 
 | ID | Level | Statement |

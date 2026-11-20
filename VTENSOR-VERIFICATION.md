@@ -951,3 +951,67 @@ formatting, frame synchronization, workspace Clippy and all cargo-deny checks
 passed. The final source audit is 10,583 lines in 51 files. The full release
 `just vv` remains unproven while the development dependency is refused; no
 unchanged expensive main-app proof was repeated for this component checkpoint.
+
+
+## VT-16: modeled four-axis REPEAT addressing
+
+The VT-16 register entry and behavioral scenario preceded execution support.
+The imported CPU reference accepted the initial graph; vTensor failed at
+`ggml_backend_dev_supports_op(dev,result)`. The test shares the copy fixture,
+its source-bound oracle build, and its complete output/padding comparison.
+It exercises all five types implemented by the pinned CPU REPEAT dispatcher:
+F32, F16, BF16, I16 and I32. The 160 cases vary source width, rows, batch count,
+padding and repetition across all four dimensions. A contiguous upstream copy
+normalizes strided sources before the CPU REPEAT, preserving the same logical
+encoded values while admitting layouts that its direct REPEAT kernel cannot
+read. The actual vTensor graph retains its source strides and padded output.
+Nondivisible repeat extents and a missing source are checked before writes.
+The unchanged copy cases retain unequal-element-count and missing-operand
+checks.
+
+Prism extends the existing block-copy decision with an explicit repeat mode.
+It admits exactly the five CPU types, requires matching output type and
+per-axis divisibility, then maps output coordinates modulo each input extent.
+The shared index context now carries the fourth source extent. A closed
+four-axis offset example checks a padded source address of 124 bytes.
+Verdant's already certified storage transfer primitive remains the execution
+substrate, with one reusable block per node.
+
+The Prism MCP draft is
+`prism-app/f9f4575eeafa88772f53e067a19d99a1c6285359948e6e8ad50da491a893232b`.
+The remote check returned `engine.check failed: project-refused`; the exact
+pinned SDK accepted the four source modules. Its production export is the
+required source of the executable artifact and certificate.
+
+The adapter now shares initialized workspace allocation between owned buffers
+and graph scratch, retaining one initialization pass and the existing typed
+allocation/overflow errors. Owned and borrowed buffers also share GGML wrapper
+construction without changing their ownership. This deduplication is covered
+by the existing allocation, host-buffer, transfer and graph oracle cases.
+
+The SDK export completed with result
+`857786898ba3003611cff6956133153116a192accfa99c1b952dfb3671e87c93`
+and attestation
+`26457a9196171ecab5291d964f5706d3a818cb32606370423fbce54ecaa28bb1`.
+The exact generated bindings carry the repeat mode and fourth source extent;
+the imported certificate and source freshness checks remain active. The
+source audit measures 10,579 handwritten lines in the existing 51 files.
+
+The initial certified execution passed all 160 repeat cases in 4.05 seconds.
+A planted adapter fault replaced every repeat source offset with zero, which
+stays inside the admitted source allocation. The live reference comparison
+rejected it at `copy mismatch type=0 op=0 layout=0`; the binding was restored
+before the workspace regression. This demonstrates detection of incorrect
+repeat addressing, independently of the earlier byte-transfer corruption test.
+
+This is the CPU-oracle repeat checkpoint, not completion of general storage
+coverage or the whole backend. Other repeat types, copy conversions and the
+remaining imported operation families remain within the original goal.
+
+The final workspace regression passed all other targets and fifteen native
+contract tests in 10.83 seconds; VT-02 alone retained the expected refusal of
+the unpublished Verdant development source. Formatting, model/source audits,
+frame synchronization, workspace Clippy and dependency checks passed. The
+source audit remains 10,579 lines in 51 files, below both the gate's Git-parent
+ceiling and the preceding checkpoint's own size. No release gate was weakened
+and no unchanged main-app proof was repeated.
