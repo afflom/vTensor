@@ -280,6 +280,12 @@ fn update_graphs_vt_19() {
     native_backend_oracle::verify(&root(), "update");
 }
 
+/// `VT-20`: Prism models four-axis REPEAT_BACK initialization and accumulation order and Verdant execution matches the imported GGML F32 CPU oracle across strided and empty tensors
+#[test]
+fn fold_graphs_vt_20() {
+    native_backend_oracle::verify(&root(), "fold");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -1596,7 +1602,7 @@ mod native_backend_oracle {
             .filter(|_| {
                 matches!(
                     mode,
-                    "buffers" | "empty" | "copy" | "repeat" | "concat" | "spatial"
+                    "buffers" | "empty" | "copy" | "repeat" | "concat" | "spatial" | "fold"
                 )
             })
             .map(|kind| format!("{kind}\n"))
@@ -1653,6 +1659,7 @@ mod native_backend_oracle {
                     "concat" => kinds.len() * 288,
                     "spatial" => 2256,
                     "update" => 4608,
+                    "fold" => 672,
                     _ => panic!("unknown oracle mode"),
                 })
             )
@@ -1780,20 +1787,22 @@ int main(int argc, char **argv) {
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases); return 0;
     }
     const bool repeating=!strcmp(argv[4], "repeat"), concatenating=!strcmp(argv[4], "concat");
-    const bool spatial=!strcmp(argv[4], "spatial");
-    if (!strcmp(argv[4], "copy") || repeating || concatenating || spatial) {
+    const bool spatial=!strcmp(argv[4], "spatial"), folding=!strcmp(argv[4], "fold");
+    if (!strcmp(argv[4], "copy") || repeating || concatenating || spatial || folding) {
       ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference,1);
       size_t cases=0, refused=0; int kind;
-      while (scanf("%d",&kind)==1) for(int operation=0;operation<(concatenating?4:repeating?1:3);operation++) {
+      while (scanf("%d",&kind)==1) for(int operation=0;operation<(concatenating?4:(repeating || folding)?1:3);operation++) {
       const std::vector<int> extents=(concatenating || (spatial && operation==0))?std::vector<int>{0,1,3}:spatial?std::vector<int>{2,3}:std::vector<int>{1,3};
       const std::vector<int> batches_list=(spatial && operation==2)?std::vector<int>{2,3}:std::vector<int>{1,2};
-      for(int pattern=0;pattern<(spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
+      for(int pattern=0;pattern<(folding?21:spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
       for(int units : extents) for(int rows : extents) for(int batches : batches_list) {
-        if((spatial && kind!=GGML_TYPE_F32) || (repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32)) continue;
+        if(((spatial || folding) && kind!=GGML_TYPE_F32) || (repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32)) continue;
         ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
         const auto type=(ggml_type)kind; const int64_t block=ggml_blck_size(type); const size_t bytes=ggml_type_size(type);
-        ggml_tensor *input=ggml_new_tensor_4d(ctx,type,block*units,rows,2,batches);
+        int64_t shape[]={block*units,rows,2,batches};
+        if(folding) for(int axis=0;axis<4;axis++) shape[axis]=(pattern==16 && axis==0) || (pattern>=17 && axis==pattern-17)?0:shape[axis]*((pattern&(1<<axis))?2:1);
+        ggml_tensor *input=ggml_new_tensor(ctx,type,4,shape);
         int64_t right_ne[]={input->ne[0],input->ne[1],input->ne[2],input->ne[3]}; right_ne[operation%4]=layout==3?0:right_ne[operation%4]+(operation==0?block:1);
         ggml_tensor *right=concatenating?ggml_new_tensor(ctx,type,4,right_ne):nullptr;
         for(ggml_tensor *operand : {input,right}) if(operand && (layout==1 || layout==2)) {
@@ -1803,6 +1812,7 @@ int main(int argc, char **argv) {
         const int64_t blocks=ggml_nelements(input)/block;
         ggml_tensor *target=layout==3?ggml_new_tensor_4d(ctx,type,block,blocks,1,1):ggml_dup_tensor(ctx,input);
         target->nb[1]+=bytes; target->nb[2]=target->nb[1]*target->ne[1]+bytes; target->nb[3]=target->nb[2]*target->ne[2]+bytes;
+        if(folding) {int64_t output_shape[]={units,rows,2,batches};if(pattern>=17) output_shape[pattern-17]=0;target=ggml_new_tensor(ctx,type,4,output_shape);}
         if(repeating) target=ggml_new_tensor_4d(ctx,type,input->ne[0]*2,input->ne[1]*(layout&1?3:1),input->ne[2]*(layout&2?2:1),input->ne[3]*2);
         auto spatial_op = [&](ggml_tensor *a, bool reference) -> ggml_tensor * {
           int args[8]={};
@@ -1825,14 +1835,15 @@ int main(int argc, char **argv) {
           for(int axis=0;axis<4;axis++) args[axis]=pattern?(((pattern-1)&(1<<axis))?-1:1)*(a->ne[axis]-1):0;
           return ggml_roll(ctx,a,args[0],args[1],args[2],args[3]);
         };
-        ggml_tensor *result=spatial?spatial_op(operation?ggml_cont(ctx,input):input,false):concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
-        ggml_tensor *expected_tensor=spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
-        if(repeating || concatenating || spatial) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
+        ggml_tensor *result=folding?ggml_repeat_back(ctx,input,target):spatial?spatial_op(operation?ggml_cont(ctx,input):input,false):concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
+        ggml_tensor *expected_tensor=folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
+        if(repeating || concatenating || spatial || folding) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer || (!ggml_nbytes(input)&&(!right||!ggml_nbytes(right))&&!ggml_nbytes(result)));
         std::vector<unsigned char> output(ggml_nbytes(result),0xA5), expected(ggml_nbytes(expected_tensor));
         for(ggml_tensor *operand : {input,right}) if(operand) {
           std::vector<unsigned char> initial(ggml_nbytes(operand));
-          for(size_t i=0;i<initial.size();i++) initial[i]=(i*37+kind*13+layout+(operand==right?71:0))%256;
+          if(folding) for(size_t i=0;i<initial.size()/4;i++) {const float value=i%4==0?16777216.0f:i%4==2?-16777216.0f:1.0f;memcpy(initial.data()+i*4,&value,4);}
+          else for(size_t i=0;i<initial.size();i++) initial[i]=(i*37+kind*13+layout+(operand==right?71:0))%256;
           if(!initial.empty()) ggml_backend_tensor_set(operand,initial.data(),0,initial.size());
         }
         if(!output.empty()) ggml_backend_tensor_set(result,output.data(),0,output.size());

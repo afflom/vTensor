@@ -184,3 +184,9 @@ id = "VT-19"
 level = "build"
 suite = "update-graphs"
 statement = "Prism plans SET and ACC initialization, bounded update views and aliases and Verdant execution matches the imported GGML CPU oracle for supported float and integer storage"
+
+[[id]]
+id = "VT-20"
+level = "build"
+suite = "fold-graphs"
+statement = "Prism models four-axis REPEAT_BACK initialization and accumulation order and Verdant execution matches the imported GGML F32 CPU oracle across strided and empty tensors"

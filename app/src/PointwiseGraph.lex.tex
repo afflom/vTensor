@@ -76,7 +76,8 @@ inductive{
     {name: padded, fields: [Nat, Nat, Nat, Nat, Bool]},
     {name: reflected, fields: [Nat]},
     {name: rolled, fields: [Nat, Nat, Nat, Nat]},
-    {name: updated, fields: [Nat, Nat, Bool]}
+    {name: updated, fields: [Nat, Nat, Bool]},
+    {name: folded, fields: [Nat]}
   ]
 }
 
@@ -218,7 +219,8 @@ inductive{
   constructors: [
     {name: planned, fields: [PointwiseDecision]},
     {name: offsets, fields: [Bool, Nat, Nat]},
-    {name: addOffsets, fields: [Nat, Nat]}
+    {name: addOffsets, fields: [Nat, Nat]},
+    {name: accumulateOffsets, fields: [Nat, Nat]}
   ]
 }
 
@@ -540,6 +542,22 @@ definition{
 }
 
 definition{
+  name: planFold,
+  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if ((((project left ty) =? 0) && ((project output ty) =? 0)) && (repeatValid (project left n0) (project left n1) (project left n2) (project left n3) (project output n0) (project output n1) (project output n2) (project output n3))) then (let initial : Nat := (blockCount output 1); (ctor PointwiseDecision.copyBlocks (initial + (blockCount left 1)) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.folded initial))) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
+  name: foldedOffsets,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, initial : Nat],
+  result: GraphResponse,
+  body: (if (index <? initial) then (ctor GraphResponse.offsets true 0 (blockOffset index destination)) else (let step : Nat := (prim subtract index initial : Nat); (ctor GraphResponse.accumulateOffsets (blockOffset step source) (repeatedBlockOffset step destination source)))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -550,7 +568,8 @@ definition{
     | CopyMode.padded p0 p1 p2 p3 circular => (paddedOffsets index source destination p0 p1 p2 p3 circular)
     | CopyMode.reflected left => (reflectedOffsets index source destination left)
     | CopyMode.rolled p0 p1 p2 p3 => (paddedOffsets index source destination p0 p1 p2 p3 true)
-    | CopyMode.updated initial base adding => (updatedOffsets index source destination initial base adding)),
+    | CopyMode.updated initial base adding => (updatedOffsets index source destination initial base adding)
+    | CopyMode.folded initial => (foldedOffsets index source destination initial)),
   executable: true
 }
 
@@ -561,7 +580,7 @@ definition{
   body: (match request
     | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (numericPlan operation variant left right output))))))))
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (numericPlan operation variant left right output)))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -662,6 +681,20 @@ theorem{
   name: backwardUpdateBelowBaseRefused,
   parameters: [],
   statement: ((updateBounds (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 4294967292, s2 := 0, s3 := 0}) 0 64 6 false) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: foldInitializesFirst,
+  parameters: [],
+  statement: ((foldedOffsets 0 (record IndexContext {u0 := 4, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 16, s2 := 32, s3 := 32}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) 2) = (ctor GraphResponse.offsets true 0 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: foldLastInputAddress,
+  parameters: [],
+  statement: ((foldedOffsets 9 (record IndexContext {u0 := 4, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 16, s2 := 32, s3 := 32}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) 2) = (ctor GraphResponse.accumulateOffsets 28 4)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

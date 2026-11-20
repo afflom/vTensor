@@ -397,61 +397,46 @@ unsafe extern "C" fn buffer_clear(buffer: Buf, value: u8) {
     }
 }
 
-unsafe extern "C" fn tensor_set(
-    buffer: Buf,
-    tensor: TensorPtr,
-    source: *const c_void,
-    offset: usize,
-    size: usize,
-) {
-    if size == 0 {
-        return;
-    }
-    // SAFETY: GGML requires a readable source of size bytes; the certified
-    // admissions validate the destination. copy permits overlapping transfers.
-    unsafe {
-        let context = &*(*buffer).context.cast::<BufferContext>();
-        let destination = require(context.region(&*tensor, offset, size));
-        ptr::copy(source.cast::<u8>(), destination, size);
-    }
+macro_rules! transfer_callback {
+    ($name:ident, $tensor:ty, $external:ty, $effect:expr) => {
+        unsafe extern "C" fn $name(
+            buffer: Buf,
+            tensor: $tensor,
+            external: $external,
+            offset: usize,
+            size: usize,
+        ) {
+            if size == 0 {
+                return;
+            }
+            // SAFETY: GGML retains these descriptors and the external region;
+            // certified admissions bound the tensor region. Copy permits aliases.
+            unsafe {
+                let context = &*(*buffer).context.cast::<BufferContext>();
+                let region = require(context.region(&*tensor, offset, size));
+                ($effect)(region, external, size);
+            }
+        }
+    };
 }
-
-unsafe extern "C" fn tensor_get(
-    buffer: Buf,
-    tensor: *const Tensor,
-    destination: *mut c_void,
-    offset: usize,
-    size: usize,
-) {
-    if size == 0 {
-        return;
-    }
-    // SAFETY: GGML requires a writable destination of size bytes; the certified
-    // admissions validate the source. No slice borrow crosses the foreign call.
-    unsafe {
-        let context = &*(*buffer).context.cast::<BufferContext>();
-        let source = require(context.region(&*tensor, offset, size));
-        ptr::copy(source, destination.cast::<u8>(), size);
-    }
-}
-
-unsafe extern "C" fn tensor_memset(
-    buffer: Buf,
-    tensor: TensorPtr,
-    value: u8,
-    offset: usize,
-    size: usize,
-) {
-    if size == 0 {
-        return;
-    }
-    // SAFETY: the certified admissions establish this writable tensor region.
-    unsafe {
-        let context = &*(*buffer).context.cast::<BufferContext>();
-        let destination = require(context.region(&*tensor, offset, size));
-        ptr::write_bytes(destination, value, size);
-    }
-}
+transfer_callback!(
+    tensor_set,
+    TensorPtr,
+    *const c_void,
+    |region, external: *const c_void, size| ptr::copy(external.cast::<u8>(), region, size)
+);
+transfer_callback!(
+    tensor_get,
+    *const Tensor,
+    *mut c_void,
+    |region: *mut u8, external: *mut c_void, size| ptr::copy(region, external.cast::<u8>(), size)
+);
+transfer_callback!(
+    tensor_memset,
+    TensorPtr,
+    u8,
+    |region: *mut u8, value, size| ptr::write_bytes(region, value, size)
+);
 
 unsafe extern "C" fn tensor_copy(
     buffer: Buf,
@@ -694,14 +679,11 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     };
     // SAFETY: the admitted plan retains every required source descriptor.
     let source_data = |slot: usize| graph_tensor_data(unsafe { &*tensor.src[slot] });
-    let zeros = if matches!(mode, CopyMode::C3(_, _, _, _, false)) {
-        workspace(bytes, 0_u8)?
-    } else {
-        Vec::new()
-    };
+    // Prism admits zero initialization only for four-byte F32 blocks.
+    let zeros = [0_u8; 4];
     let right = match mode {
         CopyMode::C2(..) | CopyMode::C6(..) => Some(source_data(1)?),
-        CopyMode::C3(_, _, _, _, false) => Some(zeros.as_ptr().cast_mut()),
+        CopyMode::C3(_, _, _, _, false) | CopyMode::C7(..) => Some(zeros.as_ptr().cast_mut()),
         _ => None,
     };
     let sources = [source_data(0)?, right.unwrap_or(null_mut())];
@@ -710,12 +692,17 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     for index in 0..count {
         let request = GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone());
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
-        if let GraphResponse::C2(from, to) = response {
-            // SAFETY: the admitted update view bounds both the original left
-            // value and right value. Reading both before writing preserves aliases.
+        if let GraphResponse::C2(from, to) | GraphResponse::C3(from, to) = response {
+            let (left_data, right_data) = if matches!(response, GraphResponse::C2(..)) {
+                (sources[0], sources[1])
+            } else {
+                (destination_data, sources[0])
+            };
+            // SAFETY: the admitted plan bounds both reads and the write.
+            // Reading operands first preserves aliases and accumulation order.
             unsafe {
-                let left = ptr::read_unaligned(sources[0].add(to as usize).cast::<f32>());
-                let right = ptr::read_unaligned(sources[1].add(from as usize).cast::<f32>());
+                let left = ptr::read_unaligned(left_data.add(to as usize).cast::<f32>());
+                let right = ptr::read_unaligned(right_data.add(from as usize).cast::<f32>());
                 let value = verdant_tensor::linear::evaluate_f32_scalar(0, left, right)
                     .map_err(|_| BackendError::InvalidTensor)?;
                 ptr::write_unaligned(destination_data.add(to as usize).cast::<f32>(), value);

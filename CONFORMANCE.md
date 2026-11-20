@@ -60,6 +60,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-14` | `build` | Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers |
 
+## fold-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-20` | `build` | Prism models four-axis REPEAT_BACK initialization and accumulation order and Verdant execution matches the imported GGML F32 CPU oracle across strided and empty tensors |
+
 ## frame
 
 | ID | Level | Statement |

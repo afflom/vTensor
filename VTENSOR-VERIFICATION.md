@@ -1263,3 +1263,51 @@ source is 10,576 lines in the existing 51 files, below the preceding checkpoint.
 The expanded shared refusal guard also passed all existing matrix, arithmetic,
 copy, repeat, concat and spatial regression cases. Full backend conformance
 and production dependency acceptance remain unfinished.
+
+
+## VT-20: F32 REPEAT_BACK through certified fold instructions
+
+Registered VT-20 and its behavioral scenario before implementation. The first
+`cargo test --locked -p vtensor-backend --test contract fold_graphs_vt_20 -- --exact --nocapture`
+failed at the live device support query after the imported CPU graph succeeded.
+The pinned upstream kernel initializes output elements to positive zero, then
+accumulates in linear input order. Prism models that initialization prefix,
+F32 admission, divisibility, input addresses and modulo output addresses.
+Verdant executes each addition; the native adapter binds memory effects only.
+Two closed address examples and the generated implementation preservation
+certificate accompany the model. These are distinct from general bounds proofs.
+
+MCP draft `prism-app/77d26fe44c69f7411e51b957f5c6ea8cc8629b2f5e435cd27cab1b26c9427bf1`
+returned `engine.check failed: project-refused`. The exact pinned SDK checked
+all four modules and exported result
+`b71e71a78ca3a9c830135171b795164079ca999e0499a2815602e9c701cb1e68`
+with attestation
+`eb2612fa67400251605885756653b7f556c631d0820ae016c80db2b370208bb9`.
+The emitted folded-mode and accumulator-response variants were inspected
+before binding them. No SDK output was edited. An accidental workspace-wide
+format pass was caught by the exact-byte audit; affected generated files were
+restored from Git before export, then the repository's scoped formatter passed.
+
+All 672 imported CPU comparisons pass: sixteen combinations of four-axis
+repetition, empty source with nonempty output, each empty output axis, four
+layouts, two widths, two row counts and two batch counts. Input values include
+2^24, 1 and -2^24 to expose accumulation-order differences. Reference input
+canonicalization preserves the actual strided input; complete output comparison
+checks unchanged padding. Malformed extents and missing inputs are refused
+before writes. The first implemented run completed in 1.85 seconds using the
+source-bound reference cache.
+
+Skipping the initialization prefix was rejected at pattern 16 (empty source):
+byte zero remained 165 instead of zero. Replacing each running accumulator with
+zero was rejected at pattern 1: byte three was 63 instead of 75. Both defects
+retained bounded memory access and were restored before regression.
+
+The final workspace run passed nineteen contract tests and every other target;
+VT-02 alone rejected the unpublished Verdant development override. Contract
+execution took 9.50 seconds. Formatting, model/source audits, frame synchronization,
+workspace Clippy and dependency checks passed. The shared set/get/memset callback
+binding passed the existing buffer oracle. A fixed four-byte zero block replaces
+a separate allocation for the F32-only padding/fold initialization modes.
+Handwritten source remains 10,576 lines in the existing 51 files. Full backend
+conformance and production dependency acceptance remain unfinished; unchanged
+main-application proofs were not redundantly rebuilt at this component checkpoint.
