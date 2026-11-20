@@ -228,27 +228,29 @@ mod tests {
         values.iter().map(|v| (*v).to_string()).collect()
     }
 
-    /// A scratch repository with an empty register and this one's authorities and ledger.
+    /// A fresh repository with mutually consistent empty registers.
     fn scratch(name: &str) -> PathBuf {
         let root = std::env::temp_dir().join(format!(
             "xtask-new-capability-{name}-{}",
             std::process::id()
         ));
         let _ = std::fs::remove_dir_all(&root);
-        let real = repo_model::repo_root();
         for dir in ["model", "features/suites", "crates/conformance/tests"] {
             std::fs::create_dir_all(root.join(dir)).unwrap();
         }
-        for file in ["authorities.toml", "ledger.toml"] {
-            std::fs::copy(real.join("model").join(file), root.join("model").join(file)).unwrap();
+        // Product authorities and ledger rows can reference product IDs, so
+        // a fresh repository must start with all three registers empty.
+        for (file, field) in [
+            ("ids.toml", "id"),
+            ("authorities.toml", "authority"),
+            ("ledger.toml", "claim"),
+        ] {
+            std::fs::write(
+                root.join("model").join(file),
+                format!("spec = \"template/1\"\n\n{field} = []\n"),
+            )
+            .unwrap();
         }
-        // An empty register, as a freshly instantiated repository has; this
-        // repository's own rows are not the scratch repository's.
-        std::fs::write(
-            root.join("model/ids.toml"),
-            "spec = \"template/1\"\n\nid = []\n",
-        )
-        .unwrap();
         root
     }
 
@@ -296,7 +298,7 @@ mod tests {
             "A \"parsed\" document round-trips"
         );
 
-        let report = repo_conformance::check_honesty(&root, &test_names(&root)).unwrap();
+        let report = repo_model::conformance::check_honesty(&root, &test_names(&root)).unwrap();
         assert!(report.is_clean(), "{:?}", report.violations);
         assert_eq!(report.scenarios_checked, 2);
 

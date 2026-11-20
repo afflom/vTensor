@@ -1,0 +1,73 @@
+\begin{lexlean}{BackendCore}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{prism.arch@1.0.0}
+\title{Boolean}
+\begin{semanticmodule}
+structure{
+  name: BackendContractCoverage,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: registry, type: Bool},
+    {name: device, type: Bool},
+    {name: buffers, type: Bool},
+    {name: transfers, type: Bool},
+    {name: synchronization, type: Bool},
+    {name: graphExecution, type: Bool},
+    {name: operations, type: Bool},
+    {name: tensorTypes, type: Bool},
+    {name: verdantTensorOnly, type: Bool},
+    {name: kernelCatalog, type: Bool}
+  ]
+}
+
+definition{
+  name: contractComplete,
+  parameters: [coverage : BackendContractCoverage],
+  result: Bool,
+  body: (((project coverage registry) && (project coverage device)) && ((project coverage buffers) && ((project coverage transfers) && ((project coverage synchronization) && ((project coverage graphExecution) && ((project coverage operations) && ((project coverage tensorTypes) && ((project coverage verdantTensorOnly) && (project coverage kernelCatalog)))))))))
+}
+
+definition{name: booleanTrue, parameters: [flag : Bool], result: Prop, body: (flag = true)}
+
+definition{
+  name: supportsF64Matmul4,
+  parameters: [typeIsF64 : Bool, lhsShapeIs4x4 : Bool, rhsShapeIs4x4 : Bool],
+  result: Bool,
+  body: ((typeIsF64 && lhsShapeIs4x4) && rhsShapeIs4x4)
+}
+
+definition{
+  name: SupportsF64Matmul4,
+  parameters: [typeIsF64 : Bool, lhsShapeIs4x4 : Bool, rhsShapeIs4x4 : Bool],
+  result: Prop,
+  body: (((booleanTrue typeIsF64) /\ (booleanTrue lhsShapeIs4x4)) /\ (booleanTrue rhsShapeIs4x4))
+}
+
+definition{
+  name: ContractComplete,
+  parameters: [coverage : BackendContractCoverage],
+  result: Prop,
+  body: (((booleanTrue (project coverage registry)) /\ (booleanTrue (project coverage device))) /\ ((booleanTrue (project coverage buffers)) /\ ((booleanTrue (project coverage transfers)) /\ ((booleanTrue (project coverage synchronization)) /\ ((booleanTrue (project coverage graphExecution)) /\ ((booleanTrue (project coverage operations)) /\ ((booleanTrue (project coverage tensorTypes)) /\ ((booleanTrue (project coverage verdantTensorOnly)) /\ (booleanTrue (project coverage kernelCatalog))))))))))
+}
+
+theorem{
+  name: contractCompleteDecides,
+  parameters: [coverage : BackendContractCoverage],
+  statement: (((contractComplete coverage) = true) <-> (ContractComplete coverage)),
+  proof: simplify{definitions: [Bool.and_eq_true, ContractComplete, booleanTrue, contractComplete]},
+  axioms: [propext]
+}
+
+theorem{
+  name: supportsF64Matmul4Decides,
+  parameters: [typeIsF64 : Bool, lhsShapeIs4x4 : Bool, rhsShapeIs4x4 : Bool],
+  statement: (((supportsF64Matmul4 typeIsF64 lhsShapeIs4x4 rhsShapeIs4x4) = true) <-> (SupportsF64Matmul4 typeIsF64 lhsShapeIs4x4 rhsShapeIs4x4)),
+  proof: simplify{
+    definitions: [Bool.and_eq_true, SupportsF64Matmul4, booleanTrue, supportsF64Matmul4]
+  },
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

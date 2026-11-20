@@ -12,6 +12,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytemuck"
+version = "1.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95832e849adfb21180ccb6826a99da14e5d266ae5c2e668e1602cf234f153797"
+dependencies = [
+ "bytemuck_derive",
+]
+
+[[package]]
+name = "bytemuck_derive"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a1f896587b6f2c069c73d2f0913e2d590c3990285cd2f0b6aa02b786b4c679c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -117,13 +137,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001"
 dependencies = [
  "proc-macro2",
-]
-
-[[package]]
-name = "repo-conformance"
-version = "0.1.0"
-dependencies = [
- "repo-model",
 ]
 
 [[package]]
@@ -261,6 +274,129 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
+name = "uor-matmul"
+version = "0.1.0"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#3cc5882f210667f9ac00fd8c02c5b5957b493f5d"
+dependencies = [
+ "uor-matmul-codec",
+ "uor-matmul-core",
+ "uor-matmul-gemm",
+ "uor-matmul-kernels",
+]
+
+[[package]]
+name = "uor-matmul-codec"
+version = "0.1.0"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#3cc5882f210667f9ac00fd8c02c5b5957b493f5d"
+dependencies = [
+ "bytemuck",
+ "uor-matmul-core",
+]
+
+[[package]]
+name = "uor-matmul-core"
+version = "0.1.0"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#3cc5882f210667f9ac00fd8c02c5b5957b493f5d"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
+name = "uor-matmul-gemm"
+version = "0.1.0"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#3cc5882f210667f9ac00fd8c02c5b5957b493f5d"
+dependencies = [
+ "bytemuck",
+ "uor-matmul-codec",
+ "uor-matmul-core",
+ "uor-matmul-kernels",
+]
+
+[[package]]
+name = "uor-matmul-kernels"
+version = "0.1.0"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#3cc5882f210667f9ac00fd8c02c5b5957b493f5d"
+dependencies = [
+ "bytemuck",
+ "uor-matmul-core",
+]
+
+[[package]]
+name = "verdant-tensor"
+version = "2.4.0"
+dependencies = [
+ "serde",
+ "uor-matmul",
+ "verdant_matrix_shape",
+]
+
+[[package]]
+name = "verdant_matrix_shape"
+version = "2.4.0"
+
+[[package]]
+name = "vtensor-backend"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "repo-model",
+ "serde_json",
+ "sha2",
+ "toml",
+ "verdant-tensor",
+ "vtensor-prism-kernel",
+ "vtensor_allocation",
+ "vtensor_index",
+ "vtensor_layout",
+ "vtensor_matrix",
+ "vtensor_native_config",
+ "vtensor_native_memory",
+ "vtensor_native_predicates",
+ "vtensor_transfer",
+ "vtensor_types",
+]
+
+[[package]]
+name = "vtensor-prism-kernel"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_allocation"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_index"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_layout"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_matrix"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_native_config"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_native_memory"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_native_predicates"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_transfer"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_types"
+version = "0.1.0"
+
+[[package]]
 name = "winnow"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -270,7 +406,6 @@ checksum = "8c3b93199df0ab874cdf0c6a94f0a0dc3423fe41f1cafb62b8bd7b1deb277aef"
 name = "xtask"
 version = "0.1.0"
 dependencies = [
- "repo-conformance",
  "repo-model",
  "serde_json",
  "sha2",

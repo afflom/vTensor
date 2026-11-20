@@ -66,3 +66,79 @@ id = "FR-05"
 level = "build"
 suite = "frame"
 statement = "An app's pages on every device of one Prism ID meet on a relay topic only those devices derive, per app, with every message sealed to the ID, and a removed device is left behind"
+
+[[id]]
+id = "VT-01"
+level = "build"
+suite = "oracle-import"
+statement = "The imported GGML backend contract, implementation interface, and operator oracle match their pinned upstream source"
+
+[[id]]
+id = "VT-02"
+level = "build"
+suite = "verdant-api"
+statement = "The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API"
+
+[[id]]
+id = "VT-03"
+level = "build"
+suite = "verdant-api"
+statement = "vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results"
+
+[[id]]
+id = "VT-04"
+level = "build"
+suite = "ggml-inventory"
+statement = "The imported GGML operation and tensor type declarations are inventoried exactly without implementation claims"
+
+[[id]]
+id = "VT-05"
+level = "build"
+suite = "ggml-storage-oracle"
+statement = "The pinned GGML storage oracle executes upstream byte-span semantics for scalar and block-encoded tensors"
+
+[[id]]
+id = "VT-06"
+level = "build"
+suite = "tensor-layout"
+statement = "The Prism-generated four-dimensional byte-span function matches the pinned GGML storage oracle and rejects invalid blocks and arithmetic overflow"
+failure = "Overflow"
+negative = "VT-06"
+
+[[id]]
+id = "VT-07"
+level = "build"
+suite = "tensor-layout"
+statement = "The Prism-generated type catalog matches every declared GGML storage type and refuses removed and out-of-range identifiers"
+
+[[id]]
+id = "VT-08"
+level = "build"
+suite = "source-accounting"
+statement = "Source accounting includes untracked implementation files and rejects drifted imported bytes"
+
+[[id]]
+id = "VT-09"
+level = "build"
+suite = "buffer-transfer"
+statement = "Prism transfer admission matches upstream GGML set and get guards and rejects overflowing ranges"
+
+[[id]]
+id = "VT-10"
+level = "build"
+suite = "buffer-allocation"
+statement = "Prism tensor placement matches the imported GGML linear allocator for aligned buffers and refuses invalid alignment, exhausted capacity, and arithmetic overflow"
+
+[[id]]
+id = "VT-11"
+level = "build"
+suite = "native-backend"
+statement = "GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior"
+failure = "BackendError"
+negative = "VT-11"
+
+[[id]]
+id = "VT-12"
+level = "build"
+suite = "matrix-graphs"
+statement = "GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference"

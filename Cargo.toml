@@ -1,6 +1,7 @@
 [workspace]
+exclude = [".verdant-engine/crates/verdant-tensor", ".verdant-engine/generated/matrix-product/packages/rust-core/verdant_matrix_shape"]
 resolver = "2"
-members = ["crates/*", "xtask"]
+members = ["generated/index/packages/rust-core/vtensor_index", "generated/matrix/packages/rust-core/vtensor_matrix", "crates/*", "xtask", "generated/layout/packages/rust-core/vtensor_layout", "generated/layout/packages/rust-core/vtensor_types", "generated/layout/packages/rust-core/vtensor_transfer", "generated/layout/packages/rust-core/vtensor_allocation", "generated/native/packages/rust-core/vtensor_native_config", "generated/native/packages/rust-core/vtensor_native_predicates", "generated/native/packages/rust-core/vtensor_native_memory"]
 
 [workspace.package]
 version = "0.1.0"
@@ -8,19 +9,20 @@ edition = "2021"
 # Raise this when something here needs a newer compiler; nothing does yet.
 rust-version = "1.89"
 license = "MIT OR Apache-2.0"
-# Instantiated repositories set their own URLs here.
-repository = "https://github.com/UOR-Foundation/template"
-homepage = "https://github.com/UOR-Foundation/template"
-authors = ["UOR Foundation"]
-keywords = []
-categories = []
+repository = "https://github.com/afflom/vTensor"
+homepage = "https://github.com/afflom/vTensor"
+authors = ["Alex"]
+keywords = ["ggml", "tensor", "inference", "verdant"]
+categories = ["science", "algorithms"]
 
 [workspace.dependencies]
+prism-kernel = { package = "vtensor-prism-kernel", version = "0.1.0", path = "crates/prism-kernel" }
 repo-model = { version = "0.1.0", path = "crates/model" }
 # A `path` dependency with no `version` is a wildcard requirement, and
 # `cargo deny` refuses those (`wildcards = "deny"`). Every internal dependency
 # carries both.
-repo-conformance = { version = "0.1.0", path = "crates/conformance" }
+vtensor-backend = { version = "0.1.0", path = "crates/conformance" }
+verdant-tensor = { version = "2.4.0", git = "https://github.com/afflom/verdant-engine", rev = "87c3256326b9ec9f8d591855394c0bd0265588ef" }
 
 [workspace.lints.rust]
 missing_docs = "deny"
@@ -34,3 +36,8 @@ missing_safety_doc = "deny"
 opt-level = 3
 lto = "thin"
 codegen-units = 1
+
+# Development source for the general matrix API. VT-02 retains the exact-source
+# release check and refuses this override until the extension has an upstream pin.
+[patch."https://github.com/afflom/verdant-engine"]
+verdant-tensor = { path = ".verdant-engine/crates/verdant-tensor" }

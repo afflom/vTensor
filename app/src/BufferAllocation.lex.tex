@@ -1,0 +1,66 @@
+\begin{lexlean}{BufferAllocation}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+inductive{
+  name: PlacementDecision,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: invalidAlignment, fields: []},
+    {name: invalidOffset, fields: []},
+    {name: exhausted, fields: []},
+    {name: placed, fields: [Nat, Nat, Nat]}
+  ]
+}
+
+definition{
+  name: alignmentValid,
+  parameters: [alignment : UInt64],
+  result: Bool,
+  body: (match (prim checked_subtract alignment (1 : UInt64) : (Option UInt64))
+    | Option.none => false
+    | Option.some previous => (prim equal (prim bit_and alignment previous : UInt64) (0 : UInt64) : Bool)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [], targets: [rust-core]}
+}
+
+definition{
+  name: placePadded,
+  parameters: [capacity : Nat, offset : Nat, paddedSize : Nat],
+  result: PlacementDecision,
+  body: (if ((offset <=? capacity) && (paddedSize <=? (prim subtract capacity offset : Nat))) then (ctor PlacementDecision.placed offset paddedSize (offset + paddedSize)) else (ctor PlacementDecision.exhausted)),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+definition{
+  name: placeAligned,
+  parameters: [capacity : Nat, offset : Nat, size : Nat, alignment : Nat],
+  result: PlacementDecision,
+  body: (if ((prim remainder offset alignment 0 : Nat) =? 0) then (placePadded capacity offset (size + (prim remainder (prim subtract alignment (prim remainder size alignment 0 : Nat) : Nat) alignment 0 : Nat))) else (ctor PlacementDecision.invalidOffset)),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+definition{
+  name: placeTensor,
+  parameters: [capacity : Nat, offset : Nat, size : Nat, alignment : UInt64],
+  result: PlacementDecision,
+  body: (if (alignmentValid alignment) then (placeAligned capacity offset size (prim to_nat alignment : Nat)) else (ctor PlacementDecision.invalidAlignment)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: zeroAlignmentRefused,
+  parameters: [capacity : Nat, offset : Nat, size : Nat],
+  statement: ((placeTensor capacity offset size (0 : UInt64)) = (ctor PlacementDecision.invalidAlignment)),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

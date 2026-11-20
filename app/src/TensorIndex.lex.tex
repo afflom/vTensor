@@ -1,0 +1,21 @@
+\begin{lexlean}{TensorIndex}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: elementOffset,
+  parameters: [i0 : Nat, i1 : Nat, i2 : Nat, i3 : Nat, s0 : Nat, s1 : Nat, s2 : Nat, s3 : Nat],
+  result: Nat,
+  body: ((((prim multiply i0 s0 : Nat) + (prim multiply i1 s1 : Nat)) + (prim multiply i2 s2 : Nat)) + (prim multiply i3 s3 : Nat)),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: origin,
+  parameters: [],
+  statement: ((elementOffset 0 0 0 0 4 16 64 256) = 0),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

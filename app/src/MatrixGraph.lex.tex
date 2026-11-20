@@ -1,0 +1,64 @@
+\begin{lexlean}{MatrixGraph}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+inductive{
+  name: MatrixDecision,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: unsupported, fields: []},
+    {name: invalidShape, fields: []},
+    {name: product, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
+  ]
+}
+
+definition{
+  name: planMatrix,
+  parameters: [
+    operation : Nat,
+    leftType : Nat,
+    rightType : Nat,
+    outputType : Nat,
+    inner : Nat,
+    rows : Nat,
+    leftBatch2 : Nat,
+    leftBatch3 : Nat,
+    rightInner : Nat,
+    columns : Nat,
+    batch2 : Nat,
+    batch3 : Nat,
+    outputRows : Nat,
+    outputColumns : Nat,
+    outputBatch2 : Nat,
+    outputBatch3 : Nat
+  ],
+  result: MatrixDecision,
+  body: (if ((((operation =? 28) && (leftType =? 0)) && (rightType =? 0)) && (outputType =? 0)) then (if ((((((((inner =? rightInner) && (rows =? outputRows)) && (columns =? outputColumns)) && (batch2 =? outputBatch2)) && (batch3 =? outputBatch3)) && (0 <? leftBatch2)) && (0 <? leftBatch3)) && (((prim remainder batch2 leftBatch2 1 : Nat) =? 0) && ((prim remainder batch3 leftBatch3 1 : Nat) =? 0))) then (ctor MatrixDecision.product rows inner columns batch2 batch3 (prim quotient batch2 leftBatch2 0 : Nat) (prim quotient batch3 leftBatch3 0 : Nat) (prim multiply rows inner : Nat) (prim multiply inner columns : Nat) (prim multiply rows columns : Nat)) else (ctor MatrixDecision.invalidShape)) else (ctor MatrixDecision.unsupported)),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: scalarProductAdmitted,
+  parameters: [],
+  statement: ((planMatrix 28 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1) = (ctor MatrixDecision.product 1 1 1 1 1 1 1 1 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: mismatchedInnerRefused,
+  parameters: [],
+  statement: ((planMatrix 28 0 0 0 2 1 1 1 1 1 1 1 1 1 1 1) = (ctor MatrixDecision.invalidShape)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: incompatibleBatchRefused,
+  parameters: [],
+  statement: ((planMatrix 28 0 0 0 1 1 2 1 1 1 3 1 1 1 3 1) = (ctor MatrixDecision.invalidShape)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

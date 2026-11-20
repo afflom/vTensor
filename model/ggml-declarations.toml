@@ -1,0 +1,558 @@
+# Declaration inventory only; does not assert implementation or semantic completeness.
+# Derived from the pinned authoritative header; VT-04 rejects any drift.
+spec = "vtensor/ggml-declarations/1"
+authority = "LLAMA-CPP-GGML-BACKEND"
+revision = "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5"
+source = "ggml/include/ggml.h"
+
+[[operation]]
+symbol = "GGML_OP_NONE"
+value = 0
+
+[[operation]]
+symbol = "GGML_OP_DUP"
+value = 1
+
+[[operation]]
+symbol = "GGML_OP_ADD"
+value = 2
+
+[[operation]]
+symbol = "GGML_OP_ADD_ID"
+value = 3
+
+[[operation]]
+symbol = "GGML_OP_ACC"
+value = 4
+
+[[operation]]
+symbol = "GGML_OP_SUB"
+value = 5
+
+[[operation]]
+symbol = "GGML_OP_MUL"
+value = 6
+
+[[operation]]
+symbol = "GGML_OP_DIV"
+value = 7
+
+[[operation]]
+symbol = "GGML_OP_SQR"
+value = 8
+
+[[operation]]
+symbol = "GGML_OP_SQRT"
+value = 9
+
+[[operation]]
+symbol = "GGML_OP_LOG"
+value = 10
+
+[[operation]]
+symbol = "GGML_OP_SIN"
+value = 11
+
+[[operation]]
+symbol = "GGML_OP_COS"
+value = 12
+
+[[operation]]
+symbol = "GGML_OP_SUM"
+value = 13
+
+[[operation]]
+symbol = "GGML_OP_SUM_ROWS"
+value = 14
+
+[[operation]]
+symbol = "GGML_OP_CUMSUM"
+value = 15
+
+[[operation]]
+symbol = "GGML_OP_MEAN"
+value = 16
+
+[[operation]]
+symbol = "GGML_OP_ARGMAX"
+value = 17
+
+[[operation]]
+symbol = "GGML_OP_COUNT_EQUAL"
+value = 18
+
+[[operation]]
+symbol = "GGML_OP_REPEAT"
+value = 19
+
+[[operation]]
+symbol = "GGML_OP_REPEAT_BACK"
+value = 20
+
+[[operation]]
+symbol = "GGML_OP_CONCAT"
+value = 21
+
+[[operation]]
+symbol = "GGML_OP_SILU_BACK"
+value = 22
+
+[[operation]]
+symbol = "GGML_OP_NORM"
+value = 23
+
+[[operation]]
+symbol = "GGML_OP_RMS_NORM"
+value = 24
+
+[[operation]]
+symbol = "GGML_OP_RMS_NORM_BACK"
+value = 25
+
+[[operation]]
+symbol = "GGML_OP_GROUP_NORM"
+value = 26
+
+[[operation]]
+symbol = "GGML_OP_L2_NORM"
+value = 27
+
+[[operation]]
+symbol = "GGML_OP_MUL_MAT"
+value = 28
+
+[[operation]]
+symbol = "GGML_OP_MUL_MAT_ID"
+value = 29
+
+[[operation]]
+symbol = "GGML_OP_OUT_PROD"
+value = 30
+
+[[operation]]
+symbol = "GGML_OP_SCALE"
+value = 31
+
+[[operation]]
+symbol = "GGML_OP_SET"
+value = 32
+
+[[operation]]
+symbol = "GGML_OP_CPY"
+value = 33
+
+[[operation]]
+symbol = "GGML_OP_CONT"
+value = 34
+
+[[operation]]
+symbol = "GGML_OP_RESHAPE"
+value = 35
+
+[[operation]]
+symbol = "GGML_OP_VIEW"
+value = 36
+
+[[operation]]
+symbol = "GGML_OP_PERMUTE"
+value = 37
+
+[[operation]]
+symbol = "GGML_OP_TRANSPOSE"
+value = 38
+
+[[operation]]
+symbol = "GGML_OP_GET_ROWS"
+value = 39
+
+[[operation]]
+symbol = "GGML_OP_GET_ROWS_BACK"
+value = 40
+
+[[operation]]
+symbol = "GGML_OP_SET_ROWS"
+value = 41
+
+[[operation]]
+symbol = "GGML_OP_DIAG"
+value = 42
+
+[[operation]]
+symbol = "GGML_OP_SOFT_MAX"
+value = 43
+
+[[operation]]
+symbol = "GGML_OP_SOFT_MAX_BACK"
+value = 44
+
+[[operation]]
+symbol = "GGML_OP_ROPE"
+value = 45
+
+[[operation]]
+symbol = "GGML_OP_ROPE_BACK"
+value = 46
+
+[[operation]]
+symbol = "GGML_OP_CLAMP"
+value = 47
+
+[[operation]]
+symbol = "GGML_OP_CONV_TRANSPOSE_1D"
+value = 48
+
+[[operation]]
+symbol = "GGML_OP_IM2COL"
+value = 49
+
+[[operation]]
+symbol = "GGML_OP_IM2COL_BACK"
+value = 50
+
+[[operation]]
+symbol = "GGML_OP_IM2COL_3D"
+value = 51
+
+[[operation]]
+symbol = "GGML_OP_COL2IM_1D"
+value = 52
+
+[[operation]]
+symbol = "GGML_OP_CONV_2D"
+value = 53
+
+[[operation]]
+symbol = "GGML_OP_CONV_3D"
+value = 54
+
+[[operation]]
+symbol = "GGML_OP_CONV_2D_DW"
+value = 55
+
+[[operation]]
+symbol = "GGML_OP_CONV_TRANSPOSE_2D"
+value = 56
+
+[[operation]]
+symbol = "GGML_OP_POOL_1D"
+value = 57
+
+[[operation]]
+symbol = "GGML_OP_POOL_2D"
+value = 58
+
+[[operation]]
+symbol = "GGML_OP_POOL_2D_BACK"
+value = 59
+
+[[operation]]
+symbol = "GGML_OP_UPSCALE"
+value = 60
+
+[[operation]]
+symbol = "GGML_OP_PAD"
+value = 61
+
+[[operation]]
+symbol = "GGML_OP_PAD_REFLECT_1D"
+value = 62
+
+[[operation]]
+symbol = "GGML_OP_ROLL"
+value = 63
+
+[[operation]]
+symbol = "GGML_OP_ARANGE"
+value = 64
+
+[[operation]]
+symbol = "GGML_OP_TIMESTEP_EMBEDDING"
+value = 65
+
+[[operation]]
+symbol = "GGML_OP_ARGSORT"
+value = 66
+
+[[operation]]
+symbol = "GGML_OP_TOP_K"
+value = 67
+
+[[operation]]
+symbol = "GGML_OP_LEAKY_RELU"
+value = 68
+
+[[operation]]
+symbol = "GGML_OP_TRI"
+value = 69
+
+[[operation]]
+symbol = "GGML_OP_FILL"
+value = 70
+
+[[operation]]
+symbol = "GGML_OP_FLASH_ATTN_EXT"
+value = 71
+
+[[operation]]
+symbol = "GGML_OP_FLASH_ATTN_BACK"
+value = 72
+
+[[operation]]
+symbol = "GGML_OP_SSM_CONV"
+value = 73
+
+[[operation]]
+symbol = "GGML_OP_SSM_SCAN"
+value = 74
+
+[[operation]]
+symbol = "GGML_OP_WIN_PART"
+value = 75
+
+[[operation]]
+symbol = "GGML_OP_WIN_UNPART"
+value = 76
+
+[[operation]]
+symbol = "GGML_OP_GET_REL_POS"
+value = 77
+
+[[operation]]
+symbol = "GGML_OP_ADD_REL_POS"
+value = 78
+
+[[operation]]
+symbol = "GGML_OP_RWKV_WKV6"
+value = 79
+
+[[operation]]
+symbol = "GGML_OP_GATED_LINEAR_ATTN"
+value = 80
+
+[[operation]]
+symbol = "GGML_OP_RWKV_WKV7"
+value = 81
+
+[[operation]]
+symbol = "GGML_OP_SOLVE_TRI"
+value = 82
+
+[[operation]]
+symbol = "GGML_OP_GATED_DELTA_NET"
+value = 83
+
+[[operation]]
+symbol = "GGML_OP_LIGHTNING_INDEXER"
+value = 84
+
+[[operation]]
+symbol = "GGML_OP_DSV4_HC_COMB"
+value = 85
+
+[[operation]]
+symbol = "GGML_OP_DSV4_HC_PRE"
+value = 86
+
+[[operation]]
+symbol = "GGML_OP_DSV4_HC_POST"
+value = 87
+
+[[operation]]
+symbol = "GGML_OP_TOP_K_MASK"
+value = 88
+
+[[operation]]
+symbol = "GGML_OP_UNARY"
+value = 89
+
+[[operation]]
+symbol = "GGML_OP_MAP_CUSTOM1"
+value = 90
+
+[[operation]]
+symbol = "GGML_OP_MAP_CUSTOM2"
+value = 91
+
+[[operation]]
+symbol = "GGML_OP_MAP_CUSTOM3"
+value = 92
+
+[[operation]]
+symbol = "GGML_OP_CUSTOM"
+value = 93
+
+[[operation]]
+symbol = "GGML_OP_CROSS_ENTROPY_LOSS"
+value = 94
+
+[[operation]]
+symbol = "GGML_OP_CROSS_ENTROPY_LOSS_BACK"
+value = 95
+
+[[operation]]
+symbol = "GGML_OP_OPT_STEP_ADAMW"
+value = 96
+
+[[operation]]
+symbol = "GGML_OP_OPT_STEP_SGD"
+value = 97
+
+[[operation]]
+symbol = "GGML_OP_GLU"
+value = 98
+
+[[operation]]
+symbol = "GGML_OP_SLEEP"
+value = 99
+
+[[operation]]
+symbol = "GGML_OP_COUNT"
+value = 100
+
+[[tensor_type]]
+symbol = "GGML_TYPE_F32"
+value = 0
+
+[[tensor_type]]
+symbol = "GGML_TYPE_F16"
+value = 1
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q4_0"
+value = 2
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q4_1"
+value = 3
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q5_0"
+value = 6
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q5_1"
+value = 7
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q8_0"
+value = 8
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q8_1"
+value = 9
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q2_K"
+value = 10
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q3_K"
+value = 11
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q4_K"
+value = 12
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q5_K"
+value = 13
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q6_K"
+value = 14
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q8_K"
+value = 15
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ2_XXS"
+value = 16
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ2_XS"
+value = 17
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ3_XXS"
+value = 18
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ1_S"
+value = 19
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ4_NL"
+value = 20
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ3_S"
+value = 21
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ2_S"
+value = 22
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ4_XS"
+value = 23
+
+[[tensor_type]]
+symbol = "GGML_TYPE_I8"
+value = 24
+
+[[tensor_type]]
+symbol = "GGML_TYPE_I16"
+value = 25
+
+[[tensor_type]]
+symbol = "GGML_TYPE_I32"
+value = 26
+
+[[tensor_type]]
+symbol = "GGML_TYPE_I64"
+value = 27
+
+[[tensor_type]]
+symbol = "GGML_TYPE_F64"
+value = 28
+
+[[tensor_type]]
+symbol = "GGML_TYPE_IQ1_M"
+value = 29
+
+[[tensor_type]]
+symbol = "GGML_TYPE_BF16"
+value = 30
+
+[[tensor_type]]
+symbol = "GGML_TYPE_TQ1_0"
+value = 34
+
+[[tensor_type]]
+symbol = "GGML_TYPE_TQ2_0"
+value = 35
+
+[[tensor_type]]
+symbol = "GGML_TYPE_MXFP4"
+value = 39
+
+[[tensor_type]]
+symbol = "GGML_TYPE_NVFP4"
+value = 40
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q1_0"
+value = 41
+
+[[tensor_type]]
+symbol = "GGML_TYPE_Q2_0"
+value = 42
+
+[[tensor_type]]
+symbol = "GGML_TYPE_F8_E4M3"
+value = 43
+
+[[tensor_type]]
+symbol = "GGML_TYPE_COUNT"
+value = 44

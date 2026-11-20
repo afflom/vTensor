@@ -1,0 +1,89 @@
+\begin{lexlean}{NativeBackend}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+structure{
+  name: BackendConfiguration,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: apiVersion, type: Nat},
+    {name: alignment, type: Nat},
+    {name: deviceCount, type: Nat},
+    {name: deviceType, type: Nat},
+    {name: initialByte, type: Nat},
+    {name: nameWord, type: UInt64},
+    {name: description0, type: UInt64},
+    {name: description1, type: UInt64},
+    {name: description2, type: UInt64},
+    {name: guid0, type: UInt64},
+    {name: guid1, type: UInt64},
+    {name: asynchronous, type: Bool},
+    {name: hostBuffer, type: Bool},
+    {name: hostPointer, type: Bool},
+    {name: events, type: Bool},
+    {name: mmap, type: Bool}
+  ]
+}
+
+definition{
+  name: configuration,
+  parameters: [],
+  result: BackendConfiguration,
+  body: (record BackendConfiguration {apiVersion := 3, alignment := 64, deviceCount := 1, deviceType := 0, initialByte := 0, nameWord := (32210688909071478 : UInt64), description0 := (2319107987578909264 : UInt64), description1 := (2338615471088231766 : UInt64), description2 := (125823003551060 : UInt64), guid0 := (6229163776170873974 : UInt64), guid1 := (2392383844493062757 : UInt64), asynchronous := false, hostBuffer := false, hostPointer := true, events := false, mmap := true}),
+  executable: true,
+  production: {effects: [], targets: [rust-core]}
+}
+
+inductive{
+  name: MemoryRequest,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: backingBytes, fields: [Nat]}, {name: alignedOffset, fields: [Nat]}]
+}
+
+definition{
+  name: planMemory,
+  parameters: [request : MemoryRequest],
+  result: Nat,
+  body: (match request
+    | MemoryRequest.backingBytes size => (if (size =? 0) then 0 else (size + (prim subtract (project (configuration) alignment) 1 : Nat)))
+    | MemoryRequest.alignedOffset address => (prim remainder (prim subtract (project (configuration) alignment) (prim remainder address (project (configuration) alignment) 0 : Nat) : Nat) (project (configuration) alignment) 0 : Nat)),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+inductive{
+  name: PredicateRequest,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: deviceIndex, fields: [Nat]}, {name: metadataOperation, fields: [Nat]}]
+}
+
+definition{
+  name: decideNative,
+  parameters: [request : PredicateRequest],
+  result: Bool,
+  body: (match request
+    | PredicateRequest.deviceIndex index => (index <? (project (configuration) deviceCount))
+    | PredicateRequest.metadataOperation operation => (((((operation =? 0) || (operation =? 35)) || (operation =? 36)) || (operation =? 37)) || (operation =? 38))),
+  executable: true,
+  production: {effects: [], targets: [rust-core]}
+}
+
+theorem{
+  name: emptyBacking,
+  parameters: [],
+  statement: ((planMemory (ctor MemoryRequest.backingBytes 0)) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: alignedOrigin,
+  parameters: [],
+  statement: ((planMemory (ctor MemoryRequest.alignedOffset 0)) = 0),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

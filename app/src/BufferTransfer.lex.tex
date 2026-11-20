@@ -1,0 +1,42 @@
+\begin{lexlean}{BufferTransfer}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+inductive{
+  name: TransferAdmission,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: missingBuffer, fields: []},
+    {name: emptyTransfer, fields: []},
+    {name: missingData, fields: []},
+    {name: outOfBounds, fields: []},
+    {name: admitted, fields: []}
+  ]
+}
+
+definition{
+  name: admitTransfer,
+  parameters: [hasBuffer : Bool, hasData : Bool, capacity : Nat, offset : Nat, size : Nat],
+  result: TransferAdmission,
+  body: (if hasBuffer then (if (size =? 0) then (ctor TransferAdmission.emptyTransfer) else (if hasData then (if ((offset <=? capacity) && (size <=? (prim subtract capacity offset : Nat))) then (ctor TransferAdmission.admitted) else (ctor TransferAdmission.outOfBounds)) else (ctor TransferAdmission.missingData))) else (ctor TransferAdmission.missingBuffer)),
+  executable: true,
+  production: {effects: [], targets: [rust-core]}
+}
+
+theorem{
+  name: missingBufferAlwaysRefused,
+  parameters: [hasData : Bool, capacity : Nat, offset : Nat, size : Nat],
+  statement: ((admitTransfer false hasData capacity offset size) = (ctor TransferAdmission.missingBuffer)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyTransferNeedsNoAllocation,
+  parameters: [hasData : Bool, capacity : Nat, offset : Nat],
+  statement: ((admitTransfer true hasData capacity offset 0) = (ctor TransferAdmission.emptyTransfer)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

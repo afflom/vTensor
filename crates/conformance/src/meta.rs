@@ -1,246 +1,235 @@
-//! The honesty meta-gate (R2).
-//!
-//! Three levels only mean something if the suite respects them, and nothing in
-//! the arithmetic can enforce that. What can is a check on the *names* and the
-//! *prose*: an `open` claim that a test asserts, or a `some-true` authority
-//! that the README presents as this repository's own result, is exactly the
-//! blurring of registers the discipline exists to prevent.
-//!
-//! The gate is deliberately about language, because that is where the failure
-//! mode lives. Nobody sets out to claim they proved an upstream theorem; they
-//! write "proves" where they meant "is evidence for", and six months later the
-//! sentence is load-bearing.
+//! GGML v3 ABI declarations, checked against the pinned authoritative headers.
 
-use std::collections::BTreeSet;
-use std::path::Path;
+use std::ffi::{c_char, c_int, c_void};
 
-use repo_model::{Level, Model};
+pub(crate) type Buf = *mut Buffer;
+pub(crate) type Buft = *mut BufferType;
+pub(crate) type Dev = *mut Device;
+pub(crate) type Reg = *mut Registry;
+pub(crate) type BackendPtr = *mut Backend;
+pub(crate) type TensorPtr = *mut Tensor;
+pub(crate) type Graph = *mut c_void;
+pub(crate) type Plan = *mut c_void;
+pub(crate) type Event = *mut c_void;
 
-use crate::runner::SuiteReport;
+pub(crate) const GGML_STATUS_SUCCESS: c_int = 0;
+pub(crate) const GGML_STATUS_FAILED: c_int = -1;
 
-/// What the meta-gate found.
-#[derive(Clone, Debug, Default)]
-pub struct HonestyReport {
-    /// Every problem, each naming the rule it breaks.
-    pub violations: Vec<String>,
-    /// How many registered IDs were checked.
-    pub ids_checked: usize,
-    /// How many scenarios were read.
-    pub scenarios_checked: usize,
+#[repr(C)]
+pub(crate) struct Tensor {
+    pub ty: c_int,
+    pub buffer: Buf,
+    pub ne: [i64; 4],
+    pub nb: [usize; 4],
+    pub op: c_int,
+    pub op_params: [i32; 16],
+    pub flags: i32,
+    pub src: [TensorPtr; 10],
+    pub view_src: TensorPtr,
+    pub view_offs: usize,
+    pub data: *mut c_void,
+    pub name: [c_char; 64],
+    pub extra: *mut c_void,
+    pub padding: [c_char; 8],
 }
 
-impl HonestyReport {
-    /// Did everything hold?
-    pub fn is_clean(&self) -> bool {
-        self.violations.is_empty()
-    }
+#[repr(C)]
+#[derive(Default)]
+pub(crate) struct BufferTypeInterface {
+    pub get_name: Option<unsafe extern "C" fn(Buft) -> *const c_char>,
+    pub alloc_buffer: Option<unsafe extern "C" fn(Buft, usize) -> Buf>,
+    pub alloc_buffer_n: Option<unsafe extern "C" fn(Buft, *mut TensorPtr, c_int) -> Buf>,
+    pub get_alignment: Option<unsafe extern "C" fn(Buft) -> usize>,
+    pub get_max_size: Option<unsafe extern "C" fn(Buft) -> usize>,
+    pub get_alloc_size: Option<unsafe extern "C" fn(Buft, *const Tensor) -> usize>,
+    pub get_alloc_size_n: Option<unsafe extern "C" fn(Buft, *mut TensorPtr, c_int) -> usize>,
+    pub is_host: Option<unsafe extern "C" fn(Buft) -> bool>,
 }
 
-/// Words that assert a claim as established.
-///
-/// A `build` claim may use them --- it *is* evidence, constructed here. An
-/// `open` claim may not, because it is a measurement, and a `some-true` claim
-/// may not, because it belongs to someone else.
-const ASSERTIVE: &[&str] = &[
-    "proves",
-    "proven",
-    "proof that",
-    "guarantees",
-    "establishes",
-    "demonstrates that",
-    "shows that",
-    "confirms",
-];
-
-/// Run the meta-gate.
-///
-/// `root` is the repository root. `tests` are the test names collected from the
-/// workspace, which the caller gathers because it knows how to run `cargo`.
-pub fn check_honesty(root: &Path, tests: &BTreeSet<String>) -> std::io::Result<HonestyReport> {
-    let mut report = HonestyReport::default();
-    let model = match Model::load(&root.join("model")) {
-        Ok(m) => m,
-        Err(e) => {
-            report
-                .violations
-                .push(format!("R1: the model does not load: {e}"));
-            return Ok(report);
-        }
-    };
-    let suites: SuiteReport = crate::runner::scenarios_in(&root.join("features/suites"))?;
-    report.scenarios_checked = suites.scenarios.len();
-    report.ids_checked = model.ids.id.len();
-
-    let scenario_ids = suites.ids();
-
-    // R3, CM-02: every registered ID has a scenario, and a test named for it.
-    for row in &model.ids.id {
-        if !scenario_ids.contains(row.id.as_str()) {
-            report.violations.push(format!(
-                "R3: {} is registered but has no scenario in features/suites/. Every \
-                 capability begins as a Gherkin scenario.",
-                row.id
-            ));
-        }
-        let slug = row.id.to_lowercase().replace('-', "_");
-        if !tests.iter().any(|t| t.ends_with(&slug)) {
-            report.violations.push(format!(
-                "CM-02: {} is registered but no test name ends in `{slug}`. A claim with \
-                 no test is an assertion.",
-                row.id
-            ));
-        }
-    }
-
-    // CM-02, the other direction: every scenario names a registered ID.
-    for s in &suites.scenarios {
-        if model.ids.get(&s.id).is_none() {
-            report.violations.push(format!(
-                "CM-02: scenario `{}` in {} names `{}`, which is not in the register.",
-                s.statement, s.suite, s.id
-            ));
-        }
-        if s.steps.is_empty() {
-            report.violations.push(format!(
-                "R3: scenario `{}` in {} has no steps. There are no pending steps.",
-                s.statement, s.suite
-            ));
-        }
-        // R2: the scenario's tag must agree with the register.
-        if let Some(row) = model.ids.get(&s.id) {
-            if s.level != row.level.as_str() {
-                report.violations.push(format!(
-                    "R2: {} is tagged `{}` in {} but `{}` in the register.",
-                    s.id,
-                    s.level,
-                    s.suite,
-                    row.level.as_str()
-                ));
-            }
-        }
-    }
-
-    // CM-02, the third direction: every ID a *test* names is registered.
-    //
-    // Without this the register can be a subset of what the suite claims: a test
-    // called `..._ct_04` looks like it discharges `CT-04`, but if `CT-04` is not
-    // a row then nothing checks it has a scenario and `CONFORMANCE.md` does not
-    // list it. Three IDs were in exactly that state --- `CK-08`, `CT-04`, and
-    // `CT-05` --- with passing tests and no register rows, which is a claim made
-    // by a name and by nothing else.
-    //
-    // Only prefixes the register already uses are checked, so a test whose name
-    // merely happens to end in two letters and two digits is not a claim.
-    let prefixes: BTreeSet<String> = model
-        .ids
-        .id
-        .iter()
-        .filter_map(|r| r.id.split('-').next().map(str::to_lowercase))
-        .collect();
-    for name in tests {
-        let Some(tail) = name.rsplit("::").next() else {
-            continue;
-        };
-        let parts: Vec<&str> = tail.rsplitn(3, '_').collect();
-        if parts.len() < 3 {
-            continue;
-        }
-        let (digits, letters) = (parts[0], parts[1]);
-        if digits.len() != 2 || !digits.bytes().all(|b| b.is_ascii_digit()) {
-            continue;
-        }
-        if letters.len() != 2 || !prefixes.contains(letters) {
-            continue;
-        }
-        let id = format!("{}-{digits}", letters.to_uppercase());
-        if model.ids.get(&id).is_none() {
-            report.violations.push(format!(
-                "CM-02: test `{name}` names `{id}`, which is not in the register. An ID                  that exists only in a test name has no scenario and no row in                  CONFORMANCE.md."
-            ));
-        }
-    }
-
-    // R2: an `open` claim must not be asserted as established, anywhere.
-    let open_ids: Vec<&str> = model
-        .ids
-        .id
-        .iter()
-        .filter(|r| r.level == Level::Open)
-        .map(|r| r.id.as_str())
-        .collect();
-    for doc in [
-        "README.md",
-        "CONFORMANCE.md",
-        "VERIFICATION.md",
-        "ANALYSIS.md",
-    ] {
-        let path = root.join(doc);
-        let Ok(text) = std::fs::read_to_string(&path) else {
-            continue;
-        };
-        for (i, line) in text.lines().enumerate() {
-            let lower = line.to_lowercase();
-            for id in &open_ids {
-                if !line.contains(id) {
-                    continue;
-                }
-                if let Some(word) = ASSERTIVE.iter().find(|w| lower.contains(*w)) {
-                    report.violations.push(format!(
-                        "R2: {doc}:{}: `{id}` is an `open` claim --- measured and reported, \
-                         never asserted --- but this line says `{word}`.\n    {}",
-                        i + 1,
-                        line.trim()
-                    ));
-                }
-            }
-        }
-    }
-
-    // R2: a `some-true` authority is reproduced, not established here.
-    for authority in &model.authorities.authority {
-        for doc in ["README.md", "CONFORMANCE.md"] {
-            let path = root.join(doc);
-            let Ok(text) = std::fs::read_to_string(&path) else {
-                continue;
-            };
-            for (i, line) in text.lines().enumerate() {
-                if !line.contains(&authority.id) {
-                    continue;
-                }
-                let lower = line.to_lowercase();
-                if let Some(word) = ASSERTIVE.iter().find(|w| lower.contains(*w)) {
-                    report.violations.push(format!(
-                        "R2: {doc}:{}: `{}` is cited, not established here, but this line \
-                         says `{word}`.\n    {}",
-                        i + 1,
-                        authority.id,
-                        line.trim()
-                    ));
-                }
-            }
-        }
-    }
-
-    Ok(report)
+#[repr(C)]
+pub(crate) struct BufferType {
+    pub iface: BufferTypeInterface,
+    pub device: Dev,
+    pub context: *mut c_void,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[repr(C)]
+#[derive(Default)]
+pub(crate) struct BufferInterface {
+    pub free_buffer: Option<unsafe extern "C" fn(Buf)>,
+    pub get_base: Option<unsafe extern "C" fn(Buf) -> *mut c_void>,
+    pub init_tensor: Option<unsafe extern "C" fn(Buf, TensorPtr) -> c_int>,
+    pub memset_tensor: Option<unsafe extern "C" fn(Buf, TensorPtr, u8, usize, usize)>,
+    pub set_tensor: Option<unsafe extern "C" fn(Buf, TensorPtr, *const c_void, usize, usize)>,
+    pub get_tensor: Option<unsafe extern "C" fn(Buf, *const Tensor, *mut c_void, usize, usize)>,
+    pub set_tensor_2d: Option<
+        unsafe extern "C" fn(Buf, TensorPtr, *const c_void, usize, usize, usize, usize, usize),
+    >,
+    pub get_tensor_2d: Option<
+        unsafe extern "C" fn(Buf, *const Tensor, *mut c_void, usize, usize, usize, usize, usize),
+    >,
+    pub cpy_tensor: Option<unsafe extern "C" fn(Buf, *const Tensor, TensorPtr) -> bool>,
+    pub clear: Option<unsafe extern "C" fn(Buf, u8)>,
+    pub reset: Option<unsafe extern "C" fn(Buf)>,
+    pub set_tensor_n: Option<
+        unsafe extern "C" fn(
+            Buf,
+            *const TensorPtr,
+            *const *const c_void,
+            *const usize,
+            *const usize,
+            usize,
+        ),
+    >,
+    pub get_tensor_n: Option<
+        unsafe extern "C" fn(
+            Buf,
+            *const *const Tensor,
+            *const *mut c_void,
+            *const usize,
+            *const usize,
+            usize,
+        ),
+    >,
+    pub cpy_tensor_n:
+        Option<unsafe extern "C" fn(Buf, *const *const Tensor, *const TensorPtr, usize) -> bool>,
+}
 
-    /// The gate's own vocabulary check must be able to fire, or every clean
-    /// run above means nothing.
-    #[test]
-    fn the_assertive_vocabulary_is_recognised() {
-        for word in ASSERTIVE {
-            let line = format!("CG-01 {word} the exponent is one");
-            assert!(
-                ASSERTIVE.iter().any(|w| line.to_lowercase().contains(*w)),
-                "{word} must be recognised"
-            );
-        }
-        // And an honest sentence about an open claim does not trip it.
-        let honest = "CG-01 reports the fitted exponent with its confidence interval";
-        assert!(!ASSERTIVE.iter().any(|w| honest.to_lowercase().contains(*w)));
-    }
+#[repr(C)]
+pub(crate) struct Buffer {
+    pub iface: BufferInterface,
+    pub buft: Buft,
+    pub context: *mut c_void,
+    pub size: usize,
+    pub usage: c_int,
+}
+
+#[repr(C)]
+#[derive(Default)]
+pub(crate) struct BackendInterface {
+    pub get_name: Option<unsafe extern "C" fn(BackendPtr) -> *const c_char>,
+    pub free: Option<unsafe extern "C" fn(BackendPtr)>,
+    pub set_tensor_async:
+        Option<unsafe extern "C" fn(BackendPtr, TensorPtr, *const c_void, usize, usize)>,
+    pub get_tensor_async:
+        Option<unsafe extern "C" fn(BackendPtr, *const Tensor, *mut c_void, usize, usize)>,
+    pub set_tensor_2d_async: Option<
+        unsafe extern "C" fn(
+            BackendPtr,
+            TensorPtr,
+            *const c_void,
+            usize,
+            usize,
+            usize,
+            usize,
+            usize,
+        ),
+    >,
+    pub get_tensor_2d_async: Option<
+        unsafe extern "C" fn(
+            BackendPtr,
+            *const Tensor,
+            *mut c_void,
+            usize,
+            usize,
+            usize,
+            usize,
+            usize,
+        ),
+    >,
+    pub cpy_tensor_async:
+        Option<unsafe extern "C" fn(BackendPtr, BackendPtr, *const Tensor, TensorPtr) -> bool>,
+    pub synchronize: Option<unsafe extern "C" fn(BackendPtr)>,
+    pub graph_plan_create: Option<unsafe extern "C" fn(BackendPtr, *const c_void) -> Plan>,
+    pub graph_plan_free: Option<unsafe extern "C" fn(BackendPtr, Plan)>,
+    pub graph_plan_update: Option<unsafe extern "C" fn(BackendPtr, Plan, *const c_void)>,
+    pub graph_plan_compute: Option<unsafe extern "C" fn(BackendPtr, Plan) -> c_int>,
+    pub graph_compute: Option<unsafe extern "C" fn(BackendPtr, Graph) -> c_int>,
+    pub event_record: Option<unsafe extern "C" fn(BackendPtr, Event)>,
+    pub event_wait: Option<unsafe extern "C" fn(BackendPtr, Event)>,
+    pub graph_optimize: Option<unsafe extern "C" fn(BackendPtr, Graph, *mut c_void)>,
+}
+
+#[repr(C)]
+pub(crate) struct Backend {
+    pub guid: *mut [u8; 16],
+    pub iface: BackendInterface,
+    pub device: Dev,
+    pub context: *mut c_void,
+}
+
+#[repr(C)]
+pub(crate) struct DeviceCapabilities {
+    pub asynchronous: bool,
+    pub host_buffer: bool,
+    pub buffer_from_host_ptr: bool,
+    pub events: bool,
+    pub mmap_support: bool,
+}
+
+#[repr(C)]
+pub(crate) struct DeviceProperties {
+    pub name: *const c_char,
+    pub description: *const c_char,
+    pub memory_free: usize,
+    pub memory_total: usize,
+    pub ty: c_int,
+    pub device_id: *const c_char,
+    pub caps: DeviceCapabilities,
+}
+
+#[repr(C)]
+#[derive(Default)]
+pub(crate) struct DeviceInterface {
+    pub get_name: Option<unsafe extern "C" fn(Dev) -> *const c_char>,
+    pub get_description: Option<unsafe extern "C" fn(Dev) -> *const c_char>,
+    pub get_memory: Option<unsafe extern "C" fn(Dev, *mut usize, *mut usize)>,
+    pub get_type: Option<unsafe extern "C" fn(Dev) -> c_int>,
+    pub get_props: Option<unsafe extern "C" fn(Dev, *mut DeviceProperties)>,
+    pub init_backend: Option<unsafe extern "C" fn(Dev, *const c_char) -> BackendPtr>,
+    pub get_buffer_type: Option<unsafe extern "C" fn(Dev) -> Buft>,
+    pub get_host_buffer_type: Option<unsafe extern "C" fn(Dev) -> Buft>,
+    pub buffer_from_host_ptr: Option<unsafe extern "C" fn(Dev, *mut c_void, usize, usize) -> Buf>,
+    pub supports_op: Option<unsafe extern "C" fn(Dev, *const Tensor) -> bool>,
+    pub supports_buft: Option<unsafe extern "C" fn(Dev, Buft) -> bool>,
+    pub offload_op: Option<unsafe extern "C" fn(Dev, *const Tensor) -> bool>,
+    pub event_new: Option<unsafe extern "C" fn(Dev) -> Event>,
+    pub event_free: Option<unsafe extern "C" fn(Dev, Event)>,
+    pub event_synchronize: Option<unsafe extern "C" fn(Dev, Event)>,
+}
+
+#[repr(C)]
+pub(crate) struct Device {
+    pub iface: DeviceInterface,
+    pub reg: Reg,
+    pub context: *mut c_void,
+}
+
+#[repr(C)]
+#[derive(Default)]
+pub(crate) struct RegistryInterface {
+    pub get_name: Option<unsafe extern "C" fn(Reg) -> *const c_char>,
+    pub get_device_count: Option<unsafe extern "C" fn(Reg) -> usize>,
+    pub get_device: Option<unsafe extern "C" fn(Reg, usize) -> Dev>,
+    pub get_proc_address: Option<unsafe extern "C" fn(Reg, *const c_char) -> *mut c_void>,
+}
+
+#[repr(C)]
+pub(crate) struct Registry {
+    pub api_version: c_int,
+    pub iface: RegistryInterface,
+    pub context: *mut c_void,
+}
+
+unsafe extern "C" {
+    pub(crate) fn ggml_backend_buffer_init(
+        buft: Buft,
+        iface: BufferInterface,
+        context: *mut c_void,
+        size: usize,
+    ) -> Buf;
+    pub(crate) fn ggml_backend_buffer_is_host(buffer: Buf) -> bool;
+    pub(crate) fn ggml_graph_n_nodes(graph: Graph) -> c_int;
+    pub(crate) fn ggml_graph_node(graph: Graph, index: c_int) -> TensorPtr;
+    pub(crate) fn ggml_abort(file: *const c_char, line: c_int, fmt: *const c_char, ...) -> !;
 }

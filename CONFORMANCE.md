@@ -18,6 +18,18 @@ The three honesty levels (R2):
 `cargo xtask audit-limits` fails if any code path returns an error the
 model does not sanction.
 
+## buffer-allocation
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-10` | `build` | Prism tensor placement matches the imported GGML linear allocator for aligned buffers and refuses invalid alignment, exhausted capacity, and arithmetic overflow |
+
+## buffer-transfer
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-09` | `build` | Prism transfer admission matches upstream GGML set and get guards and rejects overflowing ranges |
+
 ## contract
 
 | ID | Level | Statement |
@@ -34,12 +46,65 @@ model does not sanction.
 | `FR-04` | `build` | An app's workspace key opens only on a device of the Prism ID that made it, follows the ID when it joins or is recovered, and stays locked on a removed device |
 | `FR-05` | `build` | An app's pages on every device of one Prism ID meet on a relay topic only those devices derive, per app, with every message sealed to the ID, and a removed device is left behind |
 
+## ggml-inventory
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-04` | `build` | The imported GGML operation and tensor type declarations are inventoried exactly without implementation claims |
+
+## ggml-storage-oracle
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-05` | `build` | The pinned GGML storage oracle executes upstream byte-span semantics for scalar and block-encoded tensors |
+
+## matrix-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-12` | `build` | GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference |
+
+## native-backend
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-11` | `build` | GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior |
+
+## oracle-import
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-01` | `build` | The imported GGML backend contract, implementation interface, and operator oracle match their pinned upstream source |
+
+## source-accounting
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-08` | `build` | Source accounting includes untracked implementation files and rejects drifted imported bytes |
+
+## tensor-layout
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-06` | `build` | The Prism-generated four-dimensional byte-span function matches the pinned GGML storage oracle and rejects invalid blocks and arithmetic overflow |
+| `VT-07` | `build` | The Prism-generated type catalog matches every declared GGML storage type and refuses removed and out-of-range identifiers |
+
+## verdant-api
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-02` | `build` | The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API |
+| `VT-03` | `build` | vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results |
+
 ## Cited authorities
 
 An authority is cited, never re-derived, and never gated on: what it states is not claimed as established here, so the claim that reproduces it stays `some-true`, and that is all "gated on" excludes. Its artifact (a standard's text, a corpus) may be committed when its row names the path in `artifact` and records in `checksum` a SHA-256 over the committed bytes, which `cargo xtask check-model` recomputes; a conformance test may then use a committed corpus as its oracle, as evidence for a `build` claim. With nothing committed, `checksum` is `none` and `checksum_reason` says why.
 
 | Authority | Citation | Evidence here |
 | --- | --- | --- |
+| `LLAMA-CPP-GGML-BACKEND` | https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5 | -- |
+| `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/tree/87c3256326b9ec9f8d591855394c0bd0265588ef | -- |
+| `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
 
 ## Claims that are not conformance IDs
 

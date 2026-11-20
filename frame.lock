@@ -1,5 +1,10 @@
 {
   "spec": "prism/frame-lock/1",
+  "source": {
+    "repository": "UOR-Foundation/template",
+    "commit": "b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b",
+    "raw": "https://raw.githubusercontent.com/UOR-Foundation/template/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b/"
+  },
   "files": [
     {
       "path": "bootstrap/frame-sync.mjs",

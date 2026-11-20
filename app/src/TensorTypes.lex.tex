@@ -1,0 +1,43 @@
+\begin{lexlean}{TensorTypes}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+structure{
+  name: TypeStorageSpec,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: typeId, type: Nat}, {name: blockSize, type: Nat}, {name: typeSize, type: Nat}]
+}
+
+inductive{
+  name: TypeStorageDecision,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: unknownType, fields: []}, {name: knownType, fields: [TypeStorageSpec]}]
+}
+
+definition{
+  name: tensorTypeStorage,
+  parameters: [typeId : Nat],
+  result: TypeStorageDecision,
+  body: (if (typeId =? 0) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 0, blockSize := 1, typeSize := 4})) else (if (typeId =? 1) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 1, blockSize := 1, typeSize := 2})) else (if (typeId =? 2) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 2, blockSize := 32, typeSize := 18})) else (if (typeId =? 3) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 3, blockSize := 32, typeSize := 20})) else (if (typeId =? 6) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 6, blockSize := 32, typeSize := 22})) else (if (typeId =? 7) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 7, blockSize := 32, typeSize := 24})) else (if (typeId =? 8) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 8, blockSize := 32, typeSize := 34})) else (if (typeId =? 9) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 9, blockSize := 32, typeSize := 36})) else (if (typeId =? 10) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 10, blockSize := 256, typeSize := 84})) else (if (typeId =? 11) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 11, blockSize := 256, typeSize := 110})) else (if (typeId =? 12) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 12, blockSize := 256, typeSize := 144})) else (if (typeId =? 13) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 13, blockSize := 256, typeSize := 176})) else (if (typeId =? 14) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 14, blockSize := 256, typeSize := 210})) else (if (typeId =? 15) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 15, blockSize := 256, typeSize := 292})) else (if (typeId =? 16) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 16, blockSize := 256, typeSize := 66})) else (if (typeId =? 17) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 17, blockSize := 256, typeSize := 74})) else (if (typeId =? 18) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 18, blockSize := 256, typeSize := 98})) else (if (typeId =? 19) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 19, blockSize := 256, typeSize := 50})) else (if (typeId =? 20) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 20, blockSize := 32, typeSize := 18})) else (if (typeId =? 21) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 21, blockSize := 256, typeSize := 110})) else (if (typeId =? 22) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 22, blockSize := 256, typeSize := 82})) else (if (typeId =? 23) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 23, blockSize := 256, typeSize := 136})) else (if (typeId =? 24) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 24, blockSize := 1, typeSize := 1})) else (if (typeId =? 25) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 25, blockSize := 1, typeSize := 2})) else (if (typeId =? 26) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 26, blockSize := 1, typeSize := 4})) else (if (typeId =? 27) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 27, blockSize := 1, typeSize := 8})) else (if (typeId =? 28) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 28, blockSize := 1, typeSize := 8})) else (if (typeId =? 29) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 29, blockSize := 256, typeSize := 56})) else (if (typeId =? 30) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 30, blockSize := 1, typeSize := 2})) else (if (typeId =? 34) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 34, blockSize := 256, typeSize := 54})) else (if (typeId =? 35) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 35, blockSize := 256, typeSize := 66})) else (if (typeId =? 39) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 39, blockSize := 32, typeSize := 17})) else (if (typeId =? 40) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 40, blockSize := 64, typeSize := 36})) else (if (typeId =? 41) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 41, blockSize := 128, typeSize := 18})) else (if (typeId =? 42) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 42, blockSize := 64, typeSize := 18})) else (if (typeId =? 43) then (ctor TypeStorageDecision.knownType (record TypeStorageSpec {typeId := 43, blockSize := 1, typeSize := 1})) else (ctor TypeStorageDecision.unknownType))))))))))))))))))))))))))))))))))))),
+  executable: true,
+  production: {effects: [], targets: [rust-core]}
+}
+
+theorem{
+  name: removedTypeRefused,
+  parameters: [],
+  statement: ((tensorTypeStorage 4) = (ctor TypeStorageDecision.unknownType)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: sentinelRefused,
+  parameters: [],
+  statement: ((tensorTypeStorage 44) = (ctor TypeStorageDecision.unknownType)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

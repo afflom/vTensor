@@ -1,0 +1,825 @@
+\begin{lexlean}{RustCore}
+\title{Certificate B LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore}
+\begin{coremodule}
+imports [LexLeanPreservation.RustSound]
+
+definition LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.program : @0 := @162 {
+  all: [LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.program],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.krate : @163 := @448 {
+  all: [LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.krate],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.flags : @449 := @456 {
+  all: [LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.flags],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+theorem LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.fun0 : @464 := @1449 {
+  all: [LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.fun0],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.crate_ok : @1453 := @1516 {
+  all: [LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.crate_ok],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.root : @1524 := @1534 {
+  all: [LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.root],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  transparency: semireducible
+}
+
+@0 := LexLeanTarget.TargetSyntax.Program
+@1 := LexLeanTarget.TargetSyntax.Program.mk
+@2 := List.cons.{0}
+@3 := LexLeanTarget.TargetSyntax.Adt
+@4 := @2 @3
+@5 := LexLeanTarget.TargetSyntax.Adt.mk
+@6 := List.{0}
+@7 := LexLeanTarget.TargetSyntax.Ty
+@8 := @6 @7
+@9 := @2 @8
+@10 := List.nil.{0}
+@11 := @10 @7
+@12 := @9 @11
+@23 := @1 (@4 (@5 (@12 (@12 (@12 (@12 (@12 (@10 @8))))))) (@10 @3))
+@24 := LexLeanTarget.TargetSyntax.Function
+@25 := @2 @24
+@26 := LexLeanTarget.TargetSyntax.Function.mk
+@27 := Nat
+@28 := @2 @27
+@30 := OfNat.ofNat.{0} @27
+@31 := 0
+@32 := @30 @31
+@33 := instOfNatNat
+@35 := @32 (@33 @31)
+@36 := @28 @35
+@37 := 1
+@40 := @30 @37 (@33 @37)
+@41 := @28 @40
+@42 := 2
+@45 := @30 @42 (@33 @42)
+@46 := @28 @45
+@47 := 3
+@50 := @30 @47 (@33 @47)
+@51 := @28 @50
+@52 := 4
+@55 := @30 @52 (@33 @52)
+@63 := @26 (@36 (@41 (@46 (@51 (@28 @55 (@10 @27))))))
+@64 := @2 @7
+@65 := LexLeanTarget.TargetSyntax.Ty.bool
+@66 := @64 @65
+@67 := LexLeanTarget.TargetSyntax.Ty.nat
+@68 := @64 @67
+@69 := @68 @11
+@70 := @68 @69
+@74 := @63 (@66 (@66 (@68 @70)))
+@76 := LexLeanTarget.TargetSyntax.Ty.adt @35
+@77 := @74 @76
+@78 := LexLeanTarget.TargetSyntax.Expr.cond
+@79 := LexLeanTarget.TargetSyntax.Expr.var
+@80 := @79 @35
+@81 := @78 @80
+@82 := LexLeanTarget.TargetSyntax.Expr.prim
+@83 := LexLeanTarget.TargetSyntax.Prim.natEq
+@84 := @82 @83
+@85 := LexLeanTarget.TargetSyntax.Expr
+@86 := @2 @85
+@87 := @79 @55
+@88 := @86 @87
+@90 := LexLeanTarget.TargetSyntax.Expr.value @67
+@92 := LexLeanTarget.TargetSyntax.Value.nat @35
+@93 := @90 @92
+@94 := @86 @93
+@95 := @10 @85
+@96 := @94 @95
+@97 := @88 @96
+@98 := @84 @97
+@99 := @78 @98
+@100 := LexLeanTarget.TargetSyntax.Expr.build
+@101 := LexLeanTarget.TargetSyntax.Shape.adt
+@102 := @101 @40
+@105 := @100 @102 @76 @95
+@106 := @99 @105
+@107 := @79 @40
+@108 := @78 @107
+@109 := LexLeanTarget.TargetSyntax.Prim.natLe
+@110 := @82 @109
+@111 := @79 @50
+@112 := @86 @111
+@113 := @79 @45
+@114 := @86 @113
+@115 := @114 @95
+@116 := @112 @115
+@117 := @110 @116
+@118 := @78 @117
+@119 := LexLeanTarget.TargetSyntax.Prim.natSub
+@120 := @82 @119
+@121 := @112 @95
+@122 := @114 @121
+@123 := @120 @122
+@125 := @86 @123 @95
+@126 := @88 @125
+@127 := @110 @126
+@128 := @118 @127
+@129 := LexLeanTarget.TargetSyntax.Shape.false
+@132 := @100 @129 @65 @95
+@133 := @128 @132
+@134 := @78 @133
+@135 := @101 @55
+@138 := @100 @135 @76 @95
+@139 := @134 @138
+@140 := @101 @50
+@143 := @100 @140 @76 @95
+@144 := @139 @143
+@145 := @108 @144
+@146 := @101 @45
+@149 := @100 @146 @76 @95
+@150 := @145 @149
+@151 := @106 @150
+@152 := @81 @151
+@153 := @101 @35
+@156 := @100 @153 @76 @95
+@158 := @77 (@152 @156)
+@162 := @23 (@25 @158 (@10 @24))
+@163 := LexLeanTarget.RustSyntax.Crate
+@166 := LexLeanTarget.RustSyntax.Crate.mk LexLeanTarget.RustSyntax.Profile.core
+@167 := LexLeanTarget.RustSyntax.ItemDef
+@168 := @2 @167
+@169 := LexLeanTarget.RustSyntax.ItemDef.enum
+@171 := LexLeanTarget.RustSyntax.RustType.adt @35
+@172 := @169 @171
+@173 := LexLeanTarget.RustSyntax.Variant
+@174 := @2 @173
+@175 := LexLeanTarget.RustSyntax.Variant.mk
+@176 := @175 @35
+@177 := LexLeanTarget.RustSyntax.RustType
+@178 := @10 @177
+@200 := @168
+    (@172
+      (@174
+        (@176 @178)
+        (@174
+          (@175 @40 @178)
+          (@174 (@175 @45 @178) (@174 (@175 @50 @178) (@174 (@175 @55 @178) (@10 @173)))))))
+@201 := LexLeanTarget.RustSyntax.ItemDef.function
+@202 := LexLeanTarget.RustSyntax.Ident.generated
+@206 := @201 (@202 LexLeanTarget.RustSyntax.IdentKind.function @35)
+@207 := LexLeanTarget.RustSyntax.Parameter
+@208 := @2 @207
+@209 := LexLeanTarget.RustSyntax.Parameter.mk
+@210 := LexLeanTarget.RustSyntax.Pat.bind
+@212 := @202 LexLeanTarget.RustSyntax.IdentKind.binding
+@213 := @212 @35
+@215 := @209 (@210 @213)
+@216 := LexLeanTarget.RustSyntax.RustType.bool
+@218 := @208 (@215 @216)
+@219 := @212 @40
+@223 := @208 (@209 (@210 @219) @216)
+@224 := @212 @45
+@226 := @209 (@210 @224)
+@227 := LexLeanTarget.RustSyntax.RustType.nat
+@229 := @208 (@226 @227)
+@230 := @212 @50
+@234 := @208 (@209 (@210 @230) @227)
+@235 := @212 @55
+@245 := @218 (@223 (@229 (@234 (@208 (@209 (@210 @235) @227) (@10 @207)))))
+@247 := @206 @245 @171
+@248 := LexLeanTarget.RustSyntax.Block.mk
+@249 := LexLeanTarget.RustSyntax.Let
+@250 := @10 @249
+@251 := @248 @250
+@252 := LexLeanTarget.RustSyntax.Expr.cond
+@253 := LexLeanTarget.RustSyntax.Expr.copy
+@254 := @253 @213
+@255 := @252 @254
+@256 := @2 @249
+@257 := LexLeanTarget.RustSyntax.Let.mk
+@258 := LexLeanTarget.RustSyntax.IdentKind.operand
+@259 := @202 @258
+@260 := @259 @40
+@262 := @257 (@210 @260)
+@263 := Option.none.{0}
+@264 := @263 @177
+@265 := @262 @264
+@266 := @253 @235
+@268 := @256 (@265 @266)
+@269 := @259 @45
+@272 := @257 (@210 @269) @264
+@273 := LexLeanTarget.RustSyntax.Expr.lit
+@276 := @273 (LexLeanTarget.RustSyntax.Lit.nat @35)
+@279 := @256 (@272 @276) @250
+@280 := @268 @279
+@281 := @248 @280
+@282 := LexLeanTarget.RustSyntax.Expr.call
+@283 := LexLeanTarget.RustSyntax.Callee.runtime
+@284 := LexLeanTarget.RustSyntax.Item.natEq
+@286 := @282 (@283 @284)
+@287 := LexLeanTarget.RustSyntax.Expr
+@288 := @2 @287
+@289 := LexLeanTarget.RustSyntax.Expr.move
+@291 := @288 (@289 @260)
+@293 := @288 (@289 @269)
+@294 := @10 @287
+@295 := @293 @294
+@296 := @291 @295
+@297 := @286 @296
+@298 := Bool.false
+@299 := @297 @298
+@300 := @252 @299
+@301 := LexLeanTarget.RustSyntax.Expr.construct
+@303 := LexLeanTarget.RustSyntax.Ctor.adt @35
+@304 := @303 @40
+@306 := @301 @304 @294
+@308 := @300 (@251 @306)
+@309 := @253 @219
+@310 := @252 @309
+@311 := @259 @50
+@314 := @257 (@210 @311) @264
+@315 := @253 @230
+@317 := @256 (@314 @315)
+@318 := @259 @55
+@321 := @257 (@210 @318) @264
+@322 := @253 @224
+@325 := @256 (@321 @322) @250
+@326 := @317 @325
+@327 := @248 @326
+@328 := LexLeanTarget.RustSyntax.Item.natLe
+@330 := @282 (@283 @328)
+@332 := @288 (@289 @311)
+@335 := @288 (@289 @318) @294
+@336 := @332 @335
+@338 := @330 @336 @298
+@339 := @252 @338
+@340 := 7
+@343 := @30 @340 (@33 @340)
+@344 := @259 @343
+@349 := @256 (@257 (@210 @344) @264 @266)
+@350 := 8
+@353 := @30 @350 (@33 @350)
+@354 := @259 @353
+@357 := @257 (@210 @354) @264
+@358 := LexLeanTarget.RustSyntax.Expr.block
+@359 := 5
+@362 := @30 @359 (@33 @359)
+@363 := @259 @362
+@368 := @256 (@257 (@210 @363) @264 @322)
+@369 := 6
+@372 := @30 @369 (@33 @369)
+@373 := @259 @372
+@379 := @256 (@257 (@210 @373) @264 @315) @250
+@380 := @368 @379
+@381 := @248 @380
+@382 := LexLeanTarget.RustSyntax.Item.natSub
+@384 := @282 (@283 @382)
+@386 := @288 (@289 @363)
+@389 := @288 (@289 @373) @294
+@390 := @386 @389
+@392 := @384 @390 @298
+@394 := @358 (@381 @392)
+@397 := @256 (@357 @394) @250
+@398 := @349 @397
+@399 := @248 @398
+@401 := @288 (@289 @344)
+@404 := @288 (@289 @354) @294
+@405 := @401 @404
+@407 := @330 @405 @298
+@409 := @339 (@399 @407)
+@411 := LexLeanTarget.RustSyntax.Lit.bool @298
+@412 := @273 @411
+@414 := @409 (@251 @412)
+@415 := @252 @414
+@416 := @303 @55
+@418 := @301 @416 @294
+@420 := @415 (@251 @418)
+@421 := @303 @50
+@423 := @301 @421 @294
+@425 := @420 (@251 @423)
+@427 := @310 (@327 @425)
+@428 := @303 @45
+@430 := @301 @428 @294
+@432 := @427 (@251 @430)
+@434 := @308 (@251 @432)
+@436 := @255 (@281 @434)
+@437 := @303 @35
+@439 := @301 @437 @294
+@441 := @436 (@251 @439)
+@442 := @251 @441
+@448 := @166 (@200 (@168 (@247 @442) (@10 @167)))
+@449 := LexLeanPreservation.Rust.Flags
+@450 := Prod.{0, 0}
+@453 := @450 (@450 @8 @7)
+@454 := Bool
+@456 := @10 (@453 @454)
+@457 := LexLeanPreservation.Rust.FunOK
+@458 := LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.program
+@459 := @457 @458
+@460 := LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.krate
+@461 := @459 @460
+@462 := LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.flags
+@463 := @461 @462
+@464 := @463 @35
+@465 := Or.inl
+@477 := @465
+    (LexLeanPreservation.Rust.FunOK0 @458 @460 @462 @35)
+    (LexLeanPreservation.Rust.FunLoop @458 @460 @462 @35)
+@478 := Exists.intro.{1}
+@479 := @478 @24
+@480 := And
+@481 := Eq.{1}
+@482 := Option.{0}
+@483 := @482 @24
+@484 := @481 @483
+@494 := LexLeanRuntime.index
+    (@6 @24)
+    @24
+    (LexLeanRuntime.instIndexableList @24)
+    (LexLeanTarget.TargetSyntax.Program.functions @458)
+@495 := @494 @35
+@496 := @484 @495
+@497 := Option.some.{0}
+@498 := @497 @24
+@499 := #0
+@500 := @498 @499
+@502 := @480 (@496 @500)
+@503 := Or
+@504 := Exists.{1}
+@505 := @6 @207
+@506 := @504 @505
+@507 := @504 @177
+@508 := @6 @249
+@509 := @504 @508
+@510 := @504 @287
+@511 := LexLeanPreservation.Rust.Ctx
+@512 := @504 @511
+@513 := @450 @505
+@514 := @450 @177
+@518 := @482 (@513 (@514 LexLeanTarget.RustSyntax.Block))
+@519 := @481 @518
+@526 := LexLeanTarget.RustSemantics.findFunction
+    (LexLeanTarget.RustSyntax.Crate.items @460)
+    (LexLeanPreservation.Rust.fnIdent @35)
+@527 := @519 @526
+@528 := LexLeanPreservation.Rust.RBlock
+@529 := @514 @528
+@531 := @497 (@513 @529)
+@532 := Prod.mk.{0, 0}
+@534 := @532 @505 @529
+@535 := #4
+@536 := @534 @535
+@538 := @532 @177 @528
+@539 := #3
+@540 := @538 @539
+@541 := LexLeanPreservation.Rust.foldB
+@542 := #2
+@543 := @248 @542
+@544 := #1
+@546 := @541 (@543 @544)
+@547 := @540 @546
+@551 := @480 (@527 (@531 (@536 @547)))
+@552 := @482 @511
+@553 := @481 @552
+@554 := LexLeanPreservation.Rust.paramCtx
+@555 := @450 @27
+@556 := @450 @7
+@557 := @482 @27
+@558 := @556 @557
+@559 := @555 @558
+@560 := @10 @559
+@561 := @554 @560
+@562 := LexLeanTarget.TargetSyntax.Function.parameters
+@563 := #5
+@565 := @561 (@562 @563)
+@566 := LexLeanTarget.TargetSyntax.Function.types
+@568 := @565 (@566 @563)
+@569 := LexLeanTarget.RustSemantics.patternsOf
+@570 := @569 @535
+@572 := @553 (@568 @570)
+@573 := @497 @511
+@574 := @573 @499
+@576 := @480 (@572 @574)
+@580 := LexLeanPreservation.Rust.Corr @458 @460 @462
+@581 := @580 @499
+@582 := LexLeanTarget.RustSemantics.fallibleType
+@583 := @582 @539
+@584 := @581 @583
+@585 := LexLeanPreservation.Rust.Jd.b
+@586 := @585 @583
+@587 := LexLeanTarget.TargetSyntax.Function.body
+@589 := @586 (@587 @563)
+@590 := LexLeanTarget.TargetSyntax.Function.result
+@608 := @503
+    (@506
+      (fun (params : @505) =>
+      @507
+        (fun (rty : @177) =>
+        @509
+          (fun (lets : @508) =>
+          @510
+            (fun (tail : @287) =>
+            @512 (fun (Γ : @511) => @551 (@576 (@584 (@589 (@590 @563) @542 @544)))))))))
+@609 := @6 @27
+@610 := @504 @609
+@611 := @504 @7
+@612 := @481 @454
+@617 := @612 (LexLeanPreservation.Rust.validU @458 @460 @544)
+@618 := Bool.true
+@620 := @480 (@617 @618)
+@626 := Membership.mem.{0, 0} @7 @8 (List.instMembership.{0} @7)
+@630 := @480 (@626 (@566 @542) @499)
+@637 := @612 (LexLeanPreservation.Rust.uninh @458 @460 @544 @499) @618
+@648 := @479
+    (fun (fn : @24) =>
+    @502 (@608 (@610 (fun (U : @609) => @611 (fun (t : @7) => @620 (@630 @637))))))
+    @158
+@649 := And.intro
+@652 := @649 (@496 (@498 @158))
+@654 := @561 (@562 @158)
+@655 := @566 @158
+@656 := @654 @655
+@660 := @480 (@553 (@656 @570) @574)
+@661 := @587 @158
+@662 := @586 @661
+@663 := @590 @158
+@667 := @584 (@662 @663 @542 @544)
+@678 := fun (params : @505) =>
+  @507
+    (fun (rty : @177) =>
+    @509
+      (fun (lets : @508) => @510 (fun (tail : @287) => @512 (fun (Γ : @511) => @551 (@660 @667)))))
+@679 := @506 @678
+@680 := @503 @679
+@689 := @610 (fun (U : @609) => @611 (fun (t : @7) => @620 (@480 (@626 @655 @499) @637)))
+@691 := @652 (@680 @689)
+@692 := Eq.refl.{1}
+@695 := @691 (@692 @483 @495)
+@697 := @465 @679 @689
+@700 := @478 @505 @678 @245
+@701 := @478 @177
+@702 := @534 @245
+@706 := @480 (@527 (@531 (@702 @547)))
+@708 := @656 (@569 @245)
+@709 := @553 @708
+@711 := @480 (@709 @574)
+@722 := @701
+    (fun (rty : @177) =>
+    @509
+      (fun (lets : @508) => @510 (fun (tail : @287) => @512 (fun (Γ : @511) => @706 (@711 @667)))))
+    @171
+@723 := @478 @508
+@724 := @538 @171
+@729 := @480 (@527 (@531 (@702 (@724 @546))))
+@730 := @582 @171
+@731 := @581 @730
+@734 := @585 @730 @661 @663
+@746 := @723
+    (fun (lets : @508) =>
+    @510 (fun (tail : @287) => @512 (fun (Γ : @511) => @729 (@711 (@731 (@734 @542 @544))))))
+    @250
+@747 := @478 @287
+@754 := @480 (@527 (@531 (@702 (@724 (@541 (@251 @544))))))
+@755 := @734 @250
+@764 := @747 (fun (tail : @287) => @512 (fun (Γ : @511) => @754 (@711 (@731 (@755 @544))))) @441
+@765 := @478 @511
+@770 := @527 (@531 (@702 (@724 (@541 @442))))
+@771 := @480 @770
+@772 := @755 @441
+@777 := @765 (fun (Γ : @511) => @771 (@711 (@731 @772)))
+@778 := @2 @559
+@780 := @532 @27 @558
+@781 := @780 @55
+@783 := @532 @7 @557
+@784 := @783 @67
+@785 := @497 @27
+@789 := @778 (@781 (@784 (@785 @55)))
+@794 := @778 (@780 @50 (@784 (@785 @50)))
+@799 := @778 (@780 @45 (@784 (@785 @45)))
+@800 := @780 @40
+@801 := @783 @65
+@815 := @789 (@794 (@799 (@778 (@800 (@801 (@785 @40))) (@778 (@780 @35 (@801 (@785 @35))) @560))))
+@816 := @777 @815
+@817 := @649 @770
+@819 := @709 (@573 @815)
+@820 := @480 @819
+@823 := @580 @815 @730 @772
+@828 := @817 (@820 @823) (@692 @518 @526)
+@833 := @649 @819 @823 (@692 @552 @708)
+@840 := LexLeanPreservation.Rust.Corr.cond @458 @460 @462 @815 @298 @298
+@848 := @840 @80 @151 @156 @76 @250 @254 @250 @441
+@854 := LexLeanPreservation.Rust.Corr.bOfE @458 @460 @462 @815 @298
+@857 := @854 @80 @65 @254
+@863 := LexLeanPreservation.Rust.Corr.var @458 @460 @462 @815 @298
+@867 := @863 @35 @65 @35 @254
+@869 := @692 (@482 @558)
+@871 := LexLeanPreservation.Rust.ctxLookup @815
+@874 := @867 (@869 (@871 @35))
+@877 := @692 (@482 LexLeanPreservation.Rust.RIdent)
+@878 := LexLeanPreservation.Rust.readOf
+@883 := @848 (@857 (@874 (@877 (@878 @254))))
+@892 := LexLeanPreservation.Rust.Corr.kIf
+    @458
+    @460
+    @462
+    @815
+    @298
+    @298
+    LexLeanPreservation.Rust.Kind.plain
+@900 := @892 @254 @151 @156 @76 @280 @434 @250 @439
+@908 := @840 @98 @105 @150 @76 @280 @299 @250 @434
+@914 := LexLeanPreservation.Rust.Corr.prim @458 @460 @462 @815 @298
+@921 := @914 @83 @97 @70 @65 @280 @296 @284
+@927 := LexLeanPreservation.Rust.Corr.opsCons @458 @460 @462 @815 @298
+@928 := @927 @87
+@937 := @928 @96 @67 @69 @266 @279 @295 @258 @40 @264
+@947 := @863 @55 @67 @55 @266 (@869 (@871 @55)) (@877 (@878 @266))
+@948 := @937 @947
+@958 := @927 @93 @95 @67 @11 @276 @250 @294 @258 @45 @264
+@974 := LexLeanPreservation.Rust.Corr.value
+    @458
+    @460
+    @462
+    @815
+    @298
+    @67
+    @92
+    @276
+    (@692 (@482 LexLeanTarget.TargetSyntax.Value) (LexLeanPreservation.Rust.litValue @276))
+@975 := @692 @454
+@982 := @958 (@974 (@975 (LexLeanPreservation.Rust.typedLit @458 @92 @67)))
+@988 := LexLeanPreservation.Rust.Corr.opsNil @458 @460 @462 @815 @298
+@989 := @982 @988
+@992 := @975 (LexLeanPreservation.Rust.isTemp @258)
+@993 := @989 @992
+@994 := LexLeanPreservation.Rust.tempFresh
+@1005 := @921 (@948 (@993 (@975 (@994 @269 @250))) @992 (@975 (@994 @260 @279)))
+@1007 := @692 LexLeanTarget.TargetSyntax.Prim
+@1008 := LexLeanTarget.RustSemantics.itemPrimitive
+@1011 := @1005 (@1007 (@1008 @284))
+@1012 := LexLeanPreservation.Rust.plainItem
+@1015 := @1011 (@975 (@1012 @284))
+@1017 := LexLeanPreservation.Rust.itemOK @460
+@1020 := @1015 (@975 (@1017 @284))
+@1021 := LexLeanPreservation.Rust.itemTyped
+@1025 := @1020 (@975 (@1021 @284 @70))
+@1026 := LexLeanPreservation.Rust.primTyped
+@1031 := @1025 (@975 (@1026 @83 @70 @65))
+@1032 := Bool.or
+@1033 := Bool.not
+@1034 := LexLeanTarget.RustSemantics.itemFallible
+@1041 := @908 (@1031 (@975 (@1032 (@1033 (@1034 @284)) @298)))
+@1049 := @892 @299 @105 @150 @76 @250 @306 @250 @432
+@1055 := LexLeanPreservation.Rust.Corr.build @458 @460 @462 @815 @298
+@1062 := @1055 @102 @76 @95 @11 @250 @294 @304
+@1063 := @10 @454
+@1065 := @1062 @1063 @988
+@1067 := @692 (@482 @8)
+@1069 := LexLeanPreservation.Rust.buildShape @458
+@1075 := @1049 (@1065 (@1067 (@1069 @102 @76 @304)))
+@1098 := @840
+    @107
+    @144
+    @149
+    @76
+    @250
+    @309
+    @250
+    @432
+    (@854 @107 @65 @309 (@863 @40 @65 @40 @309 (@869 (@871 @40)) (@877 (@878 @309))))
+@1106 := @892 @309 @144 @149 @76 @326 @425 @250 @430
+@1114 := @840 @133 @138 @143 @76 @326 @414 @250 @425
+@1122 := @840 @117 @127 @132 @65 @326 @338 @250 @414
+@1123 := @914 @109
+@1129 := @1123 @116 @70 @65 @326 @336 @328
+@1130 := @927 @111
+@1139 := @1130 @115 @67 @69 @315 @325 @335 @258 @50 @264
+@1149 := @863 @50 @67 @50 @315 (@869 (@871 @50)) (@877 (@878 @315))
+@1150 := @1139 @1149
+@1151 := @927 @113
+@1160 := @1151 @95 @67 @11 @322 @250 @294 @258 @55 @264
+@1170 := @863 @45 @67 @45 @322 (@869 (@871 @45)) (@877 (@878 @322))
+@1184 := @1129 (@1150 (@1160 @1170 @988 @992 (@975 (@994 @318 @250))) @992 (@975 (@994 @311 @325)))
+@1186 := @1007 (@1008 @328)
+@1187 := @1184 @1186
+@1189 := @975 (@1012 @328)
+@1190 := @1187 @1189
+@1192 := @975 (@1017 @328)
+@1193 := @1190 @1192
+@1196 := @975 (@1021 @328 @70)
+@1197 := @1193 @1196
+@1201 := @975 (@1026 @109 @70 @65)
+@1202 := @1197 @1201
+@1207 := @975 (@1032 (@1033 (@1034 @328)) @298)
+@1421 := @1041
+    (@1075
+      (@1098
+        (@1106
+          (@1114
+            (@1122
+              (@1202 @1207)
+              (@892
+                @338
+                @127
+                @132
+                @65
+                @398
+                @407
+                @250
+                @412
+                (@1123
+                  @126
+                  @70
+                  @65
+                  @398
+                  @405
+                  @328
+                  (@928
+                    @125
+                    @67
+                    @69
+                    @266
+                    @397
+                    @404
+                    @258
+                    @343
+                    @264
+                    @947
+                    (@927
+                      @123
+                      @95
+                      @67
+                      @11
+                      @394
+                      @250
+                      @294
+                      @258
+                      @353
+                      @264
+                      (LexLeanPreservation.Rust.Corr.eOfB
+                        @458
+                        @460
+                        @462
+                        @815
+                        @298
+                        @123
+                        @67
+                        @380
+                        @392
+                        (@914
+                          @119
+                          @122
+                          @70
+                          @67
+                          @380
+                          @390
+                          @382
+                          (@1151
+                            @121
+                            @67
+                            @69
+                            @322
+                            @379
+                            @389
+                            @258
+                            @362
+                            @264
+                            @1170
+                            (@1130
+                              @95
+                              @67
+                              @11
+                              @315
+                              @250
+                              @294
+                              @258
+                              @372
+                              @264
+                              @1149
+                              @988
+                              @992
+                              (@975 (@994 @373 @250)))
+                            @992
+                            (@975 (@994 @363 @379)))
+                          (@1007 (@1008 @382))
+                          (@975 (@1012 @382))
+                          (@975 (@1017 @382))
+                          (@975 (@1021 @382 @70))
+                          (@975 (@1026 @119 @70 @67))
+                          (@975 (@1032 (@1033 (@1034 @382)) @298))))
+                      @988
+                      @992
+                      (@975 (@994 @354 @250)))
+                    @992
+                    (@975 (@994 @344 @397)))
+                  @1186
+                  @1189
+                  @1192
+                  @1196
+                  @1201
+                  @1207)
+                (@854
+                  @132
+                  @65
+                  @412
+                  (LexLeanPreservation.Rust.Corr.buildConst
+                    @458
+                    @460
+                    @462
+                    @815
+                    @298
+                    @129
+                    @65
+                    @411
+                    (@692
+                      (@482 LexLeanTarget.RustSyntax.Lit)
+                      (LexLeanPreservation.Rust.constShape @129 @65))))))
+            (@892
+              @414
+              @138
+              @143
+              @76
+              @250
+              @418
+              @250
+              @423
+              (@1055 @135 @76 @95 @11 @250 @294 @416 @1063 @988 (@1067 (@1069 @135 @76 @416)))
+              (@1055 @140 @76 @95 @11 @250 @294 @421 @1063 @988 (@1067 (@1069 @140 @76 @421)))))
+          (@1055 @146 @76 @95 @11 @250 @294 @428 @1063 @988 (@1067 (@1069 @146 @76 @428))))))
+@1449 := @477
+    (@648
+      (@695
+        (@697
+          (@700
+            (@722
+              (@746
+                (@764
+                  (@816
+                    (@828
+                      (@833
+                        (@883
+                          (@900
+                            @1421
+                            (@1055
+                              @153
+                              @76
+                              @95
+                              @11
+                              @250
+                              @294
+                              @437
+                              @1063
+                              @988
+                              (@1067 (@1069 @153 @76 @437)))))))))))))))
+@1453 := LexLeanPreservation.Rust.CrateOK @458 @460 @462
+@1454 := Nat.casesOn.{0}
+@1463 := HAdd.hAdd.{0, 0, 0} @27 @27 @27 (instHAdd.{0} @27 instAddNat)
+@1464 := @1463 @544
+@1468 := @484 (@494 (@1464 @35)) @500
+@1469 := @1463 @542
+@1486 := @1454
+    (fun (y : @27) => (fn : @24) -> (h : @1468) -> @463 (@1469 @35))
+    @499
+    (fun (fn : @24) =>
+    fun (h : @484 (@494 (@1463 Nat.zero @35)) @500) =>
+    LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.fun0)
+@1490 := @484 (@494 (@1464 @40)) @500
+@1495 := Option.noConfusion.{0, 0} (@463 (@1469 @40)) @24
+@1496 := @263 @24
+@1498 := @1495 @1496 @24
+@1499 := @498 @544
+@1516 := fun (x : @27) =>
+  @1486
+    (fun (x : @27) =>
+    fun (fn : @24) =>
+    fun (h : @1490) => @1498 @1499 (Eq.refl.{2} (Sort 1) @24) (heq_of_eq.{1} @483 @1496 @1499 @499))
+@1524 := (n : @27) -> (f : @27) -> LexLeanPreservation.Rust.FunSem @458 @460 @462 @544 @499
+@1534 := fun (n : @27) =>
+  fun (f : @27) =>
+  LexLeanPreservation.Rust.simulate
+    @458
+    @460
+    @462
+    LexLeanPreserve.C9c3e39f4700b57c3bb6fddfbe74faa8f.R4.RustCore.crate_ok
+    @544
+    @499
+\end{coremodule}
+\end{lexlean}

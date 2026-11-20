@@ -4,6 +4,7 @@
 \useglossary{prism.arch@1.0.0}
 \importmodule{Foundation.Bytes}
 \importmodule{Foundation.View.Text.V1.Model}
+\importmodule{BackendCore}
 \title{Text application model}
 \begin{semanticmodule}
 structure{
@@ -147,7 +148,7 @@ definition{
   name: dispatch,
   parameters: [value : Bytes],
   result: Bytes,
-  body: (if ((Foundation.Bytes::byteLength value) =? 384) then (if (conformant (observe value)) then (prim utf8_encode "conformant" : Bytes) else (prim append (prim utf8_encode "drift:" : Bytes) (drifted (observe value)) : Bytes)) else (prim utf8_encode "invalid request" : Bytes)),
+  body: (if ((Foundation.Bytes::byteLength value) =? 384) then (if ((BackendCore::supportsF64Matmul4 true true true) && (conformant (observe value))) then (prim utf8_encode "conformant" : Bytes) else (prim append (prim utf8_encode "drift:" : Bytes) (drifted (observe value)) : Bytes)) else (prim utf8_encode "invalid request" : Bytes)),
   axioms: [Quot.sound, propext]
 }
 

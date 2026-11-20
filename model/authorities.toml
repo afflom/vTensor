@@ -25,4 +25,29 @@
 
 spec = "template/1"
 
-authority = []
+[[authority]]
+id = "LLAMA-CPP-GGML-BACKEND"
+name = "llama.cpp GGML backend contract and operator oracle"
+citation = "https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5"
+checksum = "9e4ed7b3c03bf2b05291f6190eb5430de09d08a5c8d4e663f507c649c4a52a79"
+artifact = "vendor/llama.cpp-oracle"
+statement = "The pinned upstream commit contains the GGML backend API, backend implementation interface, and backend operation consistency tests used as vTensor's contract oracle."
+realized_by = []
+
+[[authority]]
+id = "VERDANT-ENGINE-TENSOR"
+name = "Verdant Engine tensor API"
+citation = "https://github.com/afflom/verdant-engine/tree/87c3256326b9ec9f8d591855394c0bd0265588ef"
+checksum = "none"
+checksum_reason = "The workspace declares this exact upstream base revision. The general-matrix extension currently uses a local development override, which is not accepted as a shipped dependency by VT-02."
+statement = "The pinned Verdant Engine revision contains the verdant-tensor crate and its unified tensor-kernel inventory."
+realized_by = []
+
+[[authority]]
+id = "PRISM-TEMPLATE-FRAME"
+name = "Prism browser frame"
+citation = "https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b"
+checksum = "e11f51fc86c9080bf15cb0d4fbb72125678ae22461951b17c9d2a94ba469bd63"
+artifact = "frame.lock"
+statement = "The browser frame is imported without modification from the pinned Prism template revision; its updater validates every listed file against upstream digests."
+realized_by = ["FR-01", "FR-02", "FR-03", "FR-04", "FR-05"]

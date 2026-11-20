@@ -34,3 +34,13 @@ screens/
 # The proof `just app` keeps for bootstrap.yml to cache (see Justfile).
 .prism-proof/
 .prism-proof.log
+
+# Scoped native backend proof cache; certified output is retained in generated/.
+/app/.lexlean-native/
+
+/app/.lexlean-matrix/
+
+/app/.lexlean-index/
+
+/.verdant-engine/
+/.verdant-engine.prepare-*/

@@ -1,0 +1,62 @@
+\begin{lexlean}{TensorLayout}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+structure{
+  name: TensorLayout,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: ne0, type: Nat},
+    {name: ne1, type: Nat},
+    {name: ne2, type: Nat},
+    {name: ne3, type: Nat},
+    {name: nb0, type: Nat},
+    {name: nb1, type: Nat},
+    {name: nb2, type: Nat},
+    {name: nb3, type: Nat},
+    {name: blockSize, type: Nat},
+    {name: typeSize, type: Nat}
+  ]
+}
+
+inductive{
+  name: ByteSpanDecision,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: invalidBlockSize, fields: []}, {name: span, fields: [Nat]}]
+}
+
+definition{
+  name: outerByteSpan,
+  parameters: [layout : TensorLayout],
+  result: Nat,
+  body: (((prim multiply (prim subtract (project layout ne1) 1 : Nat) (project layout nb1) : Nat) + (prim multiply (prim subtract (project layout ne2) 1 : Nat) (project layout nb2) : Nat)) + (prim multiply (prim subtract (project layout ne3) 1 : Nat) (project layout nb3) : Nat)),
+  executable: true
+}
+
+definition{
+  name: tensorByteSpan,
+  parameters: [layout : TensorLayout],
+  result: ByteSpanDecision,
+  body: (if ((project layout blockSize) =? 0) then (ctor ByteSpanDecision.invalidBlockSize) else (if (((((project layout ne0) =? 0) || ((project layout ne1) =? 0)) || ((project layout ne2) =? 0)) || ((project layout ne3) =? 0)) then (ctor ByteSpanDecision.span 0) else (if ((project layout blockSize) =? 1) then (ctor ByteSpanDecision.span (((project layout typeSize) + (prim multiply (prim subtract (project layout ne0) 1 : Nat) (project layout nb0) : Nat)) + (outerByteSpan layout))) else (ctor ByteSpanDecision.span ((prim quotient (prim multiply (project layout ne0) (project layout nb0) : Nat) (project layout blockSize) 0 : Nat) + (outerByteSpan layout)))))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: paddedF32Span,
+  parameters: [],
+  statement: ((tensorByteSpan (record TensorLayout {ne0 := 3, ne1 := 2, ne2 := 1, ne3 := 1, nb0 := 4, nb1 := 32, nb2 := 64, nb3 := 64, blockSize := 1, typeSize := 4})) = (ctor ByteSpanDecision.span 44)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: paddedQ4Span,
+  parameters: [],
+  statement: ((tensorByteSpan (record TensorLayout {ne0 := 64, ne1 := 2, ne2 := 1, ne3 := 1, nb0 := 18, nb1 := 64, nb2 := 128, nb3 := 128, blockSize := 32, typeSize := 18})) = (ctor ByteSpanDecision.span 100)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

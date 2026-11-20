@@ -8,7 +8,7 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-use repo_conformance::{check_honesty, scenarios_in, workspace_test_names};
+use repo_model::conformance::{check_honesty, scenarios_in, workspace_test_names};
 use repo_model::{Level, Model};
 
 fn root() -> PathBuf {

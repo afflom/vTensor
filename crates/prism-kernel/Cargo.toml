@@ -1,0 +1,20 @@
+[package]
+name = "vtensor-prism-kernel"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+[features]
+default = ["std"]
+std = []
+
+[lib]
+path = "src/lib.rs"
+
+[lints.clippy]
+let_and_return = "allow"
+useless_asref = "allow"

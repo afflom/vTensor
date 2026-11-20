@@ -1,0 +1,1 @@
+{"spec":"prism/kernel-lock/1","source":{"repository":"afflom/vTensor","attestation":"fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942"},"output":{"path":"crates/prism-kernel/src/lib.rs","sha256":"7e24d1be8f022a8292bde4478a2aef028e08855ec79d31fd0e5079749ebcec8f"}}

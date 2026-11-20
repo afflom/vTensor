@@ -7,7 +7,7 @@
 
 use std::path::{Path, PathBuf};
 
-use repo_conformance::workspace_test_names;
+use repo_model::conformance::workspace_test_names;
 use repo_model::Model;
 
 use crate::Fail;
@@ -755,10 +755,6 @@ pub mod prism {
         count
     }
 
-    /// The locks that bind Prism output: each `files` entry and the `output` entry name a path
-    /// and the digest its bytes must have.
-    const PRISM_LOCKS: [&str; 2] = ["frame.lock", "identity/stitch.lock"];
-
     /// How a commit's `xtask/src/audit.rs` shows it runs this gate.
     const GATE: &[u8] = b"pub mod prism {";
 
@@ -768,8 +764,10 @@ pub mod prism {
         mut read: impl FnMut(&str) -> Result<Option<String>, Fail>,
     ) -> Result<BTreeMap<String, String>, Fail> {
         let mut out = BTreeMap::new();
-        for name in PRISM_LOCKS {
-            let Some(text) = read(name)? else {
+        for name in
+            serde_json::from_str::<Vec<String>>(include_str!("../../model/prism-locks.json"))?
+        {
+            let Some(text) = read(&name)? else {
                 continue;
             };
             let lock: serde_json::Value = serde_json::from_str(&text)?;
@@ -879,17 +877,36 @@ pub mod prism {
         Ok(out.stdout)
     }
 
-    /// The working tree's tracked files.
+    /// Tracked files and untracked source that would be included in the revision.
     fn measure_worktree(root: &Path) -> Result<Measure, Fail> {
         let frame = bound(|name| match std::fs::read_to_string(root.join(name)) {
             Ok(text) => Ok(Some(text)),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
             Err(e) => Err(e.into()),
         })?;
+        // Validate every bound file independently of the imported checker.
+        for (path, expected) in &frame {
+            let bytes = std::fs::read(root.join(path))?;
+            if hex(&Sha256::digest(bytes)) != *expected {
+                return Err(format!("imported/generated source drifted: {path}").into());
+            }
+        }
         let mut measure = Measure::default();
-        for path in git(root, &["ls-files", "-z", "--cached"])?.split(|b| *b == 0) {
+        let local = BTreeMap::new();
+        for path in git(
+            root,
+            &[
+                "ls-files",
+                "-z",
+                "--cached",
+                "--others",
+                "--exclude-standard",
+            ],
+        )?
+        .split(|b| *b == 0)
+        {
             let path = std::str::from_utf8(path)?;
-            if path.is_empty() || language(path).is_none() {
+            if path.is_empty() || language(path).is_none() || frame.contains_key(path) {
                 continue;
             }
             let full = root.join(path);
@@ -898,7 +915,7 @@ pub mod prism {
             if full.is_symlink() || !full.is_file() {
                 continue;
             }
-            measure.add(path, &std::fs::read(&full)?, &frame);
+            measure.add(path, &std::fs::read(&full)?, &local);
         }
         Ok(measure)
     }
@@ -1017,6 +1034,49 @@ pub mod prism {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        /// VT-08: source accounting includes newly created implementation files.
+        #[test]
+        fn source_accounting_vt_08() {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let root = std::env::temp_dir().join(format!(
+                "vtensor-source-accounting-{}-{nonce}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(root.join("src")).unwrap();
+            assert!(Command::new("git")
+                .args(["init", "--quiet"])
+                .arg(&root)
+                .status()
+                .unwrap()
+                .success());
+            std::fs::write(root.join("src/new.rs"), "fn newly_created() {}\n").unwrap();
+            let observed = measure_worktree(&root).unwrap();
+            assert_eq!(
+                observed.files.get("src/new.rs"),
+                Some(&1),
+                "untracked implementation was omitted"
+            );
+            let imported_lock = serde_json::json!({"source": {"repository": "fixture/upstream"}, "files": [{"path": "src/new.rs", "sha256": hex(&Sha256::digest(b"fn newly_created() {}\n"))}]});
+            std::fs::write(root.join("frame.lock"), imported_lock.to_string()).unwrap();
+            assert_eq!(measure_worktree(&root).unwrap().total(), 0);
+            std::fs::write(root.join("src/new.rs"), "fn drifted() {}\n").unwrap();
+            assert!(
+                measure_worktree(&root).is_err(),
+                "source drift passed despite unused source budget"
+            );
+            std::fs::remove_dir_all(&root).unwrap();
+            let text = b"fn imported() {}\n";
+            let mut imported = Measure::default();
+            let pins = BTreeMap::from([("oracle.rs".to_string(), hex(&Sha256::digest(text)))]);
+            imported.add("oracle.rs", text, &pins);
+            assert_eq!(imported.total(), 0);
+            imported.add("oracle.rs", b"fn altered() {}\n", &pins);
+            assert_eq!(imported.total(), 1, "drifted imported bytes were exempted");
+        }
 
         fn measure(files: &[(&str, &str)]) -> Measure {
             let mut m = Measure::default();
