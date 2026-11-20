@@ -44,3 +44,5 @@ screens/
 
 /.verdant-engine/
 /.verdant-engine.prepare-*/
+
+/app/.lexlean-pointwise/

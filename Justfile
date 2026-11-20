@@ -97,7 +97,7 @@ bdd:
 # Certified SDK output retains the renderer's exact bytes; VT-06 replays its
 # certificate. Format every other workspace member without traversing dependencies.
 fmt *options:
-    cargo metadata --locked --no-deps --format-version 1 | node -e 'const fs = require("node:fs"), cp = require("node:child_process"); const m = JSON.parse(fs.readFileSync(0, "utf8")); const p = m.packages.filter(p => m.workspace_members.includes(p.id) && !["vtensor_layout", "vtensor_types", "vtensor_transfer", "vtensor_allocation", "vtensor_native_config", "vtensor_native_predicates", "vtensor_native_memory", "vtensor_matrix", "vtensor_index"].includes(p.name)); const a = ["fmt", ...p.flatMap(p => ["--package", p.name]), "--", ...process.argv.slice(1)]; const r = cp.spawnSync("cargo", a, {stdio: "inherit"}); if (r.error) throw r.error; process.exit(r.status ?? 1);' -- {{options}}
+    cargo metadata --locked --no-deps --format-version 1 | node -e 'const fs = require("node:fs"), cp = require("node:child_process"); const m = JSON.parse(fs.readFileSync(0, "utf8")); const p = m.packages.filter(p => m.workspace_members.includes(p.id) && !["vtensor_layout", "vtensor_types", "vtensor_transfer", "vtensor_allocation", "vtensor_native_config", "vtensor_native_predicates", "vtensor_native_memory", "vtensor_matrix", "vtensor_index", "vtensor_pointwise", "vtensor_repeat_offset"].includes(p.name)); const a = ["fmt", ...p.flatMap(p => ["--package", p.name]), "--", ...process.argv.slice(1)]; const r = cp.spawnSync("cargo", a, {stdio: "inherit"}); if (r.error) throw r.error; process.exit(r.status ?? 1);' -- {{options}}
 
 # Regenerate everything the model owns: CONFORMANCE.md.
 model-write:
@@ -124,6 +124,9 @@ matrix-export:
 index-export:
     just certified-export index
 
+pointwise-export:
+    just certified-export pointwise
+
 certified-export name:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -133,6 +136,7 @@ certified-export name:
       native) project=app/native.lexlean.toml ;;
       matrix) project=app/matrix.lexlean.toml ;;
       index) project=app/index.lexlean.toml ;;
+      pointwise) project=app/pointwise.lexlean.toml ;;
       *) echo "unknown certified bundle: $name" >&2; exit 1 ;;
     esac
     receipt=$(mktemp)
@@ -157,6 +161,7 @@ certified-export name:
       native: ['PrismTemplateContract.NativeBackend.configuration', 'vtensor_native_config'],
       matrix: ['PrismTemplateContract.MatrixGraph.planMatrix', 'vtensor_matrix'],
       index: ['PrismTemplateContract.TensorIndex.elementOffset', 'vtensor_index'],
+      pointwise: ['PrismTemplateContract.PointwiseGraph.planPointwise', 'vtensor_pointwise'],
     }[name];
     const output = result.roots.find(r => r.root === primary).outputs[0].package.files.find(f => f.path.endsWith('/src/lib.rs'));
     if (output.path !== `packages/rust-core/${packageName}/src/lib.rs`) throw Error('unexpected exported package');

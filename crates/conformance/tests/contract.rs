@@ -194,7 +194,7 @@ fn native_backend_vt_11() {
             expected
         );
     }
-    native_backend_oracle::verify(&root(), false);
+    native_backend_oracle::verify(&root(), "buffers");
 }
 
 /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
@@ -240,7 +240,14 @@ fn matrix_graphs_vt_12() {
         Ok(vtensor_matrix::Adt0::C1)
     ));
     assert!(vtensor_index::run(u64::MAX, 0, 0, 0, 2, 0, 0, 0).is_err());
-    native_backend_oracle::verify(&root(), true);
+    native_backend_oracle::verify(&root(), "matrix");
+}
+
+/// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
+#[test]
+fn elementwise_graphs_vt_13() {
+    tensor_layout::certified_current_model(&root(), "pointwise");
+    native_backend_oracle::verify(&root(), "elementwise");
 }
 
 mod ggml_oracle {
@@ -867,6 +874,7 @@ mod ggml_inventory {
         for (key, name, prefix) in [
             ("operation", "ggml_op", "GGML_OP_"),
             ("tensor_type", "ggml_type", "GGML_TYPE_"),
+            ("unary", "ggml_unary_op", "GGML_UNARY_OP_"),
         ] {
             let expected = declarations(&header, name, prefix);
             compare(&inventory, key, &expected).expect("exact upstream declaration inventory");
@@ -1115,6 +1123,11 @@ mod tensor_layout {
                 "app/index.lexlean.toml",
                 "app/index.lexlean.lock",
                 "vtensor_index",
+            ),
+            "pointwise" => (
+                "app/pointwise.lexlean.toml",
+                "app/pointwise.lexlean.lock",
+                "vtensor_pointwise",
             ),
             _ => panic!("unknown production closure"),
         };
@@ -1532,7 +1545,7 @@ mod native_backend_oracle {
     use std::path::Path;
     use std::process::{Command, Stdio};
 
-    pub(super) fn verify(root: &Path, numerical: bool) {
+    pub(super) fn verify(root: &Path, mode: &str) {
         static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
         let _access = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let oracle = storage_oracle(root);
@@ -1753,7 +1766,7 @@ mod native_backend_oracle {
             .collect();
         let input = kinds
             .iter()
-            .filter(|_| !numerical)
+            .filter(|_| mode == "buffers")
             .map(|kind| format!("{kind}\n"))
             .collect::<String>();
         let snapshot = cache.join("loaded-source.snapshot");
@@ -1775,7 +1788,7 @@ mod native_backend_oracle {
             .arg(&snapshot)
             .arg(&library)
             .arg(&expected_snapshot)
-            .arg(if numerical { "matrix" } else { "buffers" })
+            .arg(mode)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -1814,7 +1827,14 @@ mod native_backend_oracle {
         }
         assert_eq!(
             observed.get("cases"),
-            Some(&(if numerical { 640 } else { kinds.len() * 3 }))
+            Some(
+                &(match mode {
+                    "matrix" => 640,
+                    "elementwise" => 120,
+                    "buffers" => kinds.len() * 3,
+                    _ => panic!("unknown oracle mode"),
+                })
+            )
         );
         assert_eq!(
             digest(&Sha256::digest(std::fs::read(snapshot).unwrap())),
@@ -1884,6 +1904,84 @@ int main(int argc, char **argv) {
     ggml_backend_buffer_type_t buft = ggml_backend_dev_buffer_type(dev);
     CHECK(ggml_backend_buft_is_host(buft) && ggml_backend_dev_supports_buft(dev, buft));
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
+    if (!strcmp(argv[4], "elementwise")) {
+      ggml_backend_t reference = ggml_backend_cpu_init(); CHECK(reference);
+      ggml_backend_cpu_set_n_threads(reference, 1);
+      size_t cases = 0;
+      const uint32_t edges[] = {0,0x80000000,0x3F800000,0xBF800000,0x7F800000,0xFF800000,0x7FC00001,1,
+        0x7F7FFFFF,0x00800000,0x007FFFFF,0x3F800001,0x3F000000,0x00800001,0x80000001,0x7F800001};
+      for (int kind=0; kind<8; kind++) for (int width : {1,17,257}) for (int padded : {0,1})
+      for (int broadcast=0; broadcast<(kind<4?4:1); broadcast++) {
+        ggml_init_params params = {8*1024*1024, nullptr, true};
+        ggml_context *ctx = ggml_init(params); CHECK(ctx);
+        ggml_tensor *left=ggml_new_tensor_4d(ctx, GGML_TYPE_F32,width,3,2,2);
+        const int64_t r0=(broadcast==1||broadcast==3)?1:width;
+        const int64_t r1=(broadcast==1||broadcast==2)?1:3;
+        const int64_t r2=broadcast?1:2, r3=(broadcast==1||broadcast==2)?1:2;
+        ggml_tensor *right=kind<4?ggml_new_tensor_4d(ctx,GGML_TYPE_F32,r0,r1,r2,r3):nullptr;
+        for (ggml_tensor *operand : {left,right}) if (operand) {
+          operand->nb[1]=(operand->ne[0]+padded)*sizeof(float);
+          operand->nb[2]=operand->nb[1]*operand->ne[1]+padded*sizeof(float);
+          operand->nb[3]=operand->nb[2]*operand->ne[2]+padded*sizeof(float);
+        }
+        ggml_tensor *result=nullptr;
+        switch(kind) {
+          case 0: result=ggml_add(ctx,left,right); break;
+          case 1: result=ggml_sub(ctx,left,right); break;
+          case 2: result=ggml_mul(ctx,left,right); break;
+          case 3: result=ggml_div(ctx,left,right); break;
+          case 4: result=ggml_sqrt(ctx,left); break;
+          case 5: result=ggml_sqr(ctx,left); break;
+          case 6: result=ggml_neg(ctx,left); break;
+          case 7: result=ggml_abs(ctx,left); break;
+        }
+        ggml_tensor *contiguous_left=ggml_cont(ctx,left);
+        ggml_tensor *contiguous_right=right?ggml_cont(ctx,right):nullptr;
+        ggml_tensor *reference_result=nullptr;
+        switch(kind) {
+          case 0: reference_result=ggml_add(ctx,contiguous_left,contiguous_right); break;
+          case 1: reference_result=ggml_sub(ctx,contiguous_left,contiguous_right); break;
+          case 2: reference_result=ggml_mul(ctx,contiguous_left,contiguous_right); break;
+          case 3: reference_result=ggml_div(ctx,contiguous_left,contiguous_right); break;
+          case 4: reference_result=ggml_sqrt(ctx,contiguous_left); break;
+          case 5: reference_result=ggml_sqr(ctx,contiguous_left); break;
+          case 6: reference_result=ggml_neg(ctx,contiguous_left); break;
+          case 7: reference_result=ggml_abs(ctx,contiguous_left); break;
+        }
+        CHECK(result);
+        ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
+        for (ggml_tensor *operand : {left,right}) if (operand) {
+          std::vector<unsigned char> bytes(ggml_nbytes(operand),0xA5);
+          size_t index=0;
+          for (int64_t i3=0;i3<operand->ne[3];i3++) for (int64_t i2=0;i2<operand->ne[2];i2++)
+          for (int64_t i1=0;i1<operand->ne[1];i1++) for (int64_t i0=0;i0<operand->ne[0];i0++,index++) {
+            uint32_t bits=index<16?edges[(index*(operand==left?1:5)+(operand==left?0:3))%16]:uint32_t(index*2654435761U+(operand==left?0x9E3779B9U:0x85EBCA6BU));
+            memcpy(bytes.data()+i0*operand->nb[0]+i1*operand->nb[1]+i2*operand->nb[2]+i3*operand->nb[3],&bits,4);
+          }
+          ggml_backend_tensor_set(operand,bytes.data(),0,bytes.size());
+        }
+        ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
+        CHECK(ggml_backend_dev_supports_op(dev,result));
+        ggml_cgraph *reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,reference_result);
+        CHECK(ggml_backend_dev_supports_op(ggml_backend_get_device(reference),reference_result));
+        CHECK(ggml_backend_graph_compute(reference,reference_graph)==GGML_STATUS_SUCCESS);
+        std::vector<uint32_t> expected(ggml_nelements(result)),actual(expected.size());
+        ggml_backend_tensor_get(reference_result,expected.data(),0,ggml_nbytes(reference_result));
+        ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
+        CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+        ggml_backend_tensor_get(result,actual.data(),0,ggml_nbytes(result));
+        for(size_t i=0;i<expected.size();i++) {
+          float e,a; memcpy(&e,&expected[i],4); memcpy(&a,&actual[i],4);
+          if (!(std::isnan(e)&&std::isnan(a)) && expected[i]!=actual[i]) {
+            fprintf(stderr,"elementwise mismatch kind=%d width=%d padded=%d repeat=%d element=%zu expected=%08x actual=%08x\n",kind,width,padded,broadcast,i,expected[i],actual[i]); return 2;
+          }
+        }
+        ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
+      }
+      CHECK(ggml_backend_reg_count()==1 && ggml_backend_dev_count()==1);
+      ggml_backend_free(reference); ggml_backend_free(backend);
+      printf("RESULT cases %zu\n",cases); return 0;
+    }
     if (!strcmp(argv[4], "matrix")) {
       ggml_backend_t reference = ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference, 1);
@@ -1941,8 +2039,9 @@ int main(int argc, char **argv) {
           saved_buffer = left->buffer; left->buffer = foreign;
           CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_FAILED);
           left->buffer = saved_buffer; ggml_backend_buffer_free(foreign);
-          ggml_tensor *unsupported = ggml_add(ctx, product, product);
+          ggml_tensor *unsupported = ggml_dup(ctx, product);
           ggml_cgraph *bad_graph = ggml_new_graph(ctx); ggml_build_forward_expand(bad_graph, unsupported);
+          unsupported->op = GGML_OP_COUNT;
           CHECK(ggml_backend_graph_compute(backend, bad_graph) == GGML_STATUS_FAILED);
           std::vector<unsigned char> unchanged(ggml_nbytes(product));
           ggml_backend_tensor_get(product, unchanged.data(), 0, unchanged.size());
@@ -2049,9 +2148,10 @@ int main(int argc, char **argv) {
     ggml_cgraph *graph = ggml_new_graph(ctx); ggml_build_forward_expand(graph, reshape);
     CHECK(ggml_backend_dev_supports_op(dev, reshape));
     CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_SUCCESS);
-    ggml_tensor *add = ggml_add(ctx, input, input);
-    ggml_cgraph *unsupported = ggml_new_graph(ctx); ggml_build_forward_expand(unsupported, add);
-    CHECK(!ggml_backend_dev_supports_op(dev, add));
+    ggml_tensor *invalid_op = ggml_dup(ctx, input);
+    ggml_cgraph *unsupported = ggml_new_graph(ctx); ggml_build_forward_expand(unsupported, invalid_op);
+    invalid_op->op = GGML_OP_COUNT;
+    CHECK(!ggml_backend_dev_supports_op(dev, invalid_op));
     CHECK(ggml_backend_graph_compute(backend, unsupported) == GGML_STATUS_FAILED);
     ggml_backend_buffer_free(graph_buffer); ggml_free(ctx); ggml_backend_free(backend);
     printf("RESULT cases %zu\n", cases); return 0;

@@ -1,7 +1,7 @@
 [workspace]
 exclude = [".verdant-engine/crates/verdant-tensor", ".verdant-engine/generated/matrix-product/packages/rust-core/verdant_matrix_shape"]
 resolver = "2"
-members = ["generated/index/packages/rust-core/vtensor_index", "generated/matrix/packages/rust-core/vtensor_matrix", "crates/*", "xtask", "generated/layout/packages/rust-core/vtensor_layout", "generated/layout/packages/rust-core/vtensor_types", "generated/layout/packages/rust-core/vtensor_transfer", "generated/layout/packages/rust-core/vtensor_allocation", "generated/native/packages/rust-core/vtensor_native_config", "generated/native/packages/rust-core/vtensor_native_predicates", "generated/native/packages/rust-core/vtensor_native_memory"]
+members = ["generated/pointwise/packages/rust-core/vtensor_pointwise", "generated/pointwise/packages/rust-core/vtensor_repeat_offset", "generated/index/packages/rust-core/vtensor_index", "generated/matrix/packages/rust-core/vtensor_matrix", "crates/*", "xtask", "generated/layout/packages/rust-core/vtensor_layout", "generated/layout/packages/rust-core/vtensor_types", "generated/layout/packages/rust-core/vtensor_transfer", "generated/layout/packages/rust-core/vtensor_allocation", "generated/native/packages/rust-core/vtensor_native_config", "generated/native/packages/rust-core/vtensor_native_predicates", "generated/native/packages/rust-core/vtensor_native_memory"]
 
 [workspace.package]
 version = "0.1.0"

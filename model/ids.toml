@@ -142,3 +142,9 @@ id = "VT-12"
 level = "build"
 suite = "matrix-graphs"
 statement = "GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference"
+
+[[id]]
+id = "VT-13"
+level = "build"
+suite = "elementwise-graphs"
+statement = "F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference"

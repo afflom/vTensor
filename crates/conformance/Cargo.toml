@@ -10,6 +10,8 @@ license.workspace = true
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
+vtensor_pointwise = { version = "0.1.0", path = "../../generated/pointwise/packages/rust-core/vtensor_pointwise" }
+vtensor_repeat_offset = { version = "0.1.0", path = "../../generated/pointwise/packages/rust-core/vtensor_repeat_offset" }
 vtensor_index = { version = "0.1.0", path = "../../generated/index/packages/rust-core/vtensor_index" }
 vtensor_matrix = { version = "0.1.0", path = "../../generated/matrix/packages/rust-core/vtensor_matrix" }
 verdant-tensor = { workspace = true }

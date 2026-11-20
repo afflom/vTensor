@@ -36,6 +36,12 @@ model does not sanction.
 | --- | --- | --- |
 | `TC-01` | `build` | The checker answers conformant exactly when every universal policy file's observed digest equals its locked digest |
 
+## elementwise-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-13` | `build` | F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference |
+
 ## frame
 
 | ID | Level | Statement |

@@ -713,3 +713,24 @@ The bundle includes the source, imported reference, Prism model and exact
 certified output needed to reproduce the Matrix primitive; unfinished scalar
 work and unaccepted Wasm binaries are excluded. The development override
 remains visible and the exact-source release guard remains enforced.
+
+## Pointwise model checkpoint (implementation pending)
+
+VT-13 now has its registered requirement, scenario and executable imported-oracle
+comparison before runtime implementation. The fixture covers 120 F32 graphs
+across eight operations, contiguous and padded storage, ordinary and exceptional
+bit patterns, and binary broadcasting. The independent CPU reference uses
+upstream contiguous copies for operations whose CPU kernels require them.
+The nested GGML unary-operation enumeration is now checked against the imported
+header alongside operation and type inventories. Existing unsupported-tail
+tests use GGML_OP_COUNT so implementing ADD does not invalidate their purpose.
+
+The exact pinned SDK exported PointwiseGraph.planPointwise and rightOffset as
+result `3b2823fd4173282753c1e08b4ff1de1b4baa2a8969340a4ba3a285c0b0084ae6`,
+attestation `3a34ab6ffdc535b81871c419bd415dd331d12fca4e42604136099ad82eaa7245`.
+The generated packages and evidence are preserved unchanged and bound by
+pointwise-kernel.lock. Live source identity, artifact replay and compilation
+passed in the VT-13 test; the test then fails at the intended native
+supports-operation assertion because arithmetic execution is still pending.
+`cargo check -p vtensor-backend`, formatting and `just model` passed.
+This is an implementation checkpoint, not a passing capability or release.

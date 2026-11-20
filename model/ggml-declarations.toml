@@ -556,3 +556,95 @@ value = 43
 [[tensor_type]]
 symbol = "GGML_TYPE_COUNT"
 value = 44
+
+[[unary]]
+symbol = "GGML_UNARY_OP_ABS"
+value = 0
+
+[[unary]]
+symbol = "GGML_UNARY_OP_SGN"
+value = 1
+
+[[unary]]
+symbol = "GGML_UNARY_OP_NEG"
+value = 2
+
+[[unary]]
+symbol = "GGML_UNARY_OP_STEP"
+value = 3
+
+[[unary]]
+symbol = "GGML_UNARY_OP_TANH"
+value = 4
+
+[[unary]]
+symbol = "GGML_UNARY_OP_ELU"
+value = 5
+
+[[unary]]
+symbol = "GGML_UNARY_OP_RELU"
+value = 6
+
+[[unary]]
+symbol = "GGML_UNARY_OP_SIGMOID"
+value = 7
+
+[[unary]]
+symbol = "GGML_UNARY_OP_GELU"
+value = 8
+
+[[unary]]
+symbol = "GGML_UNARY_OP_GELU_QUICK"
+value = 9
+
+[[unary]]
+symbol = "GGML_UNARY_OP_SILU"
+value = 10
+
+[[unary]]
+symbol = "GGML_UNARY_OP_HARDSWISH"
+value = 11
+
+[[unary]]
+symbol = "GGML_UNARY_OP_HARDSIGMOID"
+value = 12
+
+[[unary]]
+symbol = "GGML_UNARY_OP_EXP"
+value = 13
+
+[[unary]]
+symbol = "GGML_UNARY_OP_EXPM1"
+value = 14
+
+[[unary]]
+symbol = "GGML_UNARY_OP_SOFTPLUS"
+value = 15
+
+[[unary]]
+symbol = "GGML_UNARY_OP_GELU_ERF"
+value = 16
+
+[[unary]]
+symbol = "GGML_UNARY_OP_XIELU"
+value = 17
+
+[[unary]]
+symbol = "GGML_UNARY_OP_FLOOR"
+value = 18
+
+[[unary]]
+symbol = "GGML_UNARY_OP_CEIL"
+value = 19
+
+[[unary]]
+symbol = "GGML_UNARY_OP_ROUND"
+value = 20
+
+[[unary]]
+symbol = "GGML_UNARY_OP_TRUNC"
+value = 21
+
+[[unary]]
+symbol = "GGML_UNARY_OP_COUNT"
+value = 22
