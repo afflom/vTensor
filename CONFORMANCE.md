@@ -30,6 +30,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-09` | `build` | Prism transfer admission matches upstream GGML set and get guards and rejects overflowing ranges |
 
+## concat-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-17` | `build` | Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types |
+
 ## contract
 
 | ID | Level | Statement |

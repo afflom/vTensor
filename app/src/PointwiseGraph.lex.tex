@@ -41,6 +41,17 @@ structure{
 }
 
 inductive{
+  name: CopyMode,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: linear, fields: []},
+    {name: repeated, fields: []},
+    {name: concatenated, fields: [Nat, IndexContext]}
+  ]
+}
+
+inductive{
   name: PointwiseDecision,
   type_parameters: [],
   parameters: [],
@@ -49,7 +60,7 @@ inductive{
     {name: invalidShape, fields: []},
     {name: execute, fields: [Nat, Bool, Nat, Nat, Nat, Nat, Nat]},
     {name: product, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: copyBlocks, fields: [Nat, Nat, IndexContext, IndexContext, Bool]}
+    {name: copyBlocks, fields: [Nat, Nat, IndexContext, IndexContext, CopyMode]}
   ]
 }
 
@@ -158,7 +169,7 @@ inductive{
   parameters: [],
   constructors: [
     {name: plan, fields: [Nat, Nat, TensorDescriptor, (Option TensorDescriptor), TensorDescriptor]},
-    {name: offsets, fields: [Nat, IndexContext, IndexContext, Bool]}
+    {name: offsets, fields: [Nat, IndexContext, IndexContext, CopyMode]}
   ]
 }
 
@@ -166,7 +177,10 @@ inductive{
   name: GraphResponse,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: planned, fields: [PointwiseDecision]}, {name: offsets, fields: [Nat, Nat]}]
+  constructors: [
+    {name: planned, fields: [PointwiseDecision]},
+    {name: offsets, fields: [Bool, Nat, Nat]}
+  ]
 }
 
 definition{
@@ -204,7 +218,7 @@ definition{
   result: PointwiseDecision,
   body: (if (((project left ty) =? (project output ty)) && (if (operation =? 33) then rightPresent else true)) then (match (TensorTypes::tensorTypeStorage (project left ty))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
-    | TensorTypes::TypeStorageDecision.knownType spec => (let block : Nat := (project spec blockSize); (let count : Nat := (blockCount left block); (if ((((prim remainder (project left n0) block 1 : Nat) =? 0) && ((prim remainder (project output n0) block 1 : Nat) =? 0)) && (count =? (blockCount output block))) then (ctor PointwiseDecision.copyBlocks count (project spec typeSize) (indexContext left block) (indexContext output block) false) else (ctor PointwiseDecision.invalidShape))))) else (ctor PointwiseDecision.invalidShape)),
+    | TensorTypes::TypeStorageDecision.knownType spec => (let block : Nat := (project spec blockSize); (let count : Nat := (blockCount left block); (if ((((prim remainder (project left n0) block 1 : Nat) =? 0) && ((prim remainder (project output n0) block 1 : Nat) =? 0)) && (count =? (blockCount output block))) then (ctor PointwiseDecision.copyBlocks count (project spec typeSize) (indexContext left block) (indexContext output block) (ctor CopyMode.linear)) else (ctor PointwiseDecision.invalidShape))))) else (ctor PointwiseDecision.invalidShape)),
   executable: true
 }
 
@@ -214,7 +228,32 @@ definition{
   result: PointwiseDecision,
   body: (if (((((project left ty) =? 0) || ((project left ty) =? 1)) || (((project left ty) =? 25) || ((project left ty) =? 26))) || ((project left ty) =? 30)) then (if (((project left ty) =? (project output ty)) && (repeatValid (project output n0) (project output n1) (project output n2) (project output n3) (project left n0) (project left n1) (project left n2) (project left n3))) then (match (TensorTypes::tensorTypeStorage (project left ty))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
-    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) true)) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
+    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.repeated))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
+  executable: true
+}
+
+definition{
+  name: concatExtent,
+  parameters: [axis : Nat, dimension : Nat, left : Nat, right : Nat, output : Nat],
+  result: Bool,
+  body: (if (axis =? dimension) then (output =? (left + right)) else ((left =? right) && (output =? left))),
+  executable: true
+}
+
+definition{
+  name: planConcat,
+  parameters: [
+    axis : Nat,
+    left : TensorDescriptor,
+    right : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (match right
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some value => (if (((axis <? 4) && (((project left ty) =? (project value ty)) && ((project left ty) =? (project output ty)))) && ((((concatExtent axis 0 (project left n0) (project value n0) (project output n0)) && (concatExtent axis 1 (project left n1) (project value n1) (project output n1))) && (concatExtent axis 2 (project left n2) (project value n2) (project output n2))) && (concatExtent axis 3 (project left n3) (project value n3) (project output n3)))) then (match (TensorTypes::tensorTypeStorage (project left ty))
+      | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
+      | TensorTypes::TypeStorageDecision.knownType spec => (let block : Nat := (project spec blockSize); (if ((((prim remainder (project left n0) block 1 : Nat) =? 0) && ((prim remainder (project value n0) block 1 : Nat) =? 0)) && ((prim remainder (project output n0) block 1 : Nat) =? 0)) then (ctor PointwiseDecision.copyBlocks (blockCount output block) (project spec typeSize) (indexContext left block) (indexContext output block) (ctor CopyMode.concatenated axis (indexContext value block))) else (ctor PointwiseDecision.invalidShape)))) else (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
 
@@ -251,14 +290,39 @@ definition{
 }
 
 definition{
+  name: concatenatedOffsets,
+  parameters: [
+    index : Nat,
+    left : IndexContext,
+    right : IndexContext,
+    destination : IndexContext,
+    axis : Nat
+  ],
+  result: GraphResponse,
+  body: (let q0 : Nat := (prim quotient index (project destination u0) 0 : Nat); (let q1 : Nat := (prim quotient q0 (project destination n1) 0 : Nat); (let i0 : Nat := (prim remainder index (project destination u0) 0 : Nat); (let i1 : Nat := (prim remainder q0 (project destination n1) 0 : Nat); (let i2 : Nat := (prim remainder q1 (project destination n2) 0 : Nat); (let i3 : Nat := (prim quotient q1 (project destination n2) 0 : Nat); (let edge : Nat := (if (axis =? 0) then (project left u0) else (if (axis =? 1) then (project left n1) else (if (axis =? 2) then (project left n2) else (project left n3)))); (let chosen : Bool := (edge <=? (if (axis =? 0) then i0 else (if (axis =? 1) then i1 else (if (axis =? 2) then i2 else i3)))); (let source : IndexContext := (if chosen then right else left); (ctor GraphResponse.offsets chosen (TensorIndex::elementOffset (if (chosen && (axis =? 0)) then (prim subtract i0 edge : Nat) else i0) (if (chosen && (axis =? 1)) then (prim subtract i1 edge : Nat) else i1) (if (chosen && (axis =? 2)) then (prim subtract i2 edge : Nat) else i2) (if (chosen && (axis =? 3)) then (prim subtract i3 edge : Nat) else i3) (project source s0) (project source s1) (project source s2) (project source s3)) (blockOffset index destination))))))))))),
+  executable: true
+}
+
+definition{
+  name: copyOffsets,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
+  result: GraphResponse,
+  body: (match mode
+    | CopyMode.linear => (ctor GraphResponse.offsets false (blockOffset index source) (blockOffset index destination))
+    | CopyMode.repeated => (ctor GraphResponse.offsets false (repeatedBlockOffset index source destination) (blockOffset index destination))
+    | CopyMode.concatenated axis right => (concatenatedOffsets index source right destination axis)),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
     | GraphRequest.plan operation variant left right output => (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (numericPlan operation variant left right output))))
-    | GraphRequest.offsets index source destination repeated => (ctor GraphResponse.offsets (if repeated then (repeatedBlockOffset index source destination) else (blockOffset index source)) (blockOffset index destination))),
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (numericPlan operation variant left right output)))))
+    | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -281,6 +345,27 @@ theorem{
   name: repeatedFourAxisOffset,
   parameters: [],
   statement: ((repeatedBlockOffset 251 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 4, s1 := 12, s2 := 40, s3 := 96}) (record IndexContext {u0 := 4, n1 := 9, n2 := 4, n3 := 4, s0 := 4, s1 := 16, s2 := 144, s3 := 576})) = 124),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: concatInnerBoundary,
+  parameters: [],
+  statement: ((concatenatedOffsets 3 (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) (record IndexContext {u0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 24, s2 := 24, s3 := 24}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20}) 0) = (ctor GraphResponse.offsets true 8 12)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: concatOuterBoundary,
+  parameters: [],
+  statement: ((concatenatedOffsets 12 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 1, s0 := 4, s1 := 8, s2 := 24, s3 := 48}) (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 4, s1 := 8, s2 := 24, s3 := 48}) (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 3, s0 := 4, s1 := 8, s2 := 24, s3 := 48}) 3) = (ctor GraphResponse.offsets true 0 48)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: concatEmptyLeft,
+  parameters: [],
+  statement: ((concatenatedOffsets 1 (record IndexContext {u0 := 0, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 0, s2 := 0, s3 := 0}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) 0) = (ctor GraphResponse.offsets true 4 4)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

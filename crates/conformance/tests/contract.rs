@@ -262,6 +262,12 @@ fn repeat_graphs_vt_16() {
     native_backend_oracle::verify(&root(), "repeat");
 }
 
+/// `VT-17`: Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types
+#[test]
+fn concat_graphs_vt_17() {
+    native_backend_oracle::verify(&root(), "concat");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -552,12 +558,13 @@ mod ggml_oracle {
     }
 
     /// Send a batch of tensor descriptions to the actual upstream `ggml_nbytes`.
-    fn batch(executable: &Path, input: &str) -> String {
-        let mut child = Command::new(executable)
+    pub(super) fn batch(command: &mut Command, input: &str) -> String {
+        let mut child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
-            .expect("native GGML storage oracle");
+            .expect("native GGML oracle");
         let mut stdin = child.stdin.take().expect("oracle input");
         // Drain output while writing so large differential batches cannot fill
         // both pipe buffers and block each other.
@@ -569,15 +576,17 @@ mod ggml_oracle {
         });
         assert!(
             output.status.success(),
-            "upstream oracle failed: {:?}",
-            output.status
+            "{command:?}: {:?}\n{}\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
         );
         String::from_utf8(output.stdout).expect("oracle text")
     }
 
     /// Query the upstream storage-size functions in one batch.
     pub fn spans(executable: &Path, input: &str) -> Vec<[u64; 3]> {
-        batch(executable, input)
+        batch(&mut Command::new(executable), input)
             .lines()
             .map(|line| {
                 let values = line
@@ -594,7 +603,7 @@ mod ggml_oracle {
         let base = storage_oracle(root);
         let executable = base.with_file_name("transfer-oracle");
         verify_file(&executable, base.with_file_name("transfer.sha256"));
-        batch(&executable, input)
+        batch(&mut Command::new(&executable), input)
             .lines()
             .map(|line| line.parse().expect("transfer outcome"))
             .collect()
@@ -604,7 +613,7 @@ mod ggml_oracle {
         let base = storage_oracle(root);
         let executable = base.with_file_name("allocation-oracle");
         verify_file(&executable, base.with_file_name("allocation.sha256"));
-        batch(&executable, input)
+        batch(&mut Command::new(&executable), input)
             .lines()
             .map(|line| {
                 line.split_whitespace()
@@ -1448,9 +1457,8 @@ mod native_backend_oracle {
     use super::ggml_oracle::{digest, file_digest, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
-    use std::io::Write as IoWrite;
     use std::path::Path;
-    use std::process::{Command, Stdio};
+    use std::process::Command;
 
     pub(super) fn verify(root: &Path, mode: &str) {
         static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -1653,7 +1661,7 @@ mod native_backend_oracle {
             .collect();
         let input = kinds
             .iter()
-            .filter(|_| matches!(mode, "buffers" | "empty" | "copy" | "repeat"))
+            .filter(|_| matches!(mode, "buffers" | "empty" | "copy" | "repeat" | "concat"))
             .map(|kind| format!("{kind}\n"))
             .collect::<String>();
         let snapshot = cache.join("loaded-source.snapshot");
@@ -1671,31 +1679,14 @@ mod native_backend_oracle {
         );
         let expected_snapshot = cache.join("expected-source.snapshot");
         std::fs::write(&expected_snapshot, &expected).unwrap();
-        let mut child = Command::new(&program)
-            .arg(&snapshot)
-            .arg(&library)
-            .arg(&expected_snapshot)
-            .arg(mode)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .unwrap();
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(input.as_bytes())
-            .unwrap();
-        let output = child.wait_with_output().unwrap();
-        assert!(
-            output.status.success(),
-            "native oracle failed: {:?}\n{}\n{}",
-            output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
+        let text = super::ggml_oracle::batch(
+            Command::new(&program)
+                .arg(&snapshot)
+                .arg(&library)
+                .arg(&expected_snapshot)
+                .arg(mode),
+            &input,
         );
-        let text = String::from_utf8(output.stdout).unwrap();
         let observed: std::collections::BTreeMap<_, _> = text
             .lines()
             .map(|line| {
@@ -1722,6 +1713,7 @@ mod native_backend_oracle {
                     "empty" => kinds.len() * 24,
                     "copy" => kinds.len() * 96,
                     "repeat" => 160,
+                    "concat" => kinds.len() * 288,
                     _ => panic!("unknown oracle mode"),
                 })
             )
@@ -1760,6 +1752,11 @@ extern "C" size_t vtensor_build_sources_size();
 static void refusal(const char *message) { _exit(strstr(message, "out of bounds") ? 12 : 99); }
 static int current_kind = -1, current_layout = -1;
 static void unexpected_abort(const char *message) { fprintf(stderr, "upstream abort at type %d layout %d: %s\n", current_kind, current_layout, message); _exit(99); }
+static ggml_tensor * canonical_copy(ggml_context *ctx, ggml_tensor *input) {
+    const int64_t block=ggml_blck_size(input->type), count=ggml_nelements(input)/block;
+    ggml_tensor *target=ggml_new_tensor_2d(ctx,input->type,block,count); target->nb[1]*=2; target->nb[2]=target->nb[1]*count; target->nb[3]=target->nb[2];
+    return ggml_reshape_4d(ctx,ggml_cont(ctx,ggml_cpy(ctx,input,target)),input->ne[0],input->ne[1],input->ne[2],input->ne[3]);
+}
 int main(int argc, char **argv) {
     CHECK(argc == 5);
     Dl_info loaded = {};
@@ -1794,49 +1791,58 @@ int main(int argc, char **argv) {
     ggml_backend_buffer_type_t buft = ggml_backend_dev_buffer_type(dev);
     CHECK(ggml_backend_buft_is_host(buft) && ggml_backend_dev_supports_buft(dev, buft));
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
-    const bool repeating=!strcmp(argv[4], "repeat");
-    if (!strcmp(argv[4], "copy") || repeating) {
+    const bool repeating=!strcmp(argv[4], "repeat"), concatenating=!strcmp(argv[4], "concat");
+    if (!strcmp(argv[4], "copy") || repeating || concatenating) {
       ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference,1);
       size_t cases=0; int kind;
-      while (scanf("%d",&kind)==1) for(int operation=0;operation<(repeating?1:3);operation++) for(int layout=0;layout<4;layout++)
-      for(int units : {1,3}) for(int rows : {1,3}) for(int batches : {1,2}) {
+      const std::vector<int> extents=concatenating?std::vector<int>{0,1,3}:std::vector<int>{1,3};
+      while (scanf("%d",&kind)==1) for(int operation=0;operation<(concatenating?4:repeating?1:3);operation++) for(int layout=0;layout<4;layout++)
+      for(int units : extents) for(int rows : extents) for(int batches : {1,2}) {
         if(repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32) continue;
         ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
         const auto type=(ggml_type)kind; const int64_t block=ggml_blck_size(type); const size_t bytes=ggml_type_size(type);
         ggml_tensor *input=ggml_new_tensor_4d(ctx,type,block*units,rows,2,batches);
-        if(layout==1 || layout==2) {
-          input->nb[0]=bytes*(layout==2?2:1); input->nb[1]=input->nb[0]*units+bytes;
-          input->nb[2]=input->nb[1]*rows+bytes; input->nb[3]=input->nb[2]*2+bytes;
+        int64_t right_ne[]={input->ne[0],input->ne[1],input->ne[2],input->ne[3]}; right_ne[operation%4]=layout==3?0:right_ne[operation%4]+(operation==0?block:1);
+        ggml_tensor *right=concatenating?ggml_new_tensor(ctx,type,4,right_ne):nullptr;
+        for(ggml_tensor *operand : {input,right}) if(operand && (layout==1 || layout==2)) {
+          operand->nb[0]=bytes*(layout==2?2:1); operand->nb[1]=operand->nb[0]*(operand->ne[0]/block)+bytes;
+          operand->nb[2]=operand->nb[1]*operand->ne[1]+bytes; operand->nb[3]=operand->nb[2]*operand->ne[2]+bytes;
         }
         const int64_t blocks=ggml_nelements(input)/block;
         ggml_tensor *target=layout==3?ggml_new_tensor_4d(ctx,type,block,blocks,1,1):ggml_dup_tensor(ctx,input);
         target->nb[1]+=bytes; target->nb[2]=target->nb[1]*target->ne[1]+bytes; target->nb[3]=target->nb[2]*target->ne[2]+bytes;
         if(repeating) target=ggml_new_tensor_4d(ctx,type,input->ne[0]*2,input->ne[1]*(layout&1?3:1),input->ne[2]*(layout&2?2:1),input->ne[3]*2);
-        ggml_tensor *result=repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
-        ggml_tensor *reference_target=ggml_new_tensor_2d(ctx,type,block,blocks);
-        reference_target->nb[1]=bytes*2; reference_target->nb[2]=reference_target->nb[1]*blocks; reference_target->nb[3]=reference_target->nb[2];
-        ggml_tensor *expected_tensor=repeating?ggml_repeat(ctx,ggml_cont(ctx,input),target):ggml_cont(ctx,ggml_cpy(ctx,input,reference_target));
-        if(repeating) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
-        ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
-        std::vector<unsigned char> initial(ggml_nbytes(input)),output(ggml_nbytes(result),0xA5), expected(ggml_nbytes(expected_tensor));
-        for(size_t i=0;i<initial.size();i++) initial[i]=(i*37+kind*13+layout)%256;
-        ggml_backend_tensor_set(input,initial.data(),0,initial.size());
+        ggml_tensor *result=concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
+        ggml_tensor *expected_tensor=concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
+        if(repeating || concatenating) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
+        ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer || (!ggml_nbytes(input)&&(!right||!ggml_nbytes(right))&&!ggml_nbytes(result)));
+        std::vector<unsigned char> output(ggml_nbytes(result),0xA5), expected(ggml_nbytes(expected_tensor));
+        for(ggml_tensor *operand : {input,right}) if(operand) {
+          std::vector<unsigned char> initial(ggml_nbytes(operand));
+          for(size_t i=0;i<initial.size();i++) initial[i]=(i*37+kind*13+layout+(operand==right?71:0))%256;
+          if(!initial.empty()) ggml_backend_tensor_set(operand,initial.data(),0,initial.size());
+        }
         ggml_cgraph *oracle_graph=ggml_new_graph(ctx); ggml_build_forward_expand(oracle_graph,expected_tensor);
         CHECK(ggml_backend_graph_compute(reference,oracle_graph)==GGML_STATUS_SUCCESS);
-        ggml_backend_tensor_get(expected_tensor,expected.data(),0,expected.size());
-        ggml_backend_tensor_set(result,output.data(),0,output.size());
+        if(!expected.empty()) ggml_backend_tensor_get(expected_tensor,expected.data(),0,expected.size());
+        if(!output.empty()) ggml_backend_tensor_set(result,output.data(),0,output.size());
         ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
         if(kind==0 && units==(repeating?3:1) && rows==1 && batches==1 && layout==0) {
           const int64_t saved_extent=result->ne[0]; result->ne[0]=saved_extent+(repeating?1:block); CHECK(!ggml_backend_dev_supports_op(dev,result));
           CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->ne[0]=saved_extent;
-          ggml_tensor *saved=result->src[operation==2?1:0]; result->src[operation==2?1:0]=nullptr;
+          ggml_tensor *saved=result->src[concatenating || operation==2?1:0]; result->src[concatenating || operation==2?1:0]=nullptr;
           CHECK(!ggml_backend_dev_supports_op(dev,result));
-          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->src[operation==2?1:0]=saved;
+          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->src[concatenating || operation==2?1:0]=saved;
+          if(concatenating) {const int32_t axis=4; memcpy(result->op_params,&axis,4); CHECK(!ggml_backend_dev_supports_op(dev,result));
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); memcpy(result->op_params,&operation,4);
+            right->type=GGML_TYPE_F16; CHECK(!ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); right->type=type;
+            const int other=(operation+1)%4; right->ne[other]++; CHECK(!ggml_backend_dev_supports_op(dev,result));
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); right->ne[other]--; }
           std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
         }
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-        std::vector<unsigned char> actual(output.size()); ggml_backend_tensor_get(result,actual.data(),0,actual.size());
+        std::vector<unsigned char> actual(output.size()); if(!actual.empty()) ggml_backend_tensor_get(result,actual.data(),0,actual.size());
         size_t index=0;
         for(int64_t i3=0;i3<result->ne[3];i3++) for(int64_t i2=0;i2<result->ne[2];i2++)
         for(int64_t i1=0;i1<result->ne[1];i1++) for(int64_t i0=0;i0<result->ne[0]/block;i0++,index++) {

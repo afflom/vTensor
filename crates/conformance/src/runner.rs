@@ -6,7 +6,8 @@ use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
 use vtensor_pointwise::{
-    Adt0 as GraphRequest, Adt1 as TensorDescriptor, Adt3 as GraphResponse, Adt4 as GraphPlan,
+    Adt0 as GraphRequest, Adt1 as TensorDescriptor, Adt3 as CopyMode, Adt4 as GraphResponse,
+    Adt5 as GraphPlan,
 };
 
 /// Typed refusals at the native tensor boundary.
@@ -203,7 +204,7 @@ impl BufferContext {
     }
 }
 
-fn tensor_span(tensor: &Tensor) -> Result<usize, BackendError> {
+fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
     let ty = u64::try_from(tensor.ty).map_err(|_| BackendError::InvalidTensor)?;
     let (block, element) = match vtensor_types::run(ty) {
         vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(_, block, element)) => (block, element),
@@ -214,16 +215,25 @@ fn tensor_span(tensor: &Tensor) -> Result<usize, BackendError> {
     let [Ok(n0), Ok(n1), Ok(n2), Ok(n3)] = tensor.ne.map(u64::try_from) else {
         return Err(BackendError::InvalidTensor);
     };
-    let ne = [n0, n1, n2, n3];
     let nb = tensor.nb.map(|n| n as u64);
     match vtensor_layout::run(vtensor_layout::Adt0::C0(
-        ne[0], ne[1], ne[2], ne[3], nb[0], nb[1], nb[2], nb[3], block, element,
+        n0, n1, n2, n3, nb[0], nb[1], nb[2], nb[3], block, element,
     ))
     .map_err(|_| BackendError::Overflow)?
     {
-        vtensor_layout::Adt1::C1(size) => usize::try_from(size).map_err(|_| BackendError::Overflow),
+        vtensor_layout::Adt1::C1(size) => {
+            usize::try_from(size).map_err(|_| BackendError::Overflow)?;
+            Ok(TensorDescriptor::C0(
+                ty, n0, n1, n2, n3, nb[0], nb[1], nb[2], nb[3], size,
+            ))
+        }
         _ => Err(BackendError::InvalidTensor),
     }
+}
+
+fn tensor_span(tensor: &Tensor) -> Result<usize, BackendError> {
+    let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span) = tensor_metadata(tensor)?;
+    Ok(span as usize)
 }
 
 fn require<T>(result: Result<T, BackendError>) -> T {
@@ -497,24 +507,6 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
     }
 }
 
-fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
-    let span = tensor_span(tensor)?;
-    let [n0, n1, n2, n3] = tensor.ne.map(|n| n as u64);
-    let [s0, s1, s2, s3] = tensor.nb.map(|n| n as u64);
-    Ok(TensorDescriptor::C0(
-        tensor.ty as u64,
-        n0,
-        n1,
-        n2,
-        n3,
-        s0,
-        s1,
-        s2,
-        s3,
-        span as u64,
-    ))
-}
-
 fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
     let output = tensor_metadata(tensor)?;
     let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span) = &output;
@@ -692,24 +684,28 @@ fn execute_pointwise(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendErro
 }
 
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
-    let GraphPlan::C4(count, bytes, source, destination, repeated) = plan else {
+    let GraphPlan::C4(count, bytes, source, destination, mode) = plan else {
         return Err(BackendError::InvalidTensor);
     };
-    // SAFETY: the admitted copy plan retains a live source descriptor.
-    let source_data = graph_tensor_data(unsafe { &*tensor.src[0] })?;
+    // SAFETY: the admitted plan retains every required source descriptor.
+    let source_data = |slot: usize| graph_tensor_data(unsafe { &*tensor.src[slot] });
+    let right = matches!(mode, CopyMode::C2(..))
+        .then(|| source_data(1))
+        .transpose()?;
+    let sources = [source_data(0)?, right.unwrap_or(null_mut())];
     let destination_data = graph_tensor_data(tensor)?;
     let mut block = workspace(bytes, 0_u8)?;
     for index in 0..count {
-        let request = GraphRequest::C1(index, source.clone(), destination.clone(), repeated);
+        let request = GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone());
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
-        let GraphResponse::C1(from, to) = response else {
+        let GraphResponse::C1(second, from, to) = response else {
             return Err(BackendError::InvalidTensor);
         };
         // SAFETY: the Prism block counts, offsets and admitted spans bound both
         // regions. Capture the source before borrowing a possibly aliased destination.
         unsafe {
             ptr::copy_nonoverlapping(
-                source_data.add(from as usize),
+                sources[usize::from(second)].add(from as usize),
                 block.as_mut_ptr(),
                 block.len(),
             );

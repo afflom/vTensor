@@ -1015,3 +1015,76 @@ frame synchronization, workspace Clippy and dependency checks passed. The
 source audit remains 10,579 lines in 51 files, below both the gate's Git-parent
 ceiling and the preceding checkpoint's own size. No release gate was weakened
 and no unchanged main-app proof was repeated.
+
+
+## VT-17: CONCAT source selection across all live storage types
+
+VT-17's register, scenario and live CPU comparison preceded the executable
+model extension. The initial test failed at
+`ggml_backend_dev_supports_op(dev,result)` after the reference accepted the
+first graph. CONCAT's shape/type rules come from the pinned `ggml_concat`
+constructor in `ggml/src/ggml.c`; byte movement is compared with the pinned
+CPU implementation in `ggml/src/ggml-cpu/ops.cpp`.
+
+Prism extends the shared copy mode with a typed concatenation mode carrying
+its axis and right source's addressing context. Admission requires matching
+types, a valid axis, matching nonconcatenated dimensions, summed concatenated
+dimensions, and block-aligned leading extents. Every output block's source
+selection and source/destination addresses are evaluated by Prism. Native
+glue retains the required source buffers; Verdant performs the encoded-byte
+transfer through the existing certified storage primitive. Closed examples
+cover an inner-axis boundary, an outer-axis boundary and an empty left side.
+
+The fixture exercises all 36 live types on all four axes, four layout variants,
+three widths, three row counts and two batch counts: 10,368 cases. Inputs have
+unequal concatenated extents and distinct encoded bytes. Cases include empty
+left and right operands, entirely empty graphs, strided block/outer storage,
+and padded outputs. The actual graph retains its layout. The CPU reference
+normalizes each input through the previously validated padded CPY/CONT path,
+then uses upstream CONCAT. This avoids the already documented upstream
+quantized contiguous-copy stride bug without editing or excluding its source.
+The existing copy and repeat cases retain their original parameter sets.
+
+The test also checks wrong output shape, a missing right source and an invalid
+axis before writes. Shared native/storage oracle queries now use the same
+pipe-safe batch runner, including stderr capture and exit-status assertions.
+Descriptor and span queries share the same model-backed metadata constructor;
+this removes repeated shape conversion without changing typed errors.
+
+The Prism MCP draft is
+`prism-app/20f4fa65a03e50e464144a6d0e5170bd74715d52eb17f21e659cccfb89f4560a`.
+Its remote check again returned `engine.check failed: project-refused`; the
+pinned SDK accepted all four modules. A local authoring script syntax error
+briefly started an export of the unchanged prior model. That process was
+stopped, and only the corrected CONCAT source is used for this checkpoint.
+
+The completed SDK export has result
+`9283c9bfbccf8063281f8e1ad0b059814193d6c8a37877ecd0a7da7b7f3b0efa`
+and attestation
+`13193ed69b1a9bb56da91e18e361aea7ba6bf32c83bcbccacab1e277ddcacce1`.
+The adapter bindings were checked against the actual emitted types before
+running the graph oracle. Certified source and all proof artifacts remain
+byte-preserved; license clarification binds the new emitted source digest.
+
+Fixture tracing found a dangling temporary initializer-list range in its new
+conditional extent selection. The fixture now owns one extent vector for the
+whole run. The next run exposed upstream's requirement that even zero-byte
+set/get calls have an allocated buffer. Empty operands and outputs therefore
+perform no transfers; both the reference and vTensor graphs still execute and
+are counted. After those fixture corrections, all 10,368 CONCAT cases passed
+in 5.15 seconds. No type, layout, empty graph or oracle case was excluded.
+
+A planted native binding defect swapped the first output block's source only
+when both source buffers were nonempty. Its source offset was zero and valid
+in either allocation, so the experiment introduced no out-of-bounds read.
+The live CPU comparison rejected it at
+`copy mismatch type=0 op=0 layout=0`. The adapter was restored before regression.
+
+The final workspace run passed every other target and sixteen contract tests
+in 13.00 seconds. VT-02 alone retained its explicit refusal of the unpublished
+Verdant development dependency. Formatting, model/source audits, frame
+synchronization, workspace Clippy and dependency checks passed. Handwritten
+source remains 10,579 lines in the same 51 files. The changed model was exported
+once successfully; unchanged expensive main-app proofs were not repeated.
+This component checkpoint does not establish complete backend conformance or
+resolve the existing Engine/release dependency blockers.

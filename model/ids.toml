@@ -166,3 +166,9 @@ id = "VT-16"
 level = "build"
 suite = "repeat-graphs"
 statement = "Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle"
+
+[[id]]
+id = "VT-17"
+level = "build"
+suite = "concat-graphs"
+statement = "Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types"
