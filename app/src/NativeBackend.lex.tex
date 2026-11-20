@@ -58,7 +58,7 @@ inductive{
   name: PredicateRequest,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: deviceIndex, fields: [Nat]}, {name: metadataOperation, fields: [Nat]}]
+  constructors: [{name: deviceIndex, fields: [Nat]}, {name: metadataOperation, fields: [Nat, Nat]}]
 }
 
 definition{
@@ -67,7 +67,7 @@ definition{
   result: Bool,
   body: (match request
     | PredicateRequest.deviceIndex index => (index <? (project (configuration) deviceCount))
-    | PredicateRequest.metadataOperation operation => (((((operation =? 0) || (operation =? 35)) || (operation =? 36)) || (operation =? 37)) || (operation =? 38))),
+    | PredicateRequest.metadataOperation operation span => ((span =? 0) || (((((operation =? 0) || (operation =? 35)) || (operation =? 36)) || (operation =? 37)) || (operation =? 38)))),
   executable: true,
   production: {effects: [], targets: [rust-core]}
 }
@@ -83,6 +83,13 @@ theorem{
   name: alignedOrigin,
   parameters: [],
   statement: ((planMemory (ctor MemoryRequest.alignedOffset 0)) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyOperation,
+  parameters: [operation : Nat],
+  statement: ((decideNative (ctor PredicateRequest.metadataOperation operation 0)) = true),
   proof: reflexivity{}
 }
 \end{semanticmodule}

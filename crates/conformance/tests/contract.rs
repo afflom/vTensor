@@ -173,10 +173,7 @@ fn buffer_allocation_vt_10() {
 fn native_backend_vt_11() {
     tensor_layout::verify_bundle();
     tensor_layout::certified_current_model(&root(), "native");
-    let inventory: toml::Value = toml::from_str(
-        &std::fs::read_to_string(root().join("model/ggml-declarations.toml")).unwrap(),
-    )
-    .unwrap();
+    let inventory = ggml_oracle::read_toml(root().join("model/ggml-declarations.toml"));
     for row in inventory["operation"].as_array().unwrap() {
         let expected = matches!(
             row["symbol"].as_str().unwrap(),
@@ -188,7 +185,8 @@ fn native_backend_vt_11() {
         );
         assert_eq!(
             vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(
-                row["value"].as_integer().unwrap() as u64
+                row["value"].as_integer().unwrap() as u64,
+                1
             )),
             expected
         );
@@ -201,10 +199,7 @@ fn native_backend_vt_11() {
 fn matrix_graphs_vt_12() {
     tensor_layout::certified_current_model(&root(), "matrix");
     tensor_layout::certified_current_model(&root(), "index");
-    let inventory: toml::Value = toml::from_str(
-        &std::fs::read_to_string(root().join("model/ggml-declarations.toml")).unwrap(),
-    )
-    .unwrap();
+    let inventory = ggml_oracle::read_toml(root().join("model/ggml-declarations.toml"));
     for row in inventory["operation"].as_array().unwrap() {
         let decision = vtensor_matrix::run(
             row["value"].as_integer().unwrap() as u64,
@@ -249,12 +244,32 @@ fn elementwise_graphs_vt_13() {
     native_backend_oracle::verify(&root(), "elementwise");
 }
 
+/// `VT-14`: Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers
+#[test]
+fn empty_graphs_vt_14() {
+    native_backend_oracle::verify(&root(), "empty");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
     use std::io::Write;
     use std::path::{Path, PathBuf};
     use std::process::{Command, Stdio};
+
+    pub(super) fn read_json(path: impl AsRef<Path>) -> serde_json::Value {
+        let path = path.as_ref();
+        let bytes =
+            std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        serde_json::from_slice(&bytes).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+    }
+
+    pub(super) fn read_toml(path: impl AsRef<Path>) -> toml::Value {
+        let path = path.as_ref();
+        let text = std::fs::read_to_string(path)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        toml::from_str(&text).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+    }
 
     pub(super) fn digest(bytes: &[u8]) -> String {
         use std::fmt::Write;
@@ -346,10 +361,7 @@ mod ggml_oracle {
 
     fn build_storage_oracle(root: &Path) -> PathBuf {
         let imported = root.join("vendor/llama.cpp-oracle");
-        let lock: toml::Value = toml::from_str(
-            &std::fs::read_to_string(imported.join("upstream.toml")).expect("oracle lock"),
-        )
-        .expect("valid lock");
+        let lock = read_toml(imported.join("upstream.toml"));
         let archive =
             std::fs::read(imported.join("source.tar.gz")).expect("upstream source archive");
         let archive_digest = digest(&Sha256::digest(&archive));
@@ -817,16 +829,9 @@ mod ggml_inventory {
         let header =
             std::fs::read_to_string(root.join("vendor/llama.cpp-oracle/ggml/include/ggml.h"))
                 .expect("pinned header");
-        let lock: toml::Value = toml::from_str(
-            &std::fs::read_to_string(root.join("vendor/llama.cpp-oracle/upstream.toml"))
-                .expect("oracle lock"),
-        )
-        .expect("valid lock");
-        let inventory: toml::Value = toml::from_str(
-            &std::fs::read_to_string(root.join("model/ggml-declarations.toml"))
-                .expect("declaration inventory"),
-        )
-        .expect("valid inventory");
+        let lock =
+            super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
+        let inventory = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
         assert_eq!(
             inventory["spec"].as_str(),
             Some("vtensor/ggml-declarations/1")
@@ -950,9 +955,7 @@ mod oracle_import {
     fn oracle_import_vt_01() {
         let root = root();
         let artifact = root.join("vendor/llama.cpp-oracle");
-        let lock_text =
-            std::fs::read_to_string(artifact.join("upstream.toml")).expect("upstream oracle lock");
-        let lock: toml::Value = toml::from_str(&lock_text).expect("valid upstream oracle lock");
+        let lock = super::ggml_oracle::read_toml(artifact.join("upstream.toml"));
 
         assert_eq!(
             lock["repository"].as_str(),
@@ -1016,10 +1019,7 @@ mod oracle_import {
             archive["sha256"].as_str().expect("archive digest")
         );
 
-        let exemption: serde_json::Value = serde_json::from_slice(
-            &std::fs::read(root.join("oracle-import.lock")).expect("oracle source accounting"),
-        )
-        .expect("oracle accounting JSON");
+        let exemption = super::ggml_oracle::read_json(root.join("oracle-import.lock"));
         let expected_files: Vec<_> = files.iter().map(|file| serde_json::json!({"path": format!("vendor/llama.cpp-oracle/{}", file["path"].as_str().expect("path")), "sha256": file["sha256"].as_str().expect("digest")})).collect();
         assert_eq!(exemption["source"]["repository"], "ggml-org/llama.cpp");
         assert_eq!(
@@ -1073,10 +1073,7 @@ mod tensor_layout {
         };
         let primary = format!("vtensor_{suffix}");
         let bundle = format!("generated/{name}");
-        let result: serde_json::Value = serde_json::from_slice(
-            &std::fs::read(root.join(format!("{bundle}/result.json"))).expect("certified bundle"),
-        )
-        .expect("production result");
+        let result = super::ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
         let checked = std::process::Command::new("lexlean")
             .current_dir(root)
             .args([
@@ -1108,11 +1105,8 @@ mod tensor_layout {
             result["source"]["lock_sha256"].as_str(),
             Some(lock_digest.as_str())
         );
-        let request: serde_json::Value = serde_json::from_slice(
-            &std::fs::read(root.join(format!("app/{name}-production.json")))
-                .expect("production request"),
-        )
-        .expect("request JSON");
+        let request =
+            super::ggml_oracle::read_json(root.join(format!("app/{name}-production.json")));
         let wanted = request["roots"].as_array().expect("requested roots");
         let exported = result["roots"].as_array().expect("exported roots");
         assert_eq!(exported.len(), wanted.len());
@@ -1124,10 +1118,7 @@ mod tensor_layout {
             assert_eq!(output["package"]["name"], expected["package"]["name"]);
             assert_eq!(output["certification"]["status"], "kernel-checked");
         }
-        let kernel_lock: serde_json::Value = serde_json::from_slice(
-            &std::fs::read(root.join(format!("{name}-kernel.lock"))).expect("kernel lock"),
-        )
-        .expect("kernel lock JSON");
+        let kernel_lock = super::ggml_oracle::read_json(root.join(format!("{name}-kernel.lock")));
         assert_eq!(kernel_lock["source"]["result"], result["result_id"]);
         assert_eq!(
             kernel_lock["source"]["attestation"],
@@ -1195,11 +1186,8 @@ mod tensor_layout {
             let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
             certified_current_model(&root, "layout");
             let executable = ggml_oracle::storage_oracle(&root);
-            let inventory: toml::Value = toml::from_str(
-                &std::fs::read_to_string(root.join("model/ggml-declarations.toml"))
-                    .expect("type inventory"),
-            )
-            .expect("valid inventory");
+            let inventory =
+                super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
             let kinds: Vec<_> = inventory["tensor_type"]
                 .as_array()
                 .expect("types")
@@ -1332,9 +1320,7 @@ mod verdant_api {
     #[test]
     fn verdant_api_vt_02() {
         let root = super::root();
-        let lock_text =
-            std::fs::read_to_string(root.join("Cargo.lock")).expect("workspace lockfile exists");
-        let lock: toml::Value = toml::from_str(&lock_text).expect("workspace lockfile is valid");
+        let lock = super::ggml_oracle::read_toml(root.join("Cargo.lock"));
         let verdant = lock["package"]
             .as_array()
             .expect("Cargo.lock package list exists")
@@ -1479,8 +1465,7 @@ mod native_backend_oracle {
         let _access = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let oracle = storage_oracle(root);
         let common = oracle.parent().unwrap();
-        let objects: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(common.join("objects.json")).unwrap()).unwrap();
+        let objects = super::ggml_oracle::read_json(common.join("objects.json"));
         for name in ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"] {
             assert_eq!(
                 objects[name],
@@ -1682,10 +1667,7 @@ mod native_backend_oracle {
             digest(&Sha256::digest(std::fs::read(&program).unwrap())),
             std::fs::read_to_string(cache.join("program.sha256")).unwrap()
         );
-        let declarations: toml::Value = toml::from_str(
-            &std::fs::read_to_string(root.join("model/ggml-declarations.toml")).unwrap(),
-        )
-        .unwrap();
+        let declarations = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
         let kinds: Vec<_> = declarations["tensor_type"]
             .as_array()
             .unwrap()
@@ -1695,7 +1677,7 @@ mod native_backend_oracle {
             .collect();
         let input = kinds
             .iter()
-            .filter(|_| mode == "buffers")
+            .filter(|_| matches!(mode, "buffers" | "empty"))
             .map(|kind| format!("{kind}\n"))
             .collect::<String>();
         let snapshot = cache.join("loaded-source.snapshot");
@@ -1761,6 +1743,7 @@ mod native_backend_oracle {
                     "matrix" => 640,
                     "elementwise" => 120,
                     "buffers" => kinds.len() * 3,
+                    "empty" => kinds.len() * 24,
                     _ => panic!("unknown oracle mode"),
                 })
             )
@@ -1833,6 +1816,31 @@ int main(int argc, char **argv) {
     ggml_backend_buffer_type_t buft = ggml_backend_dev_buffer_type(dev);
     CHECK(ggml_backend_buft_is_host(buft) && ggml_backend_dev_supports_buft(dev, buft));
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
+    if (!strcmp(argv[4], "empty")) {
+      ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
+      ggml_backend_cpu_set_n_threads(reference,1);
+      size_t cases=0; int kind;
+      while (scanf("%d",&kind)==1) for (int axis=0;axis<4;axis++) for (int64_t scale : {int64_t(2),int64_t(INT32_MAX)}) {
+        ggml_init_params params={8*1024*1024,nullptr,true};
+        ggml_context *ctx=ggml_init(params); CHECK(ctx);
+        int64_t ne[]={ggml_blck_size((ggml_type)kind)*2,3,2,2};
+        ne[axis==3?2:3]=scale; ne[axis]=0;
+        ggml_tensor *input=ggml_new_tensor(ctx,(ggml_type)kind,4,ne);
+        ggml_tensor *copy=ggml_cpy(ctx,input,ggml_dup_tensor(ctx,input));
+        for (ggml_tensor *result : {ggml_dup(ctx,input),ggml_cont(ctx,input),copy}) {
+          CHECK(ggml_is_empty(result) && !result->data && !input->data);
+          ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
+          CHECK(ggml_graph_n_nodes(graph)==1);
+          CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+          CHECK(ggml_backend_dev_supports_op(dev,result));
+          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+          CHECK(!result->data && !input->data); cases++;
+        }
+        ggml_free(ctx);
+      }
+      ggml_backend_free(reference); ggml_backend_free(backend);
+      printf("RESULT cases %zu\n",cases); return 0;
+    }
     if (!strcmp(argv[4], "elementwise")) {
       ggml_backend_t reference = ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference, 1);

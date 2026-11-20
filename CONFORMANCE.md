@@ -42,6 +42,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-13` | `build` | F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference |
 
+## empty-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-14` | `build` | Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers |
+
 ## frame
 
 | ID | Level | Statement |

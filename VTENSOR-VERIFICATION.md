@@ -825,3 +825,57 @@ synchronization, workspace Clippy and dependency checks passed. The full
 `just vv` acceptance boundary remains unmet; the production-source guard and
 Engine gate have not been weakened. These are finite component observations,
 not full GGML conformance or exhaustive IEEE equivalence claims.
+
+## Empty-node admission checkpoint
+
+The imported `ggml/src/ggml-cpu/ggml-cpu.c` returns from
+`ggml_compute_forward` when a tensor is empty, before operation-specific
+execution. vTensor previously sent empty copy operations through unsupported
+operation and operand checks. NativeBackend.decideNative now receives the
+certified output byte span and defines a valid zero-span node as a no-op before
+source descriptors or numeric workspace are accessed. Its `emptyOperation`
+theorem proves the zero-span result for an arbitrary operation identifier.
+
+The exact SDK NativeBackend export is result
+`395dacf6872bd25d8a470992f92117d771fa363efc696100d3c54a2585d53fe3`,
+attestation `60cacbe2623da9b5d3747ee11fbc1e00fb5228d3f1d60f53ef50a6b1128eb8d7`.
+The native bundle and source lock were updated unchanged from the SDK output.
+Existing configuration and memory semantics are preserved. No scalar,
+pointwise, matrix, index or layout export was repeated for this change.
+
+VT-14 compares actual GGML CPU and vTensor execution for 864 empty graphs:
+36 live storage types, four empty axes, ordinary and INT32_MAX remaining
+dimensions, and DUP, CONT and CPY. Every graph is checked to contain one
+executable node, preventing a vacuous empty graph pass. Inputs and outputs
+remain unallocated with null data throughout both executions. The reference
+is the unmodified CPU backend compiled from the existing pinned archive.
+These cases establish empty-copy behavior; nonempty copy execution remains
+part of the completion scope. Existing nonempty invalid-operation tests remain
+active in the full regression run.
+
+The initial test failed at `ggml_backend_dev_supports_op(dev,result)` after the
+CPU reference accepted the empty DUP. After implementation, all 864 cases
+passed. A planted native binding defect passed span+1 into the certified
+predicate and failed at that same support check. The binding was restored
+before the workspace regression.
+
+Repeated JSON/TOML fixture readers now share path-reporting helpers inside the
+source-bound oracle module. Their code remains part of the normalized build
+identity. Fixed configuration words use typed array construction for their
+little-endian ABI representation. These changes preserve the imported cases
+and bring handwritten accounting to 10,591 lines in 51 files, below the
+unchanged parent ceiling.
+
+The final workspace observation has thirteen passing contract tests and the
+one explicit VT-02 development-source refusal. All other workspace targets
+passed. Formatting, model/source audits, frame synchronization, workspace
+Clippy and dependency checks passed. The full release acceptance remains
+unproven and no guard was weakened.
+
+Upstream Verdant main has advanced to v2.7.0 commit
+`8f560d975e12fd6f599a51c4d78487b1e1f3c710`. Inspection found its in-Verdant
+ratchet-cycle and lifecycle orchestration in `lifecycle.rs`; its current stage
+paths and fidelity commands target the Engine repository. They are useful
+references for the remaining automation work, not an already validated
+vTensor integration. The prepared dependency remains the explicitly recorded
+scalar/matrix checkpoint until an updated source is validated.

@@ -47,17 +47,18 @@ reproducible matrix/scalar extension checkpoint is `ce916e894509`.
 | `VT-11` | build | Loads the native device and validates buffer lifetimes, transfers, ABI layouts and metadata graphs through upstream GGML. |
 | `VT-12` | build | Development graph path matches 640 upstream CPU matrix cases, including empty dimensions, padding, broadcasting and IEEE edge values. |
 | `VT-13` | build | Development graph path matches 120 CPU arithmetic/unary graphs with padding, broadcasting and IEEE edge values; malformed descriptors fail before writes. |
+| `VT-14` | build | Matches 864 empty copy graphs across all 36 live storage types and every empty axis, including large remaining dimensions, without operand buffers. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
 matrix products, ADD, SUB, MUL, DIV, SQRT, SQR, NEG and ABS graphs to Verdant.
 Prism selects and plans the numerical graph operations; scalar arithmetic is
 itself generated from a certified Prism bit model inside Verdant. Other
-operations and complete numeric type coverage remain unfinished. Storage coverage for all 36 live types does not
-establish their numerical behavior.
+operations and complete numeric type coverage remain unfinished. Storage and empty-graph coverage for all 36 live types do not
+establish their nonempty numerical behavior.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes twelve contract tests; VT-02 refuses the
+The current development tree passes thirteen contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy
 and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in

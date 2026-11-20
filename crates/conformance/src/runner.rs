@@ -55,13 +55,8 @@ fn state() -> &'static State {
             events,
             mmap,
         ) = vtensor_native_config::run();
-        let mut description = [0; 24];
-        for (chunk, word) in description.chunks_exact_mut(8).zip([d0, d1, d2]) {
-            chunk.copy_from_slice(&word.to_le_bytes());
-        }
-        let mut guid = [0; 16];
-        guid[..8].copy_from_slice(&g0.to_le_bytes());
-        guid[8..].copy_from_slice(&g1.to_le_bytes());
+        let description = std::array::from_fn(|i| [d0, d1, d2][i / 8].to_le_bytes()[i % 8]);
+        let guid = std::array::from_fn(|i| [g0, g1][i / 8].to_le_bytes()[i % 8]);
         let mut owner = Box::new(State {
             reg: UnsafeCell::new(Registry {
                 api_version: api as c_int,
@@ -513,9 +508,9 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
 }
 
 fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
-    tensor_span(tensor)?;
+    let span = tensor_span(tensor)?;
     let operation = u64::try_from(tensor.op).map_err(|_| BackendError::InvalidTensor)?;
-    if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation)) {
+    if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, span as u64)) {
         return Ok(None);
     }
     if tensor.src[0].is_null() {
