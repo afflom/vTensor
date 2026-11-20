@@ -268,6 +268,12 @@ fn concat_graphs_vt_17() {
     native_backend_oracle::verify(&root(), "concat");
 }
 
+/// `VT-18`: Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle
+#[test]
+fn spatial_graphs_vt_18() {
+    native_backend_oracle::verify(&root(), "spatial");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -306,6 +312,22 @@ mod ggml_oracle {
             write!(&mut out, "{byte:02x}").expect("string write");
             out
         })
+    }
+
+    pub(super) fn compile(root: &Path, source: impl AsRef<Path>, output: impl AsRef<Path>) {
+        let source = source.as_ref();
+        let c = source.extension().is_some_and(|extension| extension == "c");
+        let mut command = Command::new(if c { "cc" } else { "c++" });
+        command.args(["-O2", "-ffunction-sections", "-fdata-sections"]);
+        command.args(if c {
+            &["-std=c11", "-D_GNU_SOURCE"][..]
+        } else {
+            &["-std=c++17"][..]
+        });
+        for directory in ["ggml/include", "ggml/src", "ggml/src/ggml-cpu", ""] {
+            command.arg("-I").arg(root.join(directory));
+        }
+        run(command.arg("-c").arg(source).arg("-o").arg(output.as_ref()));
     }
 
     pub(super) fn run(command: &mut Command) -> Vec<u8> {
@@ -442,7 +464,6 @@ mod ggml_oracle {
             .arg(&cache));
         verify_source_cache(root, &cache);
         let source = cache.join("ggml/src");
-        let include = cache.join("ggml/include");
         let version = std::fs::read_to_string(source.join("ggml-version.h.in"))
             .expect("upstream version template")
             .replace("@GGML_VERSION@", "1.0.0")
@@ -459,17 +480,7 @@ mod ggml_oracle {
             (source.join("ggml-alloc.c"), "alloc.o"),
             (cache.join("storage_oracle.c"), "transport.o"),
         ] {
-            run(Command::new("cc")
-                .args(["-O2", "-ffunction-sections", "-fdata-sections", "-I"])
-                .arg(&include)
-                .arg("-I")
-                .arg(&source)
-                .arg("-I")
-                .arg(&cache)
-                .arg("-c")
-                .arg(input)
-                .arg("-o")
-                .arg(cache.join(object)));
+            compile(&cache, input, cache.join(object));
         }
         std::fs::write(cache.join("transfer.cpp"), TRANSFER_ORACLE_SOURCE)
             .expect("transfer transport");
@@ -481,21 +492,7 @@ mod ggml_oracle {
             (source.join("ggml-backend-meta.cpp"), "meta.o"),
             (cache.join("transfer.cpp"), "transfer.o"),
         ] {
-            run(Command::new("c++")
-                .args([
-                    "-std=c++17",
-                    "-O2",
-                    "-ffunction-sections",
-                    "-fdata-sections",
-                    "-I",
-                ])
-                .arg(&include)
-                .arg("-I")
-                .arg(&source)
-                .arg("-c")
-                .arg(input)
-                .arg("-o")
-                .arg(cache.join(object)));
+            compile(&cache, input, cache.join(object));
         }
         run(Command::new("c++")
             .arg("-Wl,--gc-sections")
@@ -1454,7 +1451,7 @@ fn buffer_transfer_vt_09() {
 }
 
 mod native_backend_oracle {
-    use super::ggml_oracle::{digest, file_digest, run, storage_oracle, verify_file};
+    use super::ggml_oracle::{compile, digest, file_digest, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
     use std::path::Path;
@@ -1508,12 +1505,6 @@ mod native_backend_oracle {
         let program = cache.join("native-oracle");
         if !program.exists() {
             std::fs::write(cache.join("driver.cpp"), &driver).unwrap();
-            let flags = [
-                "-std=c++17",
-                "-O2",
-                "-ffunction-sections",
-                "-fdata-sections",
-            ];
             let source_objects = [
                 ("ggml-backend-reg.cpp", "reg.o"),
                 ("ggml-backend-dl.cpp", "dl.o"),
@@ -1521,23 +1512,12 @@ mod native_backend_oracle {
             ];
             let frontend = common
                 .join("native-frontend")
-                .join(digest(&Sha256::digest(format!(
-                    "{flags:?}{source_objects:?}"
-                ))));
+                .join(digest(&Sha256::digest(format!("{source_objects:?}"))));
             std::fs::create_dir_all(&frontend).unwrap();
             for (source, object) in source_objects {
                 let object_path = frontend.join(object);
                 if !object_path.exists() {
-                    run(Command::new("c++")
-                        .args(flags)
-                        .arg("-I")
-                        .arg(common.join("ggml/include"))
-                        .arg("-I")
-                        .arg(common.join("ggml/src"))
-                        .arg("-c")
-                        .arg(common.join("ggml/src").join(source))
-                        .arg("-o")
-                        .arg(&object_path));
+                    compile(common, common.join("ggml/src").join(source), &object_path);
                     std::fs::write(
                         frontend.join(format!("{object}.sha256")),
                         file_digest(&object_path),
@@ -1546,16 +1526,7 @@ mod native_backend_oracle {
                 }
                 verify_file(&object_path, frontend.join(format!("{object}.sha256")));
             }
-            run(Command::new("c++")
-                .args(flags)
-                .arg("-I")
-                .arg(common.join("ggml/include"))
-                .arg("-I")
-                .arg(common.join("ggml/src"))
-                .arg("-c")
-                .arg(cache.join("driver.cpp"))
-                .arg("-o")
-                .arg(cache.join("driver.o")));
+            compile(common, cache.join("driver.cpp"), cache.join("driver.o"));
             let build_list =
                 std::fs::read_to_string(common.join("ggml/src/ggml-cpu/CMakeLists.txt")).unwrap();
             let mut cpu_sources: Vec<String> = build_list
@@ -1578,42 +1549,19 @@ mod native_backend_oracle {
                 format!("ggml-cpu/arch/{architecture}/quants.c"),
                 format!("ggml-cpu/arch/{architecture}/repack.cpp"),
             ]);
-            let c_flags = [
-                "-O2",
-                "-std=c11",
-                "-ffunction-sections",
-                "-fdata-sections",
-                "-D_GNU_SOURCE",
-            ];
             let cpu = common
                 .join("reference-cpu")
-                .join(digest(&Sha256::digest(format!(
-                    "{cpu_sources:?}{c_flags:?}{flags:?}"
-                ))));
+                .join(digest(&Sha256::digest(format!("{cpu_sources:?}"))));
             std::fs::create_dir_all(&cpu).unwrap();
             let mut cpu_objects = Vec::new();
             for source in cpu_sources {
                 let object = cpu.join(format!("{}.o", source.replace('/', "_")));
                 if !object.exists() {
-                    let mut compiler =
-                        Command::new(if source.ends_with(".c") { "cc" } else { "c++" });
-                    if source.ends_with(".c") {
-                        compiler.args(c_flags);
-                    } else {
-                        compiler.args(flags);
-                    }
-                    compiler
-                        .arg("-I")
-                        .arg(common.join("ggml/include"))
-                        .arg("-I")
-                        .arg(common.join("ggml/src"))
-                        .arg("-I")
-                        .arg(common.join("ggml/src/ggml-cpu"))
-                        .arg("-c")
-                        .arg(common.join("ggml/src").join(source))
-                        .arg("-o")
-                        .arg(object.with_extension("new"));
-                    run(&mut compiler);
+                    compile(
+                        common,
+                        common.join("ggml/src").join(source),
+                        object.with_extension("new"),
+                    );
                     std::fs::write(
                         object.with_extension("sha256"),
                         file_digest(object.with_extension("new")),
@@ -1661,7 +1609,12 @@ mod native_backend_oracle {
             .collect();
         let input = kinds
             .iter()
-            .filter(|_| matches!(mode, "buffers" | "empty" | "copy" | "repeat" | "concat"))
+            .filter(|_| {
+                matches!(
+                    mode,
+                    "buffers" | "empty" | "copy" | "repeat" | "concat" | "spatial"
+                )
+            })
             .map(|kind| format!("{kind}\n"))
             .collect::<String>();
         let snapshot = cache.join("loaded-source.snapshot");
@@ -1714,6 +1667,7 @@ mod native_backend_oracle {
                     "copy" => kinds.len() * 96,
                     "repeat" => 160,
                     "concat" => kinds.len() * 288,
+                    "spatial" => 2256,
                     _ => panic!("unknown oracle mode"),
                 })
             )
@@ -1792,14 +1746,17 @@ int main(int argc, char **argv) {
     CHECK(ggml_backend_buft_is_host(buft) && ggml_backend_dev_supports_buft(dev, buft));
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
     const bool repeating=!strcmp(argv[4], "repeat"), concatenating=!strcmp(argv[4], "concat");
-    if (!strcmp(argv[4], "copy") || repeating || concatenating) {
+    const bool spatial=!strcmp(argv[4], "spatial");
+    if (!strcmp(argv[4], "copy") || repeating || concatenating || spatial) {
       ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference,1);
-      size_t cases=0; int kind;
-      const std::vector<int> extents=concatenating?std::vector<int>{0,1,3}:std::vector<int>{1,3};
-      while (scanf("%d",&kind)==1) for(int operation=0;operation<(concatenating?4:repeating?1:3);operation++) for(int layout=0;layout<4;layout++)
-      for(int units : extents) for(int rows : extents) for(int batches : {1,2}) {
-        if(repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32) continue;
+      size_t cases=0, refused=0; int kind;
+      while (scanf("%d",&kind)==1) for(int operation=0;operation<(concatenating?4:repeating?1:3);operation++) {
+      const std::vector<int> extents=(concatenating || (spatial && operation==0))?std::vector<int>{0,1,3}:spatial?std::vector<int>{2,3}:std::vector<int>{1,3};
+      const std::vector<int> batches_list=(spatial && operation==2)?std::vector<int>{2,3}:std::vector<int>{1,2};
+      for(int pattern=0;pattern<(spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
+      for(int units : extents) for(int rows : extents) for(int batches : batches_list) {
+        if((spatial && kind!=GGML_TYPE_F32) || (repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32)) continue;
         ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
         const auto type=(ggml_type)kind; const int64_t block=ggml_blck_size(type); const size_t bytes=ggml_type_size(type);
         ggml_tensor *input=ggml_new_tensor_4d(ctx,type,block*units,rows,2,batches);
@@ -1813,9 +1770,30 @@ int main(int argc, char **argv) {
         ggml_tensor *target=layout==3?ggml_new_tensor_4d(ctx,type,block,blocks,1,1):ggml_dup_tensor(ctx,input);
         target->nb[1]+=bytes; target->nb[2]=target->nb[1]*target->ne[1]+bytes; target->nb[3]=target->nb[2]*target->ne[2]+bytes;
         if(repeating) target=ggml_new_tensor_4d(ctx,type,input->ne[0]*2,input->ne[1]*(layout&1?3:1),input->ne[2]*(layout&2?2:1),input->ne[3]*2);
-        ggml_tensor *result=concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
-        ggml_tensor *expected_tensor=concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
-        if(repeating || concatenating) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
+        auto spatial_op = [&](ggml_tensor *a, bool reference) -> ggml_tensor * {
+          int args[8]={};
+          if(operation==0) {
+            for(int axis=0;axis<4;axis++) {const int crop=std::min<int64_t>(a->ne[axis],1); int l=0,r=0;
+              switch(pattern/2) {
+                case 1:l=1;r=2;break; case 2:l=2;break; case 3:r=2;break;
+                case 4:l=-crop;break; case 5:r=-crop;break; case 6:l=-crop;r=2;break; case 7:l=2;r=-crop;break;
+                case 8:l=INT32_MAX;r=-INT32_MAX;break; case 9:l=-INT32_MAX;r=INT32_MAX;break;
+                case 10:l=a->ne[axis]>0?INT32_MIN:-INT32_MAX;r=INT32_MAX;break;
+              } args[axis*2]=l;args[axis*2+1]=r;
+            }
+            if(reference && pattern%2) for(int axis=0;axis<4;axis++) if(a->ne[axis]) {
+              const int64_t l=args[axis*2]%a->ne[axis], r=int64_t(args[axis*2])+args[axis*2+1]-l;
+              GGML_ASSERT(r>=INT32_MIN && r<=INT32_MAX); args[axis*2]=l;args[axis*2+1]=r;
+            }
+            return pattern%2?ggml_pad_ext_circular(ctx,a,args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]):ggml_pad_ext(ctx,a,args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
+          }
+          if(operation==1) return ggml_pad_reflect_1d(ctx,a,pattern&1?a->ne[0]-1:0,pattern&2?a->ne[0]-1:0);
+          for(int axis=0;axis<4;axis++) args[axis]=pattern?(((pattern-1)&(1<<axis))?-1:1)*(a->ne[axis]-1):0;
+          return ggml_roll(ctx,a,args[0],args[1],args[2],args[3]);
+        };
+        ggml_tensor *result=spatial?spatial_op(operation?ggml_cont(ctx,input):input,false):concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
+        ggml_tensor *expected_tensor=spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
+        if(repeating || concatenating || spatial) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer || (!ggml_nbytes(input)&&(!right||!ggml_nbytes(right))&&!ggml_nbytes(result)));
         std::vector<unsigned char> output(ggml_nbytes(result),0xA5), expected(ggml_nbytes(expected_tensor));
         for(ggml_tensor *operand : {input,right}) if(operand) {
@@ -1823,22 +1801,29 @@ int main(int argc, char **argv) {
           for(size_t i=0;i<initial.size();i++) initial[i]=(i*37+kind*13+layout+(operand==right?71:0))%256;
           if(!initial.empty()) ggml_backend_tensor_set(operand,initial.data(),0,initial.size());
         }
+        if(!output.empty()) ggml_backend_tensor_set(result,output.data(),0,output.size());
+        ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
+        if(spatial && operation==0 && pattern%2 && ggml_is_empty(input) && !ggml_is_empty(result)) {
+          CHECK(!ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
+          std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
+          ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;refused++;continue;
+        }
         ggml_cgraph *oracle_graph=ggml_new_graph(ctx); ggml_build_forward_expand(oracle_graph,expected_tensor);
         CHECK(ggml_backend_graph_compute(reference,oracle_graph)==GGML_STATUS_SUCCESS);
         if(!expected.empty()) ggml_backend_tensor_get(expected_tensor,expected.data(),0,expected.size());
-        if(!output.empty()) ggml_backend_tensor_set(result,output.data(),0,output.size());
-        ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
-        if(kind==0 && units==(repeating?3:1) && rows==1 && batches==1 && layout==0) {
+        if(kind==0 && pattern==0 && units==(spatial && operation?2:repeating?3:1) && rows==(spatial && operation?2:1) && batches==(spatial && operation==2?2:1) && layout==0) {
           const int64_t saved_extent=result->ne[0]; result->ne[0]=saved_extent+(repeating?1:block); CHECK(!ggml_backend_dev_supports_op(dev,result));
           CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->ne[0]=saved_extent;
-          ggml_tensor *saved=result->src[concatenating || operation==2?1:0]; result->src[concatenating || operation==2?1:0]=nullptr;
+          ggml_tensor *saved=result->src[concatenating || (!spatial && operation==2)?1:0]; result->src[concatenating || (!spatial && operation==2)?1:0]=nullptr;
           CHECK(!ggml_backend_dev_supports_op(dev,result));
-          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->src[concatenating || operation==2?1:0]=saved;
+          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->src[concatenating || (!spatial && operation==2)?1:0]=saved;
           if(concatenating) {const int32_t axis=4; memcpy(result->op_params,&axis,4); CHECK(!ggml_backend_dev_supports_op(dev,result));
             CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); memcpy(result->op_params,&operation,4);
             right->type=GGML_TYPE_F16; CHECK(!ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); right->type=type;
             const int other=(operation+1)%4; right->ne[other]++; CHECK(!ggml_backend_dev_supports_op(dev,result));
             CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); right->ne[other]--; }
+          if(spatial) {const int32_t bad=operation==2?input->ne[0]:-1; memcpy(result->op_params,&bad,4); CHECK(!ggml_backend_dev_supports_op(dev,result));
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); memset(result->op_params,0,4);}
           std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
         }
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
@@ -1849,9 +1834,14 @@ int main(int argc, char **argv) {
           const size_t offset=i0*result->nb[0]+i1*result->nb[1]+i2*result->nb[2]+i3*result->nb[3];
           memcpy(output.data()+offset,expected.data()+index*bytes,bytes);
         }
-        if(actual!=output) {fprintf(stderr,"copy mismatch type=%d op=%d layout=%d\n",kind,operation,layout);return 2;}
+        if(actual!=output) {
+          const size_t at=std::mismatch(actual.begin(),actual.end(),output.begin()).first-actual.begin();
+          fprintf(stderr,"copy mismatch type=%d op=%d layout=%d pattern=%d shape=%d,%d,2,%d byte=%zu actual=%u expected=%u\n",kind,operation,layout,pattern,units,rows,batches,at,actual[at],output[at]); return 2;
+        }
         ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
       }
+      }
+      CHECK(refused==(spatial?200:0));
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases);return 0;
     }
     if (!strcmp(argv[4], "empty")) {

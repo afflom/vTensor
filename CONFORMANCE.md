@@ -112,6 +112,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-08` | `build` | Source accounting includes untracked implementation files and rejects drifted imported bytes |
 
+## spatial-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-18` | `build` | Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle |
+
 ## tensor-layout
 
 | ID | Level | Statement |

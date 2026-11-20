@@ -6,8 +6,8 @@ use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
 use vtensor_pointwise::{
-    Adt0 as GraphRequest, Adt1 as TensorDescriptor, Adt3 as CopyMode, Adt4 as GraphResponse,
-    Adt5 as GraphPlan,
+    Adt0 as GraphRequest, Adt1 as Parameters, Adt2 as TensorDescriptor, Adt4 as CopyMode,
+    Adt5 as GraphResponse, Adt6 as GraphPlan,
 };
 
 /// Typed refusals at the native tensor boundary.
@@ -520,9 +520,13 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
     let right = unsafe { tensor.src[1].as_ref() }
         .map(tensor_metadata)
         .transpose()?;
+    let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
+        tensor.op_params.map(|word| u64::from(word as u32));
     let response = vtensor_pointwise::run(GraphRequest::C0(
         operation,
-        tensor.op_params[0] as u64,
+        Parameters::C0(
+            p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15,
+        ),
         tensor_metadata(left)?,
         right,
         output,
@@ -689,9 +693,16 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     };
     // SAFETY: the admitted plan retains every required source descriptor.
     let source_data = |slot: usize| graph_tensor_data(unsafe { &*tensor.src[slot] });
-    let right = matches!(mode, CopyMode::C2(..))
-        .then(|| source_data(1))
-        .transpose()?;
+    let zeros = if matches!(mode, CopyMode::C3(_, _, _, _, false)) {
+        workspace(bytes, 0_u8)?
+    } else {
+        Vec::new()
+    };
+    let right = match mode {
+        CopyMode::C2(..) => Some(source_data(1)?),
+        CopyMode::C3(_, _, _, _, false) => Some(zeros.as_ptr().cast_mut()),
+        _ => None,
+    };
     let sources = [source_data(0)?, right.unwrap_or(null_mut())];
     let destination_data = graph_tensor_data(tensor)?;
     let mut block = workspace(bytes, 0_u8)?;

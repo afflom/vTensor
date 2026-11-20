@@ -7,6 +7,30 @@
 \title{Natural number}
 \begin{semanticmodule}
 structure{
+  name: OperationParameters,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: p0, type: Nat},
+    {name: p1, type: Nat},
+    {name: p2, type: Nat},
+    {name: p3, type: Nat},
+    {name: p4, type: Nat},
+    {name: p5, type: Nat},
+    {name: p6, type: Nat},
+    {name: p7, type: Nat},
+    {name: p8, type: Nat},
+    {name: p9, type: Nat},
+    {name: p10, type: Nat},
+    {name: p11, type: Nat},
+    {name: p12, type: Nat},
+    {name: p13, type: Nat},
+    {name: p14, type: Nat},
+    {name: p15, type: Nat}
+  ]
+}
+
+structure{
   name: TensorDescriptor,
   type_parameters: [],
   parameters: [],
@@ -47,7 +71,10 @@ inductive{
   constructors: [
     {name: linear, fields: []},
     {name: repeated, fields: []},
-    {name: concatenated, fields: [Nat, IndexContext]}
+    {name: concatenated, fields: [Nat, IndexContext]},
+    {name: padded, fields: [Nat, Nat, Nat, Nat, Bool]},
+    {name: reflected, fields: [Nat]},
+    {name: rolled, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -168,7 +195,16 @@ inductive{
   type_parameters: [],
   parameters: [],
   constructors: [
-    {name: plan, fields: [Nat, Nat, TensorDescriptor, (Option TensorDescriptor), TensorDescriptor]},
+    {
+      name: plan,
+      fields: [
+        Nat,
+        OperationParameters,
+        TensorDescriptor,
+        (Option TensorDescriptor),
+        TensorDescriptor
+      ]
+    },
     {name: offsets, fields: [Nat, IndexContext, IndexContext, CopyMode]}
   ]
 }
@@ -258,6 +294,51 @@ definition{
 }
 
 definition{
+  name: positiveWord,
+  parameters: [word : Nat],
+  result: Nat,
+  body: (if (word <? 2147483648) then word else 0),
+  executable: true
+}
+
+definition{
+  name: negativeWord,
+  parameters: [word : Nat],
+  result: Nat,
+  body: (if (word <? 2147483648) then 0 else (prim subtract 4294967296 word : Nat)),
+  executable: true
+}
+
+definition{
+  name: paddingExtent,
+  parameters: [size : Nat, left : Nat, right : Nat, output : Nat],
+  result: Bool,
+  body: (let total : Nat := ((size + (positiveWord left)) + (positiveWord right)); (let removed : Nat := ((negativeWord left) + (negativeWord right)); (((left <=? 4294967295) && (right <=? 4294967295)) && ((removed <=? total) && (output =? (prim subtract total removed : Nat)))))),
+  executable: true
+}
+
+definition{
+  name: validShift,
+  parameters: [size : Nat, word : Nat],
+  result: Bool,
+  body: ((word <=? 4294967295) && (((positiveWord word) + (negativeWord word)) <? size)),
+  executable: true
+}
+
+definition{
+  name: planSpatial,
+  parameters: [
+    operation : Nat,
+    options : OperationParameters,
+    left : TensorDescriptor,
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (if (((project left ty) =? 0) && ((project output ty) =? 0)) then (if (operation =? 61) then (let circular : Bool := (0 <? (project options p8)); (if ((((((paddingExtent (project left n0) (project options p0) (project options p1) (project output n0)) && (paddingExtent (project left n1) (project options p2) (project options p3) (project output n1))) && (paddingExtent (project left n2) (project options p4) (project options p5) (project output n2))) && (paddingExtent (project left n3) (project options p6) (project options p7) (project output n3))) && ((project options p8) <=? 4294967295)) && (if circular then (if (empty (project left n0) (project left n1) (project left n2) (project left n3)) then false else true) else true)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.padded (project options p0) (project options p2) (project options p4) (project options p6) circular)) else (ctor PointwiseDecision.invalidShape))) else (if (operation =? 62) then (if ((((((project options p0) <? 2147483648) && ((project options p1) <? 2147483648)) && ((project options p0) <? (project left n0))) && ((project options p1) <? (project left n0))) && (((((project left n1) =? (project output n1)) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project output n0) =? (((project left n0) + (project options p0)) + (project options p1))))) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.reflected (project options p0))) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 63) then (if (((((validShift (project left n0) (project options p0)) && (validShift (project left n1) (project options p1))) && (validShift (project left n2) (project options p2))) && (validShift (project left n3) (project options p3))) && (((((project left n0) =? (project output n0)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3)))) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.rolled (project options p0) (project options p1) (project options p2) (project options p3))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)))) else (ctor PointwiseDecision.unsupported)),
+  executable: true
+}
+
+definition{
   name: numericPlan,
   parameters: [
     operation : Nat,
@@ -304,13 +385,89 @@ definition{
 }
 
 definition{
+  name: decodedCoordinate,
+  parameters: [index : Nat, context : IndexContext, axis : Nat],
+  result: Nat,
+  body: (let q0 : Nat := (prim quotient index (project context u0) 0 : Nat); (let q1 : Nat := (prim quotient q0 (project context n1) 0 : Nat); (if (axis =? 0) then (prim remainder index (project context u0) 0 : Nat) else (if (axis =? 1) then (prim remainder q0 (project context n1) 0 : Nat) else (if (axis =? 2) then (prim remainder q1 (project context n2) 0 : Nat) else (prim quotient q1 (project context n2) 0 : Nat)))))),
+  executable: true
+}
+
+definition{
+  name: unpaddedCoordinate,
+  parameters: [index : Nat, left : Nat],
+  result: Nat,
+  body: (prim subtract (index + (negativeWord left)) (positiveWord left) : Nat),
+  executable: true
+}
+
+definition{
+  name: paddingInterior,
+  parameters: [index : Nat, left : Nat, size : Nat],
+  result: Bool,
+  body: (((positiveWord left) <=? (index + (negativeWord left))) && ((unpaddedCoordinate index left) <? size)),
+  executable: true
+}
+
+definition{
+  name: wrappedCoordinate,
+  parameters: [index : Nat, shift : Nat, size : Nat],
+  result: Nat,
+  body: (if (shift <? 2147483648) then (prim remainder (prim subtract ((prim remainder index size 0 : Nat) + size) (prim remainder shift size 0 : Nat) : Nat) size 0 : Nat) else (prim remainder (index + (negativeWord shift)) size 0 : Nat)),
+  executable: true
+}
+
+definition{
+  name: reflectedCoordinate,
+  parameters: [index : Nat, left : Nat, size : Nat],
+  result: Nat,
+  body: (if (index <? left) then (prim subtract left index : Nat) else (if (index <? (left + size)) then (prim subtract index left : Nat) else (prim subtract (prim multiply 2 (prim subtract size 1 : Nat) : Nat) (prim subtract index left : Nat) : Nat))),
+  executable: true
+}
+
+definition{
+  name: offsetCoordinates,
+  parameters: [source : IndexContext, i0 : Nat, i1 : Nat, i2 : Nat, i3 : Nat],
+  result: Nat,
+  body: (TensorIndex::elementOffset i0 i1 i2 i3 (project source s0) (project source s1) (project source s2) (project source s3)),
+  executable: true
+}
+
+definition{
+  name: paddedOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    p0 : Nat,
+    p1 : Nat,
+    p2 : Nat,
+    p3 : Nat,
+    circular : Bool
+  ],
+  result: GraphResponse,
+  body: (let i0 : Nat := (decodedCoordinate index destination 0); (let i1 : Nat := (decodedCoordinate index destination 1); (let i2 : Nat := (decodedCoordinate index destination 2); (let i3 : Nat := (decodedCoordinate index destination 3); (if circular then (ctor GraphResponse.offsets false (offsetCoordinates source (wrappedCoordinate i0 p0 (project source u0)) (wrappedCoordinate i1 p1 (project source n1)) (wrappedCoordinate i2 p2 (project source n2)) (wrappedCoordinate i3 p3 (project source n3))) (blockOffset index destination)) else (if ((((paddingInterior i0 p0 (project source u0)) && (paddingInterior i1 p1 (project source n1))) && (paddingInterior i2 p2 (project source n2))) && (paddingInterior i3 p3 (project source n3))) then (ctor GraphResponse.offsets false (offsetCoordinates source (unpaddedCoordinate i0 p0) (unpaddedCoordinate i1 p1) (unpaddedCoordinate i2 p2) (unpaddedCoordinate i3 p3)) (blockOffset index destination)) else (ctor GraphResponse.offsets true 0 (blockOffset index destination)))))))),
+  executable: true
+}
+
+definition{
+  name: reflectedOffsets,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, left : Nat],
+  result: GraphResponse,
+  body: (let i0 : Nat := (decodedCoordinate index destination 0); (let i1 : Nat := (decodedCoordinate index destination 1); (let i2 : Nat := (decodedCoordinate index destination 2); (let i3 : Nat := (decodedCoordinate index destination 3); (ctor GraphResponse.offsets false (offsetCoordinates source (reflectedCoordinate i0 left (project source u0)) i1 i2 i3) (blockOffset index destination)))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
   body: (match mode
     | CopyMode.linear => (ctor GraphResponse.offsets false (blockOffset index source) (blockOffset index destination))
     | CopyMode.repeated => (ctor GraphResponse.offsets false (repeatedBlockOffset index source destination) (blockOffset index destination))
-    | CopyMode.concatenated axis right => (concatenatedOffsets index source right destination axis)),
+    | CopyMode.concatenated axis right => (concatenatedOffsets index source right destination axis)
+    | CopyMode.padded p0 p1 p2 p3 circular => (paddedOffsets index source destination p0 p1 p2 p3 circular)
+    | CopyMode.reflected left => (reflectedOffsets index source destination left)
+    | CopyMode.rolled p0 p1 p2 p3 => (paddedOffsets index source destination p0 p1 p2 p3 true)),
   executable: true
 }
 
@@ -319,9 +476,9 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation variant left right output => (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
+    | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (numericPlan operation variant left right output)))))
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (numericPlan operation variant left right output)))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -366,6 +523,41 @@ theorem{
   name: concatEmptyLeft,
   parameters: [],
   statement: ((concatenatedOffsets 1 (record IndexContext {u0 := 0, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 0, s2 := 0, s3 := 0}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) 0) = (ctor GraphResponse.offsets true 4 4)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeShiftWrap,
+  parameters: [],
+  statement: ((wrappedCoordinate 0 4294967295 3) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: positiveShiftWrap,
+  parameters: [],
+  statement: ((wrappedCoordinate 0 1 3) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: signedLeftCrop,
+  parameters: [],
+  statement: ((unpaddedCoordinate 0 4294967295) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: reflectLeftEdge,
+  parameters: [],
+  statement: ((reflectedCoordinate 0 2 3) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: reflectRightEdge,
+  parameters: [],
+  statement: ((reflectedCoordinate 6 2 3) = 0),
   proof: reflexivity{}
 }
 \end{semanticmodule}

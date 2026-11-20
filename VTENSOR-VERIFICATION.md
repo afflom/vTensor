@@ -1088,3 +1088,95 @@ source remains 10,579 lines in the same 51 files. The changed model was exported
 once successfully; unchanged expensive main-app proofs were not repeated.
 This component checkpoint does not establish complete backend conformance or
 resolve the existing Engine/release dependency blockers.
+
+
+## VT-18: signed spatial storage graphs
+
+The ID, scenario and live comparison preceded execution support; the initial
+run failed at `ggml_backend_dev_supports_op(dev,result)` after the CPU accepted
+the first nonempty graph. The scope includes the pinned GGML PAD variants
+(`ggml_pad_ext` and `ggml_pad_ext_circular`), PAD_REFLECT_1D and ROLL, with the
+F32 type implemented by their CPU oracle.
+
+The Prism request now carries all sixteen raw 32-bit GGML parameter words.
+Native glue preserves their bits as unsigned words; Prism interprets signed
+padding/cropping and shifts from the imported int32 ABI. The model validates
+per-axis output extents, reflection bounds and roll shift bounds. It defines
+zero padding, circular wrapping, signed crops and reflection as source
+addressing decisions. Zero padding selects a private zero block; Verdant's
+existing certified opaque storage transfer remains the byte-movement substrate.
+Circular padding and ROLL reuse the same wrapped-coordinate definition.
+Closed examples cover signed wrapping, left cropping and both reflected edges.
+
+The test has 2,256 spatial scenarios: 1,584 PAD scenarios, 128 reflected-padding
+graphs and 544 roll graphs. PAD scenarios vary all four axes, asymmetric left
+and right padding, signed crops, circular/zero mode, zero source dimensions,
+and balanced INT32_MAX/INT32_MIN values. Reflection covers both boundaries;
+ROLL covers zero shifts and every sign combination at the largest admitted
+shift on each axis. The actual outputs retain padded strides. Sources use
+contiguous and padded layouts; constructor-required contiguous sources for
+reflection and roll are produced through vTensor CONT. The CPU reference uses
+the existing upstream canonical-copy path and the same upstream constructor.
+
+Two hundred circular PAD scenarios have an empty source and a nonempty
+output. The CPU would divide by a zero extent; those graphs instead exercise
+modeled refusal before writes. The fixture asserts the exact refusal count.
+The other 2,056 scenarios execute the imported CPU oracle. Empty outputs still
+execute and count both graphs without issuing invalid zero-byte transfers.
+Wrong shapes, absent operands, mismatched crop parameters, negative reflection
+parameters and out-of-range roll shifts have explicit refusal checks.
+
+The shared compiler helper replaces duplicated command construction for
+storage, allocation, transfer, frontend and CPU reference objects. It pins
+C11/GNU and C++17 compilation, optimization and section flags and the header
+search roots. Its implementation is inside the normalized source bound into
+the oracle cache identity, so changing the helper invalidates affected cached
+objects once. Source archive and object digests remain checked on cache hits,
+and behavioral comparisons remain live.
+
+The corrected Prism MCP draft is
+`prism-app/e6f182c3b809f21268d2a1718ca2ba03a3970cf74b296e112568b667097c6d62`.
+Remote checking again returned `engine.check failed: project-refused`. The
+exact pinned SDK accepted the four source modules and is exporting the
+executable implementation and proof artifacts.
+
+The exact SDK export completed with result
+`acdfccb715fa2518d0d26b223dcd5850d277030e1c1d872f122dfc70c19ce88c`
+and attestation
+`fbe80c42722c6b17bbb4d241b76a28d568a3138ba7c0e530e7066c1b85a2272f`.
+The native bindings were checked against the emitted sixteen-word parameter
+record and spatial copy-mode variants before execution.
+
+The first data comparison differed for circular left padding INT32_MAX. The
+pinned `ggml_wrap_around` computes `(coord + size) % size`; one added extent
+cannot make a large negative coordinate nonnegative. This lets the CPU kernel
+read before the source allocation. The model already uses a mathematical
+modulo with a nonnegative source index. For the reference only, the fixture
+now normalizes each circular left pad by the source extent and adjusts the
+right pad to preserve their sum and the output shape. Signed normalized left
+pads lie strictly between minus and plus one extent, where the upstream
+helper is safe. The adjusted right pad is checked against int32 bounds.
+The actual vTensor graph retains its original signed/extreme parameters.
+No model or certified artifact changed for this reference correction, and no
+original case was removed or upstream source edited.
+
+With that equivalent upstream reference, all 2,256 scenarios passed in 3.38
+seconds, including exactly 200 typed refusals. This is finite component
+evidence for the declared F32 checkpoint, not proof of all storage-type
+coverage or complete backend conformance.
+
+Two independent planted native binding defects demonstrated detection. Changing
+the private zero source from byte zero to byte one failed at PAD pattern 2,
+shape `[0,0,2,1]`, output byte zero (`actual=1 expected=0`). Replacing admitted
+roll shifts with zero failed at ROLL pattern 1, shape `[2,2,2,2]`, byte zero
+(`actual=0 expected=172`). Both experiments stayed within admitted memory
+regions, and the original adapter was restored before regression.
+
+The final workspace run passed every other target and seventeen contract tests
+in 9.83 seconds. VT-02 alone retained the expected production-source refusal
+for the unpublished Verdant development override. Formatting, model/source
+audits, frame synchronization, workspace Clippy and dependency checks passed.
+Handwritten source is 10,577 lines in the same 51 files, below the preceding
+checkpoint. The changed model was certified once; the unchanged main-app
+proof and Engine release gates were not rerun for this component checkpoint.
+The complete backend and production dependency requirements remain open.
