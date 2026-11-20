@@ -161,7 +161,7 @@ certified-export name:
       native: ['PrismTemplateContract.NativeBackend.configuration', 'vtensor_native_config'],
       matrix: ['PrismTemplateContract.MatrixGraph.planMatrix', 'vtensor_matrix'],
       index: ['PrismTemplateContract.TensorIndex.elementOffset', 'vtensor_index'],
-      pointwise: ['PrismTemplateContract.PointwiseGraph.planPointwise', 'vtensor_pointwise'],
+      pointwise: ['PrismTemplateContract.PointwiseGraph.evaluate', 'vtensor_pointwise'],
     }[name];
     const output = result.roots.find(r => r.root === primary).outputs[0].package.files.find(f => f.path.endsWith('/src/lib.rs'));
     if (output.path !== `packages/rust-core/${packageName}/src/lib.rs`) throw Error('unexpected exported package');

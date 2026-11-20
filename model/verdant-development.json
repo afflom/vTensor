@@ -1,1 +1,11 @@
-{"spec":"vtensor/verdant-development/1","upstream":"https://github.com/afflom/verdant-engine.git","base":"87c3256326b9ec9f8d591855394c0bd0265588ef","commit":"ce916e89450986f78c2ba13df1d6954a39e2ffa3","ref":"refs/heads/vtensor/scalar-checkpoint","bundle":"vendor/verdant-development.bundle","sha256":"9fab8070cef91f631a425e7b18e1f715c174aae7e8d134f59d4f1d1c5ce0c849","sdk_image":"ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c","directory":".verdant-engine"}
+{
+  "spec": "vtensor/verdant-development/1",
+  "upstream": "https://github.com/afflom/verdant-engine.git",
+  "base": "87c3256326b9ec9f8d591855394c0bd0265588ef",
+  "commit": "26ba1eaa1369e9f6539c3ca40ec9124103d666e4",
+  "ref": "refs/heads/vtensor/storage-checkpoint",
+  "bundle": "vendor/verdant-development.bundle",
+  "sha256": "3bc08dac02c462bab96635ba82b12c750b961e25b8de3e958ebd2a8b4994224b",
+  "sdk_image": "ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c",
+  "directory": ".verdant-engine"
+}

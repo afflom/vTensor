@@ -250,6 +250,12 @@ fn empty_graphs_vt_14() {
     native_backend_oracle::verify(&root(), "empty");
 }
 
+/// `VT-15`: Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding
+#[test]
+fn copy_graphs_vt_15() {
+    native_backend_oracle::verify(&root(), "copy");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -269,6 +275,17 @@ mod ggml_oracle {
         let text = std::fs::read_to_string(path)
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
         toml::from_str(&text).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+    }
+
+    pub(super) fn verify_file(path: impl AsRef<Path>, stamp: impl AsRef<Path>) {
+        assert_eq!(file_digest(path), std::fs::read_to_string(stamp).unwrap());
+    }
+
+    pub(super) fn file_digest(path: impl AsRef<Path>) -> String {
+        let path = path.as_ref();
+        digest(&Sha256::digest(
+            std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display())),
+        ))
     }
 
     pub(super) fn digest(bytes: &[u8]) -> String {
@@ -401,15 +418,7 @@ mod ggml_oracle {
             .join(digest(&identity.finalize()));
         let executable = cache.join("storage-oracle");
         if executable.exists() {
-            let recorded = std::fs::read_to_string(cache.join("executable.sha256"))
-                .expect("cached oracle digest");
-            assert_eq!(
-                digest(&Sha256::digest(
-                    std::fs::read(&executable).expect("cached executable")
-                )),
-                recorded,
-                "cached oracle was changed"
-            );
+            verify_file(&executable, cache.join("executable.sha256"));
             verify_source_cache(root, &cache);
             return executable;
         }
@@ -487,9 +496,7 @@ mod ggml_oracle {
             .arg(cache.join("transfer-oracle")));
         std::fs::write(
             cache.join("transfer.sha256"),
-            digest(&Sha256::digest(
-                std::fs::read(cache.join("transfer-oracle")).expect("transfer oracle"),
-            )),
+            file_digest(cache.join("transfer-oracle")),
         )
         .expect("transfer digest");
         run(Command::new("c++")
@@ -505,9 +512,7 @@ mod ggml_oracle {
             .arg(cache.join("allocation-oracle")));
         std::fs::write(
             cache.join("allocation.sha256"),
-            digest(&Sha256::digest(
-                std::fs::read(cache.join("allocation-oracle")).expect("allocation oracle"),
-            )),
+            file_digest(cache.join("allocation-oracle")),
         )
         .expect("allocation digest");
         let objects: serde_json::Map<String, serde_json::Value> =
@@ -516,9 +521,7 @@ mod ggml_oracle {
                 .map(|name| {
                     (
                         name.to_string(),
-                        serde_json::json!(digest(&Sha256::digest(
-                            std::fs::read(cache.join(name)).expect("upstream object")
-                        ))),
+                        serde_json::json!(file_digest(cache.join(name))),
                     )
                 })
                 .collect();
@@ -536,13 +539,8 @@ mod ggml_oracle {
             .arg("-lm")
             .arg("-o")
             .arg(&candidate));
-        std::fs::write(
-            cache.join("executable.sha256"),
-            digest(&Sha256::digest(
-                std::fs::read(&candidate).expect("built oracle"),
-            )),
-        )
-        .expect("cache digest");
+        std::fs::write(cache.join("executable.sha256"), file_digest(&candidate))
+            .expect("cache digest");
         std::fs::rename(candidate, &executable).expect("publish built oracle");
         executable
     }
@@ -589,11 +587,7 @@ mod ggml_oracle {
     pub fn transfers(root: &Path, input: &str) -> Vec<u64> {
         let base = storage_oracle(root);
         let executable = base.with_file_name("transfer-oracle");
-        let bytes = std::fs::read(&executable).expect("transfer oracle");
-        assert_eq!(
-            digest(&Sha256::digest(bytes)),
-            std::fs::read_to_string(base.with_file_name("transfer.sha256")).expect("transfer pin")
-        );
+        verify_file(&executable, base.with_file_name("transfer.sha256"));
         batch(&executable, input)
             .lines()
             .map(|line| line.parse().expect("transfer outcome"))
@@ -603,13 +597,7 @@ mod ggml_oracle {
     pub fn placements(root: &Path, input: &str) -> Vec<[u64; 4]> {
         let base = storage_oracle(root);
         let executable = base.with_file_name("allocation-oracle");
-        assert_eq!(
-            digest(&Sha256::digest(
-                std::fs::read(&executable).expect("allocation oracle")
-            )),
-            std::fs::read_to_string(base.with_file_name("allocation.sha256"))
-                .expect("allocation pin")
-        );
+        verify_file(&executable, base.with_file_name("allocation.sha256"));
         batch(&executable, input)
             .lines()
             .map(|line| {
@@ -1098,9 +1086,7 @@ mod tensor_layout {
         );
         assert_eq!(current["semantic_id"], result["source"]["semantic_id"]);
         use sha2::{Digest, Sha256};
-        let lock_digest = ggml_oracle::digest(&Sha256::digest(
-            std::fs::read(root.join(model_lock)).expect("model lock"),
-        ));
+        let lock_digest = ggml_oracle::file_digest(root.join(model_lock));
         assert_eq!(
             result["source"]["lock_sha256"].as_str(),
             Some(lock_digest.as_str())
@@ -1453,7 +1439,7 @@ fn buffer_transfer_vt_09() {
 }
 
 mod native_backend_oracle {
-    use super::ggml_oracle::{digest, run, storage_oracle};
+    use super::ggml_oracle::{digest, file_digest, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
     use std::io::Write as IoWrite;
@@ -1467,10 +1453,7 @@ mod native_backend_oracle {
         let common = oracle.parent().unwrap();
         let objects = super::ggml_oracle::read_json(common.join("objects.json"));
         for name in ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"] {
-            assert_eq!(
-                objects[name],
-                digest(&Sha256::digest(std::fs::read(common.join(name)).unwrap()))
-            );
+            assert_eq!(objects[name], file_digest(common.join(name)));
         }
         let executable = std::env::current_exe().unwrap();
         let library = executable
@@ -1543,14 +1526,11 @@ mod native_backend_oracle {
                         .arg(&object_path));
                     std::fs::write(
                         frontend.join(format!("{object}.sha256")),
-                        digest(&Sha256::digest(std::fs::read(&object_path).unwrap())),
+                        file_digest(&object_path),
                     )
                     .unwrap();
                 }
-                assert_eq!(
-                    digest(&Sha256::digest(std::fs::read(&object_path).unwrap())),
-                    std::fs::read_to_string(frontend.join(format!("{object}.sha256"))).unwrap()
-                );
+                verify_file(&object_path, frontend.join(format!("{object}.sha256")));
             }
             run(Command::new("c++")
                 .args(flags)
@@ -1622,17 +1602,12 @@ mod native_backend_oracle {
                     run(&mut compiler);
                     std::fs::write(
                         object.with_extension("sha256"),
-                        digest(&Sha256::digest(
-                            std::fs::read(object.with_extension("new")).unwrap(),
-                        )),
+                        file_digest(object.with_extension("new")),
                     )
                     .unwrap();
                     std::fs::rename(object.with_extension("new"), &object).unwrap();
                 }
-                assert_eq!(
-                    digest(&Sha256::digest(std::fs::read(&object).unwrap())),
-                    std::fs::read_to_string(object.with_extension("sha256")).unwrap()
-                );
+                verify_file(&object, object.with_extension("sha256"));
                 cpu_objects.push(object);
             }
             let mut linker = Command::new("c++");
@@ -1656,17 +1631,12 @@ mod native_backend_oracle {
             run(&mut linker);
             std::fs::write(
                 cache.join("program.sha256"),
-                digest(&Sha256::digest(
-                    std::fs::read(cache.join("native-oracle.new")).unwrap(),
-                )),
+                file_digest(cache.join("native-oracle.new")),
             )
             .unwrap();
             std::fs::rename(cache.join("native-oracle.new"), &program).unwrap();
         }
-        assert_eq!(
-            digest(&Sha256::digest(std::fs::read(&program).unwrap())),
-            std::fs::read_to_string(cache.join("program.sha256")).unwrap()
-        );
+        verify_file(&program, cache.join("program.sha256"));
         let declarations = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
         let kinds: Vec<_> = declarations["tensor_type"]
             .as_array()
@@ -1677,7 +1647,7 @@ mod native_backend_oracle {
             .collect();
         let input = kinds
             .iter()
-            .filter(|_| matches!(mode, "buffers" | "empty"))
+            .filter(|_| matches!(mode, "buffers" | "empty" | "copy"))
             .map(|kind| format!("{kind}\n"))
             .collect::<String>();
         let snapshot = cache.join("loaded-source.snapshot");
@@ -1744,12 +1714,13 @@ mod native_backend_oracle {
                     "elementwise" => 120,
                     "buffers" => kinds.len() * 3,
                     "empty" => kinds.len() * 24,
+                    "copy" => kinds.len() * 96,
                     _ => panic!("unknown oracle mode"),
                 })
             )
         );
         assert_eq!(
-            digest(&Sha256::digest(std::fs::read(snapshot).unwrap())),
+            file_digest(snapshot),
             digest(&Sha256::digest(expected)),
             "loaded native library does not match current source"
         );
@@ -1816,6 +1787,56 @@ int main(int argc, char **argv) {
     ggml_backend_buffer_type_t buft = ggml_backend_dev_buffer_type(dev);
     CHECK(ggml_backend_buft_is_host(buft) && ggml_backend_dev_supports_buft(dev, buft));
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
+    if (!strcmp(argv[4], "copy")) {
+      ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
+      ggml_backend_cpu_set_n_threads(reference,1);
+      size_t cases=0; int kind;
+      while (scanf("%d",&kind)==1) for(int operation=0;operation<3;operation++) for(int layout=0;layout<4;layout++)
+      for(int units : {1,3}) for(int rows : {1,3}) for(int batches : {1,2}) {
+        ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
+        const auto type=(ggml_type)kind; const int64_t block=ggml_blck_size(type); const size_t bytes=ggml_type_size(type);
+        ggml_tensor *input=ggml_new_tensor_4d(ctx,type,block*units,rows,2,batches);
+        if(layout==1 || layout==2) {
+          input->nb[0]=bytes*(layout==2?2:1); input->nb[1]=input->nb[0]*units+bytes;
+          input->nb[2]=input->nb[1]*rows+bytes; input->nb[3]=input->nb[2]*2+bytes;
+        }
+        const int64_t blocks=ggml_nelements(input)/block;
+        ggml_tensor *target=layout==3?ggml_new_tensor_4d(ctx,type,block,blocks,1,1):ggml_dup_tensor(ctx,input);
+        target->nb[1]+=bytes; target->nb[2]=target->nb[1]*target->ne[1]+bytes; target->nb[3]=target->nb[2]*target->ne[2]+bytes;
+        ggml_tensor *result=operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
+        ggml_tensor *reference_target=ggml_new_tensor_2d(ctx,type,block,blocks);
+        reference_target->nb[1]=bytes*2; reference_target->nb[2]=reference_target->nb[1]*blocks; reference_target->nb[3]=reference_target->nb[2];
+        ggml_tensor *expected_tensor=ggml_cont(ctx,ggml_cpy(ctx,input,reference_target));
+        ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
+        std::vector<unsigned char> initial(ggml_nbytes(input)),output(ggml_nbytes(result),0xA5), expected(blocks*bytes);
+        for(size_t i=0;i<initial.size();i++) initial[i]=(i*37+kind*13+layout)%256;
+        ggml_backend_tensor_set(input,initial.data(),0,initial.size());
+        ggml_cgraph *oracle_graph=ggml_new_graph(ctx); ggml_build_forward_expand(oracle_graph,expected_tensor);
+        CHECK(ggml_backend_graph_compute(reference,oracle_graph)==GGML_STATUS_SUCCESS);
+        ggml_backend_tensor_get(expected_tensor,expected.data(),0,expected.size());
+        ggml_backend_tensor_set(result,output.data(),0,output.size());
+        ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
+        if(kind==0 && units==1 && rows==1 && batches==1 && layout==0) {
+          result->ne[1]++; CHECK(!ggml_backend_dev_supports_op(dev,result));
+          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->ne[1]--;
+          ggml_tensor *saved=result->src[operation==2?1:0]; result->src[operation==2?1:0]=nullptr;
+          CHECK(!ggml_backend_dev_supports_op(dev,result));
+          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED); result->src[operation==2?1:0]=saved;
+          std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
+        }
+        CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+        std::vector<unsigned char> actual(output.size()); ggml_backend_tensor_get(result,actual.data(),0,actual.size());
+        size_t index=0;
+        for(int64_t i3=0;i3<result->ne[3];i3++) for(int64_t i2=0;i2<result->ne[2];i2++)
+        for(int64_t i1=0;i1<result->ne[1];i1++) for(int64_t i0=0;i0<result->ne[0]/block;i0++,index++) {
+          const size_t offset=i0*result->nb[0]+i1*result->nb[1]+i2*result->nb[2]+i3*result->nb[3];
+          memcpy(output.data()+offset,expected.data()+index*bytes,bytes);
+        }
+        if(actual!=output) {fprintf(stderr,"copy mismatch type=%d op=%d layout=%d\n",kind,operation,layout);return 2;}
+        ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
+      }
+      ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases);return 0;
+    }
     if (!strcmp(argv[4], "empty")) {
       ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference,1);

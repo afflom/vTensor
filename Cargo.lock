@@ -329,6 +329,7 @@ dependencies = [
  "uor-matmul",
  "verdant_matrix_shape",
  "verdant_scalar_f32",
+ "verdant_storage_transfer",
 ]
 
 [[package]]
@@ -337,6 +338,10 @@ version = "2.4.0"
 
 [[package]]
 name = "verdant_scalar_f32"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_storage_transfer"
 version = "2.4.0"
 
 [[package]]

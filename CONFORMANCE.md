@@ -36,6 +36,12 @@ model does not sanction.
 | --- | --- | --- |
 | `TC-01` | `build` | The checker answers conformant exactly when every universal policy file's observed digest equals its locked digest |
 
+## copy-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-15` | `build` | Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding |
+
 ## elementwise-graphs
 
 | ID | Level | Statement |

@@ -879,3 +879,75 @@ paths and fidelity commands target the Engine repository. They are useful
 references for the remaining automation work, not an already validated
 vTensor integration. The prepared dependency remains the explicitly recorded
 scalar/matrix checkpoint until an updated source is validated.
+
+
+## VT-15: same-type storage graphs through Prism and Verdant
+
+VT-15 was registered with its scenario before execution support. The initial
+oracle run failed at `ggml_backend_dev_supports_op(dev,result)` after the CPU
+reference accepted the first nonempty copy. No previously unsupported numeric
+family is presented as completed by this checkpoint.
+
+The Prism PointwiseGraph model now exposes a typed graph request containing
+tensor type, shape, strides and byte span. Its copy decision looks up the
+imported storage catalog, checks block alignment and equal element counts,
+and supplies paired source/destination addressing contexts. The native
+adapter executes those plans and delegates each encoded block to Verdant's
+safe `memory::copy_storage_block` API. One scratch block is reused per node;
+no block allocation occurs inside the element loop. Empty nodes retain their
+separate certified no-op path before operand inspection.
+
+The exact pinned SDK exported PointwiseGraph.evaluate and rightOffset with
+result `b1c67d28021623aa81d54fafd11573d920f2fed965606723a00cfba9d52ff9b4`
+and attestation
+`c5403093084c840a1148766af0fa6dc9a47154813fd3de00bbdb72b728224187`.
+The export preserves the SDK-produced source and proof artifacts. The new
+closed examples check padded and reshaped block offsets; they are not a
+universal proof of all descriptor behavior.
+
+The source bundle now reproduces Verdant checkpoint
+`26ba1eaa1369e9f6539c3ca40ec9124103d666e4`. Its storage primitive admits
+lengths through a separate certified Prism model, preserves the Tensor
+crate's `forbid(unsafe_code)`, and rejects unequal lengths before mutation.
+The primitive's imported GGML vector-copy comparison covers 1,539 cases and
+393,984 bytes, including zero length and guard bytes. A planted flipped byte
+failed with `GGML storage byte 0`; the restored ten Tensor tests pass.
+Tensor/Core Clippy, Engine model/format and dependency checks pass. A fresh
+MIR projection retains 203 lifted, 1,192 residue, 73 foreign and 78 effect
+functions. The existing Engine Wasm release blocker remains unresolved.
+
+The native oracle covers all 36 live GGML types, three operations, four
+layout variants, two block counts, two row counts and two batch counts:
+3,456 cases. Cases include noncontiguous block/outer strides, reshaped CONT
+and CPY, raw quantized encodings, and whole-allocation comparisons preserving
+padding. Malformed output shapes and missing required operands are refused
+before writes. Type conversions remain in the completion scope.
+
+The pinned upstream `ggml_compute_forward_dup_bytes` contiguous-destination
+branch multiplies `ne[0]` by type size without dividing by quantization block
+size for noncontiguous sources. Inspection also found this branch unchanged
+at upstream commit `919794500475862f6768c353255469dc661cb734` in
+`ggml/src/ggml-cpu/ops.cpp`. The reference therefore uses upstream CPY to a
+padded `[blockSize,totalBlocks]` destination followed by same-shape CONT.
+This selects the upstream generic block-copy and row-size paths, providing
+a flat logical-byte oracle without editing upstream source or excluding
+quantized layouts. vTensor's actual operation and destination retain the
+layout under test.
+
+Shared typed ABI declarations preserve every imported field's order and
+signature. Digest helpers centralize cached-object checks; every behavioral
+comparison and native source-snapshot comparison still executes live.
+The source audit measures 10,583 handwritten lines in 51 files, below the
+unchanged parent ceiling. The complete release gate remains unproven;
+VT-02 continues to reject the development dependency override.
+
+The graph-level planted byte fault failed at
+`copy mismatch type=0 op=0 layout=0`; the source was restored before regression.
+The final workspace run passed every other target and fourteen contract tests;
+VT-02 alone failed with the explicit production-source refusal. After adding
+the missing safety comment, the complete native contract target reproduced
+fourteen passes and that same refusal in 5.96 seconds. Model and source audits,
+formatting, frame synchronization, workspace Clippy and all cargo-deny checks
+passed. The final source audit is 10,583 lines in 51 files. The full release
+`just vv` remains unproven while the development dependency is refused; no
+unchanged expensive main-app proof was repeated for this component checkpoint.

@@ -15,211 +15,162 @@ pub(crate) type Event = *mut c_void;
 pub(crate) const GGML_STATUS_SUCCESS: c_int = 0;
 pub(crate) const GGML_STATUS_FAILED: c_int = -1;
 
-#[repr(C)]
-pub(crate) struct Tensor {
-    pub ty: c_int,
-    pub buffer: Buf,
-    pub ne: [i64; 4],
-    pub nb: [usize; 4],
-    pub op: c_int,
-    pub op_params: [i32; 16],
-    pub flags: i32,
-    pub src: [TensorPtr; 10],
-    pub view_src: TensorPtr,
-    pub view_offs: usize,
-    pub data: *mut c_void,
-    pub name: [c_char; 64],
-    pub extra: *mut c_void,
-    pub padding: [c_char; 8],
+// Shared declarations preserve GGML field order and C layout.
+macro_rules! record {
+    ($name:ident { $($field:ident: $ty:ty),* $(,)? }) => {
+        #[repr(C)]
+        pub(crate) struct $name { $(pub $field: $ty,)* }
+    };
+}
+macro_rules! interface {
+    ($name:ident { $($field:ident($($arg:ty),* $(,)?) -> $out:ty;)* }) => {
+        #[repr(C)]
+        #[derive(Default)]
+        pub(crate) struct $name {
+            $(pub $field: Option<unsafe extern "C" fn($($arg),*) -> $out>,)*
+        }
+    };
 }
 
-#[repr(C)]
-#[derive(Default)]
-pub(crate) struct BufferTypeInterface {
-    pub get_name: Option<unsafe extern "C" fn(Buft) -> *const c_char>,
-    pub alloc_buffer: Option<unsafe extern "C" fn(Buft, usize) -> Buf>,
-    pub alloc_buffer_n: Option<unsafe extern "C" fn(Buft, *mut TensorPtr, c_int) -> Buf>,
-    pub get_alignment: Option<unsafe extern "C" fn(Buft) -> usize>,
-    pub get_max_size: Option<unsafe extern "C" fn(Buft) -> usize>,
-    pub get_alloc_size: Option<unsafe extern "C" fn(Buft, *const Tensor) -> usize>,
-    pub get_alloc_size_n: Option<unsafe extern "C" fn(Buft, *mut TensorPtr, c_int) -> usize>,
-    pub is_host: Option<unsafe extern "C" fn(Buft) -> bool>,
-}
+record! { Tensor {
+    ty: c_int,
+    buffer: Buf,
+    ne: [i64; 4],
+    nb: [usize; 4],
+    op: c_int,
+    op_params: [i32; 16],
+    flags: i32,
+    src: [TensorPtr; 10],
+    view_src: TensorPtr,
+    view_offs: usize,
+    data: *mut c_void,
+    name: [c_char; 64],
+    extra: *mut c_void,
+    padding: [c_char; 8],
+} }
 
-#[repr(C)]
-pub(crate) struct BufferType {
-    pub iface: BufferTypeInterface,
-    pub device: Dev,
-    pub context: *mut c_void,
-}
+interface! { BufferTypeInterface {
+    get_name(Buft) -> *const c_char;
+    alloc_buffer(Buft, usize) -> Buf;
+    alloc_buffer_n(Buft, *mut TensorPtr, c_int) -> Buf;
+    get_alignment(Buft) -> usize;
+    get_max_size(Buft) -> usize;
+    get_alloc_size(Buft, *const Tensor) -> usize;
+    get_alloc_size_n(Buft, *mut TensorPtr, c_int) -> usize;
+    is_host(Buft) -> bool;
+} }
 
-#[repr(C)]
-#[derive(Default)]
-pub(crate) struct BufferInterface {
-    pub free_buffer: Option<unsafe extern "C" fn(Buf)>,
-    pub get_base: Option<unsafe extern "C" fn(Buf) -> *mut c_void>,
-    pub init_tensor: Option<unsafe extern "C" fn(Buf, TensorPtr) -> c_int>,
-    pub memset_tensor: Option<unsafe extern "C" fn(Buf, TensorPtr, u8, usize, usize)>,
-    pub set_tensor: Option<unsafe extern "C" fn(Buf, TensorPtr, *const c_void, usize, usize)>,
-    pub get_tensor: Option<unsafe extern "C" fn(Buf, *const Tensor, *mut c_void, usize, usize)>,
-    pub set_tensor_2d: Option<
-        unsafe extern "C" fn(Buf, TensorPtr, *const c_void, usize, usize, usize, usize, usize),
-    >,
-    pub get_tensor_2d: Option<
-        unsafe extern "C" fn(Buf, *const Tensor, *mut c_void, usize, usize, usize, usize, usize),
-    >,
-    pub cpy_tensor: Option<unsafe extern "C" fn(Buf, *const Tensor, TensorPtr) -> bool>,
-    pub clear: Option<unsafe extern "C" fn(Buf, u8)>,
-    pub reset: Option<unsafe extern "C" fn(Buf)>,
-    pub set_tensor_n: Option<
-        unsafe extern "C" fn(
-            Buf,
-            *const TensorPtr,
-            *const *const c_void,
-            *const usize,
-            *const usize,
-            usize,
-        ),
-    >,
-    pub get_tensor_n: Option<
-        unsafe extern "C" fn(
-            Buf,
-            *const *const Tensor,
-            *const *mut c_void,
-            *const usize,
-            *const usize,
-            usize,
-        ),
-    >,
-    pub cpy_tensor_n:
-        Option<unsafe extern "C" fn(Buf, *const *const Tensor, *const TensorPtr, usize) -> bool>,
-}
+record! { BufferType {
+    iface: BufferTypeInterface,
+    device: Dev,
+    context: *mut c_void,
+} }
 
-#[repr(C)]
-pub(crate) struct Buffer {
-    pub iface: BufferInterface,
-    pub buft: Buft,
-    pub context: *mut c_void,
-    pub size: usize,
-    pub usage: c_int,
-}
+interface! { BufferInterface {
+    free_buffer(Buf) -> ();
+    get_base(Buf) -> *mut c_void;
+    init_tensor(Buf, TensorPtr) -> c_int;
+    memset_tensor(Buf, TensorPtr, u8, usize, usize) -> ();
+    set_tensor(Buf, TensorPtr, *const c_void, usize, usize) -> ();
+    get_tensor(Buf, *const Tensor, *mut c_void, usize, usize) -> ();
+    set_tensor_2d(Buf, TensorPtr, *const c_void, usize, usize, usize, usize, usize) -> ();
+    get_tensor_2d(Buf, *const Tensor, *mut c_void, usize, usize, usize, usize, usize) -> ();
+    cpy_tensor(Buf, *const Tensor, TensorPtr) -> bool;
+    clear(Buf, u8) -> ();
+    reset(Buf) -> ();
+    set_tensor_n(Buf, *const TensorPtr, *const *const c_void, *const usize, *const usize, usize) -> ();
+    get_tensor_n(Buf, *const *const Tensor, *const *mut c_void, *const usize, *const usize, usize) -> ();
+    cpy_tensor_n(Buf, *const *const Tensor, *const TensorPtr, usize) -> bool;
+} }
 
-#[repr(C)]
-#[derive(Default)]
-pub(crate) struct BackendInterface {
-    pub get_name: Option<unsafe extern "C" fn(BackendPtr) -> *const c_char>,
-    pub free: Option<unsafe extern "C" fn(BackendPtr)>,
-    pub set_tensor_async:
-        Option<unsafe extern "C" fn(BackendPtr, TensorPtr, *const c_void, usize, usize)>,
-    pub get_tensor_async:
-        Option<unsafe extern "C" fn(BackendPtr, *const Tensor, *mut c_void, usize, usize)>,
-    pub set_tensor_2d_async: Option<
-        unsafe extern "C" fn(
-            BackendPtr,
-            TensorPtr,
-            *const c_void,
-            usize,
-            usize,
-            usize,
-            usize,
-            usize,
-        ),
-    >,
-    pub get_tensor_2d_async: Option<
-        unsafe extern "C" fn(
-            BackendPtr,
-            *const Tensor,
-            *mut c_void,
-            usize,
-            usize,
-            usize,
-            usize,
-            usize,
-        ),
-    >,
-    pub cpy_tensor_async:
-        Option<unsafe extern "C" fn(BackendPtr, BackendPtr, *const Tensor, TensorPtr) -> bool>,
-    pub synchronize: Option<unsafe extern "C" fn(BackendPtr)>,
-    pub graph_plan_create: Option<unsafe extern "C" fn(BackendPtr, *const c_void) -> Plan>,
-    pub graph_plan_free: Option<unsafe extern "C" fn(BackendPtr, Plan)>,
-    pub graph_plan_update: Option<unsafe extern "C" fn(BackendPtr, Plan, *const c_void)>,
-    pub graph_plan_compute: Option<unsafe extern "C" fn(BackendPtr, Plan) -> c_int>,
-    pub graph_compute: Option<unsafe extern "C" fn(BackendPtr, Graph) -> c_int>,
-    pub event_record: Option<unsafe extern "C" fn(BackendPtr, Event)>,
-    pub event_wait: Option<unsafe extern "C" fn(BackendPtr, Event)>,
-    pub graph_optimize: Option<unsafe extern "C" fn(BackendPtr, Graph, *mut c_void)>,
-}
+record! { Buffer {
+    iface: BufferInterface,
+    buft: Buft,
+    context: *mut c_void,
+    size: usize,
+    usage: c_int,
+} }
 
-#[repr(C)]
-pub(crate) struct Backend {
-    pub guid: *mut [u8; 16],
-    pub iface: BackendInterface,
-    pub device: Dev,
-    pub context: *mut c_void,
-}
+interface! { BackendInterface {
+    get_name(BackendPtr) -> *const c_char;
+    free(BackendPtr) -> ();
+    set_tensor_async(BackendPtr, TensorPtr, *const c_void, usize, usize) -> ();
+    get_tensor_async(BackendPtr, *const Tensor, *mut c_void, usize, usize) -> ();
+    set_tensor_2d_async(BackendPtr, TensorPtr, *const c_void, usize, usize, usize, usize, usize) -> ();
+    get_tensor_2d_async(BackendPtr, *const Tensor, *mut c_void, usize, usize, usize, usize, usize) -> ();
+    cpy_tensor_async(BackendPtr, BackendPtr, *const Tensor, TensorPtr) -> bool;
+    synchronize(BackendPtr) -> ();
+    graph_plan_create(BackendPtr, *const c_void) -> Plan;
+    graph_plan_free(BackendPtr, Plan) -> ();
+    graph_plan_update(BackendPtr, Plan, *const c_void) -> ();
+    graph_plan_compute(BackendPtr, Plan) -> c_int;
+    graph_compute(BackendPtr, Graph) -> c_int;
+    event_record(BackendPtr, Event) -> ();
+    event_wait(BackendPtr, Event) -> ();
+    graph_optimize(BackendPtr, Graph, *mut c_void) -> ();
+} }
 
-#[repr(C)]
-pub(crate) struct DeviceCapabilities {
-    pub asynchronous: bool,
-    pub host_buffer: bool,
-    pub buffer_from_host_ptr: bool,
-    pub events: bool,
-    pub mmap_support: bool,
-}
+record! { Backend {
+    guid: *mut [u8; 16],
+    iface: BackendInterface,
+    device: Dev,
+    context: *mut c_void,
+} }
 
-#[repr(C)]
-pub(crate) struct DeviceProperties {
-    pub name: *const c_char,
-    pub description: *const c_char,
-    pub memory_free: usize,
-    pub memory_total: usize,
-    pub ty: c_int,
-    pub device_id: *const c_char,
-    pub caps: DeviceCapabilities,
-}
+record! { DeviceCapabilities {
+    asynchronous: bool,
+    host_buffer: bool,
+    buffer_from_host_ptr: bool,
+    events: bool,
+    mmap_support: bool,
+} }
 
-#[repr(C)]
-#[derive(Default)]
-pub(crate) struct DeviceInterface {
-    pub get_name: Option<unsafe extern "C" fn(Dev) -> *const c_char>,
-    pub get_description: Option<unsafe extern "C" fn(Dev) -> *const c_char>,
-    pub get_memory: Option<unsafe extern "C" fn(Dev, *mut usize, *mut usize)>,
-    pub get_type: Option<unsafe extern "C" fn(Dev) -> c_int>,
-    pub get_props: Option<unsafe extern "C" fn(Dev, *mut DeviceProperties)>,
-    pub init_backend: Option<unsafe extern "C" fn(Dev, *const c_char) -> BackendPtr>,
-    pub get_buffer_type: Option<unsafe extern "C" fn(Dev) -> Buft>,
-    pub get_host_buffer_type: Option<unsafe extern "C" fn(Dev) -> Buft>,
-    pub buffer_from_host_ptr: Option<unsafe extern "C" fn(Dev, *mut c_void, usize, usize) -> Buf>,
-    pub supports_op: Option<unsafe extern "C" fn(Dev, *const Tensor) -> bool>,
-    pub supports_buft: Option<unsafe extern "C" fn(Dev, Buft) -> bool>,
-    pub offload_op: Option<unsafe extern "C" fn(Dev, *const Tensor) -> bool>,
-    pub event_new: Option<unsafe extern "C" fn(Dev) -> Event>,
-    pub event_free: Option<unsafe extern "C" fn(Dev, Event)>,
-    pub event_synchronize: Option<unsafe extern "C" fn(Dev, Event)>,
-}
+record! { DeviceProperties {
+    name: *const c_char,
+    description: *const c_char,
+    memory_free: usize,
+    memory_total: usize,
+    ty: c_int,
+    device_id: *const c_char,
+    caps: DeviceCapabilities,
+} }
 
-#[repr(C)]
-pub(crate) struct Device {
-    pub iface: DeviceInterface,
-    pub reg: Reg,
-    pub context: *mut c_void,
-}
+interface! { DeviceInterface {
+    get_name(Dev) -> *const c_char;
+    get_description(Dev) -> *const c_char;
+    get_memory(Dev, *mut usize, *mut usize) -> ();
+    get_type(Dev) -> c_int;
+    get_props(Dev, *mut DeviceProperties) -> ();
+    init_backend(Dev, *const c_char) -> BackendPtr;
+    get_buffer_type(Dev) -> Buft;
+    get_host_buffer_type(Dev) -> Buft;
+    buffer_from_host_ptr(Dev, *mut c_void, usize, usize) -> Buf;
+    supports_op(Dev, *const Tensor) -> bool;
+    supports_buft(Dev, Buft) -> bool;
+    offload_op(Dev, *const Tensor) -> bool;
+    event_new(Dev) -> Event;
+    event_free(Dev, Event) -> ();
+    event_synchronize(Dev, Event) -> ();
+} }
 
-#[repr(C)]
-#[derive(Default)]
-pub(crate) struct RegistryInterface {
-    pub get_name: Option<unsafe extern "C" fn(Reg) -> *const c_char>,
-    pub get_device_count: Option<unsafe extern "C" fn(Reg) -> usize>,
-    pub get_device: Option<unsafe extern "C" fn(Reg, usize) -> Dev>,
-    pub get_proc_address: Option<unsafe extern "C" fn(Reg, *const c_char) -> *mut c_void>,
-}
+record! { Device {
+    iface: DeviceInterface,
+    reg: Reg,
+    context: *mut c_void,
+} }
 
-#[repr(C)]
-pub(crate) struct Registry {
-    pub api_version: c_int,
-    pub iface: RegistryInterface,
-    pub context: *mut c_void,
-}
+interface! { RegistryInterface {
+    get_name(Reg) -> *const c_char;
+    get_device_count(Reg) -> usize;
+    get_device(Reg, usize) -> Dev;
+    get_proc_address(Reg, *const c_char) -> *mut c_void;
+} }
+
+record! { Registry {
+    api_version: c_int,
+    iface: RegistryInterface,
+    context: *mut c_void,
+} }
 
 unsafe extern "C" {
     pub(crate) fn ggml_backend_buffer_init(

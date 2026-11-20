@@ -5,7 +5,9 @@ use std::cell::UnsafeCell;
 use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
-use vtensor_pointwise::Adt0 as GraphPlan;
+use vtensor_pointwise::{
+    Adt0 as GraphRequest, Adt1 as TensorDescriptor, Adt3 as GraphResponse, Adt4 as GraphPlan,
+};
 
 /// Typed refusals at the native tensor boundary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -507,53 +509,49 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
     }
 }
 
-fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
+fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
     let span = tensor_span(tensor)?;
+    let [n0, n1, n2, n3] = tensor.ne.map(|n| n as u64);
+    let [s0, s1, s2, s3] = tensor.nb.map(|n| n as u64);
+    Ok(TensorDescriptor::C0(
+        tensor.ty as u64,
+        n0,
+        n1,
+        n2,
+        n3,
+        s0,
+        s1,
+        s2,
+        s3,
+        span as u64,
+    ))
+}
+
+fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
+    let output = tensor_metadata(tensor)?;
+    let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span) = &output;
     let operation = u64::try_from(tensor.op).map_err(|_| BackendError::InvalidTensor)?;
-    if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, span as u64)) {
+    if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
         return Ok(None);
     }
-    if tensor.src[0].is_null() {
-        return Err(BackendError::InvalidTensor);
-    }
     // SAFETY: GGML retains every non-null source descriptor during queries and execution.
-    let (left, right) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
-    tensor_span(left)?;
-    if let Some(right) = right {
-        tensor_span(right)?;
-    }
-    let [Ok(k), Ok(m), Ok(l2), Ok(l3)] = left.ne.map(u64::try_from) else {
-        return Err(BackendError::InvalidTensor);
-    };
-    let [Ok(rk), Ok(n), Ok(b2), Ok(b3)] = right.map_or([1; 4], |r| r.ne).map(u64::try_from) else {
-        return Err(BackendError::InvalidTensor);
-    };
-    let [Ok(om), Ok(on), Ok(o2), Ok(o3)] = tensor.ne.map(u64::try_from) else {
-        return Err(BackendError::InvalidTensor);
-    };
-    let pointwise = vtensor_pointwise::run(
+    let left = unsafe { tensor.src[0].as_ref() }.ok_or(BackendError::InvalidTensor)?;
+    // SAFETY: GGML also retains the optional right descriptor for this call.
+    let right = unsafe { tensor.src[1].as_ref() }
+        .map(tensor_metadata)
+        .transpose()?;
+    let response = vtensor_pointwise::run(GraphRequest::C0(
         operation,
         tensor.op_params[0] as u64,
-        left.ty as u64,
-        right.map_or(0, |r| r.ty as u64),
-        tensor.ty as u64,
-        right.is_some(),
-        k,
-        m,
-        l2,
-        l3,
-        rk,
-        n,
-        b2,
-        b3,
-        om,
-        on,
-        o2,
-        o3,
-    )
+        tensor_metadata(left)?,
+        right,
+        output,
+    ))
     .map_err(|_| BackendError::Overflow)?;
-    match pointwise {
-        GraphPlan::C2(..) | GraphPlan::C3(..) => Ok(Some(pointwise)),
+    match response {
+        GraphResponse::C0(plan @ (GraphPlan::C2(..) | GraphPlan::C3(..) | GraphPlan::C4(..))) => {
+            Ok(Some(plan))
+        }
         _ => Err(BackendError::InvalidTensor),
     }
 }
@@ -574,13 +572,13 @@ fn graph_tensor_data(tensor: &Tensor) -> Result<*mut u8, BackendError> {
     }
 }
 
-fn float_workspace(size: u64) -> Result<Vec<f32>, BackendError> {
+fn workspace<T: Default>(size: u64) -> Result<Vec<T>, BackendError> {
     let count = usize::try_from(size).map_err(|_| BackendError::Overflow)?;
     let mut result = Vec::new();
     result
         .try_reserve_exact(count)
         .map_err(|_| BackendError::Allocation)?;
-    result.resize(count, 0.0);
+    result.resize_with(count, T::default);
     Ok(result)
 }
 
@@ -603,9 +601,9 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
         graph_tensor_data(right)?,
         graph_tensor_data(tensor)?,
     );
-    let mut left_values = float_workspace(left_count)?;
-    let mut right_values = float_workspace(right_count)?;
-    let mut output_values = float_workspace(output_count)?;
+    let mut left_values = workspace(left_count)?;
+    let mut right_values = workspace(right_count)?;
+    let mut output_values = workspace(output_count)?;
     let (m, k, n) = (m as usize, k as usize, n as usize);
     for i3 in 0..b3 as usize {
         for i2 in 0..b2 as usize {
@@ -705,6 +703,38 @@ fn execute_pointwise(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendErro
     Ok(())
 }
 
+fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
+    let GraphPlan::C4(count, bytes, source, destination) = plan else {
+        return Err(BackendError::InvalidTensor);
+    };
+    // SAFETY: the admitted copy plan retains a live source descriptor.
+    let source_data = graph_tensor_data(unsafe { &*tensor.src[0] })?;
+    let destination_data = graph_tensor_data(tensor)?;
+    let mut block = workspace::<u8>(bytes)?;
+    for index in 0..count {
+        let response =
+            vtensor_pointwise::run(GraphRequest::C1(index, source.clone(), destination.clone()))
+                .map_err(|_| BackendError::Overflow)?;
+        let GraphResponse::C1(from, to) = response else {
+            return Err(BackendError::InvalidTensor);
+        };
+        // SAFETY: the Prism block counts, offsets and admitted spans bound both
+        // regions. Capture the source before borrowing a possibly aliased destination.
+        unsafe {
+            ptr::copy_nonoverlapping(
+                source_data.add(from as usize),
+                block.as_mut_ptr(),
+                block.len(),
+            );
+            let target =
+                std::slice::from_raw_parts_mut(destination_data.add(to as usize), block.len());
+            verdant_tensor::memory::copy_storage_block(&block, target)
+                .map_err(|_| BackendError::InvalidTensor)?;
+        }
+    }
+    Ok(())
+}
+
 unsafe extern "C" fn supports_operation(_: Dev, tensor: *const Tensor) -> bool {
     // SAFETY: GGML supplies a live tensor descriptor for this query.
     plan_operation(unsafe { &*tensor }).is_ok()
@@ -732,6 +762,7 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
             let result = match plan {
                 GraphPlan::C3(..) => execute_matrix(&*tensor, plan),
                 GraphPlan::C2(..) => execute_pointwise(&*tensor, plan),
+                GraphPlan::C4(..) => execute_copy(&*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),
             };
             if result.is_err() {

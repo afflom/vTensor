@@ -154,3 +154,9 @@ id = "VT-14"
 level = "build"
 suite = "empty-graphs"
 statement = "Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers"
+
+[[id]]
+id = "VT-15"
+level = "build"
+suite = "copy-graphs"
+statement = "Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding"
