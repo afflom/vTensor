@@ -1311,3 +1311,55 @@ a separate allocation for the F32-only padding/fold initialization modes.
 Handwritten source remains 10,576 lines in the existing 51 files. Full backend
 conformance and production dependency acceptance remain unfinished; unchanged
 main-application proofs were not redundantly rebuilt at this component checkpoint.
+
+
+## VT-21: DIAG across every CPU-supported type
+
+Registered VT-21 and its scenario before implementation. The initial
+`cargo test --locked -p vtensor-backend --test contract diagonal_graphs_vt_21 -- --exact --nocapture`
+failed at `ggml_backend_dev_supports_op` after the imported CPU computation
+succeeded. The authoritative constructor requires a vector in dimension one
+and produces a square matrix for each batch. The CPU kernel preserves raw
+F32/F16/BF16 encodings on the diagonal and writes positive-zero bits elsewhere.
+Prism models the complete shape/type decision, diagonal predicate, strided
+input/output addresses and zero-source selection. Verdant executes every
+admitted storage transfer. Two closed examples check batched two-byte diagonal
+and off-diagonal addresses; preservation certificates accompany the generated
+implementation. Finite oracle evidence is not a general bounds proof.
+
+MCP draft `prism-app/6371236314d39c3fa9f85f09e173202ff6d763c680897ffd5e08e4a42df8edb7`
+was refused with `engine.check failed: project-refused`. The attempt to store
+the final SDK-formatted draft returned `store.put failed: unwritable`.
+The exact pinned SDK accepted all four modules and exported result
+`5b4b32e61b42c31aac75faaa6a8ad97409c845bf4e009887b26aa105de086f0b`
+with attestation
+`6eb0860c7665afba4e288a3a6c90c8eb62a6368139dbec79d0f48a35a77bd1a9`.
+The emitted zero-field diagonal mode was inspected before binding it. The
+native change selects the existing four-byte zero block for that mode; F16
+and BF16 transfers use its first two bytes. No handwritten numerical kernel,
+conversion, arithmetic or generated-source edit was added.
+
+All 384 imported CPU comparisons pass: three supported types, four layouts,
+two vector widths, two dimension-two batch counts, two dimension-three batch
+counts, and four normal/empty-dimension patterns. Actual strided input is
+retained; only the CPU reference input is canonicalized. Complete output
+comparison verifies raw diagonal encodings, zeros and untouched padding.
+Malformed source shape, either square output extent, unsupported/mismatched
+type, and missing source are refused before mutation. The initial implemented
+run completed in 2.88 seconds using source-bound reference caching.
+
+Two bounded planted defects were rejected: filling the diagonal mode's zero
+source with byte one failed at an off-diagonal output (actual 1, expected 0);
+forcing every diagonal source offset to zero failed on a later batch
+(actual 0, expected 148). Both faults were restored before regression.
+
+Model checking and certificate replay now share the existing command runner,
+which verifies exit status and reports stdout/stderr. The fixture chooses
+whether it needs a type-input stream once per batch instead of once per type.
+The full regression passed twenty contract tests and every other workspace
+target; VT-02 alone still rejected the unpublished Verdant development override.
+Contract execution took 8.99 seconds. Formatting, model/source audits, frame
+synchronization, workspace Clippy and dependency checks passed. Handwritten
+source is 10,574 lines in the existing 51 files. Full backend conformance and
+production dependency acceptance remain unfinished. Unchanged main-application
+proofs were not redundantly rebuilt for this component checkpoint.

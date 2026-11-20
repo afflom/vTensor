@@ -48,6 +48,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-15` | `build` | Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding |
 
+## diagonal-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-21` | `build` | Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle |
+
 ## elementwise-graphs
 
 | ID | Level | Statement |

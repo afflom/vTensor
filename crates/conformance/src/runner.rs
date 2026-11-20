@@ -679,14 +679,18 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     };
     // SAFETY: the admitted plan retains every required source descriptor.
     let source_data = |slot: usize| graph_tensor_data(unsafe { &*tensor.src[slot] });
-    // Prism admits zero initialization only for four-byte F32 blocks.
+    // Prism admits zero initialization only for blocks of at most four bytes.
     let zeros = [0_u8; 4];
-    let right = match mode {
-        CopyMode::C2(..) | CopyMode::C6(..) => Some(source_data(1)?),
-        CopyMode::C3(_, _, _, _, false) | CopyMode::C7(..) => Some(zeros.as_ptr().cast_mut()),
-        _ => None,
-    };
-    let sources = [source_data(0)?, right.unwrap_or(null_mut())];
+    let sources = [
+        source_data(0)?,
+        match mode {
+            CopyMode::C2(..) | CopyMode::C6(..) => source_data(1)?,
+            CopyMode::C3(_, _, _, _, false) | CopyMode::C7(..) | CopyMode::C8 => {
+                zeros.as_ptr().cast_mut()
+            }
+            _ => null_mut(),
+        },
+    ];
     let destination_data = graph_tensor_data(tensor)?;
     let mut block = workspace(bytes, 0_u8)?;
     for index in 0..count {

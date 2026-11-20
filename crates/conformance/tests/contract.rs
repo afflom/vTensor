@@ -286,6 +286,12 @@ fn fold_graphs_vt_20() {
     native_backend_oracle::verify(&root(), "fold");
 }
 
+/// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
+#[test]
+fn diagonal_graphs_vt_21() {
+    native_backend_oracle::verify(&root(), "diagonal");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -1064,24 +1070,19 @@ mod tensor_layout {
         let primary = format!("vtensor_{suffix}");
         let bundle = format!("generated/{name}");
         let result = super::ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
-        let checked = std::process::Command::new("lexlean")
-            .current_dir(root)
-            .args([
-                "--project",
-                &project,
-                "--diagnostic-format",
-                "json",
-                "check",
-            ])
-            .output()
-            .expect("run in the pinned SDK with lexlean available");
-        assert!(
-            checked.status.success(),
-            "{}",
-            String::from_utf8_lossy(&checked.stdout)
+        let checked = ggml_oracle::run(
+            std::process::Command::new("lexlean")
+                .current_dir(root)
+                .args([
+                    "--project",
+                    &project,
+                    "--diagnostic-format",
+                    "json",
+                    "check",
+                ]),
         );
         let current: serde_json::Value =
-            serde_json::from_slice(&checked.stdout).expect("model identities");
+            serde_json::from_slice(&checked).expect("model identities");
         assert_eq!(
             current["source_id"], result["source"]["source_id"],
             "regenerate layout bundle after model changes"
@@ -1133,16 +1134,10 @@ mod tensor_layout {
             serde_json::Value::Array(certified_files),
             "generated-code exemptions must exactly match the certified outputs"
         );
-        let replay = std::process::Command::new("lexlean")
-            .current_dir(root)
-            .args(["production", "verify-artifact", &bundle])
-            .output()
-            .expect("SDK artifact replay");
-        assert!(
-            replay.status.success(),
-            "{}{}",
-            String::from_utf8_lossy(&replay.stdout),
-            String::from_utf8_lossy(&replay.stderr)
+        ggml_oracle::run(
+            std::process::Command::new("lexlean")
+                .current_dir(root)
+                .args(["production", "verify-artifact", &bundle]),
         );
     }
 
@@ -1597,16 +1592,14 @@ mod native_backend_oracle {
             .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
             .map(|row| row["value"].as_integer().unwrap())
             .collect();
-        let input = kinds
-            .iter()
-            .filter(|_| {
-                matches!(
-                    mode,
-                    "buffers" | "empty" | "copy" | "repeat" | "concat" | "spatial" | "fold"
-                )
-            })
-            .map(|kind| format!("{kind}\n"))
-            .collect::<String>();
+        let input = if matches!(mode, "matrix" | "elementwise" | "update") {
+            String::new()
+        } else {
+            kinds
+                .iter()
+                .map(|kind| format!("{kind}\n"))
+                .collect::<String>()
+        };
         let snapshot = cache.join("loaded-source.snapshot");
         let mut expected = Vec::new();
         for file in vtensor_backend::SOURCE_FILES {
@@ -1660,6 +1653,7 @@ mod native_backend_oracle {
                     "spatial" => 2256,
                     "update" => 4608,
                     "fold" => 672,
+                    "diagonal" => 384,
                     _ => panic!("unknown oracle mode"),
                 })
             )
@@ -1787,20 +1781,21 @@ int main(int argc, char **argv) {
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases); return 0;
     }
     const bool repeating=!strcmp(argv[4], "repeat"), concatenating=!strcmp(argv[4], "concat");
-    const bool spatial=!strcmp(argv[4], "spatial"), folding=!strcmp(argv[4], "fold");
-    if (!strcmp(argv[4], "copy") || repeating || concatenating || spatial || folding) {
+    const bool spatial=!strcmp(argv[4], "spatial"), folding=!strcmp(argv[4], "fold"), diagonal=!strcmp(argv[4], "diagonal");
+    if (!strcmp(argv[4], "copy") || repeating || concatenating || spatial || folding || diagonal) {
       ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
       ggml_backend_cpu_set_n_threads(reference,1);
       size_t cases=0, refused=0; int kind;
-      while (scanf("%d",&kind)==1) for(int operation=0;operation<(concatenating?4:(repeating || folding)?1:3);operation++) {
+      while (scanf("%d",&kind)==1) for(int operation=0;operation<(concatenating?4:(repeating || folding || diagonal)?1:3);operation++) {
       const std::vector<int> extents=(concatenating || (spatial && operation==0))?std::vector<int>{0,1,3}:spatial?std::vector<int>{2,3}:std::vector<int>{1,3};
       const std::vector<int> batches_list=(spatial && operation==2)?std::vector<int>{2,3}:std::vector<int>{1,2};
-      for(int pattern=0;pattern<(folding?21:spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
+      for(int pattern=0;pattern<(diagonal?4:folding?21:spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
       for(int units : extents) for(int rows : extents) for(int batches : batches_list) {
-        if(((spatial || folding) && kind!=GGML_TYPE_F32) || (repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32)) continue;
+        if((diagonal && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || ((spatial || folding) && kind!=GGML_TYPE_F32) || (repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32)) continue;
         ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
         const auto type=(ggml_type)kind; const int64_t block=ggml_blck_size(type); const size_t bytes=ggml_type_size(type);
         int64_t shape[]={block*units,rows,2,batches};
+        if(diagonal) {shape[1]=1;shape[2]=rows;if(pattern)shape[pattern==1?0:pattern]=0;}
         if(folding) for(int axis=0;axis<4;axis++) shape[axis]=(pattern==16 && axis==0) || (pattern>=17 && axis==pattern-17)?0:shape[axis]*((pattern&(1<<axis))?2:1);
         ggml_tensor *input=ggml_new_tensor(ctx,type,4,shape);
         int64_t right_ne[]={input->ne[0],input->ne[1],input->ne[2],input->ne[3]}; right_ne[operation%4]=layout==3?0:right_ne[operation%4]+(operation==0?block:1);
@@ -1835,9 +1830,9 @@ int main(int argc, char **argv) {
           for(int axis=0;axis<4;axis++) args[axis]=pattern?(((pattern-1)&(1<<axis))?-1:1)*(a->ne[axis]-1):0;
           return ggml_roll(ctx,a,args[0],args[1],args[2],args[3]);
         };
-        ggml_tensor *result=folding?ggml_repeat_back(ctx,input,target):spatial?spatial_op(operation?ggml_cont(ctx,input):input,false):concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
-        ggml_tensor *expected_tensor=folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
-        if(repeating || concatenating || spatial || folding) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
+        ggml_tensor *result=diagonal?ggml_diag(ctx,input):folding?ggml_repeat_back(ctx,input,target):spatial?spatial_op(operation?ggml_cont(ctx,input):input,false):concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
+        ggml_tensor *expected_tensor=diagonal?ggml_diag(ctx,canonical_copy(ctx,input)):folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
+        if(repeating || concatenating || spatial || folding || diagonal) {result->nb[1]+=bytes;result->nb[2]=result->nb[1]*result->ne[1]+bytes;result->nb[3]=result->nb[2]*result->ne[2]+bytes;}
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer || (!ggml_nbytes(input)&&(!right||!ggml_nbytes(right))&&!ggml_nbytes(result)));
         std::vector<unsigned char> output(ggml_nbytes(result),0xA5), expected(ggml_nbytes(expected_tensor));
         for(ggml_tensor *operand : {input,right}) if(operand) {
@@ -1864,6 +1859,7 @@ int main(int argc, char **argv) {
             CHECK(refuses_change(backend,dev,graph,result,right->type,GGML_TYPE_F16));
             CHECK(refuses_change(backend,dev,graph,result,right->ne[(operation+1)%4],right->ne[(operation+1)%4]+1));
           }
+          if(diagonal) {CHECK(refuses_change(backend,dev,graph,result,input->ne[1],int64_t(2)));CHECK(refuses_change(backend,dev,graph,result,result->ne[1],result->ne[1]+1));CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32));}
           if(spatial) CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(operation==2?input->ne[0]:-1)));
         }
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
