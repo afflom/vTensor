@@ -734,3 +734,8 @@ passed in the VT-13 test; the test then fails at the intended native
 supports-operation assertion because arithmetic execution is still pending.
 `cargo check -p vtensor-backend`, formatting and `just model` passed.
 This is an implementation checkpoint, not a passing capability or release.
+
+The pointwise packages also pass `cargo deny --all-features check`. As for
+the existing certified packages, their omitted SDK license metadata is
+clarified under this repository's license using exact generated-source
+hashes; the certified package bytes remain unchanged.

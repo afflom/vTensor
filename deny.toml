@@ -106,3 +106,15 @@ name = "verdant_matrix_shape"
 version = "=2.4.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
+
+[[licenses.clarify]]
+name = "vtensor_pointwise"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xb2ac2691 }]
+
+[[licenses.clarify]]
+name = "vtensor_repeat_offset"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x356a2d30 }]
