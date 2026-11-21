@@ -1497,6 +1497,13 @@ fn generator_graphs_vt_37() {
     native_backend_oracle::verify(&root(), "upstream-ARANGE", 13);
 }
 
+/// `VT-38`: Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals
+#[test]
+fn normalization_graphs_vt_38() {
+    tensor_layout::verify_pointwise_bundle();
+    native_backend_oracle::verify(&root(), "upstream-L2_NORM,L2_NORM_BATCH", 78);
+}
+
 mod native_backend_oracle {
     use super::ggml_oracle::{compile, digest, file_digest, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
@@ -1997,6 +2004,39 @@ int main(int argc, char **argv) {
           ggml_backend_tensor_memset(result,0xA5,0,expected.size());CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
           CHECK(compare_result(result,nullptr,expected,0));++cases;ggml_backend_buffer_free(buffer);ggml_free(ctx);
         }
+      }
+      if (!strcmp(argv[3]+9,"L2_NORM,L2_NORM_BATCH")) {
+        CHECK(cases==61);
+        ggml_init_params params={2*1024*1024,nullptr,true};auto ctx=ggml_init(params);CHECK(ctx);
+        auto left=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,3,2,2,2);
+        auto result=ggml_l2_norm(ctx,left,0.0f);auto control=ggml_l2_norm(ctx,left,0.0f);
+        result->nb[0]=8;result->nb[1]=32;result->nb[2]=80;result->nb[3]=192;
+        auto buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer);
+        auto graph=ggml_new_graph(ctx);ggml_build_forward_expand(graph,result);
+        auto expected=ggml_new_graph(ctx);ggml_build_forward_expand(expected,control);
+        for(uint8_t fill:{0u,0x3fu,0x7fu,0xffu}) for(uint32_t epsilon:{0u,0x80000000u,0x358637bdu,0x7f800000u}) {
+          result->op_params[0]=control->op_params[0]=int32_t(epsilon);
+          ggml_backend_tensor_memset(left,fill,0,ggml_nbytes(left));ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
+          CHECK(ggml_backend_graph_compute(reference,expected)==GGML_STATUS_SUCCESS);
+          CHECK(ggml_backend_dev_supports_op(dev,result) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+          CHECK(compare_result(result,control,std::vector<unsigned char>(ggml_nbytes(result),0xA5),1));++cases;
+        }
+        for(uint32_t bad:{0xbf800000u,0xff800000u,0x7fc00001u,0x7f800001u})
+          CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(bad)));
+        CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_I32));
+        CHECK(refuses_change(backend,dev,graph,result,left->type,GGML_TYPE_I32));
+        CHECK(refuses_change(backend,dev,graph,result,result->src[0],nullptr));
+        CHECK(refuses_change(backend,dev,graph,result,result->ne[0],int64_t(2)));
+        CHECK(refuses_change(backend,dev,graph,result,result->data,left->data));
+        CHECK(refuses_change(backend,dev,graph,result,left->ne[0],int64_t(-1)));
+        CHECK(refuses_change(backend,dev,graph,result,result->nb[0],SIZE_MAX));
+        CHECK(refuses_change(backend,dev,graph,result,left->nb[0],SIZE_MAX));CHECK(refusal_probes==12);
+        std::vector<unsigned char> before(ggml_nbytes(result));ggml_backend_tensor_get(result,before.data(),0,before.size());
+        result->ne[0]=0;result->op_params[0]=int32_t(0x7fc00001u);
+        CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+        CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+        result->ne[0]=3;CHECK(compare_result(result,nullptr,before,0));++cases;
+        ggml_backend_buffer_free(buffer);ggml_free(ctx);
       }
       printf("RESULT cases %zu\n",cases);
       ggml_backend_free(reference);ggml_backend_free(backend);return 0;

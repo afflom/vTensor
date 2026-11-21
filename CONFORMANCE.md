@@ -137,6 +137,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-11` | `build` | GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior |
 
+## normalization-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-38` | `build` | Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals |
+
 ## oracle-import
 
 | ID | Level | Statement |

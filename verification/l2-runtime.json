@@ -1,0 +1,56 @@
+{
+  "spec": "vtensor/l2-runtime/1",
+  "id": "VT-38",
+  "status": "registered-real-imported-oracle-failure-captured-implementation-in-progress",
+  "authority": {
+    "repository": "https://github.com/ggml-org/llama.cpp",
+    "commit": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "test_file": "tests/test-backend-ops.cpp",
+    "implementation": "ggml/src/ggml-cpu/ops.cpp:ggml_compute_forward_l2_norm_f32",
+    "filter": "L2_NORM,L2_NORM_BATCH",
+    "required_upstream_cases": 61,
+    "ordinary": 31,
+    "batched": 30,
+    "source": "Unchanged imported factory and test_case::eval with CPU reference mode; cached source is byte-bound by oracle-import.lock."
+  },
+  "oracle_bridge": {
+    "required_total": 78,
+    "additional_positive": 17,
+    "refusal_probes": 12,
+    "supplemental": "16 padded-output combinations of zero, finite, overflowing-square and NaN source fills with epsilon +0, -0, 1e-6 and +infinity; one empty invalid-parameter no-op. Actual CPU expected results, unchanged padding and NaN class equivalence. Refuse invalid epsilon, types, shape, missing source, aliasing, negative extents and overflowing strides without writes."
+  },
+  "initial_failure": {
+    "command": "cargo test --locked -p vtensor-backend --test contract normalization_graphs_vt_38 -- --nocapture",
+    "result": "First required imported L2_NORM case is not supported.",
+    "passed": 0,
+    "failed": 1,
+    "ignored": 0,
+    "filtered": 37,
+    "seconds": 2.75
+  },
+  "model_draft": "prism-app/f540aff1f0acc25417c72059aabb03be29e02fbd3d86d618cce3eab4247a741d",
+  "model_check": "passed; production proof/export running",
+  "native_production_adapter": "No changes planned or needed; existing typed Prism execution instructions bind existing Verdant primitives.",
+  "source_budget": {
+    "current": 10956,
+    "previous_checkpoint": 10918,
+    "growth_in_oracle_tests": 38,
+    "last_accepted": 10549,
+    "excess": 407,
+    "status": "unsatisfied; mechanical source audit rejects this growth; no ceiling raised"
+  },
+  "logs": {
+    "registration": {
+      "path": "/tmp/vtensor-l2-registration.log",
+      "sha256": "6411a21f180cb13b07ceed41c797d9599a1c49255e03e34ab0d9d4f9944d076c"
+    },
+    "before": {
+      "path": "/tmp/vtensor-l2-before.log",
+      "sha256": "5f5471cb1bae93960770dd41c02bdacb7bb8713df6ec69eb5f2e57b7ff908a11"
+    },
+    "registration-budget": {
+      "path": "/tmp/vtensor-l2-registration-budget.log",
+      "sha256": "1e4f33508eedc2c203fa42d6863cef80e6ff7debe587e17d4ccee3ca2e9ac418"
+    }
+  }
+}
