@@ -5,6 +5,7 @@
 \importmodule{MatrixGraph}
 \importmodule{TensorTypes}
 \importmodule{RowGather}
+\importmodule{RelativePosition}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -91,7 +92,8 @@ inductive{
     {name: argmaxRow, fields: []},
     {name: counted, fields: [Nat, IndexContext]},
     {name: scattered, fields: [Nat, IndexContext]},
-    {name: gathered, fields: [Nat, IndexContext]}
+    {name: gathered, fields: [Nat, IndexContext]},
+    {name: relativePosition, fields: []}
   ]
 }
 
@@ -1004,6 +1006,14 @@ definition{
 }
 
 definition{
+  name: planRelativePosition,
+  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if (((project left ty) =? 1) || ((project left ty) =? 30)) then (if ((((((((((((project output ty) =? 1) && ((project left n0) =? (project output n0))) && (0 <? (project output n1))) && ((project output n1) =? (project output n2))) && ((project output n3) =? 1)) && ((project left n1) =? (prim subtract ((project output n1) + (project output n1)) 1 : Nat))) && (0 <? (project left n2))) && (0 <? (project left n3))) && (2 <=? (project left s0))) && (2 <=? (project output s0))) && (separateTensors left output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) 2 (indexContext left 1) (indexContext output 1) (ctor CopyMode.relativePosition)) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
+  executable: true
+}
+
+definition{
   name: planGatherDescriptors,
   parameters: [left : TensorDescriptor, indices : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
@@ -1032,6 +1042,7 @@ definition{
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
   body: (match mode
+    | CopyMode.relativePosition => (ctor GraphResponse.offsets false (blockOffset (RelativePosition::sourceWord index (project destination u0) (project destination n1)) source) (blockOffset index destination))
     | CopyMode.linear => (ctor GraphResponse.offsets false (blockOffset index source) (blockOffset index destination))
     | CopyMode.repeated => (ctor GraphResponse.offsets false (repeatedBlockOffset index source destination) (blockOffset index destination))
     | CopyMode.concatenated axis right => (concatenatedOffsets index source right destination axis)
@@ -1061,11 +1072,11 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 39) then (planGather left right output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+    | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
       | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
       | Option.none => (numericPlan operation variant left right output)
-      | Option.some kind => (planUnary kind left output)))))))))))))))))))))
+      | Option.some kind => (planUnary kind left output))))))))))))))))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)
     | GraphRequest.selection index source destination flag => (argmaxOffsets index source destination flag)
     | GraphRequest.scatter index source destination indices flag => (rowGradientOffsets index source destination indices flag)

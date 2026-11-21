@@ -1469,9 +1469,8 @@ mod native_backend_oracle {
             .join("libvtensor_backend.so")
             .canonicalize()
             .expect("Cargo builds the native shared library");
-        let layouts = vtensor_backend::abi_layout();
         let mut driver = String::from(HEADER);
-        for &(key, _) in &layouts {
+        for (key, value) in vtensor_backend::abi_layout() {
             let (ty, field) = key.rsplit_once('.').unwrap();
             let expression = match field {
                 "$size" => format!("sizeof({ty})"),
@@ -1480,7 +1479,7 @@ mod native_backend_oracle {
             };
             writeln!(
                 driver,
-                "printf(\"ABI {key} %zu\\n\", (size_t)({expression}));"
+                "static_assert((size_t)({expression}) == {value}, \"ABI {key}\");"
             )
             .unwrap();
         }
@@ -1572,20 +1571,15 @@ mod native_backend_oracle {
             std::fs::rename(cache.join("native-oracle.new"), &program).unwrap();
         }
         verify_file(&program, cache.join("program.sha256"));
-        let declarations = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
-        let kinds: Vec<_> = declarations["tensor_type"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
-            .map(|row| row["value"].as_integer().unwrap())
-            .collect();
         let input = if matches!(mode, "matrix" | "elementwise" | "update") {
             String::new()
         } else {
-            kinds
+            super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"))["tensor_type"]
+                .as_array()
+                .unwrap()
                 .iter()
-                .map(|kind| format!("{kind}\n"))
+                .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
+                .map(|row| format!("{}\n", row["value"].as_integer().unwrap()))
                 .collect::<String>()
         };
         let mut expected = Vec::new();
@@ -1608,23 +1602,7 @@ mod native_backend_oracle {
                 .arg(mode),
             &input,
         );
-        let observed: std::collections::BTreeMap<_, _> = text
-            .lines()
-            .map(|line| {
-                let fields: Vec<_> = line.split_whitespace().collect();
-                assert_eq!(fields.len(), 3, "unexpected native record: {line}");
-                (fields[1].to_string(), fields[2].parse::<usize>().unwrap())
-            })
-            .collect();
-        assert_eq!(
-            text.lines().count(),
-            layouts.len() + 1,
-            "native oracle omitted or duplicated ABI observations"
-        );
-        for (key, value) in layouts {
-            assert_eq!(observed.get(key), Some(&value), "ABI layout {key}");
-        }
-        assert_eq!(observed.get("cases"), Some(&expected_cases));
+        assert_eq!(text, format!("RESULT cases {expected_cases}\n"));
     }
 
     const HEADER: &str = r##"#include "ggml.h"

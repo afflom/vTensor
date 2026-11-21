@@ -1,0 +1,51 @@
+\begin{lexlean}{RelativePosition}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: sourceRow,
+  parameters: [positions : Nat, row : Nat, plane : Nat],
+  result: Nat,
+  body: ((prim subtract (prim subtract positions row : Nat) 1 : Nat) + plane),
+  executable: true
+}
+
+definition{
+  name: sourceWord,
+  parameters: [index : Nat, width : Nat, positions : Nat],
+  result: Nat,
+  body: ((prim multiply (sourceRow positions (prim remainder (prim quotient index width 0 : Nat) positions 0 : Nat) (prim quotient (prim quotient index width 0 : Nat) positions 0 : Nat)) width : Nat) + (prim remainder index width 0 : Nat)),
+  executable: true
+}
+
+theorem{
+  name: everySourceRowIsBounded,
+  parameters: [positions : Nat, row : Nat, plane : Nat],
+  statement: ((row < positions) -> ((plane < positions) -> ((sourceRow positions row plane) < (prim subtract (positions + positions) 1 : Nat)))),
+  proof: linear_arithmetic{definitions: [sourceRow]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: firstRelativeWord,
+  parameters: [],
+  statement: ((sourceWord 0 3 7) = 18),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: reverseRelativeRow,
+  parameters: [],
+  statement: ((sourceWord 20 3 7) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lastRelativeWord,
+  parameters: [],
+  statement: ((sourceWord 146 3 7) = 20),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

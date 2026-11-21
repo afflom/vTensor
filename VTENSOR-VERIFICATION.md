@@ -2751,3 +2751,62 @@ encoded 16-bit words without conversion. Expected words come from the imported
 CPU implementation, not a second handwritten indexing formula. This is a
 registered, failing development checkpoint, not implementation evidence.
 The initial failure log is `/tmp/vtensor-relative-before.log`.
+
+## Certified relative-position execution and shared ABI checks (VT-33)
+
+GET_REL_POS now uses a Prism source-word selector composed with the existing
+Verdant memory transfer. No handwritten native executor was added. The model
+admits F16/BF16 source words and the upstream constructor's F16 output, including
+higher source dimensions that the CPU selector does not read. It models the
+reversed relative row and query-plane offset, independent strides, source-row
+extent, output shape, minimum word strides and source/output separation. Its
+universal theorem bounds every selected source row for bounded row and plane
+coordinates. The exact observed axiom policy is `Quot.sound, propext`; the first
+proof attempt refused an incomplete declaration, which was corrected to the
+reported set before the successful certifications.
+
+Authoring draft
+`prism-app/fab757c94474adb7c9dd8d1a886d54f3db3bb0d51c8c86145e97947a95f3934f`
+verified with attestation
+`e8af07d50d1f865066ec6cd0fe603413e06ad01c295f4da6f6089169a49fcf2d`.
+The signed envelope in `verification/relative-position-runtime.json` binds all
+six canonical module digests. The pinned SDK production result is
+`eb5cd88649dade3543930b093a8fe6650425dc604ed2e61242a19ab71f013fbc`,
+attestation `7c3d3f9c8e70405bfaaf0aaec02e78e380d631fc777ae9387eac747cfaf53b03`.
+The repeat-offset library remains byte-identical to its previous certification.
+
+All 192 imported CPU comparisons pass: 144 nonempty and 48 empty graphs,
+with word widths 1/3/17, relative widths 1/3/7, higher source dimensions and
+four layouts. Raw exceptional F16/BF16 encodings and padding compare exactly;
+NaNs are not normalized. All 24 malformed descriptor/storage probes refuse
+before changing output. Reversing captured word bytes before the native Verdant
+transfer made the gate fail with `oracle mismatch type=1 width=1 rows=3 byte=0
+actual=60 expected=0`. The runner was restored byte for byte, and VT-33 passes
+again in the full suite.
+
+Every GGML ABI size, alignment and field offset is now checked by a C++
+`static_assert` against the actual imported header when the content-addressed
+oracle is compiled. Live Rust/native source provenance and executable/object
+integrity checks remain. Each graph invocation returns only its exact case-count
+record, avoiding repeated ABI output/parsing. A planted `ggml_tensor` size+1
+observation fails with `static assertion failed: ABI ggml_tensor.$size`; the
+restored full suite passes native ABI validation. Type-list serialization also
+avoids an intermediate vector and skips its inventory read for modes that do
+not consume a type list. No oracle domain was removed.
+
+The final full contract run reports 32 passed, one failed (VT-02's unpublished
+development dependency), zero ignored and zero filtered, in 144.13 seconds.
+All four BDD tests pass, with 39 IDs/scenarios and 107 test names. Backend
+Clippy at `-D warnings`, formatting, model generation and the 52 frame-file
+bindings pass. Source is 10,630 non-Prism lines, three fewer than the checkpoint
+before VT-33 registration, but still 81 above the last accepted 10,549 budget.
+The parent-relative source audit passing does not restore that earlier budget.
+
+Verdant upstream was independently refreshed to
+`294c92a3cf0c829a602b2a11be1d59e1122a9358` (v2.11.0/M19). It adds 351
+MIR-lifted functions and further Rust/JS modularity, with no changes to the
+FloatUnary/ScalarF32 extension roots or a replacement for the local packed
+storage decoder. Its integration, preserved stricter footprint/frontier limits,
+production dependency resolution, the remaining GGML specification coverage
+and complete `just vv` acceptance remain required. The user's main Engine
+worktree was left untouched.

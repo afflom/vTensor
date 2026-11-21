@@ -73,6 +73,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-30` | build | Matches 2,264 ARGMAX/COUNT_EQUAL graphs, including last ties, NaN recovery, all-NaN rows, exact I32/I64 outputs, independent strides, four-axis equality, empty inputs and large-empty planning probes. |
 | `VT-31` | build | Matches 3,360 F16/F32 GET_ROWS_BACK graphs with I32 indices, duplicate and prefix rows, strided layouts, empty outputs, zero-index clears without gradient buffers, and atomic invalid-index refusals. |
 | `VT-32` | build | In progress: GET_ROWS passes 384 CPU graphs with strided views and atomic refusals; source and production release checks remain open. |
+| `VT-33` | build | GET_REL_POS passes 192 CPU graphs with exact F16/BF16 source-word preservation in F16 output, independent strides, higher source dimensions, empty widths and atomic descriptor refusals. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -118,10 +119,10 @@ comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
 Before GET_ROWS development, thirty contract checks passed and VT-02 rejected
 the unpublished local dependency. The current full contract suite passes
-31 checks; VT-02 still refuses the local development dependency for release.
-VT-32 passes all 384 graph cases and typed/atomic refusals. The source audit
-still rejects growth in its harness and native glue, and the complete release
-checks remain open before this stage can be accepted. Detailed evidence
+32 checks; VT-02 still refuses the local development dependency for release.
+VT-32 passes all 384 graph cases and typed/atomic refusals; VT-33 adds 192
+relative-position graphs. Non-Prism source is 10,630 lines, still 81 above the
+last accepted budget. The complete release checks remain open. Detailed evidence
 is recorded in [`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
 
 ## Development
