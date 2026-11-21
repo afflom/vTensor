@@ -1,0 +1,122 @@
+{
+  "spec": "vtensor/indexed-add-runtime/1",
+  "status": "certified-model-and-oracle-passed-source-and-release-gates-pending",
+  "draft": "prism-app/004eb897a308c8e19164be8c70069e675a5f4fe7ab57c1057d90601818151b80",
+  "authoring_attestation_id": "e9ec6a91a6c69986a261d41142e62188f060a62173e499ff6263f7467798af9d",
+  "authoring_signed_envelope": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXR0ZXN0YXRpb25faWQiOiJlOWVjNmE5MWE2YzY5OTg2YTI2MWQ0MTE0MmU2MjE4OGYwNjBhNjIxNzNlNDk5ZmY2MjYzZjc0Njc3OThhZjlkIiwiYnVpbGRfaWQiOiIwYjUyYjJiYzQwYjlhYTc2NmE1YWRhNzNhNmI5NzdiYzUxNGZiNDQwNzc3MjEyNWFhMTczNDUwYjc3YTUwMTlkIiwiZmlsZXMiOlsiOWI1ZTEyMDIwNGM1MTYwMmZjNzgzY2MyZjZiZWE3NDU2ZWM2NDg4Mjg3NzUyODM0MWI1MjNhNGY0YTU4MGZiMyIsImNlMTZlNWI0MzkxMjhkYjMyMzE5NzkzODFmNDU5OWQzZmYwNjE3ZjYyYzJiZjAwYzM0OGJiYTM1MzkzYWJjZDYiLCJkYjEyNDM0M2FkOGZlMTI5NWJjOGViMzA1YzdmNTlmODNjZjZhZDc2ZDQ2YTVjYWJlYTUwMGZlNjZmM2FkNWRjIiwiMjFlNDliMDExZDJiYzJhYjA4ZTFiNDE3NzNjYmQ1MTA3MzI2NTc1YmMyMzNkYjVlZTUzNDRlZmIwNDRjMzQ3MiIsImY3OTMwZDBkYzcwYjFkMGU3MWNmNjZhNzdiNjJlNDUzYjFiNjU4ZWY5MjlmODJkZmNjNWExZTRhOTMzZTM1NmQiLCJkNDBiNWY0ODI4YTQzNjQ3ZDQxNGEzZTk4MjExZTJjYmVmODRiNzI4MjkwMzNmMGVjMTk1YzFiYTFhYmJmZGEyIiwiYmMwNzlkYjQwMWU5MjQxNWQ0YzdkNGE3MzY4ODMzMzVlOTBiNWEwNzlmZjQyNTMyYWRkYmMwNGYzYjlkOWE3ZiIsImJkYjI0MzYyZmIzMGZlNThkZWM1NTdiNzA3MTVmMTM1YjMwODFjZjc3ZjBmOWFkMzFlYmU5YTM4YzRlZjM0M2UiLCI4NjgzNWEyZGY4YjIzMjkwZmM2YTQyNTJiN2VhNjQ1ODYzZDQ1NmY2OGQ1NTk5MTYwMGJiZGUyNGJhYjNiYmJiIiwiMGNiOTgwZDU2ZTNhMWRkOGFiNDQ2NzJmODVhNTdkNjE0MjRhYzRhM2VlZGI3ZjA3N2U4NTc3NTVmZjQ2ZDZkOSJdLCJtb2R1bGVzIjpbIkluZGV4ZWRBZGRpdGlvbiIsIk1hdHJpeEdyYXBoIiwiUG9pbnR3aXNlR3JhcGgiLCJSZWxhdGl2ZVBvc2l0aW9uIiwiUm93R2F0aGVyIiwiVGVuc29ySW5kZXgiLCJUZW5zb3JUeXBlcyJdLCJzZW1hbnRpY19pZCI6IjQxMDk3NzEzNWYwODJlZDRhZTM0OWExYTdlOTcyMjUxYjE4ZDMzYjJmZWRiZjlmMzA5MTEyN2E2NWY5MmYxNDQiLCJzb3VyY2VfaWQiOiI1NDljYmI0OTI2OGFhZjQxZDg1NGY1NjU0MjMwMzI5ODI4ZDgwMDMwNjQyYjY3Mzg4MjM5MTFmZDkxYTM3ZDBmIiwic3RhdHVzIjoidmVyaWZpZWQifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vdW9yLmZvdW5kYXRpb24vbGV4bGVhbi1tY3AvdmVyaWZpY2F0aW9uL3YxIiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6ImNjZTBlOTUwMTQ4NGFiMzk5YmIyOTAwNDhkN2RkNTNmYzUzZjQxZmVmMzI2MzAyNmQwOGU0OTI3YjhmMDJiOWMifSwibmFtZSI6ImF0dGVzdGF0aW9uLmpzb24ifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "keyid": "533449506003ca0c42744122318b69f5be32d74a2781e72b5c62855cac53bb54",
+        "sig": "cGDtDvhFLLBOLT104U33o6Sg5vcxq/kW6ac/kmjMqbasXYIYJtLCV7BwGCFO3gC6fjpjNNh53sAi7ljADZXXCQ=="
+      }
+    ]
+  },
+  "files_sha256": {
+    "app/src/PointwiseGraph.lex.tex": "d40b5f4828a43647d414a3e98211e2cbef84b72829033f0ec195c1ba1abbfda2",
+    "app/src/IndexedAddition.lex.tex": "21e49b011d2bc2ab08e1b41773cbd5107326575bc233db5ee5344efb044c3472",
+    "app/src/MatrixGraph.lex.tex": "f7930d0dc70b1d0e71cf66a77b62e453b1b658ef929f82dfcc5a1e4a933e356d",
+    "app/src/RelativePosition.lex.tex": "bc079db401e92415d4c7d4a736883335e90b5a079ff42532addbc04f3b9d9a7f",
+    "app/src/RowGather.lex.tex": "bdb24362fb30fe58dec557b70715f135b3081cf77f0f9ad31ebe9a38c4ef343e",
+    "app/src/TensorIndex.lex.tex": "86835a2df8b23290fc6a4252b7ea645863d456f68d55991600bbde24bab3bbbb",
+    "app/src/TensorTypes.lex.tex": "0cb980d56e3a1dd8ab44672f85a57d61424ac4a3eedb7f077e857755ff46d6d9"
+  },
+  "production_result_id": "c47a91aea96a6f78c331b8de8e41e6df8199e8f8f6d84fc62e27f7ba3818ce16",
+  "production_source": {
+    "lock_sha256": "d1f18838cde4305ae4eddc119d14acf8c29a285926e43d55afd67a4ff167a5da",
+    "semantic_id": "4ed99a4893543b7cf82384a30a3a12f156fc9d1cb659600902b7c56062691924",
+    "source_id": "c52efe6f27c11617f36a869ee8918842502a0a2f9ad686ef97502e25e2cfd4b6"
+  },
+  "production_verification": {
+    "attestation": {
+      "byte_length": 4148855,
+      "path": "evidence/attestation.json",
+      "sha256": "c27cce5030e3a714ecd078949d93100ce7ad78188aef98dc959d92bda724b0fa"
+    },
+    "attestation_id": "9296a5ae3e04c236b66374150604ab3efabfcc27f7b52295f9a9f84da1e181e1",
+    "build_id": "2bdd0165dbee2c0ce0dbe708a7d6368ac532f305b13f73c2d355e345423dfadf",
+    "compiler_input": {
+      "byte_length": 2346886,
+      "path": "evidence/compiler-input.json",
+      "sha256": "aea5254f94cd3c3a645f00c4234307ccc9acb12da8a9b0596b4d1a564f88c43f"
+    },
+    "preservation": {
+      "byte_length": 5834,
+      "path": "evidence/preservation.json",
+      "sha256": "de76b409ff699346bfc06fe5e5ffd418d2011e19bad2f51731701c3978b3b6e1"
+    }
+  },
+  "input_boundary": {
+    "optional_tensor_slots": 10,
+    "marshalling": "no temporary source vector; all present descriptors use the existing metadata validator",
+    "zero_source_numerical_generators": "not implemented by this checkpoint"
+  },
+  "oracle": {
+    "authority": "LLAMA-CPP-GGML-BACKEND",
+    "revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "constructor": "ggml_add_id",
+    "execution": "ggml_compute_forward_add_id_f32",
+    "fixture_indexing": "ggml_unravel_index",
+    "nonempty_cases": 20,
+    "empty_cases": 144,
+    "total_cases": 164,
+    "nonempty_source_type": "F32",
+    "empty_table_types": 36,
+    "widths": [
+      1,
+      3,
+      17,
+      65
+    ],
+    "layouts": 4,
+    "patterns": [
+      "repeated selection",
+      "reverse selection",
+      "mixed minus-one copies and additions",
+      "all minus-one copies from an empty table",
+      "numerical exceptional values"
+    ],
+    "higher_index_slices": "poisoned with -2 and intentionally not consumed",
+    "comparison": "exact finite words, padding and minus-one copy words; numerical exceptional additions compare NaNs by classification",
+    "static_descriptor_refusals": 16,
+    "late_invalid_index_refusals": 8
+  },
+  "initial_refusal": {
+    "nonempty_failures": 20,
+    "reason": "unsupported opcode before implementation",
+    "log_sha256": "f94261dbcd88ef2b904725ee5e56b9a410184c41f1afc67b6738913dec910f1b"
+  },
+  "planted_defect": {
+    "change": "flip the lowest runtime index-flag bit in the native indexed-add request",
+    "effect": "20 nonempty cases refused after capability admission, before output writes",
+    "exit_code": 101,
+    "log_sha256": "4f572eb899fdc77ca5a4879ffbdb0ac832e663a06122a732440284cc8fe40c05",
+    "restoration": "native source restored byte for byte; all cases pass in the full contract run"
+  },
+  "full_contract_suite": {
+    "passed": 33,
+    "failed": 1,
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 140.63,
+    "failure": "VT-02: unpublished development dependency is not release evidence",
+    "log_sha256": "be9c309e0d1bb19581d0933de7e640f72306c5ad0daf51a5ebfebd63befe0ee4"
+  },
+  "checks": {
+    "bdd": "4 passed, 40 IDs/scenarios, 108 test names",
+    "formatting": "passed",
+    "model": "regenerated and checked",
+    "clippy": "backend all targets at -D warnings passed",
+    "source_audit": "failed as required",
+    "log_sha256": "a39e3a87a2ef79d71c56f598c314fa82ba2abc68f46cd0f3b9fdcb293903d613"
+  },
+  "source_budget": {
+    "current_lines": 10684,
+    "last_accepted_lines": 10549,
+    "remaining_reduction": 135,
+    "growth_over_previous_checkpoint": 58
+  },
+  "unchanged_repeat_library_sha256": "44c97bff79831bcf21d53ac7bbf61822afaa1335fbe7de1c23a3d0dc0ea618b8",
+  "pinned_engine_commit": "3635dcf766665509caef009e5a8f89856556a7e1"
+}

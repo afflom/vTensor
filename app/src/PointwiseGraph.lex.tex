@@ -6,6 +6,7 @@
 \importmodule{TensorTypes}
 \importmodule{RowGather}
 \importmodule{RelativePosition}
+\importmodule{IndexedAddition}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -93,7 +94,8 @@ inductive{
     {name: counted, fields: [Nat, IndexContext]},
     {name: scattered, fields: [Nat, IndexContext]},
     {name: gathered, fields: [Nat, IndexContext]},
-    {name: relativePosition, fields: []}
+    {name: relativePosition, fields: []},
+    {name: indexedAdd, fields: [IndexContext, IndexContext]}
   ]
 }
 
@@ -219,7 +221,15 @@ inductive{
       fields: [
         Nat,
         OperationParameters,
-        TensorDescriptor,
+        (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        (Option TensorDescriptor),
         (Option TensorDescriptor),
         TensorDescriptor
       ]
@@ -227,7 +237,8 @@ inductive{
     {name: offsets, fields: [Nat, IndexContext, IndexContext, CopyMode]},
     {name: selection, fields: [Nat, IndexContext, IndexContext, Nat]},
     {name: scatter, fields: [Nat, IndexContext, IndexContext, IndexContext, Nat]},
-    {name: gather, fields: [Nat, Nat, IndexContext, IndexContext, IndexContext, Nat]}
+    {name: gather, fields: [Nat, Nat, IndexContext, IndexContext, IndexContext, Nat]},
+    {name: indexedAdd, fields: [Nat, IndexContext, IndexContext, IndexContext, IndexContext, Nat]}
   ]
 }
 
@@ -1038,10 +1049,43 @@ definition{
 }
 
 definition{
+  name: planIndexedAddition,
+  parameters: [
+    left : TensorDescriptor,
+    table : (Option TensorDescriptor),
+    indices : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (match table
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some bias => (match indices
+      | Option.none => (ctor PointwiseDecision.invalidShape)
+      | Option.some ids => (if ((((((((((((((((((project left ty) =? 0) && ((project bias ty) =? 0)) && ((project ids ty) =? 26)) && ((project output ty) =? 0)) && (sameShape left output)) && ((project left n0) =? (project bias n0))) && ((project left n1) =? (project ids n0))) && ((project left n2) =? (project ids n1))) && (0 <? (project ids n2))) && (0 <? (project ids n3))) && (4 <=? (project left s0))) && (4 <=? (project bias s0))) && (4 <=? (project ids s0))) && (4 <=? (project output s0))) && (separateTensors left output)) && (separateTensors bias output)) && (separateTensors ids output)) then (ctor PointwiseDecision.copyBlocks (IndexedAddition::steps (project left n0) (project left n1) (project left n2) (project left n3)) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.indexedAdd (indexContext bias 1) (indexContext ids 1))) else (ctor PointwiseDecision.invalidShape)))),
+  executable: true
+}
+
+definition{
+  name: indexedAddOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    table : IndexContext,
+    indices : IndexContext,
+    flag : Nat
+  ],
+  result: GraphResponse,
+  body: (let rows : Nat := (prim multiply (project indices u0) (project indices n1) : Nat); (let validated : Nat := (prim multiply 2 rows : Nat); (let limit : Nat := (IndexedAddition::usableRows (project table n1) (project table n2) (project table n3)); (if (index <? validated) then (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor GraphResponse.word 19 5 (blockOffset (prim quotient index 2 0 : Nat) indices) 2 0 1 2) else (if (IndexedAddition::validIndex flag limit) then (ctor GraphResponse.word 19 1 2 2 0 1 2) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))) else (let step : Nat := (prim subtract index validated : Nat); (let row : Nat := (prim quotient step (1 + (project source u0)) 0 : Nat); (let phase : Nat := (prim remainder step (1 + (project source u0)) 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.word 19 5 (blockOffset (prim remainder row rows 0 : Nat) indices) 2 0 1 2) else (if (IndexedAddition::validIndex flag limit) then (let element : Nat := ((prim multiply row (project source u0) : Nat) + (prim subtract phase 1 : Nat)); (if (flag =? 4294967295) then (ctor GraphResponse.offsets false (blockOffset element source) (blockOffset element destination)) else (ctor GraphResponse.word 8 0 (blockOffset element source) 4 (blockOffset ((prim multiply flag (project table u0) : Nat) + (prim subtract phase 1 : Nat)) table) 3 (blockOffset element destination)))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))))))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
   body: (match mode
+    | CopyMode.indexedAdd table indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.relativePosition => (ctor GraphResponse.offsets false (blockOffset (RelativePosition::sourceWord index (project destination u0) (project destination n1)) source) (blockOffset index destination))
     | CopyMode.linear => (ctor GraphResponse.offsets false (blockOffset index source) (blockOffset index destination))
     | CopyMode.repeated => (ctor GraphResponse.offsets false (repeatedBlockOffset index source destination) (blockOffset index destination))
@@ -1068,19 +1112,36 @@ definition{
 }
 
 definition{
+  name: planTwoSources,
+  parameters: [
+    operation : Nat,
+    options : OperationParameters,
+    left : TensorDescriptor,
+    right : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: GraphResponse,
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+    | Option.none => false
+    | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
+    | Option.none => (numericPlan operation variant left right output)
+    | Option.some kind => (planUnary kind left output)))))))))))))))))))))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
-      | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
-      | Option.none => (numericPlan operation variant left right output)
-      | Option.some kind => (planUnary kind left output))))))))))))))))))))))
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 input7 input8 input9 output => (match input0
+      | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+      | Option.some left => (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output)))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)
     | GraphRequest.selection index source destination flag => (argmaxOffsets index source destination flag)
     | GraphRequest.scatter index source destination indices flag => (rowGradientOffsets index source destination indices flag)
-    | GraphRequest.gather kind index source destination indices flag => (gatherOffsets kind index source destination indices flag)),
+    | GraphRequest.gather kind index source destination indices flag => (gatherOffsets kind index source destination indices flag)
+    | GraphRequest.indexedAdd index source destination table indices flag => (indexedAddOffsets index source destination table indices flag)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }

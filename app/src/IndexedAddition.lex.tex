@@ -1,0 +1,72 @@
+\begin{lexlean}{IndexedAddition}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: validIndex,
+  parameters: [word : Nat, rows : Nat],
+  result: Bool,
+  body: ((word =? 4294967295) || ((word <? 2147483648) && (word <? rows))),
+  executable: true
+}
+
+definition{
+  name: usableRows,
+  parameters: [rows : Nat, planes : Nat, batches : Nat],
+  result: Nat,
+  body: (if ((planes =? 0) || (batches =? 0)) then 0 else rows),
+  executable: true
+}
+
+definition{
+  name: steps,
+  parameters: [width : Nat, rows : Nat, planes : Nat, batches : Nat],
+  result: Nat,
+  body: (if ((((width =? 0) || (rows =? 0)) || (planes =? 0)) || (batches =? 0)) then 0 else ((prim multiply 2 (prim multiply rows planes : Nat) : Nat) + (prim multiply (prim multiply (prim multiply rows planes : Nat) batches : Nat) (1 + width) : Nat))),
+  executable: true
+}
+
+theorem{
+  name: everyTableAdmitsMinusOne,
+  parameters: [rows : Nat],
+  statement: ((validIndex 4294967295 rows) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: everyTableRefusesMinusTwo,
+  parameters: [rows : Nat],
+  statement: ((validIndex 4294967294 rows) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: upperBoundRefused,
+  parameters: [],
+  statement: ((validIndex 3 3) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: onlyCopyFromEmptyTable,
+  parameters: [],
+  statement: ((validIndex 0 (usableRows 3 0 2)) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: zeroWidthSkipsUnboundedGeometry,
+  parameters: [rows : Nat, planes : Nat, batches : Nat],
+  statement: ((steps 0 rows planes batches) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: asymmetricBatchSchedule,
+  parameters: [],
+  statement: ((steps 17 3 2 3) = 336),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

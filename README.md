@@ -74,6 +74,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-31` | build | Matches 3,360 F16/F32 GET_ROWS_BACK graphs with I32 indices, duplicate and prefix rows, strided layouts, empty outputs, zero-index clears without gradient buffers, and atomic invalid-index refusals. |
 | `VT-32` | build | In progress: GET_ROWS passes 384 CPU graphs with strided views and atomic refusals; source and production release checks remain open. |
 | `VT-33` | build | GET_REL_POS passes 192 CPU graphs with exact F16/BF16 source-word preservation in F16 output, independent strides, higher source dimensions, empty widths and atomic descriptor refusals. |
+| `VT-34` | build | ADD_ID passes 164 CPU graphs and descriptor/index refusals, including three-source addition, exact minus-one copies, strided views, ignored poisoned index slices and empty tables; source and release gates remain open. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -117,14 +118,15 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-Before GET_ROWS development, thirty contract checks passed and VT-02 rejected
-the unpublished local dependency. The last full contract run, before the matrix-schedule refactor, passed
-32 checks; VT-02 still refuses the local development dependency for release.
-VT-32 passes all 384 graph cases and typed/atomic refusals; VT-33 adds 192
-relative-position graphs. The later matrix refactor passes 1,280 scoped cases.
-Non-Prism source is 10,626 lines, still 77 above the
-last accepted budget. The complete release checks remain open. Detailed evidence
-is recorded in [`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
+The current full contract run passes 33 checks; VT-02 still refuses the local
+Verdant development dependency for release. It includes the expanded 1,280
+matrix cases, 384 GET_ROWS cases, 192 GET_REL_POS cases and 164 ADD_ID cases.
+All ten optional GGML tensor-source slots are now carried to the Prism planner;
+zero-source numerical generators remain unfinished. Non-Prism source is 10,684
+lines, 135 above the last accepted budget, so the source audit correctly fails.
+The complete release checks and remaining imported operation coverage remain
+open. Detailed evidence is recorded in
+[`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
 
 ## Development
 

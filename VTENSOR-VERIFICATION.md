@@ -2880,7 +2880,7 @@ are recorded in `verification/matrix-execution-runtime.json`. Logs:
 
 The ADD_ID scenario and imported CPU oracle are registered before implementation.
 The existing indexed-row harness now shares GGML's own unravel-index helper for
-fixture addressing. Its new mode executes all 164 cases: 20 nonempty ADD_ID
+fixture addressing. Its new mode is configured for 164 cases: 20 nonempty ADD_ID
 cases and 144 empty cases over every live table storage type and empty axis.
 The nonempty cases cover widths 1/3/17/65, padded table views, independently
 strided values/indices/output, repeated/reversed indices, exact minus-one
@@ -2890,3 +2890,80 @@ The initial run reports all 20 nonempty cases unsupported and fails its final
 completeness check; the empty cases retain their established no-op behavior.
 This is a registered failing checkpoint, not completion evidence. The log is
 `/tmp/vtensor-indexed-add-before.log`.
+
+## Certified ten-slot input transport and ADD_ID execution (VT-34)
+
+The graph planning request now carries all ten optional GGML tensor-source
+slots. Native marshalling validates each present descriptor through the existing
+metadata function without allocating a temporary source vector. Missing sources
+reach the Prism model as `None`; supported operators still enforce their own
+requirements. This does not implement zero-source numerical generators. The
+existing two-source planner was preserved as a shared model definition rather
+than duplicated or replaced by a handwritten dispatcher.
+
+`IndexedAddition` defines signed I32 admission including the exact `0xffffffff`
+copy sentinel, usable table rows, and bounded execution length. Its universal
+sentinel and invalid-negative theorems, empty-width theorem and concrete bound
+examples kernel-check. The graph model validates all required descriptors,
+shapes, word strides and output separation. It preflights precisely the first
+index rows/planes consumed by the imported CPU function, then repeats those
+selections across value batches. Higher index slices are not consumed. Table
+higher dimensions are not selected; empty table storage permits only minus-one
+copies. Minus-one rows use exact Verdant byte transfers; selected rows use the
+existing Verdant F32 addition primitive. The native extension only binds the
+third data pointer and modeled instruction request.
+
+Authoring draft
+`prism-app/004eb897a308c8e19164be8c70069e675a5f4fe7ab57c1057d90601818151b80`
+verified with attestation
+`e9ec6a91a6c69986a261d41142e62188f060a62173e499ff6263f7467798af9d`.
+Its signed envelope binds all seven canonical model digests. The pinned SDK
+production result is
+`c47a91aea96a6f78c331b8de8e41e6df8199e8f8f6d84fc62e27f7ba3818ce16`,
+attestation `9296a5ae3e04c236b66374150604ab3efabfcc27f7b52295f9a9f84da1e181e1`.
+The repeat-offset library remains byte-identical. The matrix execution package
+and Verdant dependency were not re-exported.
+
+The shared indexed-row fixture now uses the actual imported
+`ggml_unravel_index` to locate logical blocks; both GET_ROWS and ADD_ID retain
+their original operator constructors and actual CPU execution. The empty ADD_ID
+fixtures retain block-aligned widths for quantized table types. All 164 cases
+pass: 20 nonempty F32 cases across widths 1/3/17/65 and four layouts, and 144
+empty cases across all 36 live table types and every empty axis. Nonempty
+patterns cover repeated/reversed selections, mixed addition/copy rows,
+all-copy rows with an empty table, and numerical exceptional values. Ignored
+higher index slices contain invalid -2 values, so reading or validating those
+slices would reject a required passing case. Padding and minus-one copy words
+(including signaling NaNs and signed zeros) compare exactly. Numerical NaNs in
+the addition-only exceptional pattern retain classification comparison.
+Sixteen malformed descriptor/stride/alias/missing-source probes and eight late
+invalid-index cases refuse without changing output.
+
+A planted native defect flipped the lowest runtime index bit sent to the model.
+All 20 nonempty cases were rejected after capability admission
+(`supported=1 computed=0`), through the bounded preflight checks. The runner was
+restored byte for byte. A formatting-induced Clippy safety-comment location was
+also corrected without suppressing the lint. The final full contract run passes
+33 tests and fails only VT-02's refusal of the unpublished development override;
+zero tests are ignored or filtered. It takes 140.63 seconds and includes all
+1,280 expanded matrix cases, 384 GET_ROWS cases and 192 GET_REL_POS cases, as
+well as the other existing graph families.
+
+Formatting, regenerated/checked model evidence, four BDD tests (40 IDs and
+scenarios, 108 test names), and backend Clippy over all targets at `-D warnings`
+pass. The source gate correctly fails: implementation is 10,684 non-Prism lines,
+58 more than the previous completed checkpoint and 135 above the last accepted
+10,549 budget. This checkpoint does not establish a new accepted ceiling.
+Further oracle fixture construction must move into Prism with its full case
+coverage preserved; the source policy, production dependency and complete
+release gate remain unsatisfied. The broader imported GGML operation inventory
+also remains unfinished.
+
+Exact identities, domains, logs and the signed authoring envelope are recorded
+in `verification/indexed-add-runtime.json`. Principal logs:
+`/tmp/vtensor-indexed-add-before-fixed.log`,
+`/tmp/vtensor-indexed-add-export.log`,
+`/tmp/vtensor-indexed-add-runtime.log`,
+`/tmp/vtensor-indexed-add-flag-fault.log`,
+`/tmp/vtensor-indexed-add-full-contract.log`, and
+`/tmp/vtensor-indexed-add-final-checks.log`.

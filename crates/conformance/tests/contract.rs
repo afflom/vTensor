@@ -295,8 +295,16 @@ fn row_graphs_vt_30() {
             vtensor_pointwise::run(Adt0::C0(
                 operation,
                 params,
-                empty.clone(),
+                Some(empty.clone()),
                 Some(empty),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
                 output
             )),
             Ok(Adt5::C0(Adt6::C4(2, ..)))
@@ -1758,7 +1766,7 @@ int main(int argc, char **argv) {
           for (int layout=0; layout<(empty_axis<0?4:1); ++layout) for (int pattern=0; pattern<(empty_axis<0?(indexed?5:2):1); ++pattern) {
           current_kind=type; current_layout=layout;
           int64_t source_shape[]={2*ggml_blck_size(type),3,2,2}, index_shape[]={3,2,2,1};
-          if(indexed) {const int widths[]={1,3,17,65};source_shape[0]=widths[layout];index_shape[3]=2;if(pattern==3 && empty_axis<0)source_shape[1]=0;}
+          if(indexed) {const int widths[]={1,3,17,65};if(empty_axis<0)source_shape[0]=widths[layout];index_shape[3]=2;if(pattern==3 && empty_axis<0)source_shape[1]=0;}
           if (layout>1) {source_shape[3]=3;index_shape[2]=3;}
           if (empty_axis==0) source_shape[0]=0;
           if (empty_axis>0) index_shape[empty_axis-1]=0;
@@ -1815,7 +1823,13 @@ int main(int argc, char **argv) {
             refusal_check(refuses_change(backend,dev,graph,result,result->data,input->data),"source-alias");
             refusal_check(refuses_change(backend,dev,graph,result,result->data,indices->data),"index-alias");
             if(indexed) {
+              refusal_check(refuses_change(backend,dev,graph,result,result->src[0],nullptr),"missing-values");
+              refusal_check(refuses_change(backend,dev,graph,result,result->src[1],nullptr),"missing-table");
               refusal_check(refuses_change(backend,dev,graph,result,result->src[2],nullptr),"missing-third-source");
+              refusal_check(refuses_change(backend,dev,graph,result,left->nb[0],size_t(1)),"short-value-word");
+              refusal_check(refuses_change(backend,dev,graph,result,input->nb[0],size_t(1)),"short-table-word");
+              refusal_check(refuses_change(backend,dev,graph,result,indices->nb[0],size_t(1)),"short-index-word");
+              refusal_check(refuses_change(backend,dev,graph,result,result->nb[0],size_t(1)),"short-output-word");
               refusal_check(refuses_change(backend,dev,graph,result,left->type,GGML_TYPE_F16),"value-type");
               refusal_check(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32),"table-type");
               refusal_check(refuses_change(backend,dev,graph,result,left->ne[1],left->ne[1]+1),"value-rows");

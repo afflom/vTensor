@@ -481,12 +481,12 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
         return Ok(None);
     }
-    // SAFETY: GGML retains every non-null source descriptor during queries and execution.
-    let left = unsafe { tensor.src[0].as_ref() }.ok_or(BackendError::InvalidTensor)?;
-    // SAFETY: GGML also retains the optional right descriptor for this call.
-    let right = unsafe { tensor.src[1].as_ref() }
-        .map(tensor_metadata)
-        .transpose()?;
+    let source = |slot: usize| {
+        // SAFETY: GGML retains each non-null source descriptor during this call.
+        unsafe { tensor.src[slot].as_ref() }
+            .map(tensor_metadata)
+            .transpose()
+    };
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
     let response = vtensor_pointwise::run(GraphRequest::C0(
@@ -494,8 +494,16 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
         Parameters::C0(
             p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15,
         ),
-        tensor_metadata(left)?,
-        right,
+        source(0)?,
+        source(1)?,
+        source(2)?,
+        source(3)?,
+        source(4)?,
+        source(5)?,
+        source(6)?,
+        source(7)?,
+        source(8)?,
+        source(9)?,
         output,
     ))
     .map_err(|_| BackendError::Overflow)?;
@@ -726,16 +734,16 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         | CopyMode::C10(_, false, _)
         | CopyMode::C18(..)
         | CopyMode::C19(..)
-        | CopyMode::C20(..) => source_data(1)?,
+        | CopyMode::C20(..)
+        | CopyMode::C22(..) => source_data(1)?,
+        _ => literal.as_ptr().cast_mut(),
+    };
+    let extra_data = match mode {
+        CopyMode::C22(..) => source_data(2)?,
         _ => literal.as_ptr().cast_mut(),
     };
     let destination_data = graph_tensor_data(tensor)?;
-    let pointers = [
-        left_data,
-        right_data,
-        destination_data,
-        literal.as_ptr().cast_mut(),
-    ];
+    let pointers = [left_data, right_data, destination_data, extra_data];
     let mut block = workspace(bytes, 0_u8)?;
     let mut words = [0; 3];
     for index in 0..count {
@@ -753,6 +761,14 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                 index,
                 source.clone(),
                 destination.clone(),
+                indices.clone(),
+                words[2],
+            ),
+            CopyMode::C22(ref table, ref indices) => GraphRequest::C5(
+                index,
+                source.clone(),
+                destination.clone(),
+                table.clone(),
                 indices.clone(),
                 words[2],
             ),
