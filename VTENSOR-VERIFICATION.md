@@ -3052,3 +3052,51 @@ tensor crate still lacks the local scalar evaluation and storage-block APIs.
 No local checkout, production dependency pin, bundle or acceptance policy was
 changed by this review. Exact references and limitations are recorded in
 `verification/verdant-upstream-m20-review.json`.
+
+## Certified arithmetic fixtures and shared binary framing (VT-36)
+
+`ArithmeticFixtures.lex.tex` models all 120 prior arithmetic cases, including
+eight operations, widths 1/17/257, both padding modes, all four binary broadcast
+layouts, all descriptors and every encoded input word. Its independent locked
+project exports the certified `vtensor_arithmetic` package. The original GGML
+constructors and actual GGML CPU execution still supply numerical expectations.
+The matrix model and certified package are reused byte for byte.
+
+Both generated and actual constructed descriptor/input-word records match the
+complete frozen prior corpus, including the five refusal probes at cases 0
+and 108. All 120 arithmetic and 1,280 matrix numerical cases pass through the
+shared binary transport. A changed Rust transport word fails at arithmetic
+case 0 in 2.16 seconds. Changing the C++ word binding also fails at case 0 in
+12.38 seconds after both numerical backends received the altered input. Both
+defects were restored exactly. The latter check detects a corrupted corpus
+even when its two numerical executions agree.
+
+The strict SDK initially rejected the word generator with LLV7013 deep
+recursion. Small helpers and operand ordering resolve the certificate without
+raising limits: the pinned Lean `Nat.mul` and `Nat.add` definitions recurse on
+their second operand, so the model puts large constants first. The final SDK
+certificate and signed authoring verification pass. No generated Rust was
+edited or reformatted.
+
+The transport writes one canonical little-endian binary buffer, eliminating
+per-word decimal formatting and parsing. Each fixture project replays its
+certificate once, generates its batch once and reads/checks its frozen manifest
+once per contract process. Generated records and actual GGML-bound records
+retain their separate comparisons. Existing imported reference object and
+native harness cache integrity checks remain in force. The scoped run includes
+the first reference rebuild after changing the shared batch helper; its timing
+does not establish a controlled performance comparison.
+
+The final full contract run passes 35 tests and fails only VT-02's unpublished
+development-dependency refusal. It takes 108.07 seconds, with no ignored or
+filtered tests. Formatting, model consistency, all four BDD meta-tests (42 IDs,
+42 scenarios, 110 test names) and backend Clippy over all targets at
+`-D warnings` pass. Non-Prism implementation is 10,840 lines: 53 above the prior
+completed checkpoint and 291 above the last accepted 10,549. This remains a
+failing source budget, not a new ceiling. Imported operation coverage,
+production dependency closure and complete `just vv` acceptance remain open.
+
+`verification/arithmetic-fixture-runtime.json` records identities, the signed
+authoring envelope, corpus coverage, planted defects and logs. The M20 reference
+review also records a merge-tree analysis with 15 conflicting paths; no working
+tree merge or production pin change has been made.

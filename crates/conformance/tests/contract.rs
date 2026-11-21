@@ -340,7 +340,7 @@ fn indexed_add_graphs_vt_34() {
 /// `VT-35`: Prism generates all matrix fixture dimensions layouts and input words matching the complete frozen prior oracle corpus while GGML independently computes every expected result
 #[test]
 fn fixture_generation_vt_35() {
-    native_backend_oracle::matrix_fixture_input();
+    native_backend_oracle::fixture_input(0);
     use vtensor_fixtures::Adt0 as Request;
     for (family, request) in [
         (1, Request::C0(0)),
@@ -357,10 +357,19 @@ fn fixture_generation_vt_35() {
 /// `VT-36`: Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle
 #[test]
 fn arithmetic_fixture_generation_vt_36() {
-    assert_eq!(
-        vtensor_fixtures::run(1, vtensor_fixtures::Adt0::C0(0)).unwrap(),
-        Some(120)
-    );
+    native_backend_oracle::fixture_input(1);
+    for query in [
+        (1, 120, 0, 0),
+        (1, 0, 0, 24),
+        (2, 0, 2, 0),
+        (3, 96, 1, 0),
+        (4, 0, 0, 0),
+    ] {
+        assert_eq!(
+            vtensor_arithmetic::run(query.0, query.1, query.2, query.3).unwrap(),
+            None
+        );
+    }
 }
 
 mod ggml_oracle {
@@ -629,7 +638,8 @@ mod ggml_oracle {
     }
 
     /// Send a batch of tensor descriptions to the actual upstream `ggml_nbytes`.
-    pub(super) fn batch(command: &mut Command, input: &str) -> String {
+    pub(super) fn batch(command: &mut Command, input: impl AsRef<[u8]>) -> String {
+        let input = input.as_ref();
         let mut child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -640,7 +650,7 @@ mod ggml_oracle {
         // Drain output while writing so large differential batches cannot fill
         // both pipe buffers and block each other.
         let output = std::thread::scope(|scope| {
-            let writer = scope.spawn(move || stdin.write_all(input.as_bytes()));
+            let writer = scope.spawn(move || stdin.write_all(input));
             let output = child.wait_with_output().expect("oracle result");
             writer.join().expect("input writer").expect("write input");
             output
@@ -1114,7 +1124,7 @@ mod tensor_layout {
     pub(super) fn certified_current_model(root: &std::path::Path, name: &str) {
         assert!(matches!(
             name,
-            "layout" | "native" | "matrix" | "index" | "pointwise" | "fixtures"
+            "layout" | "native" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic"
         ));
         let scope = if name == "layout" {
             String::new()
@@ -1482,14 +1492,30 @@ mod native_backend_oracle {
     use std::path::Path;
     use std::process::Command;
 
-    fn verify_matrix_fixture_records(bytes: &[u8]) {
-        let path = super::root().join("verification/matrix-fixture-baseline.json");
-        assert_eq!(
-            file_digest(&path),
-            "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
-            "the frozen prior corpus changed"
-        );
-        let baseline = super::ggml_oracle::read_json(path);
+    fn verify_fixture_records(family: u64, bytes: &[u8]) {
+        let (name, digest) = match family {
+            0 => (
+                "matrix",
+                "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
+            ),
+            1 => (
+                "arithmetic",
+                "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4",
+            ),
+            _ => panic!("unknown fixture family"),
+        };
+        static BASELINES: [std::sync::OnceLock<serde_json::Value>; 2] =
+            [const { std::sync::OnceLock::new() }; 2];
+        let baseline = BASELINES[family as usize].get_or_init(|| {
+            let path = super::root().join(format!("verification/{name}-fixture-baseline.json"));
+            let bytes = std::fs::read(path).unwrap();
+            assert_eq!(
+                repo_model::artifact::sha256_hex(&bytes),
+                digest,
+                "the frozen prior corpus changed"
+            );
+            serde_json::from_slice(&bytes).unwrap()
+        });
         let mut cursor = 0;
         for record in baseline["record"].as_array().unwrap() {
             let start = cursor;
@@ -1502,7 +1528,7 @@ mod native_backend_oracle {
             assert_eq!(
                 repo_model::artifact::sha256_hex(&bytes[start..cursor]),
                 record["sha256"].as_str().unwrap(),
-                "matrix fixture case {} differs from the frozen corpus",
+                "{name} fixture case {} differs from the frozen corpus",
                 record["case"]
             );
         }
@@ -1513,15 +1539,31 @@ mod native_backend_oracle {
         );
     }
 
-    pub(super) fn matrix_fixture_input() -> &'static str {
-        static INPUT: std::sync::OnceLock<String> = std::sync::OnceLock::new();
-        INPUT.get_or_init(|| {
+    pub(super) fn fixture_input(family: u64) -> &'static [u8] {
+        static INPUT: [std::sync::OnceLock<Vec<u8>>; 2] = [const { std::sync::OnceLock::new() }; 2];
+        INPUT[family as usize].get_or_init(|| {
             use vtensor_fixtures::Adt0 as Request;
-            super::tensor_layout::certified_current_model(&super::root(), "fixtures");
+            super::tensor_layout::certified_current_model(
+                &super::root(),
+                if family == 0 {
+                    "fixtures"
+                } else {
+                    "arithmetic"
+                },
+            );
             let query = |request| {
-                vtensor_fixtures::run(0, request)
-                    .unwrap()
-                    .expect("admitted fixture query")
+                let result = if family == 0 {
+                    vtensor_fixtures::run(0, request).unwrap()
+                } else {
+                    let (kind, case, source, item) = match request {
+                        Request::C0(item) => (0, 0, 0, item),
+                        Request::C1(case, item) => (1, case, 0, item),
+                        Request::C2(case, source, item) => (2, case, source, item),
+                        Request::C3(case, source, item) => (3, case, source, item),
+                    };
+                    vtensor_arithmetic::run(kind, case, source, item).unwrap()
+                };
+                result.expect("admitted fixture query")
             };
             let (cases, fields, sources, padding) = (
                 query(Request::C0(0)),
@@ -1529,33 +1571,34 @@ mod native_backend_oracle {
                 query(Request::C0(2)),
                 query(Request::C0(3)),
             );
-            assert_eq!((cases, fields, sources, padding), (1280, 24, 2, 165));
-            let mut input = format!("{cases} {fields} {sources} {padding}\n");
-            let mut transcript = Vec::new();
+            assert_eq!(
+                (cases, fields, sources, padding),
+                (if family == 0 { 1280 } else { 120 }, 24, 2, 165)
+            );
+            let mut input: Vec<u8> = [cases, fields, sources, padding]
+                .into_iter()
+                .flat_map(u64::to_le_bytes)
+                .collect();
             for case in 0..cases {
                 for field in 0..fields {
                     let value = query(Request::C1(case, field));
-                    write!(input, "{value} ").unwrap();
-                    transcript.extend_from_slice(&value.to_le_bytes());
+                    input.extend_from_slice(&value.to_le_bytes());
                 }
-                input.push('\n');
                 for source in 0..sources {
                     let (count, width) = (
                         query(Request::C2(case, source, 0)),
                         query(Request::C2(case, source, 1)),
                     );
-                    writeln!(input, "{count} {width}").unwrap();
                     for value in [count, width] {
-                        transcript.extend_from_slice(&value.to_le_bytes());
+                        input.extend_from_slice(&value.to_le_bytes());
                     }
                     for index in 0..count {
                         let value = query(Request::C3(case, source, index));
-                        writeln!(input, "{value}").unwrap();
-                        transcript.extend_from_slice(&value.to_le_bytes());
+                        input.extend_from_slice(&value.to_le_bytes());
                     }
                 }
             }
-            verify_matrix_fixture_records(&transcript);
+            verify_fixture_records(family, &input[32..]);
             input
         })
     }
@@ -1689,10 +1732,10 @@ mod native_backend_oracle {
             std::fs::rename(cache.join("native-oracle.new"), &program).unwrap();
         }
         verify_file(&program, cache.join("program.sha256"));
-        let input = if mode == "matrix" {
-            matrix_fixture_input().to_owned()
-        } else if matches!(mode, "elementwise" | "update") {
-            String::new()
+        let input = if matches!(mode, "matrix" | "elementwise") {
+            fixture_input(u64::from(mode == "elementwise")).to_owned()
+        } else if mode == "update" {
+            Vec::new()
         } else {
             super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"))["tensor_type"]
                 .as_array()
@@ -1701,6 +1744,7 @@ mod native_backend_oracle {
                 .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
                 .map(|row| format!("{}\n", row["value"].as_integer().unwrap()))
                 .collect::<String>()
+                .into_bytes()
         };
         let mut expected = Vec::new();
         for file in vtensor_backend::SOURCE_FILES {
@@ -1723,9 +1767,10 @@ mod native_backend_oracle {
             &input,
         );
         assert_eq!(text, format!("RESULT cases {expected_cases}\n"));
-        if mode == "matrix" {
-            verify_matrix_fixture_records(
-                &std::fs::read(format!("{}.matrix-fixtures", expected_snapshot.display())).unwrap(),
+        if matches!(mode, "matrix" | "elementwise") {
+            verify_fixture_records(
+                u64::from(mode == "elementwise"),
+                &std::fs::read(format!("{}.{mode}-fixtures", expected_snapshot.display())).unwrap(),
             );
         }
     }
@@ -1777,6 +1822,26 @@ static size_t block_address(const ggml_tensor *tensor, size_t ordinal) {
     int64_t i0,i1,i2,i3;const int64_t block=ggml_blck_size(tensor->type);
     ggml_unravel_index(tensor,ordinal*block,&i0,&i1,&i2,&i3);
     return (i0/block)*tensor->nb[0]+i1*tensor->nb[1]+i2*tensor->nb[2]+i3*tensor->nb[3];
+}
+static bool read_fixture_word(uint64_t &word) {
+    uint8_t bytes[8];if(fread(bytes,1,8,stdin)!=8)return false;
+    word=0;for(int i=0;i<8;i++)word|=uint64_t(bytes[i])<<(8*i);
+    return true;
+}
+static int bind_fixture_words(ggml_tensor *left, ggml_tensor *right, size_t padding) {
+    for (ggml_tensor *operand : {left,right}) {
+      uint64_t count,width;CHECK(read_fixture_word(count) && read_fixture_word(width));
+      CHECK(count==uint64_t(operand?ggml_nelements(operand):0) && width==4);
+      std::vector<unsigned char> bytes(operand?ggml_nbytes(operand):0,padding);
+      for(uint64_t i=0;i<count;i++) {uint64_t value;CHECK(read_fixture_word(value) && value<=UINT32_MAX);const uint32_t word=value;memcpy(bytes.data()+block_address(operand,i),&word,4);}
+      if(!bytes.empty())ggml_backend_tensor_set(operand,bytes.data(),0,bytes.size());
+    }
+    return 0;
+}
+static void observe_fixture(std::ofstream &trace, const uint64_t (&fields)[24], ggml_tensor *left, ggml_tensor *right) {
+    auto emit=[&](uint64_t word) {uint8_t bytes[8];for(int i=0;i<8;i++)bytes[i]=uint8_t(word>>(8*i));trace.write((const char *)bytes,8);};
+    for(auto value:fields)emit(value);
+    for(auto operand:{left,right}) {emit(operand?ggml_nelements(operand):0);emit(4);if(operand) for(int64_t i=0;i<ggml_nelements(operand);i++) {uint32_t word;memcpy(&word,(char *)operand->data+block_address(operand,i),4);emit(word);}}
 }
 static bool compare_result(ggml_tensor *result, ggml_tensor *reference, std::vector<unsigned char> expected, int nan_mode) {
     std::vector<unsigned char> actual(ggml_nbytes(result)), raw(reference?ggml_nbytes(reference):0);
@@ -2224,54 +2289,33 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(argv[3], "elementwise")) {
       size_t cases = 0;
-      std::ofstream trace;if(const char *path=std::getenv("VTENSOR_ARITHMETIC_TRACE")) trace.open(path,std::ios::binary);
-      auto emit=[&](uint64_t word) {uint8_t bytes[8];for(int i=0;i<8;i++)bytes[i]=uint8_t(word>>(8*i));trace.write((const char *)bytes,8);};
-      const ggml_op expected_ops[] = {
-        GGML_OP_ADD, GGML_OP_SUB, GGML_OP_MUL, GGML_OP_DIV, GGML_OP_SQRT, GGML_OP_SQR, GGML_OP_UNARY, GGML_OP_UNARY
-      };
-      const uint32_t edges[] = {0,0x80000000,0x3F800000,0xBF800000,0x7F800000,0xFF800000,0x7FC00001,1,
-        0x7F7FFFFF,0x00800000,0x007FFFFF,0x3F800001,0x3F000000,0x00800001,0x80000001,0x7F800001};
-      for (int kind=0; kind<8; kind++) for (int width : {1,17,257}) for (int padded : {0,1})
-      for (int broadcast=0; broadcast<(kind<4?4:1); broadcast++) {
+      std::ofstream trace(std::string(argv[2])+".elementwise-fixtures",std::ios::binary);CHECK(trace.good());
+      uint64_t header[4];for(auto &value:header)CHECK(read_fixture_word(value));
+      CHECK(header[0]==120 && header[1]==24 && header[2]==2 && header[3]==165);
+      for(size_t ordinal=0;ordinal<header[0];ordinal++) {
+        uint64_t fixture[24];for(auto &value:fixture)CHECK(read_fixture_word(value));
+        CHECK(fixture[23]==ordinal && fixture[0]<8);
+        const int kind=fixture[0];
         ggml_init_params params = {8*1024*1024, nullptr, true};
         ggml_context *ctx = ggml_init(params); CHECK(ctx);
-        ggml_tensor *left=ggml_new_tensor_4d(ctx, GGML_TYPE_F32,width,3,2,2);
-        const int64_t r0=(broadcast==1||broadcast==3)?1:width;
-        const int64_t r1=(broadcast==1||broadcast==2)?1:3;
-        const int64_t r2=broadcast?1:2, r3=(broadcast==1||broadcast==2)?1:2;
-        ggml_tensor *right=kind<4?ggml_new_tensor_4d(ctx,GGML_TYPE_F32,r0,r1,r2,r3):nullptr;
-        for (ggml_tensor *operand : {left,right}) if (operand) {
-          operand->nb[1]=(operand->ne[0]+padded)*sizeof(float);
-          operand->nb[2]=operand->nb[1]*operand->ne[1]+padded*sizeof(float);
-          operand->nb[3]=operand->nb[2]*operand->ne[2]+padded*sizeof(float);
-        }
+        ggml_tensor *left=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,fixture[4],fixture[5],fixture[6],fixture[7]);
+        ggml_tensor *right=kind<4?ggml_new_tensor_4d(ctx,GGML_TYPE_F32,fixture[8],fixture[9],fixture[10],fixture[11]):nullptr;
+        for(int source=0;source<2;source++) {auto operand=source?right:left;if(operand)for(int axis=0;axis<4;axis++)operand->nb[axis]=fixture[12+source*4+axis];}
         ggml_tensor *(*binary[])(ggml_context *,ggml_tensor *,ggml_tensor *)={ggml_add,ggml_sub,ggml_mul,ggml_div};
         ggml_tensor *(*unary[])(ggml_context *,ggml_tensor *)={ggml_sqrt,ggml_sqr,ggml_neg,ggml_abs};
         auto operation = [&](ggml_tensor *a, ggml_tensor *b) { return kind<4?binary[kind](ctx,a,b):unary[kind-4](ctx,a); };
         ggml_tensor *result=operation(left,right);
         ggml_tensor *reference_result=operation(ggml_cont(ctx,left),right?ggml_cont(ctx,right):nullptr);
-        CHECK(result && result->op==expected_ops[kind]);
-        if (kind>=6) CHECK(ggml_get_unary_op(result)==(kind==6?GGML_UNARY_OP_NEG:GGML_UNARY_OP_ABS));
+        CHECK(result && uint64_t(result->op)==fixture[1]);
+        if (kind>=6) CHECK(uint64_t(ggml_get_unary_op(result))==fixture[2]);
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
-        for (ggml_tensor *operand : {left,right}) if (operand) {
-          std::vector<unsigned char> bytes(ggml_nbytes(operand),0xA5);
-          size_t index=0;
-          for (int64_t i3=0;i3<operand->ne[3];i3++) for (int64_t i2=0;i2<operand->ne[2];i2++)
-          for (int64_t i1=0;i1<operand->ne[1];i1++) for (int64_t i0=0;i0<operand->ne[0];i0++,index++) {
-            uint32_t bits=index<16?edges[(index*(operand==left?1:5)+(operand==left?0:3))%16]:uint32_t(index*2654435761U+(operand==left?0x9E3779B9U:0x85EBCA6BU));
-            memcpy(bytes.data()+i0*operand->nb[0]+i1*operand->nb[1]+i2*operand->nb[2]+i3*operand->nb[3],&bits,4);
-          }
-          ggml_backend_tensor_set(operand,bytes.data(),0,bytes.size());
-        }
-        if(trace.is_open()) {
-          const uint64_t fields[]={uint64_t(kind),uint64_t(result->op),uint64_t(kind>=6?ggml_get_unary_op(result):0),uint64_t(padded),
-            uint64_t(left->ne[0]),uint64_t(left->ne[1]),uint64_t(left->ne[2]),uint64_t(left->ne[3]),
-            uint64_t(right?right->ne[0]:0),uint64_t(right?right->ne[1]:0),uint64_t(right?right->ne[2]:0),uint64_t(right?right->ne[3]:0),
-            left->nb[0],left->nb[1],left->nb[2],left->nb[3],right?right->nb[0]:0,right?right->nb[1]:0,right?right->nb[2]:0,right?right->nb[3]:0,
-            uint64_t(ggml_nelements(left)),uint64_t(right?ggml_nelements(right):0),uint64_t(width==1 && padded==0 && broadcast==0?(kind==0?1:kind==6?2:0):0),cases};
-          for(auto value:fields)emit(value);
-          for(auto operand:{left,right}) {emit(operand?ggml_nelements(operand):0);emit(4);if(operand) for(int64_t i=0;i<ggml_nelements(operand);i++) {uint32_t word;memcpy(&word,(char *)operand->data+block_address(operand,i),4);emit(word);}}
-        }
+        CHECK(bind_fixture_words(left,right,header[3])==0);
+        const uint64_t fields[]={uint64_t(kind),uint64_t(result->op),uint64_t(kind>=6?ggml_get_unary_op(result):0),fixture[3],
+          uint64_t(left->ne[0]),uint64_t(left->ne[1]),uint64_t(left->ne[2]),uint64_t(left->ne[3]),
+          uint64_t(right?right->ne[0]:0),uint64_t(right?right->ne[1]:0),uint64_t(right?right->ne[2]:0),uint64_t(right?right->ne[3]:0),
+          left->nb[0],left->nb[1],left->nb[2],left->nb[3],right?right->nb[0]:0,right?right->nb[1]:0,right?right->nb[2]:0,right?right->nb[3]:0,
+          uint64_t(ggml_nelements(left)),uint64_t(right?ggml_nelements(right):0),fixture[22],cases};
+        observe_fixture(trace,fields,left,right);
         ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
         CHECK(ggml_backend_dev_supports_op(dev,result));
         ggml_cgraph *reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,reference_result);
@@ -2280,7 +2324,8 @@ int main(int argc, char **argv) {
         ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
         CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
         CHECK(compare_result(result,reference_result,std::vector<unsigned char>(ggml_nbytes(result),0xA5),1));
-        if (width==1 && padded==0 && broadcast==0 && (kind==0 || kind==6)) {
+        if (fixture[22]) {
+          CHECK((fixture[22]==1 && kind==0) || (fixture[22]==2 && kind==6));
           if (kind==0) {
             CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
             CHECK(refuses_change(backend,dev,graph,result,right->ne[1],int64_t(2)));
@@ -2290,6 +2335,7 @@ int main(int argc, char **argv) {
         }
         ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
       }
+      CHECK(refusal_probes==5 && fgetc(stdin)==EOF);
       CHECK(ggml_backend_reg_count()==1 && ggml_backend_dev_count()==1);
       ggml_backend_free(reference); ggml_backend_free(backend);
       printf("RESULT cases %zu\n",cases); return 0;
@@ -2297,12 +2343,10 @@ int main(int argc, char **argv) {
     if (!strcmp(argv[3], "matrix")) {
       size_t matrix_cases = 0; bool negatives_checked = false;
       std::ofstream trace(std::string(argv[2])+".matrix-fixtures",std::ios::binary);CHECK(trace.good());
-      auto emit=[&](uint64_t word) {uint8_t bytes[8];for(int i=0;i<8;i++)bytes[i]=uint8_t(word>>(8*i));trace.write((const char *)bytes,8);};
-      size_t fixture_count,metadata_count,source_count,padding_byte;
-      CHECK(scanf("%zu %zu %zu %zu",&fixture_count,&metadata_count,&source_count,&padding_byte)==4);
-      CHECK(fixture_count==1280 && metadata_count==24 && source_count==2 && padding_byte==165);
-      for(size_t ordinal=0;ordinal<fixture_count;ordinal++) {
-        uint64_t fixture[24];for(auto &value:fixture)CHECK(scanf("%lu",&value)==1);
+      uint64_t header[4];for(auto &value:header)CHECK(read_fixture_word(value));
+      CHECK(header[0]==1280 && header[1]==24 && header[2]==2 && header[3]==165);
+      for(size_t ordinal=0;ordinal<header[0];ordinal++) {
+        uint64_t fixture[24];for(auto &value:fixture)CHECK(read_fixture_word(value));
         CHECK(fixture[23]==ordinal);
         ggml_init_params params = {8*1024*1024, nullptr, true};
         ggml_context *ctx = ggml_init(params); CHECK(ctx);
@@ -2314,20 +2358,11 @@ int main(int argc, char **argv) {
         for(int axis=0;axis<4;axis++)product->nb[axis]=fixture[16+axis];
         ggml_backend_buffer_t buffer = ggml_backend_alloc_ctx_tensors(ctx, backend);
         CHECK(buffer || (!ggml_nbytes(left) && !ggml_nbytes(right) && !ggml_nbytes(product)));
-        for (ggml_tensor *operand : {left,right}) {
-          uint64_t count,width;CHECK(scanf("%lu %lu",&count,&width)==2);
-          CHECK(count==uint64_t(ggml_nelements(operand)) && width==4);
-          std::vector<unsigned char> bytes(ggml_nbytes(operand),padding_byte);
-          for(uint64_t i=0;i<count;i++) {uint64_t value;CHECK(scanf("%lu",&value)==1 && value<=UINT32_MAX);const uint32_t word=value;memcpy(bytes.data()+block_address(operand,i),&word,4);}
-          if(!bytes.empty())ggml_backend_tensor_set(operand,bytes.data(),0,bytes.size());
-        }
-        if(trace.is_open()) {
-          const uint64_t fields[]={uint64_t(left->ne[1]),uint64_t(right->ne[1]),uint64_t(left->ne[0]),fixture[3],uint64_t(left->ne[2]),uint64_t(left->ne[3]),uint64_t(right->ne[2]),uint64_t(right->ne[3]),
+        CHECK(bind_fixture_words(left,right,header[3])==0);
+        const uint64_t fields[]={uint64_t(left->ne[1]),uint64_t(right->ne[1]),uint64_t(left->ne[0]),fixture[3],uint64_t(left->ne[2]),uint64_t(left->ne[3]),uint64_t(right->ne[2]),uint64_t(right->ne[3]),
             left->nb[0],left->nb[1],left->nb[2],left->nb[3],right->nb[0],right->nb[1],right->nb[2],right->nb[3],product->nb[0],product->nb[1],product->nb[2],product->nb[3],
             uint64_t(ggml_nelements(left)),uint64_t(ggml_nelements(right)),uint64_t(fixture[22]!=0),matrix_cases};
-          for(auto value:fields)emit(value);
-          for(auto operand:{left,right}) {emit(ggml_nelements(operand));emit(4);for(int64_t i=0;i<ggml_nelements(operand);i++) {uint32_t word;memcpy(&word,(char *)operand->data+block_address(operand,i),4);emit(word);}}
-        }
+        observe_fixture(trace,fields,left,right);
         ggml_cgraph *graph = ggml_new_graph(ctx); ggml_build_forward_expand(graph, product);
         CHECK(ggml_backend_dev_supports_op(dev, product));
         ggml_cgraph *reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,oracle);
@@ -2350,7 +2385,7 @@ int main(int argc, char **argv) {
         CHECK(compare_result(product,oracle,expected,1));
         ggml_backend_buffer_free(buffer); ggml_free(ctx); matrix_cases++;
       }
-      CHECK(negatives_checked && refusal_probes==5 && scanf(" %*c")==EOF);
+      CHECK(negatives_checked && refusal_probes==5 && fgetc(stdin)==EOF);
       CHECK(ggml_backend_reg_count() == 1 && ggml_backend_dev_count() == 1);
       ggml_backend_free(reference); ggml_backend_free(backend);
       printf("RESULT cases %zu\n", matrix_cases); return 0;

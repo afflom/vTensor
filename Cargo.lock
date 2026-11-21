@@ -461,6 +461,7 @@ dependencies = [
  "verdant-tensor",
  "vtensor-prism-kernel",
  "vtensor_allocation",
+ "vtensor_arithmetic",
  "vtensor_fixtures",
  "vtensor_index",
  "vtensor_layout",
@@ -481,6 +482,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_allocation"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_arithmetic"
 version = "0.1.0"
 
 [[package]]

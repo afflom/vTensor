@@ -28,5 +28,28 @@
   ],
   "implication": "The reviewed checked-in WASM files are smaller than the previously recorded local ceilings of 3915776 and 155648 bytes. No rebuilt extension, capsule closure or production dependency claim follows from those sizes.",
   "tensor_api": "The upstream linear module still lacks the local vTensor scalar/storage-block extensions; migration and their production closure remain required.",
-  "local_effect": "Fetched main only into the isolated migration repository; local checkout and the other active Verdant worktree were not changed."
+  "local_effect": "Fetched main and computed a merge-tree analysis in the isolated migration repository; checked-out branches and files were unchanged.",
+  "merge_analysis": {
+    "method": "git merge-tree --write-tree --messages; no working tree or branch merge",
+    "extension_commit": "3635dcf766665509caef009e5a8f89856556a7e1",
+    "status": "conflicts require resolution; result is not an integrated build",
+    "conflicting_paths": [
+      "CONFORMANCE.md",
+      "crates/conformance/tests/engine/world.rs",
+      "features/suites/engine.feature",
+      "frontier.toml",
+      "model/authorities.toml",
+      "model/ids.toml",
+      "model/parametric-ratchet.toml",
+      "site/frame/frame-pin.json",
+      "site/generated/immutability-seal.json",
+      "site/generated/lifecycle-gate-report.json",
+      "site/generated/observer-refinement-agenda.json",
+      "site/generated/roadmap-kpi-report.json",
+      "site/generated/self-host-ratchet-manifest.toml",
+      "site/verdant-uorc.wasm",
+      "site/verdant-wasm.wasm"
+    ],
+    "log": "/tmp/vtensor-verdant-m20-merge-analysis.log"
+  }
 }

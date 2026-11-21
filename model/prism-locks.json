@@ -1,1 +1,1 @@
-["frame.lock","identity/stitch.lock","prism-kernel.lock","layout-kernel.lock","oracle-import.lock","native-kernel.lock","matrix-kernel.lock","index-kernel.lock","pointwise-kernel.lock","fixtures-kernel.lock"]
+["frame.lock","identity/stitch.lock","prism-kernel.lock","layout-kernel.lock","oracle-import.lock","native-kernel.lock","matrix-kernel.lock","index-kernel.lock","pointwise-kernel.lock","fixtures-kernel.lock","arithmetic-kernel.lock"]
