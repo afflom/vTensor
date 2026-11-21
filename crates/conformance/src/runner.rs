@@ -253,8 +253,8 @@ fn require<T>(result: Result<T, BackendError>) -> T {
 
 // Bind Prism configuration values to GGML's typed query callbacks.
 macro_rules! configuration_queries {
-    ($($name:ident($owner:ty) -> $result:ty = $value:expr;)*) => {$(
-        unsafe extern "C" fn $name(_: $owner) -> $result { $value }
+    ($($name:ident($owner:ty $(, $arg:ident: $ty:ty)*) -> $result:ty = $value:expr;)*) => {$(
+        unsafe extern "C" fn $name(_: $owner $(, $arg: $ty)*) -> $result { $value }
     )*};
 }
 configuration_queries! {
@@ -268,6 +268,7 @@ configuration_queries! {
     buffer_type(Dev) -> Buft = state().buft.get();
     alignment_of(Buft) -> usize = state().alignment;
     is_host(Buft) -> bool = true;
+    supports_buffer_type(Dev, buft: Buft) -> bool = buft == state().buft.get();
 }
 
 unsafe extern "C" fn device_at(_: Reg, index: usize) -> Dev {
@@ -276,10 +277,6 @@ unsafe extern "C" fn device_at(_: Reg, index: usize) -> Dev {
     } else {
         null_mut()
     }
-}
-
-unsafe extern "C" fn supports_buffer_type(_: Dev, buft: Buft) -> bool {
-    buft == state().buft.get()
 }
 
 unsafe extern "C" fn memory(_: Dev, free: *mut usize, total: *mut usize) {
@@ -617,6 +614,18 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
     Ok(())
 }
 
+fn converted_word(source: u64, destination: u64, bits: u64) -> Result<[u8; 4], BackendError> {
+    let word = verdant_tensor::linear::convert_float_storage(source, destination, bits)
+        .map_err(|_| BackendError::Overflow)?
+        .ok_or(BackendError::InvalidTensor)?;
+    Ok(if destination == 0 {
+        (word as u32).to_ne_bytes()
+    } else {
+        let [a, b] = (word as u16).to_ne_bytes();
+        [a, b, 0, 0]
+    })
+}
+
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let GraphPlan::C4(count, bytes, source, destination, mode) = plan else {
         return Err(BackendError::InvalidTensor);
@@ -625,37 +634,25 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let source_data = |slot: usize| graph_tensor_data(unsafe { &*tensor.src[slot] });
     // Typed host word bindings preserve native byte order; conversion is Verdant's.
     let literal = match mode {
-        CopyMode::C9(ty, bits) => {
-            let word = verdant_tensor::linear::convert_float_storage(0, ty, bits)
-                .map_err(|_| BackendError::Overflow)?
-                .ok_or(BackendError::InvalidTensor)?;
-            if ty == 0 {
-                (word as u32).to_ne_bytes()
-            } else {
-                let [a, b] = (word as u16).to_ne_bytes();
-                [a, b, 0, 0]
-            }
-        }
+        CopyMode::C9(ty, bits) => converted_word(0, ty, bits)?,
         _ => [0; 4],
     };
     let left_data = match mode {
         CopyMode::C9(..) => null_mut(),
         _ => source_data(0)?,
     };
-    let sources = match mode {
-        CopyMode::C2(..) | CopyMode::C6(..) | CopyMode::C10(_, false, _) => {
-            [left_data, source_data(1)?]
-        }
+    let right_data = match mode {
+        CopyMode::C2(..) | CopyMode::C6(..) | CopyMode::C10(_, false, _) => source_data(1)?,
         CopyMode::C3(_, _, _, _, false)
         | CopyMode::C7(..)
         | CopyMode::C8(..)
-        | CopyMode::C9(..) => [left_data, literal.as_ptr().cast_mut()],
-        _ => [left_data, null_mut()],
+        | CopyMode::C9(..) => literal.as_ptr().cast_mut(),
+        _ => null_mut(),
     };
     let destination_data = graph_tensor_data(tensor)?;
     let pointers = [
-        sources[0],
-        sources[1],
+        left_data,
+        right_data,
         destination_data,
         literal.as_ptr().cast_mut(),
     ];
@@ -680,17 +677,27 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
             }
             continue;
         }
-        let GraphResponse::C1(second, from, to) = response else {
-            return Err(BackendError::InvalidTensor);
-        };
-        // SAFETY: the Prism block counts, offsets and admitted spans bound both
-        // regions. Capture the source before borrowing a possibly aliased destination.
+        let encoded;
+        // SAFETY: Prism bounds the selected source word/block and destination.
+        // Capture source bytes before borrowing a possibly aliased destination.
         unsafe {
-            ptr::copy_nonoverlapping(
-                sources[usize::from(second)].add(from as usize),
-                block.as_mut_ptr(),
-                block.len(),
-            );
+            let (pointer, to): (*const u8, u64) = match response {
+                GraphResponse::C1(second, from, to) => {
+                    (pointers[usize::from(second)].add(from as usize), to)
+                }
+                GraphResponse::C3(source_type, destination_type, from, to) => {
+                    let pointer = pointers[0].add(from as usize);
+                    let word = if source_type == 0 {
+                        u64::from(ptr::read_unaligned(pointer.cast::<u32>()))
+                    } else {
+                        u64::from(ptr::read_unaligned(pointer.cast::<u16>()))
+                    };
+                    encoded = converted_word(source_type, destination_type, word)?;
+                    (encoded.as_ptr(), to)
+                }
+                _ => return Err(BackendError::InvalidTensor),
+            };
+            ptr::copy_nonoverlapping(pointer, block.as_mut_ptr(), block.len());
             let target =
                 std::slice::from_raw_parts_mut(destination_data.add(to as usize), block.len());
             verdant_tensor::memory::copy_storage_block(&block, target)

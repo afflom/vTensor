@@ -57,6 +57,7 @@ reproducible matrix/scalar/storage extension checkpoint is `26ba1eaa1369`.
 | `VT-21` | build | Matches 384 batched DIAG graphs across F32, F16 and BF16, including strides, empty dimensions, exact diagonal encodings and zero-filled off-diagonals. |
 | `VT-22` | build | Checks 1,536 TRI CPU comparisons and 384 nonsquare refusals across all four variants and F32/F16/BF16, with batches, strides and empty dimensions. |
 | `VT-23` | build | Matches 15,360 F32/F16 FILL graphs, including copied/in-place output, exact constants, rounding boundaries, strides, empty dimensions and unused inputs without allocations. |
+| `VT-24` | build | Matches 1,920 cast/copy graphs across all six mixed F32/F16/BF16 pairs, both constructors, strides, reshape, empty dimensions and preserved padding. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -73,17 +74,17 @@ CPU-supported types, preserving diagonal encodings and writing positive zeros.
 TRI shares that selection path for all four upstream variants and rejects
 nonsquare descriptors before writes. FILL converts constants once through
 Verdant and uses the transfer path for F32/F16, including in-place aliases.
-Copy conversions and other
-operations and complete numeric type coverage remain unfinished. Storage and empty-graph coverage for all 36 live types do not
-establish their nonempty numerical behavior.
+Mixed F32/F16/BF16 copies use Prism ordinal-address plans and Verdant encoding
+conversion. Remaining conversions, operations and numeric types are unfinished.
+Storage and empty-graph coverage for all 36 live types do not establish their
+nonempty numerical behavior.
 
 The development Verdant dependency also provides a certified F32/F16/BF16
 storage conversion root, independently checked against 1,397,260 imported GGML
-comparisons. FILL uses this primitive; mixed-type copies and wider numerical graph
-coverage remain unfinished.
+comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes twenty-two contract tests; VT-02 refuses the
+The current development tree passes twenty-three contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy
 and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in

@@ -30,6 +30,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-09` | `build` | Prism transfer admission matches upstream GGML set and get guards and rejects overflowing ranges |
 
+## cast-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-24` | `build` | Prism plans mixed F32 F16 and BF16 casts and copies by logical element order and Verdant conversion matches the imported GGML CPU oracle across reshaped strided and empty layouts |
+
 ## concat-graphs
 
 | ID | Level | Statement |

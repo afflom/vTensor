@@ -80,7 +80,8 @@ inductive{
     {name: folded, fields: [Nat]},
     {name: selected, fields: [Nat]},
     {name: constant, fields: [Nat, Nat]},
-    {name: arithmetic, fields: [Nat, Bool, IndexContext]}
+    {name: arithmetic, fields: [Nat, Bool, IndexContext]},
+    {name: converted, fields: [Nat, Nat]}
   ]
 }
 
@@ -222,7 +223,8 @@ inductive{
   constructors: [
     {name: planned, fields: [PointwiseDecision]},
     {name: offsets, fields: [Bool, Nat, Nat]},
-    {name: arithmetic, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: arithmetic, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: converted, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -251,7 +253,7 @@ definition{
 }
 
 definition{
-  name: planStorage,
+  name: planSameStorage,
   parameters: [
     operation : Nat,
     left : TensorDescriptor,
@@ -262,6 +264,29 @@ definition{
   body: (if (((project left ty) =? (project output ty)) && (if (operation =? 33) then rightPresent else true)) then (match (TensorTypes::tensorTypeStorage (project left ty))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
     | TensorTypes::TypeStorageDecision.knownType spec => (let block : Nat := (project spec blockSize); (let count : Nat := (blockCount left block); (if ((((prim remainder (project left n0) block 1 : Nat) =? 0) && ((prim remainder (project output n0) block 1 : Nat) =? 0)) && (count =? (blockCount output block))) then (ctor PointwiseDecision.copyBlocks count (project spec typeSize) (indexContext left block) (indexContext output block) (ctor CopyMode.linear)) else (ctor PointwiseDecision.invalidShape))))) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
+  name: floatStorageType,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: (((kind =? 0) || (kind =? 1)) || (kind =? 30)),
+  executable: true
+}
+
+definition{
+  name: planStorage,
+  parameters: [
+    operation : Nat,
+    left : TensorDescriptor,
+    rightPresent : Bool,
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (if ((project left ty) =? (project output ty)) then (planSameStorage operation left rightPresent output) else (if ((((floatStorageType (project left ty)) && (floatStorageType (project output ty))) && (if (operation =? 33) then rightPresent else true)) && ((blockCount left 1) =? (blockCount output 1))) then (match (TensorTypes::tensorTypeStorage (project output ty))
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
+    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.converted (project left ty) (project output ty)))) else (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
 
@@ -654,7 +679,8 @@ definition{
     | CopyMode.folded initial => (foldedOffsets index source destination initial)
     | CopyMode.selected kind => (selectionOffsets kind index source destination)
     | CopyMode.constant kind bits => (ctor GraphResponse.offsets true 0 (blockOffset index destination))
-    | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)),
+    | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)
+    | CopyMode.converted sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))),
   executable: true
 }
 

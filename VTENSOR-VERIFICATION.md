@@ -1568,3 +1568,77 @@ and its large corpus were not rerun; this checkpoint validates their graph
 composition. Unchanged main-application proofs were not redundantly rebuilt.
 Full backend conformance, production source acceptance and the previously
 recorded broader Verdant release blockers remain unfinished.
+
+
+## VT-24: mixed F32/F16/BF16 casts and copies
+
+Registered VT-24 and its scenario before implementation. The initial
+`cargo test --locked -p vtensor-backend --test contract cast_graphs_vt_24 -- --exact --nocapture`
+failed at the live support query after the imported CPU graph succeeded.
+The upstream copy constructor requires equal element counts and retains a target
+descriptor; cast uses the CPY operation with a self target. The CPU float-copy
+kernel converts through F32. Prism now chooses mixed-float admission, equal
+logical element counts, source/destination types and independent ordinal byte
+offsets. Same-type copies retain their existing opaque-block path for all 36
+types. Missing CPY targets and unsupported mixed type pairs remain typed refusals.
+
+The native adapter reads a bounded two- or four-byte host word and calls
+Verdant's certified conversion primitive. FILL and casts share the host-word
+conversion/binding helper. Converted bytes join the existing staged Verdant
+transfer path, preserving source-before-destination ordering. Destination
+encoding uses native byte order for both word widths. A read-only source-pointer
+type annotation resolved a Rust mutability mismatch before execution. The
+existing query callback macro gained typed additional arguments, preserving
+the buffer-type callback ABI while removing repeated declaration boilerplate.
+No handwritten numerical conversion kernel or new source file was introduced.
+
+All 1,920 CPU comparisons pass: six mixed pairs, both cast/copy constructors,
+five normal/empty-axis patterns, four layouts, two widths, two row counts and
+two batch counts. CPY includes a reshaped padded destination. Raw input words
+include signed zeros, subnormals, finite limits, infinities, signaling/quiet and
+signed NaNs, and narrowing boundaries. Complete byte comparison checks exact
+encodings and untouched padding. Only the CPU reference input is canonicalized;
+the actual strided source and destination are retained. Invalid counts, missing
+source/target and unsupported source/destination types fail before writes.
+The first implemented run took 4.51 seconds. Forcing destination conversion to
+F32 failed the F16 cast at byte seven (0 instead of 128). Forcing source offset
+zero only for a reshaped copy failed at byte five (0 instead of 128). Both faults
+were bounded and restored before regression.
+
+The sampled hundred-opcode matrix dispatch loop was replaced by
+`MatrixGraph.scalarDispatchForEveryOpcode`, a kernel-checked theorem quantified
+over every Nat opcode at the same fixed scalar shape/type. Its result is the
+scalar product exactly under opcode 28's boolean guard and unsupported otherwise.
+The positive scalar API call and both existing shape/batch refusal calls remain,
+as do the 640 live CPU matrix comparisons and the separate imported opcode
+inventory check. A deliberately wrong opcode 27 in the theorem failed Lean
+with LLV7002 (`rfl` failed). The correct model was restored byte for byte.
+
+MCP draft storage returned `store.put failed: unwritable`. The pinned SDK checked
+and exported both changed projects. Matrix result
+`44067ee57128e8a1feab7c084b0501fe77c119e1df4060e18de463015a7ed14c`
+has attestation
+`90ad5047f80ea45e7819a751db8a81fead115a6f1cd1a246e7e83eb5de523952`.
+Pointwise result
+`a9f37f0c5823fd15b4357d46e0df49e99017271a71c6cafc3fbfb81069e70140`
+has attestation
+`68f4015c7d1d45f5bf78a722b63c70a3bc5368bc7e99d1d1a859e2ab1c675b41`.
+The emitted conversion mode/response variants were inspected before native
+validation. The matrix source theorem and its axiom audit were present in the
+SDK's successful production proof. After the deliberate theorem fault, a
+restored `verify` began repeating the already successful preservation proof;
+that redundant process was stopped. A current source/semantic identity check
+matched the kept matrix artifact and `production verify-artifact` verified its
+bindings. Its output explicitly says axiom audit, Lean elaboration, leanchecker
+replay and named-root extraction were not rerun. Only the changed pointwise
+root then needed a fresh export; no kept proof is described as a fresh proof.
+
+The final workspace regression passed twenty-three contract tests and every
+other target. VT-02 alone retained its exact-source refusal of the unpublished
+Verdant dependency. Contract execution took 18.59 seconds. Formatting,
+model/source audits, frame synchronization, workspace Clippy and dependency
+checks passed. Handwritten source remains 10,571 lines in 51 files. Existing
+same-type copies, FILL, arithmetic and buffer metadata regressions passed.
+The unchanged large Verdant conversion corpus and main-application proofs were
+not redundantly rerun. Other conversions, numeric types, operation families,
+complete lifecycle conformance and production source acceptance remain unfinished.

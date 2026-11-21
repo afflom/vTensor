@@ -208,3 +208,9 @@ id = "VT-23"
 level = "build"
 suite = "fill-graphs"
 statement = "Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding"
+
+[[id]]
+id = "VT-24"
+level = "build"
+suite = "cast-graphs"
+statement = "Prism plans mixed F32 F16 and BF16 casts and copies by logical element order and Verdant conversion matches the imported GGML CPU oracle across reshaped strided and empty layouts"
