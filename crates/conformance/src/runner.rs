@@ -643,11 +643,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     };
     let right_data = match mode {
         CopyMode::C2(..) | CopyMode::C6(..) | CopyMode::C10(_, false, _) => source_data(1)?,
-        CopyMode::C3(_, _, _, _, false)
-        | CopyMode::C7(..)
-        | CopyMode::C8(..)
-        | CopyMode::C9(..) => literal.as_ptr().cast_mut(),
-        _ => null_mut(),
+        _ => literal.as_ptr().cast_mut(),
     };
     let destination_data = graph_tensor_data(tensor)?;
     let pointers = [

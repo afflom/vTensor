@@ -92,5 +92,12 @@ theorem{
   statement: ((decideNative (ctor PredicateRequest.metadataOperation operation 0)) = true),
   proof: reflexivity{}
 }
+
+theorem{
+  name: metadataClassification,
+  parameters: [operation : Nat, span : Nat],
+  statement: ((decideNative (ctor PredicateRequest.metadataOperation operation span)) = ((span =? 0) || (((((operation =? 0) || (operation =? 35)) || (operation =? 36)) || (operation =? 37)) || (operation =? 38)))),
+  proof: reflexivity{}
+}
 \end{semanticmodule}
 \end{lexlean}

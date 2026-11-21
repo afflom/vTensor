@@ -16,7 +16,7 @@ reproduced by `just verdant-prepare` from the hash-bound Git bundle in this
 repository. The checkout lives at `.verdant-engine`. This override is explicit in
 `Cargo.toml`; the unchanged exact-source guard rejects it as release evidence.
 The declared upstream base is Verdant v2.4.0 commit `87c3256326b9`; the
-reproducible matrix/scalar/storage extension checkpoint is `26ba1eaa1369`.
+reproducible matrix/scalar/storage/conversion extension checkpoint is `d6674663941f`.
 
 ## Architecture
 
@@ -58,6 +58,7 @@ reproducible matrix/scalar/storage extension checkpoint is `26ba1eaa1369`.
 | `VT-22` | build | Checks 1,536 TRI CPU comparisons and 384 nonsquare refusals across all four variants and F32/F16/BF16, with batches, strides and empty dimensions. |
 | `VT-23` | build | Matches 15,360 F32/F16 FILL graphs, including copied/in-place output, exact constants, rounding boundaries, strides, empty dimensions and unused inputs without allocations. |
 | `VT-24` | build | Matches 1,920 cast/copy graphs across all six mixed F32/F16/BF16 pairs, both constructors, strides, reshape, empty dimensions and preserved padding. |
+| `VT-25` | build | Window partition/join covers 2,808 CPU comparisons and 216 bounded-source refusals, including strides, padding, empty dimensions and independent oversized/reshaped windows. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

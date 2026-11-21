@@ -81,7 +81,8 @@ inductive{
     {name: selected, fields: [Nat]},
     {name: constant, fields: [Nat, Nat]},
     {name: arithmetic, fields: [Nat, Bool, IndexContext]},
-    {name: converted, fields: [Nat, Nat]}
+    {name: converted, fields: [Nat, Nat]},
+    {name: windowed, fields: [Bool, Nat, Nat]}
   ]
 }
 
@@ -665,6 +666,66 @@ definition{
 }
 
 definition{
+  name: windowCount,
+  parameters: [extent : Nat, size : Nat],
+  result: Nat,
+  body: (prim quotient (extent + (prim subtract size 1 : Nat)) size 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: windowAxisMaximum,
+  parameters: [extent : Nat, size : Nat, step : Nat, stride : Nat],
+  result: Nat,
+  body: (if (extent =? 0) then 0 else (let last : Nat := (prim subtract extent 1 : Nat); (let block : Nat := (prim quotient last size 0 : Nat); (let tail : Nat := ((prim multiply block step : Nat) + (prim multiply (prim remainder last size 0 : Nat) stride : Nat)); (if (block =? 0) then tail else (let complete : Nat := ((prim multiply (prim subtract block 1 : Nat) step : Nat) + (prim multiply (prim subtract size 1 : Nat) stride : Nat)); (if (tail <? complete) then complete else tail))))))),
+  executable: true
+}
+
+definition{
+  name: windowJoinBound,
+  parameters: [image : TensorDescriptor, tiles : TensorDescriptor, size : Nat, nx : Nat],
+  result: Bool,
+  body: (if (empty (project image n0) (project image n1) (project image n2) (project image n3)) then true else (let row : Nat := (prim multiply (project tiles n0) (project tiles n1) : Nat); (let plane : Nat := (prim multiply row (project tiles n2) : Nat); (((prim subtract (project image n0) 1 : Nat) + ((windowAxisMaximum (project image n1) size plane (project tiles n0)) + (windowAxisMaximum (project image n2) size (prim multiply nx plane : Nat) row))) <? (blockCount tiles 1))))),
+  executable: true
+}
+
+definition{
+  name: windowGridFits,
+  parameters: [nx : Nat, ny : Nat, size : Nat],
+  result: Bool,
+  body: (((((nx <? 2147483648) && (ny <? 2147483648)) && ((prim multiply nx ny : Nat) <? 2147483648)) && ((prim multiply (prim subtract nx 1 : Nat) size : Nat) <? 2147483648)) && ((prim multiply (prim subtract ny 1 : Nat) size : Nat) <? 2147483648)),
+  executable: true
+}
+
+definition{
+  name: planWindow,
+  parameters: [
+    reverse : Bool,
+    options : OperationParameters,
+    left : TensorDescriptor,
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (let size : Nat := (if reverse then (project options p0) else (project options p2)); (if ((0 <? size) && (size <? 2147483648)) then (let image : TensorDescriptor := (if reverse then output else left); (let tiles : TensorDescriptor := (if reverse then left else output); (let nx : Nat := (windowCount (project image n1) size); (let ny : Nat := (windowCount (project image n2) size); (if ((((((project image ty) =? 0) && ((project tiles ty) =? 0)) && ((project image n3) =? 1)) && ((project image n0) =? (project tiles n0))) && (if reverse then (((((project image n1) <? 2147483648) && ((project image n2) <? 2147483648)) && ((prim multiply nx ny : Nat) <=? 2147483648)) && (windowJoinBound image tiles size nx)) else ((((((project options p0) =? nx) && ((project options p1) =? ny)) && (windowGridFits nx ny size)) && (((project tiles n1) =? size) && ((project tiles n2) =? size))) && ((project tiles n3) =? (prim multiply nx ny : Nat))))) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.windowed reverse size nx)) else (ctor PointwiseDecision.invalidShape)))))) else (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+definition{
+  name: windowOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    reverse : Bool,
+    size : Nat,
+    nx : Nat
+  ],
+  result: GraphResponse,
+  body: (let channel : Nat := (prim remainder index (project destination u0) 0 : Nat); (let q0 : Nat := (prim quotient index (project destination u0) 0 : Nat); (let x : Nat := (prim remainder q0 (project destination n1) 0 : Nat); (let q1 : Nat := (prim quotient q0 (project destination n1) 0 : Nat); (let y : Nat := (prim remainder q1 (project destination n2) 0 : Nat); (let window : Nat := (prim quotient q1 (project destination n2) 0 : Nat); (let target : Nat := (blockOffset index destination); (if reverse then (let tile : Nat := ((prim multiply (prim quotient y size 0 : Nat) nx : Nat) + (prim quotient x size 0 : Nat)); (let ordinal : Nat := (channel + (prim multiply (project source u0) ((prim remainder x size 0 : Nat) + (prim multiply (project source n1) ((prim remainder y size 0 : Nat) + (prim multiply (project source n2) tile : Nat)) : Nat)) : Nat)); (ctor GraphResponse.offsets false (blockOffset ordinal source) target))) else (let ix : Nat := ((prim multiply (prim remainder window nx 0 : Nat) size : Nat) + x); (let iy : Nat := ((prim multiply (prim quotient window nx 0 : Nat) size : Nat) + y); (if ((ix <? (project source n1)) && (iy <? (project source n2))) then (ctor GraphResponse.offsets false (blockOffset (channel + (prim multiply (project source u0) (ix + (prim multiply (project source n1) iy : Nat)) : Nat)) source) target) else (ctor GraphResponse.offsets true 0 target)))))))))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -680,7 +741,8 @@ definition{
     | CopyMode.selected kind => (selectionOffsets kind index source destination)
     | CopyMode.constant kind bits => (ctor GraphResponse.offsets true 0 (blockOffset index destination))
     | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)
-    | CopyMode.converted sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))),
+    | CopyMode.converted sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
+    | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)),
   executable: true
 }
 
@@ -691,7 +753,7 @@ definition{
   body: (match request
     | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (numericPlan operation variant left right output))))))))))))
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (numericPlan operation variant left right output)))))))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -855,6 +917,20 @@ theorem{
   name: fillRejectsWideWord,
   parameters: [],
   statement: ((fillWordValid 0 4294967296) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: shortWindowAxisMaximum,
+  parameters: [],
+  statement: ((windowAxisMaximum 3 2 1 1) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: completeWindowMayDominateTail,
+  parameters: [],
+  statement: ((windowAxisMaximum 5 4 1 1) = 3),
   proof: reflexivity{}
 }
 \end{semanticmodule}

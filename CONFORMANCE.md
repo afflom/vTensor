@@ -168,6 +168,12 @@ model does not sanction.
 | `VT-02` | `build` | The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API |
 | `VT-03` | `build` | vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results |
 
+## window-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-25` | `build` | Prism models window partition padding and window join logical indexing and Verdant transfers match the imported GGML CPU oracle for independent strided empty and bounded window inputs |
+
 ## Cited authorities
 
 An authority is cited, never re-derived, and never gated on: what it states is not claimed as established here, so the claim that reproduces it stays `some-true`, and that is all "gated on" excludes. Its artifact (a standard's text, a corpus) may be committed when its row names the path in `artifact` and records in `checksum` a SHA-256 over the committed bytes, which `cargo xtask check-model` recomputes; a conformance test may then use a committed corpus as its oracle, as evidence for a `build` claim. With nothing committed, `checksum` is `none` and `checksum_reason` says why.
