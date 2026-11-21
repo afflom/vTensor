@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/unified-execution-runtime/1",
-  "status": "certified-production-bundle-scoped-oracle-passed-full-gates-running",
+  "status": "certified-model-and-oracle-verified-full-gate-refuses-development-source",
   "scope": "Refactor existing VT-13 through VT-37 execution; no additional operation capability claimed.",
   "model": {
     "file": "app/src/PointwiseGraph.lex.tex",
@@ -82,7 +82,28 @@
     "model": "passed",
     "dependencies": "passed after refreshing only the exact generated-source license clarification hash supplied by cargo-deny",
     "repeat_offset_source": "unchanged",
-    "imported_verdant_libraries": "all 24 unchanged"
+    "imported_verdant_libraries": "all 24 unchanged",
+    "bdd": "All four BDD meta-tests pass inside full just vv.",
+    "full_gate": {
+      "command": "just vv",
+      "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+      "exit_code": 101,
+      "scope": "Full local gate; no proof-event reuse or reduced gate. Debug symbols disabled for disk use; assertions and check scope remain enabled.",
+      "app": "passed full Prism verification",
+      "app_attestation_id": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+      "format_model_frame_template_and_sdk_lock": "passed",
+      "workspace_clippy": "passed for all targets and features, warnings denied",
+      "contract": {
+        "passed": 36,
+        "failed": 1,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 138.65,
+        "failure": "VT-02 refuses development Verdant source; no waiver."
+      },
+      "dependency_check": "Full gate stops at test failure before deny; separate current-source cargo deny check passed.",
+      "budget_note": "Mechanical parent-based source audit passes the reduction; the original 10,549-line budget remains unsatisfied by 369 lines."
+    }
   },
   "source_budget": {
     "current": 10918,
@@ -93,8 +114,8 @@
     "status": "unsatisfied; no ceiling raised"
   },
   "remaining": [
-    "Complete just vv is running; the separate remote authoring service failed all three attempts.",
-    "Production dependency closure, original source budget and remaining imported operation coverage are open."
+    "Production dependency closure, original source budget and remaining imported operation coverage are open.",
+    "Remote authoring infrastructure failed all three attempts; local exact-SDK model and preservation proof is independently complete and source-bound."
   ],
   "logs": {
     "canonical": {
@@ -124,6 +145,10 @@
     "contract": {
       "path": "/tmp/vtensor-typed-vm-contract.log",
       "sha256": "64a3ef073ae492276d83a0ed25d10eaa1ffca580dd999f6fedf3ff19a0d74031"
+    },
+    "full_gate": {
+      "path": "/tmp/vtensor-typed-vm-vv.log",
+      "sha256": "369c096ebf7870f1c5a16c7d1d7f49ebc66939e379dd02afee384649da62f497"
     }
   }
 }

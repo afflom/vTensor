@@ -3242,7 +3242,12 @@ using the hash reported by cargo-deny. Source accounting falls by 34 lines to
 10,918, still 369 above the last accepted 10,549; the original budget remains
 unsatisfied. The full contract passes 36 tests and fails only the existing
 VT-02 production-source guard in 143.83 seconds, with zero ignored or filtered
-tests. Complete repository acceptance remains in progress at this checkpoint.
+tests. The full exact-SDK `just vv` also completes Prism verification,
+formatting, model/frame audits, template/SDK lock checks and workspace Clippy.
+It then passes the same 36 contract tests and fails only VT-02 in 138.65
+seconds, with zero ignored or filtered tests. The full gate exits 101 before
+its dependency stage; the separate dependency check passes. Full repository
+acceptance remains open. No proof-event reuse or budget waiver was used.
 
 All three remote authoring attempts failed: two lost their worker and the
 third exhausted disk on the verifier service. No remote authoring attestation
