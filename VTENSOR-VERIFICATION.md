@@ -2311,3 +2311,13 @@ The full exact-SDK Verdant acceptance run is in progress for this checkpoint.
 No numerical model or generated Tensor library changed, so the vTensor
 numerical corpora and proofs are retained. This packaging improvement does
 not publish a release or satisfy VT-02's upstream production-source boundary.
+
+The corrected follow-up pin is `1f827a7112cebdf1b98aba24d3eb696aed5dce3b`, bundle SHA-256
+`dcea515b8a20273560b5367ac242d2f242924a889bcb6591f0f4d05f0377c2bc`. Fidelity rejected a raw sparse-schema `2`; Verdant now
+uses its existing certified `two_u32()` value and regenerated native source
+evidence. No rule or limit was relaxed. Restored capsule identity is
+`46756621499633e505b5b443b40e3b9e39d59791ef5973300778064f4a54460c`.
+The full restored run passed all workspace lint/tests (73 engine and 31 Tensor
+tests), template, model, experience, fidelity and dependency checks. Final Prism
+verification remains active; complete acceptance is still pending. The updated
+33-crate registry was regenerated from the corrected source.
