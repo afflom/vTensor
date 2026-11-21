@@ -15,7 +15,7 @@ The current F32 matrix and arithmetic graph implementations use an isolated Verd
 reproduced by `just verdant-prepare` from the hash-bound Git bundle in this
 repository. The checkout lives at `.verdant-engine`. This override is explicit in
 `Cargo.toml`; the unchanged exact-source guard rejects it as release evidence.
-The declared upstream base is Verdant v2.9.0 commit `31c93199d2e7`. The
+The declared upstream base is Verdant M20 v2.12.0 commit `34c827db624f`. The
 exact extension commit and bundle digest are recorded in
 [`model/verdant-development.json`](model/verdant-development.json).
 
@@ -118,7 +118,7 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current full contract run passes 35 checks; VT-02 still refuses the local
+The M20 adoption contract run passes 35 checks; VT-02 still refuses the local
 Verdant development dependency for release. It includes the expanded 1,280
 matrix cases, 384 GET_ROWS cases, 192 GET_REL_POS cases and 164 ADD_ID cases.
 All ten optional GGML tensor-source slots are now carried to the Prism planner;
@@ -206,12 +206,16 @@ Promotion, address and theorem defects are rejected. This development bundle
 retains the explicit VT-02 release-source refusal; it is not a published
 Verdant dependency or evidence of complete backend conformance.
 
-The current development checkpoint rebases the Tensor extension onto Verdant
-2.9.0 upstream `31c9319`. Its twenty-three certified SDK packages share one imported
+The current development checkpoint merges the Tensor extension with Verdant
+M20 v2.12.0 upstream `34c827d`. Its twenty-four certified SDK packages share one imported
 Prism bundle and one certificate replay per process. Native source lifting now
 captures the exact generated package sources and separated test fixtures; the
 new omission checks reject missing roots and package manifests. This remains a
 development dependency until the authoritative production source and VT-02 pass.
+The isolated Engine integration passes its complete exact-SDK gate, including
+225 workspace tests and full Prism application verification. The actual Wasm
+artifacts fit stricter M20 ceilings; no budget was raised. Exact evidence is in
+[`verification/verdant-m20-integration.json`](verification/verdant-m20-integration.json).
 
 Verdant's native packager now includes the certified production dependency
 closure (36 crates), with exact registry versions and preserved SDK provenance.

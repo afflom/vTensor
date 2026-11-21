@@ -111,7 +111,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xa82506e1 }]
+license-files = [{ path = "src/lib.rs", hash = 0x999e0de3 }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -250,3 +250,27 @@ name = "verdant_packed_field"
 version = "=2.9.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x6bb35d53 }]
+
+[[licenses.clarify]]
+name = "verdant_storage_block"
+version = "=2.9.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xf77d0560 }]
+
+[[licenses.clarify]]
+name = "vtensor_arithmetic"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x342c2057 }]
+
+[[licenses.clarify]]
+name = "vtensor_fixtures"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xba1d26b1 }]
+
+[[licenses.clarify]]
+name = "vtensor_matrix_execution"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xcf7e0505 }]

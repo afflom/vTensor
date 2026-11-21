@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/verdant-upstream-review/1",
-  "status": "reference-reviewed-not-integrated-or-validated",
+  "status": "historical-reference-review-followed-by-verified-development-integration",
   "repository": "https://github.com/afflom/verdant-engine",
   "commit": "34c827db624f951609e49f57bbf324671876eeff",
   "milestone": "M20",
@@ -52,5 +52,5 @@
     ],
     "log": "/tmp/vtensor-verdant-m20-merge-analysis.log"
   },
-  "subsequent_integration": "See verification/verdant-m20-integration.json for subsequent isolated integration; this file preserves the original reference-only review."
+  "subsequent_integration": "The original reference and dry-merge observations below are historical. Subsequent actual merge, full Engine acceptance, vTensor adoption and remaining root failures are recorded in verification/verdant-m20-integration.json."
 }
