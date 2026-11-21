@@ -104,5 +104,16 @@
     "app/fixtures-production.json": "24189186f52c61b0ef8f25ae4f29c8d6cdfd927d93b9c9b582bb84b2a063e0aa",
     "app/fixtures.lexlean.lock": "4fba00781f33e77dd3ea6214ec7ae1ded6f2fd577edd79912c4b743e36c295ee",
     "fixtures-kernel.lock": "2e03abba881854efe2a8e337fb7a8837ce0ed4160878659b54fe0e0bc4d800ca"
+  },
+  "full_contract": {
+    "command": "cargo test --locked -p vtensor-backend --test contract -- --nocapture",
+    "passed": 34,
+    "failed": 1,
+    "failure": "verdant_api::verdant_api_vt_02 refuses unpublished local Verdant development override",
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 165.93,
+    "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "acceptance": "complete just vv remains pending"
   }
 }

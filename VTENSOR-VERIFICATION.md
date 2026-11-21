@@ -3019,6 +3019,12 @@ checks add infrastructure at this stage. Further fixture families must reuse
 it while removing their old handwritten generators. This does not establish
 a new accepted ceiling, complete imported operation coverage or satisfy R6.
 
+The final full contract run after restoring both planted defects passes 34
+tests and fails only VT-02's production-dependency check. No tests are ignored
+or filtered. It takes 165.93 seconds, including fixture certificate replay,
+all 1,280 matrix oracle cases and every other existing graph family. This is
+component validation; the complete pinned-SDK `just vv` acceptance remains open.
+
 Signed authoring provenance, production identities and defect/run logs are in
 `verification/matrix-fixture-runtime.json`. The frozen baseline remains local
 corpus-preservation evidence; the pinned external GGML CPU remains the numerical
