@@ -72,7 +72,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-29` | build | Matches 4,080 SUM/SUM_ROWS/MEAN graphs with F64 or F32 accumulation as upstream requires, packed/strided SUM ordering, narrowing before MEAN division, all supported float types, empty axes and preserved padding. |
 | `VT-30` | build | Matches 2,264 ARGMAX/COUNT_EQUAL graphs, including last ties, NaN recovery, all-NaN rows, exact I32/I64 outputs, independent strides, four-axis equality, empty inputs and large-empty planning probes. |
 | `VT-31` | build | Matches 3,360 F16/F32 GET_ROWS_BACK graphs with I32 indices, duplicate and prefix rows, strided layouts, empty outputs, zero-index clears without gradient buffers, and atomic invalid-index refusals. |
-| `VT-32` | build | In progress: the row-gather model is verified during authoring; the CPU-backed GET_ROWS regression passes 144 empty cases and fails all 30 nonempty cases; graph execution remains incomplete. |
+| `VT-32` | build | In progress: GET_ROWS passes 384 CPU graphs with strided views and atomic refusals; source and production release checks remain open. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -107,9 +107,9 @@ including strided F32/F16/BF16 tensors and in-place aliases.
 Storage and empty-graph coverage for all 36 live types do not establish their
 nonempty numerical behavior.
 The development dependency now contains a Prism storage-block decoder for all
-30 executable CPU formats. Its kernel proof passes, while strict oracle checks
-still reject NaN payload/sign differences in 78 of 810 executions. Row-gather
-execution is not yet connected to this decoder.
+30 executable CPU formats. Its kernel proof, 2,250 exact block executions and 16,944 exact arithmetic-word
+comparisons pass, including NaN sign/payload bits. Row-gather execution uses this
+decoder and passes 384 CPU graphs with strided views and atomic index refusals.
 
 The development Verdant dependency also provides a certified F32/F16/BF16
 storage conversion root, independently checked against 1,397,260 imported GGML
@@ -117,9 +117,11 @@ comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
 Before GET_ROWS development, thirty contract checks passed and VT-02 rejected
-the unpublished local dependency. The new VT-32 regression is intentionally
-failing, and the source audit rejects its added handwritten harness. These
-must be resolved before this development stage is accepted. Detailed evidence
+the unpublished local dependency. The current full contract suite passes
+31 checks; VT-02 still refuses the local development dependency for release.
+VT-32 passes all 384 graph cases and typed/atomic refusals. The source audit
+still rejects growth in its harness and native glue, and the complete release
+checks remain open before this stage can be accepted. Detailed evidence
 is recorded in [`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
 
 ## Development

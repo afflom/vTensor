@@ -731,7 +731,8 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         | CopyMode::C6(..)
         | CopyMode::C10(_, false, _)
         | CopyMode::C18(..)
-        | CopyMode::C19(..) => source_data(1)?,
+        | CopyMode::C19(..)
+        | CopyMode::C20(..) => source_data(1)?,
         _ => literal.as_ptr().cast_mut(),
     };
     let destination_data = graph_tensor_data(tensor)?;
@@ -753,6 +754,14 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                 indices.clone(),
                 words[2],
             ),
+            CopyMode::C20(kind, ref indices) => GraphRequest::C4(
+                kind,
+                index,
+                source.clone(),
+                destination.clone(),
+                indices.clone(),
+                words[2],
+            ),
             _ => GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone()),
         };
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
@@ -765,6 +774,21 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                 _ => 0,
             };
             execute_word(response, storage, &pointers, &mut words)?;
+            continue;
+        }
+        if let GraphResponse::C5(kind, from, bytes, to, span, stride) = response {
+            // SAFETY: Prism admits both whole tensors and these block spans,
+            // refuses source/output aliases, and preflights every index before writes.
+            unsafe {
+                let input =
+                    std::slice::from_raw_parts(left_data.add(from as usize), bytes as usize);
+                let output = std::slice::from_raw_parts_mut(
+                    destination_data.add(to as usize),
+                    span as usize,
+                );
+                verdant_tensor::linear::decode_storage_block(kind, input, output, stride as usize)
+                    .map_err(|_| BackendError::InvalidTensor)?;
+            }
             continue;
         }
         let encoded;

@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/row-gather-authoring/1",
-  "status": "authoring-model-verified-runtime-not-implemented",
+  "status": "authoring-model-verified-integrated-by-pointwise-runtime",
   "draft": "prism-app/3b4c84131fc3c81b163850b1523f47da62cb70006c9fc5c94707f2646b51b292",
   "attestation_id": "cc029e4b5152ac6df80226a0c97b3122d8a8f411c183dc2ed0352583ee248d04",
   "semantic_id": "ce3872664ff42a31fe8033a9a5e66bceeda80a5f9d6b3cdc414036ed9f265415",
@@ -26,5 +26,6 @@
         "sig": "qg9QOfuI79DXSrvX9wDVyOTcDX1qmGzWfSV14emCZQmcJH73mCEbFCz9DaqHvpt2QzIgFXo5GBxgTRTCz1ujAg=="
       }
     ]
-  }
+  },
+  "runtime_evidence": "verification/row-gather-runtime.json"
 }

@@ -1,0 +1,94 @@
+{
+  "spec": "vtensor/row-gather-runtime/1",
+  "status": "runtime-corpus-and-prior-regressions-passed-release-pending",
+  "draft": "prism-app/56b78721393d2bccc85d8bd6089d1bac53cf4169f25aff57b066f8f0e9bbd47a",
+  "authoring_attestation_id": "5dc5bf964007e6d2b92d5263b3fcd1ce129dda19691555d300cb355a51b5e7b7",
+  "authoring_semantic_id": "c54dd0c40b77d9be66a6cea1ca79a95013314e3775f11f3de5acad45c7a35d14",
+  "authoring_source_id": "e3a79a9f868d13b5438072ef5fc2281a56b30ae397a42893153caf53ea79e143",
+  "files_sha256": {
+    "app/src/PointwiseGraph.lex.tex": "981fb2ca3509fe7dcdedc742bde2edfbfd14ecb8440e045c5e395e3760c5ea32",
+    "app/src/RowGather.lex.tex": "bdb24362fb30fe58dec557b70715f135b3081cf77f0f9ad31ebe9a38c4ef343e",
+    "app/src/TensorIndex.lex.tex": "86835a2df8b23290fc6a4252b7ea645863d456f68d55991600bbde24bab3bbbb",
+    "app/src/MatrixGraph.lex.tex": "f7930d0dc70b1d0e71cf66a77b62e453b1b658ef929f82dfcc5a1e4a933e356d",
+    "app/src/TensorTypes.lex.tex": "0cb980d56e3a1dd8ab44672f85a57d61424ac4a3eedb7f077e857755ff46d6d9",
+    "app/pointwise.lexlean.toml": "46478e8fa51eb749c60ce77a33ed05fd129f0f9fbf6df8e9228b20e92d4bc9b8",
+    "app/pointwise.lexlean.lock": "d1f18838cde4305ae4eddc119d14acf8c29a285926e43d55afd67a4ff167a5da"
+  },
+  "production_result_id": "7208140b23408b7e92dd1b0324c5659e6a07234718cb080cad11b0531df44041",
+  "production_source": {
+    "lock_sha256": "d1f18838cde4305ae4eddc119d14acf8c29a285926e43d55afd67a4ff167a5da",
+    "semantic_id": "1e49ff668c6aa3d07cef43af9c40611900c10202421e7e5e088f67c04005f3d9",
+    "source_id": "1b6b37d70f3a6ad38ffb3c625881ebbf78e38573e1fe09569d9c09b8600e3990"
+  },
+  "production_verification": {
+    "attestation": {
+      "byte_length": 3841460,
+      "path": "evidence/attestation.json",
+      "sha256": "65b354599566fa06fd1c522497de908fc103e4d440c18e2a164cd703269276b1"
+    },
+    "attestation_id": "77fce78dbfe583e222347097fc24e9fc08808e230e505fc7f00cbb6b2fbcc8c8",
+    "build_id": "9bb50a7201b73aa94657143a6e0880d1db65c0db8f9bf4be844b44c01d5afddb",
+    "compiler_input": {
+      "byte_length": 2121803,
+      "path": "evidence/compiler-input.json",
+      "sha256": "590f562864c385ab42c995a5b761ad6fae18f2441d42485c7ed84f783c4acb26"
+    },
+    "preservation": {
+      "byte_length": 5834,
+      "path": "evidence/preservation.json",
+      "sha256": "4a2468d72b774a76882cf30c544c7c69d486016c645e8d252fbad02f8e807ef6"
+    }
+  },
+  "initial_graph_cases": {
+    "nonempty": 30,
+    "empty": 144,
+    "static_refusals": 175,
+    "late_invalid_index_refusals": 60,
+    "result": "passed"
+  },
+  "envelope": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXR0ZXN0YXRpb25faWQiOiI1ZGM1YmY5NjQwMDdlNmQyYjkyZDUyNjNiM2ZjZDFjZTEyOWRkYTE5NjkxNTU1ZDMwMGNiMzU1YTUxYjVlN2I3IiwiYnVpbGRfaWQiOiIyNzUyYWZmMjA2MDcxNDYzYzRjNDJmZjJjZWFiMTgyMmRkZGUyNWE3OGM0ZTAwZTM5YTBlM2E2Y2Y0OTA4MjI0IiwiZmlsZXMiOlsiOWI1ZTEyMDIwNGM1MTYwMmZjNzgzY2MyZjZiZWE3NDU2ZWM2NDg4Mjg3NzUyODM0MWI1MjNhNGY0YTU4MGZiMyIsImNlMTZlNWI0MzkxMjhkYjMyMzE5NzkzODFmNDU5OWQzZmYwNjE3ZjYyYzJiZjAwYzM0OGJiYTM1MzkzYWJjZDYiLCJkYjEyNDM0M2FkOGZlMTI5NWJjOGViMzA1YzdmNTlmODNjZjZhZDc2ZDQ2YTVjYWJlYTUwMGZlNjZmM2FkNWRjIiwiZjc5MzBkMGRjNzBiMWQwZTcxY2Y2NmE3N2I2MmU0NTNiMWI2NThlZjkyOWY4MmRmY2M1YTFlNGE5MzNlMzU2ZCIsIjk4Y2U5OGZiMGY1YjAzOTQ2ODk5NzM3NjBjMDkyZDI0ZWQwMWE3NzcxMmU5Mjc5OWJmYjgyMmY5YWVlMTExOTAiLCJiZGIyNDM2MmZiMzBmZTU4ZGVjNTU3YjcwNzE1ZjEzNWIzMDgxY2Y3N2YwZjlhZDMxZWJlOWEzOGM0ZWYzNDNlIiwiODY4MzVhMmRmOGIyMzI5MGZjNmE0MjUyYjdlYTY0NTg2M2Q0NTZmNjhkNTU5OTE2MDBiYmRlMjRiYWIzYmJiYiIsIjBjYjk4MGQ1NmUzYTFkZDhhYjQ0NjcyZjg1YTU3ZDYxNDI0YWM0YTNlZWRiN2YwNzdlODU3NzU1ZmY0NmQ2ZDkiXSwibW9kdWxlcyI6WyJNYXRyaXhHcmFwaCIsIlBvaW50d2lzZUdyYXBoIiwiUm93R2F0aGVyIiwiVGVuc29ySW5kZXgiLCJUZW5zb3JUeXBlcyJdLCJzZW1hbnRpY19pZCI6ImM1NGRkMGM0MGI3N2Q5YmU2NmE2Y2VhMWNhNzlhOTUwMTMzMTRlMzc3NWYxMWYzZGU1YWNhZDQ1YzdhMzVkMTQiLCJzb3VyY2VfaWQiOiJlM2E3OWE5Zjg2OGQxM2I1NDM4MDcyZWY1ZmMyMjgxYTU2YjMwYWUzOTdhNDI4OTMxNTNjYWY1M2VhNzllMTQzIiwic3RhdHVzIjoidmVyaWZpZWQifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vdW9yLmZvdW5kYXRpb24vbGV4bGVhbi1tY3AvdmVyaWZpY2F0aW9uL3YxIiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjY5YTY3NGIwZWQxMzI1NDVmNTAzN2I3Yjg2MDU3YjJhN2QxNWIzNzliMjk0YjVkNWI0MGI4MDgwYmQ5MzY3OWUifSwibmFtZSI6ImF0dGVzdGF0aW9uLmpzb24ifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "keyid": "533449506003ca0c42744122318b69f5be32d74a2781e72b5c62855cac53bb54",
+        "sig": "JJfpw+k0xiiijLtsOaiWyea+d12yR7uMloT89us/NalQcpfYRFEGzWULYLM5BZOO6kL3p0LL0qoycLiDr0qOCQ=="
+      }
+    ]
+  },
+  "normalization": "Pinned SDK lexlean fmt; the authoring envelope binds draft sources and the native production proof binds the canonical project.",
+  "expanded_graph_cases": {
+    "nonempty": 240,
+    "empty": 144,
+    "static_refusals": 175,
+    "late_invalid_index_refusals": 240,
+    "layouts": 4,
+    "selection_patterns": 2,
+    "result": "passed",
+    "asymmetric_batches": true,
+    "selection_varies_by_batch": true
+  },
+  "native_source_sha256": "cfd660ef144bdba319857e0cb6f22966ea6a47b4d1d248a993a41ce551a88c15",
+  "harness_sha256": "59a3f5d29e5ffcf4c6e90cfc1633f8d44c652a51da0b8f9a6e0ef6c713b3a0ec",
+  "planted_defect": {
+    "change": "Pass stride+4 to the block decoder",
+    "exit_code": 101,
+    "rejected_nonempty_executions": 200,
+    "restore_result": "384 graphs passed",
+    "fault_log_sha256": "7a13e9b5c2c62e5eeee16da8b3ebb0e869a7d4a7e047eb0fc08998d7d1845017"
+  },
+  "full_contract_suite": {
+    "passed": 31,
+    "failed": 1,
+    "ignored": 0,
+    "filtered": 0,
+    "failure": "VT-02: local development override is not release evidence",
+    "log_sha256": "cef6db1b8f3f057cf29cf3d84ebc935f86b065211772e9653d4cfb4e671df157"
+  },
+  "source_budget": {
+    "last_accepted_lines": 10549,
+    "current_lines": 10653,
+    "result": "fails-shrink-only-budget"
+  },
+  "pinned_engine_commit": "3635dcf766665509caef009e5a8f89856556a7e1"
+}

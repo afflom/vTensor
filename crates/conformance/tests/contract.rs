@@ -318,7 +318,7 @@ fn row_gradient_graphs_vt_31() {
 /// `VT-32`: Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals
 #[test]
 fn row_gather_graphs_vt_32() {
-    native_backend_oracle::verify(&root(), "row-gather", 174);
+    native_backend_oracle::verify(&root(), "row-gather", 384);
 }
 
 mod ggml_oracle {
@@ -1764,39 +1764,67 @@ int main(int argc, char **argv) {
         types++; decoders+=numerical;
         for (int empty_axis : {-1,0,1,2,3}) {
           if (empty_axis<0 && !numerical) continue;
-          current_kind=type;
+          for (int layout=0; layout<(empty_axis<0?4:1); ++layout) for (int pattern=0; pattern<(empty_axis<0?2:1); ++pattern) {
+          current_kind=type; current_layout=layout;
           int64_t source_shape[]={2*ggml_blck_size(type),3,2,2}, index_shape[]={3,2,2,1};
+          if (layout>1) {source_shape[3]=3;index_shape[2]=3;}
           if (empty_axis==0) source_shape[0]=0;
           if (empty_axis>0) index_shape[empty_axis-1]=0;
           if (empty_axis>1) source_shape[empty_axis]=0;
           ggml_init_params params={8*1024*1024,nullptr,true};
           ggml_context *ctx=ggml_init(params); CHECK(ctx);
-          ggml_tensor *input=ggml_new_tensor(ctx,type,4,source_shape);
+          const int64_t physical_shape[]={(2+layout)*ggml_blck_size(type),4,3,source_shape[3]};
+          ggml_tensor *physical=ggml_new_tensor(ctx,type,4,layout?physical_shape:source_shape);
+          ggml_tensor *input=layout?ggml_view_4d(ctx,physical,source_shape[0],3,2,source_shape[3],physical->nb[1],physical->nb[2],physical->nb[3],physical->nb[1]+ggml_type_size(type)):physical;
           ggml_tensor *indices=ggml_new_tensor(ctx,GGML_TYPE_I32,4,index_shape);
+          if (layout) {indices->nb[0]=4*(layout+1);for(int axis=1;axis<4;axis++)indices->nb[axis]=indices->nb[axis-1]*indices->ne[axis-1]+4*layout;}
           ggml_tensor *result=ggml_get_rows(ctx,input,indices);
+          ggml_tensor *oracle=ggml_get_rows(ctx,input,layout?canonical_copy(ctx,indices):indices);
+          if (layout) {result->nb[0]=4*(layout+1);for(int axis=1;axis<4;axis++)result->nb[axis]=result->nb[axis-1]*result->ne[axis-1]+4*layout;}
           ggml_backend_buffer_t buffer=nullptr;
           if (empty_axis<0) {
             buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
-            std::vector<unsigned char> source(ggml_nbytes(input));
-            for (int64_t row=0; row<ggml_nrows(input); ++row) memset(source.data()+row*input->nb[1],0xA0+row,input->nb[1]);
-            std::vector<int32_t> selected(ggml_nelements(indices));
-            for (size_t i=0; i<selected.size(); ++i) selected[i]=i%3==1?0:2;
-            ggml_backend_tensor_set(input,source.data(),0,source.size());
-            ggml_backend_tensor_set(indices,selected.data(),0,selected.size()*4);
+            std::vector<unsigned char> source(ggml_nbytes(physical));
+            for (int64_t row=0; row<ggml_nrows(physical); ++row) memset(source.data()+row*physical->nb[1],0xA0+row,physical->nb[1]);
+            std::vector<unsigned char> selected(ggml_nbytes(indices),0xA5);
+            for (int64_t i=0; i<ggml_nelements(indices); ++i) {
+              const int32_t value=((pattern?2-i%3:i%3==1?0:2)+i/3)%3;
+              const size_t at=(i%3)*indices->nb[0]+((i/3)%2)*indices->nb[1]+(i/6)*indices->nb[2];
+              memcpy(selected.data()+at,&value,4);
+            }
+            ggml_backend_tensor_set(physical,source.data(),0,source.size());
+            ggml_backend_tensor_set(indices,selected.data(),0,selected.size());
           }
           ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
-          CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
-          std::vector<unsigned char> expected(ggml_nbytes(result));
-          if (!expected.empty()) {
-            ggml_backend_tensor_get(result,expected.data(),0,expected.size());
-            ggml_backend_tensor_memset(result,0xA5,0,expected.size());
-          }
+          ggml_cgraph *reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,oracle);
+          CHECK(ggml_backend_graph_compute(reference,reference_graph)==GGML_STATUS_SUCCESS);
+          const std::vector<unsigned char> expected(ggml_nbytes(result),0xA5);
+          if (!expected.empty()) ggml_backend_tensor_memset(result,0xA5,0,expected.size());
           const bool supported=ggml_backend_dev_supports_op(dev,result);
           const bool computed=ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS;
-          const bool equal=computed && compare_result(result,nullptr,expected,0);
+          const bool equal=computed && compare_result(result,oracle,expected,0);
           complete &= supported && computed && equal;
           if (!supported || !computed || !equal) fprintf(stderr,"row-gather missing kind=%d empty_axis=%d supported=%d computed=%d equal=%d\n",kind,empty_axis,supported,computed,equal);
+          if (empty_axis<0 && pattern==0) {
+            auto refusal_check=[&](bool ok,const char *label) {if(!ok){fprintf(stderr,"row-gather refusal kind=%d %s\n",kind,label);complete=false;}};
+            if (layout==0) {
+            refusal_check(refuses_change(backend,dev,graph,result,indices->type,GGML_TYPE_I64),"index-type");
+            refusal_check(refuses_change(backend,dev,graph,result,indices->ne[3],int64_t(2)),"index-batch");
+            refusal_check(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_F16),"output-type");
+            refusal_check(refuses_change(backend,dev,graph,result,result->data,input->data),"source-alias");
+            refusal_check(refuses_change(backend,dev,graph,result,result->data,indices->data),"index-alias");
+            if (ggml_blck_size(type)>1) refusal_check(refuses_change(backend,dev,graph,result,input->nb[0],ggml_type_size(type)-1),"short-block-stride");
+            }
+            const std::vector<unsigned char> untouched(expected.size(),0xA5);
+            for (int32_t bad : {-1,3}) {
+              ggml_backend_tensor_memset(result,0xA5,0,expected.size());
+              ggml_backend_tensor_set(indices,&bad,ggml_nbytes(indices)-4,4);
+              refusal_check(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED,"late-invalid-index");
+              refusal_check(compare_result(result,nullptr,untouched,0),"atomic-index-refusal");
+            }
+          }
           ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
+          }
         }
       }
       CHECK(types==36 && decoders==30);

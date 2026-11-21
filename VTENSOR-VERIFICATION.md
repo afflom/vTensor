@@ -2623,3 +2623,94 @@ production package closure remain to be refreshed. Root GET_ROWS execution is
 not wired to the decoder yet, and its 30 nonempty graph cases still fail. Root's
 10,603-line harness still exceeds its 10,549-line parent budget. No acceptance
 ceiling was changed and this checkpoint is not a full `just vv` pass.
+
+
+## Initial GET_ROWS graph execution passes (VT-32)
+
+The main PointwiseGraph model now imports RowGather and emits a complete
+preflight pass before any output write. A second pass reloads each selected
+index and emits either raw F32/I32 word copies or typed Verdant block-decoding
+requests. Batched source addresses and independent output strides are defined
+in Prism. A packed source stride shorter than its physical block is refused
+before constructing any native slice. Native glue performs only the admitted
+load/store effects and calls decode_storage_block.
+
+The authoring proof passed with attestation
+`58865e17005c5cd8e0a9cb64df17f272af8bb1e599fa598d9b4b2ba11dd1ee6b`.
+The corrected pinned-SDK export passed with result
+`53013e44c3d97888b240830a309fe66b434e1c457ad5c7a6c8232046ca45e6e7`,
+attestation `844652c2a565d87554b18876def265fd7de839ccccabb9f9d1f5f8f401ed129c`.
+The repeat-offset runtime library is byte-identical to its previous export.
+An earlier unaccepted export preceded the packed-stride guard; it was replaced
+by this corrected export before native execution. The authoring envelope,
+canonical file hashes and production identities are recorded in
+verification/row-gather-runtime.json.
+
+The native VT-32 run passed all 174 graphs: 30 nonempty formats and four empty
+axes for each of 36 known types. It also passed 175 static descriptor/alias
+refusals and 60 bad-final-index cases, including unchanged output bytes after
+each late refusal. The run used the existing pinned development decoder and
+took 25.18 seconds after compilation. This initial graph corpus is finite-valued;
+it does not resolve the separately recorded decoder NaN-word failures.
+
+This remains an unfinished development checkpoint. Source audit reports 10,641
+non-Prism lines, versus 10,603 in its measured parent. The last accepted fixture
+budget was 10,549 lines, which remains the completion target; intermediate red
+commits do not establish a higher accepted ceiling. The harness and glue must
+be consolidated without removing coverage. Independent graph layout/view
+coverage, remaining decoder exceptional values, representative planted defects,
+all prior graph regressions and the complete release gate remain open.
+
+
+Upstream was rechecked during this stage: afflom/verdant-engine main is now
+`1c78b377c57a0714b74170d00bc1580067846efb` (v2.10.0, M18). Its additions
+cover sovereign governance, native source modularity and 321 MIR-lifted
+functions; they do not provide this storage-block decoder. The local main
+Engine worktree also has separate uncommitted changes, which were left
+untouched. Decoder work remains in its isolated development branch. Upstream
+integration and preservation of the stricter local budgets remain open.
+
+
+## Expanded GET_ROWS and exact decoder integration (VT-32)
+
+The pinned Engine checkpoint is now
+`3635dcf766665509caef009e5a8f89856556a7e1`. Its decoder passes all 2,250
+exact-word/padding executions (750 blocks, three strides), 16,944 exact
+arithmetic-word comparisons, and the native and model refusal cases. NaNs are
+compared without normalization. A planted load-endianness defect rejected
+2,163 block executions; restoring its source restored all four component tests.
+The pinned bundle retains those proofs, regression cases and fault evidence.
+
+The final main-model authoring attestation is
+`5dc5bf964007e6d2b92d5263b3fcd1ce129dda19691555d300cb355a51b5e7b7`;
+production result `7208140b23408b7e92dd1b0324c5659e6a07234718cb080cad11b0531df44041`,
+attestation `77fce78dbfe583e222347097fc24e9fc08808e230e505fc7f00cbb6b2fbcc8c8`.
+An intermediate export triggered Clippy's collapsible-match lint. Optional-input
+handling and concrete descriptor admission were separated in the model, and
+unknown storage retains its unsupported decision. The final SDK export and
+Clippy pass without altering generated code or lint policies.
+
+The expanded graph corpus passes 384 cases: 240 nonempty cases over all 30
+CPU formats and four layouts/two selection patterns, plus the original 144
+empty cases over all 36 storage types. It covers padded source views with row
+and block offsets, independently strided I32 indices and outputs, repeated and
+reversed selections varying by batch, and asymmetric batch dimensions. It also
+passes 175 static descriptor/alias refusals and 240 bad-final-index cases with
+unchanged output. The final full contract run passed 31 tests and failed only
+VT-02's required refusal of the unpublished development dependency; zero tests
+were ignored or filtered. That invocation took 109.66 seconds.
+
+A planted native stride-binding defect passed stride+4 to the decoder. The full
+384-case gather regression rejected 200 nonempty packed-format executions with
+supported=1/computed=0. Restoring the exact pre-fault source restored the passing
+384-case corpus before its final batch-data strengthening; the final full suite
+also passed the strengthened corpus. This demonstrates that the oracle rejects
+an erroneous native effect binding rather than just checking modeled examples.
+
+The repeat-offset library remains byte-identical. Formatting, focused Clippy,
+model generation (38 IDs) and frame synchronization pass. The source audit
+still rejects 10,653 non-Prism lines against its 10,603-line measured parent;
+the completion target remains the last accepted 10,549-line budget. Restoring
+that budget, refreshing the Engine frontier/footprints/package closure, resolving
+VT-02 through a real production dependency, completing the remaining imported
+GGML operation coverage, and a complete `just vv` pass remain required.

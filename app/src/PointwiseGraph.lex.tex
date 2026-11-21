@@ -4,6 +4,7 @@
 \importmodule{TensorIndex}
 \importmodule{MatrixGraph}
 \importmodule{TensorTypes}
+\importmodule{RowGather}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -89,7 +90,8 @@ inductive{
     {name: reduced, fields: [Nat, Nat]},
     {name: argmaxRow, fields: []},
     {name: counted, fields: [Nat, IndexContext]},
-    {name: scattered, fields: [Nat, IndexContext]}
+    {name: scattered, fields: [Nat, IndexContext]},
+    {name: gathered, fields: [Nat, IndexContext]}
   ]
 }
 
@@ -222,7 +224,8 @@ inductive{
     },
     {name: offsets, fields: [Nat, IndexContext, IndexContext, CopyMode]},
     {name: selection, fields: [Nat, IndexContext, IndexContext, Nat]},
-    {name: scatter, fields: [Nat, IndexContext, IndexContext, IndexContext, Nat]}
+    {name: scatter, fields: [Nat, IndexContext, IndexContext, IndexContext, Nat]},
+    {name: gather, fields: [Nat, Nat, IndexContext, IndexContext, IndexContext, Nat]}
   ]
 }
 
@@ -235,7 +238,8 @@ inductive{
     {name: offsets, fields: [Bool, Nat, Nat]},
     {name: arithmetic, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: converted, fields: [Nat, Nat, Nat, Nat]},
-    {name: word, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: word, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: decoded, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -949,6 +953,81 @@ definition{
 }
 
 definition{
+  name: gatherSteps,
+  parameters: [source : IndexContext, indices : IndexContext],
+  result: Nat,
+  body: ((prim multiply 2 (sourceElements indices) : Nat) + (prim multiply (sourceElements indices) (1 + (project source u0)) : Nat)),
+  executable: true
+}
+
+definition{
+  name: gatherIndex,
+  parameters: [row : Nat, indices : IndexContext],
+  result: GraphResponse,
+  body: (ctor GraphResponse.word 19 4 (blockOffset row indices) 2 0 1 2),
+  executable: true
+}
+
+definition{
+  name: gatherBlock,
+  parameters: [
+    kind : Nat,
+    row : Nat,
+    block : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    indices : IndexContext,
+    flag : Nat
+  ],
+  result: GraphResponse,
+  body: (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | TensorTypes::TypeStorageDecision.knownType storage => (let column : Nat := (prim multiply block (project storage blockSize) : Nat); (match (RowGather::sourceBlockAddress kind column flag row (project indices u0) (project indices n1) (project indices n2) (prim multiply (project source u0) (project storage blockSize) : Nat) (project source n1) (project source s0) (project source s1) (project source s2) (project source s3))
+      | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+      | Option.some from => (if ((kind =? 0) || (kind =? 26)) then (ctor GraphResponse.offsets false from (blockOffset ((prim multiply row (project destination u0) : Nat) + column) destination)) else (ctor GraphResponse.decoded kind from (project storage typeSize) (blockOffset ((prim multiply row (project destination u0) : Nat) + column) destination) ((prim multiply (prim subtract (project storage blockSize) 1 : Nat) (project destination s0) : Nat) + 4) (project destination s0)))))),
+  executable: true
+}
+
+definition{
+  name: gatherOffsets,
+  parameters: [
+    kind : Nat,
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    indices : IndexContext,
+    flag : Nat
+  ],
+  result: GraphResponse,
+  body: (if (index <? (gatherSteps source indices)) then (if (index <? (prim multiply 2 (sourceElements indices) : Nat)) then (if ((prim remainder index 2 0 : Nat) =? 0) then (gatherIndex (prim quotient index 2 0 : Nat) indices) else (if (RowGather::validIndex (project source n1) flag) then (ctor GraphResponse.word 19 1 2 2 0 1 2) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))) else (let step : Nat := (prim subtract index (prim multiply 2 (sourceElements indices) : Nat) : Nat); (let row : Nat := (prim quotient step (1 + (project source u0)) 0 : Nat); (let phase : Nat := (prim remainder step (1 + (project source u0)) 0 : Nat); (if (phase =? 0) then (gatherIndex row indices) else (gatherBlock kind row (prim subtract phase 1 : Nat) source destination indices flag)))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+definition{
+  name: planGatherDescriptors,
+  parameters: [left : TensorDescriptor, indices : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if (RowGather::shape (project left ty) (project left n0) (project left n1) (project left n2) (project left n3) (project indices ty) (project indices n0) (project indices n1) (project indices n2) (project indices n3) (project output ty) (project output n0) (project output n1) (project output n2) (project output n3)) then (match (TensorTypes::tensorTypeStorage (project left ty))
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
+    | TensorTypes::TypeStorageDecision.knownType storage => (if (((prim remainder (project left n0) (project storage blockSize) 0 : Nat) =? 0) && (if (RowGather::emptyOutput (project left n0) (project indices n0) (project indices n1) (project indices n2)) then true else (((4 <=? (project output s0)) && (if ((project storage blockSize) =? 1) then true else ((project storage typeSize) <=? (project left s0)))) && ((separateTensors left output) && (separateTensors indices output))))) then (let source : IndexContext := (indexContext left (project storage blockSize)); (ctor PointwiseDecision.copyBlocks (if (RowGather::emptyOutput (project left n0) (project indices n0) (project indices n1) (project indices n2)) then 0 else (gatherSteps source (indexContext indices 1))) 4 source (indexContext output 1) (ctor CopyMode.gathered (project left ty) (indexContext indices 1)))) else (ctor PointwiseDecision.invalidShape))) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
+  name: planGather,
+  parameters: [
+    left : TensorDescriptor,
+    right : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (match right
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some indices => (planGatherDescriptors left indices output)),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -972,7 +1051,8 @@ definition{
     | CopyMode.reduced operation storage => (reducedOffsets index source destination operation storage)
     | CopyMode.argmaxRow => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.counted elements right => (countEqualOffsets index source right elements)
-    | CopyMode.scattered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+    | CopyMode.scattered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
 
@@ -981,14 +1061,15 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+    | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 39) then (planGather left right output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
       | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
       | Option.none => (numericPlan operation variant left right output)
-      | Option.some kind => (planUnary kind left output))))))))))))))))))))
+      | Option.some kind => (planUnary kind left output)))))))))))))))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)
     | GraphRequest.selection index source destination flag => (argmaxOffsets index source destination flag)
-    | GraphRequest.scatter index source destination indices flag => (rowGradientOffsets index source destination indices flag)),
+    | GraphRequest.scatter index source destination indices flag => (rowGradientOffsets index source destination indices flag)
+    | GraphRequest.gather kind index source destination indices flag => (gatherOffsets kind index source destination indices flag)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -1375,6 +1456,97 @@ theorem{
   name: rowGradientAdmitsInputPrefix,
   parameters: [],
   statement: ((planRowGradient (record TensorDescriptor {ty := 1, n0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12, span := 12, address := 0}) (ctor Option.some [TensorDescriptor] (record TensorDescriptor {ty := 26, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 512})) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48, span := 48, address := 1024})) = (ctor PointwiseDecision.copyBlocks 21 4 (record IndexContext {u0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (ctor CopyMode.scattered 1 (record IndexContext {u0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4})))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherCompleteStepCount,
+  parameters: [],
+  statement: ((gatherSteps (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192})) = 60),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherPreflightLoad,
+  parameters: [],
+  statement: ((gatherOffsets 2 0 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 0) = (ctor GraphResponse.word 19 4 0 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherPreflightValidated,
+  parameters: [],
+  statement: ((gatherOffsets 2 1 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 2) = (ctor GraphResponse.word 19 1 2 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherNegativeIndexRefused,
+  parameters: [],
+  statement: ((gatherOffsets 2 1 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 4294967295) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherUpperIndexRefused,
+  parameters: [],
+  statement: ((gatherOffsets 2 1 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 3) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherFirstWriteReloadsIndex,
+  parameters: [],
+  statement: ((gatherOffsets 2 24 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 0) = (ctor GraphResponse.word 19 4 0 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherFirstPackedBlock,
+  parameters: [],
+  statement: ((gatherOffsets 2 25 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 2) = (ctor GraphResponse.decoded 2 80 18 0 252 8)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherNextPackedBlock,
+  parameters: [],
+  statement: ((gatherOffsets 2 26 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 2) = (ctor GraphResponse.decoded 2 98 18 256 252 8)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherLastBatchedBlock,
+  parameters: [],
+  statement: ((gatherOffsets 2 59 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 2) = (ctor GraphResponse.decoded 2 658 18 6896 252 8)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherExcessStepRefused,
+  parameters: [],
+  statement: ((gatherOffsets 2 60 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192}) 2) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherPackedPlan,
+  parameters: [],
+  statement: ((planGather (record TensorDescriptor {ty := 2, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400, span := 676, address := 1000}) (ctor Option.some [TensorDescriptor] (record TensorDescriptor {ty := 26, n0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192, span := 148, address := 5000})) (record TensorDescriptor {ty := 0, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000, span := 7148, address := 10000})) = (ctor PointwiseDecision.copyBlocks 60 4 (record IndexContext {u0 := 2, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400}) (record IndexContext {u0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000}) (ctor CopyMode.gathered 2 (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192})))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherMissingIndexRefused,
+  parameters: [],
+  statement: ((planGather (record TensorDescriptor {ty := 2, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 18, s1 := 40, s2 := 160, s3 := 400, span := 676, address := 1000}) (ctor Option.none [TensorDescriptor]) (record TensorDescriptor {ty := 0, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000, span := 7148, address := 10000})) = (ctor PointwiseDecision.invalidShape)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatherShortPackedStrideRefused,
+  parameters: [],
+  statement: ((planGather (record TensorDescriptor {ty := 2, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 17, s1 := 40, s2 := 160, s3 := 400, span := 676, address := 1000}) (ctor Option.some [TensorDescriptor] (record TensorDescriptor {ty := 26, n0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192, span := 148, address := 5000})) (record TensorDescriptor {ty := 0, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000, span := 7148, address := 10000})) = (ctor PointwiseDecision.invalidShape)),
   proof: reflexivity{}
 }
 \end{semanticmodule}
