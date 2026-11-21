@@ -289,6 +289,12 @@ fn unary_graphs_vt_27() {
     native_backend_oracle::verify(&root(), "unary");
 }
 
+/// `VT-28`: Prism models row-local F32 cumulative sums with exact first-word preservation and Verdant matches the imported GGML CPU scan across strided and empty graphs
+#[test]
+fn scan_graphs_vt_28() {
+    native_backend_oracle::verify(&root(), "scan");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -816,14 +822,12 @@ mod ggml_inventory {
         let lock =
             super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
         let inventory = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
-        assert_eq!(
-            inventory["spec"].as_str(),
-            Some("vtensor/ggml-declarations/1")
-        );
-        assert_eq!(
-            inventory["authority"].as_str(),
-            Some("LLAMA-CPP-GGML-BACKEND")
-        );
+        for (key, value) in [
+            ("spec", "vtensor/ggml-declarations/1"),
+            ("authority", "LLAMA-CPP-GGML-BACKEND"),
+        ] {
+            assert_eq!(inventory[key].as_str(), Some(value));
+        }
         assert_eq!(inventory["revision"], lock["commit"]);
         assert_eq!(inventory["source"].as_str(), Some("ggml/include/ggml.h"));
         for (key, name, prefix) in [
@@ -928,11 +932,10 @@ mod ggml_storage_oracle {
 
 mod oracle_import {
 
-    use super::{ggml_oracle::digest as hex, root};
+    use super::{ggml_oracle::file_digest, root};
     use std::collections::BTreeSet;
 
     use repo_model::Model;
-    use sha2::{Digest, Sha256};
 
     /// `VT-01`: The imported GGML backend contract, implementation interface, and operator oracle match their pinned upstream source
     #[test]
@@ -941,14 +944,12 @@ mod oracle_import {
         let artifact = root.join("vendor/llama.cpp-oracle");
         let lock = super::ggml_oracle::read_toml(artifact.join("upstream.toml"));
 
-        assert_eq!(
-            lock["repository"].as_str(),
-            Some("https://github.com/ggml-org/llama.cpp")
-        );
-        assert_eq!(
-            lock["commit"].as_str(),
-            Some("9a080f44b503c64f66c84a6274b9d9ee5d5b09d5")
-        );
+        for (key, value) in [
+            ("repository", "https://github.com/ggml-org/llama.cpp"),
+            ("commit", "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5"),
+        ] {
+            assert_eq!(lock[key].as_str(), Some(value));
+        }
 
         let files = lock["file"]
             .as_array()
@@ -957,9 +958,7 @@ mod oracle_import {
         for entry in files {
             let path = entry["path"].as_str().expect("source path");
             let expected = entry["sha256"].as_str().expect("source SHA-256");
-            let bytes = std::fs::read(artifact.join(path))
-                .unwrap_or_else(|error| panic!("pinned upstream file {path} is missing: {error}"));
-            let observed = hex(&Sha256::digest(bytes));
+            let observed = file_digest(artifact.join(path));
             assert_eq!(observed, expected, "upstream source drifted: {path}");
             assert!(
                 paths.insert(path),
@@ -997,9 +996,7 @@ mod oracle_import {
             ["ggml", "tests/test-backend-ops.cpp", "LICENSE"]
         );
         assert_eq!(
-            hex(&Sha256::digest(
-                std::fs::read(artifact.join("source.tar.gz")).expect("source archive")
-            )),
+            file_digest(artifact.join("source.tar.gz")),
             archive["sha256"].as_str().expect("archive digest")
         );
 
@@ -1495,8 +1492,7 @@ mod native_backend_oracle {
                 .join(digest(&Sha256::digest(format!("{source_objects:?}"))));
             std::fs::create_dir_all(&frontend).unwrap();
             for (source, object) in source_objects {
-                let object_path = frontend.join(object);
-                compiled_object(common, source, &object_path);
+                compiled_object(common, source, &frontend.join(object));
             }
             compile(common, cache.join("driver.cpp"), cache.join("driver.o"));
             let build_list =
@@ -1574,7 +1570,6 @@ mod native_backend_oracle {
                 .map(|kind| format!("{kind}\n"))
                 .collect::<String>()
         };
-        let snapshot = cache.join("loaded-source.snapshot");
         let mut expected = Vec::new();
         for file in vtensor_backend::SOURCE_FILES {
             expected.extend_from_slice(file.as_bytes());
@@ -1582,16 +1577,14 @@ mod native_backend_oracle {
             expected.extend_from_slice(&std::fs::read(root.join(file)).unwrap());
             expected.push(0);
         }
-        assert_eq!(
-            digest(&Sha256::digest(vtensor_backend::source_snapshot())),
-            digest(&Sha256::digest(&expected)),
+        assert!(
+            vtensor_backend::source_snapshot() == expected,
             "Rust test library is stale"
         );
         let expected_snapshot = cache.join("expected-source.snapshot");
         std::fs::write(&expected_snapshot, &expected).unwrap();
         let text = super::ggml_oracle::batch(
             Command::new(&program)
-                .arg(&snapshot)
                 .arg(&library)
                 .arg(&expected_snapshot)
                 .arg(mode),
@@ -1631,14 +1624,10 @@ mod native_backend_oracle {
             "window" => 3024,
             "transform" => 18816,
             "unary" => 4992,
+            "scan" => 528,
             _ => panic!("unknown oracle mode"),
         };
         assert_eq!(observed.get("cases"), Some(&expected_cases));
-        assert_eq!(
-            file_digest(snapshot),
-            digest(&Sha256::digest(expected)),
-            "loaded native library does not match current source"
-        );
     }
 
     const HEADER: &str = r##"#include "ggml.h"
@@ -1683,18 +1672,15 @@ static ggml_tensor * canonical_copy(ggml_context *ctx, ggml_tensor *input) {
     return ggml_reshape_4d(ctx,ggml_cont(ctx,ggml_cpy(ctx,input,target)),input->ne[0],input->ne[1],input->ne[2],input->ne[3]);
 }
 int main(int argc, char **argv) {
-    CHECK(argc == 5);
+    CHECK(argc == 4);
     Dl_info loaded = {};
     CHECK(dladdr((void *)&ggml_backend_vtensor_reg, &loaded) != 0);
-    CHECK(std::filesystem::canonical(loaded.dli_fname) == std::filesystem::canonical(argv[2]));
-    std::ifstream expected_file(argv[3], std::ios::binary);
+    CHECK(std::filesystem::canonical(loaded.dli_fname) == std::filesystem::canonical(argv[1]));
+    std::ifstream expected_file(argv[2], std::ios::binary);
     CHECK(expected_file.good());
     const std::vector<unsigned char> expected_source((std::istreambuf_iterator<char>(expected_file)), std::istreambuf_iterator<char>());
     CHECK(expected_source.size() == vtensor_build_sources_size());
     CHECK(!memcmp(expected_source.data(), vtensor_build_sources(), expected_source.size()));
-    std::ofstream provenance(argv[1], std::ios::binary);
-    provenance.write((const char *)vtensor_build_sources(), vtensor_build_sources_size());
-    provenance.close(); CHECK(provenance.good());
 "##;
 
     const BODY: &str = r##"
@@ -1718,7 +1704,7 @@ int main(int argc, char **argv) {
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
     ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
     ggml_backend_cpu_set_n_threads(reference,1);
-    if (!strcmp(argv[4], "update")) {
+    if (!strcmp(argv[3], "update")) {
       size_t cases=0;
       for(ggml_type type : {GGML_TYPE_F32,GGML_TYPE_I32}) for(ggml_type patch_type : {GGML_TYPE_F32,GGML_TYPE_I32}) for(int add : {0,1})
       for(int inplace : {0,1}) for(int alias : {0,1}) for(int layout=0;layout<4;layout++) for(size_t offset : {size_t(0),size_t(4),size_t(20)})
@@ -1757,23 +1743,24 @@ int main(int argc, char **argv) {
       }
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases); return 0;
     }
-    const bool repeating=!strcmp(argv[4], "repeat"), concatenating=!strcmp(argv[4], "concat");
-    const bool spatial=!strcmp(argv[4], "spatial"), folding=!strcmp(argv[4], "fold"), diagonal=!strcmp(argv[4], "diagonal"), triangular=!strcmp(argv[4], "triangular"), filling=!strcmp(argv[4], "fill"), casting=!strcmp(argv[4], "cast"), windowing=!strcmp(argv[4], "window"), transforming=!strcmp(argv[4], "transform"), unarying=!strcmp(argv[4], "unary");
-    const bool wordwise=transforming || unarying;
-    if (!strcmp(argv[4], "copy") || repeating || concatenating || spatial || folding || diagonal || triangular || filling || casting || windowing || wordwise) {
+    const bool repeating=!strcmp(argv[3], "repeat"), concatenating=!strcmp(argv[3], "concat");
+    const bool spatial=!strcmp(argv[3], "spatial"), folding=!strcmp(argv[3], "fold"), diagonal=!strcmp(argv[3], "diagonal"), triangular=!strcmp(argv[3], "triangular"), filling=!strcmp(argv[3], "fill"), casting=!strcmp(argv[3], "cast"), windowing=!strcmp(argv[3], "window"), transforming=!strcmp(argv[3], "transform"), unarying=!strcmp(argv[3], "unary"), scanning=!strcmp(argv[3], "scan");
+    const bool wordwise=transforming || unarying || scanning;
+    if (!strcmp(argv[3], "copy") || repeating || concatenating || spatial || folding || diagonal || triangular || filling || casting || windowing || wordwise) {
       static const int window_sizes[]={1,2,4};
       static const ggml_type float_types[]={GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16};
       static const uint32_t fill_words[]={0,0x80000000,0x3f800000,0xbf800000,0x7f800000,0xff800000,
         0x7fc00001,0x7f800001,0xff800001,1,0x80000001,0x00800000,0x7f7fffff,0xff7fffff,
         0x33800000,0x33000000,0x33000001,0x32ffffff,0x3f801000,0x3f803000,0x477fe000,0x477ff000,0x477fefff,0x38800000};
       size_t cases=0, refused=0; int kind;
-      while (scanf("%d",&kind)==1) for(int operation=0;operation<(unarying?39:transforming?8:windowing?2:casting?6:filling?2:(concatenating || triangular)?4:(repeating || folding || diagonal || triangular || filling || casting || windowing)?1:3);operation++) {
-      const std::vector<int> extents=(concatenating || (spatial && operation==0))?std::vector<int>{0,1,3}:windowing?std::vector<int>{1,3,5}:spatial?std::vector<int>{2,3}:std::vector<int>{1,3};
+      while (scanf("%d",&kind)==1) for(int operation=0;operation<(scanning?1:unarying?39:transforming?8:windowing?2:casting?6:filling?2:(concatenating || triangular)?4:(repeating || folding || diagonal || triangular || filling || casting || windowing)?1:3);operation++) {
+      const std::vector<int> extents=(concatenating || (spatial && operation==0))?std::vector<int>{0,1,3}:windowing?std::vector<int>{1,3,5}:spatial?std::vector<int>{2,3}:scanning?std::vector<int>{1,3,17,65}:std::vector<int>{1,3};
+      const auto row_extents=scanning?std::vector<int>{1,3}:extents;
       const std::vector<int> batches_list=(spatial && operation==2)?std::vector<int>{2,3}:std::vector<int>{1,2};
-      for(int pattern=0;pattern<(unarying?5:transforming?28:windowing?(operation?30:12):casting?5:filling?120:triangular?5:diagonal?4:folding?21:spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
-      for(int units : extents) for(int rows : extents) for(int batches : batches_list) {
-        if((casting && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || (filling && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16) || ((diagonal || triangular || wordwise) && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || ((spatial || folding || windowing) && kind!=GGML_TYPE_F32) || (repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32)) continue;
-        if(((transforming && pattern>=24) || (unarying && pattern)) && (units!=1 || rows!=1 || batches!=1)) continue;
+      for(int pattern=0;pattern<(scanning?12:unarying?5:transforming?28:windowing?(operation?30:12):casting?5:filling?120:triangular?5:diagonal?4:folding?21:spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
+      for(int units : extents) for(int rows : row_extents) for(int batches : batches_list) {
+        if((casting && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || (filling && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16) || ((diagonal || triangular || wordwise) && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || ((spatial || folding || windowing || scanning) && kind!=GGML_TYPE_F32) || (repeating && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16 && kind!=GGML_TYPE_I16 && kind!=GGML_TYPE_I32)) continue;
+        if(((scanning && pattern>=8) || (transforming && pattern>=24) || (unarying && pattern)) && (units!=1 || rows!=1 || batches!=1)) continue;
         ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
         const auto type=(ggml_type)kind; const int64_t block=ggml_blck_size(type); const size_t bytes=ggml_type_size(type);
         const ggml_type output_type=casting?float_types[operation%3]:(unarying && operation%3==2)?GGML_TYPE_F32:type;
@@ -1795,6 +1782,7 @@ int main(int argc, char **argv) {
         if(filling && pattern%5) shape[pattern%5-1]=0;
         if((casting || unarying) && pattern) shape[pattern-1]=0;
         if(transforming && pattern>=24) shape[pattern-24]=0;
+        if(scanning && pattern>=8) shape[pattern-8]=0;
         if(triangular) {shape[1]=units;shape[2]=rows;if(pattern==1)shape[0]=shape[1]=0;else if(pattern==2 || pattern==3)shape[pattern]=0;}
         if(diagonal) {shape[1]=1;shape[2]=rows;if(pattern)shape[pattern==1?0:pattern]=0;}
         if(folding) for(int axis=0;axis<4;axis++) shape[axis]=(pattern==16 && axis==0) || (pattern>=17 && axis==pattern-17)?0:shape[axis]*((pattern&(1<<axis))?2:1);
@@ -1803,6 +1791,7 @@ int main(int argc, char **argv) {
         const uint32_t bias_word=fill_words[((transforming?std::min(pattern,23):pattern/5)*7+3)%24];float bias;memcpy(&bias,&bias_word,4);
         const bool inplace=(filling && operation) || (transforming && operation%2) || (unarying && operation%3==1);
         auto word_operation = [&](ggml_tensor *a, bool inplace) {
+          if(scanning) return ggml_cumsum(ctx,a);
           if(unarying) {
             static const ggml_unary_op variants[]={GGML_UNARY_OP_ABS,GGML_UNARY_OP_SGN,GGML_UNARY_OP_NEG,GGML_UNARY_OP_STEP,GGML_UNARY_OP_RELU,GGML_UNARY_OP_COUNT,GGML_UNARY_OP_COUNT,GGML_UNARY_OP_HARDSIGMOID,GGML_UNARY_OP_HARDSWISH,GGML_UNARY_OP_FLOOR,GGML_UNARY_OP_CEIL,GGML_UNARY_OP_ROUND,GGML_UNARY_OP_TRUNC};
             const int which=operation/3;ggml_tensor *node=which==5?(inplace?ggml_sqr_inplace(ctx,a):ggml_sqr(ctx,a)):which==6?(inplace?ggml_sqrt_inplace(ctx,a):ggml_sqrt(ctx,a)):inplace?ggml_unary_inplace(ctx,a,variants[which]):ggml_unary(ctx,a,variants[which]);
@@ -1845,6 +1834,7 @@ int main(int argc, char **argv) {
         ggml_tensor *result=wordwise?filled:windowing?(operation?ggml_win_unpart(ctx,input,image_width,image_height,window_size):ggml_win_part(ctx,input,window_size)):casting?(operation<3?ggml_cast(ctx,input,output_type):ggml_cpy(ctx,input,target)):filling?filled:triangular?ggml_tri(ctx,ggml_cont(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,input):folding?ggml_repeat_back(ctx,input,target):spatial?spatial_op(operation?ggml_cont(ctx,input):input,false):concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(layout==3?ggml_cont_1d(ctx,input,ggml_nelements(input)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
         if(triangular) result->src[0]=input;
         if(inplace) memcpy(result->nb,input->nb,sizeof input->nb);
+        if(scanning && layout==3) for(int axis=0;axis<4;axis++) result->nb[axis]*=2;
         ggml_tensor *expected_tensor=wordwise?word_operation(canonical_copy(ctx,input),false):windowing?(operation?ggml_win_unpart(ctx,canonical_copy(ctx,input),image_width,image_height,window_size):ggml_win_part(ctx,canonical_copy(ctx,input),window_size)):casting?ggml_cast(ctx,canonical_copy(ctx,input),output_type):filling?ggml_fill(ctx,canonical_copy(ctx,input),constant):triangular?ggml_tri(ctx,canonical_copy(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,canonical_copy(ctx,input)):folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
         if(repeating || concatenating || spatial || folding || diagonal || triangular || (filling && !operation) || (casting && operation<3) || windowing || (wordwise && !inplace)) {result->nb[1]+=output_bytes;result->nb[2]=result->nb[1]*result->ne[1]+output_bytes;result->nb[3]=result->nb[2]*result->ne[2]+output_bytes;}
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer || (!ggml_nbytes(input)&&(!right||!ggml_nbytes(right))&&!ggml_nbytes(result)));
@@ -1853,7 +1843,10 @@ int main(int argc, char **argv) {
           std::vector<unsigned char> initial(ggml_nbytes(operand));
           if(casting || wordwise) for(size_t i=0;i<initial.size()/bytes;i++) {
             static const uint16_t small[]={0,0x8000,0x3c00,0x3f80,0xbc00,0xbf80,0x7c00,0x7f80,0xfc00,0xff80,0x7e00,0x7fc0,0x7c01,0x7f81,0xfe01,0xff81,1,0x8001,0x03ff,0x007f,0x0400,0x0080,0x7bff,0x7f7f};
-            if(unarying) {
+            if(scanning) {
+              static const uint32_t scan_words[][4]={{0x3f800000,0x40000000,0xbf800000,0},{0x4b800000,0x3f800000,0xcb800000,0xbf800000},{0x80000000,0x80000000,0,0x80000000},{0x7f800000,0xff800000,0x3f800000,0},{0x7f800001,0xffc00001,0x7fc00123,0xff800001},{0x7f7fffff,0x7f7fffff,0xff7fffff,0x00800000},{1,0x80000001,0x007fffff,0x00800000}};
+              const uint32_t word=pattern<7?scan_words[pattern][i%4]:uint32_t(i*2654435761U+0x9e3779b9U);memcpy(initial.data()+i*bytes,&word,4);
+            } else if(unarying) {
               static const uint32_t unary_words[]={0,0x80000000,0x3f000000,0xbf000000,0x3fc00000,0xbfc00000,0x40200000,0xc0200000,0x40400000,0xc0400000,0x403fffff,0x40400001,0xc03fffff,0xc0400001,0x3f800000,0xbf800000,0x7f800000,0xff800000,0x7fc00001,0x7f800001,0xff800001,1,0x80000001,0x00800000,0x7f7fffff,0xff7fffff,0x4affffff,0xcaffffff,0x4b000000,0xcb000000,0x3f7fffff,0xbf7fffff};
               const uint32_t bits=unary_words[i%32];float value;memcpy(&value,&bits,4);const uint16_t half=type==GGML_TYPE_F16?ggml_fp32_to_fp16(value):ggml_fp32_to_bf16(value).bits;
               if(type==GGML_TYPE_F32)memcpy(initial.data()+i*bytes,&bits,4);else memcpy(initial.data()+i*bytes,&half,2);
@@ -1906,7 +1899,7 @@ int main(int argc, char **argv) {
         for(int64_t i3=0;i3<result->ne[3];i3++) for(int64_t i2=0;i2<result->ne[2];i2++)
         for(int64_t i1=0;i1<result->ne[1];i1++) for(int64_t i0=0;i0<result->ne[0]/block;i0++,index++) {
           const size_t offset=i0*result->nb[0]+i1*result->nb[1]+i2*result->nb[2]+i3*result->nb[3];
-          if(wordwise) {
+          if(wordwise && !(scanning && i0==0)) {
             auto nan = [&](const unsigned char *p) {float value;if(output_type==GGML_TYPE_F32)memcpy(&value,p,4);else {uint16_t word;memcpy(&word,p,2);value=output_type==GGML_TYPE_F16?ggml_fp16_to_fp32(word):ggml_bf16_to_fp32(ggml_bf16_t{word});}return std::isnan(value);};
             if(nan(actual.data()+offset) && nan(expected.data()+index*output_bytes)) memcpy(actual.data()+offset,expected.data()+index*output_bytes,output_bytes);
           }
@@ -1922,7 +1915,7 @@ int main(int argc, char **argv) {
       CHECK(refused==(spatial?200:triangular?384:windowing?216:0));
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases);return 0;
     }
-    if (!strcmp(argv[4], "empty")) {
+    if (!strcmp(argv[3], "empty")) {
       size_t cases=0; int kind;
       while (scanf("%d",&kind)==1) for (int axis=0;axis<4;axis++) for (int64_t scale : {int64_t(2),int64_t(INT32_MAX)}) {
         ggml_init_params params={8*1024*1024,nullptr,true};
@@ -1945,7 +1938,7 @@ int main(int argc, char **argv) {
       ggml_backend_free(reference); ggml_backend_free(backend);
       printf("RESULT cases %zu\n",cases); return 0;
     }
-    if (!strcmp(argv[4], "elementwise")) {
+    if (!strcmp(argv[3], "elementwise")) {
       size_t cases = 0;
       const ggml_op expected_ops[] = {
         GGML_OP_ADD, GGML_OP_SUB, GGML_OP_MUL, GGML_OP_DIV, GGML_OP_SQRT, GGML_OP_SQR, GGML_OP_UNARY, GGML_OP_UNARY
@@ -2014,7 +2007,7 @@ int main(int argc, char **argv) {
       ggml_backend_free(reference); ggml_backend_free(backend);
       printf("RESULT cases %zu\n",cases); return 0;
     }
-    if (!strcmp(argv[4], "matrix")) {
+    if (!strcmp(argv[3], "matrix")) {
       size_t matrix_cases = 0; bool negatives_checked = false;
       const float edges[][2] = {{INFINITY,0.0f}, {INFINITY,-1.0f}, {NAN,1.0f}, {-0.0f,1.0f},
         {std::numeric_limits<float>::denorm_min(),1.0f}, {std::numeric_limits<float>::min(),0.5f},

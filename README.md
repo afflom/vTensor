@@ -60,6 +60,8 @@ reproducible Verdant extension checkpoint is `45bb03d60383`.
 | `VT-24` | build | Matches 1,920 cast/copy graphs across all six mixed F32/F16/BF16 pairs, both constructors, strides, reshape, empty dimensions and preserved padding. |
 | `VT-25` | build | Window partition/join covers 2,808 CPU comparisons and 216 bounded-source refusals, including strides, padding, empty dimensions and independent oversized/reshaped windows. |
 | `VT-26` | build | Matches 18,432 numerical and 384 empty SCALE/SCALE_BIAS/CLAMP/LEAKY_RELU graphs across F32/F16/BF16, copied/in-place output, strides and exact padding. |
+| `VT-27` | build | Matches 4,992 graphs for thirteen typed unary operations across all five supported float pairs, copied/in-place forms, strides and empty dimensions. |
+| `VT-28` | build | Matches 528 F32 CUMSUM graphs with exact first-word copies, ordered row-local prefixes, independent strides, signed-zero and NaN edges, empty axes and preserved padding. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -73,6 +75,8 @@ versus in-place alias behavior. REPEAT_BACK uses certified zero-initialization
 and accumulation instructions with Verdant addition in upstream input order.
 DIAG uses certified address selection and Verdant transfers for all three
 CPU-supported types, preserving diagonal encodings and writing positive zeros.
+CUMSUM copies the first word of each row, then uses certified F32 addition
+in CPU prefix order. It supports independently strided inputs and outputs.
 TRI shares that selection path for all four upstream variants and rejects
 nonsquare descriptors before writes. FILL converts constants once through
 Verdant and uses the transfer path for F32/F16, including in-place aliases.

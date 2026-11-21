@@ -84,7 +84,8 @@ inductive{
     {name: converted, fields: [Nat, Nat]},
     {name: windowed, fields: [Bool, Nat, Nat]},
     {name: transformed, fields: [Nat, Nat, Nat, Nat]},
-    {name: unaryWord, fields: [Nat, Nat, Nat]}
+    {name: unaryWord, fields: [Nat, Nat, Nat]},
+    {name: scanned, fields: []}
   ]
 }
 
@@ -588,6 +589,22 @@ definition{
 }
 
 definition{
+  name: planScan,
+  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if ((((project left ty) =? 0) && ((project output ty) =? 0)) && (sameShape left output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.scanned)) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
+  name: scannedOffsets,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext],
+  result: GraphResponse,
+  body: (let target : Nat := (blockOffset index destination); (let from : Nat := (blockOffset index source); (if ((prim remainder index (project source u0) 0 : Nat) =? 0) then (ctor GraphResponse.offsets false from target) else (ctor GraphResponse.arithmetic 0 2 (blockOffset (prim subtract index 1 : Nat) destination) 0 from target)))),
+  executable: true
+}
+
+definition{
   name: planSelection,
   parameters: [kind : Nat, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
@@ -775,7 +792,8 @@ definition{
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
-    | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))),
+    | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
+    | CopyMode.scanned => (scannedOffsets index source destination)),
   executable: true
 }
 
@@ -786,9 +804,9 @@ definition{
   body: (match request
     | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (match (unaryKind operation variant)
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (match (unaryKind operation variant)
       | Option.none => (numericPlan operation variant left right output)
-      | Option.some kind => (planUnary kind left output)))))))))))))))
+      | Option.some kind => (planUnary kind left output))))))))))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -995,6 +1013,34 @@ theorem{
     destinationType : Nat
   ],
   statement: ((copyOffsets index source destination (ctor CopyMode.unaryWord kind sourceType destinationType)) = (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: scanUsesEverySourceAndDestinationContext,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext],
+  statement: ((copyOffsets index source destination (ctor CopyMode.scanned)) = (scannedOffsets index source destination)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: scanRowResetCopiesSource,
+  parameters: [],
+  statement: ((scannedOffsets 3 (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 28, s2 := 60, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 16, s2 := 36, s3 := 72})) = (ctor GraphResponse.offsets false 28 16)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: scanPrefixUsesPreviousDestination,
+  parameters: [],
+  statement: ((scannedOffsets 4 (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 28, s2 := 60, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 16, s2 := 36, s3 := 72})) = (ctor GraphResponse.arithmetic 0 2 16 0 36 20)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: scanPlaneResetCopiesSource,
+  parameters: [],
+  statement: ((scannedOffsets 6 (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 28, s2 := 60, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 16, s2 := 36, s3 := 72})) = (ctor GraphResponse.offsets false 60 36)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

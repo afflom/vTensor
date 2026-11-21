@@ -1915,3 +1915,69 @@ Verdant development dependency. Formatting, model/source audits, frame sync,
 all-target/all-feature Clippy and dependency checks passed. Complete imported
 operation/type/lifecycle coverage and production dependency acceptance remain
 unfinished; this checkpoint does not claim full vTensor or Engine acceptance.
+
+
+## VT-28: row-local cumulative sums
+
+The imported GGML implementation admits F32 CUMSUM, copies each row's first
+word directly and adds later words in F32 prefix order. SUM and MEAN instead
+use an F64 accumulator; their implementation requires that wider model and
+is not inferred from CUMSUM. VT-28's registered scenario and initial live
+supports-op failure preceded this implementation.
+
+Prism defines a scan plan and response sequence using the existing copy and
+arithmetic instructions. No native numerical implementation or new Verdant
+primitive is introduced: first words use the existing byte-transfer path,
+and subsequent words call Verdant's certified F32 addition. Each row restarts
+from its own source word; both source and destination strides remain intact.
+The model rejects non-F32 operands and mismatched extents. Universal routing
+and concrete row/plane reset and predecessor-offset theorems are checked.
+
+The changed pointwise project was exported once; result
+8acd4b65dca09c0c6ba288fc48f330f829511ff33c4f3fcd8b4abfdc5d30279b,
+attestation afd4eca32e4e95820c23cf2a5550fb166e23c0e53c016843697d89f7cd0795e0.
+The generated source remains byte-for-byte SDK output. The observed cargo-deny
+source fingerprint is 34e5211c. Other projects and the unchanged main-app proof
+were not rebuilt.
+
+All 528 imported CPU graph comparisons passed in 2.52 seconds: 512 numerical
+graphs across eight data patterns, four widths (1, 3, 17, 65), two row extents,
+two batch extents and four layouts, plus sixteen empty graphs retaining every
+empty axis and layout. Data include cancellation, signed zeros, infinities,
+signaling/quiet NaNs, finite overflow, subnormals and seeded raw words. Source
+and destination element strides vary independently. The first word requires
+exact bits, including NaN payload; later numerical NaNs compare by class.
+Every finite result, infinity, signed zero and padding byte requires exact
+bytes. Invalid shape/type and allocation states retain the shared refusal
+checks before writes. CPU inputs are canonicalized for the logical strided
+extension; the imported CPU scan itself requires packed elements within rows.
+
+Replacing the first-word transfer with addition of positive zero failed the
+negative-zero case at byte three (actual zero, expected 128). Reading the first
+output word in place of the previous prefix failed at byte eleven (actual
+zero, expected 64). Both defects were bounded within admitted memory and
+restored exactly; all 528 cases then passed in 2.26 seconds using the cached
+reference. Shared file hashing and exact source-snapshot comparisons remove
+duplicated plumbing without dropping integrity or inventory checks.
+
+A plane-reset theorem changed to the wrong source offset failed Lean with
+LLV7002. Exact restoration reproduced the kept source and semantic IDs;
+artifact replay verified both generated bindings and explicitly did not repeat
+axiom audit, Lean elaboration, leanchecker or named-root extraction.
+
+The harness checks loaded-library provenance once, before execution: canonical
+library path, exact source length and a live byte comparison against current
+inputs. It no longer writes that same snapshot back to disk for a duplicate
+post-execution check. Corrupting one byte of the shared library's embedded
+source snapshot failed that live memcmp guard. The original library bytes were
+restored exactly and all 528 graphs passed in 2.22 seconds with the unchanged
+oracle host. The Rust test library also retains its independent freshness
+check against current inputs.
+
+The final workspace run passed 27 contract tests in 18.84 seconds and all other
+workspace targets. VT-02 alone still refused the unpublished development
+dependency. Formatting, model/source audits, frame sync, all-target/all-feature
+Clippy and dependency checks passed. Handwritten source is now 10,560 lines in
+the same 51 files, below the preceding 10,569-line checkpoint. Complete imported
+operation/type/lifecycle coverage, wider reduction arithmetic and production
+dependency acceptance remain unfinished.

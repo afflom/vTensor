@@ -130,6 +130,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-16` | `build` | Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle |
 
+## scan-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-28` | `build` | Prism models row-local F32 cumulative sums with exact first-word preservation and Verdant matches the imported GGML CPU scan across strided and empty graphs |
+
 ## source-accounting
 
 | ID | Level | Statement |

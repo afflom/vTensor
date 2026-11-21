@@ -232,3 +232,9 @@ id = "VT-27"
 level = "build"
 suite = "unary-graphs"
 statement = "Prism plans thirteen unary operations for all five supported GGML float source destination pairs and Verdant matches copied in-place strided and empty CPU graphs with exact finite outputs and preserved padding"
+
+[[id]]
+id = "VT-28"
+level = "build"
+suite = "scan-graphs"
+statement = "Prism models row-local F32 cumulative sums with exact first-word preservation and Verdant matches the imported GGML CPU scan across strided and empty graphs"
