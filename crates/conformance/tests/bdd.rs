@@ -73,28 +73,14 @@ fn every_some_true_claim_cites_an_authority_cm_03() {
         .check_artifacts(&root())
         .expect("every committed artifact is the one its checksum records");
 
-    let mut some_true = 0usize;
-    for claim in &model.ledger.claim {
-        if claim.level != Level::SomeTrue {
-            continue;
-        }
-        some_true += 1;
-        let name = claim
-            .authority
-            .as_ref()
-            .expect("a some-true claim names an authority");
-        let a = model
-            .authorities
-            .authority
-            .iter()
-            .find(|a| &a.id == name)
-            .unwrap_or_else(|| panic!("{name} has no row in model/authorities.toml"));
-        assert!(!a.citation.trim().is_empty(), "{name} has no citation");
-        assert!(
-            a.checksum != "none" || !a.checksum_reason.trim().is_empty(),
-            "{name} has no checksum and no reason for its absence"
-        );
-    }
+    // Model::check owns authority resolution, citations and checksum reasons.
+    // Reuse that validator rather than maintaining a second interpretation here.
+    let some_true = model
+        .ledger
+        .claim
+        .iter()
+        .filter(|claim| claim.level == Level::SomeTrue)
+        .count();
     // Armed by the ledger, for the reason `no_scenario_is_pending_cm_02` gives:
     // a repository that reproduces nothing from an authority cites none, and a
     // `some-true` claim with no authority row fails in the loop above regardless.

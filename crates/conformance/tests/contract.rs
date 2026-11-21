@@ -41,17 +41,13 @@ fn contract_tc_01() {
 
     // The proposition names every universal policy file whose digest
     // `template.lock` binds: all of them but the self-referential lock.
-    let contract =
-        std::fs::read_to_string(root().join("template-contract.json")).expect("contract");
-    let list = contract
-        .split("\"universal_policy_paths\":[")
-        .nth(1)
-        .and_then(|rest| rest.split(']').next())
-        .expect("universal_policy_paths");
-    let bound: Vec<&str> = list
-        .split(',')
-        .map(|p| p.trim_matches('"'))
-        .filter(|p| *p != "template.lock")
+    let contract = ggml_oracle::read_json(root().join("template-contract.json"));
+    let bound: Vec<_> = contract["universal_policy_paths"]
+        .as_array()
+        .expect("universal_policy_paths")
+        .iter()
+        .map(|path| path.as_str().expect("policy path"))
+        .filter(|path| *path != "template.lock")
         .collect();
     let proposition = declaration(&model, "Conformant");
     let fields = [

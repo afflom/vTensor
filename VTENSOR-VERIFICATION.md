@@ -2714,3 +2714,26 @@ the completion target remains the last accepted 10,549-line budget. Restoring
 that budget, refreshing the Engine frontier/footprints/package closure, resolving
 VT-02 through a real production dependency, completing the remaining imported
 GGML operation coverage, and a complete `just vv` pass remain required.
+
+## Shared authority validation and structured policy parsing
+
+The BDD CM-03 test now uses `Model::check` as the single validator for authority
+resolution, citations and checksum reasons, then retains its existing ledger
+non-vacuity guard and artifact validation. Its second handwritten pass over the
+same authority conditions was removed. TC-01 now reads the universal policy list
+through the existing JSON reader rather than splitting the serialized text.
+No tensor algorithm, graph domain, oracle case or generated output changed.
+
+A temporary valid `some-true` claim first passed the BDD authority check, then
+four independent planted defects were rejected: a missing referenced authority,
+an empty citation, an empty checksum reason, and an incorrect artifact digest.
+Both model files were restored byte for byte. All four restored BDD tests,
+TC-01, formatting and backend Clippy over all targets at `-D warnings` pass.
+The numeric suites were not rerun because their models, bindings and corpus
+were unchanged. Logs are `/tmp/vtensor-authority-consolidation-faults.log`,
+`/tmp/vtensor-harness-consolidation.log` and `/tmp/vtensor-harness-restored.log`.
+
+The measured non-Prism count decreased by 20 lines to 10,633. This is still
+84 lines above the last accepted 10,549-line budget; the source gate remains
+unsatisfied against that budget. This checkpoint does not claim release
+acceptance or resolve the developmental Verdant dependency.
