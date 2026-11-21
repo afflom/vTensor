@@ -332,6 +332,10 @@ dependencies = [
  "verdant_matrix_shape",
  "verdant_scalar_f32",
  "verdant_storage_transfer",
+ "verdant_unary_activate",
+ "verdant_unary_plan",
+ "verdant_unary_round",
+ "verdant_unary_select",
 ]
 
 [[package]]
@@ -352,6 +356,22 @@ version = "2.4.0"
 
 [[package]]
 name = "verdant_storage_transfer"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_unary_activate"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_unary_plan"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_unary_round"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_unary_select"
 version = "2.4.0"
 
 [[package]]

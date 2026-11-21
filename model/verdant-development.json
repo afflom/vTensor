@@ -2,10 +2,10 @@
   "spec": "vtensor/verdant-development/1",
   "upstream": "https://github.com/afflom/verdant-engine.git",
   "base": "87c3256326b9ec9f8d591855394c0bd0265588ef",
-  "commit": "45bb03d603838a3289400f36753c743a289ef492",
+  "commit": "054df8ead9a0eb47b634c4cbc34263ec4690ca16",
   "ref": "refs/heads/vtensor/storage-checkpoint",
   "bundle": "vendor/verdant-development.bundle",
-  "sha256": "69dd4ca8204b225d0913c5a1cda9f39e3ea4fd7983f57b9692d97a42ebe7c839",
+  "sha256": "87c5f8f435e4c8b5965dd58128e940389c16fbf715df920fad514535008cd218",
   "sdk_image": "ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c",
   "directory": ".verdant-engine"
 }

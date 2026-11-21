@@ -153,3 +153,17 @@ The Verdant base revision is declared in the workspace manifest. The current
 local extension must acquire an authoritative immutable dependency before
 acceptance. The graph also contains Verdant's pinned `uor-matmul` upstream;
 `deny.toml` permits only those two Git origins.
+
+## Unary foundation checkpoint
+
+The pinned Verdant development bundle now includes VTK-06: certified typed
+unary primitives for thirteen operations and all five GGML CPU float pairs.
+The isolated Engine checkpoint is `054df8ead9a0eb47b634c4cbc34263ec4690ca16`.
+Its four-root Prism bundle passed certificate replay and 3,675,256 comparisons
+with the authoritative imported GGML CPU implementation. Source/object drift
+and a wrong unary dispatch were rejected; a driver-only change reused every
+CPU object unchanged. Existing VTK-01..05 and four integration regressions pass.
+
+vTensor graph integration is the next checkpoint. This development bundle
+retains the explicit VT-02 release-source refusal; it is not a published
+Verdant dependency or evidence of complete backend conformance.

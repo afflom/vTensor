@@ -142,3 +142,27 @@ name = "verdant_float_transform"
 version = "=2.4.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x97816007 }]
+
+[[licenses.clarify]]
+name = "verdant_unary_activate"
+version = "=2.4.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x84905fc5 }]
+
+[[licenses.clarify]]
+name = "verdant_unary_plan"
+version = "=2.4.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xcfc25a71 }]
+
+[[licenses.clarify]]
+name = "verdant_unary_round"
+version = "=2.4.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xeb74a07c }]
+
+[[licenses.clarify]]
+name = "verdant_unary_select"
+version = "=2.4.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xcad12ac0 }]
