@@ -1,0 +1,57 @@
+{
+  "spec": "vtensor/arange-runtime/1",
+  "status": "registered-failing-before-production-implementation",
+  "id": "VT-37",
+  "authority": {
+    "repository": "https://github.com/ggml-org/llama.cpp",
+    "commit": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "file": "tests/test-backend-ops.cpp",
+    "source": "unchanged imported test factory and test_case::eval; CPU reference mode is mandatory"
+  },
+  "oracle_bridge": {
+    "required_cases": 10,
+    "coverage": "Every matching ARANGE case from the authoritative factory, including the 1,048,576-element case. No local numerical generator or expected-value function.",
+    "refusals": "Any selected NOT_SUPPORTED or failed case refuses the run; the exact observed case count and the printer result count must agree. SKIPPED applies only to the external operation filter; any missing required case also fails the exact count.",
+    "provenance": "The extracted upstream suite source is hash-checked on each bridge invocation, including cached program hits. The SDK/compiler/source cache and shared-library path and embedded compilation-input checks remain active.",
+    "caching": "Compile the unchanged suite plus bridge once per source/bridge/compiler/SDK identity. Reuse the existing GGML CPU and registry objects. Normal regression modes do not link the full upstream suite."
+  },
+  "initial_failure": {
+    "command": "cargo test --locked -p vtensor-backend --test contract generator_graphs_vt_37 -- --nocapture",
+    "result": "First actual imported ARANGE case rejected as not supported; no production generator implementation changed.",
+    "passed": 0,
+    "failed": 1,
+    "ignored": 0,
+    "filtered": 36,
+    "seconds": 93.74,
+    "timing": "Includes the first upstream suite C++ compilation; not a warm-run benchmark."
+  },
+  "registration": "All four BDD meta-tests pass after adding the ID, scenario and failing test. CONFORMANCE.md was regenerated.",
+  "source_budget": {
+    "current": 10912,
+    "last_accepted": 10549,
+    "excess": 363,
+    "status": "unsatisfied; no higher ceiling accepted"
+  },
+  "next_implementation": [
+    "Define zero-source ARANGE planning and instruction flow in Prism.",
+    "Use existing Verdant F32 comparison, subtraction, division, ceil, unsigned index conversion, multiplication and addition. Native code binds effects only.",
+    "Decode the computed F32 ceil count exactly in Prism, including counts beyond 2^24, and reject invalid counts before writes.",
+    "Match imported CPU flat output writes with valid physical bounds; preserve empty-node behavior.",
+    "Add atomic parameter/layout/count refusal checks and a representative execution-binding defect.",
+    "Export only the changed certified Pointwise root; reuse unchanged numerical libraries and import objects. Full exact-SDK acceptance remains required."
+  ],
+  "logs": {
+    "before": {
+      "path": "/tmp/vtensor-arange-before.log",
+      "sha256": "5d3937b0e1fe312586cd4d4a84d0e8dd51d0b7e5536ac5a6c8aa0f3812006529"
+    },
+    "bdd": {
+      "path": "/tmp/vtensor-arange-registration-bdd.log",
+      "sha256": "379145507f84a15b024fccff5be6b8ae900dba5cade26cce70e0317fd3b79fd7"
+    },
+    "budget": {
+      "path": "/tmp/vtensor-arange-registration-budget.log",
+      "sha256": "f99acb72ca9b7a588e123210558b726b48acdd3f95c36c75b1a0a84120237e9b"
+    }
+  }
+}

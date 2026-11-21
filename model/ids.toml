@@ -286,3 +286,9 @@ id = "VT-36"
 level = "build"
 suite = "fixture-generation"
 statement = "Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle"
+
+[[id]]
+id = "VT-37"
+level = "build"
+suite = "generator-graphs"
+statement = "Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals"

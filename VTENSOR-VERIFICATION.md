@@ -3148,3 +3148,21 @@ cache/dependency transition and is not a controlled performance comparison.
 attestations, actual gate results and log digests. This is a development
 foundation for the remaining imported GGML operations, not full vTensor or
 production dependency acceptance.
+
+
+## Registered upstream ARANGE regression (VT-37)
+
+The new operation regression uses the unchanged imported upstream test factory
+and `test_case::eval`, with the CPU reference mode explicitly enabled. It
+requires all ten ARANGE cases, including the 1,048,576-element case, rejects
+selected unsupported/failed cases and enforces exact execution/result counts.
+The suite object is cached separately from the normal regression driver and
+reuses the existing authoritative CPU build. Cached suite sources and program
+provenance are checked before execution.
+
+The first run fails on the actual upstream default ARANGE case with
+`not supported` (93.74 seconds including the initial suite compilation). All
+four registration meta-tests pass. No production generator has been implemented
+at this checkpoint. The source budget is now 10,912 lines, 363 above the last
+accepted 10,549; this remains unsatisfied. `verification/arange-runtime.json`
+records the initial failure, scope, cache boundaries and implementation sequence.

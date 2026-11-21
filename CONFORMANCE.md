@@ -101,6 +101,12 @@ model does not sanction.
 | `FR-04` | `build` | An app's workspace key opens only on a device of the Prism ID that made it, follows the ID when it joins or is recovered, and stays locked on a removed device |
 | `FR-05` | `build` | An app's pages on every device of one Prism ID meet on a relay topic only those devices derive, per app, with every message sealed to the ID, and a removed device is left behind |
 
+## generator-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-37` | `build` | Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals |
+
 ## ggml-inventory
 
 | ID | Level | Statement |

@@ -1485,6 +1485,12 @@ fn buffer_transfer_vt_09() {
     }
 }
 
+/// `VT-37`: Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals
+#[test]
+fn generator_graphs_vt_37() {
+    native_backend_oracle::verify(&root(), "upstream-ARANGE", 10);
+}
+
 mod native_backend_oracle {
     use super::ggml_oracle::{compile, digest, file_digest, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
@@ -1619,6 +1625,21 @@ mod native_backend_oracle {
         let _access = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let oracle = storage_oracle(root);
         let common = oracle.parent().unwrap();
+        if mode.starts_with("upstream-") {
+            let source = "tests/test-backend-ops.cpp";
+            let lock =
+                super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
+            let expected = lock["file"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|row| row["path"].as_str() == Some(source))
+                .unwrap();
+            assert_eq!(
+                expected["sha256"].as_str().unwrap(),
+                file_digest(common.join(source))
+            );
+        }
         let objects = super::ggml_oracle::read_json(common.join("objects.json"));
         for name in ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"] {
             assert_eq!(objects[name], file_digest(common.join(name)));
@@ -1631,6 +1652,9 @@ mod native_backend_oracle {
             .canonicalize()
             .expect("Cargo builds the native shared library");
         let mut driver = String::from(HEADER);
+        if mode.starts_with("upstream-") {
+            driver.insert_str(0, "#define VTENSOR_IMPORTED_SUITE\n");
+        }
         for (key, value) in vtensor_backend::abi_layout() {
             let (ty, field) = key.rsplit_once('.').unwrap();
             let expression = match field {
@@ -1708,6 +1732,17 @@ mod native_backend_oracle {
             }
             let mut linker = Command::new("c++");
             linker.args(["-Wl,--gc-sections", "-Wl,--export-dynamic"]);
+            if mode.starts_with("upstream-") {
+                let suite = common
+                    .join("imported-suite")
+                    .join(digest(&Sha256::digest(UPSTREAM_SUITE)));
+                std::fs::create_dir_all(&suite).unwrap();
+                let input = suite.join("suite.cpp");
+                std::fs::write(&input, UPSTREAM_SUITE).unwrap();
+                let object = suite.join("suite.o");
+                compiled_object(common, input.to_str().unwrap(), &object);
+                linker.arg(object);
+            }
             linker.arg(cache.join("driver.o"));
             linker.args(["reg.o", "dl.o", "threading.o"].map(|name| frontend.join(name)));
             linker.args(
@@ -1775,6 +1810,35 @@ mod native_backend_oracle {
         }
     }
 
+    const UPSTREAM_SUITE: &str = r##"#define main vtensor_unused_upstream_main
+#include "tests/test-backend-ops.cpp"
+#undef main
+size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
+    struct observation : printer {
+      size_t records=0; bool bad=false;
+      void print_test_result(const test_result &result) override {
+        ++records;
+        if(!result.supported || !result.passed || result.test_mode!="test") {
+          bad=true;fprintf(stderr,"imported case rejected: %s(%s): %s\n",result.op_name.c_str(),result.op_params.c_str(),result.error_message.c_str());
+        }
+      }
+    } observed;
+    using set_reference = void (*)(ggml_backend_t,bool);
+    auto reg=ggml_backend_dev_backend_reg(ggml_backend_get_device(reference));
+    auto use_reference=(set_reference)ggml_backend_reg_get_proc_address(reg,"ggml_backend_cpu_set_use_ref");
+    if(!use_reference) return SIZE_MAX;
+    use_reference(reference,true);
+    size_t cases=0;
+    for(auto &test:make_test_cases_eval()) {
+      const auto status=test->eval(backend,reference,op,&observed);
+      if(status==test_status_t::SKIPPED) continue;
+      if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
+      ++cases;
+    }
+    return observed.records==cases ? cases : SIZE_MAX;
+}
+"##;
+
     const HEADER: &str = r##"#include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-backend-impl.h"
@@ -1798,6 +1862,9 @@ extern "C" ggml_backend_reg_t ggml_backend_vtensor_reg();
 extern "C" ggml_backend_reg_t ggml_backend_init();
 extern "C" const unsigned char * vtensor_build_sources();
 extern "C" size_t vtensor_build_sources_size();
+#ifdef VTENSOR_IMPORTED_SUITE
+extern size_t vtensor_imported_suite(ggml_backend_t, ggml_backend_t, const char *);
+#endif
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "native check line %d: %s\n", __LINE__, #x); return 2; } } while (0)
 static void refusal(const char *message) { _exit(strstr(message, "out of bounds") ? 12 : 99); }
 static int current_kind = -1, current_layout = -1;
@@ -1891,6 +1958,14 @@ int main(int argc, char **argv) {
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
     ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
     ggml_backend_cpu_set_n_threads(reference,1);
+#ifdef VTENSOR_IMPORTED_SUITE
+    if (!strncmp(argv[3], "upstream-", 9)) {
+      const size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
+      CHECK(cases != SIZE_MAX);
+      printf("RESULT cases %zu\n",cases);
+      ggml_backend_free(reference);ggml_backend_free(backend);return 0;
+    }
+#endif
     if (!strcmp(argv[3], "update")) {
       size_t cases=0;
       for(ggml_type type : {GGML_TYPE_F32,GGML_TYPE_I32}) for(ggml_type patch_type : {GGML_TYPE_F32,GGML_TYPE_I32}) for(int add : {0,1})
