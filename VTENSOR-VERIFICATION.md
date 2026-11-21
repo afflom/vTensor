@@ -1430,3 +1430,74 @@ model/source audits, frame synchronization, workspace Clippy and dependency
 checks passed. Handwritten source is 10,572 lines in the existing 51 files.
 Full backend conformance and production dependency acceptance remain unfinished;
 unchanged main-application proofs were not redundantly rebuilt here.
+
+
+## Verdant float conversion foundation (VTK-04 dependency checkpoint)
+
+The isolated Verdant source is now
+`d6674663941f88789911131d180ea553ac8be5c7` on
+`refs/heads/vtensor/storage-checkpoint`. Its thin bundle remains based on the
+original pinned upstream commit, with SHA-256
+`fa1c3dcf03d3a35d14680cecc23a395d1acf19ca32de7585faa549416d9a3a93`
+and 4,793,982 bytes. The previous clean prepared checkout was preserved at
+`/tmp/vtensor-verdant-source-26ba1-preserved`; `just verdant-prepare` then cloned
+upstream, verified the bundle/base/ref/hash, prepared the exact new commit and
+confirmed a clean source tree. No files were copied into the prepared dependency
+by hand. The isolated Engine's two unaccepted Wasm investigation outputs were
+excluded from its commit and from this bundle.
+
+The new `verdant_tensor::linear::convert_float_storage` directly re-exports the
+certified Prism `FloatStorage.convert` root. It accepts GGML F32/F16/BF16 type
+codes and encoded words, returns `None` for unsupported types or invalid input
+widths, and has typed checked overflow. Identity conversions preserve raw bits.
+No handwritten production conversion function was introduced; Tensor retains
+its unsafe-code prohibition. The SDK result is
+`6b0c18a4cb889057de720147862a0813a8480e5a128717f057bb7ad279694206`
+and attestation
+`44377072eeaed84f50a5c87c77ad8db0fb4e37803493d33689fd1e6a9846c225`.
+MCP draft storage returned `store.put failed: unwritable`; the pinned official
+Engine SDK checked, exported and replayed the model and implementation evidence.
+
+Engine VTK-04 began with a registered ID/scenario and an observed missing-API
+compilation failure. Its imported GGML authority uses the pinned unmodified
+archive and upstream conversion functions; F16 widening is the function used
+to populate the CPU lookup table. All sixteen-bit words across six type pairs
+supply 393,216 comparisons. Verified widened results seed narrowing boundaries;
+1,048,576 generated requests are sorted/deduplicated to 1,004,044 distinct F32
+comparisons. All 1,397,260 results match bit for bit, including NaN encodings.
+The corpus asserts both its complete input topology and unique record counts.
+Invalid source/destination types and sixteen/thirty-two-bit width boundaries
+are separate fast negative tests. Closed model examples and preservation
+certificates are not presented as a general conversion-semantics proof.
+
+A tie-rounding defect returned 15361 instead of 15360 and failed the numerical
+oracle. Masking oversized sixteen-bit input to fit failed the typed refusal.
+Changing the F16 NaN model encoding without exporting again failed artifact
+freshness at `source_id`. All faults were restored. The final Engine Tensor
+suite passed thirteen unit and four integration tests, with unit execution in
+7.23 seconds. Model checks, formatting, Core/Tensor Clippy and dependency checks
+passed. The fresh uorust projection stayed at 203 lifted, 1,192 residue, 73
+foreign and 78 effect functions; no ceilings were raised. Its Rust-tree pin was
+refreshed, and the tensor models gained explicit stratum ledger entries.
+
+The broader Engine self-hosting ratchet still refused stale hashes in its
+separate generated manifest and missing lifted tensor-module entries; it also
+reported the unaccepted Wasm investigation output exceeding its unchanged size
+watermark. That dirty Wasm output is absent from the accepted source bundle.
+The manifest was not hand-edited and the full Engine release gate is not
+claimed. Its previously observed source-rebuild Wasm initialization discrepancy
+and production-source packaging remain unresolved.
+
+The fresh upstream clone observed `5b11dde69fdf03100eb493e331609cd54f1d028e`
+(v2.7.0), whose latest change decomposes seven large Rust files. Inspection of
+its tensor/model tree found none of these conversion-root/API names; no claim
+is made that the development extension is published upstream.
+
+vTensor's new dependency built successfully. The complete workspace regression
+passed twenty-one contract tests and every other target; VT-02 alone retained
+its exact-source refusal of the unpublished development override. Contract
+execution took 16.73 seconds. Formatting, model/source audits, frame synchronization,
+workspace Clippy and dependency checks passed. Source remains 10,572 lines in
+51 files. Existing Prism roots and the unchanged main application were not
+redundantly re-exported. No new native graph capability is claimed here: this
+verified conversion primitive enables subsequent mixed-type copies and F16 fill.

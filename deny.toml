@@ -130,3 +130,9 @@ name = "verdant_storage_transfer"
 version = "=2.4.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x90bfa796 }]
+
+[[licenses.clarify]]
+name = "verdant_float_storage"
+version = "=2.4.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xfc57fc6c }]

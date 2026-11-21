@@ -75,6 +75,11 @@ Copy conversions and other
 operations and complete numeric type coverage remain unfinished. Storage and empty-graph coverage for all 36 live types do not
 establish their nonempty numerical behavior.
 
+The development Verdant dependency also provides a certified F32/F16/BF16
+storage conversion root, independently checked against 1,397,260 imported GGML
+comparisons. This is the shared primitive for subsequent casts and F16 fill;
+those native graph paths remain unfinished.
+
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
 The current development tree passes twenty-one contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy

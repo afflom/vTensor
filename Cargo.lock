@@ -327,10 +327,15 @@ version = "2.4.0"
 dependencies = [
  "serde",
  "uor-matmul",
+ "verdant_float_storage",
  "verdant_matrix_shape",
  "verdant_scalar_f32",
  "verdant_storage_transfer",
 ]
+
+[[package]]
+name = "verdant_float_storage"
+version = "2.4.0"
 
 [[package]]
 name = "verdant_matrix_shape"
