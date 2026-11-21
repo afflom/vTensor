@@ -3240,8 +3240,16 @@ Clippy across every workspace target and feature, formatting, model audits and
 dependency checks pass. The generated-source license clarification is refreshed
 using the hash reported by cargo-deny. Source accounting falls by 34 lines to
 10,918, still 369 above the last accepted 10,549; the original budget remains
-unsatisfied. Full contract, full acceptance and remote authoring verification
-are in progress at this checkpoint. The first remote verifier lost its worker
-without producing an attestation; its retry is distinct from the successful
-local SDK production proof. Current identities and log hashes are recorded in
-`verification/unified-execution-runtime.json`.
+unsatisfied. The full contract passes 36 tests and fails only the existing
+VT-02 production-source guard in 143.83 seconds, with zero ignored or filtered
+tests. Complete repository acceptance remains in progress at this checkpoint.
+
+All three remote authoring attempts failed: two lost their worker and the
+third exhausted disk on the verifier service. No remote authoring attestation
+is claimed. The successful exact-SDK production attestation already checks all
+652 declarations, including all 24 universal unified-mode route theorems.
+Its build manifest is imported byte for byte into
+`verification/unified-execution-build-manifest.json`; its digest matches the
+attestation, and all eight current model source hashes match its inputs. This
+uses the completed kernel check without repeating it. Current identities and
+log hashes are recorded in `verification/unified-execution-runtime.json`.

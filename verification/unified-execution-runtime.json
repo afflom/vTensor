@@ -10,13 +10,32 @@
     "proofs": "Universal route equalities for all 24 existing CopyMode constructors, operand routing and scalar-width checks. These model proofs are distinct from external CPU conformance.",
     "authoring_draft": "prism-app/b0f1542bac05d8bc6b032a59ce12d7304e6e6f85e2085916ba25f1e6bb183402",
     "authoring_verification": {
-      "task": "task-36",
-      "state": "running",
-      "earlier_attempt": {
-        "task": "task-35",
-        "state": "failed",
-        "reason": "verifier-lost; no attestation produced"
-      }
+      "task": "task-37",
+      "state": "failed",
+      "earlier_attempts": [
+        {
+          "task": "task-35",
+          "state": "failed",
+          "reason": "verifier-lost; no attestation produced"
+        },
+        {
+          "task": "task-36",
+          "state": "failed",
+          "reason": "verifier-lost; no attestation produced"
+        }
+      ],
+      "reason": "Remote verifier reports No space left on device while staging preservation source; no authoring attestation produced."
+    },
+    "local_kernel_verification": {
+      "attestation": "generated/pointwise/evidence/attestation.json",
+      "id": "967a22967ba4ebd29ccd8cbd2e1cbd418996f56e46013bc082b2528059fabefb",
+      "declarations": 652,
+      "all_declarations_ok": true,
+      "unified_routes": 24,
+      "build_manifest": "verification/unified-execution-build-manifest.json",
+      "manifest_sha256": "1416a7f8b05c7838bd7d4982e7bf8245531a9446e3ed399b0c4ca1db9f750ff4",
+      "all_eight_current_source_hashes_match": true,
+      "note": "The successful exact-SDK production verification already checks the model declarations and preservation. No duplicate local verification was started after the remote service failed."
     }
   },
   "production": {
@@ -46,6 +65,15 @@
       "seconds": 2.77,
       "exit_code": 101,
       "restored": "Exact byte comparison against the saved current source passed."
+    },
+    "contract": {
+      "command": "cargo test --locked -p vtensor-backend --test contract -- --nocapture",
+      "passed": 36,
+      "failed": 1,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 143.83,
+      "failure": "VT-02: Verdant Tensor must resolve to the pinned upstream source; local development overrides are not release evidence"
     }
   },
   "checks": {
@@ -65,7 +93,7 @@
     "status": "unsatisfied; no ceiling raised"
   },
   "remaining": [
-    "Full contract and complete just vv are running.",
+    "Complete just vv is running; the separate remote authoring service failed all three attempts.",
     "Production dependency closure, original source budget and remaining imported operation coverage are open."
   ],
   "logs": {
@@ -92,6 +120,10 @@
     "deny": {
       "path": "/tmp/vtensor-typed-vm-deny.log",
       "sha256": "f78188651f20132b2395fba8b562037f6999addfd364d6b3fe6d784575a90d6b"
+    },
+    "contract": {
+      "path": "/tmp/vtensor-typed-vm-contract.log",
+      "sha256": "64a3ef073ae492276d83a0ed25d10eaa1ffca580dd999f6fedf3ff19a0d74031"
     }
   }
 }
