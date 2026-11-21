@@ -327,16 +327,34 @@ version = "2.4.0"
 dependencies = [
  "serde",
  "uor-matmul",
+ "verdant_add_f64",
+ "verdant_count_f32",
  "verdant_float_storage",
  "verdant_float_transform",
+ "verdant_high_f64",
+ "verdant_low_f64",
  "verdant_matrix_shape",
+ "verdant_narrow_f64",
+ "verdant_normalize_f64",
+ "verdant_pack_plan_f64",
+ "verdant_round_mantissa_f64",
  "verdant_scalar_f32",
  "verdant_storage_transfer",
  "verdant_unary_activate",
  "verdant_unary_plan",
  "verdant_unary_round",
  "verdant_unary_select",
+ "verdant_wide_mode",
+ "verdant_widen_f32",
 ]
+
+[[package]]
+name = "verdant_add_f64"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_count_f32"
+version = "2.4.0"
 
 [[package]]
 name = "verdant_float_storage"
@@ -347,7 +365,31 @@ name = "verdant_float_transform"
 version = "2.4.0"
 
 [[package]]
+name = "verdant_high_f64"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_low_f64"
+version = "2.4.0"
+
+[[package]]
 name = "verdant_matrix_shape"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_narrow_f64"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_normalize_f64"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_pack_plan_f64"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_round_mantissa_f64"
 version = "2.4.0"
 
 [[package]]
@@ -372,6 +414,14 @@ version = "2.4.0"
 
 [[package]]
 name = "verdant_unary_select"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_wide_mode"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_widen_f32"
 version = "2.4.0"
 
 [[package]]

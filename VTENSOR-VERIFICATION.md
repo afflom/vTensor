@@ -1981,3 +1981,53 @@ Clippy and dependency checks passed. Handwritten source is now 10,560 lines in
 the same 51 files, below the preceding 10,569-line checkpoint. Complete imported
 operation/type/lifecycle coverage, wider reduction arithmetic and production
 dependency acceptance remain unfinished.
+
+## Wide reduction foundation: Verdant VTK-07
+
+The development dependency advances to 940ae5b8fe404805a002ba6a0e2fb1067b642ff9.
+Its hash-bound Git bundle retains the Prism models, ten exact generated
+packages, certificates, imported oracle, failure scenarios and tests.
+ScalarF64 defines encoded F64 addition, F32 widening, F64 narrowing and
+unsigned-count conversion with nearest-even rounding. A separate pure word
+specification and universally refined field exports define the two-word
+binding. Native effects dispatch certified stages and assemble bytes; they
+provide no floating-point implementation.
+
+The six-root arithmetic result is
+b44050e4408a17672de7b4d199b234ce0d00da2eef1ab6d93c326467076947bf
+(attestation 5c52caba9d2ee04cadcaea0b8c479f650f9cf452a69ce378678516e1210e6a5e).
+The four-root encoding result is
+091f4c9728cfbbca866f7b63822d578aee8539cd66cc6c2c57b953a08b18b9a5
+(attestation 03578f78b630a5c1f48e6f8c40e456fafbe74557a48432ef8dec5cdc2c3d6e5b).
+
+Berkeley SoftFloat Release 3e is imported from its authoritative repository
+at commit 07ebd29db0cfb55723a79fbbffe99103ef38e305. Its retained source archive
+SHA-256 is a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34.
+All 1,213,940 comparisons passed: 851,968 additions, 118,712 narrowings,
+70,656 widenings and 172,604 count conversions. Exact encodings are required
+except for numerical NaNs, compared by classification. Certificate freshness
+and replay check every requested root and compiled binding.
+
+Planted source, library and executable cache corruption each failed their
+byte-integrity gate. A driver-only change reused every unchanged oracle
+library/object byte and mtime. Swapped high/low words and wrong operation
+dispatch failed the imported oracle; exact restoration passed all 152 smoke
+cases. Wrong rounding and concrete high-word theorems failed Lean with
+LLV7002; changed source also failed certificate freshness. Restored identities
+match the kept artifacts, replayed without repeating kernel proof phases.
+The unchanged million-case corpus and unrelated graph proofs were not rerun.
+
+This foundation does not yet bind SUM, SUM_ROWS or MEAN graphs. GGML requires
+F64 accumulation for F32 reductions, with observable packed/strided SUM
+ordering and F32 narrowing before MEAN division. Half-storage SUM has distinct
+F32 accumulation. Those semantics require their own Prism routing and live
+GGML comparisons. Engine full acceptance still refuses stale self-host
+manifest records and an unaccepted oversized UORC Wasm build. Both dirty Wasm
+files were excluded; no ceiling or exact-source gate was weakened.
+
+With this dependency pinned, the complete workspace test command passed all
+27 behavioral contract tests in 32.30 seconds and every other target; VT-02
+alone rejected the unpublished development override. Scoped formatting,
+model/source audits, frame synchronization, all-target/all-feature Clippy and
+cargo-deny passed. Handwritten source remains 10,560 lines in the same 51
+files. No unchanged Prism project was re-exported for this dependency update.
