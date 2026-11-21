@@ -106,6 +106,10 @@ cases. Prism now binds SCALE, SCALE_BIAS, CLAMP and LEAKY_RELU graphs to it,
 including strided F32/F16/BF16 tensors and in-place aliases.
 Storage and empty-graph coverage for all 36 live types do not establish their
 nonempty numerical behavior.
+The development dependency now contains a Prism storage-block decoder for all
+30 executable CPU formats. Its kernel proof passes, while strict oracle checks
+still reject NaN payload/sign differences in 78 of 810 executions. Row-gather
+execution is not yet connected to this decoder.
 
 The development Verdant dependency also provides a certified F32/F16/BF16
 storage conversion root, independently checked against 1,397,260 imported GGML

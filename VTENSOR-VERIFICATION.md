@@ -2583,7 +2583,7 @@ The harness must be consolidated and the final implementation must fit the
 monotonic budget. No ceiling or acceptance gate was changed. Full operation
 coverage, production dependency resolution, and VT-02 remain outstanding.
 
-The pinned Engine R3 checkpoint is
+The initial Engine R3 checkpoint was
 `00fd83066677e43dcdf0060ecdef53426eaad30e`. Its new external reference mode
 passed all 270 cases across the 30 formats. The production-root check and
 public API check remain failing (missing StorageBlock root and E0432 for
@@ -2592,3 +2592,34 @@ once per process and reused by the pending numerical and refusal tests.
 The prior runtime libraries and production request are unchanged. Neither this
 Engine stage nor VT-32 is accepted as implemented; the explicit development
 bundle retains their failing checks for the next implementation step.
+
+
+## Storage-block execution checkpoint for GET_ROWS (VT-32)
+
+The pinned development Engine checkpoint is
+`eceb2a6b3efe5da2091c5005694a213581902112`.
+Verdant's StorageBlock model now contains instruction plans for all 30 CPU
+formats. Prism authoring verification and the exact pinned SDK 24-root production
+export pass. Authoring attestation is
+`249ff2b2afaf6e962b1d8ae227b193096418c69c6d0b6507ebdae714ba454c90`;
+native export attestation is
+`0c5d6357f64238400705938c50773d6b40f0ae7de32c2ae041a5521acc3e93d8`.
+All 23 previous runtime libraries remain byte-identical.
+
+The new effect adapter loads modeled offsets, calls existing certified Verdant
+primitives and stores modeled words. It carries no handwritten codec formulas.
+All 810 imported CPU block executions now run: 732 match every byte; the other
+78 differ only in 15,360 NaN payload/sign words. The complete diagnostic checks
+every logical word and padding byte and reports zero other word differences
+and zero padding differences. The strict equality assertion remains failing.
+The reference test and all 227 typed/atomic refusal cases pass. Focused tensor
+Clippy and the wasm32 bridge type check pass. The dependency's authoring record
+contains the signed envelope, native export identities and numerical diagnostic.
+
+This is an unfinished implementation checkpoint. NaN word behavior must be
+resolved before numerical acceptance; no result has been normalized or skipped.
+The complete Engine gate, capsule and Wasm budgets, native proof frontier and
+production package closure remain to be refreshed. Root GET_ROWS execution is
+not wired to the decoder yet, and its 30 nonempty graph cases still fail. Root's
+10,603-line harness still exceeds its 10,549-line parent budget. No acceptance
+ceiling was changed and this checkpoint is not a full `just vv` pass.
