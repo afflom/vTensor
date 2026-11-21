@@ -238,3 +238,15 @@ name = "verdant_small_float"
 version = "=2.9.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x32da1e47 }]
+
+[[licenses.clarify]]
+name = "verdant_integer_f32"
+version = "=2.9.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x156cce0 }]
+
+[[licenses.clarify]]
+name = "verdant_packed_field"
+version = "=2.9.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x6bb35d53 }]

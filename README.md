@@ -192,14 +192,14 @@ retains the explicit VT-02 release-source refusal; it is not a published
 Verdant dependency or evidence of complete backend conformance.
 
 The current development checkpoint rebases the Tensor extension onto Verdant
-2.9.0 upstream `31c9319`. Its twenty-one certified SDK packages share one imported
+2.9.0 upstream `31c9319`. Its twenty-three certified SDK packages share one imported
 Prism bundle and one certificate replay per process. Native source lifting now
 captures the exact generated package sources and separated test fixtures; the
 new omission checks reject missing roots and package manifests. This remains a
 development dependency until the authoritative production source and VT-02 pass.
 
 Verdant's native packager now includes the certified production dependency
-closure (34 crates), with exact registry versions and preserved SDK provenance.
+closure (36 crates), with exact registry versions and preserved SDK provenance.
 Its registry check requires a successful real Cargo consumer build and rejects
 missing or unresolvable dependencies. Production publication and VT-02 remain
 part of completion.
@@ -208,3 +208,13 @@ The current Verdant extension adds certified packed-scale and F8 word primitives
 for the remaining row-gathering work. Its 244,492 imported GGML comparisons pass;
 all twenty previous numerical libraries remain byte-identical. Full packed-block
 decoding and GET_ROWS graph support are still under development.
+
+The next packed-block foundation adds certified packed-field extraction and
+bounded integer-to-F32 encoding, with 778,496 comparisons against the imported
+GGML CPU callbacks. All eleven CPU codebooks from the pinned upstream header
+are imported as 34,984 canonical bytes with exact table spans, hashes and the
+original license. Validation compares them with the actual compiled upstream
+arrays; source lifting and production packaging retain all three resources.
+The prior twenty-one SDK runtime libraries remain byte-identical. These
+primitive and data checks support the remaining full decoders and GET_ROWS
+implementation; they do not establish complete quantized graph support.

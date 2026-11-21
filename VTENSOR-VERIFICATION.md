@@ -2464,3 +2464,49 @@ This application evidence is separate from the new twenty-one-root Tensor
 certificate and is not a claim that all vTensor operations are complete.
 Only documentation and the saved proof-input receipt changed after the tested
 79d86c9 implementation, so its numerical and integration results are retained.
+
+## Packed fields and authoritative GGML codebooks
+
+The Verdant development extension now carries VTK-12 and VTK-13. Its
+23-root Tensor bundle is
+`7bed106bf36ece828868bb6a64e276d2e676cd1127939e4cae441d0bd7366d4b`,
+with independent SDK attestation
+`a1f97ba78c6a5009a237a731669e0d87dc514add7e9a70e6dc977b513c8c50ab`.
+The authoring MCP verification also succeeded, with attestation
+`09fe01512447485be085023287757b8f22d579e1026cc85816a1db34a379a037`.
+All 21 prior SDK runtime libraries retain their exact bytes.
+
+Certified field extraction and bounded integer-to-F32 encoding passed 778,496
+comparisons with the pinned GGML CPU callbacks, covering all byte values,
+packed lanes, high-bit planes, signed coefficients and ternary wrapping.
+Typed invalid-divisor, modulus, bounds and intermediate-overflow cases pass.
+Changing the coefficient encoding and the field factor made the numerical
+gates fail; the certified files were restored.
+
+The compiler-preprocessed upstream header enumerates all eleven CPU codebooks;
+the original compiled arrays export their values. The import contains 34,984
+canonical little-endian bytes, exact table spans and per-table hashes, and the
+original MIT license. Data SHA-256 is
+`4c7dda6f97acca70654a93868dda58faa3e299b9e3044b95afa9a55147c96c2a`.
+Both compiled and on-disk resources are compared with the authoritative export.
+Planted byte and offset defects were rejected. Validation writes only its target
+cache; importing source resources requires an explicit copy. Native lifting and
+production-package tests retain the binary, catalog and license.
+
+The complete Engine evidence, including each planted fault and restored result,
+is retained in the pinned extension's TENSOR-VERIFICATION.md. This is a decoding
+foundation. Complete packed-block execution and GET_ROWS graph support remain
+unfinished, and VT-02 continues to refuse the unpublished development dependency.
+
+The implementation checkpoint is Engine
+`1af128086268c5ce1890463d8cd9501795c311af`. Its complete workspace run passed
+76 Engine and 40 Tensor unit tests, formatting, all 93 model IDs, template/lock,
+experience, fidelity, Clippy and cargo-deny. The final application proof failed
+during a host disk-exhaustion incident; it remains pending a successful retry.
+No full Engine acceptance is claimed for this checkpoint. Disposable Cargo
+caches were cleared; source, oracle builds and certificate artifacts were kept.
+
+After importing that checkpoint, all 30 numerical/integration contract checks
+passed; VT-02 alone rejected the development dependency. All 62 tooling tests,
+formatting, model/frame/source audits, workspace Clippy and cargo-deny passed.
+The source ceiling remains unchanged at 10,558 non-Prism lines in 51 files.
