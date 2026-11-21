@@ -1363,3 +1363,70 @@ synchronization, workspace Clippy and dependency checks passed. Handwritten
 source is 10,574 lines in the existing 51 files. Full backend conformance and
 production dependency acceptance remain unfinished. Unchanged main-application
 proofs were not redundantly rebuilt for this component checkpoint.
+
+
+## VT-22: all four TRI variants through shared selection plans
+
+Registered VT-22 and its behavioral scenario before implementation. The initial
+`cargo test --locked -p vtensor-backend --test contract triangular_graphs_vt_22 -- --exact --nocapture`
+failed at the live device support query after a valid imported CPU computation.
+Prism now shares one selection mode between DIAG and TRI: it defines square
+shape/type admission, exact upper/lower and strict/inclusive predicates,
+strided addresses, retained source selection and positive-zero selection.
+The native adapter binds that mode's zero block; Verdant transfers every block.
+Closed examples cover strict/inclusive diagonal decisions and both directions,
+in addition to the retained batched DIAG address examples. Generated-code
+preservation evidence remains distinct from general semantic/bounds proofs.
+
+The first implementation exposed a fixture/model error: the upstream TRI
+constructor asserts contiguous square input, whereas the initial fixture tried
+rectangular input directly. The corrected fixture constructs a valid node on a
+contiguous descriptor before reattaching the actual strided input. The CPU
+reference uses the canonicalized input. The model now requires square TRI
+shape; a new nonsquare-descriptor case failed against the initial generated
+implementation at `!ggml_backend_dev_supports_op`. It checks admission before
+execution, restores original extents before reading output, and verifies the
+complete unchanged output. No invalid upstream computation is invoked or
+silently filtered. The corrected root was exported again after this finding.
+
+The remote MCP draft store returned `store.put failed: unwritable`, including
+for the corrected model. The exact pinned SDK checked four modules and exported
+result
+`c95380447d6d6a5f17726f0eafa99af44f8f467deb201b843e04753170635850`
+with attestation
+`99436efc8bd2d9f4f82ed600017736d4b6070415820e18c624a2a8d826144c56`.
+The emitted parameterized selection-mode variant was inspected before binding.
+No generated source was edited and no handwritten numerical kernel was added.
+
+All 1,920 scenarios pass: 1,536 imported CPU comparisons across all four enum
+variants, F32/F16/BF16, four layouts, two square widths, two dimension-two batch
+counts, two dimension-three batch counts, and normal/empty dimension patterns;
+plus 384 nonsquare refusals. Comparisons preserve retained raw encodings and
+check positive-zero masks and unchanged padding. Invalid variant words -1 and
+4, missing source, malformed extents and unsupported/mismatched type are also
+refused before writes. The final implemented run took 1.16 seconds using the
+source-bound reference cache.
+
+Two bounded planted defects were rejected. XORing the variant with two swapped
+upper/lower direction and failed at width three (actual byte 0, expected 148).
+XORing it with one changed diagonal inclusion and failed at width one (actual
+byte 0, expected 37). Both faults were restored before regression.
+
+A verifier defect was also corrected: checking the size of the collected ABI
+map could hide identical duplicate records. The gate now counts raw records;
+its existing per-key and case-count checks still establish the required set.
+Injecting a second identical registry-size record passed under the former map
+size check, then failed under the current check with 129 records instead of
+128. The fixture was restored after both experiments. This is one count check,
+not an additional validation pass replacing an unchanged count check.
+
+The two existing malformed matrix cases now share their assertion loop without
+changing inputs. Expected graph case counts have one named binding. Native
+operand binding and typed GGML abort handling were simplified without changing
+memory or error behavior. Workspace regression passed twenty-one contract
+tests and every other target; VT-02 alone retained its refusal of the unpublished
+Verdant development override. Contract execution took 9.69 seconds. Formatting,
+model/source audits, frame synchronization, workspace Clippy and dependency
+checks passed. Handwritten source is 10,572 lines in the existing 51 files.
+Full backend conformance and production dependency acceptance remain unfinished;
+unchanged main-application proofs were not redundantly rebuilt here.

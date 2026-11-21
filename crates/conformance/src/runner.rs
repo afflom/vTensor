@@ -238,20 +238,17 @@ fn tensor_span(tensor: &Tensor) -> Result<usize, BackendError> {
 }
 
 fn require<T>(result: Result<T, BackendError>) -> T {
-    match result {
-        Ok(value) => value,
-        Err(error) => {
-            let message = match error {
-                BackendError::Allocation => c"vTensor allocation refused",
-                BackendError::Overflow => c"vTensor size overflow",
-                BackendError::InvalidTensor => c"vTensor tensor not allocated",
-                BackendError::OutOfBounds => c"vTensor out of bounds",
-            };
-            // SAFETY: GGML's abort interface accepts static NUL-terminated
-            // strings. An invalid callback precondition follows its abort ABI.
-            unsafe { ggml_abort(c"vTensor".as_ptr(), 0, message.as_ptr()) }
-        }
-    }
+    result.unwrap_or_else(|error| {
+        let message = match error {
+            BackendError::Allocation => c"vTensor allocation refused",
+            BackendError::Overflow => c"vTensor size overflow",
+            BackendError::InvalidTensor => c"vTensor tensor not allocated",
+            BackendError::OutOfBounds => c"vTensor out of bounds",
+        };
+        // SAFETY: GGML's abort interface accepts static NUL-terminated
+        // strings. An invalid callback precondition follows its abort ABI.
+        unsafe { ggml_abort(c"vTensor".as_ptr(), 0, message.as_ptr()) }
+    })
 }
 
 // Bind Prism configuration values to GGML's typed query callbacks.
@@ -681,26 +678,23 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let source_data = |slot: usize| graph_tensor_data(unsafe { &*tensor.src[slot] });
     // Prism admits zero initialization only for blocks of at most four bytes.
     let zeros = [0_u8; 4];
-    let sources = [
-        source_data(0)?,
-        match mode {
-            CopyMode::C2(..) | CopyMode::C6(..) => source_data(1)?,
-            CopyMode::C3(_, _, _, _, false) | CopyMode::C7(..) | CopyMode::C8 => {
-                zeros.as_ptr().cast_mut()
-            }
-            _ => null_mut(),
-        },
-    ];
+    let left_data = source_data(0)?;
+    let sources = match mode {
+        CopyMode::C2(..) | CopyMode::C6(..) => [left_data, source_data(1)?],
+        CopyMode::C3(_, _, _, _, false) | CopyMode::C7(..) | CopyMode::C8(..) => {
+            [left_data, zeros.as_ptr().cast_mut()]
+        }
+        _ => [left_data, null_mut()],
+    };
     let destination_data = graph_tensor_data(tensor)?;
     let mut block = workspace(bytes, 0_u8)?;
     for index in 0..count {
         let request = GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone());
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
         if let GraphResponse::C2(from, to) | GraphResponse::C3(from, to) = response {
-            let (left_data, right_data) = if matches!(response, GraphResponse::C2(..)) {
-                (sources[0], sources[1])
-            } else {
-                (destination_data, sources[0])
+            let (left_data, right_data) = match response {
+                GraphResponse::C2(..) => (sources[0], sources[1]),
+                _ => (destination_data, sources[0]),
             };
             // SAFETY: the admitted plan bounds both reads and the write.
             // Reading operands first preserves aliases and accumulation order.

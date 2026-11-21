@@ -78,7 +78,7 @@ inductive{
     {name: rolled, fields: [Nat, Nat, Nat, Nat]},
     {name: updated, fields: [Nat, Nat, Bool]},
     {name: folded, fields: [Nat]},
-    {name: diagonal, fields: []}
+    {name: selected, fields: [Nat]}
   ]
 }
 
@@ -559,20 +559,28 @@ definition{
 }
 
 definition{
-  name: planDiagonal,
-  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  name: planSelection,
+  parameters: [kind : Nat, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (if ((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) then (if ((((((project left ty) =? (project output ty)) && ((project left n1) =? 1)) && ((project left n0) =? (project output n0))) && (((project left n0) =? (project output n1)) && ((project left n2) =? (project output n2)))) && ((project left n3) =? (project output n3))) then (match (TensorTypes::tensorTypeStorage (project left ty))
+  body: (if ((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) then (if ((((((project left ty) =? (project output ty)) && ((project left n0) =? (project output n0))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && (if (kind =? 4) then (((project left n1) =? 1) && ((project left n0) =? (project output n1))) else (((kind <? 4) && ((project left n0) =? (project left n1))) && ((project left n1) =? (project output n1))))) then (match (TensorTypes::tensorTypeStorage (project left ty))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
-    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.diagonal))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
+    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.selected kind))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
   executable: true
 }
 
 definition{
-  name: diagonalOffsets,
-  parameters: [index : Nat, source : IndexContext, destination : IndexContext],
+  name: keepElement,
+  parameters: [kind : Nat, column : Nat, row : Nat],
+  result: Bool,
+  body: (if (kind =? 0) then (row <=? column) else (if (kind =? 1) then (row <? column) else (if (kind =? 2) then (column <=? row) else (if (kind =? 3) then (column <? row) else (column =? row))))),
+  executable: true
+}
+
+definition{
+  name: selectionOffsets,
+  parameters: [kind : Nat, index : Nat, source : IndexContext, destination : IndexContext],
   result: GraphResponse,
-  body: (let column : Nat := (prim remainder index (project destination u0) 0 : Nat); (let row : Nat := (prim remainder (prim quotient index (project destination u0) 0 : Nat) (project destination n1) 0 : Nat); (let diagonal : Bool := (column =? row); (ctor GraphResponse.offsets (if diagonal then false else true) (if diagonal then (repeatedBlockOffset index source destination) else 0) (blockOffset index destination))))),
+  body: (let column : Nat := (prim remainder index (project destination u0) 0 : Nat); (let row : Nat := (prim remainder (prim quotient index (project destination u0) 0 : Nat) (project destination n1) 0 : Nat); (let kept : Bool := (keepElement kind column row); (ctor GraphResponse.offsets (if kept then false else true) (if kept then (repeatedBlockOffset index source destination) else 0) (blockOffset index destination))))),
   executable: true
 }
 
@@ -589,7 +597,7 @@ definition{
     | CopyMode.rolled p0 p1 p2 p3 => (paddedOffsets index source destination p0 p1 p2 p3 true)
     | CopyMode.updated initial base adding => (updatedOffsets index source destination initial base adding)
     | CopyMode.folded initial => (foldedOffsets index source destination initial)
-    | CopyMode.diagonal => (diagonalOffsets index source destination)),
+    | CopyMode.selected kind => (selectionOffsets kind index source destination)),
   executable: true
 }
 
@@ -600,7 +608,7 @@ definition{
   body: (match request
     | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planDiagonal left output) else (numericPlan operation variant left right output))))))))))
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (numericPlan operation variant left right output)))))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -721,14 +729,35 @@ theorem{
 theorem{
   name: diagonalBatchCopy,
   parameters: [],
-  statement: ((diagonalOffsets 7 (record IndexContext {u0 := 2, n1 := 1, n2 := 2, n3 := 1, s0 := 2, s1 := 4, s2 := 8, s3 := 16}) (record IndexContext {u0 := 2, n1 := 2, n2 := 2, n3 := 1, s0 := 2, s1 := 8, s2 := 24, s3 := 48})) = (ctor GraphResponse.offsets false 10 34)),
+  statement: ((selectionOffsets 4 7 (record IndexContext {u0 := 2, n1 := 1, n2 := 2, n3 := 1, s0 := 2, s1 := 4, s2 := 8, s3 := 16}) (record IndexContext {u0 := 2, n1 := 2, n2 := 2, n3 := 1, s0 := 2, s1 := 8, s2 := 24, s3 := 48})) = (ctor GraphResponse.offsets false 10 34)),
   proof: reflexivity{}
 }
 
 theorem{
   name: offDiagonalZero,
   parameters: [],
-  statement: ((diagonalOffsets 6 (record IndexContext {u0 := 2, n1 := 1, n2 := 2, n3 := 1, s0 := 2, s1 := 4, s2 := 8, s3 := 16}) (record IndexContext {u0 := 2, n1 := 2, n2 := 2, n3 := 1, s0 := 2, s1 := 8, s2 := 24, s3 := 48})) = (ctor GraphResponse.offsets true 0 32)),
+  statement: ((selectionOffsets 4 6 (record IndexContext {u0 := 2, n1 := 1, n2 := 2, n3 := 1, s0 := 2, s1 := 4, s2 := 8, s3 := 16}) (record IndexContext {u0 := 2, n1 := 2, n2 := 2, n3 := 1, s0 := 2, s1 := 8, s2 := 24, s3 := 48})) = (ctor GraphResponse.offsets true 0 32)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: strictVariantsExcludeDiagonal,
+  parameters: [],
+  statement: (((keepElement 1 2 2) || (keepElement 3 2 2)) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: inclusiveVariantsRetainDiagonal,
+  parameters: [],
+  statement: (((keepElement 0 2 2) && (keepElement 2 2 2)) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triangleDirections,
+  parameters: [],
+  statement: ((((keepElement 1 2 1) && (keepElement 3 1 2)) && (if ((keepElement 3 2 1) || (keepElement 1 1 2)) then false else true)) = true),
   proof: reflexivity{}
 }
 \end{semanticmodule}

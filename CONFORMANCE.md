@@ -137,6 +137,12 @@ model does not sanction.
 | `VT-06` | `build` | The Prism-generated four-dimensional byte-span function matches the pinned GGML storage oracle and rejects invalid blocks and arithmetic overflow |
 | `VT-07` | `build` | The Prism-generated type catalog matches every declared GGML storage type and refuses removed and out-of-range identifiers |
 
+## triangular-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-22` | `build` | Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle |
+
 ## update-graphs
 
 | ID | Level | Statement |
