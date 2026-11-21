@@ -10,7 +10,6 @@ use std::process::Command;
 
 use crate::Fail;
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 
 /// Where `just app` keeps a proof, and where bootstrap.yml caches it from.
 const KEPT: &str = ".prism-proof";
@@ -44,19 +43,7 @@ struct Observed {
     workspace: Vec<(String, String)>,
 }
 
-fn hex(bytes: &[u8]) -> String {
-    Sha256::digest(bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
-}
-
-fn is_id(value: &str) -> bool {
-    value.len() == 64
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-}
+use repo_model::artifact::sha256_hex as hex;
 
 fn text<'a>(value: &'a Value, pointer: &str) -> Result<&'a str, String> {
     value
@@ -110,7 +97,7 @@ fn acceptance_digest(acceptance: &Value) -> Result<String, String> {
 
 /// The whole read-time check. Pure, so each planted defect is a unit test.
 fn binds(kept: &Kept, observed: &Observed) -> Result<(), String> {
-    if !is_id(&kept.attestation) {
+    if !repo_model::artifact::is_lowercase_hex(&kept.attestation, 64) {
         return Err("the kept attestation ID is not a SHA-256".into());
     }
     // The ID resolves: prismpm defines the attestation ID as the SHA-256 of
@@ -328,7 +315,7 @@ pub fn reuse(root: &Path) -> Result<(), Fail> {
 /// just published, with the inputs it was proved from, then read it back
 /// through the same check a later run makes.
 pub fn keep(root: &Path, attestation: &str) -> Result<(), Fail> {
-    if !is_id(attestation) {
+    if !repo_model::artifact::is_lowercase_hex(attestation, 64) {
         return Err(format!("prismpm verify printed no attestation ID: {attestation:?}").into());
     }
     let published = root.join("app/.prism/verified").join(attestation);

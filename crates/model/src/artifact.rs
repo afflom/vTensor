@@ -30,15 +30,20 @@ pub(crate) fn is_inside(path: &str) -> bool {
             .all(|c| matches!(c, Component::Normal(_)))
 }
 
-/// Is `s` a SHA-256 written as 64 lowercase hex digits?
-pub(crate) fn is_sha256(s: &str) -> bool {
-    s.len() == 64 && s.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+/// Check an exact-width lowercase hexadecimal identifier.
+pub fn is_lowercase_hex(s: &str, digits: usize) -> bool {
+    s.len() == digits && s.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
 }
 
 /// Format the fixed-width SHA-256 digest with all leading zeros preserved.
 pub fn digest_hex(bytes: &sha2::digest::Output<Sha256>) -> String {
     let word = |part: &[u8]| u128::from_be_bytes(part.try_into().unwrap());
     format!("{:032x}{:032x}", word(&bytes[..16]), word(&bytes[16..]))
+}
+
+/// Hash bytes and format the complete lowercase SHA-256 value.
+pub fn sha256_hex(bytes: &[u8]) -> String {
+    digest_hex(&Sha256::digest(bytes))
 }
 
 fn io(path: &Path, e: std::io::Error) -> ModelError {

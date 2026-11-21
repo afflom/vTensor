@@ -141,6 +141,7 @@ model does not sanction.
 | ID | Level | Statement |
 | --- | --- | --- |
 | `VT-30` | `build` | Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs |
+| `VT-31` | `build` | Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals |
 
 ## scan-graphs
 

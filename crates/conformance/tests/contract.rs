@@ -12,13 +12,12 @@ use repo_model::repo_root as root;
 
 /// The body of the top-level declaration named `name`, up to its closing brace.
 fn declaration<'a>(model: &'a str, name: &str) -> &'a str {
-    let start = model
-        .find(&format!("\n  name: {name},\n"))
+    let (_, body) = model
+        .split_once(&format!("\n  name: {name},\n"))
         .unwrap_or_else(|| panic!("{name} is not declared"));
-    let end = model[start..]
-        .find("\n}\n")
-        .unwrap_or_else(|| panic!("{name} is not closed"));
-    &model[start..start + end]
+    body.split_once("\n}\n")
+        .unwrap_or_else(|| panic!("{name} is not closed"))
+        .0
 }
 
 /// `TC-01`: The checker answers conformant exactly when every universal policy file's observed digest equals its locked digest
@@ -315,6 +314,12 @@ fn row_graphs_vt_30() {
     native_backend_oracle::verify(&root(), "rows", 2264);
 }
 
+/// `VT-31`: Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals
+#[test]
+fn row_gradient_graphs_vt_31() {
+    native_backend_oracle::verify(&root(), "row-gradient", 3360);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -342,9 +347,9 @@ mod ggml_oracle {
 
     pub(super) fn file_digest(path: impl AsRef<Path>) -> String {
         let path = path.as_ref();
-        digest(&Sha256::digest(
-            std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display())),
-        ))
+        repo_model::artifact::sha256_hex(
+            &std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display())),
+        )
     }
 
     pub(super) use repo_model::artifact::digest_hex as digest;
@@ -1663,6 +1668,22 @@ static ggml_tensor * canonical_copy(ggml_context *ctx, ggml_tensor *input) {
     ggml_tensor *target=ggml_new_tensor_2d(ctx,input->type,block,count); target->nb[1]*=2; target->nb[2]=target->nb[1]*count; target->nb[3]=target->nb[2];
     return ggml_reshape_4d(ctx,ggml_cont(ctx,ggml_cpy(ctx,input,target)),input->ne[0],input->ne[1],input->ne[2],input->ne[3]);
 }
+static bool compare_result(ggml_tensor *result, ggml_tensor *reference, std::vector<unsigned char> expected, int nan_mode) {
+    std::vector<unsigned char> actual(ggml_nbytes(result)), raw(reference?ggml_nbytes(reference):0);
+    if(!actual.empty()) ggml_backend_tensor_get(result,actual.data(),0,actual.size());
+    if(!raw.empty()) ggml_backend_tensor_get(reference,raw.data(),0,raw.size());
+    const size_t bytes=ggml_type_size(result->type), block=ggml_blck_size(result->type);
+    auto nan=[&](const unsigned char *p) {float value;if(result->type==GGML_TYPE_F32)memcpy(&value,p,4);else {uint16_t word;memcpy(&word,p,2);value=result->type==GGML_TYPE_F16?ggml_fp16_to_fp32(word):ggml_bf16_to_fp32(ggml_bf16_t{word});}return std::isnan(value);};
+    for(size_t i=0;i<(reference?size_t(ggml_nelements(reference))/block:0);i++) {
+      size_t ordinal=i, at=0;
+      for(int axis=0;axis<4;axis++) {const size_t n=result->ne[axis]/(axis==0?block:1);at+=(ordinal%n)*result->nb[axis];ordinal/=n;}
+      if(nan_mode && (nan_mode!=2 || i%(result->ne[0]/block)) && nan(actual.data()+at) && nan(raw.data()+i*bytes)) memcpy(actual.data()+at,raw.data()+i*bytes,bytes);
+      memcpy(expected.data()+at,raw.data()+i*bytes,bytes);
+    }
+    if(actual==expected) return true;
+    const size_t at=std::mismatch(actual.begin(),actual.end(),expected.begin()).first-actual.begin();
+    fprintf(stderr,"oracle mismatch type=%d width=%lld rows=%lld byte=%zu actual=%u expected=%u\n",result->type,(long long)result->ne[0],(long long)result->ne[1],at,actual[at],expected[at]);return false;
+}
 int main(int argc, char **argv) {
     CHECK(argc == 4);
     Dl_info loaded = {};
@@ -1734,6 +1755,49 @@ int main(int argc, char **argv) {
         ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
       }
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases); return 0;
+    }
+    if (!strcmp(argv[3], "row-gradient")) {
+      const uint32_t edges[]={0,0x80000000,0x3f800000,0xbf800000,0x4b800000,0xcb800000,0x7f800000,0xff800000,0x7fc00001,0x7f800001,1,0x80000001,0x7f7fffff,0x00800000,0x3f000000,0xbf000000};
+      size_t cases=0;
+      for(auto type : {GGML_TYPE_F32,GGML_TYPE_F16}) for(int width : {0,1,3,17,65}) for(int rows : {0,1,3,9}) for(int output_rows : {0,1,4,7}) for(int layout=0;layout<3;layout++) for(int pattern=0;pattern<7;pattern++) {
+        ggml_init_params params={8*1024*1024,nullptr,true};ggml_context *ctx=ggml_init(params);CHECK(ctx);
+        ggml_tensor *input=ggml_new_tensor_2d(ctx,type,width,rows+(pattern==1?2:pattern==2?1:0)), *indices=ggml_new_tensor_1d(ctx,GGML_TYPE_I32,rows), *shape=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,width,output_rows);
+        const size_t bytes=ggml_type_size(type);
+        input->nb[0]=bytes*(layout==2?2:1);input->nb[1]=input->nb[0]*width+bytes*layout;input->nb[2]=input->nb[3]=input->nb[1]*input->ne[1];
+        indices->nb[0]=4*(layout+1);indices->nb[1]=indices->nb[2]=indices->nb[3]=indices->nb[0]*rows;
+        ggml_tensor *result=ggml_get_rows_back(ctx,input,indices,shape), *oracle=ggml_get_rows_back(ctx,input->nb[0]==bytes?input:canonical_copy(ctx,input),indices->nb[0]==4?indices:canonical_copy(ctx,indices),shape);
+        result->nb[0]=4*(layout+1);result->nb[1]=result->nb[0]*width+4*layout;result->nb[2]=result->nb[3]=result->nb[1]*output_rows;
+        ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer || (!ggml_nbytes(input)&&!ggml_nbytes(indices)&&!ggml_nbytes(result)));
+        std::vector<unsigned char> data(ggml_nbytes(input),0xA5), index_data(ggml_nbytes(indices),0xA5), initial(ggml_nbytes(result),0xA5);
+        for(int row=0;row<rows;row++) {
+          int32_t index=output_rows?pattern==0?0:pattern==2?output_rows-1-row%output_rows:pattern==3?(row%2?0:output_rows-1):pattern==4?output_rows-1:row%output_rows:0;
+          if(row==rows-1 && pattern>=5) index=pattern==5?-1:output_rows;
+          memcpy(index_data.data()+row*indices->nb[0],&index,4);
+          for(int column=0;column<width;column++) {
+            const uint32_t bits=edges[(row*width+column+pattern*7)%16];float value;memcpy(&value,&bits,4);const uint16_t half=ggml_fp32_to_fp16(value);
+            memcpy(data.data()+row*input->nb[1]+column*input->nb[0],type==GGML_TYPE_F32?(const void *)&bits:(const void *)&half,bytes);
+          }
+        }
+        if(!data.empty()) ggml_backend_tensor_set(input,data.data(),0,data.size());
+        if(!index_data.empty()) ggml_backend_tensor_set(indices,index_data.data(),0,index_data.size());
+        if(!initial.empty()) ggml_backend_tensor_set(result,initial.data(),0,initial.size());
+        ggml_cgraph *graph=ggml_new_graph(ctx);ggml_build_forward_expand(graph,result);
+        if(type==GGML_TYPE_F32 && width==1 && rows==1 && output_rows==1 && layout==0 && pattern==0) {
+          CHECK(refuses_change(backend,dev,graph,result,indices->type,GGML_TYPE_I64));
+          CHECK(refuses_change(backend,dev,graph,result,input->ne[1],int64_t(0)) && refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_F16) && refuses_change(backend,dev,graph,result,result->data,input->data));
+        }
+        const bool invalid=width && output_rows && rows && pattern>=5;
+        if(!invalid) {
+          ggml_cgraph *reference_graph=ggml_new_graph(ctx);ggml_build_forward_expand(reference_graph,oracle);
+          CHECK(ggml_backend_graph_compute(reference,reference_graph)==GGML_STATUS_SUCCESS);
+        }
+        if(!rows) {input->data=nullptr;input->buffer=nullptr;}
+        CHECK(ggml_backend_dev_supports_op(dev,result));
+        CHECK(ggml_backend_graph_compute(backend,graph)==(invalid?GGML_STATUS_FAILED:GGML_STATUS_SUCCESS));
+        CHECK(compare_result(result,invalid?nullptr:oracle,initial,invalid?0:1));
+        ggml_backend_buffer_free(buffer);ggml_free(ctx);cases++;
+      }
+      ggml_backend_free(reference);ggml_backend_free(backend);printf("RESULT cases %zu\n",cases);return 0;
     }
     const bool repeating=!strcmp(argv[3], "repeat"), concatenating=!strcmp(argv[3], "concat");
     const bool spatial=!strcmp(argv[3], "spatial"), folding=!strcmp(argv[3], "fold"), diagonal=!strcmp(argv[3], "diagonal"), triangular=!strcmp(argv[3], "triangular"), filling=!strcmp(argv[3], "fill"), casting=!strcmp(argv[3], "cast"), windowing=!strcmp(argv[3], "window"), transforming=!strcmp(argv[3], "transform"), unarying=!strcmp(argv[3], "unary"), scanning=!strcmp(argv[3], "scan"), reducing=!strcmp(argv[3], "reduction"), selecting=!strcmp(argv[3], "rows");
@@ -1838,7 +1902,7 @@ int main(int argc, char **argv) {
         ggml_tensor *expected_tensor=selecting?(operation?ggml_count_equal(ctx,(ggml_is_matrix(input) || pattern==9)?input:ggml_cont_2d(ctx,input,input->ne[0],ggml_nrows(input)),(ggml_is_matrix(input) || pattern==9)?right:ggml_cont_2d(ctx,right,right->ne[0],ggml_nrows(right))):ggml_argmax(ctx,input->nb[0]==sizeof(float)?input:canonical_copy(ctx,input))):wordwise?word_operation(reducing && !operation && type==GGML_TYPE_F32?input:canonical_copy(ctx,input),false):windowing?(operation?ggml_win_unpart(ctx,canonical_copy(ctx,input),image_width,image_height,window_size):ggml_win_part(ctx,canonical_copy(ctx,input),window_size)):casting?ggml_cast(ctx,canonical_copy(ctx,input),output_type):filling?ggml_fill(ctx,canonical_copy(ctx,input),constant):triangular?ggml_tri(ctx,canonical_copy(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,canonical_copy(ctx,input)):folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
         if(repeating || concatenating || spatial || folding || diagonal || triangular || (filling && !operation) || (casting && operation<3) || windowing || (wordwise && !inplace)) {result->nb[1]+=output_bytes;result->nb[2]=result->nb[1]*result->ne[1]+output_bytes;result->nb[3]=result->nb[2]*result->ne[2]+output_bytes;}
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer || (!ggml_nbytes(input)&&(!right||!ggml_nbytes(right))&&!ggml_nbytes(result)));
-        std::vector<unsigned char> output(ggml_nbytes(result),0xA5), expected(ggml_nbytes(expected_tensor));
+        std::vector<unsigned char> output(ggml_nbytes(result),0xA5);
         for(ggml_tensor *operand : {input,right}) if(operand) {
           std::vector<unsigned char> initial(ggml_nbytes(operand));
           if(casting || wordwise) for(size_t i=0;i<((reducing || selecting)?size_t(ggml_nelements(operand)):initial.size()/bytes);i++) {
@@ -1874,7 +1938,6 @@ int main(int argc, char **argv) {
         }
         ggml_cgraph *oracle_graph=ggml_new_graph(ctx); ggml_build_forward_expand(oracle_graph,expected_tensor);
         CHECK(ggml_backend_graph_compute(reference,oracle_graph)==GGML_STATUS_SUCCESS);
-        if(!expected.empty()) ggml_backend_tensor_get(expected_tensor,expected.data(),0,expected.size());
         if((kind==0 || unarying || selecting) && pattern==0 && units==(spatial && operation?2:repeating?3:1) && rows==(spatial && operation?2:1) && batches==(spatial && operation==2?2:1) && layout==0) {
           CHECK(refuses_change(backend,dev,graph,result,result->ne[0],result->ne[0]+(repeating?1:block)));
           CHECK(refuses_change(backend,dev,graph,result,result->src[concatenating || (!spatial && !triangular && !casting && !wordwise && operation==2)?1:0],nullptr));
@@ -1902,21 +1965,7 @@ int main(int argc, char **argv) {
         if(filling && !operation && layout==3) {input->data=nullptr;input->buffer=nullptr;}
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
         input->data=saved_data; input->buffer=saved_buffer;
-        std::vector<unsigned char> actual(output.size()); if(!actual.empty()) ggml_backend_tensor_get(result,actual.data(),0,actual.size());
-        size_t index=0;
-        for(int64_t i3=0;i3<result->ne[3];i3++) for(int64_t i2=0;i2<result->ne[2];i2++)
-        for(int64_t i1=0;i1<result->ne[1];i1++) for(int64_t i0=0;i0<result->ne[0]/block;i0++,index++) {
-          const size_t offset=i0*result->nb[0]+i1*result->nb[1]+i2*result->nb[2]+i3*result->nb[3];
-          if(wordwise && !selecting && !(scanning && i0==0)) {
-            auto nan = [&](const unsigned char *p) {float value;if(output_type==GGML_TYPE_F32)memcpy(&value,p,4);else {uint16_t word;memcpy(&word,p,2);value=output_type==GGML_TYPE_F16?ggml_fp16_to_fp32(word):ggml_bf16_to_fp32(ggml_bf16_t{word});}return std::isnan(value);};
-            if(nan(actual.data()+offset) && nan(expected.data()+index*output_bytes)) memcpy(actual.data()+offset,expected.data()+index*output_bytes,output_bytes);
-          }
-          memcpy(output.data()+offset,expected.data()+index*output_bytes,output_bytes);
-        }
-        if(actual!=output) {
-          const size_t at=std::mismatch(actual.begin(),actual.end(),output.begin()).first-actual.begin();
-          fprintf(stderr,"copy mismatch type=%d op=%d layout=%d pattern=%d shape=%lld,%lld,%lld,%lld byte=%zu actual=%u expected=%u\n",kind,operation,layout,pattern,(long long)input->ne[0],(long long)input->ne[1],(long long)input->ne[2],(long long)input->ne[3],at,actual[at],output[at]); return 2;
-        }
+        CHECK(compare_result(result,expected_tensor,output,wordwise && !selecting?(scanning?2:1):0));
         ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
       }
       }
@@ -1990,17 +2039,9 @@ int main(int argc, char **argv) {
         ggml_cgraph *reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,reference_result);
         CHECK(ggml_backend_dev_supports_op(ggml_backend_get_device(reference),reference_result));
         CHECK(ggml_backend_graph_compute(reference,reference_graph)==GGML_STATUS_SUCCESS);
-        std::vector<uint32_t> expected(ggml_nelements(result)),actual(expected.size());
-        ggml_backend_tensor_get(reference_result,expected.data(),0,ggml_nbytes(reference_result));
         ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
         CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-        ggml_backend_tensor_get(result,actual.data(),0,ggml_nbytes(result));
-        for(size_t i=0;i<expected.size();i++) {
-          float e,a; memcpy(&e,&expected[i],4); memcpy(&a,&actual[i],4);
-          if (!(std::isnan(e)&&std::isnan(a)) && expected[i]!=actual[i]) {
-            fprintf(stderr,"elementwise mismatch kind=%d width=%d padded=%d repeat=%d element=%zu expected=%08x actual=%08x\n",kind,width,padded,broadcast,i,expected[i],actual[i]); return 2;
-          }
-        }
+        CHECK(compare_result(result,reference_result,std::vector<unsigned char>(ggml_nbytes(result),0xA5),1));
         if (width==1 && padded==0 && broadcast==0 && (kind==0 || kind==6)) {
           if (kind==0) {
             CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));

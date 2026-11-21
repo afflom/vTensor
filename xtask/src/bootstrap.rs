@@ -3,7 +3,6 @@
 use std::path::{Path, PathBuf};
 
 use crate::Fail;
-use sha2::{Digest, Sha256};
 
 const UNIVERSAL_POLICY_PATHS: [&str; 7] = [
     ".devcontainer/devcontainer.json",
@@ -37,11 +36,7 @@ fn immutable_image(value: &str) -> bool {
                     byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"./_-".contains(&byte)
                 })
         });
-        valid_registry
-            && digest.len() == 64
-            && digest
-                .bytes()
-                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+        valid_registry && repo_model::artifact::is_lowercase_hex(digest, 64)
     })
 }
 
@@ -52,12 +47,7 @@ fn sdk_image(lock: &str) -> Option<&str> {
 }
 
 fn sha256(bytes: &[u8]) -> String {
-    let digest = Sha256::digest(bytes);
-    let hex = digest
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    format!("sha256:{hex}")
+    format!("sha256:{}", repo_model::artifact::sha256_hex(bytes))
 }
 
 fn content_matches(bytes: &[u8], expected: &str) -> bool {
@@ -469,11 +459,7 @@ fn action_reference_is_pinned(line: &str) -> bool {
     let Some((name, revision)) = reference.rsplit_once('@') else {
         return false;
     };
-    !name.is_empty()
-        && revision.len() == 40
-        && revision
-            .bytes()
-            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    !name.is_empty() && repo_model::artifact::is_lowercase_hex(revision, 40)
 }
 
 fn pipeline_lifecycle_is_complete(source: &str) -> bool {
@@ -631,12 +617,7 @@ pub fn audit(root: &Path) -> Result<(), Fail> {
         || template_lock["template_repository"] != "https://github.com/UOR-Foundation/template"
         || !template_lock["template_revision"]
             .as_str()
-            .is_some_and(|revision| {
-                revision.len() == 40
-                    && revision
-                        .bytes()
-                        .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-            })
+            .is_some_and(|revision| repo_model::artifact::is_lowercase_hex(revision, 40))
     {
         return Err("template.lock identity is stale or mutable".into());
     }

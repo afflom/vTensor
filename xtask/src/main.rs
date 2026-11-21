@@ -126,16 +126,9 @@ mod tests {
     //! the template's `authorities.toml` is empty, and a row in it would be
     //! copied into every repository cut from the template.
 
-    use sha2::{Digest, Sha256};
+    use repo_model::artifact::sha256_hex as hex;
 
     use super::*;
-
-    fn hex(bytes: &[u8]) -> String {
-        Sha256::digest(bytes)
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect()
-    }
 
     /// The checksum a directory artifact records: SHA-256 over one
     /// `<sha256 of file>  <path>` line per file, in byte order of the paths.

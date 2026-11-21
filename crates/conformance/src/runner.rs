@@ -727,9 +727,11 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         _ => source_data(0)?,
     };
     let right_data = match mode {
-        CopyMode::C2(..) | CopyMode::C6(..) | CopyMode::C10(_, false, _) | CopyMode::C18(..) => {
-            source_data(1)?
-        }
+        CopyMode::C2(..)
+        | CopyMode::C6(..)
+        | CopyMode::C10(_, false, _)
+        | CopyMode::C18(..)
+        | CopyMode::C19(..) => source_data(1)?,
         _ => literal.as_ptr().cast_mut(),
     };
     let destination_data = graph_tensor_data(tensor)?;
@@ -744,27 +746,22 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     for index in 0..count {
         let request = match mode {
             CopyMode::C17 => GraphRequest::C2(index, source.clone(), destination.clone(), words[2]),
+            CopyMode::C19(_, ref indices) => GraphRequest::C3(
+                index,
+                source.clone(),
+                destination.clone(),
+                indices.clone(),
+                words[2],
+            ),
             _ => GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone()),
         };
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
-        let response = match response {
-            GraphResponse::C2(kind, ls, lf, rs, rf, to) => {
-                let banks = [0, 4, 3, 5];
-                GraphResponse::C4(
-                    kind + 8,
-                    banks[ls as usize],
-                    lf,
-                    banks[rs as usize],
-                    rf,
-                    3,
-                    to,
-                )
-            }
-            other => other,
-        };
         if let GraphResponse::C4(..) = response {
             let storage = match mode {
                 CopyMode::C16(_, storage) => storage,
+                CopyMode::C19(storage, _) if matches!(response, GraphResponse::C4(6, ..)) => {
+                    storage
+                }
                 _ => 0,
             };
             execute_word(response, storage, &pointers, &mut words)?;

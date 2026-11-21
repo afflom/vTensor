@@ -2340,3 +2340,73 @@ The preserved independent LexLean attestation has ID
 `3779a2f8f076e8414ba8228b77743b97ecc8d6e86b628f0de0ffc70e52d6cd33`;
 both it and the application acceptance bind source
 `102bd4890f71f4e14829a64b9789d52de23f298dc0c233ccb9d9f0afdd46e8bc`.
+
+## Indexed row-gradient accumulation (VT-31)
+
+Prism defines `GET_ROWS_BACK` admission, the index-validation phase, logical
+zero initialization and ordered F32 accumulation. F16 inputs widen through
+Verdant's existing certified storage conversion; F32 inputs retain their bits
+before the same certified addition. I32 indices are checked as signed values
+and bounded by the destination row count before any output word is written.
+The primitive bindings add no handwritten tensor arithmetic.
+
+The imported constructor/kernel permits an index vector shorter than the
+source matrix. The revised plan traverses that prefix rather than assuming
+all gradient rows participate. An empty index vector selects a constant-zero
+plan and reads no gradient buffer, including when unused gradient rows exist.
+The corpus removes that buffer before vTensor execution to test this property.
+Nonempty accumulation retains the imported CPU loops' signed-int extent bounds;
+checked planning overflow and invalid descriptors remain typed refusals.
+
+The 3360 graphs cover both input types, widths 0/1/3/17/65, index counts 0/1/3/9,
+destination row counts 0/1/4/7, three independent stride layouts and seven index
+patterns. Prefix patterns leave poisoned unused gradient rows. Cases include
+cancellation, signed zeros, subnormals, infinities and NaNs. Every finite output
+bit and every padding byte is compared; arithmetic NaNs retain the established
+classification comparison policy. Direct CPU kernels are used when their
+word strides are admissible; otherwise the imported copy/CONT path normalizes
+the logical inputs for the authoritative CPU kernel. No oracle source is edited.
+
+There are 432 nonempty bad-index graphs (negative or upper bound, placed last)
+that must fail with the complete output allocation unchanged. Focused descriptor
+probes reject I64 indices, insufficient gradient rows, non-F32 output and output
+aliasing. An injected one-bit error after Verdant addition failed with
+`oracle mismatch type=0 width=1 rows=1 byte=0 actual=1 expected=0`; the original
+source bytes were restored. The initial implementation check failed because
+GET_ROWS_BACK was unsupported; the prefix extension also failed before its
+model correction. All 3360 restored graphs pass, including unused-buffer cases.
+
+Final pinned-SDK production result:
+`4837c1653cba871693654a0b016bb94fbabc19f2ebe5006bf444f15d9574243b`.
+Attestation:
+`9fffe3cb9315e90b15dc275f942d862178a93bc1f43270aabf1675d791684e8c`.
+Source:
+`bc8ac1ece94e34a4092cde08b39aca71139a711b2d713d2fb8b71d18c9aae8e1`.
+Semantic:
+`400a160ca682ea0dcf4fdef139b0f21158e0d5632ff5f10c59cfee46d9234bd5`.
+The kernel lock and generated outputs are copied from the SDK export unchanged.
+The generated-source license clarification retains its expression and binds
+the new pointwise file fingerprint `0xa82506e1`.
+
+Existing arithmetic/update/fold/scan word-bank selection now resides in Prism;
+the host's duplicate bank remap is removed. The oracle comparison helper shares
+complete allocation checks while preserving scan-first-word NaN payload checks
+and exact integer comparisons. Shared fixed-width hexadecimal validation and
+SHA-256 formatting replace duplicate host implementations without relaxing
+syntax, checksums, source freshness, artifact binding or CI policy.
+
+Formatting, model validation, all-target/all-feature Clippy and cargo-deny pass.
+All 62 tooling tests pass, including immutable-pin and proof-cache defect tests.
+The final workspace contract run reports 30 passed and one failure: VT-02 still
+rejects the declared development dependency. Handwritten implementation remains
+10558 lines across 51 files, equal to the unchanged shrink-only ceiling.
+The numerical primitive proofs/corpora are unchanged and were not reproved.
+Complete imported coverage and production source acceptance remain unfinished.
+
+The final prefix-aware authoring draft also passed independent MCP verification:
+attestation `d69f672c5e605cd7e41a86647e27ebecd6a9de7706297c1191fbd824bfd58bba`,
+source `ca5f618aeb082b9fe133915944867b40ff50c5740dd50863cbc946e6005f0c58`,
+semantic `2fcddc7df8d52f681b24fee739ef75fcb66e55c545ea3413b950c005a568e953`.
+Those identifiers belong to the authoring profile; the deployed code remains
+bound to the pinned-SDK production identifiers above. The unchanged repeated
+right-offset library was retained byte for byte across the export.

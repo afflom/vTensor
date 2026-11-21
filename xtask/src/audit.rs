@@ -818,9 +818,7 @@ pub mod prism {
         }
     }
 
-    fn hex(bytes: &[u8]) -> String {
-        bytes.iter().map(|b| format!("{b:02x}")).collect()
-    }
+    use repo_model::artifact::digest_hex as hex;
 
     /// The ratchet itself: what `current` adds over `ceiling`, or nothing.
     fn refusals(ceiling: &Measure, current: &Measure) -> Vec<String> {

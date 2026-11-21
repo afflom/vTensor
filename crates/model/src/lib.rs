@@ -148,7 +148,7 @@ impl Model {
                         a.id
                     )));
                 }
-                if !artifact::is_sha256(&a.checksum) {
+                if !artifact::is_lowercase_hex(&a.checksum, 64) {
                     return Err(bad(format!(
                         "{}: checksum `{}` of artifact `{artifact}` must be 64 lowercase hex \
                          digits (a SHA-256)",
