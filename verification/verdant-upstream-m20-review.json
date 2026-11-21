@@ -1,0 +1,32 @@
+{
+  "spec": "vtensor/verdant-upstream-review/1",
+  "status": "reference-reviewed-not-integrated-or-validated",
+  "repository": "https://github.com/afflom/verdant-engine",
+  "commit": "34c827db624f951609e49f57bbf324671876eeff",
+  "milestone": "M20",
+  "version": "2.12.0",
+  "prior_review": "294c92a3cf0c829a602b2a11be1d59e1122a9358",
+  "frontier_observation": {
+    "functions": 1711,
+    "lifted": 387,
+    "residue": 1167,
+    "foreign": 74,
+    "effect": 83,
+    "evidence": "frontier.toml at the reviewed commit; not independently replayed here"
+  },
+  "checked_in_artifacts": [
+    {
+      "path": "site/verdant-uorc.wasm",
+      "bytes": 3802305,
+      "git_blob": "2c734d5690896f7a134dd105d285888937882cf7"
+    },
+    {
+      "path": "site/verdant-wasm.wasm",
+      "bytes": 154334,
+      "git_blob": "ae9e97d48b0daf4657586b562e0975c0e5928f46"
+    }
+  ],
+  "implication": "The reviewed checked-in WASM files are smaller than the previously recorded local ceilings of 3915776 and 155648 bytes. No rebuilt extension, capsule closure or production dependency claim follows from those sizes.",
+  "tensor_api": "The upstream linear module still lacks the local vTensor scalar/storage-block extensions; migration and their production closure remain required.",
+  "local_effect": "Fetched main only into the isolated migration repository; local checkout and the other active Verdant worktree were not changed."
+}

@@ -3039,3 +3039,16 @@ CPU cases while capturing the complete actual descriptor/input-word transcript.
 per-case digests, including all five refusal probes at cases 0 and 108.
 The baseline is local corpus-preservation evidence, not numerical authority.
 Registration, initial failure and capture: `/tmp/vtensor-arithmetic-fixture-before.log`.
+
+## Verdant upstream M20 reference review
+
+The isolated migration repository fetched upstream main at
+`34c827db624f951609e49f57bbf324671876eeff` (M20, v2.12.0). Its checked-in core
+and UORC WASM blobs are 154,334 and 3,802,305 bytes respectively, below the
+previously recorded local ceilings. This is an observation of upstream Git
+blobs, not a rebuild or validation of the local tensor extension. The upstream
+frontier reports 387 lifted functions and 1,167 residue functions. The upstream
+tensor crate still lacks the local scalar evaluation and storage-block APIs.
+No local checkout, production dependency pin, bundle or acceptance policy was
+changed by this review. Exact references and limitations are recorded in
+`verification/verdant-upstream-m20-review.json`.
