@@ -105,22 +105,17 @@ fn buffer_allocation_vt_10() {
     let mut cases = Vec::new();
     use std::fmt::Write;
     for alignment in [1_u64, 2, 4, 8, 16, 64, 256, 1024] {
-        for offset in [0, alignment, alignment * 3] {
-            for capacity in [0, 1, alignment - 1, alignment, alignment + 1, alignment * 4] {
-                for size in [
-                    0,
-                    1,
-                    alignment - 1,
-                    alignment,
-                    alignment + 1,
-                    alignment * 2 + 1,
-                ] {
-                    writeln!(input, "{capacity} {offset} {size} {alignment}").unwrap();
-                    cases.push((capacity, offset, size, alignment));
-                }
-            }
+        let capacities = [0, 1, alignment - 1, alignment, alignment + 1, alignment * 4];
+        let mut sizes = capacities;
+        *sizes.last_mut().unwrap() = alignment * 2 + 1;
+        for [offset, capacity, size] in
+            ggml_oracle::product([&[0, alignment, alignment * 3], &capacities, &sizes])
+        {
+            writeln!(input, "{capacity} {offset} {size} {alignment}").unwrap();
+            cases.push((capacity, offset, size, alignment));
         }
     }
+    assert_eq!(cases.len(), 864);
     let reference = ggml_oracle::placements(&root(), &input);
     assert_eq!(reference.len(), cases.len());
     fn outcome(decision: vtensor_allocation::Adt0) -> [u64; 4] {
@@ -326,6 +321,19 @@ mod ggml_oracle {
     use std::io::Write;
     use std::path::{Path, PathBuf};
     use std::process::{Command, Stdio};
+
+    pub(super) fn product<const N: usize>(
+        domains: [&[u64]; N],
+    ) -> impl Iterator<Item = [u64; N]> + '_ {
+        (0..domains.iter().map(|d| d.len()).product()).map(move |mut ordinal| {
+            let mut row = [0; N];
+            for axis in (0..N).rev() {
+                row[axis] = domains[axis][ordinal % domains[axis].len()];
+                ordinal /= domains[axis].len();
+            }
+            row
+        })
+    }
 
     pub(super) fn read_json(path: impl AsRef<Path>) -> serde_json::Value {
         let path = path.as_ref();
@@ -1216,22 +1224,16 @@ mod tensor_layout {
                 block > 0 && bytes > 0,
                 "invalid upstream descriptor for type {kind}"
             );
-            for multiples in [1, 2, 4] {
-                for rows in [1, 3] {
-                    for planes in [1, 2] {
-                        for batches in [1, 2] {
-                            for padding in [0, 7] {
-                                let ne = [block * multiples, rows, planes, batches];
-                                let nb0 = bytes + padding;
-                                let nb1 = multiples * nb0 + 11;
-                                let nb2 = rows * nb1 + 13;
-                                let nb = [nb0, nb1, nb2, planes * nb2 + 17];
-                                request(&mut inputs, kind, ne, nb);
-                                layouts.push(layout(ne, nb, block, bytes));
-                            }
-                        }
-                    }
-                }
+            for [multiples, rows, planes, batches, padding] in
+                ggml_oracle::product([&[1, 2, 4], &[1, 3], &[1, 2], &[1, 2], &[0, 7]])
+            {
+                let ne = [block * multiples, rows, planes, batches];
+                let nb0 = bytes + padding;
+                let nb1 = multiples * nb0 + 11;
+                let nb2 = rows * nb1 + 13;
+                let nb = [nb0, nb1, nb2, planes * nb2 + 17];
+                request(&mut inputs, kind, ne, nb);
+                layouts.push(layout(ne, nb, block, bytes));
             }
             for axis in 0..4 {
                 let mut ne = [block, 2, 2, 2];
@@ -1380,26 +1382,16 @@ fn buffer_transfer_vt_09() {
     let mut input = String::new();
     let mut cases = Vec::new();
     use std::fmt::Write;
-    for mode in 0..4 {
-        for has_buffer in [false, true] {
-            for has_data in [false, true] {
-                for capacity in [0_u64, 1, 8, 64] {
-                    for offset in [0, 1, capacity, capacity + 1] {
-                        for size in [0, 1, capacity, capacity + 1] {
-                            writeln!(
-                                input,
-                                "{mode} {} {} {capacity} {offset} {size}",
-                                u8::from(has_buffer),
-                                u8::from(has_data)
-                            )
-                            .unwrap();
-                            cases.push((has_buffer, has_data, capacity, offset, size));
-                        }
-                    }
-                }
-            }
+    for [mode, buffer, data, capacity] in
+        ggml_oracle::product([&[0, 1, 2, 3], &[0, 1], &[0, 1], &[0, 1, 8, 64]])
+    {
+        let bounds = [0, 1, capacity, capacity + 1];
+        for [offset, size] in ggml_oracle::product([&bounds, &bounds]) {
+            writeln!(input, "{mode} {buffer} {data} {capacity} {offset} {size}").unwrap();
+            cases.push((buffer != 0, data != 0, capacity, offset, size));
         }
     }
+    assert_eq!(cases.len(), 1024);
     let reference = ggml_oracle::transfers(&root, &input);
     assert_eq!(reference.len(), cases.len());
     fn outcome(decision: vtensor_transfer::Adt0) -> u64 {

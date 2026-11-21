@@ -2527,3 +2527,15 @@ An additional 120 baseline ABI comparisons passed for both camera modes,
 wrapped nonzero yaw and extreme signed camera intents. The unchanged vTensor
 source still requires complete decoders, GET_ROWS and the remaining imported
 operations, plus resolution of the production dependency and VT-02.
+
+## Row-gather preparation: shared fixture enumeration
+
+The allocation, transfer and byte-span fixtures now share a lazy Cartesian
+iterator. Their parameter domains and nesting order are preserved; explicit
+counts retain all 864 placement and 1,024 transfer cases. The byte-span oracle
+comparison retains all 36 types and all original nonempty and empty layouts.
+The three affected imported-oracle checks pass, along with tooling tests,
+workspace Clippy, model/frame checks and the source audit. No implementation,
+model or certified runtime library changed. Handwritten source decreases from
+10,558 to 10,549 lines in the same 51 files. This supports the remaining gather
+work without increasing a ceiling or removing validation cases.
