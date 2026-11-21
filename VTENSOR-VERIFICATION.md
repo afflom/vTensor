@@ -2097,3 +2097,36 @@ Repeated validation error construction, document writes and setup bindings
 were consolidated without changing their guards or generated documentation.
 Full imported operation/type/lifecycle coverage and production dependency
 acceptance remain unfinished.
+
+## Row comparison foundation: Verdant VTK-08
+
+The development dependency advances to 61ccbe98d084643c53ca2fb020e5ae51e82a32a9.
+Its single new Prism root classifies F32 less/equal/greater and which operand
+is NaN, compares bounded U32 words, adds U64 words with typed overflow, and
+preserves word identity. The result is
+7f0a468d8de62f47d9693d14755752546f976dffaf7e1e67f9453b2cb38cc256,
+attestation 469944e7bf3b3d1bd78e3fce3175e5b9716469b840d84868e854c0e8c5201466.
+The exact generated package fingerprint is 3e01166f. The model was authored
+and checked through LexLean MCP, then proved/exported once in the pinned SDK.
+
+All 573,440 comparison cases matched the retained authoritative SoftFloat
+f32_eq/f32_lt predicates. Both signs, every exponent, fraction boundaries,
+zeros, infinities, both NaN classes and seeded words are represented. Width,
+unknown-operation and integer overflow refusal tests and certificate freshness
+and replay passed. Reversing the imported less-than operands failed while
+all SoftFloat library/object hashes and mtimes remained unchanged. A false
+signed-zero theorem failed Lean with LLV7002; exact restoration reproduced
+kept identities and replayed bindings without repeating proof phases. The
+unchanged arithmetic corpus was not repeated; the 152-case wide smoke passed.
+
+Engine formatting, scoped Clippy and cargo-deny passed. The new surface
+projection retains the previous counts and ceilings: 205 lifted, 1192 residue,
+73 foreign and 78 effects. Full Engine acceptance still refuses stale self-host
+manifest records and the retained oversized UORC build; both dirty Wasm files
+are excluded. The dependency source and its bundle are hash-bound and prepared
+without resetting local changes. Row graph acceptance is recorded separately.
+
+Upstream main was inspected at e3abe5bbadaa67ac1cffa10fd951396bfd0e2b2d,
+Verdant v2.9.0, whose native build automation and lifting work inform the
+remaining Engine acceptance/migration work. This bundle retains its declared
+base and does not claim upstream migration or production dependency acceptance.

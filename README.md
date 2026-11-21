@@ -16,7 +16,7 @@ reproduced by `just verdant-prepare` from the hash-bound Git bundle in this
 repository. The checkout lives at `.verdant-engine`. This override is explicit in
 `Cargo.toml`; the unchanged exact-source guard rejects it as release evidence.
 The declared upstream base is Verdant v2.4.0 commit `87c3256326b9`; the
-reproducible Verdant extension checkpoint is `940ae5b8fe40`.
+reproducible Verdant extension checkpoint is `61ccbe98d084`.
 
 The extension now includes Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for the reduction work. All 1,213,940
