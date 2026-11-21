@@ -2449,3 +2449,18 @@ VT-02 alone rejected the explicit development source, as intended. All 62
 xtask tests, formatting, model/frame/source audits, workspace Clippy and
 dependency checks passed. The non-Prism source total remains exactly 10558
 lines in 51 files, equal to the unchanged ceiling.
+
+The subsequent full Engine `just vv` acceptance passed. Extension commit
+`927d2863c320c9d88c5ff9b6929eeb1790e57e79` records the final result and exact
+current proof inputs. The application verification manifest remains
+`a83ef1d53cae059f70e59ab7978050c69fef04f1f7436eee24cdccea422843bc`,
+with independent attestation
+`3779a2f8f076e8414ba8228b77743b97ecc8d6e86b628f0de0ffc70e52d6cd33`.
+The unchanged main application has source
+`102bd4890f71f4e14829a64b9789d52de23f298dc0c233ccb9d9f0afdd46e8bc`
+and semantics
+`a6a9da96e587973aa53f4052b5687f2339e6c206f0fdf245d6d3d2af004d7451`.
+This application evidence is separate from the new twenty-one-root Tensor
+certificate and is not a claim that all vTensor operations are complete.
+Only documentation and the saved proof-input receipt changed after the tested
+79d86c9 implementation, so its numerical and integration results are retained.
