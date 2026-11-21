@@ -2510,3 +2510,20 @@ After importing that checkpoint, all 30 numerical/integration contract checks
 passed; VT-02 alone rejected the development dependency. All 62 tooling tests,
 formatting, model/frame/source audits, workspace Clippy and cargo-deny passed.
 The source ceiling remains unchanged at 10,558 non-Prism lines in 51 files.
+
+The final application component subsequently passed its unchanged pinned-SDK
+`just app` retry. Engine evidence commit
+`276404d37427dfb844eedc2e92f0652ba5176629` saves the exact current proof-input
+receipt. The three application evidence JSON files remain unchanged, with
+manifest `a83ef1d53cae059f70e59ab7978050c69fef04f1f7436eee24cdccea422843bc`
+and independent attestation
+`3779a2f8f076e8414ba8228b77743b97ecc8d6e86b628f0de0ffc70e52d6cd33`.
+Every component of the original Engine acceptance run has passed for the same
+implementation; the original full invocation failed during disk exhaustion
+and its application component passed on retry. A successful full release
+invocation is not claimed here. Only documentation and the saved receipt
+changed after the tested implementation, so its numerical evidence is retained.
+An additional 120 baseline ABI comparisons passed for both camera modes,
+wrapped nonzero yaw and extreme signed camera intents. The unchanged vTensor
+source still requires complete decoders, GET_ROWS and the remaining imported
+operations, plus resolution of the production dependency and VT-02.
