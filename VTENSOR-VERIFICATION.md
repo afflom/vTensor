@@ -3215,3 +3215,33 @@ formatting, then correctly refuses source growth. Assertions and gate scope
 remain enabled. Separate SDK template and lock checks pass. No budget was
 raised or acceptance claimed. Exact identities, signed authoring inputs,
 coverage, faults and log hashes are in `verification/arange-runtime.json`.
+
+### Shared typed execution protocol
+
+Prism now defines source bindings, literal storage, scalar widths and stateful
+stepping for all 24 existing pointwise modes. Its instructions carry typed
+Verdant operations, source/scratch/immediate/output operands and typed write
+targets. The native adapter binds these instructions to existing Verdant
+primitives and admitted memory regions. It no longer chooses a CopyMode route,
+remaps numerical opcodes or packs transform parameters. This refactors existing
+capabilities; no additional imported operation is claimed.
+
+The exact SDK production export passes kernel and preservation checking with
+result `3ffce9b4cdb8ed34598cf35736cbeb4ecec4d5c6d9dbd7c1e2bfee62214ad172`
+and attestation
+`967a22967ba4ebd29ccd8cbd2e1cbd418996f56e46013bc082b2528059fabefb`.
+Generated Rust is untouched by manual editing and formatting. Repeat-offset
+Rust and all 24 imported Verdant generated libraries remain byte-identical.
+All 18,816 scoped transform comparisons pass against imported GGML CPU kernels
+in 6.18 seconds. Replacing state feedback with zero causes the first unchanged
+upstream ARANGE case to fail in 2.77 seconds. The fault is restored byte for byte.
+
+Clippy across every workspace target and feature, formatting, model audits and
+dependency checks pass. The generated-source license clarification is refreshed
+using the hash reported by cargo-deny. Source accounting falls by 34 lines to
+10,918, still 369 above the last accepted 10,549; the original budget remains
+unsatisfied. Full contract, full acceptance and remote authoring verification
+are in progress at this checkpoint. The first remote verifier lost its worker
+without producing an attestation; its retry is distinct from the successful
+local SDK production proof. Current identities and log hashes are recorded in
+`verification/unified-execution-runtime.json`.

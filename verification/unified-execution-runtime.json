@@ -1,0 +1,97 @@
+{
+  "spec": "vtensor/unified-execution-runtime/1",
+  "status": "certified-production-bundle-scoped-oracle-passed-full-gates-running",
+  "scope": "Refactor existing VT-13 through VT-37 execution; no additional operation capability claimed.",
+  "model": {
+    "file": "app/src/PointwiseGraph.lex.tex",
+    "sha256": "5fcfc07ece568d1c97669452aac0f4e1d7140c54f87a868116e3fa44686744b0",
+    "protocol": "Prism models source bindings, literal storage, scalar widths, stateful stepping, typed Verdant operations, operands and destinations. Native code realizes memory effects and calls existing Verdant primitives.",
+    "routes": 24,
+    "proofs": "Universal route equalities for all 24 existing CopyMode constructors, operand routing and scalar-width checks. These model proofs are distinct from external CPU conformance.",
+    "authoring_draft": "prism-app/b0f1542bac05d8bc6b032a59ce12d7304e6e6f85e2085916ba25f1e6bb183402",
+    "authoring_verification": {
+      "task": "task-36",
+      "state": "running",
+      "earlier_attempt": {
+        "task": "task-35",
+        "state": "failed",
+        "reason": "verifier-lost; no attestation produced"
+      }
+    }
+  },
+  "production": {
+    "result_id": "3ffce9b4cdb8ed34598cf35736cbeb4ecec4d5c6d9dbd7c1e2bfee62214ad172",
+    "attestation_id": "967a22967ba4ebd29ccd8cbd2e1cbd418996f56e46013bc082b2528059fabefb",
+    "root_statuses": [
+      "kernel-checked",
+      "kernel-checked"
+    ],
+    "generated_pointwise_sha256": "86174d983cef20842ae051eb9b3c97ac4fc0b9bca59c2f44de5bab35cecf8c17",
+    "generated_rust_edited": false
+  },
+  "external_oracle": {
+    "authority": "Locked GGML CPU implementation and unchanged upstream ARANGE suite, as bound by oracle-import.lock",
+    "scoped_transform": {
+      "command": "cargo test --locked -p vtensor-backend --test contract transform_graphs_vt_26 -- --nocapture",
+      "comparisons": 18816,
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 36,
+      "seconds": 6.18
+    },
+    "fault": {
+      "change": "Replace native-to-Prism scratch state feedback with zero.",
+      "result": "First unchanged upstream ARANGE case is rejected.",
+      "seconds": 2.77,
+      "exit_code": 101,
+      "restored": "Exact byte comparison against the saved current source passed."
+    }
+  },
+  "checks": {
+    "clippy": "passed for workspace, all targets and all features, warnings denied",
+    "format": "passed; generated packages excluded from formatting",
+    "model": "passed",
+    "dependencies": "passed after refreshing only the exact generated-source license clarification hash supplied by cargo-deny",
+    "repeat_offset_source": "unchanged",
+    "imported_verdant_libraries": "all 24 unchanged"
+  },
+  "source_budget": {
+    "current": 10918,
+    "previous_checkpoint": 10952,
+    "reduction": 34,
+    "last_accepted": 10549,
+    "excess": 369,
+    "status": "unsatisfied; no ceiling raised"
+  },
+  "remaining": [
+    "Full contract and complete just vv are running.",
+    "Production dependency closure, original source budget and remaining imported operation coverage are open."
+  ],
+  "logs": {
+    "canonical": {
+      "path": "/tmp/vtensor-typed-vm-canonical.log",
+      "sha256": "8ea2f0af4ca16bcf1a5dc8a26b150cb40cf81c98c25447be2e4d565b89b562b7"
+    },
+    "export": {
+      "path": "/tmp/vtensor-typed-vm-export.log",
+      "sha256": "08676c504967adaedab5c67228e2688f418c6dc6b48afef39c5947dec1375309"
+    },
+    "transform": {
+      "path": "/tmp/vtensor-typed-vm-transform.log",
+      "sha256": "82a0dc5c5651297d4b3338cc59e43d2a5dcb93261a9f65da27702f2f0f35af5c"
+    },
+    "feedback-fault": {
+      "path": "/tmp/vtensor-typed-vm-feedback-fault.log",
+      "sha256": "14f54efc769277e648f40aa59a68f6651161a56e6bdb946bc8b77baa0eccf9fd"
+    },
+    "checks": {
+      "path": "/tmp/vtensor-typed-vm-checks.log",
+      "sha256": "f4b1a8dc58bfc8c777fc5b2b65af969b3a98f10223fb8eec6313f3cf3d4f9aed"
+    },
+    "deny": {
+      "path": "/tmp/vtensor-typed-vm-deny.log",
+      "sha256": "f78188651f20132b2395fba8b562037f6999addfd364d6b3fe6d784575a90d6b"
+    }
+  }
+}

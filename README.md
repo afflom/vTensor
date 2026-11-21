@@ -129,7 +129,7 @@ nineteen atomic refusal probes. Other imported operation families remain unfinis
 1,280 matrix and 120 arithmetic fixtures; both generated data and actual GGML
 tensor bindings match the frozen prior corpora. They share binary framing and
 cache each model replay, manifest and generated batch once per test process.
-Non-Prism source is 10,952 lines, 403 above the last
+Non-Prism source is 10,918 lines, 369 above the last
 accepted budget, so the source budget remains unsatisfied.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in

@@ -241,7 +241,48 @@ inductive{
     {name: scatter, fields: [Nat, IndexContext, IndexContext, IndexContext, Nat]},
     {name: gather, fields: [Nat, Nat, IndexContext, IndexContext, IndexContext, Nat]},
     {name: indexedAdd, fields: [Nat, IndexContext, IndexContext, IndexContext, IndexContext, Nat]},
-    {name: arangeStep, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: arangeStep, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: stateful, fields: [Nat, IndexContext, IndexContext, CopyMode, Nat]},
+    {name: bindings, fields: [CopyMode]}
+  ]
+}
+
+inductive{
+  name: WordOperation,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: wide, fields: [Nat]},
+    {name: scalar, fields: [Nat]},
+    {name: storage, fields: [Nat, Nat, Bool]},
+    {name: unary, fields: [Nat, Nat, Bool]},
+    {name: transformed, fields: [Nat, Nat, Nat, Nat]},
+    {name: encoded, fields: [Nat]},
+    {name: invalid, fields: []}
+  ]
+}
+
+inductive{
+  name: WordOperand,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: source, fields: [Nat, Nat]},
+    {name: scratch, fields: [Nat]},
+    {name: immediate, fields: [Nat]},
+    {name: output, fields: [Nat]},
+    {name: invalid, fields: []}
+  ]
+}
+
+inductive{
+  name: WordTarget,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: scratch, fields: [Nat]},
+    {name: output, fields: [Nat]},
+    {name: invalid, fields: []}
   ]
 }
 
@@ -255,7 +296,9 @@ inductive{
     {name: arithmetic, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: converted, fields: [Nat, Nat, Nat, Nat]},
     {name: word, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: decoded, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: decoded, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: bindings, fields: [Nat, Nat, Nat, Bool]},
+    {name: instruction, fields: [WordOperation, WordOperand, WordOperand, WordTarget, Nat, Nat]}
   ]
 }
 
@@ -1150,6 +1193,240 @@ definition{
 }
 
 definition{
+  name: sourceBindings,
+  parameters: [mode : CopyMode],
+  result: GraphResponse,
+  body: (match mode
+    | CopyMode.linear => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.repeated => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.concatenated axis right => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.padded p0 p1 p2 p3 circular => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.reflected left => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.rolled p0 p1 p2 p3 => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.updated initial base adding => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.folded initial => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.selected kind => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.constant kind bits => (ctor GraphResponse.bindings 0 kind bits true)
+    | CopyMode.arithmetic kind unary right => (ctor GraphResponse.bindings (if unary then 1 else 3) 0 0 false)
+    | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.windowed reverse size nx => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.scanned => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.reduced operation storage => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.argmaxRow => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.counted elements right => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.scattered storage indices => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.gathered storage indices => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.relativePosition => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false)
+    | CopyMode.arange start stop step count => (ctor GraphResponse.bindings 0 0 0 false)),
+  executable: true
+}
+
+definition{
+  name: wordBytes,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (match (TensorTypes::tensorTypeStorage storage)
+    | TensorTypes::TypeStorageDecision.unknownType => 0
+    | TensorTypes::TypeStorageDecision.knownType spec => (if (((project spec blockSize) =? 1) && (((((project spec typeSize) =? 1) || ((project spec typeSize) =? 2)) || ((project spec typeSize) =? 4)) || ((project spec typeSize) =? 8))) then (project spec typeSize) else 0)),
+  executable: true
+}
+
+definition{
+  name: wordStorage,
+  parameters: [mode : CopyMode, opcode : Nat],
+  result: Nat,
+  body: (match mode
+    | CopyMode.linear => 0
+    | CopyMode.repeated => 0
+    | CopyMode.concatenated axis right => 0
+    | CopyMode.padded p0 p1 p2 p3 circular => 0
+    | CopyMode.reflected left => 0
+    | CopyMode.rolled p0 p1 p2 p3 => 0
+    | CopyMode.updated initial base adding => 0
+    | CopyMode.folded initial => 0
+    | CopyMode.selected kind => 0
+    | CopyMode.constant kind bits => 0
+    | CopyMode.arithmetic kind unary right => 0
+    | CopyMode.converted sourceType destinationType => 0
+    | CopyMode.windowed reverse size nx => 0
+    | CopyMode.transformed kind storage a b => 0
+    | CopyMode.unaryWord kind sourceType destinationType => 0
+    | CopyMode.scanned => 0
+    | CopyMode.reduced operation storage => storage
+    | CopyMode.argmaxRow => 0
+    | CopyMode.counted elements right => 0
+    | CopyMode.scattered storage indices => (if (opcode =? 6) then storage else 0)
+    | CopyMode.gathered storage indices => 0
+    | CopyMode.relativePosition => 0
+    | CopyMode.indexedAdd table indices => 0
+    | CopyMode.arange start stop step count => 0),
+  executable: true
+}
+
+definition{
+  name: wordOperand,
+  parameters: [slot : Nat, at : Nat],
+  result: WordOperand,
+  body: (if (slot =? 0) then (ctor WordOperand.source 0 at) else (if (slot =? 1) then (ctor WordOperand.scratch at) else (if (slot =? 2) then (ctor WordOperand.immediate at) else (if (slot =? 3) then (ctor WordOperand.output at) else (if (slot <? 13) then (ctor WordOperand.source (prim subtract slot 3 : Nat) at) else (ctor WordOperand.invalid)))))),
+  executable: true
+}
+
+definition{
+  name: wordTarget,
+  parameters: [slot : Nat, at : Nat],
+  result: WordTarget,
+  body: (if (slot =? 1) then (ctor WordTarget.scratch at) else (if ((slot =? 3) || (slot =? 6)) then (ctor WordTarget.output at) else (ctor WordTarget.invalid))),
+  executable: true
+}
+
+definition{
+  name: legacyOperation,
+  parameters: [mode : CopyMode, operation : Nat],
+  result: WordOperation,
+  body: (if (operation <? 4) then (ctor WordOperation.wide operation) else (if (operation =? 4) then (ctor WordOperation.scalar 0) else (if (operation =? 5) then (ctor WordOperation.scalar 3) else (if (operation =? 6) then (ctor WordOperation.storage (wordStorage mode operation) 0 false) else (if (operation =? 7) then (ctor WordOperation.storage 0 (wordStorage mode operation) false) else (if (operation <? 16) then (ctor WordOperation.scalar (prim subtract operation 8 : Nat)) else (if (operation <? 20) then (ctor WordOperation.encoded (prim subtract operation 16 : Nat)) else (if (operation =? 20) then (ctor WordOperation.unary 0 0 false) else (ctor WordOperation.invalid))))))))),
+  executable: true
+}
+
+definition{
+  name: convertedOperation,
+  parameters: [mode : CopyMode, sourceStorage : Nat, destinationStorage : Nat],
+  result: WordOperation,
+  body: (match mode
+    | CopyMode.linear => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.repeated => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.concatenated axis right => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.padded p0 p1 p2 p3 circular => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.reflected left => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.rolled p0 p1 p2 p3 => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.updated initial base adding => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.folded initial => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.selected kind => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.constant kind bits => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.arithmetic kind unary right => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.windowed reverse size nx => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.transformed kind storage a b => (ctor WordOperation.transformed kind storage a b)
+    | CopyMode.unaryWord kind sourceType destinationType => (ctor WordOperation.unary sourceStorage destinationStorage true)
+    | CopyMode.scanned => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.reduced operation storage => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.argmaxRow => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.counted elements right => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.scattered storage indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.gathered storage indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.relativePosition => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.indexedAdd table indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.arange start stop step count => (ctor WordOperation.storage sourceStorage destinationStorage true)),
+  executable: true
+}
+
+definition{
+  name: convertedArgument,
+  parameters: [mode : CopyMode],
+  result: Nat,
+  body: (match mode
+    | CopyMode.linear => 0
+    | CopyMode.repeated => 0
+    | CopyMode.concatenated axis right => 0
+    | CopyMode.padded p0 p1 p2 p3 circular => 0
+    | CopyMode.reflected left => 0
+    | CopyMode.rolled p0 p1 p2 p3 => 0
+    | CopyMode.updated initial base adding => 0
+    | CopyMode.folded initial => 0
+    | CopyMode.selected kind => 0
+    | CopyMode.constant kind bits => 0
+    | CopyMode.arithmetic kind unary right => 0
+    | CopyMode.converted sourceType destinationType => 0
+    | CopyMode.windowed reverse size nx => 0
+    | CopyMode.transformed kind storage a b => 0
+    | CopyMode.unaryWord kind sourceType destinationType => kind
+    | CopyMode.scanned => 0
+    | CopyMode.reduced operation storage => 0
+    | CopyMode.argmaxRow => 0
+    | CopyMode.counted elements right => 0
+    | CopyMode.scattered storage indices => 0
+    | CopyMode.gathered storage indices => 0
+    | CopyMode.relativePosition => 0
+    | CopyMode.indexedAdd table indices => 0
+    | CopyMode.arange start stop step count => 0),
+  executable: true
+}
+
+definition{
+  name: typedWord,
+  parameters: [
+    operation : WordOperation,
+    sourceType : Nat,
+    destinationType : Nat,
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  result: GraphResponse,
+  body: (let destination : Nat := (if (target =? 6) then 27 else destinationType); (ctor GraphResponse.instruction operation (wordOperand leftSlot leftAt) (wordOperand rightSlot rightAt) (wordTarget target to) (wordBytes sourceType) (wordBytes destination))),
+  executable: true
+}
+
+definition{
+  name: bindStep,
+  parameters: [mode : CopyMode, response : GraphResponse],
+  result: GraphResponse,
+  body: (match response
+    | GraphResponse.planned decision => (ctor GraphResponse.planned decision)
+    | GraphResponse.offsets choosingRight from to => (ctor GraphResponse.offsets choosingRight from to)
+    | GraphResponse.arithmetic a b c d e f => (ctor GraphResponse.arithmetic a b c d e f)
+    | GraphResponse.converted sourceType destinationType from to => (typedWord (convertedOperation mode sourceType destinationType) sourceType destinationType 0 from 2 (convertedArgument mode) 3 to)
+    | GraphResponse.word operation leftSlot leftAt rightSlot rightAt target to => (let storage : Nat := (wordStorage mode operation); (typedWord (legacyOperation mode operation) storage storage leftSlot leftAt rightSlot rightAt target to))
+    | GraphResponse.decoded a b c d e f => (ctor GraphResponse.decoded a b c d e f)
+    | GraphResponse.bindings a b c d => (ctor GraphResponse.bindings a b c d)
+    | GraphResponse.instruction a b c d e f => (ctor GraphResponse.instruction a b c d e f)),
+  executable: true
+}
+
+definition{
+  name: statefulOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    mode : CopyMode,
+    flag : Nat
+  ],
+  result: GraphResponse,
+  body: (bindStep mode (match mode
+    | CopyMode.linear => (copyOffsets index source destination mode)
+    | CopyMode.repeated => (copyOffsets index source destination mode)
+    | CopyMode.concatenated axis right => (copyOffsets index source destination mode)
+    | CopyMode.padded p0 p1 p2 p3 circular => (copyOffsets index source destination mode)
+    | CopyMode.reflected left => (copyOffsets index source destination mode)
+    | CopyMode.rolled p0 p1 p2 p3 => (copyOffsets index source destination mode)
+    | CopyMode.updated initial base adding => (copyOffsets index source destination mode)
+    | CopyMode.folded initial => (copyOffsets index source destination mode)
+    | CopyMode.selected kind => (copyOffsets index source destination mode)
+    | CopyMode.constant kind bits => (copyOffsets index source destination mode)
+    | CopyMode.arithmetic kind unary right => (copyOffsets index source destination mode)
+    | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
+    | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)
+    | CopyMode.transformed kind storage a b => (copyOffsets index source destination mode)
+    | CopyMode.unaryWord kind sourceType destinationType => (copyOffsets index source destination mode)
+    | CopyMode.scanned => (copyOffsets index source destination mode)
+    | CopyMode.reduced operation storage => (copyOffsets index source destination mode)
+    | CopyMode.argmaxRow => (argmaxOffsets index source destination flag)
+    | CopyMode.counted elements right => (copyOffsets index source destination mode)
+    | CopyMode.scattered storage indices => (rowGradientOffsets index source destination indices flag)
+    | CopyMode.gathered storage indices => (gatherOffsets storage index source destination indices flag)
+    | CopyMode.relativePosition => (copyOffsets index source destination mode)
+    | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
+    | CopyMode.arange start stop step count => (arangeOffsets index count start stop step flag))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
@@ -1162,7 +1439,9 @@ definition{
     | GraphRequest.scatter index source destination indices flag => (rowGradientOffsets index source destination indices flag)
     | GraphRequest.gather kind index source destination indices flag => (gatherOffsets kind index source destination indices flag)
     | GraphRequest.indexedAdd index source destination table indices flag => (indexedAddOffsets index source destination table indices flag)
-    | GraphRequest.arangeStep index count start stop step flag => (arangeOffsets index count start stop step flag)),
+    | GraphRequest.arangeStep index count start stop step flag => (arangeOffsets index count start stop step flag)
+    | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
+    | GraphRequest.bindings mode => (sourceBindings mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -1668,6 +1947,410 @@ theorem{
   name: arangeFlatOutputAddress,
   parameters: [],
   statement: ((arangeOffsets 33 10 0 1092616192 1065353216 1092616192) = (ctor GraphResponse.word 8 2 0 1 0 3 36)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedLinear,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, flag : Nat],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.linear) flag) = (bindStep (ctor CopyMode.linear) (copyOffsets index source destination (ctor CopyMode.linear)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedRepeated,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, flag : Nat],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.repeated) flag) = (bindStep (ctor CopyMode.repeated) (copyOffsets index source destination (ctor CopyMode.repeated)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedConcatenated,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    axis : Nat,
+    right : IndexContext
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.concatenated axis right) flag) = (bindStep (ctor CopyMode.concatenated axis right) (copyOffsets index source destination (ctor CopyMode.concatenated axis right)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedPadded,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    p0 : Nat,
+    p1 : Nat,
+    p2 : Nat,
+    p3 : Nat,
+    circular : Bool
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.padded p0 p1 p2 p3 circular) flag) = (bindStep (ctor CopyMode.padded p0 p1 p2 p3 circular) (copyOffsets index source destination (ctor CopyMode.padded p0 p1 p2 p3 circular)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedReflected,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    left : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.reflected left) flag) = (bindStep (ctor CopyMode.reflected left) (copyOffsets index source destination (ctor CopyMode.reflected left)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedRolled,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    p0 : Nat,
+    p1 : Nat,
+    p2 : Nat,
+    p3 : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.rolled p0 p1 p2 p3) flag) = (bindStep (ctor CopyMode.rolled p0 p1 p2 p3) (copyOffsets index source destination (ctor CopyMode.rolled p0 p1 p2 p3)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedUpdated,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    initial : Nat,
+    base : Nat,
+    adding : Bool
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.updated initial base adding) flag) = (bindStep (ctor CopyMode.updated initial base adding) (copyOffsets index source destination (ctor CopyMode.updated initial base adding)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedFolded,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    initial : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.folded initial) flag) = (bindStep (ctor CopyMode.folded initial) (copyOffsets index source destination (ctor CopyMode.folded initial)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedSelected,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    kind : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.selected kind) flag) = (bindStep (ctor CopyMode.selected kind) (copyOffsets index source destination (ctor CopyMode.selected kind)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedConstant,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    kind : Nat,
+    bits : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.constant kind bits) flag) = (bindStep (ctor CopyMode.constant kind bits) (copyOffsets index source destination (ctor CopyMode.constant kind bits)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedArithmetic,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    kind : Nat,
+    unary : Bool,
+    right : IndexContext
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.arithmetic kind unary right) flag) = (bindStep (ctor CopyMode.arithmetic kind unary right) (copyOffsets index source destination (ctor CopyMode.arithmetic kind unary right)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedConverted,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    sourceType : Nat,
+    destinationType : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.converted sourceType destinationType) flag) = (bindStep (ctor CopyMode.converted sourceType destinationType) (copyOffsets index source destination (ctor CopyMode.converted sourceType destinationType)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedWindowed,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    reverse : Bool,
+    size : Nat,
+    nx : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.windowed reverse size nx) flag) = (bindStep (ctor CopyMode.windowed reverse size nx) (copyOffsets index source destination (ctor CopyMode.windowed reverse size nx)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedTransformed,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    kind : Nat,
+    storage : Nat,
+    a : Nat,
+    b : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.transformed kind storage a b) flag) = (bindStep (ctor CopyMode.transformed kind storage a b) (copyOffsets index source destination (ctor CopyMode.transformed kind storage a b)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedUnaryWord,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    kind : Nat,
+    sourceType : Nat,
+    destinationType : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.unaryWord kind sourceType destinationType) flag) = (bindStep (ctor CopyMode.unaryWord kind sourceType destinationType) (copyOffsets index source destination (ctor CopyMode.unaryWord kind sourceType destinationType)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedScanned,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, flag : Nat],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.scanned) flag) = (bindStep (ctor CopyMode.scanned) (copyOffsets index source destination (ctor CopyMode.scanned)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedReduced,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    operation : Nat,
+    storage : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.reduced operation storage) flag) = (bindStep (ctor CopyMode.reduced operation storage) (copyOffsets index source destination (ctor CopyMode.reduced operation storage)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedArgmaxRow,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, flag : Nat],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.argmaxRow) flag) = (bindStep (ctor CopyMode.argmaxRow) (argmaxOffsets index source destination flag))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedCounted,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    elements : Nat,
+    right : IndexContext
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.counted elements right) flag) = (bindStep (ctor CopyMode.counted elements right) (copyOffsets index source destination (ctor CopyMode.counted elements right)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedScattered,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    storage : Nat,
+    indices : IndexContext
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.scattered storage indices) flag) = (bindStep (ctor CopyMode.scattered storage indices) (rowGradientOffsets index source destination indices flag))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedGathered,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    storage : Nat,
+    indices : IndexContext
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.gathered storage indices) flag) = (bindStep (ctor CopyMode.gathered storage indices) (gatherOffsets storage index source destination indices flag))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedRelativePosition,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, flag : Nat],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.relativePosition) flag) = (bindStep (ctor CopyMode.relativePosition) (copyOffsets index source destination (ctor CopyMode.relativePosition)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedIndexedAdd,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    table : IndexContext,
+    indices : IndexContext
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.indexedAdd table indices) flag) = (bindStep (ctor CopyMode.indexedAdd table indices) (indexedAddOffsets index source destination table indices flag))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedArange,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    start : Nat,
+    stop : Nat,
+    step : Nat,
+    count : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.arange start stop step count) flag) = (bindStep (ctor CopyMode.arange start stop step count) (arangeOffsets index count start stop step flag))),
+  proof: reflexivity{}
+}
+
+theorem{name: wordWidthf32, parameters: [], statement: ((wordBytes 0) = 4), proof: reflexivity{}}
+
+theorem{name: wordWidthf16, parameters: [], statement: ((wordBytes 1) = 2), proof: reflexivity{}}
+
+theorem{name: wordWidthi8, parameters: [], statement: ((wordBytes 24) = 1), proof: reflexivity{}}
+
+theorem{name: wordWidthi64, parameters: [], statement: ((wordBytes 27) = 8), proof: reflexivity{}}
+
+theorem{name: wordWidthf64, parameters: [], statement: ((wordBytes 28) = 8), proof: reflexivity{}}
+
+theorem{name: wordWidthbf16, parameters: [], statement: ((wordBytes 30) = 2), proof: reflexivity{}}
+
+theorem{name: wordWidthf8, parameters: [], statement: ((wordBytes 43) = 1), proof: reflexivity{}}
+
+theorem{name: wordWidthblock, parameters: [], statement: ((wordBytes 2) = 0), proof: reflexivity{}}
+
+theorem{
+  name: wordWidthremoved,
+  parameters: [],
+  statement: ((wordBytes 4) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: arangeBindsNoSource,
+  parameters: [start : Nat, stop : Nat, step : Nat, count : Nat],
+  statement: ((sourceBindings (ctor CopyMode.arange start stop step count)) = (ctor GraphResponse.bindings 0 0 0 false)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: constantBindingKeepsLiteral,
+  parameters: [kind : Nat, bits : Nat],
+  statement: ((sourceBindings (ctor CopyMode.constant kind bits)) = (ctor GraphResponse.bindings 0 kind bits true)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: firstSourceOperand,
+  parameters: [at : Nat],
+  statement: ((wordOperand 0 at) = (ctor WordOperand.source 0 at)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: tenthSourceOperand,
+  parameters: [at : Nat],
+  statement: ((wordOperand 12 at) = (ctor WordOperand.source 9 at)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: outOfRangeSourceOperand,
+  parameters: [at : Nat],
+  statement: ((wordOperand 13 at) = (ctor WordOperand.invalid)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: scratchOperand,
+  parameters: [at : Nat],
+  statement: ((wordOperand 1 at) = (ctor WordOperand.scratch at)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: immediateOperand,
+  parameters: [at : Nat],
+  statement: ((wordOperand 2 at) = (ctor WordOperand.immediate at)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: outputOperand,
+  parameters: [at : Nat],
+  statement: ((wordOperand 3 at) = (ctor WordOperand.output at)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: integerOutputTarget,
+  parameters: [at : Nat],
+  statement: ((wordTarget 6 at) = (ctor WordTarget.output at)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: invalidWordTarget,
+  parameters: [at : Nat],
+  statement: ((wordTarget 2 at) = (ctor WordTarget.invalid)),
   proof: reflexivity{}
 }
 \end{semanticmodule}
