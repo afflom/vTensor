@@ -66,6 +66,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-14` | `build` | Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers |
 
+## fill-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-23` | `build` | Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding |
+
 ## fold-graphs
 
 | ID | Level | Statement |

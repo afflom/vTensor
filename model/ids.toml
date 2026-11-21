@@ -202,3 +202,9 @@ id = "VT-22"
 level = "build"
 suite = "triangular-graphs"
 statement = "Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle"
+
+[[id]]
+id = "VT-23"
+level = "build"
+suite = "fill-graphs"
+statement = "Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding"

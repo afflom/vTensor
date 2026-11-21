@@ -78,7 +78,9 @@ inductive{
     {name: rolled, fields: [Nat, Nat, Nat, Nat]},
     {name: updated, fields: [Nat, Nat, Bool]},
     {name: folded, fields: [Nat]},
-    {name: selected, fields: [Nat]}
+    {name: selected, fields: [Nat]},
+    {name: constant, fields: [Nat, Nat]},
+    {name: arithmetic, fields: [Nat, Bool, IndexContext]}
   ]
 }
 
@@ -220,8 +222,7 @@ inductive{
   constructors: [
     {name: planned, fields: [PointwiseDecision]},
     {name: offsets, fields: [Bool, Nat, Nat]},
-    {name: addOffsets, fields: [Nat, Nat]},
-    {name: accumulateOffsets, fields: [Nat, Nat]}
+    {name: arithmetic, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -345,7 +346,7 @@ definition{
 }
 
 definition{
-  name: numericPlan,
+  name: numericDecision,
   parameters: [
     operation : Nat,
     variant : Nat,
@@ -538,7 +539,7 @@ definition{
     adding : Bool
   ],
   result: GraphResponse,
-  body: (if (index <? initial) then (ctor GraphResponse.offsets false (prim multiply index 4 : Nat) (prim multiply index 4 : Nat)) else (let step : Nat := (prim subtract index initial : Nat); (let from : Nat := (blockOffset step source); (let target : Nat := (signedViewOffset step destination base); (if adding then (ctor GraphResponse.addOffsets from target) else (ctor GraphResponse.offsets true from target)))))),
+  body: (if (index <? initial) then (ctor GraphResponse.offsets false (prim multiply index 4 : Nat) (prim multiply index 4 : Nat)) else (let step : Nat := (prim subtract index initial : Nat); (let from : Nat := (blockOffset step source); (let target : Nat := (signedViewOffset step destination base); (if adding then (ctor GraphResponse.arithmetic 0 0 target 1 from target) else (ctor GraphResponse.offsets true from target)))))),
   executable: true
 }
 
@@ -554,7 +555,7 @@ definition{
   name: foldedOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, initial : Nat],
   result: GraphResponse,
-  body: (if (index <? initial) then (ctor GraphResponse.offsets true 0 (blockOffset index destination)) else (let step : Nat := (prim subtract index initial : Nat); (ctor GraphResponse.accumulateOffsets (blockOffset step source) (repeatedBlockOffset step destination source)))),
+  body: (if (index <? initial) then (ctor GraphResponse.offsets true 0 (blockOffset index destination)) else (let step : Nat := (prim subtract index initial : Nat); (let target : Nat := (repeatedBlockOffset step destination source); (ctor GraphResponse.arithmetic 0 2 target 0 (blockOffset step source) target)))),
   executable: true
 }
 
@@ -585,6 +586,60 @@ definition{
 }
 
 definition{
+  name: fillWordValid,
+  parameters: [kind : Nat, bits : Nat],
+  result: Bool,
+  body: (((kind =? 0) || (kind =? 1)) && (bits <? 4294967296)),
+  executable: true
+}
+
+definition{
+  name: planFill,
+  parameters: [bits : Nat, left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if (((fillWordValid (project left ty) bits) && ((project left ty) =? (project output ty))) && (((((project left n0) =? (project output n0)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3)))) then (match (TensorTypes::tensorTypeStorage (project left ty))
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
+    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.constant (project left ty) bits))) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
+  name: numericPlan,
+  parameters: [
+    operation : Nat,
+    variant : Nat,
+    left : TensorDescriptor,
+    right : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (match (numericDecision operation variant left right output)
+    | PointwiseDecision.unsupported => (ctor PointwiseDecision.unsupported)
+    | PointwiseDecision.invalidShape => (ctor PointwiseDecision.invalidShape)
+    | PointwiseDecision.execute kind unary n0 n1 n2 n3 count => (ctor PointwiseDecision.copyBlocks count 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.arithmetic kind unary (match right
+      | Option.none => (indexContext left 1)
+      | Option.some value => (indexContext value 1))))
+    | PointwiseDecision.product m k n b2 b3 r2 r3 lc rc oc => (ctor PointwiseDecision.product m k n b2 b3 r2 r3 lc rc oc)
+    | PointwiseDecision.copyBlocks count bytes source destination mode => (ctor PointwiseDecision.copyBlocks count bytes source destination mode)),
+  executable: true
+}
+
+definition{
+  name: arithmeticOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    kind : Nat,
+    unary : Bool,
+    right : IndexContext
+  ],
+  result: GraphResponse,
+  body: (ctor GraphResponse.arithmetic kind 0 (blockOffset index source) (if unary then 3 else 1) (if unary then 0 else (repeatedBlockOffset index right destination)) (blockOffset index destination)),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -597,7 +652,9 @@ definition{
     | CopyMode.rolled p0 p1 p2 p3 => (paddedOffsets index source destination p0 p1 p2 p3 true)
     | CopyMode.updated initial base adding => (updatedOffsets index source destination initial base adding)
     | CopyMode.folded initial => (foldedOffsets index source destination initial)
-    | CopyMode.selected kind => (selectionOffsets kind index source destination)),
+    | CopyMode.selected kind => (selectionOffsets kind index source destination)
+    | CopyMode.constant kind bits => (ctor GraphResponse.offsets true 0 (blockOffset index destination))
+    | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)),
   executable: true
 }
 
@@ -608,7 +665,7 @@ definition{
   body: (match request
     | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (numericPlan operation variant left right output)))))))))))
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (numericPlan operation variant left right output))))))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -722,7 +779,7 @@ theorem{
 theorem{
   name: foldLastInputAddress,
   parameters: [],
-  statement: ((foldedOffsets 9 (record IndexContext {u0 := 4, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 16, s2 := 32, s3 := 32}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) 2) = (ctor GraphResponse.accumulateOffsets 28 4)),
+  statement: ((foldedOffsets 9 (record IndexContext {u0 := 4, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 16, s2 := 32, s3 := 32}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 8, s3 := 8}) 2) = (ctor GraphResponse.arithmetic 0 2 4 0 28 4)),
   proof: reflexivity{}
 }
 
@@ -758,6 +815,20 @@ theorem{
   name: triangleDirections,
   parameters: [],
   statement: ((((keepElement 1 2 1) && (keepElement 3 1 2)) && (if ((keepElement 3 2 1) || (keepElement 1 1 2)) then false else true)) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fillHalfAcceptsExceptionalWord,
+  parameters: [],
+  statement: ((fillWordValid 1 4286578689) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fillRejectsWideWord,
+  parameters: [],
+  statement: ((fillWordValid 0 4294967296) = false),
   proof: reflexivity{}
 }
 \end{semanticmodule}

@@ -516,9 +516,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
     ))
     .map_err(|_| BackendError::Overflow)?;
     match response {
-        GraphResponse::C0(plan @ (GraphPlan::C2(..) | GraphPlan::C3(..) | GraphPlan::C4(..))) => {
-            Ok(Some(plan))
-        }
+        GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..))) => Ok(Some(plan)),
         _ => Err(BackendError::InvalidTensor),
     }
 }
@@ -619,89 +617,64 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
     Ok(())
 }
 
-fn execute_pointwise(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
-    let GraphPlan::C2(kind, unary, n0, n1, n2, n3, _) = plan else {
-        return Err(BackendError::InvalidTensor);
-    };
-    // SAFETY: the admitted plan requires a live left source and, for binary operations, a right source.
-    let left = unsafe { &*tensor.src[0] };
-    let left_data = graph_tensor_data(left)?;
-    let output_data = graph_tensor_data(tensor)?;
-    let right = if unary {
-        None
-    } else {
-        // SAFETY: Prism admitted a binary operation with a retained right source.
-        Some(unsafe { &*tensor.src[1] })
-    };
-    let right_data = right.map(graph_tensor_data).transpose()?;
-    for i3 in 0..n3 {
-        for i2 in 0..n2 {
-            for i1 in 0..n1 {
-                for i0 in 0..n0 {
-                    let indices = [i0 as usize, i1 as usize, i2 as usize, i3 as usize];
-                    let left_offset = element_offset(left, indices)?;
-                    let output_offset = element_offset(tensor, indices)?;
-                    // SAFETY: modeled extents and byte spans bound every unaligned F32 read.
-                    let a =
-                        unsafe { ptr::read_unaligned(left_data.add(left_offset).cast::<f32>()) };
-                    let b = if let (Some(right), Some(data)) = (right, right_data) {
-                        let [r0, r1, r2, r3] = right.ne.map(|n| n as u64);
-                        let [s0, s1, s2, s3] = right.nb.map(|n| n as u64);
-                        let offset = vtensor_repeat_offset::run(
-                            i0, i1, i2, i3, r0, r1, r2, r3, s0, s1, s2, s3,
-                        )
-                        .map_err(|_| BackendError::Overflow)?;
-                        let offset = usize::try_from(offset).map_err(|_| BackendError::Overflow)?;
-                        // SAFETY: Prism's repeat planner bounds these coordinates by the right extents.
-                        unsafe { ptr::read_unaligned(data.add(offset).cast::<f32>()) }
-                    } else {
-                        0.0
-                    };
-                    let value = verdant_tensor::linear::evaluate_f32_scalar(kind, a, b)
-                        .map_err(|_| BackendError::InvalidTensor)?;
-                    // SAFETY: the admitted output span bounds this modeled address.
-                    unsafe {
-                        ptr::write_unaligned(output_data.add(output_offset).cast::<f32>(), value);
-                    }
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let GraphPlan::C4(count, bytes, source, destination, mode) = plan else {
         return Err(BackendError::InvalidTensor);
     };
     // SAFETY: the admitted plan retains every required source descriptor.
     let source_data = |slot: usize| graph_tensor_data(unsafe { &*tensor.src[slot] });
-    // Prism admits zero initialization only for blocks of at most four bytes.
-    let zeros = [0_u8; 4];
-    let left_data = source_data(0)?;
-    let sources = match mode {
-        CopyMode::C2(..) | CopyMode::C6(..) => [left_data, source_data(1)?],
-        CopyMode::C3(_, _, _, _, false) | CopyMode::C7(..) | CopyMode::C8(..) => {
-            [left_data, zeros.as_ptr().cast_mut()]
+    // Typed host word bindings preserve native byte order; conversion is Verdant's.
+    let literal = match mode {
+        CopyMode::C9(ty, bits) => {
+            let word = verdant_tensor::linear::convert_float_storage(0, ty, bits)
+                .map_err(|_| BackendError::Overflow)?
+                .ok_or(BackendError::InvalidTensor)?;
+            if ty == 0 {
+                (word as u32).to_ne_bytes()
+            } else {
+                let [a, b] = (word as u16).to_ne_bytes();
+                [a, b, 0, 0]
+            }
         }
+        _ => [0; 4],
+    };
+    let left_data = match mode {
+        CopyMode::C9(..) => null_mut(),
+        _ => source_data(0)?,
+    };
+    let sources = match mode {
+        CopyMode::C2(..) | CopyMode::C6(..) | CopyMode::C10(_, false, _) => {
+            [left_data, source_data(1)?]
+        }
+        CopyMode::C3(_, _, _, _, false)
+        | CopyMode::C7(..)
+        | CopyMode::C8(..)
+        | CopyMode::C9(..) => [left_data, literal.as_ptr().cast_mut()],
         _ => [left_data, null_mut()],
     };
     let destination_data = graph_tensor_data(tensor)?;
+    let pointers = [
+        sources[0],
+        sources[1],
+        destination_data,
+        literal.as_ptr().cast_mut(),
+    ];
     let mut block = workspace(bytes, 0_u8)?;
     for index in 0..count {
         let request = GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone());
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
-        if let GraphResponse::C2(from, to) | GraphResponse::C3(from, to) = response {
-            let (left_data, right_data) = match response {
-                GraphResponse::C2(..) => (sources[0], sources[1]),
-                _ => (destination_data, sources[0]),
-            };
-            // SAFETY: the admitted plan bounds both reads and the write.
-            // Reading operands first preserves aliases and accumulation order.
+        if let GraphResponse::C2(kind, left_slot, left_from, right_slot, right_from, to) = response
+        {
+            // SAFETY: Prism selects four bounded operand slots and admitted offsets.
+            // Read both operands before writing to preserve aliases and fold order.
             unsafe {
-                let left = ptr::read_unaligned(left_data.add(to as usize).cast::<f32>());
-                let right = ptr::read_unaligned(right_data.add(from as usize).cast::<f32>());
-                let value = verdant_tensor::linear::evaluate_f32_scalar(0, left, right)
+                let [left, right] =
+                    [(left_slot, left_from), (right_slot, right_from)].map(|(slot, from)| {
+                        ptr::read_unaligned(
+                            pointers[slot as usize].add(from as usize).cast::<f32>(),
+                        )
+                    });
+                let value = verdant_tensor::linear::evaluate_f32_scalar(kind, left, right)
                     .map_err(|_| BackendError::InvalidTensor)?;
                 ptr::write_unaligned(destination_data.add(to as usize).cast::<f32>(), value);
             }
@@ -753,7 +726,6 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
         for (tensor, plan) in plans {
             let result = match plan {
                 GraphPlan::C3(..) => execute_matrix(&*tensor, plan),
-                GraphPlan::C2(..) => execute_pointwise(&*tensor, plan),
                 GraphPlan::C4(..) => execute_copy(&*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),
             };

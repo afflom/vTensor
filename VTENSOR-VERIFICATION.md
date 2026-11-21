@@ -1501,3 +1501,70 @@ workspace Clippy and dependency checks passed. Source remains 10,572 lines in
 51 files. Existing Prism roots and the unchanged main application were not
 redundantly re-exported. No new native graph capability is claimed here: this
 verified conversion primitive enables subsequent mixed-type copies and F16 fill.
+
+
+## VT-23: copied and in-place F32/F16 FILL
+
+Registered VT-23 and its behavioral scenario before implementation. The initial
+`cargo test --locked -p vtensor-backend --test contract fill_graphs_vt_23 -- --exact --nocapture`
+failed at the expected live device support query after the imported CPU graph
+succeeded. Upstream's constructor admits contiguous F32/F16 input and chooses
+a duplicate or aliasing view; its CPU kernel uses the descriptor's type but does
+not read the input payload. F16 constants pass through the pinned GGML conversion
+function. The fixture constructs valid nodes before applying tested strided
+layouts, and the in-place output retains its input strides and physical alias.
+
+Prism defines FILL type/word/shape admission, output block count and offsets,
+and the constant-source instruction. It preserves all 32 parameter bits and
+refuses words beyond that domain. Verdant converts the constant once per
+nonempty node, then transfers each encoded block. Native bindings preserve
+host byte order for both four-byte and two-byte words. Unused input payloads
+are not accessed or required to have buffers. Closed examples cover an F16
+exceptional input word and a width refusal; preservation evidence is distinct
+from a general semantic/bounds proof.
+
+Pointwise arithmetic now lowers to the same block executor through Prism
+arithmetic instructions. The model chooses operation code, source slots and
+all operand/output addresses. ACC's original-source reads and REPEAT_BACK's
+running-output reads use the same instruction with different modeled slots.
+Unary operands use a local zero word. The separate native pointwise loop was
+removed; the remaining interpreter binds raw memory effects and calls Verdant
+scalar arithmetic. No handwritten numerical kernel was introduced.
+
+MCP draft storage again returned `store.put failed: unwritable`. The pinned SDK
+accepted all four modules and exported result
+`72ac1710d1bb80909ad8bcf23177392fd152e7fbfe78a463ee5a2c52622a5eb0`
+with attestation
+`800206a99d844424c100cdbaf40c5552501d91008d6106c27be3def71aaeda77`.
+The actual constant/arithmetic mode variants and six-field arithmetic response
+were inspected before validating the native bindings. No SDK output was edited.
+
+All 15,360 imported CPU comparisons pass: both supported types, copied and
+in-place outputs, 24 constant encodings, normal plus four empty-axis patterns,
+four layouts, two widths, two row counts and two batch counts. Constants include
+signed zeros, normals, subnormals, infinities, signaling/quiet and signed NaNs,
+F16 underflow/overflow thresholds and even/odd ties. Complete byte comparison
+checks exact encodings and untouched padding. Out-of-place layout-three cases
+remove the unused input's buffer and data after reference execution; nonempty
+outputs still succeed. Invalid shape, missing descriptor and same-type BF16
+FILL are refused before writes. The first implemented run took 5.78 seconds.
+The migrated 120 arithmetic/unary graphs passed independently before fault tests.
+
+Three bounded defects were rejected. Converting a F16 constant as F32 failed
+at negative zero (byte one was 0 instead of 128). Requiring the unused source's
+data failed the expected successful computation for an unallocated input.
+XORing the arithmetic opcode with one failed the migrated arithmetic oracle
+(expected `bf800000`, actual `3f800000`). All faults were restored before the
+complete regression; none relied on out-of-bounds memory access.
+
+The final workspace regression passed twenty-two contract tests and every other
+target, including the existing 4,608 SET/ACC and 672 REPEAT_BACK scenarios through
+the shared arithmetic interpreter. VT-02 alone retained its exact-source refusal
+of the unpublished Verdant dependency. Contract execution took 17.56 seconds.
+Formatting, model/source audits, frame synchronization, workspace Clippy and
+dependency checks passed. Handwritten source is 10,571 lines in the existing
+51 files, below the previous checkpoint. The unchanged Verdant conversion proof
+and its large corpus were not rerun; this checkpoint validates their graph
+composition. Unchanged main-application proofs were not redundantly rebuilt.
+Full backend conformance, production source acceptance and the previously
+recorded broader Verdant release blockers remain unfinished.
