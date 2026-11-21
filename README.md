@@ -15,8 +15,9 @@ The current F32 matrix and arithmetic graph implementations use an isolated Verd
 reproduced by `just verdant-prepare` from the hash-bound Git bundle in this
 repository. The checkout lives at `.verdant-engine`. This override is explicit in
 `Cargo.toml`; the unchanged exact-source guard rejects it as release evidence.
-The declared upstream base is Verdant v2.4.0 commit `87c3256326b9`; the
-reproducible Verdant extension checkpoint is `61ccbe98d084`.
+The declared upstream base is Verdant v2.9.0 commit `31c93199d2e7`. The
+exact extension commit and bundle digest are recorded in
+[`model/verdant-development.json`](model/verdant-development.json).
 
 The extension now includes Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for the reduction work. All 1,213,940
@@ -110,7 +111,7 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes twenty-nine contract tests; VT-02 refuses the
+The current development tree passes thirty contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy
 and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in
