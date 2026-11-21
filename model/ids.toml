@@ -268,3 +268,9 @@ id = "VT-33"
 level = "build"
 suite = "relative-position-graphs"
 statement = "Prism models GGML relative-position word selection and Verdant preserves F16 and BF16 source encodings in F16 outputs across strided empty and higher-dimensional source layouts"
+
+[[id]]
+id = "VT-34"
+level = "build"
+suite = "indexed-add-graphs"
+statement = "Prism models three-source indexed row addition and Verdant matches GGML ADD_ID arithmetic and exact minus-one row copies across strides empty tensors and atomic invalid-index refusals"

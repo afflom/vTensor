@@ -106,6 +106,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-05` | `build` | The pinned GGML storage oracle executes upstream byte-span semantics for scalar and block-encoded tensors |
 
+## indexed-add-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-34` | `build` | Prism models three-source indexed row addition and Verdant matches GGML ADD_ID arithmetic and exact minus-one row copies across strides empty tensors and atomic invalid-index refusals |
+
 ## matrix-graphs
 
 | ID | Level | Statement |

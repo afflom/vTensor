@@ -2875,3 +2875,18 @@ are recorded in `verification/matrix-execution-runtime.json`. Logs:
 `/tmp/vtensor-matrix-ratio-fault.log`,
 `/tmp/vtensor-matrix-schedule-layouts.log`, and
 `/tmp/vtensor-matrix-schedule-final-checks.log`.
+
+## Three-source indexed addition registered (VT-34)
+
+The ADD_ID scenario and imported CPU oracle are registered before implementation.
+The existing indexed-row harness now shares GGML's own unravel-index helper for
+fixture addressing. Its new mode executes all 164 cases: 20 nonempty ADD_ID
+cases and 144 empty cases over every live table storage type and empty axis.
+The nonempty cases cover widths 1/3/17/65, padded table views, independently
+strided values/indices/output, repeated/reversed indices, exact minus-one
+exceptional-word copies, empty tables used only for copies, numerical exceptional
+values, and poisoned higher index slices that the CPU operator does not read.
+The initial run reports all 20 nonempty cases unsupported and fails its final
+completeness check; the empty cases retain their established no-op behavior.
+This is a registered failing checkpoint, not completion evidence. The log is
+`/tmp/vtensor-indexed-add-before.log`.
