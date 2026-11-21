@@ -124,6 +124,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-01` | `build` | The imported GGML backend contract, implementation interface, and operator oracle match their pinned upstream source |
 
+## reduction-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-29` | `build` | Prism models SUM SUM_ROWS and MEAN accumulation precision rounding and empty reductions and Verdant matches every supported float type against the imported GGML CPU oracle |
+
 ## repeat-graphs
 
 | ID | Level | Statement |

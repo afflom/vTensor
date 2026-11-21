@@ -615,12 +615,101 @@ fn storage_word(src: u64, dst: u64, bits: u64, mode: &CopyMode) -> Result<[u8; 4
             .map_err(|_| BackendError::Overflow),
     }?
     .ok_or(BackendError::InvalidTensor)?;
-    Ok(if dst == 0 {
+    Ok(storage_bytes(word, dst))
+}
+
+fn storage_bytes(word: u64, storage: u64) -> [u8; 4] {
+    if storage == 0 {
         (word as u32).to_ne_bytes()
     } else {
         let [a, b] = (word as u16).to_ne_bytes();
         [a, b, 0, 0]
-    })
+    }
+}
+
+unsafe fn read_word(pointer: *const u8, storage: u64) -> u64 {
+    // SAFETY: callers provide one admitted word of the selected storage width.
+    unsafe {
+        if storage == 0 {
+            u64::from(ptr::read_unaligned(pointer.cast::<u32>()))
+        } else {
+            u64::from(ptr::read_unaligned(pointer.cast::<u16>()))
+        }
+    }
+}
+
+fn execute_word(
+    response: GraphResponse,
+    storage: u64,
+    pointers: &[*mut u8; 4],
+    words: &mut [u64; 3],
+) -> Result<(), BackendError> {
+    let GraphResponse::C4(kind, left_slot, left_from, right_slot, right_from, target, to) =
+        response
+    else {
+        return Err(BackendError::InvalidTensor);
+    };
+    let read = |slot, from| match slot {
+        1 => words
+            .get(from as usize)
+            .copied()
+            .ok_or(BackendError::InvalidTensor),
+        2 => Ok(from),
+        slot => {
+            let index = match slot {
+                0 => 0,
+                3 => 2,
+                4 => 1,
+                5 => 3,
+                _ => return Err(BackendError::InvalidTensor),
+            };
+            // SAFETY: Prism bounds every selected word and its storage width.
+            Ok(unsafe { read_word(pointers[index].add(from as usize), storage) })
+        }
+    };
+    let (a, b) = (read(left_slot, left_from)?, read(right_slot, right_from)?);
+    let value = match kind {
+        0..=3 => verdant_tensor::linear::evaluate_wide(kind, a, b)
+            .map_err(|_| BackendError::InvalidTensor)?,
+        4 | 5 | 8..=15 => Some(u64::from(
+            verdant_tensor::linear::evaluate_f32_scalar(
+                match kind {
+                    4 => 0,
+                    5 => 3,
+                    _ => kind - 8,
+                },
+                f32::from_bits(a as u32),
+                f32::from_bits(b as u32),
+            )
+            .map_err(|_| BackendError::InvalidTensor)?
+            .to_bits(),
+        )),
+        6 => verdant_tensor::linear::convert_float_storage(storage, 0, a)
+            .map_err(|_| BackendError::InvalidTensor)?,
+        7 => verdant_tensor::linear::convert_float_storage(0, storage, a)
+            .map_err(|_| BackendError::InvalidTensor)?,
+        _ => return Err(BackendError::InvalidTensor),
+    }
+    .ok_or(BackendError::InvalidTensor)?;
+    match target {
+        1 => {
+            *words
+                .get_mut(to as usize)
+                .ok_or(BackendError::InvalidTensor)? = value
+        }
+        // SAFETY: Prism emits destination writes only for its admitted logical
+        // output words, after all required source reads. Padding is untouched.
+        3 => unsafe {
+            let encoded = storage_bytes(value, storage);
+            ptr::copy_nonoverlapping(
+                encoded.as_ptr(),
+                pointers[2].add(to as usize),
+                if storage == 0 { 4 } else { 2 },
+            );
+        },
+        _ => return Err(BackendError::InvalidTensor),
+    }
+    Ok(())
 }
 
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
@@ -650,24 +739,31 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         literal.as_ptr().cast_mut(),
     ];
     let mut block = workspace(bytes, 0_u8)?;
+    let mut words = [0; 3];
     for index in 0..count {
         let request = GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone());
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
-        if let GraphResponse::C2(kind, left_slot, left_from, right_slot, right_from, to) = response
-        {
-            // SAFETY: Prism selects four bounded operand slots and admitted offsets.
-            // Read both operands before writing to preserve aliases and fold order.
-            unsafe {
-                let [left, right] =
-                    [(left_slot, left_from), (right_slot, right_from)].map(|(slot, from)| {
-                        ptr::read_unaligned(
-                            pointers[slot as usize].add(from as usize).cast::<f32>(),
-                        )
-                    });
-                let value = verdant_tensor::linear::evaluate_f32_scalar(kind, left, right)
-                    .map_err(|_| BackendError::InvalidTensor)?;
-                ptr::write_unaligned(destination_data.add(to as usize).cast::<f32>(), value);
+        let response = match response {
+            GraphResponse::C2(kind, ls, lf, rs, rf, to) => {
+                let banks = [0, 4, 3, 5];
+                GraphResponse::C4(
+                    kind + 8,
+                    banks[ls as usize],
+                    lf,
+                    banks[rs as usize],
+                    rf,
+                    3,
+                    to,
+                )
             }
+            other => other,
+        };
+        if let GraphResponse::C4(..) = response {
+            let storage = match mode {
+                CopyMode::C16(_, storage) => storage,
+                _ => 0,
+            };
+            execute_word(response, storage, &pointers, &mut words)?;
             continue;
         }
         let encoded;
@@ -680,11 +776,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                 }
                 GraphResponse::C3(source_type, destination_type, from, to) => {
                     let pointer = pointers[0].add(from as usize);
-                    let word = if source_type == 0 {
-                        u64::from(ptr::read_unaligned(pointer.cast::<u32>()))
-                    } else {
-                        u64::from(ptr::read_unaligned(pointer.cast::<u16>()))
-                    };
+                    let word = read_word(pointer, source_type);
                     encoded = storage_word(source_type, destination_type, word, &mode)?;
                     (encoded.as_ptr(), to)
                 }

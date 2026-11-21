@@ -5,19 +5,11 @@
 //! scenario, a scenario with no ID, an ID with no test, or a mislabelled
 //! honesty level all fail here.
 
+use repo_model::repo_root as root;
 use std::collections::BTreeSet;
-use std::path::PathBuf;
 
 use repo_model::conformance::{check_honesty, scenarios_in, workspace_test_names};
 use repo_model::{Level, Model};
-
-fn root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .ancestors()
-        .nth(2)
-        .expect("crates/conformance is two below the root")
-        .to_path_buf()
-}
 
 /// `CM-02`: every registered ID has a scenario and a test, and every scenario
 /// and test names a registered ID.

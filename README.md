@@ -20,9 +20,9 @@ reproducible Verdant extension checkpoint is `940ae5b8fe40`.
 
 The extension now includes Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for the reduction work. All 1,213,940
-comparisons against the imported Berkeley SoftFloat oracle passed. SUM,
-SUM_ROWS and MEAN graph execution is still pending; this foundation does not
-expand the supported GGML operation set.
+comparisons against the imported Berkeley SoftFloat oracle passed. Prism now
+binds SUM, SUM_ROWS and MEAN graphs to this foundation and the existing F32
+and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 
 ## Architecture
 
@@ -68,6 +68,7 @@ expand the supported GGML operation set.
 | `VT-26` | build | Matches 18,432 numerical and 384 empty SCALE/SCALE_BIAS/CLAMP/LEAKY_RELU graphs across F32/F16/BF16, copied/in-place output, strides and exact padding. |
 | `VT-27` | build | Matches 4,992 graphs for thirteen typed unary operations across all five supported float pairs, copied/in-place forms, strides and empty dimensions. |
 | `VT-28` | build | Matches 528 F32 CUMSUM graphs with exact first-word copies, ordered row-local prefixes, independent strides, signed-zero and NaN edges, empty axes and preserved padding. |
+| `VT-29` | build | Matches 4,080 SUM/SUM_ROWS/MEAN graphs with F64 or F32 accumulation as upstream requires, packed/strided SUM ordering, narrowing before MEAN division, all supported float types, empty axes and preserved padding. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -81,6 +82,9 @@ versus in-place alias behavior. REPEAT_BACK uses certified zero-initialization
 and accumulation instructions with Verdant addition in upstream input order.
 DIAG uses certified address selection and Verdant transfers for all three
 CPU-supported types, preserving diagonal encodings and writing positive zeros.
+SUM retains packed-row versus strided-flat F32 accumulation order; half-storage
+SUM accumulates in F32. SUM_ROWS and MEAN accumulate F32 rows in F64, with
+F32 narrowing before MEAN division. Empty reductions retain their output semantics.
 CUMSUM copies the first word of each row, then uses certified F32 addition
 in CPU prefix order. It supports independently strided inputs and outputs.
 TRI shares that selection path for all four upstream variants and rejects
@@ -100,7 +104,7 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes twenty-five contract tests; VT-02 refuses the
+The current development tree passes twenty-eight contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy
 and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in

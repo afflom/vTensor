@@ -85,7 +85,8 @@ inductive{
     {name: windowed, fields: [Bool, Nat, Nat]},
     {name: transformed, fields: [Nat, Nat, Nat, Nat]},
     {name: unaryWord, fields: [Nat, Nat, Nat]},
-    {name: scanned, fields: []}
+    {name: scanned, fields: []},
+    {name: reduced, fields: [Nat, Nat]}
   ]
 }
 
@@ -228,7 +229,8 @@ inductive{
     {name: planned, fields: [PointwiseDecision]},
     {name: offsets, fields: [Bool, Nat, Nat]},
     {name: arithmetic, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: converted, fields: [Nat, Nat, Nat, Nat]}
+    {name: converted, fields: [Nat, Nat, Nat, Nat]},
+    {name: word, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -589,6 +591,84 @@ definition{
 }
 
 definition{
+  name: reductionRowSteps,
+  parameters: [width : Nat, mean : Bool],
+  result: Nat,
+  body: ((prim multiply width 2 : Nat) + (if mean then 4 else 2)),
+  executable: true
+}
+
+definition{
+  name: reductionGrouped,
+  parameters: [source : IndexContext, storage : Nat],
+  result: Bool,
+  body: ((if (storage =? 0) then false else true) || ((project source s0) =? 4)),
+  executable: true
+}
+
+definition{
+  name: reductionSteps,
+  parameters: [source : IndexContext, operation : Nat, storage : Nat],
+  result: Nat,
+  body: (let rows : Nat := (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat); (if (operation =? 13) then (2 + (if (reductionGrouped source storage) then (prim multiply rows (reductionRowSteps (project source u0) false) : Nat) else (prim multiply rows (prim multiply (project source u0) 2 : Nat) : Nat))) else (prim multiply rows (reductionRowSteps (project source u0) (operation =? 16)) : Nat))),
+  executable: true
+}
+
+definition{
+  name: planReduction,
+  parameters: [operation : Nat, left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let storage : Nat := (project left ty); (if ((storage =? 0) || ((operation =? 13) && ((storage =? 1) || (storage =? 30)))) then (if ((storage =? (project output ty)) && (if (operation =? 13) then (((((project output n0) =? 1) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) else (((((project output n0) =? 1) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))))) then (let source : IndexContext := (indexContext left 1); (ctor PointwiseDecision.copyBlocks (reductionSteps source operation storage) (if (storage =? 0) then 4 else 2) source (indexContext output 1) (ctor CopyMode.reduced operation storage))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported))),
+  executable: true
+}
+
+definition{
+  name: resetReductionWord,
+  parameters: [register : Nat],
+  result: GraphResponse,
+  body: (ctor GraphResponse.word 0 2 0 2 0 1 register),
+  executable: true
+}
+
+definition{
+  name: reductionElement,
+  parameters: [ordinal : Nat, phase : Nat, source : IndexContext, storage : Nat, accumulator : Nat],
+  result: GraphResponse,
+  body: (if (phase =? 0) then (ctor GraphResponse.word (if (storage =? 0) then 1 else 6) 0 (blockOffset ordinal source) 2 0 1 2) else (ctor GraphResponse.word (if (storage =? 0) then 0 else 4) 1 accumulator 1 2 1 accumulator)),
+  executable: true
+}
+
+definition{
+  name: reductionRowInstruction,
+  parameters: [step : Nat, row : Nat, source : IndexContext, storage : Nat],
+  result: GraphResponse,
+  body: (if (step =? 0) then (resetReductionWord 1) else (reductionElement ((prim multiply row (project source u0) : Nat) + (prim quotient (prim subtract step 1 : Nat) 2 0 : Nat)) (prim remainder (prim subtract step 1 : Nat) 2 0 : Nat) source storage 1)),
+  executable: true
+}
+
+definition{
+  name: sumOffsets,
+  parameters: [index : Nat, source : IndexContext, storage : Nat],
+  result: GraphResponse,
+  body: (if (index =? 0) then (resetReductionWord 0) else (if ((index + 1) =? (reductionSteps source 13 storage)) then (ctor GraphResponse.word (if (storage =? 0) then 2 else 7) 1 0 2 0 3 0) else (let step : Nat := (prim subtract index 1 : Nat); (if (reductionGrouped source storage) then (let stride : Nat := (reductionRowSteps (project source u0) false); (let row : Nat := (prim quotient step stride 0 : Nat); (let phase : Nat := (prim remainder step stride 0 : Nat); (if ((phase + 1) =? stride) then (ctor GraphResponse.word (if (storage =? 0) then 0 else 4) 1 0 1 1 1 0) else (reductionRowInstruction phase row source storage))))) else (reductionElement (prim quotient step 2 0 : Nat) (prim remainder step 2 0 : Nat) source storage 0))))),
+  executable: true
+}
+
+definition{
+  name: reducedOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    operation : Nat,
+    storage : Nat
+  ],
+  result: GraphResponse,
+  body: (if (operation =? 13) then (sumOffsets index source storage) else (let stride : Nat := (reductionRowSteps (project source u0) (operation =? 16)); (let row : Nat := (prim quotient index stride 0 : Nat); (let phase : Nat := (prim remainder index stride 0 : Nat); (let end : Nat := (1 + (prim multiply (project source u0) 2 : Nat)); (if (phase <? end) then (reductionRowInstruction phase row source 0) else (let target : Nat := (blockOffset row destination); (if (operation =? 14) then (ctor GraphResponse.word 2 1 1 2 0 3 target) else (if (phase =? end) then (ctor GraphResponse.word 2 1 1 2 0 1 1) else (if (phase =? (end + 1)) then (ctor GraphResponse.word 3 2 (project source u0) 2 0 1 2) else (ctor GraphResponse.word 5 1 1 1 2 3 target))))))))))),
+  executable: true
+}
+
+definition{
   name: planScan,
   parameters: [left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
@@ -793,7 +873,8 @@ definition{
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
     | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
-    | CopyMode.scanned => (scannedOffsets index source destination)),
+    | CopyMode.scanned => (scannedOffsets index source destination)
+    | CopyMode.reduced operation storage => (reducedOffsets index source destination operation storage)),
   executable: true
 }
 
@@ -804,9 +885,9 @@ definition{
   body: (match request
     | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (match (unaryKind operation variant)
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
       | Option.none => (numericPlan operation variant left right output)
-      | Option.some kind => (planUnary kind left output))))))))))))))))
+      | Option.some kind => (planUnary kind left output)))))))))))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -1041,6 +1122,54 @@ theorem{
   name: scanPlaneResetCopiesSource,
   parameters: [],
   statement: ((scannedOffsets 6 (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 28, s2 := 60, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 16, s2 := 36, s3 := 72})) = (ctor GraphResponse.offsets false 60 36)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: reductionUsesEveryContext,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    operation : Nat,
+    storage : Nat
+  ],
+  statement: ((copyOffsets index source destination (ctor CopyMode.reduced operation storage)) = (reducedOffsets index source destination operation storage)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: sumPackedMergesWideRows,
+  parameters: [],
+  statement: ((sumOffsets 6 (record IndexContext {u0 := 2, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 24}) 0) = (ctor GraphResponse.word 0 1 0 1 1 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: sumNextRowRestartsAccumulator,
+  parameters: [],
+  statement: ((sumOffsets 7 (record IndexContext {u0 := 2, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 24}) 0) = (ctor GraphResponse.word 0 2 0 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: meanNarrowsBeforeDivision,
+  parameters: [],
+  statement: ((reducedOffsets 5 (record IndexContext {u0 := 2, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 24}) (record IndexContext {u0 := 1, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 16, s3 := 16}) 16 0) = (ctor GraphResponse.word 2 1 1 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: meanRoundsCountToF32,
+  parameters: [],
+  statement: ((reducedOffsets 6 (record IndexContext {u0 := 2, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 24}) (record IndexContext {u0 := 1, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 16, s3 := 16}) 16 0) = (ctor GraphResponse.word 3 2 2 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: meanUsesF32Division,
+  parameters: [],
+  statement: ((reducedOffsets 7 (record IndexContext {u0 := 2, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 24}) (record IndexContext {u0 := 1, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 8, s2 := 16, s3 := 16}) 16 0) = (ctor GraphResponse.word 5 1 1 1 2 3 0)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

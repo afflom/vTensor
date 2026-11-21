@@ -50,16 +50,12 @@ pub struct Claim {
     /// What is claimed.
     pub statement: String,
     /// The Gherkin file carrying the scenario (R3).
-    #[serde(default)]
     pub feature: Option<String>,
     /// The authority a `some-true` claim is reproduced from.
-    #[serde(default)]
     pub authority: Option<String>,
     /// Recorded sample size, for a claim that is a statistic.
-    #[serde(default)]
     pub sample_size: Option<u64>,
     /// Recorded seed, for a claim that is a statistic.
-    #[serde(default)]
     pub seed: Option<u64>,
 }
 
@@ -72,41 +68,15 @@ impl Ledger {
     /// test names, not the model.
     pub fn check(&self) -> Result<(), ModelError> {
         for c in &self.claim {
-            match c.level {
-                Level::SomeTrue => {
-                    if c.authority.is_none() {
-                        return Err(ModelError::Inconsistent(format!(
-                            "{}: a some-true claim must name the authority it is \
-                             reproduced from",
-                            c.id
-                        )));
-                    }
-                }
-                Level::Build => {
-                    if c.feature.is_none() {
-                        return Err(ModelError::Inconsistent(format!(
-                            "{}: a build claim must name the Gherkin scenario that \
-                             validates it (R3)",
-                            c.id
-                        )));
-                    }
-                    if c.authority.is_some() {
-                        return Err(ModelError::Inconsistent(format!(
-                            "{}: a build claim is evidence, not a reproduction of an \
-                             authority; it must not name one",
-                            c.id
-                        )));
-                    }
-                }
-                Level::Open => {
-                    if c.authority.is_some() {
-                        return Err(ModelError::Inconsistent(format!(
-                            "{}: an open claim is a measurement and cannot cite an \
-                             authority for its value",
-                            c.id
-                        )));
-                    }
-                }
+            let failure = match (c.level, c.authority.is_some(), c.feature.is_some()) {
+                (Level::SomeTrue, false, _) => Some("a some-true claim must name the authority it is reproduced from"),
+                (Level::Build, _, false) => Some("a build claim must name the Gherkin scenario that validates it (R3)"),
+                (Level::Build, true, _) => Some("a build claim is evidence, not a reproduction of an authority; it must not name one"),
+                (Level::Open, true, _) => Some("an open claim is a measurement and cannot cite an authority for its value"),
+                _ => None,
+            };
+            if let Some(message) = failure {
+                return Err(ModelError::Inconsistent(format!("{}: {message}", c.id)));
             }
             // No rules about a *class* of ID here. `CP-` recording a sample size,
             // `CG-` being measured rather than asserted, `CN-` not existing at
@@ -148,12 +118,10 @@ pub struct IdRow {
     /// The error type this row declares, when the row specifies a public
     /// failure (R5). `cargo xtask audit-limits` sanctions a shipped crate's
     /// `Result<_, E>` only for an `E` declared here.
-    #[serde(default)]
     pub failure: Option<String>,
     /// The ID of the `build` row whose test is the negative test of
     /// [`Self::failure`]: the test that provokes the refusal and observes it. It
     /// may be this row's own ID. Present exactly when `failure` is.
-    #[serde(default)]
     pub negative: Option<String>,
 }
 
@@ -181,23 +149,21 @@ impl Ids {
     /// it. A type is declared once --- two rows declaring it would be two
     /// sources for one failure (R1).
     pub fn declared_failures(&self) -> Result<Vec<DeclaredFailure<'_>>, ModelError> {
-        let bad = |m: String| ModelError::Inconsistent(m);
         let mut out: Vec<DeclaredFailure<'_>> = Vec::new();
         for row in &self.id {
+            let id = &row.id;
+            let bad = |message| ModelError::Inconsistent(format!("{id}: {message}"));
             let (type_name, negative) = match (&row.failure, &row.negative) {
                 (None, None) => continue,
-                (Some(_), None) => {
+                (Some(type_name), None) => {
                     return Err(bad(format!(
-                        "{}: declares failure `{}` and names no negative test. Every public \
-                         failure is covered by a negative test (R5)",
-                        row.id,
-                        row.failure.as_deref().unwrap_or_default()
+                        "declares failure `{type_name}` and names no negative test. Every public \
+                     failure is covered by a negative test (R5)"
                     )))
                 }
                 (None, Some(negative)) => {
                     return Err(bad(format!(
-                        "{}: names negative test {negative} and declares no failure type",
-                        row.id
+                        "names negative test {negative} and declares no failure type"
                     )))
                 }
                 (Some(type_name), Some(negative)) => (type_name.as_str(), negative.as_str()),
@@ -209,34 +175,31 @@ impl Ids {
                     .all(|c| c.is_ascii_alphanumeric() || c == '_')
             {
                 return Err(bad(format!(
-                    "{}: failure `{type_name}` is not a bare Rust type name",
-                    row.id
+                    "failure `{type_name}` is not a bare Rust type name"
                 )));
             }
             if let Some(first) = out.iter().find(|d| d.type_name == type_name) {
+                let first = first.declared_by;
                 return Err(bad(format!(
-                    "{}: failure `{type_name}` is declared twice, by {} and {} (R1)",
-                    row.id, first.declared_by, row.id
+                    "failure `{type_name}` is declared twice, by {first} and {id} (R1)"
                 )));
             }
-            let Some(target) = self.get(negative) else {
-                return Err(bad(format!(
-                    "{}: failure `{type_name}` names negative test {negative}, which is \
-                     not a registered ID (R5)",
-                    row.id
-                )));
-            };
+            let target = self.get(negative).ok_or_else(|| {
+                bad(format!(
+                    "failure `{type_name}` names negative test {negative}, which is \
+                 not a registered ID (R5)"
+                ))
+            })?;
             if target.level != Level::Build {
+                let level = target.level.as_str();
                 return Err(bad(format!(
-                    "{}: negative test {negative} of failure `{type_name}` must be a `build` \
-                     claim, not `{}`: only a claim constructed here asserts a refusal (R2)",
-                    row.id,
-                    target.level.as_str()
+                    "negative test {negative} of failure `{type_name}` must be a `build` \
+                     claim, not `{level}`: only a claim constructed here asserts a refusal (R2)"
                 )));
             }
             out.push(DeclaredFailure {
                 type_name,
-                declared_by: &row.id,
+                declared_by: id,
                 negative,
             });
         }
@@ -295,7 +258,6 @@ pub struct AuthorityRow {
     pub checksum_reason: String,
     /// The committed file or directory the checksum is over, as a path relative
     /// to the repository root. Absent when nothing of the authority is committed.
-    #[serde(default)]
     pub artifact: Option<String>,
     /// What the authority says.
     pub statement: String,
