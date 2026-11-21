@@ -2539,3 +2539,56 @@ workspace Clippy, model/frame checks and the source audit. No implementation,
 model or certified runtime library changed. Handwritten source decreases from
 10,558 to 10,549 lines in the same 51 files. This supports the remaining gather
 work without increasing a ceiling or removing validation cases.
+
+## GET_ROWS contract and failing implementation gates (VT-32)
+
+VT-32 is registered before its implementation. The native regression derives
+30 source formats from the pinned GGML type traits plus F32/I32, builds an
+actual upstream GET_ROWS graph, and checks the CPU result before asking
+vTensor to run it. All 174 upstream cases succeed: 30 nonempty cases and
+four empty-axis cases for each of the 36 live storage types. vTensor passes
+all 144 empty cases and fails all 30 nonempty cases at support and execution.
+The test accumulates failures across the full corpus before refusing, so
+every format runs even while GET_ROWS execution remains unimplemented.
+
+RowGather.lex.tex defines the four-dimensional constructor conditions,
+I32 signed-index bounds, logical index addressing, source block addressing,
+and the imported codebook spans. Empty outputs admit all 36 known storage
+types while nonempty outputs use the 30-format CPU oracle domain. General
+shape/index decision theorems and
+boundary examples passed authoring verification. Canonical authoring
+attestation is
+`cc029e4b5152ac6df80226a0c97b3122d8a8f411c183dc2ed0352583ee248d04`.
+The exact signed envelope, source hashes and separate pinned-SDK structural
+check identities are in verification/row-gather-authoring.json. The model has
+its own locked project; it is not yet wired into the graph planner or exported
+as a runtime implementation. The authoring proof is not SDK runtime acceptance.
+
+The pinned Prism arithmetic proof form closes the general index bounds.
+The upper-bound theorem's exact observed axioms are Quot.sound and propext;
+the other two general decision proofs require propext. No axiom policy or
+proof limit was relaxed. The compiler's fixed proof form is documented in
+[LexLean v0.4.0](https://github.com/UOR-Foundation/LexLean/blob/v0.4.0/SPEC.md).
+
+Q8_1's missing CPU to_float callback and Q8_K's absence from this row-operator
+domain remain explicit reference gaps. The cpuSource predicate describes the
+executable oracle domain, not a claim that every imported numerical requirement
+is implemented. All storage types retain their existing storage/copy contracts.
+
+The new regression is an unfinished TDD checkpoint. The source audit currently
+rejects its added handwritten harness (10,603 lines versus the measured
+10,558-line parent). The immediately preceding fixture-refactor checkpoint
+is at 10,549 lines, which becomes the parent budget after this commit.
+The harness must be consolidated and the final implementation must fit the
+monotonic budget. No ceiling or acceptance gate was changed. Full operation
+coverage, production dependency resolution, and VT-02 remain outstanding.
+
+The pinned Engine R3 checkpoint is
+`00fd83066677e43dcdf0060ecdef53426eaad30e`. Its new external reference mode
+passed all 270 cases across the 30 formats. The production-root check and
+public API check remain failing (missing StorageBlock root and E0432 for
+missing decode_storage_block). The new expected-value corpus is initialized
+once per process and reused by the pending numerical and refusal tests.
+The prior runtime libraries and production request are unchanged. Neither this
+Engine stage nor VT-32 is accepted as implemented; the explicit development
+bundle retains their failing checks for the next implementation step.

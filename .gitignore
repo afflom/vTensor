@@ -46,3 +46,5 @@ screens/
 /.verdant-engine.prepare-*/
 
 /app/.lexlean-pointwise/
+
+/app/.lexlean-row-gather/

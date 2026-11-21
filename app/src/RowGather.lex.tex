@@ -1,0 +1,378 @@
+\begin{lexlean}{RowGather}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TensorTypes}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: cpuSource,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((((((((((((((((((((((((((((((kind =? 0) || (kind =? 1)) || (kind =? 2)) || (kind =? 3)) || (kind =? 6)) || (kind =? 7)) || (kind =? 8)) || (kind =? 10)) || (kind =? 11)) || (kind =? 12)) || (kind =? 13)) || (kind =? 14)) || (kind =? 16)) || (kind =? 17)) || (kind =? 18)) || (kind =? 19)) || (kind =? 20)) || (kind =? 21)) || (kind =? 22)) || (kind =? 23)) || (kind =? 26)) || (kind =? 29)) || (kind =? 30)) || (kind =? 34)) || (kind =? 35)) || (kind =? 39)) || (kind =? 40)) || (kind =? 41)) || (kind =? 42)) || (kind =? 43)),
+  executable: true
+}
+
+definition{
+  name: knownStorage,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => false
+    | TensorTypes::TypeStorageDecision.knownType storage => true),
+  executable: true
+}
+
+definition{
+  name: emptyOutput,
+  parameters: [width : Nat, i0 : Nat, i1 : Nat, i2 : Nat],
+  result: Bool,
+  body: ((((width =? 0) || (i0 =? 0)) || (i1 =? 0)) || (i2 =? 0)),
+  executable: true
+}
+
+definition{
+  name: sourceDomain,
+  parameters: [kind : Nat, width : Nat, i0 : Nat, i1 : Nat, i2 : Nat],
+  result: Bool,
+  body: (if (emptyOutput width i0 i1 i2) then (knownStorage kind) else (cpuSource kind)),
+  executable: true
+}
+
+definition{
+  name: outputKind,
+  parameters: [kind : Nat],
+  result: Nat,
+  body: (if (kind =? 26) then 26 else 0),
+  executable: true
+}
+
+definition{
+  name: shape,
+  parameters: [
+    kind : Nat,
+    s0 : Nat,
+    s1 : Nat,
+    s2 : Nat,
+    s3 : Nat,
+    indexKind : Nat,
+    i0 : Nat,
+    i1 : Nat,
+    i2 : Nat,
+    i3 : Nat,
+    outKind : Nat,
+    o0 : Nat,
+    o1 : Nat,
+    o2 : Nat,
+    o3 : Nat
+  ],
+  result: Bool,
+  body: ((((((((((sourceDomain kind s0 i0 i1 i2) && (indexKind =? 26)) && (s2 =? i1)) && (s3 =? i2)) && (i3 =? 1)) && (outKind =? (outputKind kind))) && (o0 =? s0)) && (o1 =? i0)) && (o2 =? i1)) && (o3 =? i2)),
+  executable: true
+}
+
+definition{
+  name: GatherDimensions,
+  parameters: [
+    kind : Nat,
+    s0 : Nat,
+    s1 : Nat,
+    s2 : Nat,
+    s3 : Nat,
+    indexKind : Nat,
+    i0 : Nat,
+    i1 : Nat,
+    i2 : Nat,
+    i3 : Nat,
+    outKind : Nat,
+    o0 : Nat,
+    o1 : Nat,
+    o2 : Nat,
+    o3 : Nat
+  ],
+  result: Prop,
+  body: (((((((((((sourceDomain kind s0 i0 i1 i2) = true) /\ (indexKind = 26)) /\ (s2 = i1)) /\ (s3 = i2)) /\ (i3 = 1)) /\ (outKind = (outputKind kind))) /\ (o0 = s0)) /\ (o1 = i0)) /\ (o2 = i1)) /\ (o3 = i2))
+}
+
+theorem{
+  name: shapeDecidesEveryDescriptor,
+  parameters: [
+    kind : Nat,
+    s0 : Nat,
+    s1 : Nat,
+    s2 : Nat,
+    s3 : Nat,
+    indexKind : Nat,
+    i0 : Nat,
+    i1 : Nat,
+    i2 : Nat,
+    i3 : Nat,
+    outKind : Nat,
+    o0 : Nat,
+    o1 : Nat,
+    o2 : Nat,
+    o3 : Nat
+  ],
+  statement: (((shape kind s0 s1 s2 s3 indexKind i0 i1 i2 i3 outKind o0 o1 o2 o3) = true) <-> (GatherDimensions kind s0 s1 s2 s3 indexKind i0 i1 i2 i3 outKind o0 o1 o2 o3)),
+  proof: simplify{definitions: [Bool.and_eq_true, GatherDimensions, Nat.beq_eq, shape]},
+  axioms: [propext]
+}
+
+definition{
+  name: validIndex,
+  parameters: [rows : Nat, word : Nat],
+  result: Bool,
+  body: ((word <=? 2147483647) && (word <? rows)),
+  executable: true
+}
+
+definition{
+  name: ValidIndex,
+  parameters: [rows : Nat, word : Nat],
+  result: Prop,
+  body: ((word <= 2147483647) /\ (word < rows))
+}
+
+theorem{
+  name: validIndexDecidesSignedBounds,
+  parameters: [rows : Nat, word : Nat],
+  statement: (((validIndex rows word) = true) <-> (ValidIndex rows word)),
+  proof: linear_arithmetic{definitions: [ValidIndex, validIndex]},
+  axioms: [propext]
+}
+
+definition{
+  name: indexCount,
+  parameters: [i0 : Nat, i1 : Nat, i2 : Nat],
+  result: Nat,
+  body: (if (((i0 =? 0) || (i1 =? 0)) || (i2 =? 0)) then 0 else (prim multiply (prim multiply i0 i1 : Nat) i2 : Nat)),
+  executable: true
+}
+
+definition{
+  name: indexAddress,
+  parameters: [
+    ordinal : Nat,
+    i0 : Nat,
+    i1 : Nat,
+    i2 : Nat,
+    stride0 : Nat,
+    stride1 : Nat,
+    stride2 : Nat
+  ],
+  result: (Option Nat),
+  body: (if (ordinal <? (indexCount i0 i1 i2)) then (ctor Option.some [Nat] (((prim multiply (prim remainder ordinal i0 0 : Nat) stride0 : Nat) + (prim multiply (prim remainder (prim quotient ordinal i0 0 : Nat) i1 0 : Nat) stride1 : Nat)) + (prim multiply (prim quotient (prim quotient ordinal i0 0 : Nat) i1 0 : Nat) stride2 : Nat))) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: sourceBlockAddress,
+  parameters: [
+    kind : Nat,
+    column : Nat,
+    row : Nat,
+    ordinal : Nat,
+    i0 : Nat,
+    i1 : Nat,
+    i2 : Nat,
+    width : Nat,
+    rows : Nat,
+    stride0 : Nat,
+    stride1 : Nat,
+    stride2 : Nat,
+    stride3 : Nat
+  ],
+  result: (Option Nat),
+  body: (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor Option.none [Nat])
+    | TensorTypes::TypeStorageDecision.knownType storage => (if (((((cpuSource kind) && (column <? width)) && (validIndex rows row)) && (ordinal <? (indexCount i0 i1 i2))) && ((prim remainder width (project storage blockSize) 0 : Nat) =? 0)) then (ctor Option.some [Nat] ((((prim multiply (prim quotient column (project storage blockSize) 0 : Nat) stride0 : Nat) + (prim multiply row stride1 : Nat)) + (prim multiply (prim remainder (prim quotient ordinal i0 0 : Nat) i1 0 : Nat) stride2 : Nat)) + (prim multiply (prim quotient (prim quotient ordinal i0 0 : Nat) i1 0 : Nat) stride3 : Nat))) else (ctor Option.none [Nat]))),
+  executable: true
+}
+
+structure{
+  name: TableSpan,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: offset, type: Nat}, {name: elementBytes, type: Nat}, {name: elements, type: Nat}]
+}
+
+definition{
+  name: tableSpan,
+  parameters: [table : Nat],
+  result: (Option TableSpan),
+  body: (if (table =? 0) then (ctor Option.some [TableSpan] (record TableSpan {offset := 0, elementBytes := 1, elements := 8})) else (if (table =? 1) then (ctor Option.some [TableSpan] (record TableSpan {offset := 8, elementBytes := 1, elements := 128})) else (if (table =? 2) then (ctor Option.some [TableSpan] (record TableSpan {offset := 136, elementBytes := 8, elements := 128})) else (if (table =? 3) then (ctor Option.some [TableSpan] (record TableSpan {offset := 1160, elementBytes := 8, elements := 256})) else (if (table =? 4) then (ctor Option.some [TableSpan] (record TableSpan {offset := 3208, elementBytes := 8, elements := 512})) else (if (table =? 5) then (ctor Option.some [TableSpan] (record TableSpan {offset := 7304, elementBytes := 8, elements := 1024})) else (if (table =? 6) then (ctor Option.some [TableSpan] (record TableSpan {offset := 15496, elementBytes := 4, elements := 256})) else (if (table =? 7) then (ctor Option.some [TableSpan] (record TableSpan {offset := 16520, elementBytes := 4, elements := 512})) else (if (table =? 8) then (ctor Option.some [TableSpan] (record TableSpan {offset := 18568, elementBytes := 1, elements := 16})) else (if (table =? 9) then (ctor Option.some [TableSpan] (record TableSpan {offset := 18584, elementBytes := 1, elements := 16})) else (if (table =? 10) then (ctor Option.some [TableSpan] (record TableSpan {offset := 18600, elementBytes := 8, elements := 2048})) else (ctor Option.none [TableSpan])))))))))))),
+  executable: true
+}
+
+definition{
+  name: tableByte,
+  parameters: [table : Nat, element : Nat, byte : Nat],
+  result: (Option Nat),
+  body: (match (tableSpan table)
+    | Option.none => (ctor Option.none [Nat])
+    | Option.some span => (if ((element <? (project span elements)) && (byte <? (project span elementBytes))) then (ctor Option.some [Nat] (((project span offset) + (prim multiply element (project span elementBytes) : Nat)) + byte)) else (ctor Option.none [Nat]))),
+  executable: true
+}
+
+theorem{
+  name: emptySourceDomainKeepsEveryKnownStorage,
+  parameters: [kind : Nat, i0 : Nat, i1 : Nat, i2 : Nat],
+  statement: ((sourceDomain kind 0 i0 i1 i2) = (knownStorage kind)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyQ8OneNeedsNoCpuDecoder,
+  parameters: [],
+  statement: ((shape 9 0 7 3 2 26 5 3 2 1 0 0 5 3 2) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyQ8KBatchNeedsNoCpuDecoder,
+  parameters: [],
+  statement: ((shape 15 256 7 0 2 26 5 0 2 1 0 256 5 0 2) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyF64NeedsNoCpuDecoder,
+  parameters: [],
+  statement: ((shape 28 0 7 3 2 26 5 3 2 1 0 0 5 3 2) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyUnknownTypeRefused,
+  parameters: [],
+  statement: ((shape 44 0 7 3 2 26 5 3 2 1 0 0 5 3 2) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: packedAndIntegerShapes,
+  parameters: [],
+  statement: ((shape 23 256 7 3 2 26 5 3 2 1 0 256 5 3 2) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: integerOutputPreservesType,
+  parameters: [],
+  statement: ((shape 26 3 7 2 4 26 5 2 4 1 26 3 5 2 4) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: rejectWrongOutputKind,
+  parameters: [],
+  statement: ((shape 26 3 7 2 4 26 5 2 4 1 0 3 5 2 4) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: rejectMismatchedBatch,
+  parameters: [],
+  statement: ((shape 0 3 7 2 4 26 5 3 4 1 0 3 5 3 4) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: rejectNonI32Index,
+  parameters: [],
+  statement: ((shape 0 3 7 2 4 27 5 2 4 1 0 3 5 2 4) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeIndexRefused,
+  parameters: [rows : Nat],
+  statement: ((validIndex rows 4294967295) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: upperIndexRefused,
+  parameters: [rows : Nat],
+  statement: ((validIndex rows rows) = false),
+  proof: linear_arithmetic{definitions: [validIndex]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: emptyIndicesShortCircuit,
+  parameters: [i1 : Nat, i2 : Nat],
+  statement: ((indexCount 0 i1 i2) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyIndexAddress,
+  parameters: [],
+  statement: ((indexAddress 0 0 2 3 4 12 24) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: stridedBatchedIndex,
+  parameters: [],
+  statement: ((indexAddress 23 5 3 2 8 80 320) = (ctor Option.some [Nat] 424)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: stridedQuantizedSource,
+  parameters: [],
+  statement: ((sourceBlockAddress 23 300 6 23 5 3 2 512 7 152 384 3072 16384) = (ctor Option.some [Nat] 21912)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: rejectUnalignedBlockWidth,
+  parameters: [],
+  statement: ((sourceBlockAddress 23 0 0 0 1 1 1 255 1 136 136 136 136) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: cpuOracleMissingQ8One,
+  parameters: [],
+  statement: ((cpuSource 9) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: cpuOracleMissingQ8K,
+  parameters: [],
+  statement: ((cpuSource 15) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseUnknownTable,
+  parameters: [],
+  statement: ((tableByte 11 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseGridUpperIndex,
+  parameters: [],
+  statement: ((tableByte 10 2048 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseGridUpperByte,
+  parameters: [],
+  statement: ((tableByte 10 0 8) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lastGridByte,
+  parameters: [],
+  statement: ((tableByte 10 2047 7) = (ctor Option.some [Nat] 34983)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -72,6 +72,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-29` | build | Matches 4,080 SUM/SUM_ROWS/MEAN graphs with F64 or F32 accumulation as upstream requires, packed/strided SUM ordering, narrowing before MEAN division, all supported float types, empty axes and preserved padding. |
 | `VT-30` | build | Matches 2,264 ARGMAX/COUNT_EQUAL graphs, including last ties, NaN recovery, all-NaN rows, exact I32/I64 outputs, independent strides, four-axis equality, empty inputs and large-empty planning probes. |
 | `VT-31` | build | Matches 3,360 F16/F32 GET_ROWS_BACK graphs with I32 indices, duplicate and prefix rows, strided layouts, empty outputs, zero-index clears without gradient buffers, and atomic invalid-index refusals. |
+| `VT-32` | build | In progress: the row-gather model is verified during authoring; the CPU-backed GET_ROWS regression passes 144 empty cases and fails all 30 nonempty cases; graph execution remains incomplete. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -111,11 +112,11 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes thirty contract tests; VT-02 refuses the
-unpublished local dependency. Formatting, model/source audits, workspace Clippy
-and dependency checks pass. No release gate has been weakened to admit it.
-Detailed evidence is recorded in
-[`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
+Before GET_ROWS development, thirty contract checks passed and VT-02 rejected
+the unpublished local dependency. The new VT-32 regression is intentionally
+failing, and the source audit rejects its added handwritten harness. These
+must be resolved before this development stage is accepted. Detailed evidence
+is recorded in [`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
 
 ## Development
 
@@ -218,3 +219,12 @@ arrays; source lifting and production packaging retain all three resources.
 The prior twenty-one SDK runtime libraries remain byte-identical. These
 primitive and data checks support the remaining full decoders and GET_ROWS
 implementation; they do not establish complete quantized graph support.
+
+The next checkpoint registers full GET_ROWS and storage-block decoding before
+implementation. A separate RowGather model verifies shared shape and index
+conditions; its authoring evidence is retained under verification/. Verdant's
+new reference corpus executes the upstream CPU operator over all 30 decodable
+source formats and nine byte patterns. The implementation tests are deliberately
+failing at this stage. Decoder execution will remain inside Verdant, with
+vTensor following Prism's graph and address plans. The added native harness
+currently exceeds the source budget and must be consolidated before acceptance.

@@ -315,6 +315,12 @@ fn row_gradient_graphs_vt_31() {
     native_backend_oracle::verify(&root(), "row-gradient", 3360);
 }
 
+/// `VT-32`: Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals
+#[test]
+fn row_gather_graphs_vt_32() {
+    native_backend_oracle::verify(&root(), "row-gather", 174);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -1747,6 +1753,56 @@ int main(int argc, char **argv) {
         ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
       }
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases); return 0;
+    }
+    if (!strcmp(argv[3], "row-gather")) {
+      size_t cases=0, types=0, decoders=0;
+      bool complete=true;
+      for (int kind=0; kind<GGML_TYPE_COUNT; ++kind) {
+        const auto type=ggml_type(kind);
+        if (!ggml_get_type_traits(type)->type_size) continue;
+        const bool numerical=type==GGML_TYPE_F32 || type==GGML_TYPE_I32 || ggml_get_type_traits(type)->to_float;
+        types++; decoders+=numerical;
+        for (int empty_axis : {-1,0,1,2,3}) {
+          if (empty_axis<0 && !numerical) continue;
+          current_kind=type;
+          int64_t source_shape[]={2*ggml_blck_size(type),3,2,2}, index_shape[]={3,2,2,1};
+          if (empty_axis==0) source_shape[0]=0;
+          if (empty_axis>0) index_shape[empty_axis-1]=0;
+          if (empty_axis>1) source_shape[empty_axis]=0;
+          ggml_init_params params={8*1024*1024,nullptr,true};
+          ggml_context *ctx=ggml_init(params); CHECK(ctx);
+          ggml_tensor *input=ggml_new_tensor(ctx,type,4,source_shape);
+          ggml_tensor *indices=ggml_new_tensor(ctx,GGML_TYPE_I32,4,index_shape);
+          ggml_tensor *result=ggml_get_rows(ctx,input,indices);
+          ggml_backend_buffer_t buffer=nullptr;
+          if (empty_axis<0) {
+            buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
+            std::vector<unsigned char> source(ggml_nbytes(input));
+            for (int64_t row=0; row<ggml_nrows(input); ++row) memset(source.data()+row*input->nb[1],0xA0+row,input->nb[1]);
+            std::vector<int32_t> selected(ggml_nelements(indices));
+            for (size_t i=0; i<selected.size(); ++i) selected[i]=i%3==1?0:2;
+            ggml_backend_tensor_set(input,source.data(),0,source.size());
+            ggml_backend_tensor_set(indices,selected.data(),0,selected.size()*4);
+          }
+          ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
+          CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+          std::vector<unsigned char> expected(ggml_nbytes(result));
+          if (!expected.empty()) {
+            ggml_backend_tensor_get(result,expected.data(),0,expected.size());
+            ggml_backend_tensor_memset(result,0xA5,0,expected.size());
+          }
+          const bool supported=ggml_backend_dev_supports_op(dev,result);
+          const bool computed=ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS;
+          const bool equal=computed && compare_result(result,nullptr,expected,0);
+          complete &= supported && computed && equal;
+          if (!supported || !computed || !equal) fprintf(stderr,"row-gather missing kind=%d empty_axis=%d supported=%d computed=%d equal=%d\n",kind,empty_axis,supported,computed,equal);
+          ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
+        }
+      }
+      CHECK(types==36 && decoders==30);
+      CHECK(complete);
+      ggml_backend_free(reference); ggml_backend_free(backend);
+      printf("RESULT cases %zu\n",cases); return 0;
     }
     if (!strcmp(argv[3], "row-gradient")) {
       const uint32_t edges[]={0,0x80000000,0x3f800000,0xbf800000,0x4b800000,0xcb800000,0x7f800000,0xff800000,0x7fc00001,0x7f800001,1,0x80000001,0x7f7fffff,0x00800000,0x3f000000,0xbf000000};

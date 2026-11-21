@@ -1,0 +1,30 @@
+{
+  "spec": "vtensor/row-gather-authoring/1",
+  "status": "authoring-model-verified-runtime-not-implemented",
+  "draft": "prism-app/3b4c84131fc3c81b163850b1523f47da62cb70006c9fc5c94707f2646b51b292",
+  "attestation_id": "cc029e4b5152ac6df80226a0c97b3122d8a8f411c183dc2ed0352583ee248d04",
+  "semantic_id": "ce3872664ff42a31fe8033a9a5e66bceeda80a5f9d6b3cdc414036ed9f265415",
+  "source_id": "46eed42a1b3644697f4e332d37b2746ef7cee4ab081ffbbb8988b3cda8fab5ad",
+  "files_sha256": {
+    "app/src/RowGather.lex.tex": "bdb24362fb30fe58dec557b70715f135b3081cf77f0f9ad31ebe9a38c4ef343e",
+    "app/src/TensorTypes.lex.tex": "0cb980d56e3a1dd8ab44672f85a57d61424ac4a3eedb7f077e857755ff46d6d9",
+    "app/row-gather.lexlean.toml": "3ecd041208ff959726f1282d56b6953b2e1aa89b046ae2ca4af5c79941184cbf",
+    "app/row-gather.lexlean.lock": "03ad16a95327498d9f94a8d473abfa874aac83933fe8f5489ea2dccd3145aaf8"
+  },
+  "sdk_check": {
+    "image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "source_id": "0478c5df8b64e6e33bef96f7af90e18fa8121a50799381d1285a0db6a8fb8d3b",
+    "semantic_id": "75a3864cc6e643e9f1461c9cafb98ccfc42913eb71d71812a49b22e24ea02a3a",
+    "stage": "check-only"
+  },
+  "envelope": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXR0ZXN0YXRpb25faWQiOiJjYzAyOWU0YjUxNTJhYzZkZjgwMjI2YTBjOTdiMzEyMmQ4YThmNDExYzE4M2RjMmVkMDM1MjU4M2VlMjQ4ZDA0IiwiYnVpbGRfaWQiOiI1NGFlY2JjYzdkZTVhYTc0ZTVjZTgxMWMyZDE5YjNhY2RkM2QxYzRhM2FjYjhlZTJmMmEyODJiMzA2YWJhNmQzIiwiZmlsZXMiOlsiOWI1ZTEyMDIwNGM1MTYwMmZjNzgzY2MyZjZiZWE3NDU2ZWM2NDg4Mjg3NzUyODM0MWI1MjNhNGY0YTU4MGZiMyIsImNlMTZlNWI0MzkxMjhkYjMyMzE5NzkzODFmNDU5OWQzZmYwNjE3ZjYyYzJiZjAwYzM0OGJiYTM1MzkzYWJjZDYiLCJkYjEyNDM0M2FkOGZlMTI5NWJjOGViMzA1YzdmNTlmODNjZjZhZDc2ZDQ2YTVjYWJlYTUwMGZlNjZmM2FkNWRjIiwiYmRiMjQzNjJmYjMwZmU1OGRlYzU1N2I3MDcxNWYxMzViMzA4MWNmNzdmMGY5YWQzMWViZTlhMzhjNGVmMzQzZSIsIjBjYjk4MGQ1NmUzYTFkZDhhYjQ0NjcyZjg1YTU3ZDYxNDI0YWM0YTNlZWRiN2YwNzdlODU3NzU1ZmY0NmQ2ZDkiXSwibW9kdWxlcyI6WyJSb3dHYXRoZXIiLCJUZW5zb3JUeXBlcyJdLCJzZW1hbnRpY19pZCI6ImNlMzg3MjY2NGZmNDJhMzFmZTgwMzNhOWE1ZTY2YmNlZWRhODBhNWY5ZDZiM2NkYzQxNDAzNmVkOWYyNjU0MTUiLCJzb3VyY2VfaWQiOiI0NmVlZDQyYTFiMzY0NDY5N2Y0ZTMzMmQzN2IyNzQ2ZWY3Y2VlNGFiMDgxZmZiYmI4OTg4YjNjZGE4ZmFiNWFkIiwic3RhdHVzIjoidmVyaWZpZWQifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vdW9yLmZvdW5kYXRpb24vbGV4bGVhbi1tY3AvdmVyaWZpY2F0aW9uL3YxIiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjA2ZGY4NjQ1YjE3Yzg0YmU0NmVmODgzM2RmMTdlNGVkMGM3NjlhY2QzNTdmNGY0MzAxYTY5YWViZTg4MjhmMjYifSwibmFtZSI6ImF0dGVzdGF0aW9uLmpzb24ifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "keyid": "533449506003ca0c42744122318b69f5be32d74a2781e72b5c62855cac53bb54",
+        "sig": "qg9QOfuI79DXSrvX9wDVyOTcDX1qmGzWfSV14emCZQmcJH73mCEbFCz9DaqHvpt2QzIgFXo5GBxgTRTCz1ujAg=="
+      }
+    ]
+  }
+}

@@ -12,3 +12,10 @@ Feature: GGML selection and equality row graphs
     When Prism validates indices before clearing and orders duplicate-row additions through Verdant
     Then logical F32 results match the imported CPU oracle and padding remains unchanged
     And invalid indices and descriptors are refused before output writes
+
+  @VT-32 @build
+  Scenario: Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals
+    Given float integer and every CPU-decodable packed source format with independently strided batched I32 indices
+    When Prism admits every indexed address and orders Verdant block decoding and source-word transfers
+    Then gathered logical words match the imported GGML CPU and output padding remains unchanged
+    And empty tensors need no buffers and every invalid index is refused before any output write

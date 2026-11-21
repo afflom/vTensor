@@ -256,3 +256,9 @@ id = "VT-31"
 level = "build"
 suite = "row-graphs"
 statement = "Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals"
+
+[[id]]
+id = "VT-32"
+level = "build"
+suite = "row-graphs"
+statement = "Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals"
