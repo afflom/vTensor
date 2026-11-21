@@ -188,3 +188,10 @@ in-place graphs, half-to-F32 promotion, independent strides and empty tensors.
 Promotion, address and theorem defects are rejected. This development bundle
 retains the explicit VT-02 release-source refusal; it is not a published
 Verdant dependency or evidence of complete backend conformance.
+
+The current development checkpoint rebases the Tensor extension onto Verdant
+2.9.0 upstream `31c9319`. Its twenty certified SDK packages share one imported
+Prism bundle and one certificate replay per process. Native source lifting now
+captures the exact generated package sources and separated test fixtures; the
+new omission checks reject missing roots and package manifests. This remains a
+development dependency until production packaging and VT-02 pass.

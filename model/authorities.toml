@@ -37,7 +37,7 @@ realized_by = []
 [[authority]]
 id = "VERDANT-ENGINE-TENSOR"
 name = "Verdant Engine tensor API"
-citation = "https://github.com/afflom/verdant-engine/tree/87c3256326b9ec9f8d591855394c0bd0265588ef"
+citation = "https://github.com/afflom/verdant-engine/tree/31c93199d2e77c16cf6044ad3b61654c92e66c68"
 checksum = "none"
 checksum_reason = "The workspace declares this exact upstream base revision. The general-matrix extension currently uses a local development override, which is not accepted as a shipped dependency by VT-02."
 statement = "The pinned Verdant Engine revision contains the verdant-tensor crate and its unified tensor-kernel inventory."

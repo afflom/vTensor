@@ -1294,7 +1294,7 @@ mod verdant_api {
     use verdant_tensor::linear::multiply_mat4_cols_exact;
     use verdant_tensor::{verified_unified_tensor_kernels, TensorComputeError};
 
-    const VERDANT_ENGINE_REVISION: &str = "87c3256326b9ec9f8d591855394c0bd0265588ef";
+    const VERDANT_ENGINE_REVISION: &str = "31c93199d2e77c16cf6044ad3b61654c92e66c68";
 
     /// `VT-02`: The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API
     #[test]

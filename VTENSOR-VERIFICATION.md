@@ -2212,3 +2212,55 @@ Digest formatting is shared, and ID uniqueness uses one ordered-set insertion.
 Scratch bindings use the same bounds-checked indexing convention as admitted
 pointer slots; Prism emits only the three literal register indices.
 Complete imported coverage and production dependency acceptance remain open.
+
+## Verdant 2.9 upstream migration checkpoint
+
+The development source now extends upstream
+`31c93199d2e77c16cf6044ad3b61654c92e66c68` at
+`5ebdafd58f114c8c272177c99134593762dd6567`. Its Git bundle is SHA-256
+`1be003f9142542f2e2616bf17e3ca316ff94501dcf4bdd54b0a71f393c10a962`.
+The preparation recipe verifies that bundle and clean exact checkout; the old
+clean dependency commit is preserved locally as `vtensor/preserved-61ccbe9`.
+The universal policy files and release checks remain unchanged.
+
+Verdant combines the ten Tensor models into a twenty-root SDK export:
+result `3df6d8268ddd7716fa9fbc43dc425922c623b2b175e583beb0949e109462d8fa`,
+attestation `38e9980830f040c8cdd3c28379a7a3ee4e7e1e8fbf6c7b5fcb461006a629eaa5`.
+Every generated library matches the previously validated numerical source byte
+for byte. Nine certificate tests passed with one shared replay (1.68 seconds);
+all expected roots, source/semantic identities, lock and compiled bytes remain
+checked. The earlier full numerical migration run passed its 22 numerical
+tests; stale legacy certificate locks were rejected, then replaced by this
+unified project. Unchanged mathematical roots were not reproved again.
+
+New VTK-09 failed first on a missing separated test fixture, then passed against
+87 exact source-DAG and manifest entries in 89.41 seconds. Removing one exported
+root was rejected as 19 versus 20; removing a generated package manifest was
+rejected by native source lifting with a typed missing-source error. Both
+faults were restored. The shared-artifact checksum regression rejects a second
+authority with a conflicting checksum. The existing ten-catalog runtime oracle
+check passed; GGML and SoftFloat archives retain their independent import
+validation instead of being treated as runtime JSON catalogs.
+
+Native Wasm rebuild measured 157313-byte core and 3919275-byte UORC artifacts.
+An earlier 3923259-byte UORC was rejected by the unchanged 3919872-byte ceiling.
+Consolidating repeated GGML authority records preserved citations and oracle
+coverage. Native source/ratchet generation retained all upper limits and
+measured 282 lifted functions, 1177 residue and 1334 uncertified functions. These
+are surface measures, not new numerical correctness proofs.
+
+Verdant's exact-SDK template, model, fidelity and workspace Clippy checks passed.
+Its first full acceptance run passed 70 engine checks and rejected two: a fixed
+authority count and a UI check aimed at the pre-extraction source file. Their
+corrected checks pass in the isolated migration worktree; a subsequent
+checkpoint must capture those corrections and updated native source evidence.
+Production packaging still needs the certified dependency closure and removal
+of development path/Git dependencies. VT-02 continues to reject the development
+override; neither Verdant nor vTensor is claimed release-complete here.
+
+For this vTensor pin, workspace compilation, scoped formatting, model validation,
+all-target/all-feature Clippy and cargo-deny passed. The full contract run
+reported 29 passed and exactly one failure: VT-02 rejected the development
+source override. This is recorded as a failing release boundary, not waived.
+Handwritten Rust remains 10558 lines across 51 files; only its exact upstream
+revision constant changed.

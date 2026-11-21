@@ -323,7 +323,7 @@ dependencies = [
 
 [[package]]
 name = "verdant-tensor"
-version = "2.4.0"
+version = "2.9.0"
 dependencies = [
  "serde",
  "uor-matmul",
@@ -351,83 +351,83 @@ dependencies = [
 
 [[package]]
 name = "verdant_add_f64"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_count_f32"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_encoded_word"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_float_storage"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_float_transform"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_high_f64"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_low_f64"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_matrix_shape"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_narrow_f64"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_normalize_f64"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_pack_plan_f64"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_round_mantissa_f64"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_scalar_f32"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_storage_transfer"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_unary_activate"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_unary_plan"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_unary_round"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_unary_select"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_wide_mode"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "verdant_widen_f32"
-version = "2.4.0"
+version = "2.9.0"
 
 [[package]]
 name = "vtensor-backend"
