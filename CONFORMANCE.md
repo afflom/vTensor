@@ -161,6 +161,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-22` | `build` | Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle |
 
+## unary-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-27` | `build` | Prism plans thirteen unary operations for all five supported GGML float source destination pairs and Verdant matches copied in-place strided and empty CPU graphs with exact finite outputs and preserved padding |
+
 ## update-graphs
 
 | ID | Level | Statement |

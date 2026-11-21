@@ -154,7 +154,7 @@ local extension must acquire an authoritative immutable dependency before
 acceptance. The graph also contains Verdant's pinned `uor-matmul` upstream;
 `deny.toml` permits only those two Git origins.
 
-## Unary foundation checkpoint
+## Typed unary checkpoint
 
 The pinned Verdant development bundle now includes VTK-06: certified typed
 unary primitives for thirteen operations and all five GGML CPU float pairs.
@@ -164,6 +164,8 @@ with the authoritative imported GGML CPU implementation. Source/object drift
 and a wrong unary dispatch were rejected; a driver-only change reused every
 CPU object unchanged. Existing VTK-01..05 and four integration regressions pass.
 
-vTensor graph integration is the next checkpoint. This development bundle
+The vTensor graph integration passes 4,992 imported CPU comparisons, including
+in-place graphs, half-to-F32 promotion, independent strides and empty tensors.
+Promotion, address and theorem defects are rejected. This development bundle
 retains the explicit VT-02 release-source refusal; it is not a published
 Verdant dependency or evidence of complete backend conformance.

@@ -607,6 +607,10 @@ fn storage_word(src: u64, dst: u64, bits: u64, mode: &CopyMode) -> Result<[u8; 4
             verdant_tensor::linear::transform_float_storage(*kind, *ty, bits, *a, *b)
                 .map_err(|_| BackendError::Overflow)
         }
+        CopyMode::C14(kind, source, destination) => {
+            verdant_tensor::linear::evaluate_float_unary(*kind, *source, *destination, bits)
+                .map_err(|_| BackendError::Overflow)
+        }
         _ => verdant_tensor::linear::convert_float_storage(src, dst, bits)
             .map_err(|_| BackendError::Overflow),
     }?

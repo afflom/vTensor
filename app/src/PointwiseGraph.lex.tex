@@ -83,7 +83,8 @@ inductive{
     {name: arithmetic, fields: [Nat, Bool, IndexContext]},
     {name: converted, fields: [Nat, Nat]},
     {name: windowed, fields: [Bool, Nat, Nat]},
-    {name: transformed, fields: [Nat, Nat, Nat, Nat]}
+    {name: transformed, fields: [Nat, Nat, Nat, Nat]},
+    {name: unaryWord, fields: [Nat, Nat, Nat]}
   ]
 }
 
@@ -644,6 +645,22 @@ definition{
 }
 
 definition{
+  name: unaryKind,
+  parameters: [operation : Nat, variant : Nat],
+  result: (Option Nat),
+  body: (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat])))),
+  executable: true
+}
+
+definition{
+  name: planUnary,
+  parameters: [kind : Nat, left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if ((((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) && (((project left ty) =? (project output ty)) || ((project output ty) =? 0))) && (sameShape left output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if ((project output ty) =? 0) then 4 else 2) (indexContext left 1) (indexContext output 1) (ctor CopyMode.unaryWord kind (project left ty) (project output ty))) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
   name: numericPlan,
   parameters: [
     operation : Nat,
@@ -757,7 +774,8 @@ definition{
     | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
-    | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))),
+    | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
+    | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))),
   executable: true
 }
 
@@ -768,7 +786,9 @@ definition{
   body: (match request
     | GraphRequest.plan operation options left right output => (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (copyOperation operation) then (planStorage operation left (match right
       | Option.none => false
-      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (numericPlan operation variant left right output))))))))))))))
+      | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (match (unaryKind operation variant)
+      | Option.none => (numericPlan operation variant left right output)
+      | Option.some kind => (planUnary kind left output)))))))))))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -961,6 +981,20 @@ theorem{
     b : Nat
   ],
   statement: ((copyOffsets index source destination (ctor CopyMode.transformed kind storage a b)) = (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unaryOffsetsPreserveIndependentWordTypes,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    kind : Nat,
+    sourceType : Nat,
+    destinationType : Nat
+  ],
+  statement: ((copyOffsets index source destination (ctor CopyMode.unaryWord kind sourceType destinationType)) = (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))),
   proof: reflexivity{}
 }
 \end{semanticmodule}

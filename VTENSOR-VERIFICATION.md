@@ -1853,3 +1853,65 @@ unchanged layout/native/matrix/index and main-app proofs were not rebuilt.
 The unchanged Verdant primitive corpus was not redundantly rerun; this checkpoint
 checks its graph composition. Other operations, numeric types, lifecycle
 coverage and production dependency acceptance remain unfinished.
+
+
+## VT-27: typed unary graphs and integer rounding
+
+Registered VT-27 and its scenario before implementation. The initial graph
+fixture failed at the live supports-op check. The Verdant VTK-06 foundation
+is pinned by development commit 054df8ead9a0eb47b634c4cbc34263ec4690ca16;
+its four certified roots and 3,675,256 imported GGML CPU comparisons are
+recorded in that bundle's README. vTensor uses its typed adapter without
+handwritten numerical arithmetic. The upstream reference remains the imported
+GGML CPU unary functions from commit 9a080f44b503c64f66c84a6274b9d9ee5d5b09d5.
+
+Prism maps ABS, SGN, NEG, STEP, RELU, SQR, SQRT, HARDSIGMOID, HARDSWISH,
+FLOOR, CEIL, ROUND and TRUNC to Verdant's model. The plan admits F32/F32,
+F16/F16, BF16/BF16, F16/F32 and BF16/F32; source and destination element
+widths remain independent throughout addressing and transfer. Shapes must
+agree. Native code binds raw host-endian words and effects; Verdant defines
+all numerical behavior. A universal theorem retains both type codes in every
+unary offset response.
+
+Only the changed pointwise project was exported, including its companion
+repeat-offset root. Certified result
+16fec5454c51e69a19708a6366fce5b9d0056193833e5576ec9f91d67034031c,
+attestation 69c9bee1327a54125654f740c35be83fa3cd917fd8b4d2c6b0752487cbe3154b.
+The emitted source remains untouched; cargo-deny's observed source fingerprint
+is e9447206.
+
+All 4,992 graph cases passed: 3,328 nonempty numerical graphs and 1,664 empty
+graphs. These cover thirteen operations, the five admitted pairs, copied and
+same-type in-place forms, four layouts, two widths, two row extents and two
+batch extents. Empty cases retain every type/form/layout/empty-axis while
+avoiding redundant geometry. CPU inputs are canonicalized to test the logical
+extension to arbitrary admitted strides. Every finite value, infinity and
+signed zero requires exact output bytes; numerical NaNs compare by class.
+Destination padding is checked byte-for-byte. Wrong pairs, unsupported unary
+variants, invalid storage, shape drift and absent source data are refused.
+
+The first positive run took 46.27 seconds including the fresh reference build.
+A promotion defect that encoded the result in the source type failed F16 to
+F32 ABS at byte 29 (actual 56, expected zero). A source-offset-zero defect
+failed F32 ABS at byte 31 (actual zero, expected 63). Both were bounded within
+allocated memory, restored byte-for-byte, and the full 4,992-case graph check
+then passed in 2.32 seconds using the unchanged CPU reference. A wrong theorem
+that replaced the destination type with the source type was refused by Lean
+with LLV7002. After restoration, source and semantic IDs matched the accepted
+bundle. Artifact replay verified both outputs' bindings and explicitly did
+not repeat axiom audit, Lean elaboration, leanchecker or root extraction.
+
+Shared oracle row parsing, exact file hashing, and atomic compiled-object
+publication replace duplicated plumbing. The transfer-boundary table retains
+all previous negative inputs. Handwritten source is 10,569 lines across the
+same 51 files, below the 10,571-line parent ceiling. No implementation-accounting
+exemption or limit was added. Main-app and unchanged Prism projects were not
+reproved, and the unchanged exhaustive Verdant corpus was not rerun for graph
+binding faults.
+
+The final workspace run passed 26 contract tests in 20.74 seconds and every
+other workspace target. VT-02 alone retained its refusal of the unpublished
+Verdant development dependency. Formatting, model/source audits, frame sync,
+all-target/all-feature Clippy and dependency checks passed. Complete imported
+operation/type/lifecycle coverage and production dependency acceptance remain
+unfinished; this checkpoint does not claim full vTensor or Engine acceptance.

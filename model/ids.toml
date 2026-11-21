@@ -226,3 +226,9 @@ id = "VT-26"
 level = "build"
 suite = "transform-graphs"
 statement = "Prism plans scale bias clamp and leaky ReLU graphs and Verdant matches the imported GGML CPU kernels for every supported float storage type across copied in-place strided and empty tensors"
+
+[[id]]
+id = "VT-27"
+level = "build"
+suite = "unary-graphs"
+statement = "Prism plans thirteen unary operations for all five supported GGML float source destination pairs and Verdant matches copied in-place strided and empty CPU graphs with exact finite outputs and preserved padding"
