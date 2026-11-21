@@ -75,6 +75,10 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-32` | build | In progress: GET_ROWS passes 384 CPU graphs with strided views and atomic refusals; source and production release checks remain open. |
 | `VT-33` | build | GET_REL_POS passes 192 CPU graphs with exact F16/BF16 source-word preservation in F16 output, independent strides, higher source dimensions, empty widths and atomic descriptor refusals. |
 | `VT-34` | build | ADD_ID passes 164 CPU graphs and descriptor/index refusals, including three-source addition, exact minus-one copies, strided views, ignored poisoned index slices and empty tables; source and release gates remain open. |
+| `VT-35` | build | Prism generates the complete frozen matrix fixture corpus while imported GGML computes every expected result. |
+| `VT-36` | build | Prism generates the complete frozen arithmetic fixture corpus with independent GGML CPU numerical results. |
+| `VT-37` | build | Zero-source ARANGE passes all ten unchanged upstream cases, three supplemental cases and nineteen atomic refusal probes. |
+| `VT-38` | build | L2 normalization passes all 61 unchanged upstream ordinary/batched cases, 68 supplemental cases and 28 atomic refusal probes through the shared Prism/Verdant executor. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -118,18 +122,26 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current full contract run passes 36 checks; VT-02 still refuses the local
+The current full contract run passes 37 checks; VT-02 still refuses the local
 Verdant development dependency for release. It includes the expanded 1,280
 matrix cases, 384 GET_ROWS cases, 192 GET_REL_POS cases and 164 ADD_ID cases.
 All ten optional GGML tensor-source slots are now carried to the Prism planner;
 zero-source ARANGE now uses Prism preflight and exact output-count validation
 with Verdant F32 primitives. All ten unchanged upstream ARANGE cases pass,
 including a million-element output, plus empty and padded-layout checks and
-nineteen atomic refusal probes. Other imported operation families remain unfinished. Prism now generates all
+nineteen atomic refusal probes. L2 normalization now uses the same typed Prism
+instructions and existing Verdant primitives. All 61 unchanged upstream L2
+cases pass, including batched graphs and a 65,536-row case, plus padded outputs,
+both copied and in-place constructors, epsilon and IEEE edges, empty outputs
+and atomic metadata refusals.
+Development builds optimize dependency arithmetic and the pointwise kernel
+while keeping assertions and overflow checks. The complete contract group takes
+17.31 seconds with 37 passes and the explicit VT-02 refusal; these timings are
+observations, not controlled benchmarks. Other imported operation families remain unfinished. Prism now generates all
 1,280 matrix and 120 arithmetic fixtures; both generated data and actual GGML
 tensor bindings match the frozen prior corpora. They share binary framing and
 cache each model replay, manifest and generated batch once per test process.
-Non-Prism source is 10,918 lines, 369 above the last
+Non-Prism source is 10,972 lines, 423 above the last
 accepted budget, so the source budget remains unsatisfied.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in
@@ -140,7 +152,7 @@ open. Detailed evidence is recorded in
 The completion sequence uses shared models, execution primitives and the same
 imported oracle throughout:
 
-1. Keep the complete imported contract inventory, including nested operation
+1. Keep the complete imported contract inventory, including public constructor and in-place variants as well as nested operation
    variants, tied to exact upstream bytes. Map each requirement to its Prism
    definition, Verdant implementation, oracle cases and observed failure test.
 2. Complete the shared tensor execution interface: typed shapes, strides,

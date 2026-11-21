@@ -3258,3 +3258,78 @@ Its build manifest is imported byte for byte into
 attestation, and all eight current model source hashes match its inputs. This
 uses the completed kernel check without repeating it. Current identities and
 log hashes are recorded in `verification/unified-execution-runtime.json`.
+
+### VT-38: L2 normalization through shared typed instructions
+
+VT-38 begins with its registered ID, scenario and a real failing imported test:
+the first unchanged upstream L2_NORM case reports not supported in 2.75 seconds.
+The unchanged factory and test_case::eval select both L2_NORM and L2_NORM_BATCH,
+with mandatory CPU reference mode. All 31 ordinary and 30 batched cases are
+required, including views, noncontiguous rows and a 65,536-row shape. Missing,
+unsupported or failed required cases refuse the run.
+
+A header audit finds a constructor missing from the factory corpus:
+ggml_l2_norm_inplace at ggml/include/ggml.h:1245. Its real test first fails in
+12.26 seconds after the upstream cases pass. The model and oracle are expanded
+before closing this milestone. Every required public constructor is part of
+the completion audit; a green factory corpus alone is insufficient.
+
+Prism models F32, matching shapes, nonnegative epsilon including negative zero
+and positive infinity, and four-axis addressing. Output may be separate or an
+exact matching in-place view; partial overlap and mismatched alias strides
+are refused. Each input is squared in F32, widened and added in F64, then the
+sum narrows before F32 square root, epsilon maximum, reciprocal and scaling.
+Existing Verdant primitives execute every numerical step. No native production
+adapter or imported Verdant library changes are needed. Empty outputs retain
+the upstream no-op behavior even with invalid parameters.
+
+The final exact-SDK export passes with result
+`9b732f59b323c76a1971f273f933de8303966a85a0de58d2d5f385bab038bc4a`
+and attestation
+`e640e8f181efafd71d11b4e42b966fd67a6f1e2152f2ec021ad3d848a7acf3a1`.
+All 672 declarations pass kernel checking. The imported build manifest binds
+all nine current model source files. Repeat-offset Rust and all 24 imported
+Verdant libraries are byte-identical. Generated Rust is not manually edited
+or formatted. The remote authoring service exhausts its own disk and produces
+no attestation; the independent pinned-SDK model and preservation proof succeeds.
+
+All 61 required factory cases pass. Another 64 cases exercise both actual CPU
+constructors across contiguous and padded sources/in-place views and padded
+copied outputs. Four source fill classes cover zero, finite values, overflowing
+squares and NaNs; epsilon covers +0, -0, 1e-6 and +infinity. Four empty copied
+and in-place cases preserve all bytes. The comparison follows actual reference
+strides and preserves padding; NaNs compare by class. Twenty-eight refusal
+probes check epsilon, source/output types, missing source, shape mismatch,
+unsafe aliases, negative extents and overflowing strides before any output
+write. Exact totals require 129 positive cases and all 28 refusals. The final
+scoped test passes in 11.17 seconds.
+
+Binding square root to Verdant squaring fails the first imported case with
+ERR 8898.370948965 above 0.000000100 in 3.08 seconds during the earlier copied
+stage. The native source is restored byte for byte. An initial edit assertion
+failed before applying a defect; its mistakenly started unchanged test was
+stopped and is not defect evidence. Restoring the old contiguous-reference
+assumption fails the final padded in-place comparison at byte 10, actual 192
+versus expected 0, in 11.60 seconds. That fault is restored byte for byte before
+the final workspace run.
+
+Development dependency arithmetic and the pointwise kernel use optimization
+level 2. Native effects and tests retain their development profile. Compiler
+invocations show optimization with debug assertions, and overflow checks keep
+their development defaults. No proof, oracle case, assertion or provenance
+check is removed. The final workspace contract run passes 37 tests and fails
+only the existing VT-02 production-source guard in 17.31 seconds, with zero
+ignored or filtered tests. Five model unit tests and four BDD meta-tests pass.
+The earlier unoptimized copied-only L2 test took 265.82 seconds; the first
+optimized profile build took 75 seconds. These observations differ in scope
+and are not a controlled speedup benchmark. Final all-target/all-feature
+Clippy, formatting, template/SDK lock and dependency checks pass.
+
+The complete pinned-SDK just vv passes full Prism application verification
+and formatting, then the source audit rejects 54 lines of oracle-test growth
+against ec9f9ef, 10,918 to 10,972. No proof-event reuse, reduced gate or budget
+waiver is used. The original accepted 10,549-line budget is still exceeded by
+423 lines. Production dependency closure and all remaining imported operations
+and API variants remain open. Current source-bound evidence and historical
+iteration measurements are in verification/l2-runtime.json and the imported
+build manifests beside it.

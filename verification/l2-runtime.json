@@ -1,7 +1,7 @@
 {
   "spec": "vtensor/l2-runtime/1",
   "id": "VT-38",
-  "status": "registered-real-imported-oracle-failure-captured-implementation-in-progress",
+  "status": "implemented-model-and-oracle-verified-full-gate-refuses-source-growth",
   "authority": {
     "repository": "https://github.com/ggml-org/llama.cpp",
     "commit": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
@@ -14,10 +14,11 @@
     "source": "Unchanged imported factory and test_case::eval with CPU reference mode; cached source is byte-bound by oracle-import.lock."
   },
   "oracle_bridge": {
-    "required_total": 78,
-    "additional_positive": 17,
-    "refusal_probes": 12,
-    "supplemental": "16 padded-output combinations of zero, finite, overflowing-square and NaN source fills with epsilon +0, -0, 1e-6 and +infinity; one empty invalid-parameter no-op. Actual CPU expected results, unchanged padding and NaN class equivalence. Refuse invalid epsilon, types, shape, missing source, aliasing, negative extents and overflowing strides without writes."
+    "required_total": 129,
+    "additional_positive": 68,
+    "refusal_probes": 28,
+    "supplemental": "32 copied and 32 in-place combinations across contiguous/padded sources, padded copied outputs, and four input fill/epsilon classes; four empty copied/in-place no-ops. Actual CPU executes each constructor; reference addresses follow reference strides.",
+    "result": "All 129 positives and 28 refusal probes passed scoped testing."
   },
   "initial_failure": {
     "command": "cargo test --locked -p vtensor-backend --test contract normalization_graphs_vt_38 -- --nocapture",
@@ -28,15 +29,15 @@
     "filtered": 37,
     "seconds": 2.75
   },
-  "model_draft": "prism-app/f540aff1f0acc25417c72059aabb03be29e02fbd3d86d618cce3eab4247a741d",
-  "model_check": "passed; production proof/export running",
-  "native_production_adapter": "No changes planned or needed; existing typed Prism execution instructions bind existing Verdant primitives.",
+  "model_draft": "prism-app/f561d30a0ae2db746d3ff4490b3dfa67b36b056d1b5971f3825f441d55bb12c8",
+  "model_check": "Final exact-SDK model and preservation proof passed; all 672 declarations verified",
+  "native_production_adapter": "Unchanged: existing typed Prism execution instructions bind existing Verdant primitives.",
   "source_budget": {
-    "current": 10956,
+    "current": 10972,
     "previous_checkpoint": 10918,
-    "growth_in_oracle_tests": 38,
+    "growth_in_oracle_tests": 54,
     "last_accepted": 10549,
-    "excess": 407,
+    "excess": 423,
     "status": "unsatisfied; mechanical source audit rejects this growth; no ceiling raised"
   },
   "logs": {
@@ -51,6 +52,245 @@
     "registration-budget": {
       "path": "/tmp/vtensor-l2-registration-budget.log",
       "sha256": "1e4f33508eedc2c203fa42d6863cef80e6ff7debe587e17d4ccee3ca2e9ac418"
+    },
+    "export": {
+      "path": "/tmp/vtensor-l2-export.log",
+      "sha256": "08676c504967adaedab5c67228e2688f418c6dc6b48afef39c5947dec1375309"
+    },
+    "canonical": {
+      "path": "/tmp/vtensor-l2-canonical.log",
+      "sha256": "4b2284964e53f3e6134388701329a1f92d8edf809c21220066cbbc6488fa2488"
+    },
+    "implemented": {
+      "path": "/tmp/vtensor-l2-implemented.log",
+      "sha256": "470f7f75cd16df5ad73eff9e3720238e098a1a2f1534c130e368dd021fb75355"
+    },
+    "sqrt-fault": {
+      "path": "/tmp/vtensor-l2-sqrt-fault.log",
+      "sha256": "0853f7f22e97bccb1e80ad88b223c140b85b63e4612cabc073588f487248b7fb"
+    },
+    "workspace": {
+      "path": "/tmp/vtensor-l2-workspace.log",
+      "sha256": "71b9e65b6c82c3acdc420281b0865702140c295a63206342eea25742c187e134"
+    },
+    "checks": {
+      "path": "/tmp/vtensor-l2-checks.log",
+      "sha256": "38c98948e5c0a5dbeaf9054354aa70a4758fc461c2f3fc7b57189fd341859ea5"
+    },
+    "deny": {
+      "path": "/tmp/vtensor-l2-deny.log",
+      "sha256": "f78188651f20132b2395fba8b562037f6999addfd364d6b3fe6d784575a90d6b"
+    },
+    "inplace_before": {
+      "path": "/tmp/vtensor-l2-inplace-before.log",
+      "sha256": "e946f528c73410d459f46d8e40e99b7836b7e4ffc9b12c4f01a966ea12e54e5b"
+    },
+    "inplace_export": {
+      "path": "/tmp/vtensor-l2-inplace-export.log",
+      "sha256": "8214120151d8e78b8fc593eb6c38aed2426ca5b2f2c901c61d27dc28e058387a"
+    },
+    "inplace_scoped": {
+      "path": "/tmp/vtensor-l2-inplace-implemented.log",
+      "sha256": "f00ec7fefe95499aaa7a6f623a8eff8f04a39436243dda9e114c29bf1be653e1"
+    },
+    "inplace_model": {
+      "path": "/tmp/vtensor-l2-inplace-model-checks.log",
+      "sha256": "8006e0e09b3ff6a7d5fb5967d4a86be1d3add3722ef4d4b346785bcdf772d4e4"
+    },
+    "full_gate": {
+      "path": "/tmp/vtensor-l2-vv.log",
+      "sha256": "8d2c98f3b2653022d1cefbb52524bad789fe546b1d6e9a2550c34fd971157660"
+    },
+    "reference_layout_fault": {
+      "path": "/tmp/vtensor-l2-reference-layout-fault.log",
+      "sha256": "f052aed52d0957fd7872fd7c251ce03b3693041c4d45b192dea6f4685e6c286a"
+    },
+    "model_checks": {
+      "path": "/tmp/vtensor-l2-inplace-model-checks.log",
+      "sha256": "8006e0e09b3ff6a7d5fb5967d4a86be1d3add3722ef4d4b346785bcdf772d4e4"
+    },
+    "final_workspace": {
+      "path": "/tmp/vtensor-l2-inplace-workspace.log",
+      "sha256": "3bc9c3e1f6826e6503882993e87dd541208a8d92689452c67dfd9ed5c1ad0b72"
+    },
+    "final_checks": {
+      "path": "/tmp/vtensor-l2-inplace-checks.log",
+      "sha256": "44cfe789b74d4de28978acd380d3b75899b5a6fe1c518a9b10f8edfeebc28e70"
+    },
+    "final_dependencies": {
+      "path": "/tmp/vtensor-l2-inplace-deny.log",
+      "sha256": "f78188651f20132b2395fba8b562037f6999addfd364d6b3fe6d784575a90d6b"
+    },
+    "template_and_sdk_lock": {
+      "path": "/tmp/vtensor-l2-template.log",
+      "sha256": "45622158f0fc2b926015f0c597a57c0567a6819309c1c471fbe52035740a5206"
     }
-  }
+  },
+  "production": {
+    "result_id": "9b732f59b323c76a1971f273f933de8303966a85a0de58d2d5f385bab038bc4a",
+    "attestation_id": "e640e8f181efafd71d11b4e42b966fd67a6f1e2152f2ec021ad3d848a7acf3a1",
+    "declarations": 672,
+    "all_verified": true,
+    "build_manifest": "verification/l2-build-manifest.json",
+    "build_manifest_sha256": "f3957f06ca43445d1b959b60cf57b565dd03227dd55f83855145c1ff25998c54",
+    "all_nine_source_hashes_match": true,
+    "generated_rust_manually_edited": false,
+    "repeat_offset_rust": "unchanged",
+    "all_24_imported_verdant_libraries": "unchanged"
+  },
+  "remote_authoring": {
+    "task": "task-38",
+    "state": "failed",
+    "reason": "LLB6003: No space left on device while staging RustCore.lean on remote verifier service; no attestation produced.",
+    "draft": "prism-app/f540aff1f0acc25417c72059aabb03be29e02fbd3d86d618cce3eab4247a741d",
+    "final_draft_verification": "Not repeated against known service disk exhaustion; final canonical source independently completes all 672 kernel declarations and preservation in the exact SDK."
+  },
+  "scoped_result": {
+    "command": "cargo test --locked -p vtensor-backend --test contract normalization_graphs_vt_38 -- --nocapture",
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 37,
+    "seconds": 11.17,
+    "positive_cases": 129,
+    "refusal_probes": 28,
+    "profile": "Optimized dependency arithmetic and pointwise kernel with development assertions retained."
+  },
+  "planted_defect": {
+    "change": "Bind the modeled square-root scalar operation to Verdant squaring.",
+    "result": "First imported L2_NORM case fails numerical comparison: ERR 8898.370948965 exceeds 0.000000100.",
+    "exit_code": 101,
+    "seconds": 3.08,
+    "restoration": "Exact saved-source byte comparison passed; native runner also matches Git baseline. Subsequent full contract passes all 37 functional tests.",
+    "discarded_attempt": "An initial edit assertion failed before applying any defect. Its mistakenly launched unchanged run was stopped and is not evidence."
+  },
+  "workspace_result": {
+    "command": "cargo test --workspace --locked",
+    "exit_code": 101,
+    "contract": {
+      "passed": 37,
+      "failed": 1,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 17.31,
+      "failure": "VT-02 production-source guard rejects the local Verdant development override."
+    },
+    "bdd": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    "model_unit_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "scope": "Final restored 129-case L2 coverage and all prior contract tests; no filtered or ignored tests."
+  },
+  "development_profile": {
+    "dependency_and_pointwise_opt_level": 2,
+    "native_effects_and_tests": "Unoptimized development profile",
+    "debug_assertions": "Enabled; observed -C debug-assertions=on alongside -C opt-level=2 for generated arithmetic and pointwise code in Clippy compiler invocations.",
+    "overflow_checks": "Development default retained; no disabling flags.",
+    "scope": "No proof, case, assertion or provenance check omitted. No generated Rust changes for optimization.",
+    "observation": "Final 38-test contract group completes in 17.31 seconds under the new profile, including the expanded in-place corpus; the earlier unoptimized scoped copy-only L2 test took 265.82 seconds. Different scopes and observations, not a controlled speedup benchmark."
+  },
+  "checks": {
+    "clippy": "workspace, all targets, all features, warnings denied: passed",
+    "format": "passed with generated Rust excluded",
+    "dependencies": "all-feature cargo deny check passed after updating only the exact Pointwise generated-source license hash reported by cargo-deny",
+    "source_budget": "unsatisfied; no ceiling raised",
+    "full_just_vv": {
+      "command": "just vv",
+      "exit_code": 1,
+      "app": "passed full verification with attestation fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+      "format": "passed",
+      "model_consistency_typed_errors_deferral_bootstrap_and_sdk_ownership": "passed",
+      "refusal": "Source audit rejects 54-line growth, 10918 to 10972, against ec9f9ef. Original accepted budget is still 10549, exceeded by 423.",
+      "remaining_stages": "Not reached after source refusal; separate final checks follow.",
+      "reuse": "No proof-event reuse or gate reduction."
+    },
+    "final_clippy_format_template_and_dependencies": "All-target/all-feature workspace Clippy with warnings denied, formatting, template contract, SDK lock and all-feature dependency checks pass."
+  },
+  "historical_copy_only_checkpoint": {
+    "production": {
+      "result_id": "21e32421ef2180d8f901a0c9a5e964c6c9423dfa36b4ad7634ea49f3cd1456d0",
+      "attestation_id": "f6c1994ec7109a27fc46400e79c6afd054245ef5315837be61229a5e4fcdc8c0",
+      "declarations": 668,
+      "all_verified": true,
+      "build_manifest": "verification/l2-copy-only-build-manifest.json",
+      "build_manifest_sha256": "13b68b13190688f335b42aa3a10069b50f6c637c4e81aa5e4aceddddcbba4191",
+      "all_nine_source_hashes_match": "Matched the earlier copy-only checkout; superseded by the final model.",
+      "generated_rust_manually_edited": false,
+      "repeat_offset_rust": "unchanged",
+      "all_24_imported_verdant_libraries": "unchanged"
+    },
+    "scoped_result": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 37,
+      "seconds": 265.82,
+      "profile": "Unoptimized development kernels; includes complete required corpus and supplemental checks."
+    },
+    "workspace_result": {
+      "command": "cargo test --workspace --locked",
+      "exit_code": 101,
+      "contract": {
+        "passed": 37,
+        "failed": 1,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 17.78,
+        "failure": "VT-02 production-source guard rejects the local Verdant development override."
+      },
+      "bdd": {
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 0.03
+      },
+      "compile_seconds": 75.0,
+      "model_unit_tests": {
+        "passed": 5,
+        "failed": 0
+      }
+    },
+    "coverage": "61 imported upstream cases plus 17 supplements; excluded the imported in-place constructor and is superseded by the expanded final checks.",
+    "model_draft": "prism-app/f540aff1f0acc25417c72059aabb03be29e02fbd3d86d618cce3eab4247a741d"
+  },
+  "coverage_audit": {
+    "header": "ggml/include/ggml.h:1240 and :1245",
+    "implementation": "ggml/src/ggml.c:3244-3270",
+    "finding": "Unchanged upstream cases omit ggml_l2_norm_inplace. Audit added both constructors with actual CPU execution, matching contiguous and padded views.",
+    "initial_inplace_failure": {
+      "log": "/tmp/vtensor-l2-inplace-before.log",
+      "seconds": 12.26,
+      "reason": "All selected upstream cases complete, then actual in-place constructor is rejected by the former model."
+    }
+  },
+  "inplace_scoped_result": {
+    "command": "cargo test --locked -p vtensor-backend --test contract normalization_graphs_vt_38 -- --nocapture",
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 37,
+    "seconds": 11.17,
+    "positive_cases": 129,
+    "refusal_probes": 28,
+    "profile": "Optimized dependency arithmetic and pointwise kernel with development assertions retained."
+  },
+  "planted_reference_defect": {
+    "change": "Replace physical reference offsets with contiguous i*bytes indexing.",
+    "result": "Padded in-place CPU reference comparison fails at byte 10: actual 192 expected 0.",
+    "exit_code": 101,
+    "seconds": 11.6,
+    "restoration": "Restored exact saved contract source before final workspace run."
+  },
+  "remaining": [
+    "The full just vv refuses source growth; the original source budget is exceeded by 423 lines. No higher ceiling is accepted.",
+    "VT-02 still rejects the development dependency. Production dependency closure and remaining imported operations and API variants remain open."
+  ],
+  "scope_note": "Passing every unchanged factory case does not close all imported constructors. Header audit exposed the in-place variant; it was added and verified before this milestone."
 }

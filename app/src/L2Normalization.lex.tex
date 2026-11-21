@@ -1,0 +1,86 @@
+\begin{lexlean}{L2Normalization}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: epsilonAdmitted,
+  parameters: [word : Nat],
+  result: Bool,
+  body: ((word <=? 2139095040) || (word =? 2147483648)),
+  executable: true
+}
+
+definition{
+  name: rowSteps,
+  parameters: [width : Nat],
+  result: Nat,
+  body: (5 + (prim multiply 4 width : Nat)),
+  executable: true
+}
+
+definition{
+  name: steps,
+  parameters: [width : Nat, rows : Nat],
+  result: Nat,
+  body: (if (width =? 0) then 0 else (prim multiply rows (rowSteps width) : Nat)),
+  executable: true
+}
+
+theorem{
+  name: negativeZeroAdmitted,
+  parameters: [],
+  statement: ((epsilonAdmitted 2147483648) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: positiveInfinityAdmitted,
+  parameters: [],
+  statement: ((epsilonAdmitted 2139095040) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeEpsilonRefused,
+  parameters: [],
+  statement: ((epsilonAdmitted 3212836864) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeInfinityRefused,
+  parameters: [],
+  statement: ((epsilonAdmitted 4286578688) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nanEpsilonRefused,
+  parameters: [],
+  statement: ((epsilonAdmitted 2143289344) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: wideEpsilonRefused,
+  parameters: [],
+  statement: ((epsilonAdmitted 4294967296) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: zeroWidthHasNoInstructions,
+  parameters: [rows : Nat],
+  statement: ((steps 0 rows) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: zeroRowsHaveNoInstructions,
+  parameters: [],
+  statement: ((steps 64 0) = 0),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}
