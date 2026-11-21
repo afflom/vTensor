@@ -83,6 +83,7 @@ model does not sanction.
 | ID | Level | Statement |
 | --- | --- | --- |
 | `VT-35` | `build` | Prism generates all matrix fixture dimensions layouts and input words matching the complete frozen prior oracle corpus while GGML independently computes every expected result |
+| `VT-36` | `build` | Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle |
 
 ## fold-graphs
 

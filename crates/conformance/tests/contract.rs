@@ -354,6 +354,15 @@ fn fixture_generation_vt_35() {
     }
 }
 
+/// `VT-36`: Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle
+#[test]
+fn arithmetic_fixture_generation_vt_36() {
+    assert_eq!(
+        vtensor_fixtures::run(1, vtensor_fixtures::Adt0::C0(0)).unwrap(),
+        Some(120)
+    );
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -2215,6 +2224,8 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(argv[3], "elementwise")) {
       size_t cases = 0;
+      std::ofstream trace;if(const char *path=std::getenv("VTENSOR_ARITHMETIC_TRACE")) trace.open(path,std::ios::binary);
+      auto emit=[&](uint64_t word) {uint8_t bytes[8];for(int i=0;i<8;i++)bytes[i]=uint8_t(word>>(8*i));trace.write((const char *)bytes,8);};
       const ggml_op expected_ops[] = {
         GGML_OP_ADD, GGML_OP_SUB, GGML_OP_MUL, GGML_OP_DIV, GGML_OP_SQRT, GGML_OP_SQR, GGML_OP_UNARY, GGML_OP_UNARY
       };
@@ -2251,6 +2262,15 @@ int main(int argc, char **argv) {
             memcpy(bytes.data()+i0*operand->nb[0]+i1*operand->nb[1]+i2*operand->nb[2]+i3*operand->nb[3],&bits,4);
           }
           ggml_backend_tensor_set(operand,bytes.data(),0,bytes.size());
+        }
+        if(trace.is_open()) {
+          const uint64_t fields[]={uint64_t(kind),uint64_t(result->op),uint64_t(kind>=6?ggml_get_unary_op(result):0),uint64_t(padded),
+            uint64_t(left->ne[0]),uint64_t(left->ne[1]),uint64_t(left->ne[2]),uint64_t(left->ne[3]),
+            uint64_t(right?right->ne[0]:0),uint64_t(right?right->ne[1]:0),uint64_t(right?right->ne[2]:0),uint64_t(right?right->ne[3]:0),
+            left->nb[0],left->nb[1],left->nb[2],left->nb[3],right?right->nb[0]:0,right?right->nb[1]:0,right?right->nb[2]:0,right?right->nb[3]:0,
+            uint64_t(ggml_nelements(left)),uint64_t(right?ggml_nelements(right):0),uint64_t(width==1 && padded==0 && broadcast==0?(kind==0?1:kind==6?2:0):0),cases};
+          for(auto value:fields)emit(value);
+          for(auto operand:{left,right}) {emit(operand?ggml_nelements(operand):0);emit(4);if(operand) for(int64_t i=0;i<ggml_nelements(operand);i++) {uint32_t word;memcpy(&word,(char *)operand->data+block_address(operand,i),4);emit(word);}}
         }
         ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
         CHECK(ggml_backend_dev_supports_op(dev,result));

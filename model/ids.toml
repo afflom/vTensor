@@ -280,3 +280,9 @@ id = "VT-35"
 level = "build"
 suite = "fixture-generation"
 statement = "Prism generates all matrix fixture dimensions layouts and input words matching the complete frozen prior oracle corpus while GGML independently computes every expected result"
+
+[[id]]
+id = "VT-36"
+level = "build"
+suite = "fixture-generation"
+statement = "Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle"

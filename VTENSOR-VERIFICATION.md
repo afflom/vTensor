@@ -3029,3 +3029,13 @@ Signed authoring provenance, production identities and defect/run logs are in
 `verification/matrix-fixture-runtime.json`. The frozen baseline remains local
 corpus-preservation evidence; the pinned external GGML CPU remains the numerical
 validation authority.
+
+## Arithmetic fixture corpus frozen before migration (VT-36)
+
+The new fixture-family test initially refuses family 1 (the certified package
+returns `None`). The unchanged prior arithmetic generator passes all 120 GGML
+CPU cases while capturing the complete actual descriptor/input-word transcript.
+`verification/arithmetic-fixture-baseline.json` freezes 1,313,024 bytes in 120
+per-case digests, including all five refusal probes at cases 0 and 108.
+The baseline is local corpus-preservation evidence, not numerical authority.
+Registration, initial failure and capture: `/tmp/vtensor-arithmetic-fixture-before.log`.
