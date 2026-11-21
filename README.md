@@ -52,7 +52,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-09` | build | Compares certified transfer admission with upstream set/get guards. |
 | `VT-10` | build | Compares certified aligned tensor placement with upstream’s linear allocator. |
 | `VT-11` | build | Loads the native device and validates buffer lifetimes, transfers, ABI layouts and metadata graphs through upstream GGML. |
-| `VT-12` | build | Development graph path matches 640 upstream CPU matrix cases, including empty dimensions, padding, broadcasting and IEEE edge values. |
+| `VT-12` | build | Certified execution schedule matches 1,280 upstream CPU matrix cases, including independent source/output padding and strides, empty dimensions, broadcasting and IEEE edge values. |
 | `VT-13` | build | Development graph path matches 120 CPU arithmetic/unary graphs with padding, broadcasting and IEEE edge values; malformed descriptors fail before writes. |
 | `VT-14` | build | Matches 864 empty copy graphs across all 36 live storage types and every empty axis, including large remaining dimensions, without operand buffers. |
 | `VT-15` | build | Matches 3,456 nonempty same-type DUP, CONT and CPY graphs across all 36 live types, with strided inputs, reshape and preserved padding. |
@@ -118,10 +118,11 @@ comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
 Before GET_ROWS development, thirty contract checks passed and VT-02 rejected
-the unpublished local dependency. The current full contract suite passes
+the unpublished local dependency. The last full contract run, before the matrix-schedule refactor, passed
 32 checks; VT-02 still refuses the local development dependency for release.
 VT-32 passes all 384 graph cases and typed/atomic refusals; VT-33 adds 192
-relative-position graphs. Non-Prism source is 10,630 lines, still 81 above the
+relative-position graphs. The later matrix refactor passes 1,280 scoped cases.
+Non-Prism source is 10,626 lines, still 77 above the
 last accepted budget. The complete release checks remain open. Detailed evidence
 is recorded in [`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
 

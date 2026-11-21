@@ -1,0 +1,147 @@
+\begin{lexlean}{MatrixExecution}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+structure{
+  name: Strides,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: s0, type: Nat},
+    {name: s1, type: Nat},
+    {name: s2, type: Nat},
+    {name: s3, type: Nat}
+  ]
+}
+
+inductive{
+  name: Instruction,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: schedule, fields: [Nat, Nat]},
+    {name: transfer, fields: [Bool, Nat, Nat, Nat]},
+    {name: multiply, fields: []},
+    {name: refused, fields: []}
+  ]
+}
+
+definition{
+  name: emptyExecution,
+  parameters: [m : Nat, n : Nat, b2 : Nat, b3 : Nat],
+  result: Bool,
+  body: ((((m =? 0) || (n =? 0)) || (b2 =? 0)) || (b3 =? 0)),
+  executable: true
+}
+
+definition{
+  name: address,
+  parameters: [i0 : Nat, i1 : Nat, i2 : Nat, i3 : Nat, strides : Strides],
+  result: Nat,
+  body: ((((prim multiply i0 (project strides s0) : Nat) + (prim multiply i1 (project strides s1) : Nat)) + (prim multiply i2 (project strides s2) : Nat)) + (prim multiply i3 (project strides s3) : Nat)),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [
+    index : Nat,
+    m : Nat,
+    k : Nat,
+    n : Nat,
+    b2 : Nat,
+    b3 : Nat,
+    r2 : Nat,
+    r3 : Nat,
+    left : Strides,
+    right : Strides,
+    output : Strides
+  ],
+  result: Instruction,
+  body: (if (emptyExecution m n b2 b3) then (if (index =? 0) then (ctor Instruction.schedule 1 0) else (ctor Instruction.refused)) else (if ((0 <? r2) && (0 <? r3)) then (let lc : Nat := (prim multiply m k : Nat); (let rc : Nat := (prim multiply k n : Nat); (let oc : Nat := (prim multiply m n : Nat); (let block : Nat := (((lc + rc) + 1) + oc); (let steps : Nat := (1 + (prim multiply (prim multiply b2 b3 : Nat) block : Nat)); (if (index =? 0) then (ctor Instruction.schedule steps ((lc + rc) + oc)) else (if (index <? steps) then (let ordinal : Nat := (prim subtract index 1 : Nat); (let batch : Nat := (prim quotient ordinal block 0 : Nat); (let phase : Nat := (prim remainder ordinal block 0 : Nat); (let i2 : Nat := (prim remainder batch b2 0 : Nat); (let i3 : Nat := (prim quotient batch b2 0 : Nat); (if (phase <? lc) then (ctor Instruction.transfer false 0 phase (address (prim remainder phase k 0 : Nat) (prim quotient phase k 0 : Nat) (prim quotient i2 r2 0 : Nat) (prim quotient i3 r3 0 : Nat) left)) else (if (phase <? (lc + rc)) then (let element : Nat := (prim subtract phase lc : Nat); (ctor Instruction.transfer false 1 phase (address (prim quotient element n 0 : Nat) (prim remainder element n 0 : Nat) i2 i3 right))) else (if (phase =? (lc + rc)) then (ctor Instruction.multiply) else (let element : Nat := (prim subtract (prim subtract phase (lc + rc) : Nat) 1 : Nat); (ctor Instruction.transfer true 2 ((lc + rc) + element) (address (prim quotient element n 0 : Nat) (prim remainder element n 0 : Nat) i2 i3 output))))))))))) else (ctor Instruction.refused)))))))) else (ctor Instruction.refused))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: everyZeroRowExecutionIsEmpty,
+  parameters: [
+    k : Nat,
+    n : Nat,
+    b2 : Nat,
+    b3 : Nat,
+    r2 : Nat,
+    r3 : Nat,
+    left : Strides,
+    right : Strides,
+    output : Strides
+  ],
+  statement: ((evaluate 0 0 k n b2 b3 r2 r3 left right output) = (ctor Instruction.schedule 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: boundedBatchSchedule,
+  parameters: [],
+  statement: ((evaluate 0 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.schedule 217 26)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lastLeftWord,
+  parameters: [],
+  statement: ((evaluate 6 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.transfer false 0 5 24)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lastRightWord,
+  parameters: [],
+  statement: ((evaluate 18 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.transfer false 1 17 68)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: multiplyAfterLoads,
+  parameters: [],
+  statement: ((evaluate 19 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.multiply)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lastOutputWord,
+  parameters: [],
+  statement: ((evaluate 27 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.transfer true 2 25 40)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: broadcastSecondBatch,
+  parameters: [],
+  statement: ((evaluate 28 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.transfer false 0 0 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: advanceThirdBatch,
+  parameters: [],
+  statement: ((evaluate 55 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.transfer false 0 0 64)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: advanceOuterBatch,
+  parameters: [],
+  statement: ((evaluate 109 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.transfer false 0 0 256)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseScheduleEnd,
+  parameters: [],
+  statement: ((evaluate 217 2 3 4 4 2 2 1 (record Strides {s0 := 4, s1 := 16, s2 := 64, s3 := 256}) (record Strides {s0 := 4, s1 := 20, s2 := 100, s3 := 500}) (record Strides {s0 := 4, s1 := 12, s2 := 60, s3 := 300})) = (ctor Instruction.refused)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

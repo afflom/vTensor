@@ -2810,3 +2810,68 @@ storage decoder. Its integration, preserved stricter footprint/frontier limits,
 production dependency resolution, the remaining GGML specification coverage
 and complete `just vv` acceptance remain required. The user's main Engine
 worktree was left untouched.
+
+## Prism matrix execution schedule and independent output layouts (VT-12)
+
+`MatrixExecution.evaluate` now defines the complete per-batch sequence of
+source loads, the Verdant kernel call and output stores. It owns broadcast
+coordinates, byte offsets, workspace indices, schedule length and total scratch
+size. Its zero-output branch returns an empty schedule before evaluating
+potentially overflowing geometry. The native interpreter binds bounded byte
+transfers and the existing `multiply_matrix_rows_f32` call; the old nested
+matrix loops and standalone native index helper are removed. Three separately
+allocated scratch arrays are replaced by one private F32 workspace, split at
+the admitted matrix counts only when invoking Verdant. No numerical fallback
+or new arithmetic implementation was added.
+
+The existing VT-12 scenario was extended before implementation. Its initial
+check rejected the old certified bundle's one root against the two requested
+roots. The final authoring draft is
+`prism-app/004ee33d374bfa0b9aadeaa0ef3e631be8fe0d70687a3a6a846c935e2eb30f18`,
+attestation `991dfb8b13553103ea45540647c2809a439adfcb15268a395a8c72986f21109d`.
+The signed envelope binds the canonical execution module. The pinned SDK
+production result is
+`58b516927e5610c6d0cd3b4ccda38242ee2a6f6c4b1e74f5069218372b76208a`,
+attestation `48de2aa9ca57127fa2cc15b59dd1671a5e3189c883330225f0275f30953f6b82`.
+The existing matrix admission library is byte-identical (SHA-256
+`a9dabc1dae888635ebe4ae75ccc02b73dc5ed55dbe6b4eda230b3900ba3920e3`).
+No pointwise or Verdant root was re-exported. The newly generated package is
+included in the workspace and exact-output lock, and excluded from handwritten
+Rust formatting. The standalone index package is now a test dependency only.
+
+The new interpreter first passed all 640 existing GGML matrix cases. A planted
+native binding sent `r3+1` to the schedule instead of `r3`. The resulting left
+source coordinate is never larger than its correct value, so the defect is
+bounded; the actual GGML output comparison rejected it. The runner was restored
+byte for byte before further validation.
+
+The old corpus varied source padding but left the result contiguous. The
+expanded corpus independently varies source padding and destination word/axis
+strides, yielding 1,280 actual CPU comparisons. A separate ordinary GGML CPU
+result supplies expected values for the strided vTensor destination. The shared
+byte comparator now checks every output padding byte and exact finite/infinite
+F32 words, including signed zeros. Numerical NaNs retain the previous
+classification comparison. All 1,280 cases pass in 9.33 seconds, including the
+original dimensions, broadcast shapes, empty outputs, zero-inner products and
+negative descriptor/buffer/unsupported-node probes. The shared comparator
+removes the duplicated matrix-specific result reader rather than introducing
+another expected-value implementation.
+
+Formatting, regenerated/checked model evidence, four BDD tests (39 IDs and
+scenarios, 107 test names), and backend Clippy over all targets at `-D warnings`
+pass. The affected matrix suite was rerun; the other numerical suites were not
+repeated for this isolated matrix change. The last full contract result remains
+the preceding relative-position checkpoint (32 passed, VT-02 refused the
+unpublished development dependency). These scoped results are not `just vv`
+release evidence. Current non-Prism implementation is 10,626 lines, four fewer
+than before this refactor and still 77 above the last accepted 10,549 budget.
+The earlier target remains required even though the parent-relative audit passes.
+
+Exact certificates, source and log hashes, domains and planted-defect evidence
+are recorded in `verification/matrix-execution-runtime.json`. Logs:
+`/tmp/vtensor-matrix-schedule-before.log`,
+`/tmp/vtensor-matrix-schedule-export.log`,
+`/tmp/vtensor-matrix-schedule-runtime.log`,
+`/tmp/vtensor-matrix-ratio-fault.log`,
+`/tmp/vtensor-matrix-schedule-layouts.log`, and
+`/tmp/vtensor-matrix-schedule-final-checks.log`.

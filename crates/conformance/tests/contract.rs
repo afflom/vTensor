@@ -177,7 +177,7 @@ fn matrix_graphs_vt_12() {
         ));
     }
     assert!(vtensor_index::run(u64::MAX, 0, 0, 0, 2, 0, 0, 0).is_err());
-    native_backend_oracle::verify(&root(), "matrix", 640);
+    native_backend_oracle::verify(&root(), "matrix", 1280);
 }
 
 /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
@@ -2134,17 +2134,19 @@ int main(int argc, char **argv) {
         {std::numeric_limits<float>::max(),2.0f}, {-INFINITY,-INFINITY}};
       const int batches[][4] = {{1,1,1,1}, {1,1,3,2}, {2,1,4,2}, {2,2,4,4}};
       for (int rows : {0,1,2,5}) for (int columns : {0,1,3,7}) for (int inner : {0,1,2,7,33})
-      for (int padded : {0,1}) for (const auto &batch : batches) {
+      for (int padded : {0,1,2,3}) for (const auto &batch : batches) {
         ggml_init_params params = {8*1024*1024, nullptr, true};
         ggml_context *ctx = ggml_init(params); CHECK(ctx);
         ggml_tensor *left = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, inner, rows, batch[0], batch[1]);
         ggml_tensor *right = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, inner, columns, batch[2], batch[3]);
         for (ggml_tensor *operand : {left, right}) {
-          operand->nb[1] = (std::max(inner, 1)+padded)*sizeof(float);
-          operand->nb[2] = operand->nb[1]*operand->ne[1]+padded*sizeof(float);
-          operand->nb[3] = operand->nb[2]*operand->ne[2]+padded*sizeof(float);
+          operand->nb[1] = (std::max(inner, 1)+(padded&1))*sizeof(float);
+          operand->nb[2] = operand->nb[1]*operand->ne[1]+(padded&1)*sizeof(float);
+          operand->nb[3] = operand->nb[2]*operand->ne[2]+(padded&1)*sizeof(float);
         }
         ggml_tensor *product = ggml_mul_mat(ctx, left, right); CHECK(product);
+        ggml_tensor *oracle = ggml_mul_mat(ctx, left, right); CHECK(oracle);
+        if(padded&2) {product->nb[0]*=2;for(int axis=1;axis<4;axis++)product->nb[axis]=product->nb[axis-1]*product->ne[axis-1]+4;}
         ggml_backend_buffer_t buffer = ggml_backend_alloc_ctx_tensors(ctx, backend);
         CHECK(buffer || (!ggml_nbytes(left) && !ggml_nbytes(right) && !ggml_nbytes(product)));
         for (ggml_tensor *operand : {left, right}) {
@@ -2152,19 +2154,17 @@ int main(int argc, char **argv) {
           for (int64_t i3=0; i3<operand->ne[3]; i3++) for (int64_t i2=0; i2<operand->ne[2]; i2++)
           for (int64_t i1=0; i1<operand->ne[1]; i1++) for (int64_t i0=0; i0<operand->ne[0]; i0++) {
             float value = float((i0*7+i1*11+i2*3+i3*5+(operand==left?1:2))%19-9)/4.0f;
-            if (rows==1 && columns==1 && inner==1) value=edges[padded*4+(&batch-batches)][operand==left?0:1];
+            if (rows==1 && columns==1 && inner==1) value=edges[(padded&1)*4+(&batch-batches)][operand==left?0:1];
             memcpy(bytes.data()+i0*operand->nb[0]+i1*operand->nb[1]+i2*operand->nb[2]+i3*operand->nb[3], &value, sizeof(value));
           }
           if (!bytes.empty()) ggml_backend_tensor_set(operand, bytes.data(), 0, bytes.size());
         }
         ggml_cgraph *graph = ggml_new_graph(ctx); ggml_build_forward_expand(graph, product);
         CHECK(ggml_backend_dev_supports_op(dev, product));
-        CHECK(ggml_backend_graph_compute(reference, graph) == GGML_STATUS_SUCCESS);
-        std::vector<float> expected(ggml_nelements(product)), actual(expected.size());
-        if (ggml_nbytes(product)) {
-          ggml_backend_tensor_get(product, expected.data(), 0, ggml_nbytes(product));
-          ggml_backend_tensor_memset(product, 0xA5, 0, ggml_nbytes(product));
-        }
+        ggml_cgraph *reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,oracle);
+        CHECK(ggml_backend_graph_compute(reference, reference_graph) == GGML_STATUS_SUCCESS);
+        const std::vector<unsigned char> expected(ggml_nbytes(product),0xA5);
+        if(!expected.empty()) ggml_backend_tensor_memset(product,0xA5,0,expected.size());
         if (!negatives_checked && ggml_nbytes(product) && ggml_nbytes(left)) {
           negatives_checked = true;
           CHECK(refuses_change(backend,dev,graph,product,product->ne[0],product->ne[0]+1));
@@ -2177,8 +2177,7 @@ int main(int argc, char **argv) {
           CHECK(refuses_change(backend,dev,bad_graph,product,unsupported->op,GGML_OP_COUNT,false));
         }
         CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_SUCCESS);
-        if (ggml_nbytes(product)) ggml_backend_tensor_get(product, actual.data(), 0, ggml_nbytes(product));
-        for (size_t i=0; i<expected.size(); i++) CHECK((std::isnan(expected[i]) && std::isnan(actual[i])) || expected[i] == actual[i]);
+        CHECK(compare_result(product,oracle,expected,1));
         ggml_backend_buffer_free(buffer); ggml_free(ctx); matrix_cases++;
       }
       CHECK(negatives_checked);

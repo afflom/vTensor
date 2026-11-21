@@ -1,0 +1,150 @@
+{
+  "spec": "vtensor/matrix-execution-runtime/1",
+  "status": "certified-schedule-and-expanded-matrix-corpus-passed-release-pending",
+  "draft": "prism-app/004ee33d374bfa0b9aadeaa0ef3e631be8fe0d70687a3a6a846c935e2eb30f18",
+  "authoring_attestation_id": "991dfb8b13553103ea45540647c2809a439adfcb15268a395a8c72986f21109d",
+  "authoring_signed_envelope": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXR0ZXN0YXRpb25faWQiOiI5OTFkZmI4YjEzNTUzMTAzZWE0NTU0MDY0N2MyODA5YTQzOWFkZmNiMTUyNjhhMzk1YThjNzI5ODZmMjExMDlkIiwiYnVpbGRfaWQiOiI4Yjg5NWVmZDY3ZjY3YzcxMTNhN2QwYjI4NDdmYzc1ZmJlNTlmMTgzM2QyZDJhMDU3ZGY4ZTg0ZWRjY2Y4YzhlIiwiZmlsZXMiOlsiOWI1ZTEyMDIwNGM1MTYwMmZjNzgzY2MyZjZiZWE3NDU2ZWM2NDg4Mjg3NzUyODM0MWI1MjNhNGY0YTU4MGZiMyIsImNlMTZlNWI0MzkxMjhkYjMyMzE5NzkzODFmNDU5OWQzZmYwNjE3ZjYyYzJiZjAwYzM0OGJiYTM1MzkzYWJjZDYiLCJkYjEyNDM0M2FkOGZlMTI5NWJjOGViMzA1YzdmNTlmODNjZjZhZDc2ZDQ2YTVjYWJlYTUwMGZlNjZmM2FkNWRjIiwiYTY3ZjEwZjRlMDViZjM3NTQwOTExMzRiMWVmMzJmMTM4ZDhlY2ZiYzliNTVhZjJlYTVmNTk1ZGU3MmU1OGJmYiJdLCJtb2R1bGVzIjpbIk1hdHJpeEV4ZWN1dGlvbiJdLCJzZW1hbnRpY19pZCI6ImRmMWRiNTZjMjBiNDViZDk3YWJhMWFiM2U2NWZlN2Q3Y2RjYjM3ZmM5YjU0NGNjY2NkMjZiMGU5ZWQ4ODlmMGMiLCJzb3VyY2VfaWQiOiJiNGZmMjFjZWIxYWUyYWVkYzg3ZDBlNTQyM2E1ZjJiOWVjYzVkMjMwMTdlZDNhZWFhMjM0MDQxNzUzZTJhZjE0Iiwic3RhdHVzIjoidmVyaWZpZWQifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vdW9yLmZvdW5kYXRpb24vbGV4bGVhbi1tY3AvdmVyaWZpY2F0aW9uL3YxIiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjJhNTBlNDg4YTBmNDA4YWQzY2RhM2VmNjVhNjg3Zjc4NTI1NjhlMGU5M2QwZGRmOTFkMTg2OGRiMjNiNDIwNWEifSwibmFtZSI6ImF0dGVzdGF0aW9uLmpzb24ifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "keyid": "533449506003ca0c42744122318b69f5be32d74a2781e72b5c62855cac53bb54",
+        "sig": "VYsYAaGxce+2dDytmMQgKl34sgjSDWtdsQOAosrJI5xvlLtRF/Gnyo2H8gIg9ILJGObxsjmlRdkz58P7XPGwDQ=="
+      }
+    ]
+  },
+  "files_sha256": {
+    "app/src/MatrixExecution.lex.tex": "a67f10f4e05bf3754091134b1ef32f138d8ecfbc9b55af2ea5f595de72e58bfb",
+    "app/src/MatrixGraph.lex.tex": "f7930d0dc70b1d0e71cf66a77b62e453b1b658ef929f82dfcc5a1e4a933e356d",
+    "app/matrix.lexlean.toml": "366b693a42b781762b70ac6604932fe133d69013730552911ce0e47a0e3a46e8",
+    "app/matrix.lexlean.lock": "65ca0957eadf76c07e096b32829fa25a1bd4ad316043cb42a7e37b17959604fe",
+    "crates/conformance/src/runner.rs": "05db2978390f3448891833c0d559bf26e7da876439deef21a70279497ff747a0",
+    "crates/conformance/tests/contract.rs": "371bfc22aeda7ede905809e3976e8ce9e4c1bc1a5a117465c2b7537046311dfd"
+  },
+  "production_result_id": "58b516927e5610c6d0cd3b4ccda38242ee2a6f6c4b1e74f5069218372b76208a",
+  "production_source": {
+    "lock_sha256": "65ca0957eadf76c07e096b32829fa25a1bd4ad316043cb42a7e37b17959604fe",
+    "semantic_id": "8ff570128dc14b53c71382439c845ec0831b75f386098e6d8dafd3b7d28cf8be",
+    "source_id": "d046d109eb8f48cca511edb4462d76ebe14fe914f80ba4f5556dcb87cdb9baa9"
+  },
+  "production_verification": {
+    "attestation": {
+      "byte_length": 1040905,
+      "path": "evidence/attestation.json",
+      "sha256": "cca4550f149288584bc50f995e413fc951dd54c8fb442599b57169cf11be35b3"
+    },
+    "attestation_id": "48de2aa9ca57127fa2cc15b59dd1671a5e3189c883330225f0275f30953f6b82",
+    "build_id": "c1de82654d10232166ed4c9cded399623a3e1e29711e34b0a2f56bc125cdc7ae",
+    "compiler_input": {
+      "byte_length": 120908,
+      "path": "evidence/compiler-input.json",
+      "sha256": "7621cb76a327205999debb65b459816523e04abcea872c2da9a39073732b0336"
+    },
+    "preservation": {
+      "byte_length": 2444,
+      "path": "evidence/preservation.json",
+      "sha256": "f62222a33285696f2d8eed955401f1f0ef1d17c1c3964b6df5d3d8ca07221e3a"
+    }
+  },
+  "unchanged_admission_library_sha256": "a9dabc1dae888635ebe4ae75ccc02b73dc5ed55dbe6b4eda230b3900ba3920e3",
+  "executor": {
+    "control": "Prism MatrixExecution.evaluate",
+    "native_effects": [
+      "allocate one private F32 workspace",
+      "bind bounded four-byte transfers",
+      "split certified workspace regions",
+      "call the existing Verdant matrix primitive"
+    ],
+    "arithmetic": "verdant_tensor::linear::multiply_matrix_rows_f32"
+  },
+  "oracle": {
+    "authority": "LLAMA-CPP-GGML-BACKEND",
+    "revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "constructor": "ggml_mul_mat",
+    "cases": 1280,
+    "rows": [
+      0,
+      1,
+      2,
+      5
+    ],
+    "columns": [
+      0,
+      1,
+      3,
+      7
+    ],
+    "inner": [
+      0,
+      1,
+      2,
+      7,
+      33
+    ],
+    "source_padding": [
+      false,
+      true
+    ],
+    "destination_padding_and_word_stride": [
+      false,
+      true
+    ],
+    "batch_shapes": [
+      [
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        1,
+        4,
+        2
+      ],
+      [
+        2,
+        2,
+        4,
+        4
+      ]
+    ],
+    "comparison": "exact finite/infinite F32 words and all padding; numerical NaNs compared by classification",
+    "seconds": 9.33,
+    "log_sha256": "833bf08847cd00e0edaf15f99a825a01c044777777bdc629310bb0d62c77dd58"
+  },
+  "initial_refusal": {
+    "reason": "requested execution root absent from the old certified bundle",
+    "expected_root_count": 2,
+    "observed_root_count": 1,
+    "log_sha256": "8ead024ce9db0c1ac73d643ca57fe3905a8b57ec0764af0c6b91021312625290"
+  },
+  "planted_defect": {
+    "change": "bind broadcast ratio r3+1 instead of r3 in the native request",
+    "safety": "the altered left-batch coordinate never exceeds its correct value",
+    "exit_code": 101,
+    "diagnostic": "native check line 699: (std::isnan(expected[i]) && std::isnan(actual[i])) || expected[i] == actual[i]",
+    "log_sha256": "e9312831e0f6ec06af0fdb934a0b4d1cc303261c299cedaf7fd484791b0aea5d",
+    "restoration": "native source restored byte for byte; expanded 1280-case oracle passes"
+  },
+  "checks": {
+    "bdd": "4 passed, 39 IDs/scenarios and 107 test names",
+    "clippy": "backend all targets at -D warnings passed",
+    "formatting": "passed",
+    "model": "regenerated and checked",
+    "log_sha256": "f91e939f92c38c7bc46e1a9287e7b6706deb16346cca0c5dc46e572047250542"
+  },
+  "source_budget": {
+    "current_lines": 10626,
+    "last_accepted_lines": 10549,
+    "remaining_reduction": 77
+  },
+  "full_suite": "The last full contract run belongs to the preceding relative-position checkpoint; unrelated numerical suites were not repeated for this isolated matrix refactor.",
+  "release_status": "development Verdant dependency, source budget, remaining imported operations, Engine integration/frontier/footprints and the complete pinned-SDK acceptance gate remain open"
+}

@@ -531,71 +531,65 @@ fn workspace<T: Clone>(size: u64, initial: T) -> Result<Vec<T>, BackendError> {
     Ok(result)
 }
 
-fn element_offset(tensor: &Tensor, indices: [usize; 4]) -> Result<usize, BackendError> {
-    let [i0, i1, i2, i3] = indices.map(|i| i as u64);
-    let [s0, s1, s2, s3] = tensor.nb.map(|s| s as u64);
-    let offset =
-        vtensor_index::run(i0, i1, i2, i3, s0, s1, s2, s3).map_err(|_| BackendError::Overflow)?;
-    usize::try_from(offset).map_err(|_| BackendError::Overflow)
-}
-
 fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
-    let GraphPlan::C3(m, k, n, b2, b3, r2, r3, left_count, right_count, output_count) = plan else {
+    use vtensor_matrix_execution::{Adt0 as Strides, Adt1 as Instruction};
+    let GraphPlan::C3(m, k, n, b2, b3, r2, r3, left_count, right_count, _) = plan else {
         return Err(BackendError::InvalidTensor);
     };
     // SAFETY: plan_operation admitted both retained source descriptors.
     let (left, right) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
-    let (left_data, right_data, output_data) = (
+    let pointers = [
         graph_tensor_data(left)?,
         graph_tensor_data(right)?,
         graph_tensor_data(tensor)?,
-    );
-    let mut left_values = workspace(left_count, 0.0)?;
-    let mut right_values = workspace(right_count, 0.0)?;
-    let mut output_values = workspace(output_count, 0.0)?;
-    let (m, k, n) = (m as usize, k as usize, n as usize);
-    for i3 in 0..b3 as usize {
-        for i2 in 0..b2 as usize {
-            let (l2, l3) = (i2 / r2 as usize, i3 / r3 as usize);
-            for row in 0..m {
-                for inner in 0..k {
-                    let offset = element_offset(left, [inner, row, l2, l3])?;
-                    // SAFETY: certified span admission bounds every modeled element
-                    // offset for these extents. Unaligned F32 views are supported.
-                    left_values[row * k + inner] =
-                        unsafe { ptr::read_unaligned(left_data.add(offset).cast::<f32>()) };
-                }
+    ];
+    let strides = |tensor: &Tensor| {
+        let [s0, s1, s2, s3] = tensor.nb.map(|s| s as u64);
+        Strides::C0(s0, s1, s2, s3)
+    };
+    let step = |index| {
+        vtensor_matrix_execution::run(
+            index,
+            m,
+            k,
+            n,
+            b2,
+            b3,
+            r2,
+            r3,
+            strides(left),
+            strides(right),
+            strides(tensor),
+        )
+        .map_err(|_| BackendError::Overflow)
+    };
+    let Instruction::C0(steps, total) = step(0)? else {
+        return Err(BackendError::InvalidTensor);
+    };
+    let mut values = workspace(total, 0.0_f32)?;
+    let [m, k, n] = [m, k, n].map(|n| n as usize);
+    for index in 1..steps {
+        match step(index)? {
+            // SAFETY: Prism bounds the private workspace slot, foreign pointer
+            // slot and byte offset. Native F32 words may be unaligned; byte
+            // transfers preserve all encodings without creating foreign borrows.
+            Instruction::C1(writing, slot, at, offset) => unsafe {
+                let temporary = values.as_mut_ptr().add(at as usize).cast::<u8>();
+                let external = pointers[slot as usize].add(offset as usize);
+                let (from, to) = if writing {
+                    (temporary, external)
+                } else {
+                    (external, temporary)
+                };
+                ptr::copy_nonoverlapping(from, to, 4);
+            },
+            Instruction::C2 => {
+                let (left, rest) = values.split_at_mut(left_count as usize);
+                let (right, output) = rest.split_at_mut(right_count as usize);
+                verdant_tensor::linear::multiply_matrix_rows_f32(m, k, n, left, right, output)
+                    .map_err(|_| BackendError::InvalidTensor)?;
             }
-            for inner in 0..k {
-                for column in 0..n {
-                    let offset = element_offset(right, [inner, column, i2, i3])?;
-                    // SAFETY: the validated right span bounds this modeled address.
-                    right_values[inner * n + column] =
-                        unsafe { ptr::read_unaligned(right_data.add(offset).cast::<f32>()) };
-                }
-            }
-            verdant_tensor::linear::multiply_matrix_rows_f32(
-                m,
-                k,
-                n,
-                &left_values,
-                &right_values,
-                &mut output_values,
-            )
-            .map_err(|_| BackendError::InvalidTensor)?;
-            for row in 0..m {
-                for column in 0..n {
-                    let offset = element_offset(tensor, [row, column, i2, i3])?;
-                    // SAFETY: the output span bounds this modeled address. Raw
-                    // stores avoid manufacturing Rust borrows over foreign aliases.
-                    unsafe {
-                        ptr::write_unaligned(
-                            output_data.add(offset).cast::<f32>(),
-                            output_values[row * n + column],
-                        );
-                    }
-                }
-            }
+            _ => return Err(BackendError::InvalidTensor),
         }
     }
     Ok(())

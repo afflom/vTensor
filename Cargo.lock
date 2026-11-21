@@ -464,6 +464,7 @@ dependencies = [
  "vtensor_index",
  "vtensor_layout",
  "vtensor_matrix",
+ "vtensor_matrix_execution",
  "vtensor_native_config",
  "vtensor_native_memory",
  "vtensor_native_predicates",
@@ -491,6 +492,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_matrix"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_matrix_execution"
 version = "0.1.0"
 
 [[package]]
