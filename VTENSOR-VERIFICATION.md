@@ -1720,3 +1720,58 @@ Only changed native and pointwise projects were exported. Unchanged main-app
 proofs and Verdant's large conversion corpus were not rebuilt. Full imported
 operation coverage, complete lifecycle support, production dependency acceptance
 and the previously recorded Verdant release blockers remain unfinished.
+
+
+## Certified float-transform dependency foundation
+
+The reproducible Verdant extension is advanced to
+`45bb03d603838a3289400f36753c743a289ef492`. Its new VTK-05 capability adds
+`linear::transform_float_storage` for scale-bias, clamp and leaky ReLU across
+F32, F16 and BF16. `FloatTransform.lex.tex` composes the existing certified
+storage conversion and scalar arithmetic models, including unordered comparison,
+signed zeros, reversed clamp bounds and the F32 zero-bias scale branch.
+The pinned SDK export has result
+`e9e77b4bbfe6d9ec6aac3f513ef975ab7f3c60ba6ca569940d0c1baafa4d8310`
+and attestation
+`7afb29d539884299def8d2d56bcd7ab9f87607e22bbba58bb26bf4ee375e55df`.
+The remote Prism draft store again refused writes; the exact SDK supplied the
+source check, Lean proof and generated-code preservation certificate.
+
+The isolated Engine checkpoint registers its capability and scenario before
+the observed missing-API failure. Its oracle compiles the imported GGML CPU
+kernels directly with the SDK C/C++ compilers and baseline architecture flags.
+The 35,964 cases span input/parameter combinations, exceptional values and all
+three storage types. Finite values, infinities and signed zeros require exact
+bits; numerical NaNs use the existing scalar classification policy. Reversed
+clamp bounds and NaN selection are exercised, rather than filtered. Swapping
+the leaky-ReLU slope and unused argument failed the negative-one/unit-slope
+comparison (actual zero, expected `bf800000`). The binding was restored, and
+all three new tests passed, including typed refusals and certificate replay.
+
+All 16 Tensor unit and four integration tests passed in the Engine checkpoint.
+The complete numeric corpora were rerun because the shared oracle builder
+changed; the 75.18-second unit run includes a fresh CPU executable build.
+Formatting, model checks, Core/Tensor all-target/all-feature Clippy and
+cargo-deny pass. A fresh uorust projection retains the existing 203 lifted and
+1,192 residue functions without raising ceilings; its 49-file source pin is
+`74acfe14d176770b0846e108a283d272db0d276a574026c95d77e542e2432c6e`.
+Previously recorded broader Engine release blockers remain open.
+
+The vTensor bundle is 5,179,847 bytes, SHA-256
+`69dd4ca8204b225d0913c5a1cda9f39e3ea4fd7983f57b9692d97a42ebe7c839`.
+Its Git prerequisite and exact ref were verified. The clean prepared checkout
+was advanced by a fast-forward; `just verdant-prepare` confirms the exact new
+commit and bundle. The isolated checkout's two unaccepted rebuilt Wasm files
+remain outside the commit and bundle. The lockfile and generated-source license
+fingerprint bind the added package without changing its emitted bytes.
+Graph bindings for these three transforms remain to be implemented in Prism;
+this dependency foundation does not add native graph support by itself.
+
+The vTensor workspace regression used `cargo test --workspace --locked
+--no-fail-fast`: twenty-four contract tests passed in 17.06 seconds, every other
+target passed, and VT-02 alone refused the unpublished development override.
+Formatting, model/source audits, frame synchronization, workspace Clippy and
+all dependency checks pass. Handwritten source remains 10,571 lines across the
+existing 51 files. Unchanged vTensor Prism roots were replayed without fresh
+exports. Full backend coverage, the new transforms' graph bindings, complete
+lifecycle support and production source acceptance remain unfinished.

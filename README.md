@@ -16,7 +16,7 @@ reproduced by `just verdant-prepare` from the hash-bound Git bundle in this
 repository. The checkout lives at `.verdant-engine`. This override is explicit in
 `Cargo.toml`; the unchanged exact-source guard rejects it as release evidence.
 The declared upstream base is Verdant v2.4.0 commit `87c3256326b9`; the
-reproducible matrix/scalar/storage/conversion extension checkpoint is `d6674663941f`.
+reproducible Verdant extension checkpoint is `45bb03d60383`.
 
 ## Architecture
 
@@ -77,6 +77,9 @@ nonsquare descriptors before writes. FILL converts constants once through
 Verdant and uses the transfer path for F32/F16, including in-place aliases.
 Mixed F32/F16/BF16 copies use Prism ordinal-address plans and Verdant encoding
 conversion. Remaining conversions, operations and numeric types are unfinished.
+The development dependency also carries the certified F32/F16/BF16 scale-bias,
+clamp and leaky-ReLU transform primitive, checked against 35,964 imported CPU
+cases. Its graph binding is the next implementation step.
 Storage and empty-graph coverage for all 36 live types do not establish their
 nonempty numerical behavior.
 
@@ -85,7 +88,7 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes twenty-three contract tests; VT-02 refuses the
+The current development tree passes twenty-four contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy
 and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in

@@ -328,6 +328,7 @@ dependencies = [
  "serde",
  "uor-matmul",
  "verdant_float_storage",
+ "verdant_float_transform",
  "verdant_matrix_shape",
  "verdant_scalar_f32",
  "verdant_storage_transfer",
@@ -335,6 +336,10 @@ dependencies = [
 
 [[package]]
 name = "verdant_float_storage"
+version = "2.4.0"
+
+[[package]]
+name = "verdant_float_transform"
 version = "2.4.0"
 
 [[package]]
