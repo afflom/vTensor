@@ -650,10 +650,9 @@ fn execute_word(
         return Err(BackendError::InvalidTensor);
     };
     let read = |slot, from| match slot {
-        1 => words
-            .get(from as usize)
-            .copied()
-            .ok_or(BackendError::InvalidTensor),
+        // Prism emits only literal scratch indices 0, 1 and 2, using the
+        // same admitted bounds as the pointer-slot bindings below.
+        1 => Ok(words[from as usize]),
         2 => Ok(from),
         slot => {
             let index = match slot {
@@ -688,15 +687,13 @@ fn execute_word(
             .map_err(|_| BackendError::InvalidTensor)?,
         7 => verdant_tensor::linear::convert_float_storage(0, storage, a)
             .map_err(|_| BackendError::InvalidTensor)?,
+        16..=19 => verdant_tensor::linear::evaluate_encoded_word(kind - 16, a, b)
+            .map_err(|_| BackendError::InvalidTensor)?,
         _ => return Err(BackendError::InvalidTensor),
     }
     .ok_or(BackendError::InvalidTensor)?;
     match target {
-        1 => {
-            *words
-                .get_mut(to as usize)
-                .ok_or(BackendError::InvalidTensor)? = value
-        }
+        1 => words[to as usize] = value,
         // SAFETY: Prism emits destination writes only for its admitted logical
         // output words, after all required source reads. Padding is untouched.
         3 => unsafe {
@@ -707,6 +704,8 @@ fn execute_word(
                 if storage == 0 { 4 } else { 2 },
             );
         },
+        // SAFETY: Prism's I64 COUNT_EQUAL plan admits this scalar word.
+        6 => unsafe { ptr::write_unaligned(pointers[2].add(to as usize).cast::<u64>(), value) },
         _ => return Err(BackendError::InvalidTensor),
     }
     Ok(())
@@ -728,7 +727,9 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         _ => source_data(0)?,
     };
     let right_data = match mode {
-        CopyMode::C2(..) | CopyMode::C6(..) | CopyMode::C10(_, false, _) => source_data(1)?,
+        CopyMode::C2(..) | CopyMode::C6(..) | CopyMode::C10(_, false, _) | CopyMode::C18(..) => {
+            source_data(1)?
+        }
         _ => literal.as_ptr().cast_mut(),
     };
     let destination_data = graph_tensor_data(tensor)?;
@@ -741,7 +742,10 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let mut block = workspace(bytes, 0_u8)?;
     let mut words = [0; 3];
     for index in 0..count {
-        let request = GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone());
+        let request = match mode {
+            CopyMode::C17 => GraphRequest::C2(index, source.clone(), destination.clone(), words[2]),
+            _ => GraphRequest::C1(index, source.clone(), destination.clone(), mode.clone()),
+        };
         let response = vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)?;
         let response = match response {
             GraphResponse::C2(kind, ls, lf, rs, rf, to) => {

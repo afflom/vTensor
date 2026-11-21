@@ -2130,3 +2130,85 @@ Upstream main was inspected at e3abe5bbadaa67ac1cffa10fd951396bfd0e2b2d,
 Verdant v2.9.0, whose native build automation and lifting work inform the
 remaining Engine acceptance/migration work. This bundle retains its declared
 base and does not claim upstream migration or production dependency acceptance.
+
+## VT-30: ARGMAX and COUNT_EQUAL graphs
+
+The registered scenario and initial supports-operation failure preceded
+implementation. Prism admits F32 matrix ARGMAX to an I32 vector with one
+index per row, requiring matrix extents and the imported INT32_MAX width
+limit. It admits COUNT_EQUAL for equal-shaped I32 operands to an I64 scalar.
+Type/shape/source/allocation refusals precede writes. Source and destination
+strides are independent; COUNT_EQUAL has a separate right indexing context.
+
+ARGMAX models the imported sequence `max = MAX(max, x)` followed by the index
+update when `max == x`. Equal maxima choose the last index, including either
+signed zero and negative infinity. A right NaN replaces the maximum but keeps
+the index; the next finite value replaces that NaN and updates the index even
+when smaller than a prior finite maximum. An all-NaN or zero-width row returns
+zero. Prism emits comparison, maximum selection, index selection and final
+writes; the new typed selection request carries only the comparison flag.
+Numerical classification and word operations execute solely through Verdant.
+COUNT_EQUAL compares raw I32 encodings, so opposite sign bits and float-looking
+NaN words are ordinary distinct integers. Its certified checked integer sum
+writes the I64 scalar through the native word binding. The admitted count is
+retained in the plan, avoiding repeated extent products during execution.
+
+The final pointwise result is
+9f5dce5498200d553ad81c5ad217267471a9e7822a58ba84b66ab96817e0e137,
+attestation 120c8c6fac0e25292116c64f49af0a069e1d8d93c06444ba03f2a12cdd58c588.
+Source identity d3dbbf8860c43a99cee7145eda9dfd1dbbd36e408dbfd65c19a6469e079953ff;
+semantic identity f7ee6716870c9a107b5db2ec240af7e5742e834702091922ec16b8c0a076d5a8.
+Generated output is unchanged SDK output, fingerprint 1787daf3. Only the
+changed pointwise project was exported. An initial accepted row model exposed
+an empty-input overflow on new direct plan probes: unused extents 2^40 could
+multiply before recognizing zero elements. The model now checks emptiness
+first; scalar SUM and COUNT_EQUAL emit two instructions for those probes.
+Universal zero-width theorems cover arbitrary remaining natural extents.
+This necessary model correction was re-exported; unrelated proofs were kept.
+
+All 2,264 imported CPU comparisons passed: 1,120 numerical ARGMAX and 1,120
+numerical COUNT_EQUAL graphs, plus eight empty ARGMAX and sixteen empty count
+graphs. Numerical cases combine fourteen patterns, five widths (1, 2, 3, 17,
+65), two row choices, two batch choices and four layouts. ARGMAX varies its
+matrix row count; COUNT_EQUAL exercises all four axes and independently
+strided operands. Data include repeated maxima, opposite zeros, all negative
+infinities, all NaNs, NaNs before and between finite values, subnormals,
+negative values and seeded words. Equality patterns cover all equal, all
+different, alternating and sparse differences. Exact integer outputs and
+all padding bytes are required, with no NaN normalization of integer data.
+The two large-empty plan probes pass in addition to those CPU graphs.
+
+The imported count kernel computes its multidimensional row coordinates with
+`i03*ne03` and `i02*ne02` where the general logical decomposition requires
+other products. Arbitrary shapes can therefore read incorrect or out-of-bound
+rows. The public header specifies the number of equal elements. Reference
+comparisons retain raw 2D layouts and balanced 4D layouts where the imported
+index equations are valid: n1=n2=k, n3=k*k, with k=1,2,3,4 and mixed equality
+results. Other shapes use the imported CONT operation to normalize both
+operands to contiguous 2D tensors before calling the unchanged COUNT_EQUAL
+kernel. That normalization preserves logical equality while avoiding undefined
+upstream accesses; it is explicit oracle scope, not evidence that the buggy
+raw CPU kernel implements arbitrary strides/shapes. ARGMAX uses the raw CPU
+input whenever its element stride is admissible, normalizing only the strided
+element extension. Output comparison always retains actual output strides.
+
+Changing the live comparison flag so ties retained an earlier index failed
+ARGMAX (actual 1, expected 13). Treating a left NaN as a right NaN failed the
+recovery case (actual zero, expected one). Dropping COUNT_EQUAL's integer
+addend failed the first equality graph (actual zero, expected two). Native
+sources were restored byte-for-byte. A false last-tie theorem failed Lean by
+rfl with LLV7002. Restored source/semantic IDs match the kept result; artifact
+replay verified both outputs without repeating axiom audit, Lean, leanchecker
+or named-root extraction.
+
+The workspace command passed 29 contract tests in 25.60 seconds and every
+other target, with VT-02 alone rejecting the unpublished development override.
+The final raw-layout reference refinements and explicit ARGMAX width-limit
+refusal were then checked by the affected row corpus only (4.16 seconds). Scoped formatting, model/source audits, frame sync, Clippy,
+cargo-deny, template checks and SDK locks passed. Handwritten code remains
+10,558 lines in the same 51 files. Scenario tests now own their expected case
+counts directly, removing duplicate mode dispatch from the common harness.
+Digest formatting is shared, and ID uniqueness uses one ordered-set insertion.
+Scratch bindings use the same bounds-checked indexing convention as admitted
+pointer slots; Prism emits only the three literal register indices.
+Complete imported coverage and production dependency acceptance remain open.

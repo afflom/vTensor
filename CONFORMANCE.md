@@ -136,6 +136,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-16` | `build` | Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle |
 
+## row-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-30` | `build` | Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs |
+
 ## scan-graphs
 
 | ID | Level | Statement |

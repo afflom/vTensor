@@ -69,6 +69,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-27` | build | Matches 4,992 graphs for thirteen typed unary operations across all five supported float pairs, copied/in-place forms, strides and empty dimensions. |
 | `VT-28` | build | Matches 528 F32 CUMSUM graphs with exact first-word copies, ordered row-local prefixes, independent strides, signed-zero and NaN edges, empty axes and preserved padding. |
 | `VT-29` | build | Matches 4,080 SUM/SUM_ROWS/MEAN graphs with F64 or F32 accumulation as upstream requires, packed/strided SUM ordering, narrowing before MEAN division, all supported float types, empty axes and preserved padding. |
+| `VT-30` | build | Matches 2,264 ARGMAX/COUNT_EQUAL graphs, including last ties, NaN recovery, all-NaN rows, exact I32/I64 outputs, independent strides, four-axis equality, empty inputs and large-empty planning probes. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -87,6 +88,10 @@ SUM accumulates in F32. SUM_ROWS and MEAN accumulate F32 rows in F64, with
 F32 narrowing before MEAN division. Empty reductions retain their output semantics.
 CUMSUM copies the first word of each row, then uses certified F32 addition
 in CPU prefix order. It supports independently strided inputs and outputs.
+ARGMAX preserves GGML’s last-index ties and NaN reset behavior. COUNT_EQUAL
+compares raw I32 words by logical position across all four axes and writes an
+I64 total. Its CPU reference uses raw valid layouts and an explicit contiguous
+normalization for shapes affected by the imported multidimensional index bug.
 TRI shares that selection path for all four upstream variants and rejects
 nonsquare descriptors before writes. FILL converts constants once through
 Verdant and uses the transfer path for F32/F16, including in-place aliases.
@@ -104,7 +109,7 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes twenty-eight contract tests; VT-02 refuses the
+The current development tree passes twenty-nine contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy
 and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in

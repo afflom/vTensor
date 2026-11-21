@@ -244,3 +244,9 @@ id = "VT-29"
 level = "build"
 suite = "reduction-graphs"
 statement = "Prism models SUM SUM_ROWS and MEAN accumulation precision rounding and empty reductions and Verdant matches every supported float type against the imported GGML CPU oracle"
+
+[[id]]
+id = "VT-30"
+level = "build"
+suite = "row-graphs"
+statement = "Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs"

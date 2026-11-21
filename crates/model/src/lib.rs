@@ -88,12 +88,11 @@ impl Model {
     /// its rule here, in the same commit that adds the first ID in it.
     fn check_ids(&self) -> Result<(), ModelError> {
         let bad = |m: String| ModelError::Inconsistent(m);
-        let mut seen: Vec<&str> = Vec::new();
+        let mut seen = std::collections::BTreeSet::new();
         for row in &self.ids.id {
-            if seen.contains(&row.id.as_str()) {
+            if !seen.insert(&row.id) {
                 return Err(bad(format!("{}: registered twice", row.id)));
             }
-            seen.push(&row.id);
 
             if row.statement.trim().is_empty() {
                 return Err(bad(format!(
