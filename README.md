@@ -192,14 +192,19 @@ retains the explicit VT-02 release-source refusal; it is not a published
 Verdant dependency or evidence of complete backend conformance.
 
 The current development checkpoint rebases the Tensor extension onto Verdant
-2.9.0 upstream `31c9319`. Its twenty certified SDK packages share one imported
+2.9.0 upstream `31c9319`. Its twenty-one certified SDK packages share one imported
 Prism bundle and one certificate replay per process. Native source lifting now
 captures the exact generated package sources and separated test fixtures; the
 new omission checks reject missing roots and package manifests. This remains a
-development dependency until production packaging and VT-02 pass.
+development dependency until the authoritative production source and VT-02 pass.
 
 Verdant's native packager now includes the certified production dependency
-closure (33 crates), with exact registry versions and preserved SDK provenance.
+closure (34 crates), with exact registry versions and preserved SDK provenance.
 Its registry check requires a successful real Cargo consumer build and rejects
 missing or unresolvable dependencies. Production publication and VT-02 remain
 part of completion.
+
+The current Verdant extension adds certified packed-scale and F8 word primitives
+for the remaining row-gathering work. Its 244,492 imported GGML comparisons pass;
+all twenty previous numerical libraries remain byte-identical. Full packed-block
+decoding and GET_ROWS graph support are still under development.

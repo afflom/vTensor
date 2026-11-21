@@ -340,6 +340,7 @@ dependencies = [
  "verdant_pack_plan_f64",
  "verdant_round_mantissa_f64",
  "verdant_scalar_f32",
+ "verdant_small_float",
  "verdant_storage_transfer",
  "verdant_unary_activate",
  "verdant_unary_plan",
@@ -399,6 +400,10 @@ version = "2.9.0"
 
 [[package]]
 name = "verdant_scalar_f32"
+version = "2.9.0"
+
+[[package]]
+name = "verdant_small_float"
 version = "2.9.0"
 
 [[package]]

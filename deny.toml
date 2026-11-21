@@ -232,3 +232,9 @@ name = "verdant_encoded_word"
 version = "=2.9.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x3e01166f }]
+
+[[licenses.clarify]]
+name = "verdant_small_float"
+version = "=2.9.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x32da1e47 }]

@@ -2410,3 +2410,42 @@ semantic `2fcddc7df8d52f681b24fee739ef75fcb66e55c545ea3413b950c005a568e953`.
 Those identifiers belong to the authoring profile; the deployed code remains
 bound to the pinned-SDK production identifiers above. The unchanged repeated
 right-offset library was retained byte for byte across the export.
+
+
+## Packed-scale and F8 execution foundation
+
+Verdant extension `79d86c94170b88c5a52e3180466a3bab51a99c5b` adds VTK-11
+without changing the bytes of the twenty existing numerical SDK libraries. The
+new SmallFloat Prism root handles E8M0, E8M0-half, unsigned E4M3-half, signed F8,
+the two upstream F32 encoders, and doubled E2M1 coefficients. This foundation is
+for complete packed row gathering; no GET_ROWS graph claim is added here.
+
+The current twenty-one-root SDK bundle is
+`9e0295585e59ecee5c12da182f0e6a232210440c61a7774c9dff4bf838536a9a`,
+with independent Lean/leanchecker attestation
+`c7bc0cd2d04ad9d8128b3aefb6aa2d736d600603a9774f04327d4e50b1ca6ba4`.
+Its 1,040 exhaustive byte/nibble and 243,452 encoder comparisons against the
+pinned imported GGML helpers passed. A planted one-bit E8M0 defect was rejected.
+The final generated implementation has no normalization or exponentiation
+loops. Certificate replay and typed refusal checks pass. Full Engine workspace
+verification passed 74 Engine and 35 Tensor tests, plus all model, fidelity,
+formatting, Clippy, dependency and production-registry checks. The final main
+application proof remains running at this implementation checkpoint.
+
+The authoring MCP service timed out at its unchanged five-minute child limit;
+it issued no successful attestation. The pinned SDK completed the model, Rust
+target, composition and independent checker stages. The successful SDK
+evidence above is distinct from the remote authoring outcome.
+
+Native source lifting retained zero unlifted workspace and UI modules. Core
+Wasm shrank to 155562 bytes and UORC to 3919290 bytes; the core ceiling tightened
+to 155648 bytes and no bound increased. The native source capsule is
+`e5b6127b75c27bd02fb023b9ca6bb5ddfe63eac7480792977d415b82068521b2`.
+The new package remains in the explicit development source bundle. VT-02 must
+continue to reject that override as production release evidence.
+
+After pinning the extension, all 30 current vTensor contract checks passed;
+VT-02 alone rejected the explicit development source, as intended. All 62
+xtask tests, formatting, model/frame/source audits, workspace Clippy and
+dependency checks passed. The non-Prism source total remains exactly 10558
+lines in 51 files, equal to the unchanged ceiling.
