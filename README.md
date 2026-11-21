@@ -59,6 +59,7 @@ reproducible Verdant extension checkpoint is `45bb03d60383`.
 | `VT-23` | build | Matches 15,360 F32/F16 FILL graphs, including copied/in-place output, exact constants, rounding boundaries, strides, empty dimensions and unused inputs without allocations. |
 | `VT-24` | build | Matches 1,920 cast/copy graphs across all six mixed F32/F16/BF16 pairs, both constructors, strides, reshape, empty dimensions and preserved padding. |
 | `VT-25` | build | Window partition/join covers 2,808 CPU comparisons and 216 bounded-source refusals, including strides, padding, empty dimensions and independent oversized/reshaped windows. |
+| `VT-26` | build | Matches 18,432 numerical and 384 empty SCALE/SCALE_BIAS/CLAMP/LEAKY_RELU graphs across F32/F16/BF16, copied/in-place output, strides and exact padding. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -79,7 +80,8 @@ Mixed F32/F16/BF16 copies use Prism ordinal-address plans and Verdant encoding
 conversion. Remaining conversions, operations and numeric types are unfinished.
 The development dependency also carries the certified F32/F16/BF16 scale-bias,
 clamp and leaky-ReLU transform primitive, checked against 35,964 imported CPU
-cases. Its graph binding is the next implementation step.
+cases. Prism now binds SCALE, SCALE_BIAS, CLAMP and LEAKY_RELU graphs to it,
+including strided F32/F16/BF16 tensors and in-place aliases.
 Storage and empty-graph coverage for all 36 live types do not establish their
 nonempty numerical behavior.
 
@@ -88,7 +90,7 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current development tree passes twenty-four contract tests; VT-02 refuses the
+The current development tree passes twenty-five contract tests; VT-02 refuses the
 unpublished local dependency. Formatting, model/source audits, workspace Clippy
 and dependency checks pass. No release gate has been weakened to admit it.
 Detailed evidence is recorded in

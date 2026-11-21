@@ -220,3 +220,9 @@ id = "VT-25"
 level = "build"
 suite = "window-graphs"
 statement = "Prism models window partition padding and window join logical indexing and Verdant transfers match the imported GGML CPU oracle for independent strided empty and bounded window inputs"
+
+[[id]]
+id = "VT-26"
+level = "build"
+suite = "transform-graphs"
+statement = "Prism plans scale bias clamp and leaky ReLU graphs and Verdant matches the imported GGML CPU kernels for every supported float storage type across copied in-place strided and empty tensors"

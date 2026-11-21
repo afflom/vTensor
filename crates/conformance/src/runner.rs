@@ -391,8 +391,8 @@ unsafe extern "C" fn buffer_clear(buffer: Buf, value: u8) {
     }
 }
 
-macro_rules! transfer_callback {
-    ($name:ident, $tensor:ty, $external:ty, $effect:expr) => {
+macro_rules! transfer_callbacks {
+    ($($name:ident($tensor:ty, $external:ty) => $effect:expr;)*) => {$(
         unsafe extern "C" fn $name(
             buffer: Buf,
             tensor: $tensor,
@@ -411,26 +411,13 @@ macro_rules! transfer_callback {
                 ($effect)(region, external, size);
             }
         }
-    };
+    )*};
 }
-transfer_callback!(
-    tensor_set,
-    TensorPtr,
-    *const c_void,
-    |region, external: *const c_void, size| ptr::copy(external.cast::<u8>(), region, size)
-);
-transfer_callback!(
-    tensor_get,
-    *const Tensor,
-    *mut c_void,
-    |region: *mut u8, external: *mut c_void, size| ptr::copy(region, external.cast::<u8>(), size)
-);
-transfer_callback!(
-    tensor_memset,
-    TensorPtr,
-    u8,
-    |region: *mut u8, value, size| ptr::write_bytes(region, value, size)
-);
+transfer_callbacks! {
+    tensor_set(TensorPtr, *const c_void) => |region, external: *const c_void, size| ptr::copy(external.cast::<u8>(), region, size);
+    tensor_get(*const Tensor, *mut c_void) => |region: *mut u8, external: *mut c_void, size| ptr::copy(region, external.cast::<u8>(), size);
+    tensor_memset(TensorPtr, u8) => |region: *mut u8, value, size| ptr::write_bytes(region, value, size);
+}
 
 unsafe extern "C" fn tensor_copy(
     buffer: Buf,
@@ -614,11 +601,17 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
     Ok(())
 }
 
-fn converted_word(source: u64, destination: u64, bits: u64) -> Result<[u8; 4], BackendError> {
-    let word = verdant_tensor::linear::convert_float_storage(source, destination, bits)
-        .map_err(|_| BackendError::Overflow)?
-        .ok_or(BackendError::InvalidTensor)?;
-    Ok(if destination == 0 {
+fn storage_word(src: u64, dst: u64, bits: u64, mode: &CopyMode) -> Result<[u8; 4], BackendError> {
+    let word = match mode {
+        CopyMode::C13(kind, ty, a, b) => {
+            verdant_tensor::linear::transform_float_storage(*kind, *ty, bits, *a, *b)
+                .map_err(|_| BackendError::Overflow)
+        }
+        _ => verdant_tensor::linear::convert_float_storage(src, dst, bits)
+            .map_err(|_| BackendError::Overflow),
+    }?
+    .ok_or(BackendError::InvalidTensor)?;
+    Ok(if dst == 0 {
         (word as u32).to_ne_bytes()
     } else {
         let [a, b] = (word as u16).to_ne_bytes();
@@ -634,7 +627,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let source_data = |slot: usize| graph_tensor_data(unsafe { &*tensor.src[slot] });
     // Typed host word bindings preserve native byte order; conversion is Verdant's.
     let literal = match mode {
-        CopyMode::C9(ty, bits) => converted_word(0, ty, bits)?,
+        CopyMode::C9(ty, bits) => storage_word(0, ty, bits, &mode)?,
         _ => [0; 4],
     };
     let left_data = match mode {
@@ -688,7 +681,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                     } else {
                         u64::from(ptr::read_unaligned(pointer.cast::<u16>()))
                     };
-                    encoded = converted_word(source_type, destination_type, word)?;
+                    encoded = storage_word(source_type, destination_type, word, &mode)?;
                     (encoded.as_ptr(), to)
                 }
                 _ => return Err(BackendError::InvalidTensor),

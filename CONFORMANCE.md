@@ -149,6 +149,12 @@ model does not sanction.
 | `VT-06` | `build` | The Prism-generated four-dimensional byte-span function matches the pinned GGML storage oracle and rejects invalid blocks and arithmetic overflow |
 | `VT-07` | `build` | The Prism-generated type catalog matches every declared GGML storage type and refuses removed and out-of-range identifiers |
 
+## transform-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-26` | `build` | Prism plans scale bias clamp and leaky ReLU graphs and Verdant matches the imported GGML CPU kernels for every supported float storage type across copied in-place strided and empty tensors |
+
 ## triangular-graphs
 
 | ID | Level | Statement |
