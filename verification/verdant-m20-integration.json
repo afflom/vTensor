@@ -1,0 +1,100 @@
+{
+  "spec": "vtensor/verdant-m20-integration/1",
+  "status": "integrated-in-isolated-worktree-full-gate-running-not-adopted",
+  "upstream": "34c827db624f951609e49f57bbf324671876eeff",
+  "extension_parent": "3635dcf766665509caef009e5a8f89856556a7e1",
+  "version": "2.12.0",
+  "sdk_image": "ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c",
+  "changes": [
+    "Resolved the actual upstream merge in an isolated worktree, preserving the original user checkout.",
+    "Native authority bootstrap reads canonical locks; Wasm retains the regenerated compact projection. VE-38 regression fails on the prior stale projection.",
+    "The authority Wasm export uses the existing global bridge mutex.",
+    "RNG seed normalization is equivalent to seed | 1 and is admitted by Prism lifting; 65,792 seed cases cover the low word and every bit position.",
+    "StorageBlock is grounded in the existing model ratchet. Decoder register widths, dispatch and stores derive from constructive scalar constants and machine types. No tensor arithmetic fallback or generated library edit."
+  ],
+  "frontier": {
+    "functions": 1714,
+    "lifted": 390,
+    "residue": 1167,
+    "foreign": 74,
+    "effect": 83
+  },
+  "checks": {
+    "tensor_before_binding_refactor": "44 passed; 0 failed; 0 ignored; 0 filtered out",
+    "affected_packed_word_tests_after_refactor": "9 passed, including exact imported GGML block and arithmetic-word oracles",
+    "focused_engine_tests_before_grounding_fix": "VE-38, VTK-09 and VTK-10 passed; VE-55 and VE-72 rejected missing grounding and numeric literals; fixed before full gate",
+    "faults": [
+      "RNG seed normalization increment removed: VE-55 rejected seed 0; restored exact bytes.",
+      "Storage conversion source/destination reversed: imported GGML block oracle rejected mismatches; restored exact bytes."
+    ],
+    "artifact_writers": "Native operator sync-wasm and operator ratchet-lift passed; actual files regenerated, ceilings tightened rather than raised.",
+    "full_gate": {
+      "command": "just vv",
+      "status": "running",
+      "environment": {
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0"
+      },
+      "scope": "Unchanged complete gate in the exact SDK; debug assertions remain enabled. An earlier attempt exhausted disk during test compilation. Only task-owned build cache was removed before restarting.",
+      "log": "/tmp/vtensor-verdant-m20-vv-lean.log"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "site/verdant-wasm.wasm",
+      "bytes": 153529,
+      "sha256": "3f6c869dae3907367a9c322f31a25e890718e7a43b6d6514021659db7b777681"
+    },
+    {
+      "path": "site/verdant-uorc.wasm",
+      "bytes": 3798351,
+      "sha256": "44338ff070b6970cc18f515d523f5b7485796f585bff5410b2bf9841d834630b"
+    },
+    {
+      "path": "frontier.toml",
+      "bytes": 442240,
+      "sha256": "1653cc1356399ae9badf15686b26ef251f17839cac5984a815b5605c93d70c19"
+    },
+    {
+      "path": "model/parametric-ratchet.toml",
+      "bytes": 10335,
+      "sha256": "79ebce9b2284e4d557851930e33d95ef394b64447d44a1ada3187bd6c912acde"
+    },
+    {
+      "path": "model/runtime-authority-locks.toml",
+      "bytes": 1919,
+      "sha256": "d88f47f2e02ab87c6b351df3cfc133ad03f15d2d6e1f802893313a4ec2642236"
+    }
+  ],
+  "logs": {
+    "bootstrap-before": {
+      "path": "/tmp/vtensor-verdant-m20-bootstrap-before.log",
+      "sha256": "321d24f0e21115776e83ef5d60dafc622b916140327fb6535d9454f6dd52112b"
+    },
+    "seed-fault": {
+      "path": "/tmp/vtensor-verdant-m20-seed-fault.log",
+      "sha256": "b91c46ef3f3befb62ef7044346d2fb9e6c60a0bab2a09f05fb7811a1337d81a5"
+    },
+    "codec-fault": {
+      "path": "/tmp/vtensor-verdant-m20-codec-fault.log",
+      "sha256": "b9c094dcec93bb67ca13fb4f1bd31fb65f1b9203a9a362f9b5f6341faa029c23"
+    },
+    "tensor-tests": {
+      "path": "/tmp/vtensor-verdant-m20-tensor-tests.log",
+      "sha256": "b50ae6b2fc7b68c5e24c96a4b53999bc10792e80f8ff07f4d71d77bea229907e"
+    },
+    "model-checks": {
+      "path": "/tmp/vtensor-verdant-m20-model-checks.log",
+      "sha256": "a5313b3d9219c65a34776dd190da784dcb0388f6921a913e398619255ae5d480"
+    },
+    "integration-checks": {
+      "path": "/tmp/vtensor-verdant-m20-integration-checks.log",
+      "sha256": "8c643bddb561fff9b0d027cc84f1077b49f4ede9d4ddd05d32475c8a259aca38"
+    },
+    "artifacts-grounded": {
+      "path": "/tmp/vtensor-verdant-m20-artifacts-grounded.log",
+      "sha256": "f842f4cefb9c386d6c3bba0332021a7bc467612abd18af85608e3e187ba031f0"
+    }
+  },
+  "release": "Not a production dependency. vTensor remains pinned to its previous development bundle until the full Engine gate passes. VT-02 and the vTensor source budget remain open."
+}

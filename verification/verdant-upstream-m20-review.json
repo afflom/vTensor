@@ -51,5 +51,6 @@
       "site/verdant-wasm.wasm"
     ],
     "log": "/tmp/vtensor-verdant-m20-merge-analysis.log"
-  }
+  },
+  "subsequent_integration": "See verification/verdant-m20-integration.json for subsequent isolated integration; this file preserves the original reference-only review."
 }
