@@ -2,10 +2,10 @@
   "spec": "vtensor/verdant-development/1",
   "upstream": "https://github.com/afflom/verdant-engine.git",
   "base": "31c93199d2e77c16cf6044ad3b61654c92e66c68",
-  "commit": "1f827a7112cebdf1b98aba24d3eb696aed5dce3b",
+  "commit": "5fd03d498df926f7770ad131ea8c828f4b657e86",
   "ref": "refs/heads/vtensor/upstream-migration",
   "bundle": "vendor/verdant-development.bundle",
-  "sha256": "dcea515b8a20273560b5367ac242d2f242924a889bcb6591f0f4d05f0377c2bc",
+  "sha256": "0231025623a4636eeee4bcd0c4915e8b1d2c83f3364ee38b38d4e49b4d5590f5",
   "sdk_image": "ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c",
   "directory": ".verdant-engine"
 }

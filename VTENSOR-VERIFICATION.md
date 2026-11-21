@@ -2321,3 +2321,22 @@ The full restored run passed all workspace lint/tests (73 engine and 31 Tensor
 tests), template, model, experience, fidelity and dependency checks. Final Prism
 verification remains active; complete acceptance is still pending. The updated
 33-crate registry was regenerated from the corrected source.
+
+Verdant's restored full `just vv` subsequently passed with exit 0. Final
+attestation is
+`a83ef1d53cae059f70e59ab7978050c69fef04f1f7436eee24cdccea422843bc`.
+The current evidence pin is `5fd03d498df926f7770ad131ea8c828f4b657e86`; bundle SHA-256
+`0231025623a4636eeee4bcd0c4915e8b1d2c83f3364ee38b38d4e49b4d5590f5`. The exact SDK acceptance, Lean attestation, build
+manifest and input receipt are committed in the dependency's
+`verification/tensor-delivery/` directory. They cover the main application
+artifact closure, Cargo package, core Wasm, browser projection, modeled vectors
+and independent kernel replay, separately from the twenty Tensor root
+certificates. Only evidence and documentation changed after the passing run;
+its numerical sources and proof inputs were retained. Full Verdant acceptance
+does not establish complete GGML coverage or waive vTensor's VT-02 boundary.
+
+The reported final identifier is the SHA-256 of the SDK verification manifest.
+The preserved independent LexLean attestation has ID
+`3779a2f8f076e8414ba8228b77743b97ecc8d6e86b628f0de0ffc70e52d6cd33`;
+both it and the application acceptance bind source
+`102bd4890f71f4e14829a64b9789d52de23f298dc0c233ccb9d9f0afdd46e8bc`.
