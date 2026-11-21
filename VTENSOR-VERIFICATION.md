@@ -2985,3 +2985,41 @@ completion or release evidence.
 
 Capture: `/tmp/vtensor-matrix-fixture-capture.log` (1,280 cases passed).
 Initial refusal: `/tmp/vtensor-fixture-before.log` (missing fixture bundle).
+
+## Certified matrix fixture generation (VT-35)
+
+`MatrixFixtures.lex.tex` now defines all 1,280 matrix cases, their 24 metadata
+fields, both source layouts and every encoded input word. The separate locked
+fixture project exports a certified `vtensor_fixtures` SDK package. The native
+harness imports that data, constructs real GGML tensors and executes the
+imported GGML CPU backend for expected numerical results. No expected numerical
+result comes from the fixture model. All five matrix refusal probes remain
+mandatory at case 416. Invalid families, fields, cases, sources and empty-word
+queries return the modeled `None` result.
+
+Every generated case and every actual constructed tensor/input-word record
+matches the frozen prior corpus digest. This checks both model migration and
+the native binding independently of numerical agreement. A planted low-bit
+input-word defect in the Rust transport fails at case 416 in 2.21 seconds.
+A second defect in the C++ word binding also fails at case 416 in 15.61 seconds,
+even though both numerical backends receive the same altered input. Both
+changes were restored byte for byte. The restored scoped pair passes, including
+all 1,280 CPU matrix comparisons and the five refusal probes.
+
+Fixture generation and its certificate check execute once per contract-test
+process through `OnceLock`, shared by VT-35 and VT-12. Existing integrity-bound
+GGML object and native-program caches remain in use. Only the new fixture
+project was exported; unrelated product kernels were not regenerated.
+
+Formatting, model regeneration/checking, the four BDD meta-tests and backend
+Clippy over all targets pass. The source audit correctly fails at 10,787
+non-Prism lines: 103 above the previous development checkpoint and 238 above
+the last accepted 10,549 budget. The shared fixture transport and preservation
+checks add infrastructure at this stage. Further fixture families must reuse
+it while removing their old handwritten generators. This does not establish
+a new accepted ceiling, complete imported operation coverage or satisfy R6.
+
+Signed authoring provenance, production identities and defect/run logs are in
+`verification/matrix-fixture-runtime.json`. The frozen baseline remains local
+corpus-preservation evidence; the pinned external GGML CPU remains the numerical
+validation authority.

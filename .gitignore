@@ -48,3 +48,5 @@ screens/
 /app/.lexlean-pointwise/
 
 /app/.lexlean-row-gather/
+
+/app/.lexlean-fixtures/

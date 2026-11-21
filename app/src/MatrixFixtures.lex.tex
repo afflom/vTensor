@@ -1,0 +1,263 @@
+\begin{lexlean}{MatrixFixtures}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+inductive{
+  name: Request,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: describe, fields: [Nat]},
+    {name: metadata, fields: [Nat, Nat]},
+    {name: extent, fields: [Nat, Nat, Nat]},
+    {name: word, fields: [Nat, Nat, Nat]}
+  ]
+}
+
+definition{
+  name: rows,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if ((prim remainder (prim quotient ordinal 320 0 : Nat) 4 0 : Nat) =? 0) then 0 else (if ((prim remainder (prim quotient ordinal 320 0 : Nat) 4 0 : Nat) =? 1) then 1 else (if ((prim remainder (prim quotient ordinal 320 0 : Nat) 4 0 : Nat) =? 2) then 2 else 5))),
+  executable: true
+}
+
+definition{
+  name: columns,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if ((prim remainder (prim quotient ordinal 80 0 : Nat) 4 0 : Nat) =? 0) then 0 else (if ((prim remainder (prim quotient ordinal 80 0 : Nat) 4 0 : Nat) =? 1) then 1 else (if ((prim remainder (prim quotient ordinal 80 0 : Nat) 4 0 : Nat) =? 2) then 3 else 7))),
+  executable: true
+}
+
+definition{
+  name: inner,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if ((prim remainder (prim quotient ordinal 16 0 : Nat) 5 0 : Nat) =? 0) then 0 else (if ((prim remainder (prim quotient ordinal 16 0 : Nat) 5 0 : Nat) =? 1) then 1 else (if ((prim remainder (prim quotient ordinal 16 0 : Nat) 5 0 : Nat) =? 2) then 2 else (if ((prim remainder (prim quotient ordinal 16 0 : Nat) 5 0 : Nat) =? 3) then 7 else 33)))),
+  executable: true
+}
+
+definition{
+  name: padding,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim remainder (prim quotient ordinal 4 0 : Nat) 4 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: batch,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim remainder ordinal 4 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: batch2,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (if (source =? 0) then (if (2 <=? (batch ordinal)) then 2 else 1) else (if ((batch ordinal) =? 0) then 1 else (if ((batch ordinal) =? 1) then 3 else 4))),
+  executable: true
+}
+
+definition{
+  name: batch3,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (if (source =? 0) then (if ((batch ordinal) =? 3) then 2 else 1) else (if ((batch ordinal) =? 0) then 1 else (if ((batch ordinal) =? 3) then 4 else 2))),
+  executable: true
+}
+
+definition{
+  name: height,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (if (source =? 0) then (rows ordinal) else (columns ordinal)),
+  executable: true
+}
+
+definition{
+  name: sourceStride1,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim multiply ((if ((inner ordinal) =? 0) then 1 else (inner ordinal)) + (prim remainder (padding ordinal) 2 0 : Nat)) 4 : Nat),
+  executable: true
+}
+
+definition{
+  name: sourceStride2,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: ((prim multiply (sourceStride1 ordinal) (height ordinal source) : Nat) + (prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat)),
+  executable: true
+}
+
+definition{
+  name: sourceStride3,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: ((prim multiply (sourceStride2 ordinal source) (batch2 ordinal source) : Nat) + (prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat)),
+  executable: true
+}
+
+definition{
+  name: sourceStride,
+  parameters: [ordinal : Nat, source : Nat, axis : Nat],
+  result: Nat,
+  body: (if (axis =? 0) then 4 else (if (axis =? 1) then (sourceStride1 ordinal) else (if (axis =? 2) then (sourceStride2 ordinal source) else (sourceStride3 ordinal source)))),
+  executable: true
+}
+
+definition{
+  name: outputStride0,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (2 <=? (padding ordinal)) then 8 else 4),
+  executable: true
+}
+
+definition{
+  name: outputGap,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (2 <=? (padding ordinal)) then 4 else 0),
+  executable: true
+}
+
+definition{
+  name: outputStride1,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: ((prim multiply (outputStride0 ordinal) (rows ordinal) : Nat) + (outputGap ordinal)),
+  executable: true
+}
+
+definition{
+  name: outputStride2,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: ((prim multiply (outputStride1 ordinal) (columns ordinal) : Nat) + (outputGap ordinal)),
+  executable: true
+}
+
+definition{
+  name: outputStride3,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: ((prim multiply (outputStride2 ordinal) (batch2 ordinal 1) : Nat) + (outputGap ordinal)),
+  executable: true
+}
+
+definition{
+  name: wordCount,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (prim multiply (prim multiply (prim multiply (inner ordinal) (height ordinal source) : Nat) (batch2 ordinal source) : Nat) (batch3 ordinal source) : Nat),
+  executable: true
+}
+
+definition{
+  name: metadata,
+  parameters: [ordinal : Nat, item : Nat],
+  result: Nat,
+  body: (if (item =? 0) then (rows ordinal) else (if (item =? 1) then (columns ordinal) else (if (item =? 2) then (inner ordinal) else (if (item =? 3) then (padding ordinal) else (if (item =? 4) then (batch2 ordinal 0) else (if (item =? 5) then (batch3 ordinal 0) else (if (item =? 6) then (batch2 ordinal 1) else (if (item =? 7) then (batch3 ordinal 1) else (if (item <? 16) then (sourceStride ordinal (prim quotient (prim subtract item 8 : Nat) 4 0 : Nat) (prim remainder (prim subtract item 8 : Nat) 4 0 : Nat)) else (if (item =? 16) then (outputStride0 ordinal) else (if (item =? 17) then (outputStride1 ordinal) else (if (item =? 18) then (outputStride2 ordinal) else (if (item =? 19) then (outputStride3 ordinal) else (if (item =? 20) then (wordCount ordinal 0) else (if (item =? 21) then (wordCount ordinal 1) else (if (item =? 22) then (if (ordinal =? 416) then 1 else 0) else ordinal)))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: quarterWord,
+  parameters: [index : Nat],
+  result: Nat,
+  body: (if (index =? 0) then 3222274048 else (if (index =? 1) then 3221225472 else (if (index =? 2) then 3219128320 else (if (index =? 3) then 3217031168 else (if (index =? 4) then 3214934016 else (if (index =? 5) then 3212836864 else (if (index =? 6) then 3208642560 else (if (index =? 7) then 3204448256 else (if (index =? 8) then 3196059648 else (if (index =? 9) then 0 else (if (index =? 10) then 1048576000 else (if (index =? 11) then 1056964608 else (if (index =? 12) then 1061158912 else (if (index =? 13) then 1065353216 else (if (index =? 14) then 1067450368 else (if (index =? 15) then 1069547520 else (if (index =? 16) then 1071644672 else (if (index =? 17) then 1073741824 else 1074790400)))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: edgeWord,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (if (((prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat) + (batch ordinal)) =? 0) then (if (source =? 0) then 2139095040 else 0) else (if (((prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat) + (batch ordinal)) =? 1) then (if (source =? 0) then 2139095040 else 3212836864) else (if (((prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat) + (batch ordinal)) =? 2) then (if (source =? 0) then 2143289344 else 1065353216) else (if (((prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat) + (batch ordinal)) =? 3) then (if (source =? 0) then 2147483648 else 1065353216) else (if (((prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat) + (batch ordinal)) =? 4) then (if (source =? 0) then 1 else 1065353216) else (if (((prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat) + (batch ordinal)) =? 5) then (if (source =? 0) then 8388608 else 1056964608) else (if (((prim multiply (prim remainder (padding ordinal) 2 0 : Nat) 4 : Nat) + (batch ordinal)) =? 6) then (if (source =? 0) then 2139095039 else 1073741824) else (if (source =? 0) then 4286578688 else 4286578688)))))))),
+  executable: true
+}
+
+definition{
+  name: word,
+  parameters: [ordinal : Nat, source : Nat, index : Nat],
+  result: Nat,
+  body: (let i0 : Nat := (prim remainder index (inner ordinal) 0 : Nat); (let row : Nat := (prim quotient index (inner ordinal) 0 : Nat); (let i1 : Nat := (prim remainder row (height ordinal source) 0 : Nat); (let plane : Nat := (prim quotient row (height ordinal source) 0 : Nat); (let i2 : Nat := (prim remainder plane (batch2 ordinal source) 0 : Nat); (let i3 : Nat := (prim quotient plane (batch2 ordinal source) 0 : Nat); (if ((((rows ordinal) =? 1) && ((columns ordinal) =? 1)) && ((inner ordinal) =? 1)) then (edgeWord ordinal source) else (quarterWord (prim remainder (((((prim multiply i0 7 : Nat) + (prim multiply i1 11 : Nat)) + (prim multiply i2 3 : Nat)) + (prim multiply i3 5 : Nat)) + (if (source =? 0) then 1 else 2)) 19 0 : Nat))))))))),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [family : Nat, request : Request],
+  result: (Option Nat),
+  body: (if (family =? 0) then (match request
+    | Request.describe item => (if (item <? 4) then (ctor Option.some [Nat] (if (item =? 0) then 1280 else (if (item =? 1) then 24 else (if (item =? 2) then 2 else 165)))) else (ctor Option.none [Nat]))
+    | Request.metadata ordinal item => (if ((ordinal <? 1280) && (item <? 24)) then (ctor Option.some [Nat] (metadata ordinal item)) else (ctor Option.none [Nat]))
+    | Request.extent ordinal source item => (if (((ordinal <? 1280) && (source <? 2)) && (item <? 2)) then (ctor Option.some [Nat] (if (item =? 0) then (wordCount ordinal source) else 4)) else (ctor Option.none [Nat]))
+    | Request.word ordinal source index => (if (((ordinal <? 1280) && (source <? 2)) && (index <? (wordCount ordinal source))) then (ctor Option.some [Nat] (word ordinal source index)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: completeCaseCount,
+  parameters: [],
+  statement: ((evaluate 0 (ctor Request.describe 0)) = (ctor Option.some [Nat] 1280)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseNextCase,
+  parameters: [],
+  statement: ((evaluate 0 (ctor Request.metadata 1280 0)) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseThirdSource,
+  parameters: [],
+  statement: ((evaluate 0 (ctor Request.word 416 2 0)) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseEmptySourceWord,
+  parameters: [],
+  statement: ((evaluate 0 (ctor Request.word 0 0 0)) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: firstNonemptyLeftInfinity,
+  parameters: [],
+  statement: ((evaluate 0 (ctor Request.word 416 0 0)) = (ctor Option.some [Nat] 2139095040)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: firstNonemptyRightZero,
+  parameters: [],
+  statement: ((evaluate 0 (ctor Request.word 416 1 0)) = (ctor Option.some [Nat] 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeProbesPreserved,
+  parameters: [],
+  statement: ((evaluate 0 (ctor Request.metadata 416 22)) = (ctor Option.some [Nat] 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lastCaseRows,
+  parameters: [],
+  statement: ((evaluate 0 (ctor Request.metadata 1279 0)) = (ctor Option.some [Nat] 5)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}
