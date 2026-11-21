@@ -2264,3 +2264,15 @@ reported 29 passed and exactly one failure: VT-02 rejected the development
 source override. This is recorded as a failing release boundary, not waived.
 Handwritten Rust remains 10558 lines across 51 files; only its exact upstream
 revision constant changed.
+
+The follow-up development pin is
+`f4d3dd44bdbd8b41ebd18f24c15347046157cd28`, bundle SHA-256
+`c973ae23c8d0ba01224b5fb3ed04a8e76ce3e0db326aed25c77d0336f2c7064d`.
+It captures both corrected Verdant checks and regenerated native source
+manifest/frame evidence. A conflicting GGML authority checksum and a
+disconnected gameplay-panel import each failed the corresponding corrected
+check; original bytes were restored. The two positive checks, nine certificate
+replays and conformance Clippy passed. Native generation retained zero unlifted
+workspace/UI modules and all ratchet limits. No production numerical source or
+certified library changed between these two development pins, so their large
+oracle corpora and unchanged proofs were not repeated for the follow-up.
