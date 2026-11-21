@@ -195,3 +195,9 @@ Prism bundle and one certificate replay per process. Native source lifting now
 captures the exact generated package sources and separated test fixtures; the
 new omission checks reject missing roots and package manifests. This remains a
 development dependency until production packaging and VT-02 pass.
+
+Verdant's native packager now includes the certified production dependency
+closure (33 crates), with exact registry versions and preserved SDK provenance.
+Its registry check requires a successful real Cargo consumer build and rejects
+missing or unresolvable dependencies. Production publication and VT-02 remain
+part of completion.

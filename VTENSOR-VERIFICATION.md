@@ -2276,3 +2276,38 @@ replays and conformance Clippy passed. Native generation retained zero unlifted
 workspace/UI modules and all ratchet limits. No production numerical source or
 certified library changed between these two development pins, so their large
 oracle corpora and unchanged proofs were not repeated for the follow-up.
+
+## Certified production dependency packaging
+
+Development pin `4d52da880b1b383ddbd3028113da4268b4707daa` captures VTK-10.
+Its source bundle SHA-256 is
+`1e386f73cda75729d00a17572919667bb0109b82ef037a12a521766383dafccd`.
+The registered scenario first failed because native packaging omitted
+`verdant_float_storage`. Verdant now follows its resolved runtime/build graph,
+including direct imported features, and packages 33 crates: four shipped crates,
+twenty certified Tensor libraries and nine non-registry imports. Normalized
+manifests use exact dependency versions and registry references; original
+manifests and SDK package/provenance metadata remain present. The test checks
+all twenty generated libraries and their metadata against the authoritative
+SDK export byte for byte. Embedded core resources are relocated into its crate.
+
+Cargo from the immutable Verdant SDK is the imported validation oracle. The
+Cargo Book registry-index specification is imported with SHA-256
+`11660f5678ee206d0997f1fe1712a2ba83fbc08a367a9af72a9c333a774d422e`.
+A live loopback sparse registry must now produce a successful real Cargo
+consumer build using the shipped APIs. The earlier verifier could report
+success after a failed Cargo process; the new gate rejects that result.
+VTK-10 passed in 22.93 seconds, including missing-SDK-index and syntactically
+valid unresolved-dependency defects. The latter must name the missing package
+and report `real Cargo consumer failed`, proving that endpoint responses alone
+do not satisfy the gate. A real 33-crate registry was generated natively.
+
+Native Wasm and source generation passed without increasing any limit: core
+157313 bytes, UORC 3919723 bytes (ceiling 3919872), zero unlifted workspace/UI
+modules, and frontier 282 lifted / 1177 residue / 1334 uncertified. Source
+capsule identity is
+`eaebf567bcd553a837f2316725f2893290f6308503f51f2690d5373bda052679`.
+The full exact-SDK Verdant acceptance run is in progress for this checkpoint.
+No numerical model or generated Tensor library changed, so the vTensor
+numerical corpora and proofs are retained. This packaging improvement does
+not publish a release or satisfy VT-02's upstream production-source boundary.
