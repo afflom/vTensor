@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/arange-runtime/1",
-  "status": "implemented-authoring-and-SDK-verified-oracle-and-restored-regressions-pass-full-repository-gate-pending",
+  "status": "implemented-model-and-oracle-verified-full-gate-refuses-source-growth",
   "id": "VT-37",
   "authority": {
     "repository": "https://github.com/ggml-org/llama.cpp",
@@ -91,6 +91,18 @@
     "format_bdd_budget": {
       "path": "/tmp/vtensor-arange-checks.log",
       "sha256": "529b4370e36029bf5decaa4d6e8b21138b522c9a0208631b0f6efdf937570121"
+    },
+    "full_gate_first": {
+      "path": "/tmp/vtensor-arange-vv.log",
+      "sha256": "09fb914ca0429a661f14cd646d023a4f9ba55baeb167a3856d103c9196965ae0"
+    },
+    "full_gate_retry": {
+      "path": "/tmp/vtensor-arange-vv-retry.log",
+      "sha256": "57986a65fa3326924d1b48acb44af0f276a3e93da74a76099cedcfa85c2d579a"
+    },
+    "template": {
+      "path": "/tmp/vtensor-arange-template-check.log",
+      "sha256": "45622158f0fc2b926015f0c597a57c0567a6819309c1c471fbe52035740a5206"
     }
   },
   "implementation": {
@@ -186,6 +198,19 @@
     "dependency_audit": "All features: passed after refreshing the exact generated Pointwise license hash",
     "format": "just fmt-check passed",
     "bdd": "All four BDD meta-tests passed",
-    "full_gate": "Pending; no repository acceptance claim. Production dependency and source budget remain open."
+    "full_gate": {
+      "command": "just vv",
+      "first_attempt": "SDK application browser-adapter compilation exhausted disk; PP5008 refused uncertain private-exporter cleanup. No acceptance claim.",
+      "retry_environment": {
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0"
+      },
+      "retry_result": "Prism app and formatting passed; model validation passed model consistency, R4, R5 and bootstrap checks, then source audit refused the 40-line increase over the intermediate parent.",
+      "retry_exit_code": 1,
+      "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+      "scope": "Assertions and complete gate scope unchanged. Only obsolete task-owned caches removed; source, bundles, certificates and logs retained.",
+      "source_budget": "10952 remains 403 above last accepted 10549; no higher ceiling accepted."
+    },
+    "template": "Separate exact-SDK template and lock checks passed after the full gate stopped at the source audit."
   }
 }

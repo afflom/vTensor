@@ -3208,6 +3208,10 @@ meta-tests pass. These timings are observations, not controlled benchmarks.
 
 The source budget remains unsatisfied: 10,952 lines is 403 above the last
 accepted 10,549. Full repository acceptance, production dependency closure and
-remaining imported operations are still open. The complete gate must still be
-attempted for this batch. Exact identities, signed authoring inputs, coverage,
-faults and log hashes are in `verification/arange-runtime.json`.
+remaining imported operations are still open. The complete gate was attempted twice. The first exhausted disk in the SDK
+browser-adapter build. After removing obsolete task-owned caches, the retry
+with debug symbols disabled passes full Prism application verification and
+formatting, then correctly refuses source growth. Assertions and gate scope
+remain enabled. Separate SDK template and lock checks pass. No budget was
+raised or acceptance claimed. Exact identities, signed authoring inputs,
+coverage, faults and log hashes are in `verification/arange-runtime.json`.
