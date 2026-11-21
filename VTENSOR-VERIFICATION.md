@@ -2737,3 +2737,17 @@ The measured non-Prism count decreased by 20 lines to 10,633. This is still
 84 lines above the last accepted 10,549-line budget; the source gate remains
 unsatisfied against that budget. This checkpoint does not claim release
 acceptance or resolve the developmental Verdant dependency.
+
+## Relative-position oracle registered (VT-33)
+
+VT-33 is registered with its behavioral scenario and actual GGML CPU graph
+comparison before implementation. Its first behavioral run fails at native
+capability admission for GET_REL_POS (`native check line 555:
+ggml_backend_dev_supports_op(dev,result)`), as expected. The test is part of the
+existing contract harness and is configured for 192 cases over F16/BF16 source
+words, relative widths, higher source dimensions, strided outputs and empty
+widths. The CPU constructor always produces F16 output; its BF16 path copies
+encoded 16-bit words without conversion. Expected words come from the imported
+CPU implementation, not a second handwritten indexing formula. This is a
+registered, failing development checkpoint, not implementation evidence.
+The initial failure log is `/tmp/vtensor-relative-before.log`.

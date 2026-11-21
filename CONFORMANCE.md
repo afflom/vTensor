@@ -130,6 +130,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-29` | `build` | Prism models SUM SUM_ROWS and MEAN accumulation precision rounding and empty reductions and Verdant matches every supported float type against the imported GGML CPU oracle |
 
+## relative-position-graphs
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-33` | `build` | Prism models GGML relative-position word selection and Verdant preserves F16 and BF16 source encodings in F16 outputs across strided empty and higher-dimensional source layouts |
+
 ## repeat-graphs
 
 | ID | Level | Statement |

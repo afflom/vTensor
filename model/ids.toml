@@ -262,3 +262,9 @@ id = "VT-32"
 level = "build"
 suite = "row-graphs"
 statement = "Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals"
+
+[[id]]
+id = "VT-33"
+level = "build"
+suite = "relative-position-graphs"
+statement = "Prism models GGML relative-position word selection and Verdant preserves F16 and BF16 source encodings in F16 outputs across strided empty and higher-dimensional source layouts"
