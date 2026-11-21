@@ -78,6 +78,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-23` | `build` | Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding |
 
+## fixture-generation
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-35` | `build` | Prism generates all matrix fixture dimensions layouts and input words matching the complete frozen prior oracle corpus while GGML independently computes every expected result |
+
 ## fold-graphs
 
 | ID | Level | Statement |

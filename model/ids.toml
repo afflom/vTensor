@@ -274,3 +274,9 @@ id = "VT-34"
 level = "build"
 suite = "indexed-add-graphs"
 statement = "Prism models three-source indexed row addition and Verdant matches GGML ADD_ID arithmetic and exact minus-one row copies across strides empty tensors and atomic invalid-index refusals"
+
+[[id]]
+id = "VT-35"
+level = "build"
+suite = "fixture-generation"
+statement = "Prism generates all matrix fixture dimensions layouts and input words matching the complete frozen prior oracle corpus while GGML independently computes every expected result"

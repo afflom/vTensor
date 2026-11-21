@@ -337,6 +337,12 @@ fn indexed_add_graphs_vt_34() {
     native_backend_oracle::verify(&root(), "indexed-add", 164);
 }
 
+/// `VT-35`: Prism generates all matrix fixture dimensions layouts and input words matching the complete frozen prior oracle corpus while GGML independently computes every expected result
+#[test]
+fn fixture_generation_vt_35() {
+    tensor_layout::certified_current_model(&root(), "fixtures");
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -1088,7 +1094,7 @@ mod tensor_layout {
     pub(super) fn certified_current_model(root: &std::path::Path, name: &str) {
         assert!(matches!(
             name,
-            "layout" | "native" | "matrix" | "index" | "pointwise"
+            "layout" | "native" | "matrix" | "index" | "pointwise" | "fixtures"
         ));
         let scope = if name == "layout" {
             String::new()
@@ -2172,6 +2178,8 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(argv[3], "matrix")) {
       size_t matrix_cases = 0; bool negatives_checked = false;
+      std::ofstream trace; if(const char *path=std::getenv("VTENSOR_MATRIX_TRACE")) trace.open(path,std::ios::binary);
+      auto emit=[&](uint64_t word) {uint8_t bytes[8];for(int i=0;i<8;i++)bytes[i]=uint8_t(word>>(8*i));trace.write((const char *)bytes,8);};
       const float edges[][2] = {{INFINITY,0.0f}, {INFINITY,-1.0f}, {NAN,1.0f}, {-0.0f,1.0f},
         {std::numeric_limits<float>::denorm_min(),1.0f}, {std::numeric_limits<float>::min(),0.5f},
         {std::numeric_limits<float>::max(),2.0f}, {-INFINITY,-INFINITY}};
@@ -2201,6 +2209,13 @@ int main(int argc, char **argv) {
             memcpy(bytes.data()+i0*operand->nb[0]+i1*operand->nb[1]+i2*operand->nb[2]+i3*operand->nb[3], &value, sizeof(value));
           }
           if (!bytes.empty()) ggml_backend_tensor_set(operand, bytes.data(), 0, bytes.size());
+        }
+        if(trace.is_open()) {
+          const uint64_t fields[]={uint64_t(rows),uint64_t(columns),uint64_t(inner),uint64_t(padded),uint64_t(batch[0]),uint64_t(batch[1]),uint64_t(batch[2]),uint64_t(batch[3]),
+            left->nb[0],left->nb[1],left->nb[2],left->nb[3],right->nb[0],right->nb[1],right->nb[2],right->nb[3],product->nb[0],product->nb[1],product->nb[2],product->nb[3],
+            uint64_t(ggml_nelements(left)),uint64_t(ggml_nelements(right)),uint64_t(!negatives_checked && ggml_nbytes(product) && ggml_nbytes(left)),matrix_cases};
+          for(auto value:fields)emit(value);
+          for(auto operand:{left,right}) {emit(ggml_nelements(operand));emit(4);for(int64_t i=0;i<ggml_nelements(operand);i++) {uint32_t word;memcpy(&word,(char *)operand->data+block_address(operand,i),4);emit(word);}}
         }
         ggml_cgraph *graph = ggml_new_graph(ctx); ggml_build_forward_expand(graph, product);
         CHECK(ggml_backend_dev_supports_op(dev, product));

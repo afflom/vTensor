@@ -2967,3 +2967,21 @@ in `verification/indexed-add-runtime.json`. Principal logs:
 `/tmp/vtensor-indexed-add-flag-fault.log`,
 `/tmp/vtensor-indexed-add-full-contract.log`, and
 `/tmp/vtensor-indexed-add-final-checks.log`.
+
+## Matrix fixture generation registered and prior corpus frozen (VT-35)
+
+VT-35 is registered before its implementation. Its first test refuses the
+missing certified fixture bundle. The existing matrix oracle was instrumented
+without changing its case domains or input generation, then passed all 1,280
+cases while capturing actual tensor dimensions/strides, control flags, and
+logical encoded input words. The canonical transcript has 2,515,840 bytes.
+`verification/matrix-fixture-baseline.json` records every case's key and digest,
+the complete transcript digest, and the prior fixture source identity. These
+are local fixture-preservation evidence; expected numerical results remain the
+actual imported GGML CPU computations. The baseline includes the negative-probe
+case at ordinal 416. Its source/data domain must survive the Prism migration
+byte for byte. This is a registered failing checkpoint, not fixture-generation
+completion or release evidence.
+
+Capture: `/tmp/vtensor-matrix-fixture-capture.log` (1,280 cases passed).
+Initial refusal: `/tmp/vtensor-fixture-before.log` (missing fixture bundle).
