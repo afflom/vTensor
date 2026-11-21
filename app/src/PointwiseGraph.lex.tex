@@ -7,6 +7,7 @@
 \importmodule{RowGather}
 \importmodule{RelativePosition}
 \importmodule{IndexedAddition}
+\importmodule{Arange}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -95,7 +96,8 @@ inductive{
     {name: scattered, fields: [Nat, IndexContext]},
     {name: gathered, fields: [Nat, IndexContext]},
     {name: relativePosition, fields: []},
-    {name: indexedAdd, fields: [IndexContext, IndexContext]}
+    {name: indexedAdd, fields: [IndexContext, IndexContext]},
+    {name: arange, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -238,7 +240,8 @@ inductive{
     {name: selection, fields: [Nat, IndexContext, IndexContext, Nat]},
     {name: scatter, fields: [Nat, IndexContext, IndexContext, IndexContext, Nat]},
     {name: gather, fields: [Nat, Nat, IndexContext, IndexContext, IndexContext, Nat]},
-    {name: indexedAdd, fields: [Nat, IndexContext, IndexContext, IndexContext, IndexContext, Nat]}
+    {name: indexedAdd, fields: [Nat, IndexContext, IndexContext, IndexContext, IndexContext, Nat]},
+    {name: arangeStep, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -1107,7 +1110,8 @@ definition{
     | CopyMode.argmaxRow => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.counted elements right => (countEqualOffsets index source right elements)
     | CopyMode.scattered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-    | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+    | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.arange start stop step count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
 
@@ -1130,18 +1134,35 @@ definition{
 }
 
 definition{
+  name: planArange,
+  parameters: [options : OperationParameters, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let count : Nat := (blockCount output 1); (if (((((((((project output ty) =? 0) && ((project output s0) =? 4)) && (Arange::finiteWord (project options p0))) && (Arange::finiteWord (project options p1))) && (0 <? (project options p2))) && ((project options p2) <? 2139095040)) && (count <? 9223372036854775808)) && ((Arange::outputByte count) <=? (project output span))) then (ctor PointwiseDecision.copyBlocks (Arange::steps count) 4 (indexContext output 1) (indexContext output 1) (ctor CopyMode.arange (project options p0) (project options p1) (project options p2) count)) else (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+definition{
+  name: arangeOffsets,
+  parameters: [index : Nat, count : Nat, start : Nat, stop : Nat, step : Nat, flag : Nat],
+  result: GraphResponse,
+  body: (if (index <? (Arange::steps count)) then (if (index <? 4) then (if (index =? 0) then (ctor GraphResponse.word 16 2 start 2 stop 1 2) else (if (index =? 1) then (if (flag =? 0) then (ctor GraphResponse.word 9 2 stop 2 start 1 2) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))) else (if (index =? 2) then (ctor GraphResponse.word 11 1 2 2 step 1 2) else (ctor GraphResponse.word 20 1 2 2 10 1 2)))) else (if ((index =? 4) && (if ((Arange::positiveIntegerWord flag) =? count) then false else true)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (let ordinal : Nat := (prim quotient (prim subtract index 4 : Nat) 3 0 : Nat); (let phase : Nat := (prim remainder (prim subtract index 4 : Nat) 3 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.word 3 2 ordinal 2 0 1 0) else (if (phase =? 1) then (ctor GraphResponse.word 10 2 step 1 0 1 0) else (ctor GraphResponse.word 8 2 start 1 0 3 (Arange::outputByte ordinal)))))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 input7 input8 input9 output => (match input0
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 input7 input8 input9 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output)))
+      | Option.some left => (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)
     | GraphRequest.selection index source destination flag => (argmaxOffsets index source destination flag)
     | GraphRequest.scatter index source destination indices flag => (rowGradientOffsets index source destination indices flag)
     | GraphRequest.gather kind index source destination indices flag => (gatherOffsets kind index source destination indices flag)
-    | GraphRequest.indexedAdd index source destination table indices flag => (indexedAddOffsets index source destination table indices flag)),
+    | GraphRequest.indexedAdd index source destination table indices flag => (indexedAddOffsets index source destination table indices flag)
+    | GraphRequest.arangeStep index count start stop step flag => (arangeOffsets index count start stop step flag)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -1619,6 +1640,34 @@ theorem{
   name: gatherShortPackedStrideRefused,
   parameters: [],
   statement: ((planGather (record TensorDescriptor {ty := 2, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 17, s1 := 40, s2 := 160, s3 := 400, span := 676, address := 1000}) (ctor Option.some [TensorDescriptor] (record TensorDescriptor {ty := 26, n0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192, span := 148, address := 5000})) (record TensorDescriptor {ty := 0, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000, span := 7148, address := 10000})) = (ctor PointwiseDecision.invalidShape)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: arangeWrongOrderIsAtomic,
+  parameters: [start : Nat, stop : Nat, step : Nat],
+  statement: ((arangeOffsets 1 10 start stop step 1) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: arangeRoundedCountDoesNotAlias,
+  parameters: [],
+  statement: ((arangeOffsets 4 16777217 0 0 1065353216 1266679808) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: arangeFirstWordConvertsOrdinal,
+  parameters: [],
+  statement: ((arangeOffsets 4 10 0 1092616192 1065353216 1092616192) = (ctor GraphResponse.word 3 2 0 2 0 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: arangeFlatOutputAddress,
+  parameters: [],
+  statement: ((arangeOffsets 33 10 0 1092616192 1065353216 1092616192) = (ctor GraphResponse.word 8 2 0 1 0 3 36)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

@@ -1,0 +1,105 @@
+\begin{lexlean}{Arange}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: binaryUnit,
+  parameters: [exponent : Nat],
+  result: Nat,
+  body: (if (exponent <? 40) then (if (exponent <? 20) then (if (exponent <? 10) then (if (exponent <? 5) then (if (exponent <? 2) then (if (exponent <? 1) then 1 else 2) else (if (exponent <? 3) then 4 else (if (exponent <? 4) then 8 else 16))) else (if (exponent <? 7) then (if (exponent <? 6) then 32 else 64) else (if (exponent <? 8) then 128 else (if (exponent <? 9) then 256 else 512)))) else (if (exponent <? 15) then (if (exponent <? 12) then (if (exponent <? 11) then 1024 else 2048) else (if (exponent <? 13) then 4096 else (if (exponent <? 14) then 8192 else 16384))) else (if (exponent <? 17) then (if (exponent <? 16) then 32768 else 65536) else (if (exponent <? 18) then 131072 else (if (exponent <? 19) then 262144 else 524288))))) else (if (exponent <? 30) then (if (exponent <? 25) then (if (exponent <? 22) then (if (exponent <? 21) then 1048576 else 2097152) else (if (exponent <? 23) then 4194304 else (if (exponent <? 24) then 8388608 else 16777216))) else (if (exponent <? 27) then (if (exponent <? 26) then 33554432 else 67108864) else (if (exponent <? 28) then 134217728 else (if (exponent <? 29) then 268435456 else 536870912)))) else (if (exponent <? 35) then (if (exponent <? 32) then (if (exponent <? 31) then 1073741824 else 2147483648) else (if (exponent <? 33) then 4294967296 else (if (exponent <? 34) then 8589934592 else 17179869184))) else (if (exponent <? 37) then (if (exponent <? 36) then 34359738368 else 68719476736) else (if (exponent <? 38) then 137438953472 else (if (exponent <? 39) then 274877906944 else 549755813888)))))) else 0),
+  executable: true
+}
+
+definition{
+  name: finiteWord,
+  parameters: [word : Nat],
+  result: Bool,
+  body: ((word <? 4294967296) && ((prim remainder word 2147483648 0 : Nat) <? 2139095040)),
+  executable: true
+}
+
+definition{
+  name: positiveIntegerWord,
+  parameters: [word : Nat],
+  result: Nat,
+  body: (let exponent : Nat := (prim quotient word 8388608 0 : Nat); (if (((word <? 2147483648) && (127 <=? exponent)) && (exponent <? 190)) then (let mantissa : Nat := (8388608 + (prim remainder word 8388608 0 : Nat)); (if (exponent <? 150) then (let unit : Nat := (binaryUnit (prim subtract 150 exponent : Nat)); (if ((prim remainder mantissa unit 0 : Nat) =? 0) then (prim quotient mantissa unit 0 : Nat) else 0)) else (prim multiply (binaryUnit (prim subtract exponent 150 : Nat)) mantissa : Nat))) else 0)),
+  executable: true
+}
+
+definition{
+  name: steps,
+  parameters: [count : Nat],
+  result: Nat,
+  body: (if (count =? 0) then 0 else (4 + (prim multiply 3 count : Nat))),
+  executable: true
+}
+
+definition{
+  name: outputByte,
+  parameters: [index : Nat],
+  result: Nat,
+  body: (prim multiply 4 index : Nat),
+  executable: true
+}
+
+theorem{
+  name: integerTen,
+  parameters: [],
+  statement: ((positiveIntegerWord 1092616192) = 10),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: integerAtExactnessBoundary,
+  parameters: [],
+  statement: ((positiveIntegerWord 1266679808) = 16777216),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fractionRefused,
+  parameters: [],
+  statement: ((positiveIntegerWord 1069547520) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeIntegerRefused,
+  parameters: [],
+  statement: ((positiveIntegerWord 3212836864) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: infiniteCountRefused,
+  parameters: [],
+  statement: ((positiveIntegerWord 2139095040) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nanCountRefused,
+  parameters: [],
+  statement: ((positiveIntegerWord 2143289344) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: signedCountLimitRefused,
+  parameters: [],
+  statement: ((positiveIntegerWord 1593835520) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: everyStoreWithinCount,
+  parameters: [index : Nat, count : Nat],
+  statement: ((index < count) -> (((outputByte index) + 4) <= (outputByte count))),
+  proof: linear_arithmetic{definitions: [outputByte]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{name: emptyHasNoSteps, parameters: [], statement: ((steps 0) = 0), proof: reflexivity{}}
+\end{semanticmodule}
+\end{lexlean}

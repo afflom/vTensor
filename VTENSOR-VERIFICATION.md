@@ -3166,3 +3166,48 @@ four registration meta-tests pass. No production generator has been implemented
 at this checkpoint. The source budget is now 10,912 lines, 363 above the last
 accepted 10,549; this remains unsatisfied. `verification/arange-runtime.json`
 records the initial failure, scope, cache boundaries and implementation sequence.
+
+
+## Implemented zero-source ARANGE (VT-37)
+
+`Arange.lex.tex` models exact positive-integer F32 count decoding, bounded binary
+units, execution length and flat output addresses. `PointwiseGraph` admits the
+zero-source operation and preflights Verdant comparison/subtraction/division/ceil
+before the first write. Decoding the computed ceil word prevents a rounded F32
+count from aliasing an incorrect count above 2^24. Each value uses the existing
+Verdant unsigned-index conversion, multiplication and addition in CPU order.
+The native adapter adds an instruction binding and a source-free request route.
+It contains no new host floating arithmetic.
+
+The canonical model passes authoring verification, with attestation
+`4c43bcea3b5e304a99f19c202d56c89d9fab5ad3031d7adc084c71c30ed25d0d`. All eight
+local file hashes occur in its signed input set. The general store-bound theorem
+and exceptional/count-alias checks are included. Strict SDK production export
+and certificate verification pass with attestation
+`a1ad957b0b532fb058a4c9059492f50279c77ada5ac13c0c69f5ce40b6be4394`.
+The repeat-offset Rust source and all imported Verdant libraries are unchanged.
+No generated Rust was edited or reformatted.
+
+All ten unchanged upstream factory cases pass, including the 1,048,576-element
+case. Two additional layouts verify the CPU's flat writes through padded
+higher-dimensional descriptors against actual CPU execution and all physical
+padding bytes. An empty-output case preserves the CPU no-op behavior even for
+invalid parameters. Nineteen parameter/type/stride/count refusal probes verify
+failure before writes. Exact counters require thirteen positive cases and all
+nineteen refusal probes. The Pointwise certificate is checked once per test
+process and shared by arithmetic and ARANGE tests.
+
+Binding ceil to floor fails the imported 3.0/3.5/1.0 comparison in 3.42 seconds.
+Changing the extracted upstream source is rejected before execution in 3.47
+seconds; selecting no required cases is rejected in 3.95 seconds. All changes
+were restored byte for byte. The restored scoped test passes in 59.77 seconds.
+The full contract run passes 36 tests and fails only the unchanged VT-02
+production-source guard in 170.81 seconds, with zero ignored or filtered tests.
+All-target/all-feature workspace Clippy, dependencies, formatting and four BDD
+meta-tests pass. These timings are observations, not controlled benchmarks.
+
+The source budget remains unsatisfied: 10,952 lines is 403 above the last
+accepted 10,549. Full repository acceptance, production dependency closure and
+remaining imported operations are still open. The complete gate must still be
+attempted for this batch. Exact identities, signed authoring inputs, coverage,
+faults and log hashes are in `verification/arange-runtime.json`.

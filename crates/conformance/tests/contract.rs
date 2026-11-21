@@ -183,7 +183,7 @@ fn matrix_graphs_vt_12() {
 /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
 #[test]
 fn elementwise_graphs_vt_13() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
+    tensor_layout::verify_pointwise_bundle();
     native_backend_oracle::verify(&root(), "elementwise", 120);
 }
 
@@ -1121,6 +1121,11 @@ mod tensor_layout {
 
     use vtensor_layout::{run, Adt0, Adt1, Overflow};
 
+    pub(super) fn verify_pointwise_bundle() {
+        static VERIFIED: std::sync::OnceLock<()> = std::sync::OnceLock::new();
+        VERIFIED.get_or_init(|| certified_current_model(&super::root(), "pointwise"));
+    }
+
     pub(super) fn certified_current_model(root: &std::path::Path, name: &str) {
         assert!(matches!(
             name,
@@ -1488,7 +1493,8 @@ fn buffer_transfer_vt_09() {
 /// `VT-37`: Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals
 #[test]
 fn generator_graphs_vt_37() {
-    native_backend_oracle::verify(&root(), "upstream-ARANGE", 10);
+    tensor_layout::verify_pointwise_bundle();
+    native_backend_oracle::verify(&root(), "upstream-ARANGE", 13);
 }
 
 mod native_backend_oracle {
@@ -1960,8 +1966,38 @@ int main(int argc, char **argv) {
     ggml_backend_cpu_set_n_threads(reference,1);
 #ifdef VTENSOR_IMPORTED_SUITE
     if (!strncmp(argv[3], "upstream-", 9)) {
-      const size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
+      size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
+      if (!strcmp(argv[3]+9,"ARANGE")) {
+        CHECK(cases==10);
+        ggml_init_params params={1024*1024,nullptr,true};auto ctx=ggml_init(params);CHECK(ctx);
+        auto result=ggml_arange(ctx,0.0f,10.0f,1.0f);auto buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer);
+        ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));auto graph=ggml_new_graph(ctx);ggml_build_forward_expand(graph,result);
+        for(uint32_t bad:{0u,0x80000000u,0xbf800000u,0x7f800000u,0xff800000u,0x7fc00001u})
+          CHECK(refuses_change(backend,dev,graph,result,result->op_params[2],int32_t(bad)));
+        for(int slot:{0,1}) for(uint32_t bad:{0x7f800000u,0xff800000u,0x7fc00001u})
+          CHECK(refuses_change(backend,dev,graph,result,result->op_params[slot],int32_t(bad)));
+        CHECK(refuses_change(backend,dev,graph,result,result->op_params[2],int32_t(1),false));
+        for(uint32_t start:{0x41200000u,0x41a00000u})
+          CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(start),false));
+        for(int64_t count:{9,11}) CHECK(refuses_change(backend,dev,graph,result,result->ne[0],count,false));
+        CHECK(refuses_change(backend,dev,graph,result,result->nb[0],size_t(8)));
+        CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_I32));CHECK(refusal_probes==19);
+        result->ne[0]=0;result->op_params[2]=int32_t(0x7fc00001u);
+        CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+        CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+        result->ne[0]=10;CHECK(compare_result(result,nullptr,std::vector<unsigned char>(40,0xA5),0));++cases;
+        ggml_backend_buffer_free(buffer);ggml_free(ctx);
+        for(int axis:{1,2}) {
+          ctx=ggml_init(params);CHECK(ctx);result=ggml_arange(ctx,0.0f,10.0f,1.0f);
+          result->ne[0]=2;result->ne[axis]=5;result->nb[1]=16;result->nb[2]=axis==2?20:80;result->nb[3]=100;
+          buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer);graph=ggml_new_graph(ctx);ggml_build_forward_expand(graph,result);
+          std::vector<unsigned char> expected(ggml_nbytes(result));ggml_backend_tensor_memset(result,0xA5,0,expected.size());
+          CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);ggml_backend_tensor_get(result,expected.data(),0,expected.size());
+          ggml_backend_tensor_memset(result,0xA5,0,expected.size());CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+          CHECK(compare_result(result,nullptr,expected,0));++cases;ggml_backend_buffer_free(buffer);ggml_free(ctx);
+        }
+      }
       printf("RESULT cases %zu\n",cases);
       ggml_backend_free(reference);ggml_backend_free(backend);return 0;
     }

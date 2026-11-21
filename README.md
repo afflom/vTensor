@@ -118,15 +118,18 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The M20 adoption contract run passes 35 checks; VT-02 still refuses the local
+The current full contract run passes 36 checks; VT-02 still refuses the local
 Verdant development dependency for release. It includes the expanded 1,280
 matrix cases, 384 GET_ROWS cases, 192 GET_REL_POS cases and 164 ADD_ID cases.
 All ten optional GGML tensor-source slots are now carried to the Prism planner;
-zero-source numerical generators remain unfinished. Prism now generates all
+zero-source ARANGE now uses Prism preflight and exact output-count validation
+with Verdant F32 primitives. All ten unchanged upstream ARANGE cases pass,
+including a million-element output, plus empty and padded-layout checks and
+nineteen atomic refusal probes. Other imported operation families remain unfinished. Prism now generates all
 1,280 matrix and 120 arithmetic fixtures; both generated data and actual GGML
 tensor bindings match the frozen prior corpora. They share binary framing and
 cache each model replay, manifest and generated batch once per test process.
-Non-Prism source is 10,840 lines, 291 above the last
+Non-Prism source is 10,952 lines, 403 above the last
 accepted budget, so the source budget remains unsatisfied.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in

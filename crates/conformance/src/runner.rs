@@ -691,6 +691,8 @@ fn execute_word(
             .map_err(|_| BackendError::InvalidTensor)?,
         16..=19 => verdant_tensor::linear::evaluate_encoded_word(kind - 16, a, b)
             .map_err(|_| BackendError::InvalidTensor)?,
+        20 => verdant_tensor::linear::evaluate_float_unary(b, 0, 0, a)
+            .map_err(|_| BackendError::InvalidTensor)?,
         _ => return Err(BackendError::InvalidTensor),
     }
     .ok_or(BackendError::InvalidTensor)?;
@@ -725,7 +727,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         _ => [0; 4],
     };
     let left_data = match mode {
-        CopyMode::C9(..) => null_mut(),
+        CopyMode::C9(..) | CopyMode::C23(..) => null_mut(),
         _ => source_data(0)?,
     };
     let right_data = match mode {
@@ -748,6 +750,9 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let mut words = [0; 3];
     for index in 0..count {
         let request = match mode {
+            CopyMode::C23(start, stop, step, elements) => {
+                GraphRequest::C6(index, elements, start, stop, step, words[2])
+            }
             CopyMode::C17 => GraphRequest::C2(index, source.clone(), destination.clone(), words[2]),
             CopyMode::C19(_, ref indices) => GraphRequest::C3(
                 index,

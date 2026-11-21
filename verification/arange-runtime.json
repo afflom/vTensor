@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/arange-runtime/1",
-  "status": "registered-failing-before-production-implementation",
+  "status": "implemented-authoring-and-SDK-verified-oracle-and-restored-regressions-pass-full-repository-gate-pending",
   "id": "VT-37",
   "authority": {
     "repository": "https://github.com/ggml-org/llama.cpp",
@@ -13,7 +13,10 @@
     "coverage": "Every matching ARANGE case from the authoritative factory, including the 1,048,576-element case. No local numerical generator or expected-value function.",
     "refusals": "Any selected NOT_SUPPORTED or failed case refuses the run; the exact observed case count and the printer result count must agree. SKIPPED applies only to the external operation filter; any missing required case also fails the exact count.",
     "provenance": "The extracted upstream suite source is hash-checked on each bridge invocation, including cached program hits. The SDK/compiler/source cache and shared-library path and embedded compilation-input checks remain active.",
-    "caching": "Compile the unchanged suite plus bridge once per source/bridge/compiler/SDK identity. Reuse the existing GGML CPU and registry objects. Normal regression modes do not link the full upstream suite."
+    "caching": "Compile the unchanged suite plus bridge once per source/bridge/compiler/SDK identity. Reuse the existing GGML CPU and registry objects. Normal regression modes do not link the full upstream suite.",
+    "additional_positive_cases": 3,
+    "expected_program_total": 13,
+    "certificate_cache": "The immutable current-workspace Pointwise bundle is checked once per test process and shared by the arithmetic and ARANGE consumers; separate test processes still independently validate it."
   },
   "initial_failure": {
     "command": "cargo test --locked -p vtensor-backend --test contract generator_graphs_vt_37 -- --nocapture",
@@ -27,19 +30,11 @@
   },
   "registration": "All four BDD meta-tests pass after adding the ID, scenario and failing test. CONFORMANCE.md was regenerated.",
   "source_budget": {
-    "current": 10912,
+    "current": 10952,
     "last_accepted": 10549,
-    "excess": 363,
+    "excess": 403,
     "status": "unsatisfied; no higher ceiling accepted"
   },
-  "next_implementation": [
-    "Define zero-source ARANGE planning and instruction flow in Prism.",
-    "Use existing Verdant F32 comparison, subtraction, division, ceil, unsigned index conversion, multiplication and addition. Native code binds effects only.",
-    "Decode the computed F32 ceil count exactly in Prism, including counts beyond 2^24, and reject invalid counts before writes.",
-    "Match imported CPU flat output writes with valid physical bounds; preserve empty-node behavior.",
-    "Add atomic parameter/layout/count refusal checks and a representative execution-binding defect.",
-    "Export only the changed certified Pointwise root; reuse unchanged numerical libraries and import objects. Full exact-SDK acceptance remains required."
-  ],
   "logs": {
     "before": {
       "path": "/tmp/vtensor-arange-before.log",
@@ -52,6 +47,145 @@
     "budget": {
       "path": "/tmp/vtensor-arange-registration-budget.log",
       "sha256": "f99acb72ca9b7a588e123210558b726b48acdd3f95c36c75b1a0a84120237e9b"
+    },
+    "export": {
+      "path": "/tmp/vtensor-arange-export.log",
+      "sha256": "08676c504967adaedab5c67228e2688f418c6dc6b48afef39c5947dec1375309"
+    },
+    "first_success": {
+      "path": "/tmp/vtensor-arange-implemented.log",
+      "sha256": "693e0196698aa7da3e432eb6f8c72391a1b58db821b77c045ba37e2e879bbbf4"
+    },
+    "contract": {
+      "path": "/tmp/vtensor-arange-contract.log",
+      "sha256": "07770cafbe2f413ed40f8be3a89c5529b5661106ee08b07c351a850e12baeef8"
+    },
+    "floor_fault": {
+      "path": "/tmp/vtensor-arange-floor-fault.log",
+      "sha256": "15e601960c48fd0176251c1f81eaa809b0fedcf3f22dcdf27171cdecab154027"
+    },
+    "source_fault": {
+      "path": "/tmp/vtensor-arange-source-fault.log",
+      "sha256": "13911aa63ce6c80c1a9501a4d94b6fc5fd68fd1add258ba89731dd30a2f6b2b0"
+    },
+    "count_fault": {
+      "path": "/tmp/vtensor-arange-count-fault.log",
+      "sha256": "39b10e9348e51e67d63cc31ed32c4ae9e50bc5148bb3d7b540bbd5796a21888d"
+    },
+    "restored": {
+      "path": "/tmp/vtensor-arange-restored.log",
+      "sha256": "f3b45342d328bc2e61c4786f111583d9a6f8695c1afa0bfa74c456103b704a57"
+    },
+    "clippy": {
+      "path": "/tmp/vtensor-arange-clippy.log",
+      "sha256": "febf99fe1c10c2e26bbfec1f48a360a5384a3ac65257c4dd307dbb0043df07bf"
+    },
+    "dependency_before": {
+      "path": "/tmp/vtensor-arange-license-before.log",
+      "sha256": "212e64d6966c2abf56b9f79c97de70c1d2f65ea84b715a80ccbf220bb4a4de4d"
+    },
+    "dependency_restored": {
+      "path": "/tmp/vtensor-arange-deny-restored.log",
+      "sha256": "f78188651f20132b2395fba8b562037f6999addfd364d6b3fe6d784575a90d6b"
+    },
+    "format_bdd_budget": {
+      "path": "/tmp/vtensor-arange-checks.log",
+      "sha256": "529b4370e36029bf5decaa4d6e8b21138b522c9a0208631b0f6efdf937570121"
     }
+  },
+  "implementation": {
+    "model": [
+      "app/src/Arange.lex.tex",
+      "app/src/PointwiseGraph.lex.tex"
+    ],
+    "behavior": "Zero-source F32 ARANGE uses modeled preflight comparison, subtraction, division and ceil; the exact decoded positive integer count must equal the admitted output count before the first store. Each output uses Verdant count-to-F32, multiplication and addition in CPU order. Flat physical output writes match the CPU even for padded higher-dimensional descriptors.",
+    "effects": "Append one GraphRequest variant and CopyMode variant; native bindings use the existing Verdant unary primitive and never dereference a missing input tensor. No native floating arithmetic added.",
+    "proof": "A general theorem bounds every scheduled flat word store within its admitted output extent. Authored checks cover fractional, negative, NaN, infinite, signed-overflow and rounded-count-alias cases.",
+    "coverage": {
+      "unchanged_upstream_cases": 10,
+      "largest_upstream_output_elements": 1048576,
+      "additional_padded_layouts": 2,
+      "empty_output_ignoring_invalid_parameters": 1,
+      "total_positive_cases": 13,
+      "atomic_refusal_probes": 19
+    },
+    "unchanged": "All 24 imported Verdant numerical libraries and the vTensor repeat-offset Rust library are unchanged."
+  },
+  "authoring": {
+    "attestation": "4c43bcea3b5e304a99f19c202d56c89d9fab5ad3031d7adc084c71c30ed25d0d",
+    "source_id": "16274b8eaefbba31437284f030fe99e4713e888ec6e9005bcf89cb82fe531c64",
+    "semantic_id": "d6cb6f58fb7f8748df8e161fa6182421347db851121dec5a74df5169886a7a9d",
+    "signed_envelope": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXR0ZXN0YXRpb25faWQiOiI0YzQzYmNlYTNiNWUzMDRhOTlmMTljMjAyZDU2Yzg5ZDlmYWI1YWQzMDMxZDdhZGMwODRjNzFjMzBlZDI1ZDBkIiwiYnVpbGRfaWQiOiIxMWMwZDZhNmZjNzdjYzFiNzBhNjNlYzRiNzBhMTQwMzhiZTc2ZDEwY2M2YjgwNTU5Y2QwN2QzZWU4OWZmZmNhIiwiZmlsZXMiOlsiZWIxNzA3NDMxMmMzZDBhNjQ2ODg5NzYxM2MzYjAxYTM1NzE2MmYzZTg4ZjljNTQ0YjBiMjg5Y2RjMzY1NDM0MiIsIjliNWUxMjAyMDRjNTE2MDJmYzc4M2NjMmY2YmVhNzQ1NmVjNjQ4ODI4Nzc1MjgzNDFiNTIzYTRmNGE1ODBmYjMiLCJjZTE2ZTViNDM5MTI4ZGIzMjMxOTc5MzgxZjQ1OTlkM2ZmMDYxN2Y2MmMyYmYwMGMzNDhiYmEzNTM5M2FiY2Q2IiwiZGIxMjQzNDNhZDhmZTEyOTViYzhlYjMwNWM3ZjU5ZjgzY2Y2YWQ3NmQ0NmE1Y2FiZWE1MDBmZTY2ZjNhZDVkYyIsIjIxZTQ5YjAxMWQyYmMyYWIwOGUxYjQxNzczY2JkNTEwNzMyNjU3NWJjMjMzZGI1ZWU1MzQ0ZWZiMDQ0YzM0NzIiLCJmNzkzMGQwZGM3MGIxZDBlNzFjZjY2YTc3YjYyZTQ1M2IxYjY1OGVmOTI5ZjgyZGZjYzVhMWU0YTkzM2UzNTZkIiwiZDZjOTdlMWU0OWE3YWU1OTU1ZTExZGQ4N2RkMTUzZWI1NmI3NjMwMWUxOGIyMjY4MmEzMTQzODc3MjczMjk2OSIsImJjMDc5ZGI0MDFlOTI0MTVkNGM3ZDRhNzM2ODgzMzM1ZTkwYjVhMDc5ZmY0MjUzMmFkZGJjMDRmM2I5ZDlhN2YiLCJiZGIyNDM2MmZiMzBmZTU4ZGVjNTU3YjcwNzE1ZjEzNWIzMDgxY2Y3N2YwZjlhZDMxZWJlOWEzOGM0ZWYzNDNlIiwiODY4MzVhMmRmOGIyMzI5MGZjNmE0MjUyYjdlYTY0NTg2M2Q0NTZmNjhkNTU5OTE2MDBiYmRlMjRiYWIzYmJiYiIsIjBjYjk4MGQ1NmUzYTFkZDhhYjQ0NjcyZjg1YTU3ZDYxNDI0YWM0YTNlZWRiN2YwNzdlODU3NzU1ZmY0NmQ2ZDkiXSwibW9kdWxlcyI6WyJBcmFuZ2UiLCJJbmRleGVkQWRkaXRpb24iLCJNYXRyaXhHcmFwaCIsIlBvaW50d2lzZUdyYXBoIiwiUmVsYXRpdmVQb3NpdGlvbiIsIlJvd0dhdGhlciIsIlRlbnNvckluZGV4IiwiVGVuc29yVHlwZXMiXSwic2VtYW50aWNfaWQiOiJkNmNiNmY1OGZiN2Y4NzQ4ZGY4ZTE2MWZhNjE4MjQyMTM0N2RiODUxMTIxZGVjNWE3NGRmNTE2OTg4NmE3YTlkIiwic291cmNlX2lkIjoiMTYyNzRiOGVhZWZiYmEzMTQzNzI4NGYwMzBmZTk5ZTQ3MTNlODg4ZWM2ZTkwMDViY2Y4OWNiODJmZTUzMWM2NCIsInN0YXR1cyI6InZlcmlmaWVkIn0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Vvci5mb3VuZGF0aW9uL2xleGxlYW4tbWNwL3ZlcmlmaWNhdGlvbi92MSIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiJlMmYyMTlhYThiNTIyYmIzYzEzZDQ4NWNmOGU1ZjBmMTU2NDhmZTJmMzI4NDYyYjBlNGM5MGQ3YzZmZGE1YzcyIn0sIm5hbWUiOiJhdHRlc3RhdGlvbi5qc29uIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "533449506003ca0c42744122318b69f5be32d74a2781e72b5c62855cac53bb54",
+          "sig": "lXoy5D2lY9YfUFu89N1SQjHlHK+HFS2aNMgk9hjwzTaCRkwNAQ7kSaXx4m3gPy1exMsE6Tkvv4vhwwmVjkIfDQ=="
+        }
+      ]
+    },
+    "local_files_in_signed_inputs": {
+      "app/src/Arange.lex.tex": "eb17074312c3d0a6468897613c3b01a357162f3e88f9c544b0b289cdc3654342",
+      "app/src/IndexedAddition.lex.tex": "21e49b011d2bc2ab08e1b41773cbd5107326575bc233db5ee5344efb044c3472",
+      "app/src/MatrixGraph.lex.tex": "f7930d0dc70b1d0e71cf66a77b62e453b1b658ef929f82dfcc5a1e4a933e356d",
+      "app/src/PointwiseGraph.lex.tex": "d6c97e1e49a7ae5955e11dd87dd153eb56b76301e18b22682a31438772732969",
+      "app/src/RelativePosition.lex.tex": "bc079db401e92415d4c7d4a736883335e90b5a079ff42532addbc04f3b9d9a7f",
+      "app/src/RowGather.lex.tex": "bdb24362fb30fe58dec557b70715f135b3081cf77f0f9ad31ebe9a38c4ef343e",
+      "app/src/TensorIndex.lex.tex": "86835a2df8b23290fc6a4252b7ea645863d456f68d55991600bbde24bab3bbbb",
+      "app/src/TensorTypes.lex.tex": "0cb980d56e3a1dd8ab44672f85a57d61424ac4a3eedb7f077e857755ff46d6d9"
+    },
+    "verification": "Gateway task-33 returned verified; all eight canonical local model hashes are in the signed input set."
+  },
+  "production": {
+    "project": "app/pointwise.lexlean.toml",
+    "result": "e1803a701971a9665626ab954663365f367d3caefd8e99512d63045d01aba80b",
+    "attestation": "a1ad957b0b532fb058a4c9059492f50279c77ada5ac13c0c69f5ce40b6be4394",
+    "primary_rust_sha256": "7a446ea32835b3152937b47aabb3acd1492ccaecfc6638bdbad7dd9232825c37",
+    "status": "just pointwise-export passed, including strict SDK certificate verification; generated source was neither edited nor reformatted.",
+    "unchanged_repeat_offset_sha256": "44c97bff79831bcf21d53ac7bbf61822afaa1335fbe7de1c23a3d0dc0ea618b8"
+  },
+  "checks": {
+    "contract": {
+      "passed": 36,
+      "failed": 1,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 170.81,
+      "failure": "VT-02 rejects the unpublished local development override"
+    },
+    "scoped_first_success": {
+      "passed": 1,
+      "seconds": 62.55,
+      "positive_cases": 13,
+      "refusals": 19
+    },
+    "faults": [
+      {
+        "change": "Native ceil operation bound to floor",
+        "result": "Imported ARANGE 3.0/3.5/1.0 numerical comparison failed",
+        "seconds": 3.42
+      },
+      {
+        "change": "Appended bytes to the extracted cached upstream operation test source",
+        "result": "Authoritative SHA-256 comparison rejected the cached input before execution",
+        "seconds": 3.47
+      },
+      {
+        "change": "Replaced the requested operation with an absent selector",
+        "result": "Observed zero cases rejected against required total thirteen",
+        "seconds": 3.95
+      }
+    ],
+    "restored": {
+      "passed": 1,
+      "seconds": 59.77,
+      "source_restoration": "Production and test files and the imported cached source restored byte for byte. All thirteen positive cases and nineteen refusal probes pass."
+    },
+    "clippy": "Workspace, all targets and features, locked, -D warnings: passed",
+    "dependency_audit": "All features: passed after refreshing the exact generated Pointwise license hash",
+    "format": "just fmt-check passed",
+    "bdd": "All four BDD meta-tests passed",
+    "full_gate": "Pending; no repository acceptance claim. Production dependency and source budget remain open."
   }
 }
