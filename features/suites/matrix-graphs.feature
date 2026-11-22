@@ -13,3 +13,9 @@ Feature: matrix-graphs
     Given the pinned factory for Q8_0 weights and F32 activations
     When the upstream evaluator executes each standalone matrix product
     Then every selected case is supported and its output passes the upstream CPU comparison
+
+  @VT-54 @build
+  Scenario: Prism admits Q4_0 by F32 GGML matrix graphs and Verdant executes their block products against the imported GGML CPU
+    Given the pinned factory for Q4_0 weights and F32 activations
+    When the upstream evaluator executes each standalone matrix product
+    Then every selected case is supported and its output passes the upstream CPU comparison

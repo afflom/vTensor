@@ -173,6 +173,13 @@ fn symmetric_matrix_graphs_vt_53() {
     native_backend_oracle::verify(&root(), "upstream-MUL_MAT_Q8_0_F32", 122);
 }
 
+/// `VT-54`: The upstream factory evaluates all Q4_0 by F32 matrix cases.
+#[test]
+fn packed_matrix_graphs_vt_54() {
+    tensor_layout::certified_current_model(&root(), "matrix");
+    native_backend_oracle::verify(&root(), "upstream-MUL_MAT_Q4_0_F32", 122);
+}
+
 /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
 #[test]
 fn matrix_graphs_vt_12() {
@@ -2199,14 +2206,23 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         }
         let text = super::ggml_oracle::batch(&mut command, &input);
         let footer = format!("RESULT cases {expected_cases}\n");
-        if mode == "upstream-MUL_MAT_Q8_0_F32" {
+        let transcript = match mode {
+            "upstream-MUL_MAT_Q8_0_F32" => {
+                Some("98ccc36df39f889744f83d3afec15c00e033031c5220e564565b54f30332eddd")
+            }
+            "upstream-MUL_MAT_Q4_0_F32" => {
+                Some("dfa8e8d874e02e063285441939a67fcbc4a050a100a503706457ecd0390c578a")
+            }
+            _ => None,
+        };
+        if let Some(digest) = transcript {
             let rows = text
                 .strip_suffix(&footer)
-                .expect("complete Q8 factory count");
+                .expect("complete matrix factory count");
             assert_eq!(
                 repo_model::artifact::sha256_hex(rows.as_bytes()),
-                "98ccc36df39f889744f83d3afec15c00e033031c5220e564565b54f30332eddd",
-                "Q8 factory ordinals or parameters differ from the pinned transcript"
+                digest,
+                "matrix factory ordinals or parameters differ from the pinned transcript"
             );
         } else {
             assert_eq!(text, footer);
@@ -2262,17 +2278,19 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
     size_t ordinal = 0;
-    const bool q8_matrix = !std::strcmp(op, "MUL_MAT_Q8_0_F32");
+    const ggml_type weight_type = !std::strcmp(op, "MUL_MAT_Q8_0_F32") ? GGML_TYPE_Q8_0 :
+                                  !std::strcmp(op, "MUL_MAT_Q4_0_F32") ? GGML_TYPE_Q4_0 : GGML_TYPE_COUNT;
+    const bool matrix_group = weight_type != GGML_TYPE_COUNT;
     for(auto &test:make_test_cases_eval()) {
       const auto id = ordinal++;
-      if (q8_matrix) {
+      if (matrix_group) {
         const auto *matrix = dynamic_cast<const test_mul_mat *>(test.get());
-        if (!matrix || matrix->type_a != GGML_TYPE_Q8_0 || matrix->type_b != GGML_TYPE_F32) continue;
+        if (!matrix || matrix->type_a != weight_type || matrix->type_b != GGML_TYPE_F32) continue;
       }
-      const auto status=test->eval(backend,reference,q8_matrix ? "MUL_MAT" : op,&observed);
+      const auto status=test->eval(backend,reference,matrix_group ? "MUL_MAT" : op,&observed);
       if(status==test_status_t::SKIPPED) continue;
       if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
-      if(q8_matrix) std::printf("CASE\t%zu\tMUL_MAT\t%s\n",id,test->vars().c_str());
+      if(matrix_group) std::printf("CASE\t%zu\tMUL_MAT\t%s\n",id,test->vars().c_str());
       ++cases;
     }
     return observed.records==cases ? cases : SIZE_MAX;
