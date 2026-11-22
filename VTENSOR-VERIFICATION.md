@@ -4699,3 +4699,13 @@ Swapping the first two extents changed that digest to
 `a9ccdebad3b7084af999748d61b4632cd8857e5911ca52d977b861015e9992a5`
 and the layout test failed. The imported executable still supplies every
 expected byte span. [Prism result](generated/probes/result.json)
+
+## VT-58 complete checkpoint
+
+At `06b95286fb1aaeff1fb579eaeeb6094bf514d1c0`, the pinned SDK ran the full
+`just vv` and regenerated the application proof because its inputs had changed.
+All 66 backend contract tests passed in 519.17 seconds, including the dense
+attention graphs and direct IQ2_XXS copy. Cargo dependency checks passed.
+The native audit counted 12,166 lines in both this revision and its parent.
+Recovery to the original 10,549-line ceiling and published Verdant dependency
+acceptance remain open. [Implementation](https://github.com/afflom/vTensor/commit/06b95286fb1aaeff1fb579eaeeb6094bf514d1c0)
