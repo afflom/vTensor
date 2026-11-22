@@ -150,6 +150,7 @@ model does not sanction.
 | `VT-61` | `build` | GGML sigmoid and SiLU execute through Verdant in unary, multiplied and added graph compositions across all 122 imported factory cases |
 | `VT-62` | `build` | GGML BF16 row gradients accumulate into F32 with repeated and strided indices and match the pinned CPU widening and row-gradient operators |
 | `VT-63` | `build` | GGML attention with BF16 key and value rows uses Verdant conversion and contraction and matches the imported CPU with optional masks and sinks |
+| `VT-64` | `build` | GGML matrix products with F16 and BF16 operands honor the input dot-product storage and match the imported CPU across six scalar type pairs |
 
 ## normalization-graphs
 
