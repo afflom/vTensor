@@ -372,10 +372,13 @@ fn arithmetic_fixture_generation_vt_36() {
     }
 }
 
-/// `VT-40`: Native fixture construction initialized bytes and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
+/// `VT-40`: Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
 #[test]
 fn native_fixture_baselines_vt_40() {
     let baseline = native_backend_oracle::fixture_baselines();
+    let released = &baseline["source_release"];
+    assert_eq!(released["cases"].as_u64(), Some(1920));
+    assert_eq!(released["record"].as_array().unwrap().len(), 1920);
     let source =
         std::fs::read_to_string(root().join("crates/conformance/tests/contract.rs")).unwrap();
     assert_eq!(source, include_str!("contract.rs"), "stale fixture gate");
@@ -1557,7 +1560,18 @@ mod native_backend_oracle {
                 "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
                 "frozen native corpus changed"
             );
-            serde_json::from_slice(&bytes).unwrap()
+            let mut baseline: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+            let bytes = std::fs::read(
+                super::root().join("verification/native-fixture-source-release.json"),
+            )
+            .unwrap();
+            assert_eq!(
+                repo_model::artifact::sha256_hex(&bytes),
+                "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
+                "frozen source-release corpus changed"
+            );
+            baseline["source_release"] = serde_json::from_slice(&bytes).unwrap();
+            baseline
         })
     }
 
@@ -1859,15 +1873,33 @@ mod native_backend_oracle {
         let expected_snapshot =
             cache.join(format!("expected-source-{}.snapshot", std::process::id()));
         std::fs::write(&expected_snapshot, &expected).unwrap();
-        let recipe = fixture_baselines()["mode"]
+        let baselines = fixture_baselines();
+        let mut recipes = Vec::new();
+        if let Some(recipe) = baselines["mode"]
             .as_array()
             .unwrap()
             .iter()
-            .find(|row| row["name"] == mode);
-        let recipe_path =
-            std::path::PathBuf::from(format!("{}.{mode}-recipes", expected_snapshot.display()));
-        if recipe.is_some() && recipe_path.exists() {
-            std::fs::remove_file(&recipe_path).unwrap();
+            .find(|row| row["name"] == mode)
+        {
+            assert_eq!(recipe["cases"].as_u64().unwrap() as usize, expected_cases);
+            recipes.push((
+                std::path::PathBuf::from(format!("{}.{mode}-recipes", expected_snapshot.display())),
+                recipe,
+            ));
+        }
+        if mode == "fill" {
+            recipes.push((
+                std::path::PathBuf::from(format!(
+                    "{}.fill-source-release",
+                    expected_snapshot.display()
+                )),
+                &baselines["source_release"],
+            ));
+        }
+        for (path, _) in &recipes {
+            if path.exists() {
+                std::fs::remove_file(path).unwrap();
+            }
         }
         let text = super::ggml_oracle::batch(
             Command::new(&program)
@@ -1877,21 +1909,22 @@ mod native_backend_oracle {
             &input,
         );
         assert_eq!(text, format!("RESULT cases {expected_cases}\n"));
-        if let Some(recipe) = recipe {
-            assert_eq!(recipe["cases"].as_u64().unwrap() as usize, expected_cases);
-            let bytes = std::fs::read(&recipe_path)
-                .expect("this execution must emit its fixture transcript");
+        for (path, recipe) in recipes {
+            let bytes =
+                std::fs::read(&path).expect("this execution must emit its fixture transcript");
             assert_eq!(
                 bytes.len() as u64,
                 recipe["bytes"].as_u64().unwrap(),
-                "{mode} fixture length changed"
+                "{mode} fixture length changed: {}",
+                path.display()
             );
             assert_eq!(
                 repo_model::artifact::sha256_hex(&bytes),
                 recipe["sha256"].as_str().unwrap(),
-                "{mode} fixture corpus changed"
+                "{mode} fixture corpus changed: {}",
+                path.display()
             );
-            std::fs::remove_file(&recipe_path).unwrap();
+            std::fs::remove_file(path).unwrap();
         }
         if matches!(mode, "matrix" | "elementwise") {
             let path = format!("{}.{mode}-fixtures", expected_snapshot.display());
@@ -2458,12 +2491,14 @@ int main(int argc, char **argv) {
     if (!strcmp(argv[3], "copy") || repeating || concatenating || spatial || folding || diagonal || triangular || filling || casting || windowing || wordwise || relative) {
       std::ofstream trace(std::string(argv[2])+"."+argv[3]+"-recipes",std::ios::binary);CHECK(trace);recipe_trace=&trace;
       recipe_word(1);recipe_word(GGML_MAX_SRC);recipe_word(GGML_MAX_OP_PARAMS/sizeof(int32_t));
+      std::ofstream released;
+      if(filling) {released.open(std::string(argv[2])+".fill-source-release",std::ios::binary);CHECK(released);recipe_trace=&released;recipe_word(1);recipe_trace=&trace;}
       static const int window_sizes[]={1,2,4};
       static const ggml_type float_types[]={GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16};
       static const uint32_t fill_words[]={0,0x80000000,0x3f800000,0xbf800000,0x7f800000,0xff800000,
         0x7fc00001,0x7f800001,0xff800001,1,0x80000001,0x00800000,0x7f7fffff,0xff7fffff,
         0x33800000,0x33000000,0x33000001,0x32ffffff,0x3f801000,0x3f803000,0x477fe000,0x477ff000,0x477fefff,0x38800000};
-      size_t cases=0, refused=0; int kind;
+      size_t cases=0, refused=0, source_releases=0; int kind;
       while (scanf("%d",&kind)==1) for(int operation=0;operation<(relative?1:selecting?2:reducing?3:scanning?1:unarying?39:transforming?8:windowing?2:casting?6:filling?2:(concatenating || triangular)?4:(repeating || folding || diagonal || triangular || filling || casting || windowing)?1:3);operation++) {
       const std::vector<int> extents=relative?std::vector<int>{1,3,17}:(concatenating || (spatial && operation==0))?std::vector<int>{0,1,3}:windowing?std::vector<int>{1,3,5}:spatial?std::vector<int>{2,3}:(reducing || selecting)?std::vector<int>{1,2,3,17,65}:scanning?std::vector<int>{1,3,17,65}:std::vector<int>{1,3};
       const auto row_extents=relative?std::vector<int>{1,3,7}:(scanning || reducing || selecting)?std::vector<int>{1,3}:extents;
@@ -2636,7 +2671,7 @@ int main(int argc, char **argv) {
         }
         auto saved_data=input->data;
         auto saved_buffer=input->buffer;
-        if(filling && !operation && layout==3) {input->data=nullptr;input->buffer=nullptr;}
+        if(filling && !operation && layout==3) {input->data=nullptr;input->buffer=nullptr;recipe_trace=&released;recipe_word(cases);recipe_state(6);recipe_trace=&trace;++source_releases;}
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
         input->data=saved_data; input->buffer=saved_buffer;
         CHECK(compare_result(result,expected_tensor,output,wordwise && !selecting?(scanning?2:1):0));
@@ -2645,6 +2680,7 @@ int main(int argc, char **argv) {
       }
       CHECK(refused==(spatial?200:triangular?384:windowing?216:0));
       recipe_word(4);recipe_word(cases);recipe_word(refusal_probes);recipe_word(refused);
+      if(filling) {recipe_trace=&released;recipe_word(UINT64_MAX);recipe_word(source_releases);recipe_trace=&trace;}
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases);return 0;
     }
     if (!strcmp(argv[3], "empty")) {

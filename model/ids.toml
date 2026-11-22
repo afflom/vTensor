@@ -309,4 +309,4 @@ statement = "Prism models copied and in-place GGML ADD_REL_POS event ordering an
 id = "VT-40"
 level = "build"
 suite = "fixture-generation"
-statement = "Native fixture construction initialized bytes and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle"
+statement = "Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle"
