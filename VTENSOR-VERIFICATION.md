@@ -4647,3 +4647,14 @@ row across six layers. Four of the 6,912 prefill FP16 words differed by at most
 `llama-eval-callback` executable reached its CPU registry threadpool lookup and
 exited with SIGSEGV. Both threadpool entry points must be supplied for that
 consumer. [Inputs, placement, hashes and per-step results](verification/llama-stories15m-vt58.json)
+
+The F32 stories15M model from the pinned upstream quantization test completed
+the same three steps. All top-token IDs matched (29892, 278, 6575). The largest
+absolute differences were 0.00161553 for logits and 0.001953125 for stored FP16
+cache values. The scheduler callback recorded the output buffer device of every
+node for both models, including views. Each of the six graph executions had 195
+nodes, including 192 marked for compute. Every node used a vTensor buffer and
+the vTensor processes loaded only the vTensor plugin.
+[F32 per-step results](verification/llama-stories15m-float-vt58.json) ·
+[Q4_0 per-step results](verification/llama-stories15m-vt58.json) ·
+[Per-node placement transcript](verification/llama-stories15m-vt58-placement.tsv.gz)

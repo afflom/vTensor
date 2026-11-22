@@ -1,7 +1,7 @@
 {
   "authority": "https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_revision": "b7f665db061eb6e38f572cf3571455a330c3c233",
-  "provider_sha256": "82ed9ae68bd69e91dad0c69ec2b264b9a46621312b31aa7e99bd52889d9bfb1e",
+  "provider_revision": "e1d9c8537f3babe023961227f446ab5ed7a0b7fd",
+  "provider_sha256": "ec6e9115fd2ca7529cedae0e52b3a5f0a984f0a483a88888dc2da34db84a544c",
   "sdk_digest": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
   "verdant_revision": "53dfc67d4382c6d9b01eb04ae053ba6a9cd1c862",
   "model": "stories15M-q4_0.gguf",
@@ -37,8 +37,11 @@
       5,
       6
     ],
-    "scheduled_nodes": 195,
-    "scheduler_splits": 1
+    "nodes_per_step": 195,
+    "compute_flagged_per_step": 192,
+    "scheduler_splits": 1,
+    "transcript": "llama-stories15m-vt58-placement.tsv.gz",
+    "model_id": "q4"
   },
   "outputs_sha256": {
     "cpu-cache-logits.f32": "f4caddfe5318ef079d9fe5c3a0acf83ddd7e9ebbfcd9b9ad9072b1c869773e7e",
@@ -80,5 +83,6 @@
       "cache_bit_mismatches": 0,
       "max_abs_cache_difference": 0.0
     }
-  ]
+  ],
+  "model_authority": "https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/examples/eval-callback/CMakeLists.txt"
 }

@@ -34,7 +34,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Complete embedding, projection and KV-cache operations. Close the remaining 641 SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, MUL_MAT precision modes, MUL_MAT_ID and OUT_PROD across their legal formats. Reuse the verified decoders and F32 matrix path.
 - [ ] Complete rotary cache updates, fused normalization/rotation, masked softmax and attention. Run the 77 ROPE_SET_ROWS, 281 RMS_NORM_MUL_ROPE and remaining 5,772 FLASH_ATTN_EXT factory cases in their assigned batches.
 - [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, all GLU variants, and their composed graphs. Close the remaining 173 standalone ADD cases. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
-- [ ] Run a checksum-pinned floating-point GGUF. Repeat the quantized prefill, successive decode and KV-cache comparison against the separate upstream CPU run. Record device assignment for every compute node and require zero numerical fallback.
+- [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract
 

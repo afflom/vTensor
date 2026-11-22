@@ -1,0 +1,88 @@
+{
+  "authority": "https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "e1d9c8537f3babe023961227f446ab5ed7a0b7fd",
+  "provider_sha256": "ec6e9115fd2ca7529cedae0e52b3a5f0a984f0a483a88888dc2da34db84a544c",
+  "sdk_digest": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "53dfc67d4382c6d9b01eb04ae053ba6a9cd1c862",
+  "model": "stories15M.gguf",
+  "model_sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+  "settings": {
+    "prompt": "hello",
+    "add_special": true,
+    "parse_special": true,
+    "continuation_token_ids": [
+      29892,
+      278
+    ],
+    "ctx": 256,
+    "batch": 32,
+    "ubatch": 32,
+    "threads": 1,
+    "gpu_layers": 0,
+    "flash_attention": "enabled"
+  },
+  "host": "Unmodified llama library, public llama_decode API. Two processes with independently loaded device plugins.",
+  "oracle": "Use llama_get_logits_ith(ctx,-1) after prefill and each fixed continuation. After each cache_k_l* or cache_v_l* GGML_OP_SET_ROWS read every row named by src[1] using ggml_backend_tensor_get. Compare the complete last-token vocabulary and all 288 FP16 words of every updated row.",
+  "loaded_backends": [
+    "load_backend: loaded CPU backend from /work/llama-build/bin/libggml-cpu.so",
+    "load_backend: loaded vTensor backend from /work/attention-target/release/deps/libvtensor_backend.so"
+  ],
+  "vtensor_placement": {
+    "assigned_layers": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "nodes_per_step": 195,
+    "compute_flagged_per_step": 192,
+    "scheduler_splits": 1,
+    "transcript": "llama-stories15m-vt58-placement.tsv.gz",
+    "model_id": "f32"
+  },
+  "outputs_sha256": {
+    "cpu-float-logits.f32": "599e5b8375a74e5e60e17a96c772e129b2354e721652a2ec193920e2bc5f87d2",
+    "vtensor-float-logits.f32": "967a41146f102899985e7cbffc4f18c19c8b420acab74bea73c2fdb6f815d3d9",
+    "cpu-float-kv.tsv": "8d70132183c77259271f163f7b7ab3fd240ef2d242936c3e9345cf03d3429406",
+    "vtensor-float-kv.tsv": "41651bead686d9974276cfc7d4ca2acff649f15407ba437c69dbc0eed3c1b230"
+  },
+  "steps": [
+    {
+      "step": 0,
+      "logits": 32000,
+      "top_token_cpu": 29892,
+      "top_token_vtensor": 29892,
+      "max_abs_logit_difference": 0.0016155242919921875,
+      "normalized_squared_logit_error": 9.229801676005185e-10,
+      "cache_fp16_values": 6912,
+      "cache_bit_mismatches": 228,
+      "max_abs_cache_difference": 0.001953125
+    },
+    {
+      "step": 1,
+      "logits": 32000,
+      "top_token_cpu": 278,
+      "top_token_vtensor": 278,
+      "max_abs_logit_difference": 0.001082777976989746,
+      "normalized_squared_logit_error": 1.183413093093081e-09,
+      "cache_fp16_values": 3456,
+      "cache_bit_mismatches": 135,
+      "max_abs_cache_difference": 0.0009765625
+    },
+    {
+      "step": 2,
+      "logits": 32000,
+      "top_token_cpu": 6575,
+      "top_token_vtensor": 6575,
+      "max_abs_logit_difference": 0.0006666183471679688,
+      "normalized_squared_logit_error": 4.178222220243914e-10,
+      "cache_fp16_values": 3456,
+      "cache_bit_mismatches": 89,
+      "max_abs_cache_difference": 0.0009765625
+    }
+  ],
+  "model_authority": "https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/tests/test-quantize-be.sh"
+}
