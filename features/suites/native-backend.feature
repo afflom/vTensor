@@ -68,3 +68,9 @@ Feature: native-backend
     Given the original F16 attention cases with a soft cap of ten
     When vTensor runs all four combinations of mask and sink presence
     Then every output passes the upstream CPU comparison
+
+  @VT-70 @build
+  Scenario: Prism maps GGML three-dimensional image columns through padded and dilated input views, with Verdant storing each typed output
+    Given imported IM2COL_3D graphs with strided input views and F16 or F32 output
+    When vTensor places each image sample or padding value in its result column
+    Then every result matches the original GGML CPU evaluator

@@ -155,6 +155,7 @@ model does not sanction.
 | `VT-66` | `build` | GGML extended attention with Q4_0 and Q8_0 keys and values executes through Verdant block conversion and row products and matches the imported CPU |
 | `VT-67` | `build` | GGML hyperbolic tangent and composed soft-cap graphs execute through the pinned Verdant binary32 activation and match the imported CPU evaluator |
 | `VT-68` | `build` | Prism places attention logit soft caps before the mask and Verdant evaluates the scaled hyperbolic tangent against the imported GGML CPU |
+| `VT-70` | `build` | Prism maps GGML three-dimensional image columns through padded and dilated input views, with Verdant storing each typed output |
 
 ## normalization-graphs
 
