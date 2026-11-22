@@ -1614,48 +1614,35 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "21fd02406bf95d861f86e1b3543a55a8eabd38decec848a2b91f5f8d4d0f6a32",
+            "202b15726f94ecac1304bc332eb81f38f8ec2320a4bfa93cc6b6ce91291ac557",
         )
     });
 
-    pub(super) static NATIVE_FIXTURES: LazyLock<serde_json::Value> = LazyLock::new(|| {
+    fn fixture_record(name: &str) -> serde_json::Value {
         frozen_json(
-            "native-fixture-baseline",
-            "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+            name,
+            ORACLE_BINDINGS["fixture_digests"][name]
+                .as_str()
+                .expect("fixture digest"),
         )
-    });
-    pub(super) static FILL_RELEASE: LazyLock<serde_json::Value> = LazyLock::new(|| {
-        frozen_json(
-            "native-fixture-source-release",
-            "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
-        )
-    });
-    static TYPED_BINARY: LazyLock<serde_json::Value> = LazyLock::new(|| {
-        frozen_json(
-            "typed-binary-fixture-baseline",
-            "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959",
-        )
-    });
+    }
+    pub(super) static NATIVE_FIXTURES: LazyLock<serde_json::Value> =
+        LazyLock::new(|| fixture_record("native-fixture-baseline"));
+    pub(super) static FILL_RELEASE: LazyLock<serde_json::Value> =
+        LazyLock::new(|| fixture_record("native-fixture-source-release"));
+    static TYPED_BINARY: LazyLock<serde_json::Value> =
+        LazyLock::new(|| fixture_record("typed-binary-fixture-baseline"));
 
     pub(super) fn fixture_input(family: u64) -> &'static [u8] {
         static INPUT: [std::sync::OnceLock<Vec<u8>>; 2] = [const { std::sync::OnceLock::new() }; 2];
         INPUT[family as usize].get_or_init(|| {
             use vtensor_fixtures::Adt0 as Request;
-            let (name, model, digest) = match family {
-                0 => (
-                    "matrix",
-                    "fixtures",
-                    "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
-                ),
-                1 => (
-                    "arithmetic",
-                    "arithmetic",
-                    "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4",
-                ),
-                _ => panic!("unknown fixture family"),
-            };
+            let (model, record) = [
+                ("fixtures", "matrix-fixture-baseline"),
+                ("arithmetic", "arithmetic-fixture-baseline"),
+            ][family as usize];
             super::tensor_layout::certified_current_model(&super::root(), model);
-            let baseline = frozen_json(&format!("{name}-fixture-baseline"), digest);
+            let baseline = fixture_record(record);
             let query = |request| {
                 let result = if family == 0 {
                     vtensor_fixtures::run(0, request).unwrap()
@@ -1672,10 +1659,9 @@ mod native_backend_oracle {
             };
             let [cases, fields, sources, padding] =
                 [0, 1, 2, 3].map(|item| query(Request::C0(item)));
-            assert_eq!(
-                (cases, fields, sources, padding),
-                (if family == 0 { 1280 } else { 120 }, 24, 2, 165)
-            );
+            let header = ["cases", "metadata_fields", "sources", "padding_byte"]
+                .map(|key| baseline[key].as_u64().expect("fixture header"));
+            assert_eq!([cases, fields, sources, padding], header);
             let mut input: Vec<u8> = [cases, fields, sources, padding]
                 .into_iter()
                 .flat_map(u64::to_le_bytes)
@@ -1939,7 +1925,10 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let input: &[u8] = match mode {
             "matrix" | "elementwise" => fixture_input(u64::from(mode == "elementwise")),
             "update" => &[],
-            mode if mode.starts_with("upstream-") => &[],
+            mode if mode.starts_with("upstream-") => ORACLE_BINDINGS["factory_inputs"][mode]
+                .as_str()
+                .unwrap_or("")
+                .as_bytes(),
             _ => &STORAGE_TYPES,
         };
         let mut expected = Vec::new();
@@ -2034,9 +2023,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 #include "tests/test-backend-ops.cpp"
 #undef main
 struct vtensor_observation : printer {
-  size_t records=0; bool bad=false;
+  size_t records=0; bool bad=false; std::string label;
   void print_test_result(const test_result &result) override {
-    ++records;
+    ++records; label=result.op_name;
     if(!result.supported || !result.passed || result.test_mode!="test") {
       bad=true;fprintf(stderr,"imported case rejected: %s(%s): %s [backend: %s]\n",result.op_name.c_str(),result.op_params.c_str(),result.error_message.c_str(),result.backend_name.c_str());
     }
@@ -2052,41 +2041,21 @@ static bool vtensor_use_reference(ggml_backend_t reference) {
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
-    size_t ordinal = 0;
-    const ggml_type weight_type = !std::strcmp(op, "MUL_MAT_Q8_0_F32") ? GGML_TYPE_Q8_0 :
-                                  !std::strcmp(op, "MUL_MAT_Q4_0_F32") ? GGML_TYPE_Q4_0 :
-                                  !std::strcmp(op, "MUL_MAT_Q2_K_F32") ? GGML_TYPE_Q2_K : GGML_TYPE_COUNT;
-    const bool matrix_group = weight_type != GGML_TYPE_COUNT;
-    const bool set_rows = !std::strcmp(op, "SET_ROWS_SCALAR");
-    // Keep the ordinal selections tied to the imported make_test_cases_eval order.
-    const bool float_matrix = !std::strcmp(op, "MUL_MAT_FLOAT_STORAGE");
-    const std::vector<size_t> selected = float_matrix ? std::vector<size_t>{10551,12452,12471,12520,12539,12588,12607,13423,13432,13495,13650} : !std::strcmp(op, "FLASH_ATTN_EXT_FIRST") ? std::vector<size_t>{19242} :
-        !std::strcmp(op, "FLASH_ATTN_EXT_SMALL") ? std::vector<size_t>{19314, 19394} :
-        !std::strcmp(op, "FLASH_ATTN_EXT_PACKED") ? std::vector<size_t>{19541, 19545, 20261, 20265, 20981, 20985, 21269, 21273} :
-        !std::strcmp(op, "FLASH_ATTN_EXT_BF16") ? std::vector<size_t>{19540, 20260, 20980, 21268} : std::vector<size_t>{};
-    const char *label = float_matrix ? "MUL_MAT,MUL_MAT_PREC_SRC1_F32" : !selected.empty() ? "FLASH_ATTN_EXT" : set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
+    std::vector<size_t> selected;
+    size_t id;
+    while (std::scanf("%zu", &id)==1) selected.push_back(id);
+    if (!std::feof(stdin)) return SIZE_MAX;
+    size_t ordinal=0;
     for(auto &test:make_test_cases_eval()) {
-      const auto id = ordinal++;
-      if (!selected.empty() && std::find(selected.begin(),selected.end(),id)==selected.end()) continue;
-      const bool gathered_product = weight_type == GGML_TYPE_Q2_K && id == 809;
-      if (matrix_group && !gathered_product) {
-        const auto *matrix = dynamic_cast<const test_mul_mat *>(test.get());
-        if (!matrix || matrix->type_a != weight_type || matrix->type_b != GGML_TYPE_F32) continue;
-      }
-      if (set_rows) {
-        const auto *row = dynamic_cast<const test_set_rows *>(test.get());
-        if (!row || (row->type_src != GGML_TYPE_F32 && row->type_src != GGML_TYPE_F16) ||
-            (row->type_dst != GGML_TYPE_F32 && row->type_dst != GGML_TYPE_F16 && row->type_dst != GGML_TYPE_BF16) ||
-            (row->type_idx != GGML_TYPE_I32 && row->type_idx != GGML_TYPE_I64)) continue;
-      }
-      const char *case_label = gathered_product ? "ADD" : label;
-      const auto status=test->eval(backend,reference,case_label,&observed);
+      const auto i=ordinal++;
+      if (!selected.empty() && (cases==selected.size() || selected[cases]!=i)) continue;
+      const auto status=test->eval(backend,reference,selected.empty()?op:nullptr,&observed);
       if(status==test_status_t::SKIPPED) continue;
       if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
-      if(matrix_group || set_rows || !std::strcmp(op, "SWIGLU")) std::printf("CASE\t%zu\t%s\t%s\n",id,case_label,test->vars().c_str());
+      if(!selected.empty()) std::printf("CASE\t%zu\t%s\t%s\n",i,observed.label.c_str(),test->vars().c_str());
       ++cases;
     }
-    return observed.records==cases ? cases : SIZE_MAX;
+    return observed.records==cases && (selected.empty() || cases==selected.size()) ? cases : SIZE_MAX;
 }
 using vtensor_graph_factory = ggml_tensor * (*)(ggml_context *, void *, void *);
 using vtensor_initializer = void (*)(ggml_context *, void *);

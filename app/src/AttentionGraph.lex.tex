@@ -3,6 +3,7 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{NormPlan}
 \importmodule{ScalarDotStorage}
+\importmodule{TensorTypes}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -80,6 +81,39 @@ definition{
 }
 
 definition{
+  name: packedKey,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((kind =? 2) || (kind =? 8)),
+  executable: true
+}
+
+definition{
+  name: queryStorage,
+  parameters: [kind : Nat],
+  result: Nat,
+  body: (if (packedKey kind) then 8 else (ScalarDotStorage::activationType kind)),
+  executable: true
+}
+
+definition{
+  name: rowStorage,
+  parameters: [kind : Nat, lanes : Nat, stride : Nat],
+  result: Bool,
+  body: (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => false
+    | TensorTypes::TypeStorageDecision.knownType storage => ((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (packedKey kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
+  executable: true
+}
+
+theorem{
+  name: partialPackedRowRefused,
+  parameters: [],
+  statement: ((rowStorage 2 31 18) = false),
+  proof: reflexivity{}
+}
+
+definition{
   name: rowTensor,
   parameters: [
     t : NormPlan::TensorDescriptor,
@@ -87,7 +121,7 @@ definition{
     o : NormPlan::TensorDescriptor
   ],
   result: Bool,
-  body: ((((((((project t ty) =? 1) || ((project t ty) =? 30)) && ((project t s0) =? 2)) || (((project t ty) =? 0) && ((project t s0) =? 4))) && (multiple (project q n2) (project t n2))) && (multiple (project q n3) (project t n3))) && (NormPlan::separateTensors t o)),
+  body: ((((rowStorage (project t ty) (project t n0) (project t s0)) && (multiple (project q n2) (project t n2))) && (multiple (project q n3) (project t n3))) && (NormPlan::separateTensors t o)),
   executable: true
 }
 
@@ -146,7 +180,7 @@ definition{
   result: Response,
   body: (if (((token <? (project (project plan query) n1)) && (head <? (project (project plan query) n2))) && (batch <? (project (project plan query) n3))) then (ctor Response.offsets (rowOffset (project plan query) token head batch) (rowOffset (project plan key) 0 (prim quotient head (prim quotient (project (project plan query) n2) (project (project plan key) n2) 0 : Nat) 0 : Nat) (prim quotient batch (prim quotient (project (project plan query) n3) (project (project plan key) n3) 0 : Nat) 0 : Nat)) (rowOffset (project plan value) 0 (prim quotient head (prim quotient (project (project plan query) n2) (project (project plan value) n2) 0 : Nat) 0 : Nat) (prim quotient batch (prim quotient (project (project plan query) n3) (project (project plan value) n3) 0 : Nat) 0 : Nat)) (match (project plan mask)
     | Option.none => 0
-    | Option.some m => (rowOffset m token (prim remainder head (project m n2) 0 : Nat) (prim remainder batch (project m n3) 0 : Nat))) (prim multiply head 4 : Nat) (rowOffset (project plan output) head token batch) (project (project plan key) s1) (project (project plan value) s1) (ScalarDotStorage::activationType (project (project plan key) ty))) else (ctor Response.invalid)),
+    | Option.some m => (rowOffset m token (prim remainder head (project m n2) 0 : Nat) (prim remainder batch (project m n3) 0 : Nat))) (prim multiply head 4 : Nat) (rowOffset (project plan output) head token batch) (project (project plan key) s1) (project (project plan value) s1) (queryStorage (project (project plan key) ty))) else (ctor Response.invalid)),
   executable: true
 }
 

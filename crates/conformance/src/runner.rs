@@ -1034,41 +1034,10 @@ fn normalization_word(
     else {
         return Err(BackendError::InvalidTensor);
     };
-    instruction_response([
-        family, operation, 0, 0, a, from, b, right, target, to, bytes, bytes,
-    ])
-}
-
-fn instruction_response(
-    [family, operation, source_type, destination_type, a, from, b, right, target, to, read_bytes, write_bytes]: [u64; 12],
-) -> Result<GraphResponse, BackendError> {
-    let operand = |kind, at| match kind {
-        0 => Ok(WordOperand::C0(0, at)),
-        1 => Ok(WordOperand::C1(at)),
-        2 => Ok(WordOperand::C2(at)),
-        3 => Ok(WordOperand::C3(at)),
-        4 => Ok(WordOperand::C0(1, at)),
-        _ => Err(BackendError::InvalidTensor),
-    };
-    Ok(GraphResponse::C7(
-        match family {
-            0 => WordOperation::C0(operation),
-            1 => WordOperation::C1(operation),
-            2 => WordOperation::C5(operation),
-            3 => WordOperation::C3(operation, operation, false),
-            4 => WordOperation::C2(source_type, destination_type, false),
-            _ => return Err(BackendError::InvalidTensor),
-        },
-        operand(a, from)?,
-        operand(b, right)?,
-        match target {
-            0 | 1 => WordTarget::C0(to),
-            3 => WordTarget::C1(to),
-            _ => return Err(BackendError::InvalidTensor),
-        },
-        read_bytes,
-        write_bytes,
+    vtensor_pointwise::run(GraphRequest::C3(
+        false, family, operation, 0, 0, a, from, b, right, target, to, bytes, bytes,
     ))
+    .map_err(|_| BackendError::Overflow)
 }
 
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
@@ -1115,8 +1084,9 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
             return Err(BackendError::InvalidTensor);
         };
         execute_word(
-            instruction_response([
-                if family == 0 { 4 } else { family },
+            vtensor_pointwise::run(GraphRequest::C3(
+                true,
+                family,
                 operation,
                 source_type,
                 destination_type,
@@ -1128,7 +1098,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 to,
                 read_bytes,
                 write_bytes,
-            ])?,
+            ))
+            .map_err(|_| BackendError::Overflow)?,
             &pointers,
             output,
             &mut words,
@@ -1449,7 +1420,9 @@ mod attention {
     use super::{
         graph_tensor_data, workspace, BackendError, Tensor, TensorDescriptor, TensorInput,
     };
-    use verdant_tensor::linear::{evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32};
+    use verdant_tensor::linear::{
+        self, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
+    };
     use vtensor_attention::{Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as Response};
 
     fn request(query: Request) -> Result<Response, BackendError> {
@@ -1491,10 +1464,35 @@ mod attention {
             ))
         }
 
+        fn blocks(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
+            let bytes = count
+                .checked_mul(self.tensor.nb[0])
+                .ok_or(BackendError::Overflow)?;
+            self.region(offset, bytes)
+        }
+
         fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
             let width = self.tensor.nb[0];
-            let size = out.len().checked_mul(width).ok_or(BackendError::Overflow)?;
-            for (bytes, value) in self.region(offset, size)?.chunks_exact(width).zip(out) {
+            if matches!(self.tensor.ty, 2 | 8) {
+                let (blocks, tail) = out.as_chunks_mut::<32>();
+                if !tail.is_empty() {
+                    return Err(BackendError::InvalidTensor);
+                }
+                let source = self.blocks(offset, blocks.len())?;
+                for (input, block) in source.chunks_exact(width).zip(blocks) {
+                    // SAFETY: this byte view exclusively borrows an initialized F32 array.
+                    let dst = unsafe {
+                        std::slice::from_raw_parts_mut(
+                            block.as_mut_ptr().cast(),
+                            std::mem::size_of_val(block),
+                        )
+                    };
+                    linear::decode_storage_block(self.tensor.ty as u64, input, dst, 4)
+                        .map_err(|_| BackendError::InvalidTensor)?;
+                }
+                return Ok(());
+            }
+            for (bytes, value) in self.blocks(offset, out.len())?.chunks_exact(width).zip(out) {
                 *value = match (self.tensor.ty as u64, bytes) {
                     (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
                     (kind @ (1 | 30), &[a, b]) => {
@@ -1524,6 +1522,12 @@ mod attention {
         let mut query = workspace(shape[0] as u64, 0.0)?;
         let mut key = workspace(shape[0] as u64, 0.0)?;
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
+        let mut packed = Vec::new();
+        if matches!(k.tensor.ty, 2 | 8) {
+            packed
+                .try_reserve_exact(query.len() / 32)
+                .map_err(|_| BackendError::Allocation)?;
+        }
         let output = graph_tensor_data(tensor)?;
         let scale = f32::from_bits(tensor.op_params[0] as u32);
         for batch in 0..shape[3] as u64 {
@@ -1536,7 +1540,15 @@ mod attention {
                     };
                     q.decode(qoff, &mut query)?;
                     // GGML prepares the query in the key's dot-product storage once per head.
-                    if dot_type != 0 {
+                    if dot_type == 8 {
+                        packed.clear();
+                        for block in query.as_chunks::<32>().0 {
+                            packed.push(
+                                linear::encode_symmetric_q8_block(block)
+                                    .map_err(|_| BackendError::InvalidTensor)?,
+                            );
+                        }
+                    } else if dot_type != 0 {
                         for word in &mut query {
                             *word = super::prepare_float(0, dot_type, word.to_bits().into())?;
                         }
@@ -1553,12 +1565,24 @@ mod attention {
                             }
                             None => 0.0,
                         };
-                        k.decode(koff + row * ks, &mut key)?;
+                        let key_offset = koff + row * ks;
+                        let dot = if dot_type == 8 {
+                            let bytes = k.blocks(key_offset, packed.len())?;
+                            let product = match k.tensor.ty {
+                                2 => linear::dot_symmetric_q4_row,
+                                8 => linear::dot_symmetric_q8_row,
+                                _ => return Err(BackendError::InvalidTensor),
+                            };
+                            product(bytes, &packed).map_err(|_| BackendError::InvalidTensor)?
+                        } else {
+                            k.decode(key_offset, &mut key)?;
+                            let mut dot = [0.0];
+                            multiply_matrix_rows_f32(1, key.len(), 1, &key, &query, &mut dot)
+                                .map_err(|_| BackendError::InvalidTensor)?;
+                            dot[0]
+                        };
                         v.decode(voff + row * vs, &mut value)?;
-                        let mut dot = [0.0];
-                        multiply_matrix_rows_f32(1, key.len(), 1, &key, &query, &mut dot)
-                            .map_err(|_| BackendError::InvalidTensor)?;
-                        let scaled = evaluate_f32_scalar(2, dot[0], scale)
+                        let scaled = evaluate_f32_scalar(2, dot, scale)
                             .map_err(|_| BackendError::Overflow)?;
                         let score = evaluate_f32_scalar(0, scaled, bias)
                             .map_err(|_| BackendError::Overflow)?;
