@@ -15,8 +15,8 @@ Cargo fetches the certified Verdant tensor primitives by the immutable commit in
 The [patch record](model/verdant-development.json) identifies the dependency
 until a published Verdant release includes these APIs.
 
-The extension now includes Prism-generated F64 addition, F32 widening and
-narrowing, and unsigned-count conversion for the reduction work. All 1,213,940
+Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
+narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940
 comparisons against the imported Berkeley SoftFloat oracle passed. Prism now
 binds SUM, SUM_ROWS and MEAN graphs to this foundation and the existing F32
 and storage-conversion primitives, matching 4,080 imported CPU comparisons.
