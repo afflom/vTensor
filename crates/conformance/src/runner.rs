@@ -514,7 +514,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
         GraphResponse::C0(GraphPlan::C5(64)) => normalization_plan(
             primary.as_ref().ok_or(BackendError::InvalidTensor)?,
             &output,
+            operation,
             p0,
+            p1,
         )
         .map(Some),
         _ => Err(BackendError::InvalidTensor),
@@ -725,15 +727,18 @@ fn execute_word(
 fn normalization_plan(
     source: &TensorDescriptor,
     output: &TensorDescriptor,
-    epsilon: u64,
+    operation: u64,
+    p0: u64,
+    p1: u64,
 ) -> Result<GraphPlan, BackendError> {
     let TensorDescriptor::C0(l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10) = *source;
     let TensorDescriptor::C0(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10) = *output;
-    let vtensor_norm_plan::Adt0::C1(count, bytes, kind, rows, capacity) = vtensor_norm_plan::run(
-        epsilon, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, r0, r1, r2, r3, r4, r5, r6, r7, r8,
-        r9, r10,
-    )
-    .map_err(|_| BackendError::Overflow)?
+    let vtensor_norm_plan::Adt0::C1(count, bytes, kind, rows, capacity, parameter) =
+        vtensor_norm_plan::run(
+            operation, p0, p1, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, r0, r1, r2, r3, r4, r5,
+            r6, r7, r8, r9, r10,
+        )
+        .map_err(|_| BackendError::Overflow)?
     else {
         return Err(BackendError::InvalidTensor);
     };
@@ -742,7 +747,7 @@ fn normalization_plan(
         bytes,
         IndexContext::C0(l1, l2, l3, l4, l5, l6, l7, l8),
         IndexContext::C0(r1, r2, r3, r4, r5, r6, r7, r8),
-        CopyMode::C26(kind, epsilon, rows, capacity),
+        CopyMode::C26(kind, parameter, rows, capacity),
     ))
 }
 
@@ -757,10 +762,10 @@ fn normalization_word(
     let IndexContext::C0(width, n1, n2, n3, s0, s1, s2, s3) = *source;
     let IndexContext::C0(_, _, _, _, t0, t1, t2, t3) = *destination;
     let [family, operation, a, from, b, right, target, to] = match *mode {
-        CopyMode::C26(64, epsilon, rows, capacity) => {
+        CopyMode::C26(kind @ (64 | 65), epsilon, rows, capacity) => {
             let vtensor_norm::Adt0::C1(family, operation, a, from, b, right, target, to) =
                 vtensor_norm::run(
-                    index, width, n1, n2, n3, s0, s1, s2, s3, t0, t1, t2, t3, epsilon, rows,
+                    kind, index, width, n1, n2, n3, s0, s1, s2, s3, t0, t1, t2, t3, epsilon, rows,
                     capacity, flag,
                 )
                 .map_err(|_| BackendError::Overflow)?
@@ -851,7 +856,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let words = dynamic.as_deref_mut().unwrap_or(&mut fixed);
     for index in 0..count {
         let response = match &mode {
-            CopyMode::C26(64, ..) | CopyMode::C24(_) => {
+            CopyMode::C26(64 | 65, ..) | CopyMode::C24(_) => {
                 normalization_word(index, &source, &destination, &mode, words[2], bytes)?
             }
             _ => vtensor_pointwise::run(GraphRequest::C1(

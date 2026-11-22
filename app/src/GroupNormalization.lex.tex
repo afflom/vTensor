@@ -1,0 +1,275 @@
+\begin{lexlean}{GroupNormalization}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+structure{
+  name: GroupState,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: channelStart, type: Nat},
+    {name: channelCount, type: Nat},
+    {name: batch, type: Nat},
+    {name: phase, type: Nat}
+  ]
+}
+
+definition{
+  name: channelsPerGroup,
+  parameters: [channels : Nat, groupCount : Nat],
+  result: Nat,
+  body: (prim quotient (prim subtract (channels + groupCount) 1 : Nat) groupCount 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: fullGroups,
+  parameters: [channels : Nat, groupCount : Nat],
+  result: Nat,
+  body: (prim quotient channels (channelsPerGroup channels groupCount) 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: tailChannels,
+  parameters: [channels : Nat, groupCount : Nat],
+  result: Nat,
+  body: (prim remainder channels (channelsPerGroup channels groupCount) 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: activeGroups,
+  parameters: [channels : Nat, groupCount : Nat],
+  result: Nat,
+  body: ((fullGroups channels groupCount) + (if (0 <? (tailChannels channels groupCount)) then 1 else 0)),
+  executable: true
+}
+
+definition{
+  name: rowSteps,
+  parameters: [width : Nat],
+  result: Nat,
+  body: ((prim multiply 7 width : Nat) + 4),
+  executable: true
+}
+
+definition{
+  name: partSteps,
+  parameters: [width : Nat, height : Nat, partChannels : Nat],
+  result: Nat,
+  body: (if (partChannels =? 0) then 0 else (11 + (prim multiply (prim multiply height partChannels : Nat) (rowSteps width) : Nat))),
+  executable: true
+}
+
+definition{
+  name: kernelSteps,
+  parameters: [width : Nat, height : Nat, channels : Nat, batches : Nat, groupCount : Nat],
+  result: Nat,
+  body: (prim multiply batches ((prim multiply (fullGroups channels groupCount) (partSteps width height (channelsPerGroup channels groupCount)) : Nat) + (partSteps width height (tailChannels channels groupCount))) : Nat),
+  executable: true
+}
+
+definition{
+  name: bitmapSteps,
+  parameters: [width : Nat, height : Nat, channels : Nat, batches : Nat, slots : Nat],
+  result: Nat,
+  body: (if (slots =? 0) then 0 else (prim multiply 2 (prim multiply (prim multiply width height : Nat) (prim multiply channels batches : Nat) : Nat) : Nat)),
+  executable: true
+}
+
+definition{
+  name: steps,
+  parameters: [
+    width : Nat,
+    height : Nat,
+    channels : Nat,
+    batches : Nat,
+    groupCount : Nat,
+    slots : Nat
+  ],
+  result: Nat,
+  body: (if ((((width =? 0) || (height =? 0)) || (channels =? 0)) || (batches =? 0)) then 0 else ((bitmapSteps width height channels batches slots) + (kernelSteps width height channels batches groupCount))),
+  executable: true
+}
+
+definition{
+  name: counterMagnitude,
+  parameters: [channels : Nat, groupCount : Nat],
+  result: Nat,
+  body: (let part : Nat := (channelsPerGroup channels groupCount); (let negative : Nat := (prim subtract (prim multiply (prim subtract groupCount 1 : Nat) part : Nat) channels : Nat); (if (part <? negative) then negative else part))),
+  executable: true
+}
+
+definition{
+  name: countersAdmitted,
+  parameters: [width : Nat, height : Nat, channels : Nat, groupCount : Nat],
+  result: Bool,
+  body: ((((width <=? 2147483647) && ((0 <? groupCount) && (groupCount <=? 2147483647))) && ((prim subtract (channels + groupCount) 1 : Nat) <=? 2147483647)) && ((prim multiply (prim multiply width height : Nat) (counterMagnitude channels groupCount) : Nat) <=? 9223372036854775807)),
+  executable: true
+}
+
+definition{
+  name: locate,
+  parameters: [
+    index : Nat,
+    width : Nat,
+    height : Nat,
+    channels : Nat,
+    batches : Nat,
+    groupCount : Nat
+  ],
+  result: GroupState,
+  body: (let part : Nat := (channelsPerGroup channels groupCount); (let full : Nat := (partSteps width height part); (let prefix : Nat := (prim multiply (prim multiply (fullGroups channels groupCount) batches : Nat) full : Nat); (if (index <? prefix) then (let unit : Nat := (prim quotient index full 0 : Nat); (record GroupState {channelStart := (prim multiply (prim quotient unit batches 0 : Nat) part : Nat), channelCount := part, batch := (prim remainder unit batches 0 : Nat), phase := (prim remainder index full 0 : Nat)})) else (let relative : Nat := (prim subtract index prefix : Nat); (let tail : Nat := (partSteps width height (tailChannels channels groupCount)); (record GroupState {channelStart := (prim multiply (fullGroups channels groupCount) part : Nat), channelCount := (tailChannels channels groupCount), batch := (prim quotient relative tail 0 : Nat), phase := (prim remainder relative tail 0 : Nat)}))))))),
+  executable: true
+}
+
+theorem{
+  name: ceilPartition,
+  parameters: [],
+  statement: ((channelsPerGroup 5 4) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: clampedTail,
+  parameters: [],
+  statement: ((tailChannels 5 4) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyFinalGroupElided,
+  parameters: [],
+  statement: ((activeGroups 5 4) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: excessGroupsElided,
+  parameters: [],
+  statement: ((activeGroups 5 8) = 5),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: shortPartCount,
+  parameters: [],
+  statement: ((partSteps 3 2 1) = 61),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fullPartCount,
+  parameters: [],
+  statement: ((partSteps 3 2 2) = 111),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: oddGroupSchedule,
+  parameters: [],
+  statement: ((steps 3 2 5 1 4 0) = 283),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: batchGroupSchedule,
+  parameters: [],
+  statement: ((steps 3 2 5 2 4 0) = 566),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupsAboveChannelsSchedule,
+  parameters: [],
+  statement: ((steps 3 2 5 1 8 0) = 305),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: overlapNeedsCompletePreflight,
+  parameters: [],
+  statement: ((steps 3 2 5 1 4 27) = 343),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyAxisNoInstructions,
+  parameters: [],
+  statement: ((steps 3 2 0 1 0 0) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: zeroGroupsRefused,
+  parameters: [],
+  statement: ((countersAdmitted 3 2 5 0) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: signedGroupOverflowRefused,
+  parameters: [],
+  statement: ((countersAdmitted 3 2 5 2147483647) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: scaleHelperOverflowRefused,
+  parameters: [],
+  statement: ((countersAdmitted 2147483648 1 1 1) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: inactiveDenominatorOverflowRefused,
+  parameters: [],
+  statement: ((countersAdmitted 1000000000 1000000000 1 1000000000) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: intMaximumScaleCountAdmitted,
+  parameters: [],
+  statement: ((countersAdmitted 2147483647 1 1 1) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: firstGroupFirstBatch,
+  parameters: [],
+  statement: ((locate 0 3 2 5 2 4) = (record GroupState {channelStart := 0, channelCount := 2, batch := 0, phase := 0})),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: firstGroupSecondBatch,
+  parameters: [],
+  statement: ((locate 111 3 2 5 2 4) = (record GroupState {channelStart := 0, channelCount := 2, batch := 1, phase := 0})),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nextGroupFirstBatch,
+  parameters: [],
+  statement: ((locate 222 3 2 5 2 4) = (record GroupState {channelStart := 2, channelCount := 2, batch := 0, phase := 0})),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: shortTailFirstBatch,
+  parameters: [],
+  statement: ((locate 444 3 2 5 2 4) = (record GroupState {channelStart := 4, channelCount := 1, batch := 0, phase := 0})),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: shortTailSecondBatch,
+  parameters: [],
+  statement: ((locate 505 3 2 5 2 4) = (record GroupState {channelStart := 4, channelCount := 1, batch := 1, phase := 0})),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

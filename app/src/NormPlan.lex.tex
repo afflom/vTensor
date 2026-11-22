@@ -2,6 +2,7 @@
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{NormNormalization}
+\importmodule{GroupNormalization}
 \importmodule{RmsNormalization}
 \title{Natural number}
 \begin{semanticmodule}
@@ -28,7 +29,7 @@ inductive{
   name: PlanDecision,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: invalid, fields: []}, {name: copy, fields: [Nat, Nat, Nat, Nat, Nat]}]
+  constructors: [{name: invalid, fields: []}, {name: copy, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}]
 }
 
 definition{
@@ -91,14 +92,54 @@ definition{
   name: plan,
   parameters: [epsilon : Nat, left : TensorDescriptor, output : TensorDescriptor],
   result: PlanDecision,
-  body: (if (((((project left ty) =? 0) && ((project output ty) =? 0)) && (sameShape left output)) && (if (empty (project left n0) (project left n1) (project left n2) (project left n3)) then true else (((((RmsNormalization::epsilonAdmitted epsilon) && (rowCountAdmitted left output)) && (normAligned left)) && (normAligned output)) && ((separateTensors left output) || (sameWordView left output))))) then (let rows : Nat := (if (empty (project left n0) (project left n1) (project left n2) (project left n3)) then 0 else (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat)); (let slots : Nat := (if ((rows =? 0) || (normNested output)) then 0 else (prim quotient (project output span) 4 0 : Nat)); (ctor PlanDecision.copy (NormNormalization::steps (NormNormalization::unitInnerStrides (project left s0) (project output s0)) (project left n0) rows slots) 4 64 rows (NormNormalization::scratchWords slots)))) else (ctor PlanDecision.invalid)),
+  body: (if (((((project left ty) =? 0) && ((project output ty) =? 0)) && (sameShape left output)) && (if (empty (project left n0) (project left n1) (project left n2) (project left n3)) then true else (((((RmsNormalization::epsilonAdmitted epsilon) && (rowCountAdmitted left output)) && (normAligned left)) && (normAligned output)) && ((separateTensors left output) || (sameWordView left output))))) then (let rows : Nat := (if (empty (project left n0) (project left n1) (project left n2) (project left n3)) then 0 else (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat)); (let slots : Nat := (if ((rows =? 0) || (normNested output)) then 0 else (prim quotient (project output span) 4 0 : Nat)); (ctor PlanDecision.copy (NormNormalization::steps (NormNormalization::unitInnerStrides (project left s0) (project output s0)) (project left n0) rows slots) 4 64 rows (NormNormalization::scratchWords slots) epsilon))) else (ctor PlanDecision.invalid)),
+  executable: true
+}
+
+definition{
+  name: groupOutput,
+  parameters: [output : TensorDescriptor],
+  result: TensorDescriptor,
+  body: (record TensorDescriptor {ty := (project output ty), n0 := (project output n0), n1 := (project output n1), n2 := (project output n2), n3 := (project output n3), s0 := 4, s1 := (project output s1), s2 := (project output s2), s3 := (project output s3), span := (project output span), address := (project output address)}),
+  executable: true
+}
+
+definition{
+  name: groupSpan,
+  parameters: [output : TensorDescriptor],
+  result: Nat,
+  body: ((((4 + (prim multiply (prim subtract (project output n0) 1 : Nat) (project output s0) : Nat)) + (prim multiply (prim subtract (project output n1) 1 : Nat) (project output s1) : Nat)) + (prim multiply (prim subtract (project output n2) 1 : Nat) (project output s2) : Nat)) + (prim multiply (prim subtract (project output n3) 1 : Nat) (project output s3) : Nat)),
+  executable: true
+}
+
+definition{
+  name: planGroup,
+  parameters: [groupCount : Nat, epsilon : Nat, left : TensorDescriptor, output : TensorDescriptor],
+  result: PlanDecision,
+  body: (let destination : TensorDescriptor := (groupOutput output); (if (((((project left ty) =? 0) && ((project output ty) =? 0)) && (sameShape left output)) && (if (empty (project left n0) (project left n1) (project left n2) (project left n3)) then true else (((((((project left s0) =? 4) && (GroupNormalization::countersAdmitted (project left n0) (project left n1) (project left n2) groupCount)) && (normAligned left)) && (normAligned destination)) && ((groupSpan destination) <=? (project destination span))) && ((separateTensors left destination) || (sameWordView left destination))))) then (let slots : Nat := (if ((empty (project left n0) (project left n1) (project left n2) (project left n3)) || (normNested destination)) then 0 else (prim quotient (project destination span) 4 0 : Nat)); (ctor PlanDecision.copy (GroupNormalization::steps (project left n0) (project left n1) (project left n2) (project left n3) groupCount slots) 4 65 groupCount (NormNormalization::scratchWords slots) epsilon)) else (ctor PlanDecision.invalid))),
+  executable: true
+}
+
+definition{
+  name: dispatch,
+  parameters: [
+    operation : Nat,
+    p0 : Nat,
+    p1 : Nat,
+    left : TensorDescriptor,
+    output : TensorDescriptor
+  ],
+  result: PlanDecision,
+  body: (if (operation =? 23) then (plan p0 left output) else (if (operation =? 26) then (planGroup p0 p1 left output) else (ctor PlanDecision.invalid))),
   executable: true
 }
 
 definition{
   name: evaluate,
   parameters: [
-    epsilon : Nat,
+    operation : Nat,
+    p0 : Nat,
+    p1 : Nat,
     l0 : Nat,
     l1 : Nat,
     l2 : Nat,
@@ -123,7 +164,7 @@ definition{
     r10 : Nat
   ],
   result: PlanDecision,
-  body: (plan epsilon (record TensorDescriptor {ty := l0, n0 := l1, n1 := l2, n2 := l3, n3 := l4, s0 := l5, s1 := l6, s2 := l7, s3 := l8, span := l9, address := l10}) (record TensorDescriptor {ty := r0, n0 := r1, n1 := r2, n2 := r3, n3 := r4, s0 := r5, s1 := r6, s2 := r7, s3 := r8, span := r9, address := r10})),
+  body: (dispatch operation p0 p1 (record TensorDescriptor {ty := l0, n0 := l1, n1 := l2, n2 := l3, n3 := l4, s0 := l5, s1 := l6, s2 := l7, s3 := l8, span := l9, address := l10}) (record TensorDescriptor {ty := r0, n0 := r1, n1 := r2, n2 := r3, n3 := r4, s0 := r5, s1 := r6, s2 := r7, s3 := r8, span := r9, address := r10})),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -131,28 +172,28 @@ definition{
 theorem{
   name: contiguousPlan,
   parameters: [],
-  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 2048})) = (ctor PlanDecision.copy 43 4 64 1 6)),
+  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 2048})) = (ctor PlanDecision.copy 43 4 64 1 6 0)),
   proof: reflexivity{}
 }
 
 theorem{
   name: inputStridePlan,
   parameters: [],
-  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 20, s2 := 20, s3 := 20, span := 36, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 2048})) = (ctor PlanDecision.copy 34 4 64 1 6)),
+  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 20, s2 := 20, s3 := 20, span := 36, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 2048})) = (ctor PlanDecision.copy 34 4 64 1 6 0)),
   proof: reflexivity{}
 }
 
 theorem{
   name: outputStridePlan,
   parameters: [],
-  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 20, s2 := 20, s3 := 20, span := 36, address := 2048})) = (ctor PlanDecision.copy 34 4 64 1 6)),
+  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 20, s2 := 20, s3 := 20, span := 36, address := 2048})) = (ctor PlanDecision.copy 34 4 64 1 6 0)),
   proof: reflexivity{}
 }
 
 theorem{
   name: inplacePlan,
   parameters: [],
-  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 1024})) = (ctor PlanDecision.copy 43 4 64 1 6)),
+  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 20, address := 1024})) = (ctor PlanDecision.copy 43 4 64 1 6 0)),
   proof: reflexivity{}
 }
 
@@ -187,14 +228,14 @@ theorem{
 theorem{
   name: overlapUsesPreflight,
   parameters: [],
-  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 40, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 0, s2 := 20, s3 := 20, span := 20, address := 2048})) = (ctor PlanDecision.copy 106 4 64 2 11)),
+  statement: ((plan 0 (record TensorDescriptor {ty := 0, n0 := 5, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 40, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 5, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 0, s2 := 20, s3 := 20, span := 20, address := 2048})) = (ctor PlanDecision.copy 106 4 64 2 11 0)),
   proof: reflexivity{}
 }
 
 theorem{
   name: emptyNanIsSkipped,
   parameters: [],
-  statement: ((plan 2143289345 (record TensorDescriptor {ty := 0, n0 := 0, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 0, address := 0}) (record TensorDescriptor {ty := 0, n0 := 0, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 0, address := 0})) = (ctor PlanDecision.copy 0 4 64 0 6)),
+  statement: ((plan 2143289345 (record TensorDescriptor {ty := 0, n0 := 0, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 0, address := 0}) (record TensorDescriptor {ty := 0, n0 := 0, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 20, s3 := 20, span := 0, address := 0})) = (ctor PlanDecision.copy 0 4 64 0 6 2143289345)),
   proof: reflexivity{}
 }
 
@@ -216,6 +257,97 @@ theorem{
   name: scalarCounterStaysWide,
   parameters: [],
   statement: ((rowCountAdmitted (record TensorDescriptor {ty := 0, n0 := 2147483648, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 8589934592, s2 := 8589934592, s3 := 8589934592, span := 8589934592, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 2147483648, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 8589934592, s2 := 8589934592, s3 := 8589934592, span := 8589934592, address := 1099511627776})) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupOrdinaryPlan,
+  parameters: [],
+  statement: ((planGroup 4 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 2048})) = (ctor PlanDecision.copy 283 4 65 4 6 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupInplacePlan,
+  parameters: [],
+  statement: ((planGroup 4 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024})) = (ctor PlanDecision.copy 283 4 65 4 6 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupIgnoresMetadataOutputColumnStride,
+  parameters: [],
+  statement: ((planGroup 4 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 8, s1 := 12, s2 := 24, s3 := 120, span := 128, address := 2048})) = (ctor PlanDecision.copy 283 4 65 4 6 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupDoesNotInheritNormEpsilonRefusal,
+  parameters: [],
+  statement: ((planGroup 4 3212836864 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 2048})) = (ctor PlanDecision.copy 283 4 65 4 6 3212836864)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupNanEpsilonAdmitted,
+  parameters: [],
+  statement: ((planGroup 4 2143289345 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 2048})) = (ctor PlanDecision.copy 283 4 65 4 6 2143289345)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupOutputOverlapPreflight,
+  parameters: [],
+  statement: ((planGroup 4 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 0, s2 := 24, s3 := 120, span := 108, address := 2048})) = (ctor PlanDecision.copy 343 4 65 4 33 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupCountAboveChannelsAdmitted,
+  parameters: [],
+  statement: ((planGroup 8 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 2048})) = (ctor PlanDecision.copy 305 4 65 8 6 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupZeroCountRefused,
+  parameters: [],
+  statement: ((planGroup 0 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 2048})) = (ctor PlanDecision.invalid)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupSignedCountOverflowRefused,
+  parameters: [],
+  statement: ((planGroup 2147483647 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 2048})) = (ctor PlanDecision.invalid)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupInputInnerStrideRefused,
+  parameters: [],
+  statement: ((planGroup 4 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 8, s1 := 12, s2 := 24, s3 := 120, span := 128, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 2048})) = (ctor PlanDecision.invalid)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupPhysicalWriteFootprintMustFit,
+  parameters: [],
+  statement: ((planGroup 4 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 0, s1 := 12, s2 := 24, s3 := 120, span := 112, address := 2048})) = (ctor PlanDecision.invalid)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupShiftedAliasRefused,
+  parameters: [],
+  statement: ((planGroup 4 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1028})) = (ctor PlanDecision.invalid)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unknownNormalizationOperationRefused,
+  parameters: [],
+  statement: ((dispatch 25 4 0 (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 1024}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120, span := 120, address := 2048})) = (ctor PlanDecision.invalid)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

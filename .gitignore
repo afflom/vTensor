@@ -58,3 +58,5 @@ screens/
 /app/.lexlean-norm/
 
 /app/.lexlean-normfixtures/
+
+/app/.lexlean-groupfixtures/

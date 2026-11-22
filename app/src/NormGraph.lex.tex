@@ -3,6 +3,7 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{TensorIndex}
 \importmodule{NormNormalization}
+\importmodule{GroupNormalization}
 \importmodule{RmsNormalization}
 \importmodule{L2Normalization}
 \title{Natural number}
@@ -163,8 +164,85 @@ definition{
 }
 
 definition{
+  name: groupOutput,
+  parameters: [destination : IndexContext],
+  result: IndexContext,
+  body: (record IndexContext {u0 := (project destination u0), n1 := (project destination n1), n2 := (project destination n2), n3 := (project destination n3), s0 := 4, s1 := (project destination s1), s2 := (project destination s2), s3 := (project destination s3)}),
+  executable: true
+}
+
+definition{
+  name: groupRowOrdinal,
+  parameters: [row : Nat, state : GroupNormalization::GroupState, source : IndexContext],
+  result: Nat,
+  body: ((prim multiply ((prim multiply (project state batch) (project source n2) : Nat) + (project state channelStart)) (project source n1) : Nat) + row),
+  executable: true
+}
+
+definition{
+  name: groupReductionRow,
+  parameters: [
+    variance : Bool,
+    phase : Nat,
+    row : Nat,
+    state : GroupNormalization::GroupState,
+    source : IndexContext,
+    destination : IndexContext
+  ],
+  result: Instruction,
+  body: (let stride : Nat := (if variance then 4 else 2); (let end : Nat := (1 + (prim multiply (project source u0) stride : Nat)); (if (phase =? 0) then (resetReductionWord 1) else (if (phase <? end) then (let item : Nat := (prim subtract phase 1 : Nat); (let ordinal : Nat := ((prim multiply (groupRowOrdinal row state source) (project source u0) : Nat) + (prim quotient item stride 0 : Nat)); (let from : Nat := (blockOffset ordinal source); (let to : Nat := (blockOffset ordinal destination); (let part : Nat := (prim remainder item stride 0 : Nat); (if variance then (if (part =? 0) then (word 9 0 from 1 3 3 to) else (if (part =? 1) then (word 10 3 to 3 to 1 2) else (if (part =? 2) then (word 1 1 2 2 0 1 2) else (word 0 1 1 1 2 1 1)))) else (if (part =? 0) then (word 1 0 from 2 0 1 2) else (word 0 1 1 1 2 1 1)))))))) else (if (phase =? end) then (word 0 1 0 1 1 1 0) else (ctor Instruction.invalid)))))),
+  executable: true
+}
+
+definition{
+  name: groupMeanFinish,
+  parameters: [phase : Nat, count : Nat],
+  result: Instruction,
+  body: (if (phase =? 0) then (word 22 2 count 2 0 1 2) else (if (phase =? 1) then (word 21 1 0 1 2 1 3) else (if (phase =? 2) then (word 2 1 3 2 0 1 3) else (if (phase =? 3) then (resetReductionWord 0) else (ctor Instruction.invalid))))),
+  executable: true
+}
+
+definition{
+  name: groupVarianceFinish,
+  parameters: [phase : Nat, count : Nat, epsilon : Nat],
+  result: Instruction,
+  body: (if (phase =? 0) then (word 22 2 count 2 0 1 2) else (if (phase =? 1) then (word 21 1 0 1 2 1 2) else (if (phase =? 2) then (word 2 1 2 2 0 1 2) else (if (phase =? 3) then (word 4 1 2 2 epsilon 1 1) else (if (phase =? 4) then (word 12 1 1 2 0 1 1) else (if (phase =? 5) then (word 11 2 1065353216 1 1 1 1) else (ctor Instruction.invalid))))))),
+  executable: true
+}
+
+definition{
+  name: groupPart,
+  parameters: [
+    state : GroupNormalization::GroupState,
+    source : IndexContext,
+    destination : IndexContext,
+    epsilon : Nat
+  ],
+  result: Instruction,
+  body: (let phase : Nat := (project state phase); (let width : Nat := (project source u0); (let rows : Nat := (prim multiply (project state channelCount) (project source n1) : Nat); (let count : Nat := (prim multiply rows width : Nat); (let meanRow : Nat := ((prim multiply 2 width : Nat) + 2); (let varianceRow : Nat := ((prim multiply 4 width : Nat) + 2); (let meanEnd : Nat := (1 + (prim multiply rows meanRow : Nat)); (let meanFinish : Nat := (meanEnd + 4); (let varianceEnd : Nat := (meanFinish + (prim multiply rows varianceRow : Nat)); (let finishEnd : Nat := (varianceEnd + 6); (if (phase =? 0) then (resetReductionWord 0) else (if (phase <? meanEnd) then (let relative : Nat := (prim subtract phase 1 : Nat); (groupReductionRow false (prim remainder relative meanRow 0 : Nat) (prim quotient relative meanRow 0 : Nat) state source destination)) else (if (phase <? meanFinish) then (groupMeanFinish (prim subtract phase meanEnd : Nat) count) else (if (phase <? varianceEnd) then (let relative : Nat := (prim subtract phase meanFinish : Nat); (groupReductionRow true (prim remainder relative varianceRow 0 : Nat) (prim quotient relative varianceRow 0 : Nat) state source destination)) else (if (phase <? finishEnd) then (groupVarianceFinish (prim subtract phase varianceEnd : Nat) count epsilon) else (if (phase <? (finishEnd + count)) then (let relative : Nat := (prim subtract phase finishEnd : Nat); (let row : Nat := (prim quotient relative width 0 : Nat); (let ordinal : Nat := ((prim multiply (groupRowOrdinal row state source) width : Nat) + (prim remainder relative width 0 : Nat)); (let at : Nat := (blockOffset ordinal destination); (word 10 3 at 1 1 3 at))))) else (ctor Instruction.invalid))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: groupOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    output : IndexContext,
+    epsilon : Nat,
+    groupCount : Nat,
+    capacity : Nat,
+    flag : Nat
+  ],
+  result: Instruction,
+  body: (let slots : Nat := (prim subtract capacity 6 : Nat); (let destination : IndexContext := (groupOutput output); (let marked : Nat := (GroupNormalization::bitmapSteps (project source u0) (project source n1) (project source n2) (project source n3) slots); (if (index <? (GroupNormalization::steps (project source u0) (project source n1) (project source n2) (project source n3) groupCount slots)) then (if (index <? marked) then (markWordsStep index destination 4 6 flag) else (let state : GroupNormalization::GroupState := (GroupNormalization::locate (prim subtract index marked : Nat) (project source u0) (project source n1) (project source n2) (project source n3) groupCount); (groupPart state source destination epsilon))) else (ctor Instruction.invalid))))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [
+    kind : Nat,
     index : Nat,
     width : Nat,
     n1 : Nat,
@@ -184,7 +262,7 @@ definition{
     flag : Nat
   ],
   result: Instruction,
-  body: (normOffsets index (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := s0, s1 := s1, s2 := s2, s3 := s3}) (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := t0, s1 := t1, s2 := t2, s3 := t3}) epsilon rows capacity flag),
+  body: (if (kind =? 64) then (normOffsets index (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := s0, s1 := s1, s2 := s2, s3 := s3}) (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := t0, s1 := t1, s2 := t2, s3 := t3}) epsilon rows capacity flag) else (if (kind =? 65) then (groupOffsets index (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := s0, s1 := s1, s2 := s2, s3 := s3}) (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := t0, s1 := t1, s2 := t2, s3 := t3}) epsilon rows capacity flag) else (ctor Instruction.invalid))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -569,6 +647,167 @@ theorem{
     to : Nat
   ],
   statement: ((word 16 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 2 0 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupStartsWithFreshGroupAccumulator,
+  parameters: [],
+  statement: ((groupOffsets 0 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 0 2 0 2 0 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupStartsWithFreshRowAccumulator,
+  parameters: [],
+  statement: ((groupOffsets 1 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 0 2 0 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupWidensBeforeRowSum,
+  parameters: [],
+  statement: ((groupOffsets 2 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 1 0 0 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupAddsElementToRowSubtotal,
+  parameters: [],
+  statement: ((groupOffsets 3 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 0 1 1 1 2 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupAddsCompletedRowSubtotal,
+  parameters: [],
+  statement: ((groupOffsets 8 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 0 1 0 1 1 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupResetsTheNextRowSubtotal,
+  parameters: [],
+  statement: ((groupOffsets 9 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 0 2 0 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupMeanCountIsF64,
+  parameters: [],
+  statement: ((groupOffsets 33 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 22 2 12 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupMeanDividesBeforeNarrowing,
+  parameters: [],
+  statement: ((groupOffsets 34 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 21 1 0 1 2 1 3)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupMeanNarrowsTheQuotient,
+  parameters: [],
+  statement: ((groupOffsets 35 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 2 1 3 2 0 1 3)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupVarianceStartsWithFreshGroupAccumulator,
+  parameters: [],
+  statement: ((groupOffsets 36 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 0 2 0 2 0 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupCentersOutputInF32,
+  parameters: [],
+  statement: ((groupOffsets 38 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 9 0 0 1 3 3 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupSquaresInF32,
+  parameters: [],
+  statement: ((groupOffsets 39 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 10 3 0 3 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupWidensSquareBeforeRowSum,
+  parameters: [],
+  statement: ((groupOffsets 40 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 1 1 2 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupVarianceAddsCompletedRow,
+  parameters: [],
+  statement: ((groupOffsets 50 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 0 1 0 1 1 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupVarianceCountIsF64,
+  parameters: [],
+  statement: ((groupOffsets 93 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 22 2 12 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupVarianceDividesBeforeNarrowing,
+  parameters: [],
+  statement: ((groupOffsets 94 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 21 1 0 1 2 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupVarianceNarrowsTheQuotient,
+  parameters: [],
+  statement: ((groupOffsets 95 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 2 1 2 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupDoesNotRejectNonfiniteScale,
+  parameters: [],
+  statement: ((groupOffsets 98 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 11 2 1065353216 1 1 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupScalesCenteredOutput,
+  parameters: [],
+  statement: ((groupOffsets 99 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 10 3 0 1 1 3 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupUsesPhysicalFloatColumnSpacing,
+  parameters: [],
+  statement: ((groupOffsets 110 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 10 3 44 1 1 3 44)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupThenBatchOrdering,
+  parameters: [],
+  statement: ((groupOffsets 113 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 1 0 120 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupShortTailHasItsOwnDenominator,
+  parameters: [],
+  statement: ((groupOffsets 461 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 2, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 6 0) = (word 22 2 6 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupPreflightRejectsOccupiedOutput,
+  parameters: [],
+  statement: ((groupOffsets 1 (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 4, s1 := 12, s2 := 24, s3 := 120}) (record IndexContext {u0 := 3, n1 := 2, n2 := 5, n3 := 1, s0 := 8, s1 := 12, s2 := 24, s3 := 120}) 0 4 33 1) = (ctor Instruction.invalid)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

@@ -1,0 +1,38 @@
+{
+  "spec": "vtensor/normalization-backward-audit/1",
+  "status": "source-audit-only-not-implemented",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "operation": "RMS_NORM_BACK",
+  "constructor": "ggml_rms_norm_back(ctx, gradient, input, epsilon)",
+  "source_roles": [
+    "src[0]: incoming gradient dz",
+    "src[1]: original forward input x"
+  ],
+  "factory_cases": 10,
+  "factory_basis": "Five epsilon values times widths 64 and 1025, each shape [width,5,4,3].",
+  "cpu_domain": "F32, equal shapes, both input inner strides 4; int64 column loops with no int scale helper. Do not inherit GROUP_NORM or contiguous NORM int width bounds without a source reason.",
+  "accumulation": "F32 x*x and x*dz products, each widened and accumulated sequentially into separate F64 sums.",
+  "mean_epsilon": "Narrow sum_xx to F32 before division by the F32-converted row count, then F32 epsilon addition. This differs from forward RMS_NORM.",
+  "sum_epsilon": "F32-narrowed sum_xx plus the F32 product epsilon*row_count.",
+  "gradient_coefficient": "Negate sum_xdz in F64, narrow to F32, then F32 division by sum_epsilon.",
+  "output": "F32 (dz + x*scale_x)*rrms, where rrms is F32 1/sqrt(mean_epsilon). Audit compiler contraction; current SDK has SSE2 without FMA.",
+  "epsilon_and_scale": "No CPU epsilon-admission or scale-positivity assertion; nonfinite values must follow authoritative arithmetic.",
+  "output_spacing": "As GROUP_NORM, output row columns are indexed as float pointers rather than dst nb[0].",
+  "next_work": [
+    "Register a new ID, scenario and actual imported failing test before implementation.",
+    "Reuse certified Verdant arithmetic, F32 unary negation if its narrow/negate order is established equivalent, and the independent normalization roots.",
+    "Pass source-1 geometry once through the transport; avoid per-word descriptor validation or duplicating arithmetic in native code.",
+    "Add independent CPU counterexamples for each narrowing point, source-role binding, compound rounding, physical output spacing and atomic alias/overlap refusals."
+  ],
+  "claims_not_made": [
+    "RMS_NORM_BACK implementation or conformance",
+    "Complete vTensor acceptance"
+  ],
+  "source_sha256": {
+    "ggml/src/ggml.c": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+    "ggml/src/ggml-cpu/ops.cpp": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+    "ggml/src/ggml-cpu/vec.h": "7ad7cf31d4787fa9c112e087b929fff456761b97bd4e523d60d5a01ceb2409af",
+    "ggml/src/ggml-cpu/vec.cpp": "2422d2ab0ce6f9c1b78f478656bc1a2864d1374f8a339de127584c7349a4a869",
+    "tests/test-backend-ops.cpp": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52"
+  }
+}

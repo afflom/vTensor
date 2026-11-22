@@ -1,7 +1,7 @@
 {
   "spec": "vtensor/group-normalization-authoring/1",
   "capability": "VT-49",
-  "status": "registered-failing-before-implementation",
+  "status": "implemented-and-oracle-tested-acceptance-open",
   "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "initial_failure": {
     "test": "group_normalization_vt_49",
@@ -32,5 +32,140 @@
     "existing_operations": "Preserve NORM and L2 roots and RMS bindings; only change and certify affected models.",
     "validation": "Run all five unchanged factory cases. Author Prism supplemental fixtures for partition tails, empty groups, nested rounding, output physical stride, parameter domains, in-place execution, nonfinite arithmetic, padding and atomic refusals; compare against imported CPU."
   },
-  "acceptance_not_claimed": true
+  "acceptance_not_claimed": true,
+  "exports": {
+    "pointwise": {
+      "result": "ebdeece9bf545a05e6ce78f88f72ebb885d0c35b0a82b4d4614b83e2925e3606",
+      "attestation": "cc7962237c362b055d3da5d74ec0bd3f4f0aa0b251a44df24971beae5b12c363",
+      "declarations": 750,
+      "status": "verified",
+      "certificate_b_bytes": [
+        4123314,
+        36538
+      ]
+    },
+    "norm": {
+      "result": "9c521081bcfc3f8f2e2c9fe29c2e594c74f0ef242d23eb0ddff878abd8a19de1",
+      "attestation": "f5c6e4751c75f4f4a85e65353a15a465d0c479de5843f6dc7fa8cafbb4c6c038",
+      "declarations": 492,
+      "status": "verified",
+      "certificate_b_bytes": [
+        767517,
+        194497,
+        532406
+      ]
+    },
+    "groupfixtures": {
+      "result": "310614802ccf398d120a11c56edba4f7cd2ef69e9d03dcf9b89aa800cd7ce2d3",
+      "attestation": "c8c01d11bad3043223a32629ea4978e45bdd9f3704e7ef79f13c40b203dfcb82",
+      "declarations": 382,
+      "status": "verified",
+      "certificate_b_bytes": [
+        582629
+      ]
+    }
+  },
+  "implementation": {
+    "planner": "Independent NormPlan dispatch accepts operation and both raw parameters and returns the selected epsilon as part of its certified copy result. Native code does not interpret the parameter layout.",
+    "execution": "Normalization flavor 65 uses the existing six-word scratch and one Prism instruction call per step; source channel groups use separate F64 row/group accumulators.",
+    "partition": "Elide groups with no stores, handle clamped tails and preserve group-outer/batch-inner traversal.",
+    "source_bounds": "Model signed group/channel and denominator limits, plus the int scale-helper width bound and physical output footprint.",
+    "native_delta": "Reuse the existing normalized copy transport. No native numerical fallback or generated-code edit."
+  },
+  "oracle_results": {
+    "factory_cases": 5,
+    "supplemental_cases": 224,
+    "supplemental_successes": 112,
+    "atomic_refusals": 112,
+    "comparison": "Exact non-NaN output words, NaN class, full CPU physical output bytes including padding, and unchanged bytes on refusals.",
+    "first_supplemental_pass_seconds": 8.0,
+    "factory_evidence": "Both ordinary and GROUP_NORM_MUL_ADD whole-graph tests passed in the first affected batch; that batch initially also reported a separate supplemental harness wiring failure."
+  },
+  "harness_corrections": [
+    {
+      "failure": "Supplemental invocation omitted its fixture library argument; argc==5 failed.",
+      "correction": "Route group-norm through the same certified fixture-library transport as the other modeled fixtures."
+    },
+    {
+      "failure": "At copied output nb[0]=8, the old logical-payload comparison expected padding byte 4 to remain 165 while the actual imported CPU writes F32 columns at spacing 4.",
+      "correction": "Seed the CPU result with the same original output bytes; read its full physical byte span. A physical descriptor view selects actual F32 payload positions solely for NaN classification. Compare every remaining byte exactly. Production arithmetic was unchanged."
+    }
+  ],
+  "planted_defects": [
+    {
+      "defect": "Reset group accumulator 0 instead of row accumulator 1 inside groupReductionRow",
+      "location": "Separate MCP draft only; repository model remained restored and certified",
+      "draft": "prism-app/cc4c5db133edb09b3c815068d63235e925ebad5ddccc818a0c980f453173029b",
+      "verification_task": "task-55",
+      "state": "failed",
+      "diagnostic": "LLV7002: rfl rejected groupOffsets at indices 1 and 9; expected fresh row accumulator 1."
+    },
+    {
+      "defect": "For GROUP_NORM output nb[0]=8 route physical target offset 4 to 8",
+      "test": "group_runtime_edges_vt_49",
+      "exit_code": 101,
+      "seconds": 4.87,
+      "diagnostic": "oracle mismatch type=0 width=3 rows=2 byte=4 actual=165 expected=0"
+    },
+    {
+      "defect": "Pass zero instead of modeled occupancy readback to normalization instructions",
+      "test": "group_runtime_edges_vt_49",
+      "exit_code": 101,
+      "seconds": 4.42,
+      "diagnostic": "ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED rejected missing refusal"
+    },
+    {
+      "defect": "Zero groupfixtures-kernel.lock source attestation",
+      "test": "group_runtime_edges_vt_49",
+      "exit_code": 101,
+      "seconds": 3.84,
+      "diagnostic": "attestation identity assertion failed before numerical comparisons"
+    },
+    {
+      "defect": "Flatten only the first group mean by retaining its row accumulator and copying each subtotal into the group accumulator",
+      "test": "group_runtime_edges_vt_49",
+      "exit_code": 101,
+      "seconds": 4.1,
+      "diagnostic": "oracle mismatch type=0 width=3 rows=2 byte=4 actual=171 expected=0",
+      "counterexample": "First row [+2^60,0,0], second row [-2^60,1,0], then zero rows. Distinct F64 row subtotal rounding changes the mean and small centered outputs.",
+      "restoration": "Native source restored byte for byte to the full 51-pass workspace baseline; normal library rebuilt afterward."
+    }
+  ],
+  "checks": {
+    "contract": {
+      "passed": 51,
+      "failed": 1,
+      "failure": "VT-02 rejects development dependency override",
+      "seconds": 86.48
+    },
+    "workspace_all_targets_all_features_clippy": "passed",
+    "cargo_deny": "passed",
+    "format": "passed",
+    "frame_tests": 5,
+    "xtask_tests": 62,
+    "template_and_sdk_lock": "passed",
+    "frame_sync_files": 52,
+    "full_vv": {
+      "exit_code": 1,
+      "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+      "app": "Passed actual full local verification; no proof-event reuse.",
+      "stopped_at": "model: audit-prism source budget",
+      "non_prism_lines": 11564,
+      "parent_lines": 11532,
+      "parent_revision": "9cf2df10c921",
+      "growth": 32,
+      "original_ceiling": 10549,
+      "excess_over_original_ceiling": 1015,
+      "native_growth": 5,
+      "test_transport_and_comparison_growth": 27,
+      "gate_or_limit_relaxed": false
+    }
+  },
+  "cache_state": {
+    "root_sdk_cache": "Restored with original hard links to app/target/hologram-oracle; temporary RAM copy removed.",
+    "private_build_cache": "Task-owned /tmp/vtensor-analysis-target/debug remains mounted from /dev/shm/vtensor-root-debug for subsequent commands.",
+    "superseded_export_caches": "24 obsolete pointwise/normalization/arithmetic SDK cache directories archived reversibly in /tmp/vtensor-superseded-model-exports-15edb59.tar.gz; current exports and all committed evidence preserved.",
+    "historical_oracle_cache": "Prior task-owned 336378 namespace remains usable through its original /tmp path, symlinked to RAM. Current numerical namespace is unchanged 6f9e62f3db3f142303a09aafe1573b428e2134e86c1424ba2f589102f90372f9.",
+    "user_upstream_worktree": "Unmodified."
+  }
 }

@@ -1,0 +1,400 @@
+\begin{lexlean}{GroupFixtures}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TensorLayout}
+\importmodule{NormFixtures}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: emptyCase,
+  parameters: [ordinal : Nat],
+  result: Bool,
+  body: (200 <=? ordinal),
+  executable: true
+}
+
+definition{
+  name: scenario,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (ordinal <? 200) then (prim remainder ordinal 20 0 : Nat) else 20),
+  executable: true
+}
+
+definition{
+  name: inplace,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (ordinal <? 200) then (prim quotient ordinal 100 0 : Nat) else (prim quotient (prim subtract ordinal 200 : Nat) 12 0 : Nat)),
+  executable: true
+}
+
+definition{
+  name: layout,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (ordinal <? 200) then (prim quotient (prim remainder ordinal 100 0 : Nat) 20 0 : Nat) else 0),
+  executable: true
+}
+
+definition{
+  name: emptyAxis,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim quotient (prim remainder (prim subtract ordinal 200 : Nat) 12 0 : Nat) 3 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: kind,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if ((scenario ordinal) =? 14) then 1 else 0),
+  executable: true
+}
+
+definition{
+  name: bytes,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if ((kind ordinal) =? 1) then 2 else 4),
+  executable: true
+}
+
+definition{
+  name: width,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if ((scenario ordinal) =? 9) then 1 else (if ((scenario ordinal) =? 10) then 7 else (if ((scenario ordinal) =? 2) then 5 else 3))),
+  executable: true
+}
+
+definition{
+  name: dimension,
+  parameters: [ordinal : Nat, axis : Nat],
+  result: Nat,
+  body: (if ((emptyCase ordinal) && (axis =? (emptyAxis ordinal))) then 0 else (if (axis =? 0) then (width ordinal) else (if (axis =? 1) then (if ((layout ordinal) =? 4) then 3 else 2) else (if (axis =? 2) then 5 else (if (axis =? 3) then 2 else 2))))),
+  executable: true
+}
+
+definition{
+  name: sourceRole,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Bool,
+  body: ((role =? 0) || ((role =? 3) && ((inplace ordinal) =? 1))),
+  executable: true
+}
+
+definition{
+  name: innerStride,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (prim multiply (bytes ordinal) (if (sourceRole ordinal role) then (if ((((scenario ordinal) =? 15) || ((layout ordinal) =? 1)) || (((layout ordinal) =? 2) && ((inplace ordinal) =? 1))) then 2 else 1) else (if ((layout ordinal) =? 2) then 2 else 1)) : Nat),
+  executable: true
+}
+
+definition{
+  name: rowStride,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (let base : Nat := (if ((layout ordinal) =? 4) then 100 else (if ((layout ordinal) =? 3) then 240 else ((prim multiply (innerStride ordinal role) (dimension ordinal 0) : Nat) + (bytes ordinal)))); (if ((((scenario ordinal) =? 16) && ((if (sourceRole ordinal role) then false else true) || ((inplace ordinal) =? 1))) || (((scenario ordinal) =? 17) && (sourceRole ordinal role))) then 0 else (if (((scenario ordinal) =? 18) && ((if (sourceRole ordinal role) then false else true) || ((inplace ordinal) =? 1))) then (base + 1) else base))),
+  executable: true
+}
+
+definition{
+  name: planeStride,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (if ((layout ordinal) =? 4) then 140 else (if ((layout ordinal) =? 3) then 40 else ((prim multiply (rowStride ordinal role) (dimension ordinal 1) : Nat) + (bytes ordinal)))),
+  executable: true
+}
+
+definition{
+  name: batchStride,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (if ((layout ordinal) =? 4) then 1000 else (if ((layout ordinal) =? 3) then 600 else ((prim multiply (planeStride ordinal role) (dimension ordinal 2) : Nat) + (bytes ordinal)))),
+  executable: true
+}
+
+definition{
+  name: stride,
+  parameters: [ordinal : Nat, role : Nat, axis : Nat],
+  result: Nat,
+  body: (if (axis =? 0) then (innerStride ordinal role) else (if (axis =? 1) then (rowStride ordinal role) else (if (axis =? 2) then (planeStride ordinal role) else (if (axis =? 3) then (batchStride ordinal role) else (batchStride ordinal role))))),
+  executable: true
+}
+
+definition{
+  name: span,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (match (TensorLayout::tensorByteSpan (record TensorLayout::TensorLayout {ne0 := (dimension ordinal 0), ne1 := (dimension ordinal 1), ne2 := (dimension ordinal 2), ne3 := (dimension ordinal 3), nb0 := (stride ordinal role 0), nb1 := (stride ordinal role 1), nb2 := (stride ordinal role 2), nb3 := (stride ordinal role 3), blockSize := 1, typeSize := (bytes ordinal)}))
+    | TensorLayout::ByteSpanDecision.invalidBlockSize => 0
+    | TensorLayout::ByteSpanDecision.span count => count),
+  executable: true
+}
+
+definition{
+  name: elements,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim multiply (prim multiply (dimension ordinal 0) (dimension ordinal 1) : Nat) (prim multiply (dimension ordinal 2) (dimension ordinal 3) : Nat) : Nat),
+  executable: true
+}
+
+definition{
+  name: groupCount,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (emptyCase ordinal) then (if ((prim remainder (prim subtract ordinal 200 : Nat) 3 0 : Nat) =? 0) then 0 else (if ((prim remainder (prim subtract ordinal 200 : Nat) 3 0 : Nat) =? 1) then 4294967295 else (if ((prim remainder (prim subtract ordinal 200 : Nat) 3 0 : Nat) =? 2) then 8 else 8))) else (if ((scenario ordinal) =? 0) then 2 else (if ((scenario ordinal) =? 1) then 4 else (if ((scenario ordinal) =? 2) then 8 else (if ((scenario ordinal) =? 3) then 1 else (if ((scenario ordinal) =? 4) then 2 else (if ((scenario ordinal) =? 5) then 2 else (if ((scenario ordinal) =? 6) then 3 else (if ((scenario ordinal) =? 7) then 2 else (if ((scenario ordinal) =? 8) then 2 else (if ((scenario ordinal) =? 9) then 2 else (if ((scenario ordinal) =? 10) then 2 else (if ((scenario ordinal) =? 11) then 0 else (if ((scenario ordinal) =? 12) then 4294967295 else (if ((scenario ordinal) =? 13) then 2147483647 else (if ((scenario ordinal) =? 14) then 2 else (if ((scenario ordinal) =? 15) then 2 else (if ((scenario ordinal) =? 16) then 2 else (if ((scenario ordinal) =? 17) then 2 else (if ((scenario ordinal) =? 18) then 2 else (if ((scenario ordinal) =? 19) then 1 else (if ((scenario ordinal) =? 20) then 0 else 0)))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: epsilon,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (emptyCase ordinal) then (if ((prim remainder (prim subtract ordinal 200 : Nat) 3 0 : Nat) =? 0) then 2143289345 else (if ((prim remainder (prim subtract ordinal 200 : Nat) 3 0 : Nat) =? 1) then 3212836864 else (if ((prim remainder (prim subtract ordinal 200 : Nat) 3 0 : Nat) =? 2) then 2139095040 else 2139095040))) else (if ((scenario ordinal) =? 0) then 897988541 else (if ((scenario ordinal) =? 1) then 0 else (if ((scenario ordinal) =? 2) then 0 else (if ((scenario ordinal) =? 3) then 0 else (if ((scenario ordinal) =? 4) then 2147483648 else (if ((scenario ordinal) =? 5) then 0 else (if ((scenario ordinal) =? 6) then 0 else (if ((scenario ordinal) =? 7) then 3212836864 else (if ((scenario ordinal) =? 8) then 2143289345 else (if ((scenario ordinal) =? 9) then 2139095040 else (if ((scenario ordinal) =? 10) then 1 else (if ((scenario ordinal) =? 11) then 0 else (if ((scenario ordinal) =? 12) then 0 else (if ((scenario ordinal) =? 13) then 0 else (if ((scenario ordinal) =? 14) then 0 else (if ((scenario ordinal) =? 15) then 0 else (if ((scenario ordinal) =? 16) then 0 else (if ((scenario ordinal) =? 17) then 0 else (if ((scenario ordinal) =? 18) then 0 else (if ((scenario ordinal) =? 19) then 0 else (if ((scenario ordinal) =? 20) then 0 else 0)))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: outcome,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (emptyCase ordinal) then 0 else (if (((((((((layout ordinal) =? 1) || (((layout ordinal) =? 2) && ((inplace ordinal) =? 1))) || ((scenario ordinal) =? 11)) || ((scenario ordinal) =? 12)) || ((scenario ordinal) =? 13)) || ((scenario ordinal) =? 14)) || ((scenario ordinal) =? 15)) || ((scenario ordinal) =? 18)) then 2 else (if (((scenario ordinal) =? 16) || (((scenario ordinal) =? 17) && ((inplace ordinal) =? 1))) then 1 else 0))),
+  executable: true
+}
+
+definition{
+  name: metadata,
+  parameters: [ordinal : Nat, item : Nat],
+  result: Nat,
+  body: (if (item =? 0) then (kind ordinal) else (if (item =? 1) then (inplace ordinal) else (if (item =? 2) then (scenario ordinal) else (if (item =? 3) then (layout ordinal) else (if (item =? 4) then (dimension ordinal 0) else (if (item =? 5) then (dimension ordinal 1) else (if (item =? 6) then (dimension ordinal 3) else (if (item =? 7) then ordinal else (if (item =? 8) then (outcome ordinal) else (if (item =? 9) then (epsilon ordinal) else (if (item =? 10) then (groupCount ordinal) else (groupCount ordinal)))))))))))),
+  executable: true
+}
+
+definition{
+  name: dataWord,
+  parameters: [ordinal : Nat, index : Nat],
+  result: Nat,
+  body: (if ((kind ordinal) =? 1) then 15360 else (if ((scenario ordinal) =? 0) then (if (index =? 0) then 1568669696 else (if (index =? (prim quotient (rowStride ordinal 0) 4 0 : Nat)) then 3716153344 else (if (index =? ((prim quotient (rowStride ordinal 0) 4 0 : Nat) + 1)) then 1065353216 else 0))) else (if ((scenario ordinal) =? 3) then 0 else (if ((scenario ordinal) =? 4) then (if ((prim remainder index 2 0 : Nat) =? 0) then 0 else 2147483648) else (if ((scenario ordinal) =? 5) then (NormFixtures::exceptionWord index) else (if (((scenario ordinal) =? 6) && (index =? 0)) then 2139095041 else (if ((scenario ordinal) =? 10) then (NormFixtures::tinyWord index) else (if ((scenario ordinal) =? 19) then 1065353216 else (NormFixtures::finiteWord index))))))))),
+  executable: true
+}
+
+definition{
+  name: byte,
+  parameters: [ordinal : Nat, index : Nat],
+  result: Nat,
+  body: (prim remainder (prim quotient (dataWord ordinal (prim quotient index (bytes ordinal) 0 : Nat)) (if ((prim remainder index (bytes ordinal) 0 : Nat) =? 0) then 1 else (if ((prim remainder index (bytes ordinal) 0 : Nat) =? 1) then 256 else (if ((prim remainder index (bytes ordinal) 0 : Nat) =? 2) then 65536 else (if ((prim remainder index (bytes ordinal) 0 : Nat) =? 3) then 16777216 else 16777216)))) 0 : Nat) 256 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: chunkCount,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim quotient ((span ordinal 0) + 511) 512 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: header,
+  parameters: [item : Nat],
+  result: Nat,
+  body: (if (item =? 0) then 224 else (if (item =? 1) then 11 else (if (item =? 2) then 224 else (if (item =? 3) then 512 else (if (item =? 4) then 165 else (if (item =? 5) then 112 else 112)))))),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [query : Nat, ordinal : Nat, source : Nat, item : Nat],
+  result: (Option Nat),
+  body: (if (query =? 0) then (if (item <? 6) then (ctor Option.some [Nat] (header item)) else (ctor Option.none [Nat])) else (if (ordinal <? 224) then (if (query =? 1) then (if ((source =? 0) && (item <? 11)) then (ctor Option.some [Nat] (metadata ordinal item)) else (ctor Option.none [Nat])) else (if (query =? 2) then (if ((((source =? 0) || (source =? 1)) || (source =? 3)) && (item <? 10)) then (ctor Option.some [Nat] (if (item =? 0) then (dimension ordinal 0) else (if (item =? 1) then (dimension ordinal 1) else (if (item =? 2) then (dimension ordinal 2) else (if (item =? 3) then (dimension ordinal 3) else (if (item =? 4) then (stride ordinal source 0) else (if (item =? 5) then (stride ordinal source 1) else (if (item =? 6) then (stride ordinal source 2) else (if (item =? 7) then (stride ordinal source 3) else (if (item =? 8) then (span ordinal source) else (if (item =? 9) then (elements ordinal) else (elements ordinal)))))))))))) else (ctor Option.none [Nat])) else (if (query =? 3) then (if ((source =? 0) && (item <? 512)) then (ctor Option.some [Nat] (byte ordinal item)) else (ctor Option.none [Nat])) else (if (query =? 4) then (if (item <? 2) then (if (source =? 0) then (if (item =? 0) then (ctor Option.some [Nat] (chunkCount ordinal)) else (ctor Option.none [Nat])) else (if (source <=? (chunkCount ordinal)) then (ctor Option.some [Nat] (if (item =? 0) then (prim multiply (prim subtract source 1 : Nat) 512 : Nat) else (let remaining : Nat := (prim subtract (span ordinal 0) (prim multiply (prim subtract source 1 : Nat) 512 : Nat) : Nat); (if (remaining <? 512) then remaining else 512)))) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])) else (ctor Option.none [Nat]))))) else (ctor Option.none [Nat]))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{name: completeCorpus, parameters: [], statement: ((header 0) = 224), proof: reflexivity{}}
+
+theorem{name: completeRefusals, parameters: [], statement: ((header 5) = 112), proof: reflexivity{}}
+
+theorem{
+  name: groupParameterTransport,
+  parameters: [],
+  statement: ((metadata 1 10) = 4),
+  proof: reflexivity{}
+}
+
+theorem{name: tailCase, parameters: [], statement: ((groupCount 1) = 4), proof: reflexivity{}}
+
+theorem{
+  name: excessGroupCase,
+  parameters: [],
+  statement: ((groupCount 2) = 8),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeGroupEncoding,
+  parameters: [],
+  statement: ((groupCount 12) = 4294967295),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeEpsilonIsNumeric,
+  parameters: [],
+  statement: ((outcome 7) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nanEpsilonIsNumeric,
+  parameters: [],
+  statement: ((outcome 8) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: sourceInnerStrideRefused,
+  parameters: [],
+  statement: ((outcome 20) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: inplaceStrideRefused,
+  parameters: [],
+  statement: ((outcome 140) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: copiedOutputInnerStrideAllowed,
+  parameters: [],
+  statement: ((outcome 40) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: copiedOutputMetadataSpacing,
+  parameters: [],
+  statement: ((stride 40 3 0) = 8),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: outputOverlapAtomic,
+  parameters: [],
+  statement: ((outcome 16) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: readonlyInputOverlapAllowed,
+  parameters: [],
+  statement: ((outcome 17) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: inplaceOverlapAtomic,
+  parameters: [],
+  statement: ((outcome 117) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: inputRowsMayOverlap,
+  parameters: [],
+  statement: ((stride 17 0 1) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: firstRowLargeValue,
+  parameters: [],
+  statement: ((dataWord 0 0) = 1568669696),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: secondRowLargeNegative,
+  parameters: [],
+  statement: ((dataWord 0 4) = 3716153344),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: secondRowSmallValue,
+  parameters: [],
+  statement: ((dataWord 0 5) = 1065353216),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nonNestedRowStride,
+  parameters: [],
+  statement: ((stride 80 3 1) = 100),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nonNestedChannelStride,
+  parameters: [],
+  statement: ((stride 80 3 2) = 140),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyGroupsSkipped,
+  parameters: [],
+  statement: ((outcome 200) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyChannelAxis,
+  parameters: [],
+  statement: ((dimension 206 2) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyBatchAxis,
+  parameters: [],
+  statement: ((dimension 209 3) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptySignedGroupCount,
+  parameters: [],
+  statement: ((groupCount 201) = 4294967295),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: metadataBoundary,
+  parameters: [],
+  statement: ((evaluate 1 0 0 11) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: ordinalBoundary,
+  parameters: [],
+  statement: ((evaluate 1 224 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unknownQuery,
+  parameters: [],
+  statement: ((evaluate 5 0 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

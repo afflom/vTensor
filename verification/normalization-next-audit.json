@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/normalization-next-audit/1",
-  "status": "NORM-implemented-oracle-checked-GROUP_NORM-audit-only",
+  "status": "NORM-and-GROUP_NORM-implemented-oracle-checked-acceptance-open",
   "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "source_sha256": {
     "ggml/src/ggml.c": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
@@ -38,14 +38,14 @@
     "partition": "ceil(channels/groups), clamped final group; audit empty group and constructor conditions.",
     "mean": "F64 per-row sum, then F64 addition of row sums, then F64 division by group element count before narrowing.",
     "variance": "F32 center/square, F64 per-row sum, F64 sum of row sums, F64 division then F32 narrowing.",
-    "warning": "Preserve nested row subtotal order, which differs from a single flat F64 fold."
+    "warning": "Preserve nested row subtotal order, which differs from a single flat F64 fold.",
+    "evidence": "verification/group-normalization-authoring.json"
   },
   "next_actions": [
-    "Finish source-budget recovery and production dependency resolution; retain the rejecting acceptance gates.",
-    "Register GROUP_NORM and its failing imported test before implementing its distinct per-row subtotal semantics."
+    "Recover the original source budget and resolve production dependency packaging; keep rejecting gates enabled.",
+    "Audit and register RMS_NORM_BACK before implementing its two-source accumulation and narrowing order."
   ],
   "claims_not_made": [
-    "GROUP_NORM implementation or conformance",
     "Complete architecture coverage",
     "General proof from finite oracle tests",
     "Full vTensor acceptance or production dependency resolution"

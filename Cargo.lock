@@ -527,6 +527,10 @@ name = "vtensor_fixtures"
 version = "0.1.0"
 
 [[package]]
+name = "vtensor_groupfixtures"
+version = "0.1.0"
+
+[[package]]
 name = "vtensor_index"
 version = "0.1.0"
 

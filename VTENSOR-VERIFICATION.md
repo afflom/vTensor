@@ -3961,3 +3961,101 @@ All 54 model IDs and the error/deferral/bootstrap checks passed before this
 refusal. Remaining gate components were checked separately as described above;
 this is not a successful full acceptance run. No proof-event reuse, source
 ceiling increase, certificate-limit increase or generated-code edit was used.
+
+### VT-49: GROUP_NORM with nested F64 row subtotals
+
+Registration `15edb59` added the ID, scenario and actual imported failing test
+before implementation. The first ordinary GROUP_NORM case was unsupported.
+The unchanged imported factory supplies three ordinary cases, including the
+65,537-plane regression, and two whole-graph GROUP_NORM_MUL_ADD cases. All five
+now pass. The 224 Prism supplemental cases also pass: 112 successes and 112
+atomic refusals. They cover both public constructors, odd and excess group
+counts, short and empty tail groups, padded/permuted/non-nested layouts,
+readonly overlaps, nonfinite and negative epsilon, empty dimensions and
+physical output column spacing. The fixture's +/-2^60 and unit counterexample
+separates row-subtotal accumulation from a flattened F64 fold.
+
+The planner and instruction stream extend the independent normalization bundle.
+Separate F64 row and group accumulators preserve the CPU's subtotal order for
+both mean and variance. Division occurs in F64 before F32 narrowing. The model
+retains F32 centering/squaring and the F32 epsilon/sqrt/reciprocal/scale tail,
+elides groups that perform no stores, bounds signed channel/group/denominator
+arithmetic, and preflights all physical output words before writing. It does
+not inherit NORM's epsilon assertion: GROUP_NORM's imported CPU has none.
+Six scratch words are reused, with occupancy storage only where needed.
+
+The certified copy result now carries its selected epsilon explicitly. Native
+code forwards the operation and raw parameters and transports that result; it
+adds no parameter-selection or numerical algorithm. Existing normalized modes
+and L2 keep one instruction query per step. NORM, RMS and L2 remain covered by
+the restored full contract batch.
+
+Actual production exports from the unchanged pinned SDK are:
+
+- Pointwise: result `ebdeece9bf545a05e6ce78f88f72ebb885d0c35b0a82b4d4614b83e2925e3606`, attestation `cc7962237c362b055d3da5d74ec0bd3f4f0aa0b251a44df24971beae5b12c363`, 750 verified declarations; largest certificate B is 4,123,314 bytes, below the unchanged 4,194,304-byte limit.
+- Normalization: result `9c521081bcfc3f8f2e2c9fe29c2e594c74f0ef242d23eb0ddff878abd8a19de1`, attestation `f5c6e4751c75f4f4a85e65353a15a465d0c479de5843f6dc7fa8cafbb4c6c038`, 492 verified declarations. Its NORM/GROUP_NORM, L2 and planner certificate B sizes are 767,517, 194,497 and 532,406 bytes.
+- Group fixtures: result `310614802ccf398d120a11c56edba4f7cd2ef69e9d03dcf9b89aa800cd7ce2d3`, attestation `c8c01d11bad3043223a32629ea4978e45bdd9f3704e7ef79f13c40b203dfcb82`, 382 verified declarations.
+
+The first supplemental invocation exposed a missing fixture-library argument;
+this was corrected in the shared host dispatch. The numerical comparison then
+exposed a more important oracle-harness assumption. GROUP_NORM indexes output
+columns as float pointers even when the descriptor says nb[0]=8. The old
+comparison copied only logical payload words into a padding seed and therefore
+misclassified a real CPU write at byte 4 as padding. The corrected comparison
+seeds the CPU output with the same initial bytes, reads its complete physical
+result, and adjusts only the descriptor view used to recognize NaNs at actual
+F32 payload locations. Every other byte, including padding, is compared exactly.
+The expected values still come solely from the imported CPU implementation;
+production arithmetic did not change to accommodate the harness.
+
+The planted row-reset defect exists only in MCP draft
+`prism-app/cc4c5db133edb09b3c815068d63235e925ebad5ddccc818a0c980f453173029b`.
+It resets the group accumulator instead of the row accumulator. Verification
+`task-55` fails with LLV7002 at the fresh-row proofs for instruction indices 1
+and 9. The correct repository model was never replaced by this draft.
+
+Three transport/provenance faults also fail the intended gates. Moving physical
+write offset 4 to 8 for metadata nb[0]=8 fails the CPU comparison at byte 4
+(actual 165, expected 0) in 4.87 seconds. Bypassing occupancy readback fails the
+expected refusal assertion in 4.42 seconds. Zeroing the fixture lock attestation
+fails certificate validation before numerical comparisons in 3.84 seconds.
+Native source and the fixture lock were restored byte for byte afterward.
+
+The restored workspace contract batch passes 51 of 52 tests in 86.48 seconds;
+VT-02 alone continues to reject the local development dependency override.
+Formatting, all-target/all-feature workspace Clippy, cargo-deny, five frame
+tests, 62 xtask tests, template/SDK-lock checks and 52-file frame synchronization
+pass. This does not establish full vTensor acceptance. Machine-readable evidence
+is in `verification/group-normalization-authoring.json`.
+
+The next backward-normalization audit records ten imported RMS_NORM_BACK cases,
+two source roles, F32 narrowing before mean division and coefficient division,
+and physical output spacing. These are source observations, not implementation
+claims: see `verification/normalization-backward-audit.json`. The remaining
+imported requirements, original source-budget recovery and authoritative
+production dependency packaging remain open.
+
+The complete exact-SDK `just vv` attempt passes its actual application proof and
+formatting, then exits 1 at the unchanged source ratchet. The kept application
+attestation remains
+`fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942`.
+The ratchet measures 11,564 lines against 11,532 in parent `9cf2df10c921`:
+32 additional lines, comprising five in the native transport and 27 in test
+transport/comparison. This remains 1,015 above the original 10,549-line ceiling.
+All 55 IDs and the error, deferral and bootstrap checks pass before that refusal.
+No ceiling or proof policy is relaxed; production dependency resolution and
+full acceptance remain open.
+
+A further numerical fault flattens only the first group's mean: it retains the
+row accumulator between rows and copies that subtotal into the group sum.
+The +/-2^60/unit fixture rejects this at output byte 4 (actual 171, expected 0)
+in 4.10 seconds. This independently demonstrates the row-subtotal rounding
+counterexample against the real imported CPU, in addition to the Lean reset
+proofs. Native source was restored byte for byte to the full passing-component
+baseline and its normal library rebuilt; no numerical change remained.
+
+The SDK cache was restored to its ordinary workspace path with hard links
+preserved. To retain disk space without losing prior evidence, obsolete
+SDK export caches were archived under the task's temporary directory; current
+exports and committed evidence are intact. Private compiled and historical
+oracle caches remain in task RAM through their existing paths.

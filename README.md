@@ -85,6 +85,11 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-42` | build | Prism supplies all 160 REPEAT fixture recipes, source/target/output layouts and initial bytes, preserving frozen transcripts and independent CPU results. |
 | `VT-43` | build | Prism supplies all 10,368 CONCAT fixture recipes, both operand layouts, output layouts and initial bytes, preserving frozen transcripts and independent CPU results. |
 | `VT-44` | build | Prism supplies 15,360 FILL and 1,920 CAST fixture recipes, typed layouts, fill constants and physical byte patterns; frozen transcripts, FILL source-release states and independent CPU results are preserved. |
+| `VT-45` | build | Certified Verdant F64 division and unsigned-count conversion preserve the imported normalization mean-order regression. |
+| `VT-46` | build | F32/BF16 RMS_NORM passes 121 factory and 256 supplemental cases, including 168 atomic refusals. |
+| `VT-47` | build | A separate certified Prism package preserves all 2,256 spatial constructor/input recipes and independent CPU results. |
+| `VT-48` | build | NORM passes 61 factory and 184 supplemental cases, including 55 atomic refusals and stride-selected rounding. |
+| `VT-49` | build | GROUP_NORM passes five ordinary/fused factory cases and 224 supplemental cases, including 112 atomic refusals, nested F64 row subtotals and physical output spacing. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -235,7 +240,12 @@ SSE2 grouped variance, scalar stride path and mean narrowing point. The same
 normalization package carries L2's existing instruction stream to keep every
 certificate within the unchanged SDK limit. The pinned oracle compiler and
 source audit are recorded in `verification/normalization-next-audit.json`;
-GROUP_NORM remains to be implemented. Full acceptance remains open.
+GROUP_NORM (VT-49) now preserves F64 row subtotals, clamped channel groups
+and physical F32 output spacing through the same certified normalization roots.
+All five ordinary/fused factory cases and 224 supplemental cases pass, including
+112 atomic refusals. Evidence is in `verification/group-normalization-authoring.json`.
+RMS_NORM_BACK remains at source audit in `verification/normalization-backward-audit.json`.
+Full acceptance remains open.
 
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:
