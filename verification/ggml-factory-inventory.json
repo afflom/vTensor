@@ -181,6 +181,48 @@
   ],
   "vt_51_cases": 187,
   "separate_rope_compositions": 281,
-  "driver_temporary_path": "/dev/shm/vtensor-factory-inventory/inventory.cpp",
-  "scope": "One-time diagnostic inventory, not a shipped implementation or a numerical acceptance gate. The unchanged authoritative factory remains the source of every constructor and variant."
+  "scope": "One-time diagnostic inventory, not a shipped implementation or a numerical acceptance gate. The unchanged authoritative factory remains the source of every constructor and variant.",
+  "case_transcript": "ggml-factory-cases.tsv.gz",
+  "case_columns": [
+    "record",
+    "factory_ordinal",
+    "label",
+    "parameters"
+  ],
+  "factory_verdicts": {
+    "evidence_commit": "2ddd3a7",
+    "source": "crates/conformance/tests/contract.rs",
+    "selection": "Join each ordinal to the completed CPU factory test by exact label. Rows without a matching label have an open verdict. Supplemental fixtures do not contribute.",
+    "passed_by_requirement": {
+      "VT-37": [
+        "ARANGE"
+      ],
+      "VT-38": [
+        "L2_NORM",
+        "L2_NORM_BATCH"
+      ],
+      "VT-46": [
+        "RMS_NORM"
+      ],
+      "VT-48": [
+        "NORM"
+      ],
+      "VT-49": [
+        "GROUP_NORM",
+        "GROUP_NORM_MUL_ADD"
+      ],
+      "VT-50": [
+        "RMS_NORM_BACK"
+      ],
+      "VT-51": [
+        "NORM_SCALE",
+        "RMS_NORM_SCALE",
+        "NORM_MUL_ADD",
+        "RMS_NORM_MUL_ADD",
+        "ADD_RMS_NORM"
+      ]
+    },
+    "passed": 455,
+    "open": 27300
+  }
 }
