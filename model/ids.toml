@@ -370,3 +370,9 @@ id = "VT-50"
 level = "build"
 suite = "normalization-graphs"
 statement = "Prism models F32 RMS_NORM_BACK with independent source strides and its specified narrowing order while Verdant matches every imported GGML CPU case"
+
+[[id]]
+id = "VT-51"
+level = "build"
+suite = "normalization-graphs"
+statement = "Prism models composed normalization graphs with mixed scalar storage broadcast and aliases while Verdant matches every imported non-RoPE composed normalization factory case"

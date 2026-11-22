@@ -153,6 +153,7 @@ model does not sanction.
 | `VT-48` | `build` | Prism models copied and in-place F32 NORM with stride-selected accumulation and grouped contiguous variance while Verdant matches the pinned imported GGML CPU oracle |
 | `VT-49` | `build` | Prism models copied and in-place F32 GROUP_NORM with nested F64 row subtotals and Verdant matches the imported ordinary and fused GGML CPU cases |
 | `VT-50` | `build` | Prism models F32 RMS_NORM_BACK with independent source strides and its specified narrowing order while Verdant matches every imported GGML CPU case |
+| `VT-51` | `build` | Prism models composed normalization graphs with mixed scalar storage broadcast and aliases while Verdant matches every imported non-RoPE composed normalization factory case |
 
 ## oracle-import
 

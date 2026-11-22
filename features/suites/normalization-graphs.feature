@@ -50,3 +50,11 @@ Feature: normalization-graphs
     And independent source layouts physical output spacing aliases and nonfinite parameters preserve CPU behavior
     And malformed metadata and overlapping output writes are typed atomic refusals
     And wrong source bindings and premature or delayed narrowing are rejected
+
+  @VT-51 @build
+  Scenario: Prism models composed normalization graphs with mixed scalar storage broadcast and aliases while Verdant matches every imported non-RoPE composed normalization factory case
+    Given all 187 NORM_SCALE RMS_NORM_SCALE NORM_MUL_ADD RMS_NORM_MUL_ADD and ADD_RMS_NORM cases in the pinned factory
+    When vTensor executes the complete imported graphs using certified Prism plans and Verdant scalar arithmetic
+    Then every required case passes the independent CPU comparison without unsupported or omitted graphs
+    And mixed BF16 and F32 weights and residuals preserve intermediate storage rounding
+    And broadcasts in-place residuals and post-multiply graphs preserve authoritative alias behavior

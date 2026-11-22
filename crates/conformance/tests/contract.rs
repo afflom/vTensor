@@ -565,6 +565,18 @@ fn backward_runtime_edges_vt_50() {
     native_backend_oracle::verify(&root(), "rms-backward", 353);
 }
 
+/// `VT-51`: Full composed graphs preserve mixed storage, broadcasting and aliases.
+#[test]
+fn composed_normalization_vt_51() {
+    tensor_layout::certified_current_model(&root(), "pointwise");
+    tensor_layout::certified_current_model(&root(), "norm");
+    native_backend_oracle::verify(
+        &root(),
+        "upstream-NORM_SCALE,RMS_NORM_SCALE,NORM_MUL_ADD,RMS_NORM_MUL_ADD,ADD_RMS_NORM",
+        187,
+    );
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
