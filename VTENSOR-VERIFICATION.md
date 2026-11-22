@@ -4752,3 +4752,11 @@ VT-62 extends the existing Prism scatter plan to accept BF16. Verdant widens the
 In the locked SDK, `bf16_row_gradient_vt_62` passed 1,680 cases and `row_gradient_graphs_vt_31` passed all 3,360 existing F16/F32 cases. The comparator requires exact finite words, signed zeros, infinities and padding, and checks NaNs by class. Invalid indices must leave the whole output unchanged. Before the implementation, the native admission assertion failed. Routing a BF16 word to Verdant's F16 decoder produced byte 192 where the CPU returned 128. Restoring the source format passed the batch.
 
 Prism now locates a transfer within both the tensor span and its backing allocation. The host reuses a computed span for tensor initialization, copying and attention inputs. The exported locator covers an offset view, a tensor extending beyond its backing store and an empty transfer. The native-line count fell from 12,162 to 12,158 across the same 51 files. [Certified layout roots](layout-kernel.lock)
+
+Removing the backing-view displacement failed VT-11's viewed-byte comparison. Restoring the Prism offset passed VT-11 and all 510 forward rotary cases. The final gradient plan separates optional-index admission from scatter planning. Scoped Clippy, the dependency audit and the 1,680-case gradient suite passed on the regenerated package.
+
+## BF16 attention
+
+Prism admits two-byte BF16 key and value rows under the dense attention plan. Verdant rounds each query once to the key's dot-product storage, widens the operands, computes the dot product and updates the streaming weighted mean. The native host shares the same bounded input regions with quantized matrix reads.
+
+The pinned CPU factory initially reported a vTensor refusal for ordinal 19540. The original four mask/sink combinations pass on the implementation, as do the existing small attention probes. Misreading BF16 keys and values as F16 produced normalized error 0.698156352 against the upstream limit of 0.0005. Restoring BF16 decoding passed. The numerical transcript links the tested provider binary to individual factory ordinals. [Factory evidence](verification/factory-bf16-attention-vt63.json)
