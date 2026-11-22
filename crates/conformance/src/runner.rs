@@ -1312,8 +1312,8 @@ mod rotary {
                 return Err(BackendError::InvalidTensor);
             };
             let factor = match factors {
-                // SAFETY: Prism admitted this contiguous F32 factor word.
                 Some(pointer) => {
+                    // SAFETY: Prism admitted this contiguous F32 factor word.
                     f32::from_bits(unsafe { scalar_word(pointer.add(lane * 4), 4, None)? } as u32)
                 }
                 None => 1.0,
