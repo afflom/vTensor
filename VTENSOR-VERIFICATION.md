@@ -3404,3 +3404,48 @@ No proof-event reuse or reduced gate is used. Current source is 11,084 lines,
 coverage remain open. Detailed source-bound evidence is recorded in
 verification/relative-position-add-runtime.json and the signed authoring and
 imported build manifests beside it.
+
+## Native oracle cache invalidation
+
+The native executable key previously included every Rust token in the native
+oracle module. A semantically equivalent change to expected-source snapshot
+allocation rebuilt the C++ driver, despite unchanged build inputs. The revised
+key retains the compiler/linker recipe tokens, complete emitted C++ and ABI
+assertions, source/compiler/SDK cache identity and dynamically loaded library
+path. It includes imported evaluator adapter bytes only for drivers that link
+the adapter. Source snapshot, upstream source, object and executable checks
+still run at their existing boundaries.
+
+Before the change, replacing `Vec::new()` with `Vec::with_capacity(0)` in the
+host snapshot orchestration created a new executable; the scoped native test
+took 5.10 seconds. After the change, the same edit preserved every executable
+path and nanosecond modification time; the test passed in 2.39 seconds.
+Reordering linker flags created exactly one new driver and passed in 5.12
+seconds. Inserting a harmless static assertion into the imported evaluator
+adapter created exactly one new upstream driver and passed ADD_REL_POS in
+35.22 seconds, including adapter compilation. The same adapter edit preserved
+the non-importing native driver. These are local observations rather than
+controlled benchmarks.
+
+Appending one zero byte to the warm native executable failed its digest check
+before execution in 2.40 seconds. The executable and its original timestamps
+were restored, and every temporary source mutation was restored byte for byte.
+The numerical Prism model, native production runner and pinned evaluator
+source remain unchanged. Detailed mutations and final gate results are in
+`verification/native-oracle-cache.json`.
+
+The complete pinned-SDK `just vv` freshly verifies the Prism application with
+attestation `fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942`.
+Formatting, all 45 model IDs, error and deferral checks, bootstrap/frame
+integrity, template/SDK locks and all-target/all-feature Clippy pass. All five
+model unit tests and four BDD meta-tests pass. The contract group passes 38
+tests and fails only VT-02 in 15.88 seconds, with no ignored or filtered tests.
+Both generated fixture batches and observed GGML bindings still match every
+frozen matrix/arithmetic record. The dependency audit passes separately; the
+complete gate exits 101 at the development-source refusal before its deny
+stage. This is not a release pass.
+
+The source audit measures 11,083 lines in 51 files, one line smaller than the
+parent. The original accepted 10,549-line budget remains exceeded by 534; no
+ceiling is raised. Fixture generation migration, remaining imported operation
+and API coverage, and production dependency closure remain open.

@@ -146,7 +146,12 @@ observations, not controlled benchmarks. Other imported operation families remai
 1,280 matrix and 120 arithmetic fixtures; both generated data and actual GGML
 tensor bindings match the frozen prior corpora. They share binary framing and
 cache each model replay, manifest and generated batch once per test process.
-Non-Prism source is 11,084 lines, 535 above the last
+Native oracle build identities bind the emitted C++ and compiler/linker recipe;
+host-only fixture orchestration edits reuse the driver. Imported evaluator edits
+invalidate only drivers that link it. Warm executions retain their upstream,
+executable and current-source integrity checks. Mutation evidence is recorded in
+[`verification/native-oracle-cache.json`](verification/native-oracle-cache.json).
+Non-Prism source is 11,083 lines, 534 above the last
 accepted budget, so the source budget remains unsatisfied.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in

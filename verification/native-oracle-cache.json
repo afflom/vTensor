@@ -1,0 +1,145 @@
+{
+  "spec": "vtensor/native-oracle-cache/1",
+  "scope": "Native oracle build invalidation only; numerical models, production runner, authoritative inputs and positive/negative case counts unchanged.",
+  "baseline_commit": "169ffd61baf42fbe700ba7bce397d2e5c9171810",
+  "status": "cache-and-fixture-regressions-passed-full-gate-refused-development-dependency",
+  "key_inputs": [
+    "native shared-library absolute path (live provenance checked separately)",
+    "complete emitted C++ driver including ABI assertions",
+    "source/compiler/SDK/architecture-bound common cache path",
+    "Rust compiler/linker recipe tokens from compiled_object through executable publication",
+    "unchanged imported evaluator adapter bytes for upstream modes only"
+  ],
+  "runtime_checks_retained": [
+    "pinned upstream test source digest on every upstream invocation",
+    "base oracle object hashes",
+    "cached native executable digest",
+    "current Rust source snapshot",
+    "native shared-library source snapshot",
+    "exact positive-case counts",
+    "fixture record SHA-256 checks for matrix/arithmetic"
+  ],
+  "mutation_checks": [
+    {
+      "mutation": "Native host expected-source Vec::new() replaced with semantically equal Vec::with_capacity(0)",
+      "before_fix": {
+        "observed_new_executables": 1,
+        "expected_new_executables": 0,
+        "oracle_pass": true,
+        "seconds": 5.1
+      },
+      "after_fix": {
+        "observed_new_executables": 0,
+        "expected_new_executables": 0,
+        "all_existing_mtimes_ns_unchanged": true,
+        "oracle_pass": true,
+        "seconds": 2.39
+      },
+      "test": "native_backend_vt_11"
+    },
+    {
+      "mutation": "Reverse the order of --gc-sections and --export-dynamic linker flags",
+      "observed_new_executables": 1,
+      "expected_new_executables": 1,
+      "oracle_pass": true,
+      "seconds": 5.12,
+      "test": "native_backend_vt_11"
+    },
+    {
+      "mutation": "Insert static_assert(true,\"cache evaluator identity probe\") in UPSTREAM_SUITE only",
+      "observed_new_executables": 1,
+      "expected_new_executables": 1,
+      "oracle_pass": true,
+      "seconds": 35.22,
+      "test": "relative_position_add_vt_39",
+      "non_importing_driver_reused": true
+    },
+    {
+      "mutation": "Append one zero byte to the warm native executable",
+      "expected": "reject digest before execution",
+      "observed": "file_digest assertion failed; test exit 101",
+      "seconds": 2.4,
+      "test": "native_backend_vt_11",
+      "restored_sha256": "91931f5bc8e45560128828a0164c57a52df6db922727a9b8315128f592df4453",
+      "restored_original_timestamps": true
+    }
+  ],
+  "measurement_limits": "Single local observations in the exact SDK, not controlled performance benchmarks. Before/after Rust mutations and compiler/evaluator probes are restored byte-for-byte. No skipped run is counted as evidence.",
+  "logs": {
+    "before": "/tmp/vtensor-oracle-cache-before.log",
+    "fixed": "/tmp/vtensor-oracle-cache-fixed.log",
+    "host-change": "/tmp/vtensor-oracle-cache-host-change.log",
+    "recipe-change": "/tmp/vtensor-oracle-cache-recipe-change.log",
+    "suite-change": "/tmp/vtensor-oracle-cache-suite-change.log",
+    "suite-isolation": "/tmp/vtensor-oracle-cache-suite-isolation.log",
+    "corruption": "/tmp/vtensor-oracle-cache-corruption.log",
+    "upstream": "/tmp/vtensor-oracle-cache-upstream.log",
+    "vv": "/tmp/vtensor-oracle-cache-vv.log"
+  },
+  "open": [
+    "Original handwritten-source budget debt",
+    "VT-02 rejects development dependency",
+    "Remaining imported operator, type and API coverage",
+    "Complete release acceptance"
+  ],
+  "implementation_commit": "2034db2",
+  "fixture_serialization": "Consolidated repeated existing Prism query framing; unchanged frozen record hashes remain mandatory for both generated inputs and observed GGML tensor bindings.",
+  "source_budget": {
+    "last_accepted": 10549,
+    "current": 11083,
+    "excess": 534,
+    "parent": 11084,
+    "change": -1,
+    "ceiling_raised": false,
+    "status": "parent-shrink-check-passes-original-budget-still-unsatisfied"
+  },
+  "observed_driver_keys": {
+    "baseline_host_only_edit": "bca8547cbe6c763845adb826dba16989285eaf3b37314f0bc6fe53234c18674b",
+    "fixed_native_driver": "4e97ee9d0cc2c8688de52213994e88486a7c407dba444950d564db382852584a",
+    "compiler_recipe_edit": "819e57ba0668f69f66fbb3fc368768ed57ac84eb99aba6b5ad564b830c269a8d",
+    "imported_evaluator_edit": "d8ec99c5f9d3fc8b196beb4166241737cd5749d5b5b295885f05e0ef4065f7a6"
+  },
+  "full_gate": {
+    "command": "just vv",
+    "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "proof_event_reuse": false,
+    "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+    "observed_passes": [
+      "full Prism verification",
+      "formatting",
+      "45-ID model coherence",
+      "typed error and negative-test registry",
+      "deferral audit",
+      "SDK/bootstrap ownership",
+      "source audit (one line smaller than parent)",
+      "52-file frame integrity",
+      "template contract",
+      "canonical SDK lock",
+      "all-target all-feature Clippy with -D warnings",
+      "5 model unit tests",
+      "4 BDD meta-tests",
+      "38 contract tests including both frozen fixture corpora"
+    ],
+    "status": "failed",
+    "exit_code": 101,
+    "failure": "VT-02: Verdant Tensor must resolve to the pinned upstream source; local development overrides are not release evidence",
+    "contract": {
+      "passed": 38,
+      "failed": 1,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 15.88
+    },
+    "dependency_audit": {
+      "status": "passed separately",
+      "command": "just template-check deny",
+      "reason": "The complete gate stops at the VT-02 test failure before its deny stage.",
+      "log": "/tmp/vtensor-oracle-cache-policy.log"
+    }
+  },
+  "unchanged_source_sha256": {
+    "crates/conformance/src/runner.rs": "89d3cfc7294f6aa4507209ee3f067786f52f96b4c3aea4278f06e036fb41a351",
+    "app/src/PointwiseGraph.lex.tex": "81e226efae91786178742b1e7ada725b76770865d820b0ac7241da574b61c7b1",
+    "vendor/llama.cpp-oracle/tests/test-backend-ops.cpp": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52"
+  }
+}
