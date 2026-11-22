@@ -11,3 +11,9 @@ Feature: GGML spatial storage graphs
     Given floating-point source rows with positions, optional frequency factors, modes and offsets
     When vTensor executes the forward or backward rotation through Verdant
     Then the 510 ROPE and 424 ROPE_BACK factory cases match the upstream evaluator
+
+  @VT-58 @build
+  Scenario: Prism plans GGML extended flash attention views and Verdant computes the masked attention output against the imported GGML CPU evaluator
+    Given the extended attention cases from the pinned upstream factory
+    When the host schedules them on vTensor
+    Then all 5775 outputs agree with the independent GGML evaluator

@@ -412,3 +412,9 @@ id = "VT-57"
 level = "build"
 suite = "spatial-graphs"
 statement = "Prism plans GGML rotary position encodings and their backward graphs and Verdant computes each rotation against the imported GGML CPU"
+
+[[id]]
+id = "VT-58"
+level = "build"
+suite = "spatial-graphs"
+statement = "Prism plans GGML extended flash attention views and Verdant computes the masked attention output against the imported GGML CPU evaluator"

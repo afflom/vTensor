@@ -127,6 +127,8 @@ ggml_batches! {
     rotary_graphs_vt_57: "upstream-ROPE", 510, ["rotary"];
     /// `VT-57`: Exercise all upstream inverse-rotation graphs.
     rotary_backward_graphs_vt_57: "upstream-ROPE_BACK", 424, ["rotary"];
+    /// Verified by the upstream GGML extended flash attention evaluator.
+    extended_attention_vt_58: "upstream-FLASH_ATTN_EXT", 5775, [];
 }
 
 /// `TC-01`: The checker answers conformant exactly when every universal policy file's observed digest equals its locked digest
