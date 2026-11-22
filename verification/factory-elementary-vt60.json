@@ -1,0 +1,78 @@
+{
+  "requirement": "VT-60",
+  "implementation": "7993de0776e0fa1fa07176f72ddbe20081fafc20",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_revision": "ed88897c22e962f1ddcf97ea5e2596200d9e9fb5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "case_transcript": "ggml-factory-cases.tsv.gz",
+  "case_ordinals": {
+    "EXP": [
+      26,
+      27,
+      68,
+      69,
+      110,
+      111,
+      152,
+      153,
+      194,
+      195,
+      236,
+      237
+    ],
+    "LOG": [
+      16854,
+      16868,
+      16869,
+      16888,
+      16902,
+      16903,
+      16922,
+      16936,
+      16937
+    ],
+    "SIN": [
+      16855,
+      16870,
+      16871,
+      16889,
+      16904,
+      16905,
+      16923,
+      16938,
+      16939
+    ],
+    "COS": [
+      16856,
+      16872,
+      16873,
+      16890,
+      16906,
+      16907,
+      16924,
+      16940,
+      16941
+    ]
+  },
+  "oracle": "Unmodified make_test_cases_eval and test_case::eval with upstream CPU reference mode",
+  "test": "elementary_graphs_vt_60",
+  "pointwise_lock_sha256": "caa2e3ee68cb79125b97eeacdd09dc881655e38f8262edd6437c609355d39ce3",
+  "before": {
+    "status": "refused",
+    "count": 39,
+    "evidence": "factory-standalone-vt59.tsv.gz"
+  },
+  "after": {
+    "status": "passed",
+    "count": 39
+  },
+  "mutant": {
+    "change": "Dispatch sine to the cosine output",
+    "rejected_case": "SIN(type=f16,ne=[10,2,2,2])",
+    "error": 2.26196297,
+    "limit": 1e-07,
+    "restored": "All 39 cases passed"
+  },
+  "native_lines_before": 12166,
+  "native_lines_after": 12163
+}

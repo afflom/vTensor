@@ -701,6 +701,14 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
     Ok(())
 }
 
+/// The caller supplies a live, disjoint destination spanning the whole row.
+unsafe fn write_float_row(destination: *mut u8, row: &[f32]) {
+    // SAFETY: the caller validates the region. Byte copies permit unaligned GGML views.
+    unsafe {
+        ptr::copy_nonoverlapping(row.as_ptr().cast(), destination, std::mem::size_of_val(row))
+    }
+}
+
 fn execute_quantized_matrix(
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
@@ -772,13 +780,7 @@ fn execute_quantized_matrix(
     for (column, offset) in results.chunks_exact(rows as usize).zip(offsets) {
         // SAFETY: each certified column fits the checked buffer and the private
         // result workspace is disjoint from it. Byte copying permits unaligned views.
-        unsafe {
-            ptr::copy_nonoverlapping(
-                column.as_ptr().cast::<u8>(),
-                destination.add(offset as usize),
-                std::mem::size_of_val(column),
-            );
-        }
+        unsafe { write_float_row(destination.add(offset as usize), column) }
     }
     Ok(())
 }
@@ -809,6 +811,12 @@ unsafe fn scalar_word(
         }
     }
     Ok(u64::from_ne_bytes(bytes))
+}
+
+fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
+    verdant_tensor::linear::convert_float_storage(from, to, word)
+        .map_err(|_| BackendError::Overflow)?
+        .ok_or(BackendError::InvalidTensor)
 }
 
 fn execute_word(
@@ -877,6 +885,19 @@ fn execute_word(
         WordOperation::C5(kind) => verdant_tensor::linear::evaluate_encoded_word(kind, a, b)
             .map_err(|_| BackendError::InvalidTensor)?,
         WordOperation::C6 => return Err(BackendError::InvalidTensor),
+        WordOperation::C7(kind, source, destination) => {
+            use verdant_tensor::linear::{exponential_f32, natural_log_f32, sin_cos_f32};
+            let input = f32::from_bits(convert(source, 0, a)? as u32);
+            let result = match kind {
+                13 => natural_log_f32(input),
+                14 => sin_cos_f32(input).map(|pair| pair.0),
+                15 => sin_cos_f32(input).map(|pair| pair.1),
+                16 => exponential_f32(input),
+                _ => return Err(BackendError::InvalidTensor),
+            }
+            .map_err(|_| BackendError::Overflow)?;
+            Some(convert(0, destination, u64::from(result.to_bits()))?)
+        }
     }
     .ok_or(BackendError::InvalidTensor)?;
     match target {
@@ -1090,9 +1111,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     };
     let mut literal = [0_u8; 8];
     if constant {
-        let value = verdant_tensor::linear::convert_float_storage(0, literal_type, bits)
-            .map_err(|_| BackendError::Overflow)?
-            .ok_or(BackendError::InvalidTensor)?;
+        let value = convert(0, literal_type, bits)?;
         // SAFETY: scalar_word accepts widths of at most eight bytes; literal owns all eight.
         unsafe {
             scalar_word(literal.as_mut_ptr(), bytes, Some(value))?;
@@ -1227,10 +1246,10 @@ mod rotary {
     //! GGML rotary graph transport. Prism supplies addresses and Verdant computes coefficients and values.
 
     use super::{
-        graph_tensor_data, scalar_word, workspace, BackendError, Tensor, TensorDescriptor,
+        convert, graph_tensor_data, scalar_word, workspace, BackendError, Tensor, TensorDescriptor,
     };
     use verdant_tensor::linear::{
-        convert_float_storage, rotate_pair_f32, signed_word_f32, RotaryParameters, RotarySpectrum,
+        rotate_pair_f32, signed_word_f32, RotaryParameters, RotarySpectrum,
     };
     use vtensor_rotary::{
         Adt0 as Request, Adt1 as Layout, Adt2 as Descriptor, Adt3 as Plan, Adt4 as Response,
@@ -1276,12 +1295,6 @@ mod rotary {
             Response::C0 => Ok(None),
             _ => Err(BackendError::InvalidTensor),
         }
-    }
-
-    fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
-        convert_float_storage(from, to, word)
-            .map_err(|_| BackendError::Overflow)?
-            .ok_or(BackendError::InvalidTensor)
     }
 
     fn spectrum(tensor: &Tensor) -> Result<RotarySpectrum, BackendError> {
@@ -1412,12 +1425,8 @@ mod rotary {
 }
 
 mod attention {
-    use super::{
-        graph_tensor_data, scalar_word, workspace, BackendError, Tensor, TensorDescriptor,
-    };
-    use verdant_tensor::linear::{
-        convert_float_storage, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
-    };
+    use super::{graph_tensor_data, workspace, BackendError, Tensor, TensorDescriptor};
+    use verdant_tensor::linear::{evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32};
     use vtensor_attention::{Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as Response};
 
     fn request(query: Request) -> Result<Response, BackendError> {
@@ -1515,10 +1524,7 @@ mod attention {
     }
 
     fn half_value(half: u16) -> Result<f32, BackendError> {
-        let word = convert_float_storage(1, 0, u64::from(half))
-            .map_err(|_| BackendError::Overflow)?
-            .ok_or(BackendError::InvalidTensor)?;
-        Ok(f32::from_bits(word as u32))
+        Ok(f32::from_bits(super::convert(1, 0, u64::from(half))? as u32))
     }
 
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
@@ -1580,16 +1586,8 @@ mod attention {
                             .map_err(|_| BackendError::Overflow)?;
                     }
                     let row = mean.finish().map_err(|_| BackendError::Overflow)?;
-                    for (lane, word) in row.iter().enumerate() {
-                        // SAFETY: the certified address selects a full contiguous output row inside its native region.
-                        unsafe {
-                            scalar_word(
-                                output.add(dst as usize + 4 * lane),
-                                4,
-                                Some(u64::from(word.to_bits())),
-                            )?;
-                        }
-                    }
+                    // SAFETY: the Prism plan bounds this contiguous F32 row. Verdant owns its separate workspace.
+                    unsafe { super::write_float_row(output.add(dst as usize), &row) }
                 }
             }
         }

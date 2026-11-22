@@ -101,6 +101,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-56` | build | Prism selects the two SwiGLU operands and their row addresses. Verdant evaluates the gated product. All 36 imported factory cases pass. |
 | `VT-57` | build | Passes all 510 GGML ROPE and 424 ROPE_BACK factory cases using Verdant rotations. |
 | `VT-58` | build | Executes dense floating-point attention through Verdant. The quantized stories15M prefill and two decode steps match the reference top token and have maximum absolute logit error below 0.000008. [Consumer evidence](verification/llama-stories15m-vt58.json) |
+| `VT-60` | build | Dispatches LOG, SIN, COS and EXP to Verdant. All 39 imported GGML factory cases pass across F32, F16 and BF16. [Oracle results](verification/factory-elementary-vt60.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

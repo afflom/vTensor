@@ -14,3 +14,9 @@ Feature: native-backend
     Given a scheduled graph with an intermediate result and a dependent consumer
     When the application reuses the graph with the intermediate compute bit set or cleared
     Then both node outputs match the imported CPU and each compute node is assigned to the selected device
+
+  @VT-60 @build
+  Scenario: GGML logarithm sine cosine and exponential graphs execute through the Verdant scalar primitives across the imported factory storage and view cases
+    Given the pinned upstream GGML evaluation factory and CPU reference
+    When LOG, SIN, COS and EXP run on the vTensor backend
+    Then all 39 factory outputs match the reference within the imported tolerances

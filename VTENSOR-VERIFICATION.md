@@ -4709,3 +4709,15 @@ attention graphs and direct IQ2_XXS copy. Cargo dependency checks passed.
 The native audit counted 12,166 lines in both this revision and its parent.
 Recovery to the original 10,549-line ceiling and published Verdant dependency
 acceptance remain open. [Implementation](https://github.com/afflom/vTensor/commit/06b95286fb1aaeff1fb579eaeeb6094bf514d1c0)
+
+## Elementary function graphs
+
+VT-60 sends GGML LOG, SIN, COS and EXP to the pinned Verdant logarithm,
+circular-function and exponential primitives. Prism selects the operation,
+storage formats and addresses. Verdant performs both storage conversions and
+the numerical operation. All 39 factory ordinals previously refused by
+vTensor now pass the imported upstream reference evaluator on the restored
+library. Sending SIN to the cosine output failed the first F16 sine case
+with error 2.261962970 against a limit of 0.000000100. Sharing the checked
+native row transfer between matrix and attention execution reduced the
+overall native count from 12,166 to 12,163. [Oracle, source and certificate](verification/factory-elementary-vt60.json)
