@@ -549,6 +549,14 @@ fn group_runtime_edges_vt_49() {
     native_backend_oracle::verify(&root(), "group-norm", 224);
 }
 
+/// `VT-50`: RMS_NORM_BACK preserves its two-source reductions and narrowing order.
+#[test]
+fn backward_normalization_vt_50() {
+    tensor_layout::certified_current_model(&root(), "pointwise");
+    tensor_layout::certified_current_model(&root(), "norm");
+    native_backend_oracle::verify(&root(), "upstream-RMS_NORM_BACK", 10);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};

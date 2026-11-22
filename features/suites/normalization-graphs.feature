@@ -41,3 +41,12 @@ Feature: normalization-graphs
     Then every imported GROUP_NORM and GROUP_NORM_MUL_ADD case matches the authoritative CPU
     And copied and in-place edge cases preserve physical output spacing padding and atomic refusals
     And altered row-subtotal grouping and parameter bindings are rejected
+
+  @VT-50 @build
+  Scenario: Prism models F32 RMS_NORM_BACK with independent source strides and its specified narrowing order while Verdant matches every imported GGML CPU case
+    Given the pinned RMS_NORM_BACK constructor CPU implementation and test factory
+    When Prism accumulates both input reductions and orders the narrowed coefficient phases
+    Then every imported backward normalization case matches the authoritative CPU
+    And independent source layouts physical output spacing aliases and nonfinite parameters preserve CPU behavior
+    And malformed metadata and overlapping output writes are typed atomic refusals
+    And wrong source bindings and premature or delayed narrowing are rejected

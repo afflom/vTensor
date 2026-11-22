@@ -1,0 +1,24 @@
+{
+  "spec": "vtensor/backward-normalization-authoring/1",
+  "capability": "VT-50",
+  "status": "registered-failing-before-implementation",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "audit": "verification/normalization-backward-audit.json",
+  "initial_failure": {
+    "test": "backward_normalization_vt_50",
+    "exit_code": 101,
+    "seconds": 3.13,
+    "diagnostic": "RMS_NORM_BACK(type=f32,ne=[64,5,4,3],eps=0.000000): not supported",
+    "expected_factory_count": 10
+  },
+  "design": {
+    "root": "Add a separate backward instruction root; preserve existing NORM/GROUP_NORM/L2 instruction implementations.",
+    "planner": "Extend the independent normalization planner with source-1 presence and metadata, enforce both F32 unit-inner source layouts and safe effective output aliases.",
+    "geometry": "Capture source-1 strides once per graph; share ordinary normalized copy transport and two-source bindings.",
+    "arithmetic": "Two F64 sums of F32 products, then the imported F32 narrowing/division order, compound operations and physical output spacing. Reuse existing Verdant primitives only.",
+    "negation": "Verdant ScalarF64.narrow preserves the sign separately from unsigned magnitude and ScalarF32.negate toggles that sign. Establish the sign-composition law in Prism before using F32 negation after narrowing; validate the composed coefficient against the imported CPU.",
+    "memory": "Six reusable scratch words; global physical output injectivity preflight only for non-nested layouts. No numeric-scale refusal is inherited from forward RMS_NORM.",
+    "validation": "All ten factory cases, Prism supplemental two-source fixtures and imported full CPU outputs; target both narrowing points, source roles, output spacing, aliases, nonfinite arithmetic and typed atomic refusals."
+  },
+  "acceptance_not_claimed": true
+}
