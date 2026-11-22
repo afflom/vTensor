@@ -4796,3 +4796,7 @@ The imported evaluator now reads selected factory ordinals from its test input. 
 VT-67 runs all twelve TANH graphs and the composed SOFTCAP graph from the pinned GGML factory. VT-68 selects four distinct F16 attention graphs with masks and sinks at cap 10. Both suites pass on the loaded vTensor plugin against the imported CPU. The pointwise and attention Prism models determine GGML operation admission, storage, and cap placement. Verdant PR #25 computes the hyperbolic tangent. Its independent scalar comparison covers 128,870 inputs. [Verdant implementation and oracle](https://github.com/afflom/verdant-engine/pull/25)
 
 Changing pre-cap division to multiplication in the vTensor adapter made the original GGML evaluator reject ordinal 22994 with error 0.544802536 against its limit of 0.0005. Reverting that change restored all four attention graphs. The seven-test compatibility run also passed the TANH, Verdant dependency, BF16 attention, packed attention, small attention and grouped matrix contracts. The broader cap-10 census uses separate factory ordinals.
+
+## VT-65 complete checkpoint
+
+The locked SDK passed `just vv` at `31b0c5c589e3b3a25263d883d5f547be38d73fe3` using Verdant PR #24. The gate reused attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. All 72 backend contracts passed, followed by the remaining workspace tests and dependency checks. [Checked source](https://github.com/afflom/vTensor/commit/31b0c5c589e3b3a25263d883d5f547be38d73fe3)
