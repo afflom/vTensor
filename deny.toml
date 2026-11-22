@@ -309,3 +309,9 @@ name = "verdant_quotient_route"
 version = "=2.12.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x824c1aca }]
+
+[[licenses.clarify]]
+name = "vtensor_spatial"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xf6891fd4 }]

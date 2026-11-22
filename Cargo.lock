@@ -502,6 +502,7 @@ dependencies = [
  "vtensor_native_predicates",
  "vtensor_pointwise",
  "vtensor_repeat_offset",
+ "vtensor_spatial",
  "vtensor_transfer",
  "vtensor_types",
 ]
@@ -556,6 +557,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_repeat_offset"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_spatial"
 version = "0.1.0"
 
 [[package]]

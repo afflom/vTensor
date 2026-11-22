@@ -3827,3 +3827,61 @@ operations are still open.
 After the full gate exited, the task-owned SDK cache was restored to its normal
 workspace path. Only superseded private oracle binaries/libraries were removed;
 current outputs and dependency caches were retained.
+
+
+VT-47 moves signed spatial fixture pad, reflect and roll arguments, including
+the circular CPU-reference adjustment, from C++ into SpatialFixtures. The
+existing typed fixture bridge loads the separate certified package. All other
+generated bundles remain unchanged. The production export has 291 successful
+declarations, result
+`a674595a87fe122269442af5a4302d1a563bf553b2efd9d2705a31d7663878a6`,
+and attestation
+`502ac31b4f7a29457eaeea39827b4c7dba824346061470330f8768bb0c28b008`.
+
+Two initial production attempts failed preservation with deep recursion. A
+separate package alone did not resolve the failure. Inspecting the generated
+preservation source identified padWord as the failing relation. Commuting the
+large constant to the left of its addition resolved this case without changing
+kernel/SDK limits, axioms, fixture theorem statements or generated code. The
+first installation then exposed a missing writer package-name mapping. After
+fixing it, the actual successful artifact was replayed and installed directly;
+its proof was not rebuilt. Certificate replay validates the exported bindings;
+the original production build supplies Lean and leanchecker proof evidence.
+
+The unchanged imported CPU evaluator and frozen transcript checker preserve all
+2,256 spatial cases, including construction and input bytes. Asking for axis
+zero on every roll axis changes the frozen digest from
+`a44c02245774e077b1f02a0217d0fba7da1fd065676c8e10abc5f1f24b770dfe` to
+`e44ae834f64e88d94946a0a53a8070784d304bf42d6d753c99d8f3019542eeda`;
+the gate rejects it in 4.23 seconds. A preceding compile error in the transport
+was fixed and is not counted as mutation evidence. Replacing the spatial lock
+attestation with zeroes is rejected in 0.45 seconds; exact restoration passes
+in 1.00 second. Both faults are restored.
+
+Before the final infrastructure consolidation, the complete workspace contract
+run reports 47 passes and the existing VT-02 production-dependency failure in
+26.97 seconds. After consolidation, all-target/all-feature Clippy, dependency
+checks, seven fixture-generation tests, the imported storage and transfer
+oracle tests, five frame tests, frame sync, 62 xtask tests and the new generated
+library/documentation targets pass. Certificate checks share one cache keyed
+by canonical repository root and model; certificate failure poisons it and
+fails closed. Process-output checking is shared, and fixed-width oracle parsing
+no longer allocates a temporary Vec per row. Existing arithmetic fixtures retain
+their own certificate and cached bridge instance.
+
+The source audit still refuses growth: 11,407 lines versus 11,402 in checked
+parent 487d69c, 858 above the original 10,549-line ceiling. The registered failing
+test checkpoint was 11,424 lines; shrinking from that checkpoint does not recover
+the original budget. No ceiling or release gate was relaxed. Another full
+`just vv` is left for the next acceptance batch because the default application
+model is unchanged; full acceptance remains unproven, and the previous failed
+full gate is retained. The temporary SDK cache is restored to its workspace
+path. Details are in `verification/spatial-parameters.json`.
+
+The next normalization source audit finds that NORM's mean and variance
+rounding change with inner strides, and its contiguous variance uses native
+SIMD grouping. The current imported oracle compiler enables SSE2 without AVX
+or FMA flags. GROUP_NORM separately preserves F64 per-row subtotals. These
+findings, source hashes and implementation prerequisites are recorded in
+`verification/normalization-next-audit.json`; neither operation is claimed
+implemented by this audit.

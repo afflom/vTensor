@@ -166,7 +166,7 @@ host-only fixture orchestration edits reuse the driver. Imported evaluator edits
 invalidate only drivers that link it. Warm executions retain their upstream,
 executable and current-source integrity checks. Mutation evidence is recorded in
 [`verification/native-oracle-cache.json`](verification/native-oracle-cache.json).
-Non-Prism source is 11,402 lines, 853 above the original
+Non-Prism source is 11,407 lines, 858 above the original
 accepted budget, so the source budget remains unsatisfied.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in
@@ -225,6 +225,11 @@ RMS_NORM now executes the F32/BF16 copied and in-place paths (VT-46): all 121
 imported cases and 256 Prism-generated supplemental cases pass. Its exact-word
 comparisons and atomic numeric/overlap refusals are recorded in the verification
 evidence. Full acceptance and source-budget recovery remain open.
+Spatial pad/reflect/roll fixture parameters now come from a separate certified
+Prism package (VT-47); all 2,256 frozen construction/input cases and imported
+CPU comparisons are preserved. Binding and certificate faults are rejected.
+The next normalization audit records NORM's distinct contiguous/strided and
+SIMD rounding paths in `verification/normalization-next-audit.json`.
 
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:

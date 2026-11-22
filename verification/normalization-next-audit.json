@@ -1,0 +1,60 @@
+{
+  "spec": "vtensor/normalization-next-audit/1",
+  "status": "source-audit-only-not-implemented",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "source_sha256": {
+    "ggml/src/ggml.c": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+    "ggml/src/ggml-cpu/ops.cpp": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+    "ggml/src/ggml-cpu/vec.h": "7ad7cf31d4787fa9c112e087b929fff456761b97bd4e523d60d5a01ceb2409af",
+    "ggml/src/ggml-cpu/vec.cpp": "2422d2ab0ce6f9c1b78f478656bc1a2864d1374f8a339de127584c7349a4a869",
+    "tests/test-backend-ops.cpp": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52"
+  },
+  "NORM": {
+    "constructors": [
+      "ggml_norm",
+      "ggml_norm_inplace"
+    ],
+    "cpu_type": "F32",
+    "epsilon": "CPU asserts eps >= 0, which admits signed zero and positive infinity; no scale > 0 assertion.",
+    "dispatch_condition": "The arithmetic path changes when BOTH input and output inner stride equal sizeof(float).",
+    "unit_inner_stride": {
+      "mean": "ggml_vec_sum_f32 sums in F64, narrows the sum to F32, then divides by the F32 row count. This differs from RMS_NORM.",
+      "variance": "ggml_vec_cvar_f32 centers and squares in F32. The native SIMD branch groups F32 additions before F64 accumulation, divides in F64, then narrows the return to F32. Scalar remainder squares accumulate in F64.",
+      "x86_sse2_no_avx": "Each four-square group is (s0+s1)+(s2+s3), all three additions in F32, then widened into the F64 sum.",
+      "architecture_constraint": "Bind and verify compiler feature selection. The imported source has distinct AVX512, AVX2+FMA, SSE2, AArch64 NEON, VXE and RVV paths; do not assume one generic F64 sum matches all. The exact SDK oracle build uses its recorded compiler flags."
+    },
+    "nonunit_inner_stride": {
+      "mean": "Each addition is F32, then F32 division by the row count.",
+      "variance": "Center and square in F32; each variance addition is F32, followed by F32 division."
+    },
+    "common_tail": "F32 epsilon addition, sqrtf, reciprocal and centered-output scaling.",
+    "factory_gap": "test_norm builds copied output only. Audit in-place, explicit output stride and grouped-rounding regressions separately."
+  },
+  "GROUP_NORM": {
+    "cpu_type": "F32",
+    "input_inner_stride": "CPU asserts sizeof(float).",
+    "partition": "ceil(channels/groups), clamped final group; audit empty group and constructor conditions.",
+    "mean": "F64 per-row sum, then F64 addition of row sums, then F64 division by group element count before narrowing.",
+    "variance": "F32 center/square, F64 per-row sum, F64 sum of row sums, F64 division then F32 narrowing.",
+    "warning": "Preserve nested row subtotal order, which differs from a single flat F64 fold."
+  },
+  "next_actions": [
+    "Register the next capability, acceptance scenario and failing imported test before implementing it.",
+    "Capture actual compiler feature macros for the imported vector variance path.",
+    "Add cancellation and grouping regressions through Prism fixtures and the imported CPU oracle.",
+    "Reuse certified Verdant arithmetic and Prism scratch planning, but preserve each normalization operation's own rounding points."
+  ],
+  "claims_not_made": [
+    "NORM implementation or conformance",
+    "GROUP_NORM implementation or conformance",
+    "Complete architecture coverage",
+    "General proof from finite oracle tests"
+  ],
+  "oracle_compiler_feature_observation": {
+    "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "command": "c++ -dM -E -x c++ /dev/null (selected SIMD macros)",
+    "selected_macro_output": "#define __SSE2__ 1\n",
+    "compiler_flags": "The imported oracle compile helper adds -O2, function/data sections and -std=c++17; it adds no -mavx, -mfma or -march feature flags.",
+    "inference": "The current x86 oracle selects the SSE2 variance branch. This observation is not a claim for another compiler, target or feature configuration."
+  }
+}

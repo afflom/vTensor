@@ -183,7 +183,7 @@ fn matrix_graphs_vt_12() {
 /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
 #[test]
 fn elementwise_graphs_vt_13() {
-    tensor_layout::verify_pointwise_bundle();
+    tensor_layout::certified_current_model(&root(), "pointwise");
     native_backend_oracle::verify(&root(), "elementwise", 120);
 }
 
@@ -404,7 +404,7 @@ fn fixture_queries(cases: &[(u64, u64, u64, u64, Option<u64>)]) {
             expected
         );
     }
-    tensor_layout::verify_arithmetic_bundle();
+    tensor_layout::certified_current_model(&root(), "arithmetic");
 }
 
 /// `VT-41`: Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results
@@ -489,37 +489,32 @@ fn normalization_arithmetic_vt_45() {
 /// `VT-46`: Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals
 #[test]
 fn rms_normalization_vt_46() {
-    tensor_layout::verify_pointwise_bundle();
+    tensor_layout::certified_current_model(&root(), "pointwise");
     native_backend_oracle::verify(&root(), "upstream-RMS_NORM", 121);
 }
 
 /// `VT-46`: Supplemental RMS normalization outputs and atomic refusals match Prism fixtures and the imported CPU oracle.
 #[test]
 fn rms_runtime_edges_vt_46() {
-    tensor_layout::verify_pointwise_bundle();
+    tensor_layout::certified_current_model(&root(), "pointwise");
     native_backend_oracle::verify(&root(), "rms-norm", 256);
 }
 
 /// `VT-47`: Prism supplies spatial fixture parameters and rejects undefined recipe queries.
 #[test]
 fn fixture_generation_vt_47() {
-    fixture_queries(&[
-        (43, 8, 3, 0, Some(4294967295)),
-        (43, 16, 3, 1, Some(2147483649)),
-        (46, 17, 3, 0, Some(1)),
-        (46, 17, 3, 1, Some(4294967295)),
-        (46, 21, 3, 0, Some(4294967294)),
-        (46, 21, 3, 1, Some(1)),
-        (44, 3, 3, 1, Some(2)),
-        (45, 1, 3, 0, Some(2)),
-        (45, 2, 3, 0, Some(4294967294)),
-        (43, 22, 3, 0, None),
-        (44, 4, 3, 0, None),
-        (45, 17, 3, 0, None),
-        (43, 0, 3, 2, None),
-        (43, 0, 2147483648, 0, None),
-        (47, 0, 0, 0, None),
-    ]);
+    for (mode, pattern, extent, item, expected) in [
+        (3, 21, 3, 0, Some(4294967294)),
+        (0, 22, 3, 0, None),
+        (0, 0, 2147483648, 0, None),
+        (4, 0, 0, 0, None),
+    ] {
+        assert_eq!(
+            vtensor_spatial::run(mode, pattern, extent, item).unwrap(),
+            expected
+        );
+    }
+    tensor_layout::certified_current_model(&root(), "spatial");
 }
 
 mod ggml_oracle {
@@ -527,7 +522,7 @@ mod ggml_oracle {
     use sha2::{Digest, Sha256};
     use std::io::Write;
     use std::path::{Path, PathBuf};
-    use std::process::{Command, Stdio};
+    use std::process::{Command, Output, Stdio};
 
     pub(super) fn product<const N: usize>(
         domains: [&[u64]; N],
@@ -586,16 +581,21 @@ mod ggml_oracle {
     }
 
     pub(super) fn run(command: &mut Command) -> Vec<u8> {
-        let result = command
+        let output = command
             .output()
             .expect("oracle build tool available in SDK");
+        checked_output(command, output)
+    }
+
+    fn checked_output(command: &Command, output: Output) -> Vec<u8> {
         assert!(
-            result.status.success(),
-            "{command:?}\n{}\n{}",
-            String::from_utf8_lossy(&result.stdout),
-            String::from_utf8_lossy(&result.stderr)
+            output.status.success(),
+            "{command:?}: {:?}\n{}\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
         );
-        result.stdout
+        output.stdout
     }
 
     pub(super) fn source_tokens(body: &str) -> Vec<u8> {
@@ -805,14 +805,7 @@ mod ggml_oracle {
             writer.join().expect("input writer").expect("write input");
             output
         });
-        assert!(
-            output.status.success(),
-            "{command:?}: {:?}\n{}\n{}",
-            output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-        String::from_utf8(output.stdout).expect("oracle text")
+        String::from_utf8(checked_output(command, output)).expect("oracle text")
     }
 
     /// Query the upstream storage-size functions in one batch.
@@ -820,11 +813,12 @@ mod ggml_oracle {
         batch(&mut Command::new(executable), input)
             .lines()
             .map(|line| {
-                let values = line
+                let mut values = line
                     .split_whitespace()
-                    .map(|v| v.parse::<u64>().expect("oracle integer"))
-                    .collect::<Vec<_>>();
-                values.try_into().expect("oracle column count")
+                    .map(|v| v.parse::<u64>().expect("oracle integer"));
+                let row = std::array::from_fn(|_| values.next().expect("oracle column count"));
+                assert!(values.next().is_none(), "oracle column count");
+                row
             })
             .collect()
     }
@@ -834,9 +828,9 @@ mod ggml_oracle {
         let base = storage_oracle(root);
         let executable = base.with_file_name("transfer-oracle");
         verify_file(&executable, base.with_file_name("transfer.sha256"));
-        batch(&mut Command::new(&executable), input)
-            .lines()
-            .map(|line| line.parse().expect("transfer outcome"))
+        spans::<1>(&executable, input)
+            .into_iter()
+            .flatten()
             .collect()
     }
 
@@ -1268,24 +1262,22 @@ mod oracle_import {
 mod tensor_layout {
 
     use super::ggml_oracle;
+    use std::{collections::BTreeSet, path::PathBuf, sync::Mutex};
 
     use vtensor_layout::{run, Adt0, Adt1, Overflow};
 
-    pub(super) fn verify_pointwise_bundle() {
-        static VERIFIED: std::sync::OnceLock<()> = std::sync::OnceLock::new();
-        VERIFIED.get_or_init(|| certified_current_model(&super::root(), "pointwise"));
-    }
-
-    pub(super) fn verify_arithmetic_bundle() {
-        static VERIFIED: std::sync::OnceLock<()> = std::sync::OnceLock::new();
-        VERIFIED.get_or_init(|| certified_current_model(&super::root(), "arithmetic"));
-    }
-
     pub(super) fn certified_current_model(root: &std::path::Path, name: &str) {
+        static VERIFIED: Mutex<BTreeSet<(PathBuf, String)>> = Mutex::new(BTreeSet::new());
+        let mut verified = VERIFIED
+            .lock()
+            .expect("a failed certificate poisons the cache");
+        if !verified.insert((root.canonicalize().unwrap(), name.to_owned())) {
+            return;
+        }
         let (primary, directory) = match name {
             "quotient" => ("verdant_quotient_f64".to_owned(), "tensor-quotient"),
             "native" => ("vtensor_native_config".to_owned(), "native"),
-            "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" => {
+            "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" | "spatial" => {
                 (format!("vtensor_{name}"), name)
             }
             _ => panic!("unknown certified model: {name}"),
@@ -1638,21 +1630,21 @@ fn buffer_transfer_vt_09() {
 /// `VT-37`: Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals
 #[test]
 fn generator_graphs_vt_37() {
-    tensor_layout::verify_pointwise_bundle();
+    tensor_layout::certified_current_model(&root(), "pointwise");
     native_backend_oracle::verify(&root(), "upstream-ARANGE", 13);
 }
 
 /// `VT-38`: Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals
 #[test]
 fn normalization_graphs_vt_38() {
-    tensor_layout::verify_pointwise_bundle();
+    tensor_layout::certified_current_model(&root(), "pointwise");
     native_backend_oracle::verify(&root(), "upstream-L2_NORM,L2_NORM_BATCH", 129);
 }
 
 /// `VT-39`: Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals
 #[test]
 fn relative_position_add_vt_39() {
-    tensor_layout::verify_pointwise_bundle();
+    tensor_layout::certified_current_model(&root(), "pointwise");
     native_backend_oracle::verify(&root(), "upstream-ORACLE_CALIBRATION", 2);
     native_backend_oracle::verify(&root(), "upstream-ADD_REL_POS", 1315);
 }
@@ -1735,7 +1727,7 @@ mod native_backend_oracle {
             if family == 0 {
                 super::tensor_layout::certified_current_model(&super::root(), "fixtures");
             } else {
-                super::tensor_layout::verify_arithmetic_bundle();
+                super::tensor_layout::certified_current_model(&super::root(), "arithmetic");
             }
             let query = |request| {
                 let result = if family == 0 {
@@ -1778,12 +1770,12 @@ mod native_backend_oracle {
         })
     }
 
-    const FIXTURE_BRIDGE: &str = r#"extern crate vtensor_arithmetic;
+    const FIXTURE_BRIDGE: &str = r#"extern crate vtensor_fixture_model;
 #[repr(C)]
 pub struct Answer { pub status: u64, pub value: u64 }
 #[no_mangle]
 pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answer {
-    match vtensor_arithmetic::run(query,case,source,item) {
+    match vtensor_fixture_model::run(query,case,source,item) {
         Ok(Some(value))=>Answer{status:1,value},
         Ok(None)=>Answer{status:0,value:0},
         Err(_)=>Answer{status:2,value:0},
@@ -1791,12 +1783,15 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 }
 "#;
 
-    fn fixture_library(common: &Path) -> std::path::PathBuf {
-        static LIBRARY: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
-        let library = LIBRARY.get_or_init(|| {
-            super::tensor_layout::verify_arithmetic_bundle();
-            let source = super::root()
-                .join("generated/arithmetic/packages/rust-core/vtensor_arithmetic/src/lib.rs");
+    fn fixture_library(common: &Path, spatial: bool) -> std::path::PathBuf {
+        static LIBRARY: [std::sync::OnceLock<std::path::PathBuf>; 2] =
+            [const { std::sync::OnceLock::new() }; 2];
+        let library = LIBRARY[usize::from(spatial)].get_or_init(|| {
+            let model = if spatial { "spatial" } else { "arithmetic" };
+            super::tensor_layout::certified_current_model(&super::root(), model);
+            let source = super::root().join(format!(
+                "generated/{model}/packages/rust-core/vtensor_{model}/src/lib.rs"
+            ));
             let recipe = include_str!("contract.rs")
                 .split_once("\n    fn fixture_library(")
                 .unwrap()
@@ -1822,7 +1817,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             if !library.exists() {
                 let input = cache.join("bridge.rs");
                 std::fs::write(&input, FIXTURE_BRIDGE).unwrap();
-                let object = cache.join("libvtensor_arithmetic.rlib");
+                let object = cache.join("libvtensor_fixture_model.rlib");
                 let flags = [
                     "--edition=2021",
                     "-Copt-level=2",
@@ -1831,7 +1826,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 ];
                 run(Command::new("rustc")
                     .args(flags)
-                    .args(["--crate-name=vtensor_arithmetic", "--crate-type=rlib"])
+                    .args(["--crate-name=vtensor_fixture_model", "--crate-type=rlib"])
                     .arg(source)
                     .arg("-o")
                     .arg(&object));
@@ -1839,7 +1834,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 run(Command::new("rustc")
                     .args(flags)
                     .args(["--crate-type=cdylib", "--extern"])
-                    .arg(format!("vtensor_arithmetic={}", object.display()))
+                    .arg(format!("vtensor_fixture_model={}", object.display()))
                     .arg(input)
                     .arg("-o")
                     .arg(&pending));
@@ -2082,9 +2077,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         command.arg(&library).arg(&expected_snapshot).arg(mode);
         if matches!(
             mode,
-            "copy" | "repeat" | "concat" | "fill" | "cast" | "rms-norm"
+            "copy" | "repeat" | "concat" | "fill" | "cast" | "rms-norm" | "spatial"
         ) {
-            command.arg(fixture_library(common));
+            command.arg(fixture_library(common, mode == "spatial"));
         }
         let text = super::ggml_oracle::batch(&mut command, &input);
         assert_eq!(text, format!("RESULT cases {expected_cases}\n"));
@@ -2684,7 +2679,7 @@ int main(int argc, char **argv) {
       static_assert(sizeof(FixtureAnswer)==16 && offsetof(FixtureAnswer,value)==8);
       using FixtureQuery=FixtureAnswer(*)(uint64_t,uint64_t,uint64_t,uint64_t);
       FixtureQuery query=nullptr;
-      if(modeled) {CHECK(argc==5);auto model=dlopen(argv[4],RTLD_NOW|RTLD_LOCAL);CHECK(model);query=(FixtureQuery)dlsym(model,"fixture_query");CHECK(query);}
+      if(modeled || spatial) {CHECK(argc==5);auto model=dlopen(argv[4],RTLD_NOW|RTLD_LOCAL);CHECK(model);query=(FixtureQuery)dlsym(model,"fixture_query");CHECK(query);}
       auto fixture=[&](uint64_t q,uint64_t c,uint64_t source,uint64_t item) {auto answer=query(fixture_base+q,c,source,item);if(answer.status!=1)unexpected_abort("invalid Prism fixture response");return answer.value;};
       uint64_t config[5]={};
       std::vector<uint64_t> fixture_plan;
@@ -2762,23 +2757,12 @@ int main(int argc, char **argv) {
         if(repeating) {int64_t d[4];for(int axis=0;axis<4;++axis)d[axis]=fixture(2,cases,2,axis);target=ggml_new_tensor(ctx,type,4,d);for(int axis=0;axis<4;++axis)target->nb[axis]=fixture(2,cases,2,axis+4);}
         auto spatial_op = [&](ggml_tensor *a, bool reference) -> ggml_tensor * {
           int args[8]={};
-          if(operation==0) {
-            for(int axis=0;axis<4;axis++) {const int crop=std::min<int64_t>(a->ne[axis],1); int l=0,r=0;
-              switch(pattern/2) {
-                case 1:l=1;r=2;break; case 2:l=2;break; case 3:r=2;break;
-                case 4:l=-crop;break; case 5:r=-crop;break; case 6:l=-crop;r=2;break; case 7:l=2;r=-crop;break;
-                case 8:l=INT32_MAX;r=-INT32_MAX;break; case 9:l=-INT32_MAX;r=INT32_MAX;break;
-                case 10:l=a->ne[axis]>0?INT32_MIN:-INT32_MAX;r=INT32_MAX;break;
-              } args[axis*2]=l;args[axis*2+1]=r;
-            }
-            if(reference && pattern%2) for(int axis=0;axis<4;axis++) if(a->ne[axis]) {
-              const int64_t l=args[axis*2]%a->ne[axis], r=int64_t(args[axis*2])+args[axis*2+1]-l;
-              GGML_ASSERT(r>=INT32_MIN && r<=INT32_MAX); args[axis*2]=l;args[axis*2+1]=r;
-            }
-            return pattern%2?ggml_pad_ext_circular(ctx,a,args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]):ggml_pad_ext(ctx,a,args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
+          for(int axis=0;axis<(operation==1?1:4);++axis) for(int side=0;side<(operation==2?1:2);++side) {
+            auto answer=query(operation==0 && reference?3:operation,pattern,a->ne[axis],operation==2?axis:side);
+            if(answer.status!=1 || answer.value>UINT32_MAX)unexpected_abort("invalid Prism spatial fixture response");uint32_t word=answer.value;memcpy(&args[operation==0?axis*2+side:operation==1?side:axis],&word,4);
           }
-          if(operation==1) return ggml_pad_reflect_1d(ctx,a,pattern&1?a->ne[0]-1:0,pattern&2?a->ne[0]-1:0);
-          for(int axis=0;axis<4;axis++) args[axis]=pattern?(((pattern-1)&(1<<axis))?-1:1)*(a->ne[axis]-1):0;
+          if(operation==0) return pattern%2?ggml_pad_ext_circular(ctx,a,args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]):ggml_pad_ext(ctx,a,args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
+          if(operation==1) return ggml_pad_reflect_1d(ctx,a,args[0],args[1]);
           return ggml_roll(ctx,a,args[0],args[1],args[2],args[3]);
         };
         ggml_tensor *result=relative?ggml_get_rel_pos(ctx,input,rows,rows):selecting?(operation?ggml_count_equal(ctx,input,right):ggml_argmax(ctx,input)):wordwise?filled:windowing?(operation?ggml_win_unpart(ctx,input,image_width,image_height,window_size):ggml_win_part(ctx,input,window_size)):casting?(operation<3?ggml_cast(ctx,input,output_type):ggml_cpy(ctx,input,target)):filling?filled:triangular?ggml_tri(ctx,ggml_cont(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,input):folding?ggml_repeat_back(ctx,input,target):spatial?spatial_op(operation?ggml_cont(ctx,input):input,false):concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(fixture_plan[8]?ggml_cont_1d(ctx,input,fixture(2,cases,0,9)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));

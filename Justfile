@@ -97,7 +97,7 @@ bdd:
 # Certified SDK output retains the renderer's exact bytes; VT-06 replays its
 # certificate. Format every other workspace member without traversing dependencies.
 fmt *options:
-    cargo metadata --locked --no-deps --format-version 1 | node -e 'const fs = require("node:fs"), cp = require("node:child_process"); const m = JSON.parse(fs.readFileSync(0, "utf8")); const p = m.packages.filter(p => m.workspace_members.includes(p.id) && !["vtensor_layout", "vtensor_types", "vtensor_transfer", "vtensor_allocation", "vtensor_native_config", "vtensor_native_predicates", "vtensor_native_memory", "vtensor_matrix", "vtensor_matrix_execution", "vtensor_fixtures", "vtensor_arithmetic", "vtensor_index", "vtensor_pointwise", "vtensor_repeat_offset"].includes(p.name)); const a = ["fmt", ...p.flatMap(p => ["--package", p.name]), "--", ...process.argv.slice(1)]; const r = cp.spawnSync("cargo", a, {stdio: "inherit"}); if (r.error) throw r.error; process.exit(r.status ?? 1);' -- {{options}}
+    cargo metadata --locked --no-deps --format-version 1 | node -e 'const fs = require("node:fs"), cp = require("node:child_process"); const m = JSON.parse(fs.readFileSync(0, "utf8")); const p = m.packages.filter(p => m.workspace_members.includes(p.id) && !["vtensor_layout", "vtensor_types", "vtensor_transfer", "vtensor_allocation", "vtensor_native_config", "vtensor_native_predicates", "vtensor_native_memory", "vtensor_matrix", "vtensor_matrix_execution", "vtensor_fixtures", "vtensor_arithmetic", "vtensor_spatial", "vtensor_index", "vtensor_pointwise", "vtensor_repeat_offset"].includes(p.name)); const a = ["fmt", ...p.flatMap(p => ["--package", p.name]), "--", ...process.argv.slice(1)]; const r = cp.spawnSync("cargo", a, {stdio: "inherit"}); if (r.error) throw r.error; process.exit(r.status ?? 1);' -- {{options}}
 
 # Regenerate everything the model owns: CONFORMANCE.md.
 model-write:
@@ -138,6 +138,7 @@ certified-export name:
       index) project=app/index.lexlean.toml ;;
       fixtures) project=app/fixtures.lexlean.toml ;;
       arithmetic) project=app/arithmetic.lexlean.toml ;;
+      spatial) project=app/spatial.lexlean.toml ;;
       pointwise) project=app/pointwise.lexlean.toml ;;
       *) echo "unknown certified bundle: $name" >&2; exit 1 ;;
     esac
@@ -147,12 +148,16 @@ certified-export name:
       cat "$receipt" >&2
       exit 1
     fi
-    node - "$receipt" "$name" <<'JS'
+    artifact=$(node -e 'const r = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if (!r.success || r.artifacts.length !== 1) throw Error("SDK did not export one certified bundle"); process.stdout.write(r.artifacts[0]);' "$receipt")
+    just certified-install "$name" "$artifact"
+
+# Install a previously certified SDK bundle; this writer is not an acceptance gate.
+certified-install name artifact:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    node - {{quote(name)}} {{quote(artifact)}} <<'JS'
     const fs = require('node:fs'), path = require('node:path');
-    const name = process.argv[3];
-    const receipt = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-    if (!receipt.success || receipt.artifacts.length !== 1) throw Error('SDK did not export one certified bundle');
-    const artifact = receipt.artifacts[0];
+    const name = process.argv[2], artifact = process.argv[3];
     const buildRoot = name === 'layout' ? '.lexlean' : `.lexlean-${name}`;
     if (!artifact.startsWith(`${buildRoot}/production/`) || !/^[0-9a-f]{64}$/.test(artifact.slice(buildRoot.length + 12))) throw Error('unexpected SDK bundle path');
     const source = path.resolve('app', artifact);
@@ -165,6 +170,7 @@ certified-export name:
       index: ['PrismTemplateContract.TensorIndex.elementOffset', 'vtensor_index'],
       fixtures: ['PrismTemplateContract.MatrixFixtures.evaluate', 'vtensor_fixtures'],
       arithmetic: ['PrismTemplateContract.ArithmeticFixtures.evaluate', 'vtensor_arithmetic'],
+      spatial: ['PrismTemplateContract.SpatialFixtures.evaluate', 'vtensor_spatial'],
       pointwise: ['PrismTemplateContract.PointwiseGraph.evaluate', 'vtensor_pointwise'],
     }[name];
     const output = result.roots.find(r => r.root === primary).outputs[0].package.files.find(f => f.path.endsWith('/src/lib.rs'));

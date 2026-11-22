@@ -1,0 +1,211 @@
+\begin{lexlean}{SpatialFixtures}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: negative,
+  parameters: [magnitude : Nat],
+  result: Nat,
+  body: (prim remainder (prim subtract 4294967296 magnitude : Nat) 4294967296 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: padLeft,
+  parameters: [pattern : Nat, extent : Nat],
+  result: Nat,
+  body: (let family : Nat := (prim quotient pattern 2 0 : Nat); (if ((family =? 1) || (family =? 7)) then (if (family =? 1) then 1 else 2) else (if (family =? 2) then 2 else (if ((family =? 4) || (family =? 6)) then (if (extent =? 0) then 0 else 4294967295) else (if (family =? 8) then 2147483647 else (if (family =? 9) then 2147483649 else (if (family =? 10) then (if (extent =? 0) then 2147483649 else 2147483648) else 0))))))),
+  executable: true
+}
+
+definition{
+  name: padRight,
+  parameters: [pattern : Nat, extent : Nat],
+  result: Nat,
+  body: (let family : Nat := (prim quotient pattern 2 0 : Nat); (if ((family =? 1) || ((family =? 3) || (family =? 6))) then 2 else (if ((family =? 5) || (family =? 7)) then (if (extent =? 0) then 0 else 4294967295) else (if (family =? 8) then 2147483649 else (if ((family =? 9) || (family =? 10)) then 2147483647 else 0))))),
+  executable: true
+}
+
+definition{
+  name: signedRemainder,
+  parameters: [word : Nat, extent : Nat],
+  result: Nat,
+  body: (if (extent =? 0) then word else (if (word <? 2147483648) then (prim remainder word extent 0 : Nat) else (negative (prim remainder (prim subtract 4294967296 word : Nat) extent 0 : Nat)))),
+  executable: true
+}
+
+definition{
+  name: padWord,
+  parameters: [reference : Bool, pattern : Nat, extent : Nat, side : Nat],
+  result: Nat,
+  body: (let left : Nat := (padLeft pattern extent); (let right : Nat := (padRight pattern extent); (if ((reference && ((prim remainder pattern 2 0 : Nat) =? 1)) && (0 <? extent)) then (let adjusted : Nat := (signedRemainder left extent); (if (side =? 0) then adjusted else (prim remainder (prim subtract (4294967296 + (left + right)) adjusted : Nat) 4294967296 0 : Nat))) else (if (side =? 0) then left else right)))),
+  executable: true
+}
+
+definition{
+  name: reflectWord,
+  parameters: [pattern : Nat, extent : Nat, side : Nat],
+  result: Nat,
+  body: (if ((prim remainder (prim quotient pattern (if (side =? 0) then 1 else 2) 0 : Nat) 2 0 : Nat) =? 1) then (prim subtract extent 1 : Nat) else 0),
+  executable: true
+}
+
+definition{
+  name: rollWord,
+  parameters: [pattern : Nat, extent : Nat, axis : Nat],
+  result: Nat,
+  body: (if (pattern =? 0) then 0 else (let magnitude : Nat := (prim subtract extent 1 : Nat); (if ((prim remainder (prim quotient (prim subtract pattern 1 : Nat) (if (axis <? 2) then (if (axis =? 0) then 1 else 2) else (if (axis =? 2) then 4 else 8)) 0 : Nat) 2 0 : Nat) =? 1) then (negative magnitude) else magnitude))),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [mode : Nat, pattern : Nat, extent : Nat, item : Nat],
+  result: (Option Nat),
+  body: (if ((extent <=? 2147483647) && (mode <? 4)) then (if ((mode =? 0) || (mode =? 3)) then (if ((pattern <? 22) && (item <? 2)) then (ctor Option.some [Nat] (padWord (mode =? 3) pattern extent item)) else (ctor Option.none [Nat])) else (if (mode =? 1) then (if ((pattern <? 4) && ((item <? 2) && (0 <? extent))) then (ctor Option.some [Nat] (reflectWord pattern extent item)) else (ctor Option.none [Nat])) else (if ((pattern <? 17) && ((item <? 4) && (0 <? extent))) then (ctor Option.some [Nat] (rollWord pattern extent item)) else (ctor Option.none [Nat])))) else (ctor Option.none [Nat])),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: cropLeft,
+  parameters: [],
+  statement: ((evaluate 0 8 3 0) = (ctor Option.some [Nat] 4294967295)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: largeRight,
+  parameters: [],
+  statement: ((evaluate 0 16 3 1) = (ctor Option.some [Nat] 2147483649)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: circularLeft,
+  parameters: [],
+  statement: ((evaluate 3 17 3 0) = (ctor Option.some [Nat] 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: circularRight,
+  parameters: [],
+  statement: ((evaluate 3 17 3 1) = (ctor Option.some [Nat] 4294967295)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: intMinLeft,
+  parameters: [],
+  statement: ((evaluate 3 21 3 0) = (ctor Option.some [Nat] 4294967294)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: intMinRight,
+  parameters: [],
+  statement: ((evaluate 3 21 3 1) = (ctor Option.some [Nat] 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: reflectedRight,
+  parameters: [],
+  statement: ((evaluate 1 3 3 1) = (ctor Option.some [Nat] 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: rollPositive,
+  parameters: [],
+  statement: ((evaluate 2 1 3 0) = (ctor Option.some [Nat] 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: rollNegative,
+  parameters: [],
+  statement: ((evaluate 2 2 3 0) = (ctor Option.some [Nat] 4294967294)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyCircular,
+  parameters: [],
+  statement: ((evaluate 3 21 0 0) = (ctor Option.some [Nat] 2147483649)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: zeroRemainder,
+  parameters: [],
+  statement: ((evaluate 3 19 1 0) = (ctor Option.some [Nat] 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fourthAxisNegative,
+  parameters: [],
+  statement: ((evaluate 2 9 3 3) = (ctor Option.some [Nat] 4294967294)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nextPadRefused,
+  parameters: [],
+  statement: ((evaluate 0 22 3 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nextReflectRefused,
+  parameters: [],
+  statement: ((evaluate 1 4 3 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nextRollRefused,
+  parameters: [],
+  statement: ((evaluate 2 17 3 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: missingSideRefused,
+  parameters: [],
+  statement: ((evaluate 0 0 3 2) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: largeExtentRefused,
+  parameters: [],
+  statement: ((evaluate 0 0 2147483648 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unknownModeRefused,
+  parameters: [],
+  statement: ((evaluate 4 0 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyReflectRefused,
+  parameters: [],
+  statement: ((evaluate 1 0 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyRollRefused,
+  parameters: [],
+  statement: ((evaluate 2 0 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}
