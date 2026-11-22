@@ -4667,3 +4667,28 @@ All 63 backend contract tests passed, including the upstream rotary suite.
 The run covered the application proof, format, model, template, lint, workspace
 tests and dependency checks. The later dense attention implementation has its
 own scoped oracle and consumer results above.
+
+## IQ2_XXS identity copy
+
+For factory ordinal 8368 the upstream evaluator names the CPU as the sole
+refusing backend. The GGML CPU graph entry point can execute the underlying
+same-format copy. The test builds the 256 × 2 × 3 × 4 graph with the pinned
+GGML constructors, fills every encoded input byte and compares the complete
+destination from both devices. Both matched the input byte for byte.
+Clearing the block in the vTensor adapter made the comparison fail at
+`observed==data`. Restoring the source block passed. Run
+`cargo test --release --locked -p vtensor-backend --test contract iq2_identity_copy_vt_15`
+in the locked SDK. The [factory inventory](verification/ggml-factory-inventory.json)
+retains the admission refusal from its own upstream evaluator.
+
+## VT-06 layout fixtures
+
+The pre-migration executable emitted 1,872 requests across the 36 imported
+storage types. The fixture model reproduces all 48 strided and four empty-axis
+layouts per type from the upstream block size and byte width. The complete
+serialized input to the GGML storage oracle retains SHA-256
+`c16f7845ee80d5bcc0cdba789e92eff7395c84b28a95fd06407bef0e14172570`.
+Swapping the first two extents changed that digest to
+`a9ccdebad3b7084af999748d61b4632cd8857e5911ca52d977b861015e9992a5`
+and the layout test failed. The imported executable still supplies every
+expected byte span. [Prism result](generated/probes/result.json)

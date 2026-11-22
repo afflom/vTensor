@@ -53,6 +53,9 @@ ggml_batches! {
     /// `VT-15`: Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding
     #[test]
     fn copy_graphs_vt_15() { "copy", 3456, [] }
+    /// Compare the IQ2_XXS identity copy with the actual GGML CPU copy kernel.
+    #[test]
+    fn iq2_identity_copy_vt_15() { "iq2-identity-copy", 1, [] }
     /// `VT-16`: Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle
     #[test]
     fn repeat_graphs_vt_16() { "repeat", 160, [] }
@@ -401,19 +404,24 @@ fn native_fixture_baselines_vt_40() {
     }
 }
 
-fn probes(suite: u64, count: u64) -> impl Iterator<Item = vtensor_probes::Adt0> {
+fn probes(
+    suite: u64,
+    count: u64,
+    block: u64,
+    bytes: u64,
+) -> impl Iterator<Item = vtensor_probes::Adt0> {
     tensor_layout::certified_current_model(&root(), "probes");
     assert!(matches!(
-        vtensor_probes::run(suite, count).unwrap(),
+        vtensor_probes::run(suite, count, block, bytes).unwrap(),
         vtensor_probes::Adt0::C0
     ));
-    (0..count).map(move |index| vtensor_probes::run(suite, index).unwrap())
+    (0..count).map(move |index| vtensor_probes::run(suite, index, block, bytes).unwrap())
 }
 
 fn fixture_queries(suite: u64, count: u64) {
     let spatial = suite == 47;
     tensor_layout::certified_current_model(&root(), if spatial { "spatial" } else { "arithmetic" });
-    for probe in probes(suite, count) {
+    for probe in probes(suite, count, 0, 0) {
         let vtensor_probes::Adt0::C1(query, case, source, item, expected) = probe else {
             panic!("missing fixture probe");
         };
@@ -434,7 +442,7 @@ fn boundary_rows<const N: usize, const M: usize>(
 ) -> impl Iterator<Item = ([u64; N], [u64; M])> {
     use std::fmt::Write;
     tensor_layout::certified_current_model(&root(), "layout");
-    let rows: Vec<_> = probes(suite, count).map(unpack).collect();
+    let rows: Vec<_> = probes(suite, count, 0, 0).map(unpack).collect();
     let mut input = String::new();
     for row in &rows {
         writeln!(input, "{}", row.map(|word| word.to_string()).join(" ")).unwrap();
@@ -500,19 +508,6 @@ mod ggml_oracle {
     use std::io::Write;
     use std::path::{Path, PathBuf};
     use std::process::{Command, Output, Stdio};
-
-    pub(super) fn product<const N: usize>(
-        domains: [&[u64]; N],
-    ) -> impl Iterator<Item = [u64; N]> + '_ {
-        (0..domains.iter().map(|d| d.len()).product()).map(move |mut ordinal| {
-            let mut row = [0; N];
-            for axis in (0..N).rev() {
-                row[axis] = domains[axis][ordinal % domains[axis].len()];
-                ordinal /= domains[axis].len();
-            }
-            row
-        })
-    }
 
     pub(super) fn read_json(path: impl AsRef<Path>) -> serde_json::Value {
         let path = path.as_ref();
@@ -1345,68 +1340,49 @@ mod tensor_layout {
         .expect("string write");
     }
 
-    struct Fixture {
-        executable: std::path::PathBuf,
-        kinds: &'static [u64],
-        metadata: Vec<[u64; 3]>,
-    }
-
-    fn fixture() -> &'static Fixture {
-        static FIXTURE: std::sync::OnceLock<Fixture> = std::sync::OnceLock::new();
-        FIXTURE.get_or_init(|| {
-            let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    fn storage_metadata() -> &'static [[u64; 3]] {
+        static METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
+            let root = super::root();
             certified_current_model(&root, "layout");
-            let executable = ggml_oracle::storage_oracle(&root);
             let kinds = &*super::ggml_inventory::STORAGE_TYPES;
-            let mut metadata_requests = String::new();
+            let mut input = String::new();
             for &kind in kinds {
-                request(&mut metadata_requests, kind, [0; 4], [0; 4]);
+                request(&mut input, kind, [0; 4], [0; 4]);
             }
-            let metadata = ggml_oracle::spans(&executable, &metadata_requests);
+            let metadata = ggml_oracle::spans(&ggml_oracle::storage_oracle(&root), &input);
             assert_eq!(metadata.len(), kinds.len(), "oracle omitted a type");
-            Fixture {
-                executable,
-                kinds,
-                metadata,
-            }
-        })
+            metadata
+        });
+        &METADATA
     }
 
     /// `VT-06`: The Prism-generated four-dimensional byte-span function matches the pinned GGML storage oracle and rejects invalid blocks and arithmetic overflow
     #[test]
     fn tensor_layout_vt_06() {
-        let Fixture {
-            executable,
-            kinds,
-            metadata,
-        } = fixture();
+        let kinds = &*super::ggml_inventory::STORAGE_TYPES;
         let mut inputs = String::new();
         let mut layouts = Vec::new();
-        for (&kind, &[_, block, bytes]) in kinds.iter().zip(metadata) {
+        for (&kind, &[_, block, bytes]) in kinds.iter().zip(storage_metadata()) {
             assert!(
                 block > 0 && bytes > 0,
                 "invalid upstream descriptor for type {kind}"
             );
-            for [multiples, rows, planes, batches, padding] in
-                ggml_oracle::product([&[1, 2, 4], &[1, 3], &[1, 2], &[1, 2], &[0, 7]])
-            {
-                let ne = [block * multiples, rows, planes, batches];
-                let nb0 = bytes + padding;
-                let nb1 = multiples * nb0 + 11;
-                let nb2 = rows * nb1 + 13;
-                let nb = [nb0, nb1, nb2, planes * nb2 + 17];
-                request(&mut inputs, kind, ne, nb);
-                layouts.push(layout(ne, nb, block, bytes));
-            }
-            for axis in 0..4 {
-                let mut ne = [block, 2, 2, 2];
-                ne[axis] = 0;
-                let nb = [bytes, bytes * 2, bytes * 4, bytes * 8];
+            for probe in super::probes(6, 52, block, bytes) {
+                let vtensor_probes::Adt0::C4(n0, n1, n2, n3, b0, b1, b2, b3) = probe else {
+                    panic!("missing layout probe for type {kind}");
+                };
+                let ne = [n0, n1, n2, n3];
+                let nb = [b0, b1, b2, b3];
                 request(&mut inputs, kind, ne, nb);
                 layouts.push(layout(ne, nb, block, bytes));
             }
         }
-        let expected = ggml_oracle::spans::<3>(executable, &inputs);
+        assert_eq!(
+            repo_model::artifact::sha256_hex(inputs.as_bytes()),
+            "c16f7845ee80d5bcc0cdba789e92eff7395c84b28a95fd06407bef0e14172570"
+        );
+        let expected =
+            ggml_oracle::spans::<3>(&ggml_oracle::storage_oracle(&super::root()), &inputs);
         assert_eq!(expected.len(), layouts.len(), "oracle omitted a layout");
         for (index, (input, reference)) in layouts.into_iter().zip(expected).enumerate() {
             match run(input).expect("bounded layout fits machine arithmetic") {
@@ -1432,10 +1408,8 @@ mod tensor_layout {
     /// `VT-07`: The Prism-generated type catalog matches every declared GGML storage type and refuses removed and out-of-range identifiers
     #[test]
     fn tensor_layout_vt_07() {
-        let Fixture {
-            kinds, metadata, ..
-        } = fixture();
-        for (&kind, &[_, block, bytes]) in kinds.iter().zip(metadata) {
+        let kinds = &*super::ggml_inventory::STORAGE_TYPES;
+        for (&kind, &[_, block, bytes]) in kinds.iter().zip(storage_metadata()) {
             match vtensor_types::run(kind) {
                 vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(id, block_size, type_size)) => {
                     assert_eq!(
@@ -2265,6 +2239,30 @@ int main(int argc, char **argv) {
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
     ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
     ggml_backend_cpu_set_n_threads(reference,1);
+    if (!strcmp(argv[3],"iq2-identity-copy")) {
+        for (auto selected : {reference, backend}) {
+            auto ctx=ggml_init({ggml_graph_overhead()+8*ggml_tensor_overhead(),nullptr,true});
+            CHECK(ctx);
+            auto src=ggml_new_tensor_4d(ctx,GGML_TYPE_IQ2_XXS,256,2,3,4);
+            ggml_set_param(src);
+            auto dst=ggml_dup_tensor(ctx,src);
+            auto out=ggml_cpy(ctx,src,dst);
+            auto graph=ggml_new_graph(ctx);
+            ggml_build_forward_expand(graph,out);
+            auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected);
+            CHECK(buffer);
+            std::vector<uint8_t> data(ggml_nbytes(src)), observed(data.size(),0);
+            for(size_t i=0;i<data.size();++i) data[i]=uint8_t(i*197+19);
+            ggml_backend_tensor_set(src,data.data(),0,data.size());
+            ggml_backend_tensor_set(dst,observed.data(),0,observed.size());
+            CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+            ggml_backend_tensor_get(out,observed.data(),0,observed.size());
+            CHECK(observed==data);
+            ggml_backend_buffer_free(buffer); ggml_free(ctx);
+        }
+        ggml_backend_free(reference); ggml_backend_free(backend);
+        puts("RESULT cases 1"); return 0;
+    }
     if (!strcmp(argv[3],"scheduled-flags")) {
         std::array<std::array<float,2>,3> expected{};
         for (auto selected : {reference, backend}) {

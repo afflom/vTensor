@@ -10,7 +10,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pin the submitted Verdant primitives. VT-02 checks Cargo's exact upstream source and the 15 descriptors. [Engine PR #12](https://github.com/afflom/verdant-engine/pull/12) · [Stacked Engine PR #13](https://github.com/afflom/verdant-engine/pull/13) · [Engine PR #14](https://github.com/afflom/verdant-engine/pull/14) · [Engine PR #15](https://github.com/afflom/verdant-engine/pull/15) · [Engine PR #16](https://github.com/afflom/verdant-engine/pull/16) · [Engine PR #17](https://github.com/afflom/verdant-engine/pull/17) · [Engine PR #18](https://github.com/afflom/verdant-engine/pull/18) · [Engine PR #19](https://github.com/afflom/verdant-engine/pull/19) · [Engine PR #20](https://github.com/afflom/verdant-engine/pull/20) · [Engine PR #21](https://github.com/afflom/verdant-engine/pull/21) · [Patch record](model/verdant-development.json)
 - [ ] When Verdant releases these primitives, switch to the published production packages, verify provenance and checksums, and build a clean consumer. Continue implementation on the PR pin until then.
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
-- [ ] Recover **1,618 non-Prism lines** (12,167 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
+- [ ] Recover **1,617 non-Prism lines** (12,166 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -41,7 +42,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Execute Q2_K ADD (809). vTensor alone refuses it. Use the pinned CPU evaluator for the output comparison.
 - [ ] Complete BF16 GET_ROWS_BACK (1069). Both devices refuse it. Import a GGML reference that executes this format.
-- [ ] Verify same-format IQ2_XXS CPY (8368) against a GGML reference that executes it. vTensor admits it and the CPU evaluator refuses it. [Upstream verdicts for all three cases](verification/ggml-factory-inventory.json)
+- [x] Compare the IQ2_XXS copy at ordinal 8368 byte for byte with the executable upstream CPU copy kernel. Its factory admission refusal remains recorded. [Direct kernel evidence](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
 - [ ] Complete sorting, TOP_K and masks, expert routing, indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
 - [ ] Complete convolution, im2col/col2im, transpose/depthwise forms, pooling, upscaling, timestep embeddings and their defined backward paths.
 - [ ] Complete SSM convolution/scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
