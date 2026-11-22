@@ -1271,7 +1271,7 @@ definition{
     | CopyMode.scattered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.relativeAdd initial width biases => (relativeAddOffsets index initial width biases)
-    | CopyMode.normalized kind epsilon rows capacity => (if ((kind =? 64) || (kind =? 65)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))
+    | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
     | CopyMode.arange start stop step count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
   executable: true
@@ -1340,7 +1340,7 @@ definition{
     | CopyMode.relativePosition => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false)
     | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false)
-    | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings (if (kind =? 66) then 3 else 1) 0 0 false)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.arange start stop step count => (ctor GraphResponse.bindings 0 0 0 false)),
   executable: true
@@ -1554,7 +1554,7 @@ definition{
     | CopyMode.relativePosition => (copyOffsets index source destination mode)
     | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
     | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
-    | CopyMode.normalized kind epsilon rows capacity => (if ((kind =? 64) || (kind =? 65)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
+    | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
     | CopyMode.arange start stop step count => (arangeOffsets index count start stop step flag))),
   executable: true
@@ -1567,7 +1567,7 @@ definition{
   body: (match request
     | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 input7 input8 input9 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if ((operation =? 23) || (operation =? 26)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))))))
+      | Option.some left => (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
     | GraphRequest.bindings mode => (sourceBindings mode)),
   executable: true,
@@ -2692,6 +2692,20 @@ theorem{
     flag : Nat
   ],
   statement: ((statefulOffsets index source destination (ctor CopyMode.normalized 65 epsilon groups capacity) flag) = (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: backwardBindsBothSources,
+  parameters: [],
+  statement: ((sourceBindings (ctor CopyMode.normalized 66 0 4 6)) = (ctor GraphResponse.bindings 3 0 0 false)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: backwardDoesNotAddBindingsToForwardNorm,
+  parameters: [],
+  statement: ((sourceBindings (ctor CopyMode.normalized 64 0 4 6)) = (ctor GraphResponse.bindings 1 0 0 false)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

@@ -505,6 +505,7 @@ dependencies = [
  "vtensor_norm_plan",
  "vtensor_pointwise",
  "vtensor_repeat_offset",
+ "vtensor_rms_backward",
  "vtensor_spatial",
  "vtensor_transfer",
  "vtensor_types",
@@ -580,6 +581,14 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_repeat_offset"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_rms_backward"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_rmsbackfixtures"
 version = "0.1.0"
 
 [[package]]

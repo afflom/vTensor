@@ -4059,3 +4059,101 @@ preserved. To retain disk space without losing prior evidence, obsolete
 SDK export caches were archived under the task's temporary directory; current
 exports and committed evidence are intact. Private compiled and historical
 oracle caches remain in task RAM through their existing paths.
+
+### VT-50: two-source RMS_NORM_BACK and its narrowing order
+
+Registration `b26a61a` added the ID, scenario and actual imported failing test
+before implementation. Its first F32 RMS_NORM_BACK factory case was
+unsupported. All ten factory cases now pass, together with 353 Prism
+supplemental cases: 238 successes and 115 atomic refusals. Twelve additional
+mutations check required sources, source/output types, both inner strides,
+all source-1 dimensions, missing source data and shifted output aliasing.
+The supplemental corpus includes a 65,537-batch execution and four memory
+configurations: copied output, output aliasing the gradient, output aliasing
+the original input, and both sources/output sharing an effective view.
+The backward public constructor remains copied; no backward in-place
+constructor is invented by these buffer-view tests.
+
+A separate backward instruction root reuses the existing six-word normalized
+copy transport and Verdant primitives. Source-1 metadata is captured in planning
+and its strides once during execution binding, rather than validating its
+descriptor per instruction. The model requires matching F32 source/output
+shapes, unit inner strides for both inputs, physical output bounds and safe
+aliases against both inputs. Output injectivity is checked globally before any
+write when the layout needs occupancy storage. It retains the CPU's int64
+column domain rather than inheriting forward normalization's int helper bound.
+There is no epsilon-admission or numeric-scale assertion in the imported CPU
+backward implementation, and none is added here.
+
+F32 products x*x and x*dz are widened into separate sequential F64 sums. The
+squared sum is narrowed before F32 mean division; the gradient dot product is
+narrowed before F32 coefficient division. Mean/epsilon, sum/epsilon and the
+compound multiply/add/multiply output phases retain their separate rounding.
+Physical output columns are spaced by sizeof(float), as in the imported CPU.
+No handwritten numerical implementation or generated Rust edit is added.
+
+The coefficient uses existing Verdant F32 negation after narrowing. Its imported
+ScalarF64 narrowing model keeps sign separate from unsigned rounded magnitude,
+and ScalarF32 negation toggles that sign. The general sign-composition law is
+proved in Prism for sign <= 1 and magnitude < 2^31. MCP `task-57` verified it
+under attestation
+`9b214ce275b58b461f82820684a04b84542df83f2a14c060eb6d5f2b4860bc0a`.
+This sign law, the pinned imported model-byte audit and the independent full
+CPU execution establish the chosen composition; the sign law alone is not
+restated as a proof of the entire imported floating-point implementation.
+
+Actual exact-SDK production exports are:
+
+- Pointwise: result `418cfd05fff116155d67325063473ad1aee672c2f397fe77e1bfe2ac79d74cff`, attestation `5f32a023e9d5fe81acaf9fe1ce418c6111d4167fb1f1649b262860adad9f4711`, 752 verified declarations; largest certificate B is 4,130,620 bytes, below the unchanged 4,194,304-byte limit.
+- Normalization: result `688919e092c115620602401552ea51a8f0a24a5a6c2edcf8b39963ca2e786452`, attestation `73a992d5bc6c5dfe328bda96d25ddd95ddca28a661c91122b8b844715ee22a9c`, 643 verified declarations across NORM/GROUP_NORM, L2, metadata planning and backward execution. Certificate B sizes are 767,517, 194,497, 624,067 and 334,103 bytes. Existing NORM/GROUP_NORM and L2 generated instruction files are byte-identical to the parent.
+- Backward fixtures: result `7028e9d97d20660a438127f470a310d64a3ffb56a4866ec79d7987bf80e7043e`, attestation `045011c8bc9b4fd856d6c18a5091e7b75eed356e640809d332fe3059d5165563`, 391 verified declarations.
+
+Planted transport defects demonstrate the independent oracle gates. Rebinding
+the original input to gradient source 0 fails at output byte 0 (actual 0,
+expected 189) in 4.65 seconds. Delaying mean narrowing until after F64 division
+while preserving the coefficient denominator changes that byte from 189 to 188
+and fails in 4.61 seconds. Moving physical output offset 4 to 8 for metadata
+nb[0]=8 fails at byte 4 (actual 165, expected 188) in 4.81 seconds. Bypassing
+occupancy readback fails the expected refusal assertion in 4.83 seconds.
+Zeroing the fixture lock attestation fails before numerical execution in 4.09
+seconds. Each native/lock mutation was restored byte for byte afterward.
+
+The distinct model defect in MCP draft
+`prism-app/cdcf4211bcdead4ff67cb9b8c4ab32c9e6037ec61b4ea843bffe7e12e926bb1d`
+changes coefficient division from F32 to F64. Verification `task-58` fails with
+LLV7002 at instruction 42. The correct repository model was never replaced by
+this mutant.
+
+The restored workspace contract batch passes 53 of 54 tests in 92.70 seconds;
+VT-02 alone rejects the development dependency override. Formatting,
+all-target/all-feature workspace Clippy, cargo-deny, five frame tests, 62 xtask
+tests, template/SDK-lock checks and 52-file frame synchronization pass. Clippy
+required expressing three consecutive mode alternatives as an equivalent
+inclusive range; the ordinary native library was rebuilt afterward.
+Machine-readable details are in `verification/backward-normalization-authoring.json`.
+
+The completion audit still distinguishes ordinary normalization from separately
+labeled composed graphs. NORM_SCALE, RMS_NORM_SCALE, NORM_MUL_ADD,
+RMS_NORM_MUL_ADD, ADD_RMS_NORM and normalization/RoPE combinations require their
+own authoritative factory coverage, including mixed-storage operands and graph
+aliases. No pass is inferred from component behavior. Source observations and
+follow-up are in `verification/composed-normalization-audit.json`. The original
+source budget, authoritative production dependency packaging and remaining
+imported requirements remain open.
+
+The complete exact-SDK `just vv` attempt passes its actual application proof and
+formatting, then exits 1 at the unchanged source ratchet. It keeps application
+attestation
+`fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942`.
+All 56 IDs and the error, deferral and bootstrap checks pass before that refusal.
+Non-Prism implementation measures 11,628 lines against 11,564 in parent
+`0f105352d5cb`: 32 added native transport lines and 32 test transport lines,
+64 total. The implementation remains 1,079 above the original 10,549-line
+ceiling. A newer checkpoint parent cannot erase that debt. No limit, proof
+policy or dependency rejection was weakened, and full acceptance remains open.
+
+The SDK cache is restored to its workspace path with hard links preserved.
+Three non-current cached SDK oracle executables are preserved separately in
+task RAM; the active executable and common library cache are retained. Private
+compiled and historical oracle caches remain accessible through their existing
+task paths. This changes no committed proof, generated artifact or oracle source.

@@ -43,12 +43,13 @@
   },
   "next_actions": [
     "Recover the original source budget and resolve production dependency packaging; keep rejecting gates enabled.",
-    "Audit and register RMS_NORM_BACK before implementing its two-source accumulation and narrowing order."
+    "Audit and validate every composed normalization factory label independently; see verification/composed-normalization-audit.json."
   ],
   "claims_not_made": [
     "Complete architecture coverage",
     "General proof from finite oracle tests",
-    "Full vTensor acceptance or production dependency resolution"
+    "Full vTensor acceptance or production dependency resolution",
+    "Complete composed-normalization coverage"
   ],
   "oracle_compiler_feature_observation": {
     "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
@@ -56,5 +57,9 @@
     "selected_macro_output": "#define __SSE2__ 1\n",
     "compiler_flags": "The imported oracle compile helper adds -O2, function/data sections and -std=c++17; it adds no -mavx, -mfma or -march feature flags.",
     "inference": "The current x86 oracle selects the SSE2 variance branch. This observation is not a claim for another compiler, target or feature configuration."
+  },
+  "RMS_NORM_BACK": {
+    "evidence": "verification/backward-normalization-authoring.json",
+    "audit": "verification/normalization-backward-audit.json"
   }
 }

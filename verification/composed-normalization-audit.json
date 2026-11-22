@@ -1,0 +1,23 @@
+{
+  "spec": "vtensor/composed-normalization-audit/1",
+  "status": "source-audit-only-not-conformance",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "source_sha256": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52",
+  "observations": [
+    "The ordinary operation-name filters do not select every normalization graph in the authoritative factory.",
+    "test_norm_scale overrides op_desc with NORM_SCALE or RMS_NORM_SCALE and evaluates the whole norm-to-scale graph. The epsilon/width loops provide ten cases of each label.",
+    "The factory separately labels NORM_MUL_ADD, RMS_NORM_MUL_ADD and ADD_RMS_NORM. These include broadcasting, multi-add, residual/input aliasing, post-multiply, large-width and mixed F32/BF16 weight/residual configurations.",
+    "RMS normalization is also composed with RoPE and SET_ROWS in test_rms_norm_mul_rope; supporting ordinary RMS normalization does not establish those graphs."
+  ],
+  "required_followup": [
+    "Enumerate every factory label and constructor variant from the pinned factory, not only the GGML operation enum. Bind observed case counts to its authoritative source.",
+    "Register a genuine failing test for composed/mixed-storage normalization before extending the required shared typed arithmetic or graph families.",
+    "Reuse existing Prism/Verdant stages where their semantics match; audit rounding and aliases across full graph boundaries.",
+    "Retain unsupported/missing/wrong-file rejection and exact independent CPU supplemental checks.",
+    "Recover the original non-Prism source ceiling and complete production dependency packaging; do not treat component coverage as full acceptance."
+  ],
+  "claims_not_made": [
+    "Any composed label passes solely because its component operations pass",
+    "Complete normalization or full vTensor conformance"
+  ]
+}

@@ -491,13 +491,14 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
     let primary = source(0)?;
+    let secondary = source(1)?;
     let response = vtensor_pointwise::run(GraphRequest::C0(
         operation,
         Parameters::C0(
             p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15,
         ),
         primary.clone(),
-        source(1)?,
+        secondary.clone(),
         source(2)?,
         source(3)?,
         source(4)?,
@@ -513,6 +514,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
         GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..))) => Ok(Some(plan)),
         GraphResponse::C0(GraphPlan::C5(64)) => normalization_plan(
             primary.as_ref().ok_or(BackendError::InvalidTensor)?,
+            secondary.as_ref(),
             &output,
             operation,
             p0,
@@ -726,6 +728,7 @@ fn execute_word(
 
 fn normalization_plan(
     source: &TensorDescriptor,
+    secondary: Option<&TensorDescriptor>,
     output: &TensorDescriptor,
     operation: u64,
     p0: u64,
@@ -733,10 +736,13 @@ fn normalization_plan(
 ) -> Result<GraphPlan, BackendError> {
     let TensorDescriptor::C0(l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10) = *source;
     let TensorDescriptor::C0(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10) = *output;
+    let present = secondary.is_some();
+    let TensorDescriptor::C0(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10) =
+        *secondary.unwrap_or(source);
     let vtensor_norm_plan::Adt0::C1(count, bytes, kind, rows, capacity, parameter) =
         vtensor_norm_plan::run(
-            operation, p0, p1, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, r0, r1, r2, r3, r4, r5,
-            r6, r7, r8, r9, r10,
+            operation, p0, p1, present, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, r0, r1, r2,
+            r3, r4, r5, r6, r7, r8, r9, r10, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10,
         )
         .map_err(|_| BackendError::Overflow)?
     else {
@@ -755,6 +761,7 @@ fn normalization_word(
     index: u64,
     source: &IndexContext,
     destination: &IndexContext,
+    secondary_strides: [u64; 4],
     mode: &CopyMode,
     flag: u64,
     bytes: u64,
@@ -767,6 +774,19 @@ fn normalization_word(
                 vtensor_norm::run(
                     kind, index, width, n1, n2, n3, s0, s1, s2, s3, t0, t1, t2, t3, epsilon, rows,
                     capacity, flag,
+                )
+                .map_err(|_| BackendError::Overflow)?
+            else {
+                return Err(BackendError::InvalidTensor);
+            };
+            [family, operation, a, from, b, right, target, to]
+        }
+        CopyMode::C26(66, epsilon, rows, capacity) => {
+            let [x0, x1, x2, x3] = secondary_strides;
+            let vtensor_rms_backward::Adt0::C1(family, operation, a, from, b, right, target, to) =
+                vtensor_rms_backward::run(
+                    index, width, n1, n2, n3, s0, s1, s2, s3, x0, x1, x2, x3, t0, t1, t2, t3,
+                    epsilon, rows, capacity, flag,
                 )
                 .map_err(|_| BackendError::Overflow)?
             else {
@@ -792,6 +812,7 @@ fn normalization_word(
         1 => Ok(WordOperand::C1(at)),
         2 => Ok(WordOperand::C2(at)),
         3 => Ok(WordOperand::C3(at)),
+        4 => Ok(WordOperand::C0(1, at)),
         _ => Err(BackendError::InvalidTensor),
     };
     Ok(GraphResponse::C7(
@@ -799,6 +820,7 @@ fn normalization_word(
             0 => WordOperation::C0(operation),
             1 => WordOperation::C1(operation),
             2 => WordOperation::C5(operation),
+            3 => WordOperation::C3(operation, operation, false),
             _ => return Err(BackendError::InvalidTensor),
         },
         operand(a, from)?,
@@ -837,11 +859,15 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     if mask >> pointers.len() != 0 {
         return Err(BackendError::InvalidTensor);
     }
+    let mut secondary_strides = [0; 4];
     for (slot, pointer) in pointers.iter_mut().enumerate() {
         if mask & (1 << slot) != 0 {
             // SAFETY: GGML retains each descriptor; absent required sources are typed refusals.
             let source = unsafe { tensor.src[slot].as_ref() }.ok_or(BackendError::InvalidTensor)?;
             *pointer = graph_tensor_data(source)?;
+            if slot == 1 && matches!(mode, CopyMode::C26(66, ..)) {
+                secondary_strides = source.nb.map(|stride| stride as u64);
+            }
         }
     }
     let destination_data = graph_tensor_data(tensor)?;
@@ -856,9 +882,15 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let words = dynamic.as_deref_mut().unwrap_or(&mut fixed);
     for index in 0..count {
         let response = match &mode {
-            CopyMode::C26(64 | 65, ..) | CopyMode::C24(_) => {
-                normalization_word(index, &source, &destination, &mode, words[2], bytes)?
-            }
+            CopyMode::C26(64..=66, ..) | CopyMode::C24(_) => normalization_word(
+                index,
+                &source,
+                &destination,
+                secondary_strides,
+                &mode,
+                words[2],
+                bytes,
+            )?,
             _ => vtensor_pointwise::run(GraphRequest::C1(
                 index,
                 source.clone(),

@@ -90,6 +90,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-47` | build | A separate certified Prism package preserves all 2,256 spatial constructor/input recipes and independent CPU results. |
 | `VT-48` | build | NORM passes 61 factory and 184 supplemental cases, including 55 atomic refusals and stride-selected rounding. |
 | `VT-49` | build | GROUP_NORM passes five ordinary/fused factory cases and 224 supplemental cases, including 112 atomic refusals, nested F64 row subtotals and physical output spacing. |
+| `VT-50` | build | RMS_NORM_BACK passes ten factory and 353 supplemental cases, including 115 atomic refusals, 12 mutation probes, independent source strides, narrowing counterexamples and a 65,537-batch regression. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -244,7 +245,12 @@ GROUP_NORM (VT-49) now preserves F64 row subtotals, clamped channel groups
 and physical F32 output spacing through the same certified normalization roots.
 All five ordinary/fused factory cases and 224 supplemental cases pass, including
 112 atomic refusals. Evidence is in `verification/group-normalization-authoring.json`.
-RMS_NORM_BACK remains at source audit in `verification/normalization-backward-audit.json`.
+RMS_NORM_BACK (VT-50) now passes all ten factory and 353 supplemental cases
+through a separate certified instruction root. NORM and L2 instruction bytes
+are preserved; source-1 geometry is captured once for execution. Its narrowing
+order and sign composition are recorded in `verification/backward-normalization-authoring.json`.
+Composed labels such as NORM_SCALE and mixed-storage RMS_NORM_MUL_ADD require
+their own coverage; see `verification/composed-normalization-audit.json`.
 Full acceptance remains open.
 
 The normative repository gate is `just vv`, run using the SDK image pinned in

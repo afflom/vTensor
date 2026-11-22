@@ -1,0 +1,303 @@
+\begin{lexlean}{RmsBackwardGraph}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{NormGraph}
+\importmodule{RmsBackwardNormalization}
+\importmodule{RmsNormalization}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: accumulate,
+  parameters: [
+    index : Nat,
+    row : Nat,
+    source : NormGraph::IndexContext,
+    rhs : NormGraph::IndexContext
+  ],
+  result: NormGraph::Instruction,
+  body: (let part : Nat := (prim remainder index 6 0 : Nat); (let ordinal : Nat := ((prim multiply row (project source u0) : Nat) + (prim quotient index 6 0 : Nat)); (let x : Nat := (NormGraph::blockOffset ordinal rhs); (let dz : Nat := (NormGraph::blockOffset ordinal source); (if (part =? 0) then (NormGraph::word 10 4 x 4 x 1 2) else (if (part =? 1) then (NormGraph::word 1 1 2 2 0 1 2) else (if (part =? 2) then (NormGraph::word 0 1 0 1 2 1 0) else (if (part =? 3) then (NormGraph::word 10 4 x 0 dz 1 2) else (if (part =? 4) then (NormGraph::word 1 1 2 2 0 1 2) else (NormGraph::word 0 1 1 1 2 1 1)))))))))),
+  executable: true
+}
+
+definition{
+  name: finish,
+  parameters: [phase : Nat, width : Nat, epsilon : Nat],
+  result: NormGraph::Instruction,
+  body: (if (phase =? 0) then (NormGraph::word 2 1 0 2 0 1 3) else (if (phase =? 1) then (NormGraph::word 3 2 width 2 0 1 2) else (if (phase =? 2) then (NormGraph::word 11 1 3 1 2 1 4) else (if (phase =? 3) then (NormGraph::word 4 1 4 2 epsilon 1 4) else (if (phase =? 4) then (NormGraph::word 12 1 4 2 0 1 4) else (if (phase =? 5) then (NormGraph::word 11 2 1065353216 1 4 1 4) else (if (phase =? 6) then (NormGraph::word 10 2 epsilon 1 2 1 5) else (if (phase =? 7) then (NormGraph::word 4 1 3 1 5 1 5) else (if (phase =? 8) then (NormGraph::word 2 1 1 2 0 1 2) else (if (phase =? 9) then (ctor NormGraph::Instruction.step 3 0 1 2 2 2 1 2) else (if (phase =? 10) then (NormGraph::word 11 1 2 1 5 1 5) else (ctor NormGraph::Instruction.invalid)))))))))))),
+  executable: true
+}
+
+definition{
+  name: outputStep,
+  parameters: [
+    index : Nat,
+    row : Nat,
+    source : NormGraph::IndexContext,
+    rhs : NormGraph::IndexContext,
+    destination : NormGraph::IndexContext
+  ],
+  result: NormGraph::Instruction,
+  body: (let part : Nat := (prim remainder index 3 0 : Nat); (let ordinal : Nat := ((prim multiply row (project source u0) : Nat) + (prim quotient index 3 0 : Nat)); (let x : Nat := (NormGraph::blockOffset ordinal rhs); (let dz : Nat := (NormGraph::blockOffset ordinal source); (let to : Nat := (NormGraph::blockOffset ordinal destination); (if (part =? 0) then (NormGraph::word 10 4 x 1 5 1 2) else (if (part =? 1) then (NormGraph::word 4 0 dz 1 2 1 2) else (NormGraph::word 10 1 2 1 4 3 to)))))))),
+  executable: true
+}
+
+definition{
+  name: rowStep,
+  parameters: [
+    phase : Nat,
+    row : Nat,
+    source : NormGraph::IndexContext,
+    rhs : NormGraph::IndexContext,
+    destination : NormGraph::IndexContext,
+    epsilon : Nat
+  ],
+  result: NormGraph::Instruction,
+  body: (let accumulated : Nat := (RmsBackwardNormalization::accumulationEnd (project source u0)); (let scaled : Nat := (RmsBackwardNormalization::outputStart (project source u0)); (if (phase <? 2) then (NormGraph::resetReductionWord phase) else (if (phase <? accumulated) then (accumulate (prim subtract phase 2 : Nat) row source rhs) else (if (phase <? scaled) then (finish (prim subtract phase accumulated : Nat) (project source u0) epsilon) else (if (phase <? (RmsBackwardNormalization::rowSteps (project source u0))) then (outputStep (prim subtract phase scaled : Nat) row source rhs destination) else (ctor NormGraph::Instruction.invalid))))))),
+  executable: true
+}
+
+definition{
+  name: offsets,
+  parameters: [
+    index : Nat,
+    source : NormGraph::IndexContext,
+    rhs : NormGraph::IndexContext,
+    output : NormGraph::IndexContext,
+    epsilon : Nat,
+    rows : Nat,
+    capacity : Nat,
+    flag : Nat
+  ],
+  result: NormGraph::Instruction,
+  body: (let slots : Nat := (prim subtract capacity 6 : Nat); (let destination : NormGraph::IndexContext := (NormGraph::groupOutput output); (if (index <? (RmsBackwardNormalization::steps (project source u0) rows slots)) then (let marked : Nat := (RmsNormalization::bitmapSteps (project source u0) rows slots); (if (index <? marked) then (NormGraph::markWordsStep index destination 4 6 flag) else (let relative : Nat := (prim subtract index marked : Nat); (let stride : Nat := (RmsBackwardNormalization::rowSteps (project source u0)); (rowStep (prim remainder relative stride 0 : Nat) (prim quotient relative stride 0 : Nat) source rhs destination epsilon))))) else (ctor NormGraph::Instruction.invalid)))),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [
+    index : Nat,
+    width : Nat,
+    n1 : Nat,
+    n2 : Nat,
+    n3 : Nat,
+    s0 : Nat,
+    s1 : Nat,
+    s2 : Nat,
+    s3 : Nat,
+    x0 : Nat,
+    x1 : Nat,
+    x2 : Nat,
+    x3 : Nat,
+    t0 : Nat,
+    t1 : Nat,
+    t2 : Nat,
+    t3 : Nat,
+    epsilon : Nat,
+    rows : Nat,
+    capacity : Nat,
+    flag : Nat
+  ],
+  result: NormGraph::Instruction,
+  body: (offsets index (record NormGraph::IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := s0, s1 := s1, s2 := s2, s3 := s3}) (record NormGraph::IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := x0, s1 := x1, s2 := x2, s3 := x3}) (record NormGraph::IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := t0, s1 := t1, s2 := t2, s3 := t3}) epsilon rows capacity flag),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: resetSquaredSum,
+  parameters: [],
+  statement: ((offsets 0 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 0 2 0 2 0 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: resetGradientDotSum,
+  parameters: [],
+  statement: ((offsets 1 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 0 2 0 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: squareOriginalInput,
+  parameters: [],
+  statement: ((offsets 2 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 4 0 4 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: widenSquareBeforeAdding,
+  parameters: [],
+  statement: ((offsets 3 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 1 1 2 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: accumulateSquaredSum,
+  parameters: [],
+  statement: ((offsets 4 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 0 1 0 1 2 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: multiplyInputAndGradient,
+  parameters: [],
+  statement: ((offsets 5 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 4 0 0 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: accumulateGradientDot,
+  parameters: [],
+  statement: ((offsets 7 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 0 1 1 1 2 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: narrowSquaredSumBeforeMean,
+  parameters: [],
+  statement: ((offsets 32 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 2 1 0 2 0 1 3)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: countConvertedToF32,
+  parameters: [],
+  statement: ((offsets 33 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 3 2 5 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: divideNarrowedMean,
+  parameters: [],
+  statement: ((offsets 34 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 11 1 3 1 2 1 4)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: epsilonAddedAfterDivision,
+  parameters: [],
+  statement: ((offsets 35 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 4 1 4 2 897988541 1 4)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: squareRootMeanEpsilon,
+  parameters: [],
+  statement: ((offsets 36 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 12 1 4 2 0 1 4)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: reciprocalRmsIsNotValidatedPositive,
+  parameters: [],
+  statement: ((offsets 37 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 11 2 1065353216 1 4 1 4)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: multiplyEpsilonByF32Count,
+  parameters: [],
+  statement: ((offsets 38 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 2 897988541 1 2 1 5)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: sumEpsilonUsesNarrowedSum,
+  parameters: [],
+  statement: ((offsets 39 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 4 1 3 1 5 1 5)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: narrowDotBeforeCoefficientDivision,
+  parameters: [],
+  statement: ((offsets 40 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 2 1 1 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negateNarrowedCoefficientNumerator,
+  parameters: [],
+  statement: ((offsets 41 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (ctor NormGraph::Instruction.step 3 0 1 2 2 2 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: divideCoefficientInF32,
+  parameters: [],
+  statement: ((offsets 42 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 11 1 2 1 5 1 5)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: multiplyInputBeforeGradientAddition,
+  parameters: [],
+  statement: ((offsets 43 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 4 0 1 5 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: addGradientBeforeFinalScale,
+  parameters: [],
+  statement: ((offsets 44 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 4 0 0 1 2 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: scaleToPhysicalOutput,
+  parameters: [],
+  statement: ((offsets 45 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 1 2 1 4 3 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: secondColumnPhysicalSpacing,
+  parameters: [],
+  statement: ((offsets 48 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 1 2 1 4 3 4)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nextRowUsesIndependentInputStride,
+  parameters: [],
+  statement: ((offsets 60 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 4 32 4 32 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nextRowUsesIndependentGradientStride,
+  parameters: [],
+  statement: ((offsets 63 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 4 32 0 24 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nextPlaneUsesIndependentInputStride,
+  parameters: [],
+  statement: ((offsets 118 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (NormGraph::word 10 4 72 4 72 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: outOfRangeStepRefused,
+  parameters: [],
+  statement: ((offsets 232 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 897988541 4 6 0) = (ctor NormGraph::Instruction.invalid)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: outputPreflightReadsFirstSlot,
+  parameters: [],
+  statement: ((offsets 0 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 0 4 106 0) = (NormGraph::word 19 1 6 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: occupiedOutputRefusedBeforeWriting,
+  parameters: [],
+  statement: ((offsets 1 (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 24, s2 := 56, s3 := 112}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 4, s1 := 32, s2 := 72, s3 := 144}) (record NormGraph::IndexContext {u0 := 5, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 44, s2 := 100, s3 := 200}) 0 4 106 1) = (ctor NormGraph::Instruction.invalid)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

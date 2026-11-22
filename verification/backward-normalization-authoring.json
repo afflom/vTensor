@@ -1,7 +1,7 @@
 {
   "spec": "vtensor/backward-normalization-authoring/1",
   "capability": "VT-50",
-  "status": "registered-failing-before-implementation",
+  "status": "implemented-and-oracle-tested-acceptance-open",
   "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "audit": "verification/normalization-backward-audit.json",
   "initial_failure": {
@@ -20,5 +20,169 @@
     "memory": "Six reusable scratch words; global physical output injectivity preflight only for non-nested layouts. No numeric-scale refusal is inherited from forward RMS_NORM.",
     "validation": "All ten factory cases, Prism supplemental two-source fixtures and imported full CPU outputs; target both narrowing points, source roles, output spacing, aliases, nonfinite arithmetic and typed atomic refusals."
   },
-  "acceptance_not_claimed": true
+  "acceptance_not_claimed": true,
+  "exports": {
+    "pointwise": {
+      "result": "418cfd05fff116155d67325063473ad1aee672c2f397fe77e1bfe2ac79d74cff",
+      "attestation": "5f32a023e9d5fe81acaf9fe1ce418c6111d4167fb1f1649b262860adad9f4711",
+      "declarations": 752,
+      "status": "verified",
+      "certificate_b_bytes": [
+        4130620,
+        36538
+      ]
+    },
+    "norm": {
+      "result": "688919e092c115620602401552ea51a8f0a24a5a6c2edcf8b39963ca2e786452",
+      "attestation": "73a992d5bc6c5dfe328bda96d25ddd95ddca28a661c91122b8b844715ee22a9c",
+      "declarations": 643,
+      "status": "verified",
+      "certificate_b_bytes": [
+        767517,
+        194497,
+        624067,
+        334103
+      ]
+    },
+    "rmsbackfixtures": {
+      "result": "7028e9d97d20660a438127f470a310d64a3ffb56a4866ec79d7987bf80e7043e",
+      "attestation": "045011c8bc9b4fd856d6c18a5091e7b75eed356e640809d332fe3059d5165563",
+      "declarations": 391,
+      "status": "verified",
+      "certificate_b_bytes": [
+        699212
+      ]
+    }
+  },
+  "unchanged_instruction_packages": {
+    "vtensor_norm": {
+      "sha256": "268f930aa9b710a26c76381dafbfd0a5f126c25aabe4643006ff97424032701b",
+      "identical_to_parent": true
+    },
+    "vtensor_l2": {
+      "sha256": "f942897013d54dadbad9bcac55d9b6999e61a91952108ab0fed1bdf9605d6f32",
+      "identical_to_parent": true
+    }
+  },
+  "sign_composition": {
+    "draft": "prism-app/5bda446c3b21253b4489b11fb64a93302aace6c6cd0784fc0317833ae071a0a7",
+    "task": "task-57",
+    "state": "verified",
+    "attestation": "9b214ce275b58b461f82820684a04b84542df83f2a14c060eb6d5f2b4860bc0a",
+    "law": "For sign <= 1 and unsigned narrowed magnitude < 2^31, toggling the F32 sign after attaching it equals attaching the toggled sign.",
+    "scope": "A general sign/magnitude composition law. The imported engine narrowing separates sign from the unsigned rounded magnitude, and unary negation toggles that sign. The full numeric composition is additionally checked against imported GGML CPU execution.",
+    "engine_revision": "158402b84cf273dc303c16c70e3781809a568a37",
+    "imported_model_sha256": {
+      "ScalarF64.lex.tex": "8112ecf8489b879afa40309a0264a422c593b0f3b0a263b1fc740986b682125f",
+      "ScalarF32.lex.tex": "244cba725be69ddfe632ddd12fa6044fa6b04946a16ad57bb8cb1ef1db69d120",
+      "FloatUnary.lex.tex": "ac83b8fde590b02bfdccd7ee4f25e8cd2567785789cc9ccaaef744a93e025302"
+    }
+  },
+  "implementation": {
+    "transport": "Capture secondary metadata once in planning and secondary strides once during execution binding; no per-instruction descriptor validation. Forward NORM/GROUP_NORM and L2 instruction files remain byte-identical.",
+    "roots": "Backward execution is a separate certified root using the existing normalized copy mode, six scratch words and two source bindings.",
+    "output": "Preserve physical F32 column spacing and preflight non-nested output injectivity globally before writing. Effective exact output aliases are checked against both sources.",
+    "arithmetic": "Preserve interleaved F32 x*x and x*dz products with separate F64 sums. Narrow each sum before its F32 division; preserve mean/epsilon, sum/epsilon and compound output rounding. No epsilon or numeric scale assertion is inherited from forward RMS.",
+    "scope_note": "The public backward constructor is copied. Supplemental aliases are explicit valid GGML buffer views, not a claimed backward in-place constructor."
+  },
+  "oracle_results": {
+    "factory_cases": 10,
+    "factory_seconds": 6.24,
+    "supplemental_cases": 353,
+    "supplemental_successes": 238,
+    "atomic_refusals": 115,
+    "additional_atomic_mutations": 12,
+    "supplemental_seconds": 8.67,
+    "large_batch_count": 65537,
+    "comparison": "Exact non-NaN physical CPU output words, NaN classification, complete padding and unchanged output bytes after typed refusals.",
+    "counterexamples": [
+      "x=[4096,1,0,0,0], dz=[0,1,0,0,0]: sum_xx=16777217 separates narrowing before versus after mean division.",
+      "x=[1,1,1,1,1], dz=[16777216,1,0,0,0]: sum_xdz=16777217 separates coefficient numerator narrowing from F64 division.",
+      "Finite F64 dot sums overflowing F32 on narrowing must preserve that overflow before coefficient division."
+    ],
+    "fixtures": "Independent source strides and pattern identities, four alias configurations, nonfinite/negative epsilon, signed zeros, mixed storage and mismatched source shapes, readonly overlaps, physical output stride, empty axes and large batches. Aliased sources share identical modeled initialization bytes."
+  },
+  "planted_defects": [
+    {
+      "defect": "Bind original input operand tag 4 to gradient source 0",
+      "test": "backward_runtime_edges_vt_50",
+      "exit_code": 101,
+      "seconds": 4.65,
+      "diagnostic": "oracle mismatch type=0 width=5 rows=2 byte=0 actual=0 expected=189"
+    },
+    {
+      "defect": "Use F64 mean division and narrow afterward in the first zero-epsilon row, preserving the coefficient denominator",
+      "test": "backward_runtime_edges_vt_50",
+      "exit_code": 101,
+      "seconds": 4.61,
+      "diagnostic": "oracle mismatch type=0 width=5 rows=2 byte=0 actual=188 expected=189"
+    },
+    {
+      "defect": "Route physical output offset 4 to 8 when metadata nb[0]=8",
+      "test": "backward_runtime_edges_vt_50",
+      "exit_code": 101,
+      "seconds": 4.81,
+      "diagnostic": "oracle mismatch type=0 width=5 rows=2 byte=4 actual=165 expected=188"
+    },
+    {
+      "defect": "Bypass modeled output occupancy readback",
+      "test": "backward_runtime_edges_vt_50",
+      "exit_code": 101,
+      "seconds": 4.83,
+      "diagnostic": "ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED rejected missing refusal"
+    },
+    {
+      "defect": "Zero the fixture lock attestation identity",
+      "test": "backward_runtime_edges_vt_50",
+      "exit_code": 101,
+      "seconds": 4.09,
+      "diagnostic": "Attestation identity assertion failed before numerical execution."
+    },
+    {
+      "defect": "Use F64 division instead of F32 coefficient division",
+      "location": "Separate MCP draft; correct repository model unchanged",
+      "draft": "prism-app/cdcf4211bcdead4ff67cb9b8c4ab32c9e6037ec61b4ea843bffe7e12e926bb1d",
+      "task": "task-58",
+      "state": "failed",
+      "diagnostic": "LLV7002: coefficient phase proof rejected offsets 42; required NormGraph.word 11 1 2 1 5 1 5."
+    }
+  ],
+  "checks": {
+    "contract": {
+      "passed": 53,
+      "failed": 1,
+      "failure": "VT-02 rejects the development dependency override",
+      "seconds": 92.7
+    },
+    "format": "passed",
+    "workspace_all_targets_all_features_clippy": "Passed after replacing three consecutive mode alternatives with the equivalent inclusive range required by Clippy.",
+    "cargo_deny": "passed",
+    "frame_tests": 5,
+    "xtask_tests": 62,
+    "template_and_sdk_lock": "passed",
+    "frame_sync_files": 52,
+    "full_vv": {
+      "exit_code": 1,
+      "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+      "app": "Passed actual full local verification; no proof-event reuse.",
+      "stopped_at": "model: audit-prism source budget",
+      "non_prism_lines": 11628,
+      "parent_lines": 11564,
+      "parent_revision": "0f105352d5cb",
+      "growth": 64,
+      "native_growth": 32,
+      "test_transport_growth": 32,
+      "original_ceiling": 10549,
+      "excess_over_original_ceiling": 1079,
+      "gate_or_limit_relaxed": false
+    }
+  },
+  "remaining_scope": "Ordinary and supplemental RMS_NORM_BACK evidence does not establish composed normalization labels or complete vTensor conformance.",
+  "cache_state": {
+    "root_sdk_cache": "Restored to app/target/hologram-oracle with hard links and file sizes preserved; task RAM copy removed.",
+    "superseded_sdk_executables": "Three non-current SDK oracle executable cache variants preserved separately in /dev/shm/vtensor-superseded-sdk-oracle-executables-b26a61a; the active SDK executable and library cache are restored.",
+    "private_build_cache": "Task-owned /tmp/vtensor-analysis-target/debug remains mounted from /dev/shm/vtensor-root-debug.",
+    "other_task_caches": "Historical oracle namespace remains accessible through its original /tmp symlink; current numerical namespace remains 6f9e62f3db3f142303a09aafe1573b428e2134e86c1424ba2f589102f90372f9.",
+    "user_upstream_worktree": "Unmodified."
+  }
 }

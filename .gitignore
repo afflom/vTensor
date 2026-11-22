@@ -60,3 +60,5 @@ screens/
 /app/.lexlean-normfixtures/
 
 /app/.lexlean-groupfixtures/
+
+/app/.lexlean-rmsbackfixtures/

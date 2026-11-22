@@ -557,6 +557,14 @@ fn backward_normalization_vt_50() {
     native_backend_oracle::verify(&root(), "upstream-RMS_NORM_BACK", 10);
 }
 
+/// `VT-50`: Backward normalization fixtures preserve both sources, narrowing and atomic refusals.
+#[test]
+fn backward_runtime_edges_vt_50() {
+    tensor_layout::certified_current_model(&root(), "pointwise");
+    tensor_layout::certified_current_model(&root(), "norm");
+    native_backend_oracle::verify(&root(), "rms-backward", 353);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -1318,7 +1326,9 @@ mod tensor_layout {
             "quotient" => ("verdant_quotient_f64".to_owned(), "tensor-quotient"),
             "native" => ("vtensor_native_config".to_owned(), "native"),
             "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" | "spatial"
-            | "norm" | "normfixtures" | "groupfixtures" => (format!("vtensor_{name}"), name),
+            | "norm" | "normfixtures" | "groupfixtures" | "rmsbackfixtures" => {
+                (format!("vtensor_{name}"), name)
+            }
             _ => panic!("unknown certified model: {name}"),
         };
         let scope = if name == "layout" {
@@ -1824,9 +1834,15 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 "#;
 
     fn fixture_library(common: &Path, model: &str) -> std::path::PathBuf {
-        const MODELS: [&str; 4] = ["arithmetic", "spatial", "normfixtures", "groupfixtures"];
-        static LIBRARY: [std::sync::OnceLock<std::path::PathBuf>; 4] =
-            [const { std::sync::OnceLock::new() }; 4];
+        const MODELS: [&str; 5] = [
+            "arithmetic",
+            "spatial",
+            "normfixtures",
+            "groupfixtures",
+            "rmsbackfixtures",
+        ];
+        static LIBRARY: [std::sync::OnceLock<std::path::PathBuf>; 5] =
+            [const { std::sync::OnceLock::new() }; 5];
         let slot = MODELS
             .iter()
             .position(|candidate| *candidate == model)
@@ -2130,17 +2146,16 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 | "spatial"
                 | "norm"
                 | "group-norm"
+                | "rms-backward"
         ) {
             command.arg(fixture_library(
                 common,
-                if mode == "spatial" {
-                    "spatial"
-                } else if mode == "norm" {
-                    "normfixtures"
-                } else if mode == "group-norm" {
-                    "groupfixtures"
-                } else {
-                    "arithmetic"
+                match mode {
+                    "spatial" => "spatial",
+                    "norm" => "normfixtures",
+                    "group-norm" => "groupfixtures",
+                    "rms-backward" => "rmsbackfixtures",
+                    _ => "arithmetic",
                 },
             ));
         }
@@ -2725,8 +2740,9 @@ int main(int argc, char **argv) {
     }
     const bool repeating=!strcmp(argv[3], "repeat"), concatenating=!strcmp(argv[3], "concat");
     const bool spatial=!strcmp(argv[3], "spatial"), folding=!strcmp(argv[3], "fold"), diagonal=!strcmp(argv[3], "diagonal"), triangular=!strcmp(argv[3], "triangular"), filling=!strcmp(argv[3], "fill"), casting=!strcmp(argv[3], "cast"), windowing=!strcmp(argv[3], "window"), transforming=!strcmp(argv[3], "transform"), unarying=!strcmp(argv[3], "unary"), scanning=!strcmp(argv[3], "scan"), reducing=!strcmp(argv[3], "reduction"), selecting=!strcmp(argv[3], "rows");
-    const bool relative=!strcmp(argv[3], "relative-position"), rmsing=!strcmp(argv[3],"rms-norm"), norming=!strcmp(argv[3],"norm"), grouping=!strcmp(argv[3],"group-norm");
-    const bool normalizing=rmsing || norming || grouping;
+    const bool relative=!strcmp(argv[3], "relative-position"), rmsing=!strcmp(argv[3],"rms-norm"), norming=!strcmp(argv[3],"norm"), grouping=!strcmp(argv[3],"group-norm"), backward=!strcmp(argv[3],"rms-backward");
+    const bool normalizing=rmsing || norming || grouping || backward;
+    const bool physical_norm=norming || grouping || backward;
     const bool wordwise=transforming || unarying || scanning || reducing || selecting || normalizing;
     if (!strcmp(argv[3], "copy") || repeating || concatenating || spatial || folding || diagonal || triangular || filling || casting || windowing || wordwise || relative) {
       std::ofstream trace(std::string(argv[2])+"."+argv[3]+"-recipes",std::ios::binary);CHECK(trace);recipe_trace=&trace;
@@ -2740,7 +2756,7 @@ int main(int argc, char **argv) {
       size_t cases=0, refused=0, source_releases=0; int kind;
       const bool copying=!strcmp(argv[3],"copy");
       const bool modeled=copying || repeating || concatenating || filling || casting || normalizing;
-      const uint64_t fixture_base=copying?5:repeating?11:concatenating?17:filling?24:casting?31:(norming || grouping)?0:38;
+      const uint64_t fixture_base=copying?5:repeating?11:concatenating?17:filling?24:casting?31:physical_norm?0:38;
       struct FixtureAnswer {uint64_t status,value;};
       static_assert(sizeof(FixtureAnswer)==16 && offsetof(FixtureAnswer,value)==8);
       using FixtureQuery=FixtureAnswer(*)(uint64_t,uint64_t,uint64_t,uint64_t);
@@ -2750,7 +2766,7 @@ int main(int argc, char **argv) {
       uint64_t config[5]={};
       std::vector<uint64_t> fixture_plan;
       std::vector<std::vector<unsigned char>> patterns;
-      if(modeled) {for(uint64_t i=0;i<5;++i)config[i]=fixture(0,0,0,i);CHECK(query(10,0,0,0).status==0 && query(fixture_base+1,config[0],0,0).status==0);fixture_plan.resize(config[1]);CHECK(fixture_plan.size()==size_t(grouping?11:filling || casting || normalizing?10:9));patterns.resize(config[2]);}
+      if(modeled) {for(uint64_t i=0;i<5;++i)config[i]=fixture(0,0,0,i);CHECK(query(10,0,0,0).status==0 && query(fixture_base+1,config[0],0,0).status==0);fixture_plan.resize(config[1]);CHECK(fixture_plan.size()==size_t(backward?12:grouping?11:filling || casting || normalizing?10:9));patterns.resize(config[2]);}
       auto exercise=[&](int kind,int operation,int pattern,int layout,int units,int rows,int batches)->int {
         if(relative && ((kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || (pattern && units!=1))) return 0;
         if(((diagonal || triangular || wordwise) && !selecting && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || ((spatial || folding || windowing || scanning) && kind!=GGML_TYPE_F32)) return 0;
@@ -2793,10 +2809,13 @@ int main(int argc, char **argv) {
         const uint32_t word=filling || normalizing?fixture_plan[9]:transforming?fill_words[std::min(pattern,23)]:0; float constant; memcpy(&constant,&word,4);
         const uint32_t bias_word=fill_words[((transforming?std::min(pattern,23):pattern/5)*7+3)%24];float bias;memcpy(&bias,&bias_word,4);
         const bool inplace=((filling || normalizing) && operation) || (transforming && operation%2) || (unarying && operation%3==1);
+        ggml_tensor *backward_input=nullptr;
+        if(backward) {int64_t d[4];for(int axis=0;axis<4;++axis)d[axis]=fixture(2,cases,1,axis);backward_input=operation==3?ggml_view_tensor(ctx,input):ggml_new_tensor(ctx,(ggml_type)fixture_plan[11],4,d);}
         auto word_operation = [&](ggml_tensor *a, bool inplace) {
           if(norming) return inplace?ggml_norm_inplace(ctx,a,constant):ggml_norm(ctx,a,constant);
           if(grouping) return inplace?ggml_group_norm_inplace(ctx,a,fixture_plan[10],constant):ggml_group_norm(ctx,a,fixture_plan[10],constant);
           if(rmsing) return inplace?ggml_rms_norm_inplace(ctx,a,constant):ggml_rms_norm(ctx,a,constant);
+          if(backward) {auto out=ggml_rms_norm_back(ctx,a,backward_input,constant);if(inplace)out->view_src=operation==2?backward_input:a;return out;}
           if(scanning) return ggml_cumsum(ctx,a);
           if(reducing) return operation==0?ggml_sum(ctx,a):operation==1?ggml_sum_rows(ctx,a):ggml_mean(ctx,a);
           if(unarying) {
@@ -2807,16 +2826,17 @@ int main(int argc, char **argv) {
           return operation<2?(inplace?ggml_scale_inplace(ctx,a,constant):ggml_scale(ctx,a,constant)):operation<4?(inplace?ggml_scale_bias_inplace(ctx,a,constant,bias):ggml_scale_bias(ctx,a,constant,bias)):operation<6?(inplace?ggml_clamp_inplace(ctx,a,constant,bias):ggml_clamp(ctx,a,constant,bias)):ggml_leaky_relu(ctx,a,constant,inplace);};
         ggml_tensor *filled=filling?(operation?ggml_fill_inplace(ctx,input,constant):ggml_fill(ctx,input,constant)):wordwise && !selecting?word_operation(input,inplace):nullptr;
         int64_t right_ne[]={input->ne[0],input->ne[1],input->ne[2],input->ne[3]}; if(concatenating) for(int axis=0;axis<4;++axis)right_ne[axis]=fixture(2,cases,2,axis);
-        ggml_tensor *right=(concatenating || (selecting && operation))?ggml_new_tensor(ctx,type,4,right_ne):nullptr;
+        ggml_tensor *right=(concatenating || (selecting && operation))?ggml_new_tensor(ctx,type,4,right_ne):backward_input;
         for(ggml_tensor *operand : {input,right}) if(operand) {
-          if(modeled) {for(int axis=0;axis<4;++axis)operand->nb[axis]=fixture(2,cases,operand==right?2:0,axis+4);}
+          if(modeled) {for(int axis=0;axis<4;++axis)operand->nb[axis]=fixture(2,cases,operand==right?(backward?1:2):0,axis+4);}
           else if(layout==1 || layout==2) {
             operand->nb[0]=bytes*(layout==2?2:1)*(selecting && operand==right?2:1); operand->nb[1]=operand->nb[0]*(operand->ne[0]/block)+bytes;
             operand->nb[2]=operand->nb[1]*operand->ne[1]+bytes; operand->nb[3]=operand->nb[2]*operand->ne[2]+bytes;
           }
         }
         ggml_tensor *target;
-        if(modeled) {int64_t d[4];for(int axis=0;axis<4;++axis)d[axis]=fixture(2,cases,1,axis);target=ggml_new_tensor(ctx,output_type,4,d);for(int axis=0;axis<4;++axis)target->nb[axis]=fixture(2,cases,1,axis+4);}
+        if(backward) target=nullptr;
+        else if(modeled) {int64_t d[4];for(int axis=0;axis<4;++axis)d[axis]=fixture(2,cases,1,axis);target=ggml_new_tensor(ctx,output_type,4,d);for(int axis=0;axis<4;++axis)target->nb[axis]=fixture(2,cases,1,axis+4);}
         else {const int64_t blocks=ggml_nelements(input)/block;
           target=layout==3?ggml_new_tensor_4d(ctx,output_type,block,blocks,1,1):ggml_new_tensor(ctx,output_type,4,input->ne);
           target->nb[1]+=output_bytes; target->nb[2]=target->nb[1]*target->ne[1]+output_bytes; target->nb[3]=target->nb[2]*target->ne[2]+output_bytes;
@@ -2834,20 +2854,20 @@ int main(int argc, char **argv) {
           return ggml_roll(ctx,a,args[0],args[1],args[2],args[3]);
         };
         ggml_tensor *result=relative?ggml_get_rel_pos(ctx,input,rows,rows):selecting?(operation?ggml_count_equal(ctx,input,right):ggml_argmax(ctx,input)):wordwise?filled:windowing?(operation?ggml_win_unpart(ctx,input,image_width,image_height,window_size):ggml_win_part(ctx,input,window_size)):casting?(operation<3?ggml_cast(ctx,input,output_type):ggml_cpy(ctx,input,target)):filling?filled:triangular?ggml_tri(ctx,ggml_cont(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,input):folding?ggml_repeat_back(ctx,input,target):spatial?spatial_op(operation?ggml_cont(ctx,input):input,false):concatenating?ggml_concat(ctx,input,right,operation):repeating?ggml_repeat(ctx,input,target):operation==0?ggml_dup(ctx,input):(operation==1?(fixture_plan[8]?ggml_cont_1d(ctx,input,fixture(2,cases,0,9)):ggml_cont(ctx,input)):ggml_cpy(ctx,input,target));
-        if(norming || grouping) {uint32_t parameter;memcpy(&parameter,result->op_params+(grouping?1:0),4);CHECK(parameter==fixture_plan[9] && result->op==(grouping?GGML_OP_GROUP_NORM:GGML_OP_NORM) && result->src[0]==input && (result->view_src!=nullptr)==inplace);if(grouping)CHECK(uint32_t(result->op_params[0])==fixture_plan[10]);}
+        if(physical_norm) {uint32_t parameter;memcpy(&parameter,result->op_params+(grouping?1:0),4);CHECK(parameter==fixture_plan[9] && result->op==(grouping?GGML_OP_GROUP_NORM:backward?GGML_OP_RMS_NORM_BACK:GGML_OP_NORM) && result->src[0]==input && (result->view_src!=nullptr)==inplace);if(grouping)CHECK(uint32_t(result->op_params[0])==fixture_plan[10]);if(backward)CHECK(result->src[1]==right && result->view_src==(operation?(operation==2?right:input):nullptr));}
         if(triangular) result->src[0]=input;
         if(inplace) memcpy(result->nb,input->nb,sizeof input->nb);
         if((scanning || reducing || selecting) && layout==3) for(int axis=0;axis<4;axis++) result->nb[axis]*=2;
-        ggml_tensor *expected_tensor=relative?ggml_get_rel_pos(ctx,canonical_copy(ctx,input),rows,rows):selecting?(operation?ggml_count_equal(ctx,(ggml_is_matrix(input) || pattern==9)?input:ggml_cont_2d(ctx,input,input->ne[0],ggml_nrows(input)),(ggml_is_matrix(input) || pattern==9)?right:ggml_cont_2d(ctx,right,right->ne[0],ggml_nrows(right))):ggml_argmax(ctx,input->nb[0]==sizeof(float)?input:canonical_copy(ctx,input))):(norming || grouping)?word_operation(input,false):wordwise?word_operation(reducing && !operation && type==GGML_TYPE_F32?input:canonical_copy(ctx,input),false):windowing?(operation?ggml_win_unpart(ctx,canonical_copy(ctx,input),image_width,image_height,window_size):ggml_win_part(ctx,canonical_copy(ctx,input),window_size)):casting?ggml_cast(ctx,canonical_copy(ctx,input),output_type):filling?ggml_fill(ctx,canonical_copy(ctx,input),constant):triangular?ggml_tri(ctx,canonical_copy(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,canonical_copy(ctx,input)):folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
+        ggml_tensor *expected_tensor=relative?ggml_get_rel_pos(ctx,canonical_copy(ctx,input),rows,rows):selecting?(operation?ggml_count_equal(ctx,(ggml_is_matrix(input) || pattern==9)?input:ggml_cont_2d(ctx,input,input->ne[0],ggml_nrows(input)),(ggml_is_matrix(input) || pattern==9)?right:ggml_cont_2d(ctx,right,right->ne[0],ggml_nrows(right))):ggml_argmax(ctx,input->nb[0]==sizeof(float)?input:canonical_copy(ctx,input))):physical_norm?word_operation(input,false):wordwise?word_operation(reducing && !operation && type==GGML_TYPE_F32?input:canonical_copy(ctx,input),false):windowing?(operation?ggml_win_unpart(ctx,canonical_copy(ctx,input),image_width,image_height,window_size):ggml_win_part(ctx,canonical_copy(ctx,input),window_size)):casting?ggml_cast(ctx,canonical_copy(ctx,input),output_type):filling?ggml_fill(ctx,canonical_copy(ctx,input),constant):triangular?ggml_tri(ctx,canonical_copy(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,canonical_copy(ctx,input)):folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
         if(modeled && !copying) {for(int axis=0;axis<4;++axis)result->nb[axis]=fixture(2,cases,3,axis+4);}
         else if(relative || spatial || folding || diagonal || triangular || (filling && !operation) || (casting && operation<3) || windowing || (wordwise && !inplace)) {result->nb[1]+=output_bytes;result->nb[2]=result->nb[1]*result->ne[1]+output_bytes;result->nb[3]=result->nb[2]*result->ne[2]+output_bytes;}
-        if(norming || grouping)memcpy(expected_tensor->nb,result->nb,sizeof result->nb);
+        if(physical_norm)memcpy(expected_tensor->nb,result->nb,sizeof result->nb);
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer || (!ggml_nbytes(input)&&(!right||!ggml_nbytes(right))&&!ggml_nbytes(result)));
         std::vector<unsigned char> output(ggml_nbytes(result),modeled?config[4]:0xA5);
         for(ggml_tensor *operand : {input,right}) if(operand) {
           std::vector<unsigned char> initial(ggml_nbytes(operand));
           if(modeled) {
-            auto &pattern=patterns.at(fixture_plan[operand==right?8:7]);
+            auto &pattern=patterns.at(fixture_plan[operand==right?(backward?10:8):7]);
             if(pattern.empty())for(uint64_t i=0;i<config[3];++i) {auto value=fixture(3,cases,operand==right?1:0,i);CHECK(value<=255);pattern.push_back(value);}
             const uint64_t chunk_query=operand==right?5:4;
             const auto chunks=fixture(chunk_query,cases,0,0);
@@ -2889,9 +2909,17 @@ int main(int argc, char **argv) {
           std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
           recipe_word(5);recipe_word(0);recipe_context=nullptr;ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;refused++;return 0;
         }
-        if(grouping && !output.empty())ggml_backend_tensor_set(expected_tensor,output.data(),0,output.size());
+        if((grouping || backward) && !output.empty())ggml_backend_tensor_set(expected_tensor,output.data(),0,output.size());
         ggml_cgraph *oracle_graph=ggml_new_graph(ctx); ggml_build_forward_expand(oracle_graph,expected_tensor);
         CHECK(ggml_backend_graph_compute(reference,oracle_graph)==GGML_STATUS_SUCCESS);
+        if(backward && cases==0) {
+          CHECK(refuses_change(backend,dev,graph,result,result->src[0],nullptr));CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
+          CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_I32));
+          CHECK(refuses_change(backend,dev,graph,result,input->nb[0],size_t(8)));CHECK(refuses_change(backend,dev,graph,result,right->nb[0],size_t(8)));
+          for(int axis=0;axis<4;++axis)CHECK(refuses_change(backend,dev,graph,result,right->ne[axis],right->ne[axis]+1));
+          CHECK(refuses_change(backend,dev,graph,result,right->data,nullptr,false));CHECK(refuses_change(backend,dev,graph,result,result->data,(char *)input->data+4));
+          CHECK(refusal_probes==12);
+        }
         if((kind==0 || unarying || selecting || relative) && pattern==0 && units==(spatial && operation?2:repeating?3:1) && rows==(spatial && operation?2:1) && batches==(spatial && operation==2?2:1) && layout==0) {
           CHECK(refuses_change(backend,dev,graph,result,result->ne[0],result->ne[0]+(repeating?1:block)));
           CHECK(refuses_change(backend,dev,graph,result,result->src[concatenating || (!spatial && !triangular && !casting && !wordwise && operation==2)?1:0],nullptr));
@@ -2931,7 +2959,7 @@ int main(int argc, char **argv) {
         if(filling && !operation && layout==3) {input->data=nullptr;input->buffer=nullptr;recipe_trace=&released;recipe_word(cases);recipe_state(6);recipe_trace=&trace;++source_releases;}
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
         input->data=saved_data; input->buffer=saved_buffer;
-        CHECK(compare_result(result,expected_tensor,output,grouping?4:wordwise && !selecting?(scanning?2:1):0));
+        CHECK(compare_result(result,expected_tensor,output,(grouping || backward)?4:wordwise && !selecting?(scanning?2:1):0));
         recipe_word(5);recipe_word(1);recipe_context=nullptr;ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
         return 0;
       };

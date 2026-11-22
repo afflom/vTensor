@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/normalization-backward-audit/1",
-  "status": "source-audit-only-not-implemented",
+  "status": "implemented-and-oracle-tested-acceptance-open",
   "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "operation": "RMS_NORM_BACK",
   "constructor": "ggml_rms_norm_back(ctx, gradient, input, epsilon)",
@@ -19,13 +19,11 @@
   "epsilon_and_scale": "No CPU epsilon-admission or scale-positivity assertion; nonfinite values must follow authoritative arithmetic.",
   "output_spacing": "As GROUP_NORM, output row columns are indexed as float pointers rather than dst nb[0].",
   "next_work": [
-    "Register a new ID, scenario and actual imported failing test before implementation.",
-    "Reuse certified Verdant arithmetic, F32 unary negation if its narrow/negate order is established equivalent, and the independent normalization roots.",
-    "Pass source-1 geometry once through the transport; avoid per-word descriptor validation or duplicating arithmetic in native code.",
-    "Add independent CPU counterexamples for each narrowing point, source-role binding, compound rounding, physical output spacing and atomic alias/overlap refusals."
+    "Validate composed normalization labels independently of ordinary operation filters; see verification/composed-normalization-audit.json.",
+    "Recover the original source budget and resolve authoritative production dependency packaging."
   ],
   "claims_not_made": [
-    "RMS_NORM_BACK implementation or conformance",
+    "Complete composed-normalization coverage",
     "Complete vTensor acceptance"
   ],
   "source_sha256": {
@@ -34,5 +32,6 @@
     "ggml/src/ggml-cpu/vec.h": "7ad7cf31d4787fa9c112e087b929fff456761b97bd4e523d60d5a01ceb2409af",
     "ggml/src/ggml-cpu/vec.cpp": "2422d2ab0ce6f9c1b78f478656bc1a2864d1374f8a339de127584c7349a4a869",
     "tests/test-backend-ops.cpp": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52"
-  }
+  },
+  "implementation_evidence": "verification/backward-normalization-authoring.json"
 }

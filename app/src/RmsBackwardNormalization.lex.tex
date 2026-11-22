@@ -1,0 +1,150 @@
+\begin{lexlean}{RmsBackwardNormalization}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{RmsNormalization}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: signedNarrowed,
+  parameters: [sign : Nat, magnitude : Nat],
+  result: Nat,
+  body: ((prim multiply sign 2147483648 : Nat) + magnitude),
+  executable: true
+}
+
+definition{
+  name: narrowedNegated,
+  parameters: [sign : Nat, magnitude : Nat],
+  result: Nat,
+  body: ((prim multiply (prim subtract 1 sign : Nat) 2147483648 : Nat) + magnitude),
+  executable: true
+}
+
+definition{
+  name: negateNarrowed,
+  parameters: [bits : Nat],
+  result: Nat,
+  body: (prim remainder (bits + 2147483648) 4294967296 0 : Nat),
+  executable: true
+}
+
+theorem{
+  name: signNegationCommutesWithNarrowedMagnitude,
+  parameters: [sign : Nat, magnitude : Nat],
+  statement: ((sign <= 1) -> ((magnitude < 2147483648) -> ((negateNarrowed (signedNarrowed sign magnitude)) = (narrowedNegated sign magnitude)))),
+  proof: linear_arithmetic{definitions: [narrowedNegated, negateNarrowed, signedNarrowed]},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: rowSteps,
+  parameters: [width : Nat],
+  result: Nat,
+  body: (13 + (prim multiply 9 width : Nat)),
+  executable: true
+}
+
+definition{
+  name: accumulationEnd,
+  parameters: [width : Nat],
+  result: Nat,
+  body: (2 + (prim multiply 6 width : Nat)),
+  executable: true
+}
+
+definition{
+  name: outputStart,
+  parameters: [width : Nat],
+  result: Nat,
+  body: ((accumulationEnd width) + 11),
+  executable: true
+}
+
+definition{
+  name: steps,
+  parameters: [width : Nat, rows : Nat, slots : Nat],
+  result: Nat,
+  body: (if ((width =? 0) || (rows =? 0)) then 0 else ((RmsNormalization::bitmapSteps width rows slots) + (prim multiply rows (rowSteps width) : Nat))),
+  executable: true
+}
+
+theorem{name: widthFiveRow, parameters: [], statement: ((rowSteps 5) = 58), proof: reflexivity{}}
+
+theorem{
+  name: widthFiveFinish,
+  parameters: [],
+  statement: ((accumulationEnd 5) = 32),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: widthFiveOutput,
+  parameters: [],
+  statement: ((outputStart 5) = 43),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: overlapBeforeAnyOutput,
+  parameters: [],
+  statement: ((steps 5 2 7) = 136),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyWidthNoSteps,
+  parameters: [],
+  statement: ((steps 0 7 50) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyRowsNoSteps,
+  parameters: [],
+  statement: ((steps 5 0 50) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: largeBatchCount,
+  parameters: [],
+  statement: ((steps 1 65537 0) = 1441814),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negatedPositiveZero,
+  parameters: [],
+  statement: ((negateNarrowed 0) = 2147483648),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negatedNegativeZero,
+  parameters: [],
+  statement: ((negateNarrowed 2147483648) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negatedPositiveInfinity,
+  parameters: [],
+  statement: ((negateNarrowed 2139095040) = 4286578688),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negatedNegativeInfinity,
+  parameters: [],
+  statement: ((negateNarrowed 4286578688) = 2139095040),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negatedQuietNanSign,
+  parameters: [],
+  statement: ((negateNarrowed 2143289344) = 4290772992),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}
