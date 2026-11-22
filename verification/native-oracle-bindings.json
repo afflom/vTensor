@@ -1,0 +1,22 @@
+{
+  "factory_transcripts": {
+    "upstream-MUL_MAT_Q2_K_F32": "d0e5747446106ed976bf928ad20e61680f829d80354eaa453105475ed9b1cdeb",
+    "upstream-MUL_MAT_Q4_0_F32": "dfa8e8d874e02e063285441939a67fcbc4a050a100a503706457ecd0390c578a",
+    "upstream-MUL_MAT_Q8_0_F32": "98ccc36df39f889744f83d3afec15c00e033031c5220e564565b54f30332eddd",
+    "upstream-SET_ROWS_SCALAR": "cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595",
+    "upstream-SWIGLU": "8f96851eea2a120140823c8edb76eb8c6683589b8112bb847d48ab016395cd47"
+  },
+  "fixture_libraries": {
+    "cast": "arithmetic",
+    "concat": "arithmetic",
+    "copy": "arithmetic",
+    "fill": "arithmetic",
+    "group-norm": "groupfixtures",
+    "norm": "normfixtures",
+    "repeat": "arithmetic",
+    "rms-backward": "rmsbackfixtures",
+    "rms-norm": "arithmetic",
+    "spatial": "spatial",
+    "typed-binary": "typedfixtures"
+  }
+}

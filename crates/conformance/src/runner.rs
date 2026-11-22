@@ -752,16 +752,30 @@ fn execute_quantized_matrix(
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
 ) -> Result<(), BackendError> {
-    use verdant_tensor::linear::{
-        dot_symmetric_q4_row, dot_symmetric_q8_row, encode_symmetric_q8_block,
-    };
+    use verdant_tensor::linear;
+    use vtensor_matrix_q8::Adt2::C0;
+    let symmetric = linear::encode_symmetric_q8_block::<32>;
+    match plan {
+        C0(.., 2) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q4_row),
+        C0(.., 8) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q8_row),
+        C0(.., 10) => execute_block_rows(
+            tensor,
+            plan,
+            linear::encode_grouped_q8_block,
+            linear::dot_grouped_q2_row,
+        ),
+        _ => Err(BackendError::InvalidTensor),
+    }
+}
+
+fn execute_block_rows<const LANES: usize, Block>(
+    tensor: &Tensor,
+    plan: vtensor_matrix_q8::Adt2,
+    encode: impl Fn(&[f32; LANES]) -> Result<Block, verdant_tensor::TensorComputeError>,
+    dot: impl Fn(&[u8], &[Block]) -> Result<f32, verdant_tensor::TensorComputeError>,
+) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt3 as Response};
-    let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, .., packed) = plan;
-    let dot = if packed {
-        dot_symmetric_q4_row
-    } else {
-        dot_symmetric_q8_row
-    };
+    let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
     // SAFETY: graph admission retained both typed GGML source descriptors.
     let (w, a) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
     let weights = TensorInput::new(w)?;
@@ -787,16 +801,15 @@ fn execute_quantized_matrix(
         prepared.clear();
         for block in 0..blocks {
             // SAFETY: the certified column lies in the admitted activation span and has
-            // exactly this many contiguous 32-lane blocks. GGML views may be unaligned.
+            // exactly this many contiguous blocks. GGML views may be unaligned.
             let lanes = unsafe {
                 activations
                     .add(activation as usize)
-                    .cast::<[f32; 32]>()
+                    .cast::<[f32; LANES]>()
                     .add(block as usize)
                     .read_unaligned()
             };
-            prepared
-                .push(encode_symmetric_q8_block(&lanes).map_err(|_| BackendError::InvalidTensor)?);
+            prepared.push(encode(&lanes).map_err(|_| BackendError::InvalidTensor)?);
         }
         for (row, value) in values.iter_mut().enumerate() {
             let Response::C3(start) = run(Request::C2(plan.clone(), weight_base, row as u64))

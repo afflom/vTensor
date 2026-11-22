@@ -45,7 +45,7 @@ structure{
     {name: o1, type: Nat},
     {name: o2, type: Nat},
     {name: o3, type: Nat},
-    {name: packed, type: Bool}
+    {name: weightType, type: Nat}
   ]
 }
 
@@ -73,11 +73,19 @@ inductive{
 }
 
 definition{
+  name: rowProductType,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: (((kind =? 2) || (kind =? 8)) || (kind =? 10)),
+  executable: true
+}
+
+definition{
   name: planStorage,
   parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor, lanes : Nat, width : Nat],
   result: Response,
-  body: (if ((((((((((project w kind) =? 8) || ((project w kind) =? 2)) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && ((project a s0) =? 4)) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))) then (match (MatrixGraph::planMatrix op 0 (project a kind) (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
-    | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor Response.planned (record Plan {blocks := (prim quotient (project w n0) lanes 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply outputCount (prim multiply b2 b3 : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), packed := ((project w kind) =? 2)}))
+  body: (if ((((((((rowProductType (project w kind)) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && ((project a s0) =? 4)) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))) then (match (MatrixGraph::planMatrix op 0 (project a kind) (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
+    | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor Response.planned (record Plan {blocks := (prim quotient (project w n0) lanes 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply outputCount (prim multiply b2 b3 : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), weightType := (project w kind)}))
     | MatrixGraph::MatrixDecision.unsupported => (ctor Response.refused)
     | MatrixGraph::MatrixDecision.invalidShape => (ctor Response.refused)) else (ctor Response.refused)),
   executable: true
@@ -103,6 +111,13 @@ definition{
     | Request.row plan base row => (if (row <? (project plan rows)) then (ctor Response.weightOffset (base + (prim multiply row (project plan w1) : Nat))) else (ctor Response.refused))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: groupedTwoBitProducts,
+  parameters: [],
+  statement: ((rowProductType 10) = true),
+  proof: reflexivity{}
 }
 
 theorem{

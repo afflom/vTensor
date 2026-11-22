@@ -1607,6 +1607,13 @@ mod native_backend_oracle {
 
     use std::sync::LazyLock;
 
+    static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
+        frozen_json(
+            "native-oracle-bindings",
+            "21fd02406bf95d861f86e1b3543a55a8eabd38decec848a2b91f5f8d4d0f6a32",
+        )
+    });
+
     pub(super) static NATIVE_FIXTURES: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-fixture-baseline",
@@ -1974,35 +1981,12 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         }
         let mut command = Command::new(&program);
         command.arg(&library).arg(&expected_snapshot).arg(mode);
-        let fixture = match mode {
-            "spatial" => Some("spatial"),
-            "norm" => Some("normfixtures"),
-            "group-norm" => Some("groupfixtures"),
-            "rms-backward" => Some("rmsbackfixtures"),
-            "typed-binary" => Some("typedfixtures"),
-            "copy" | "repeat" | "concat" | "fill" | "cast" | "rms-norm" => Some("arithmetic"),
-            _ => None,
-        };
-        if let Some(model) = fixture {
+        if let Some(model) = ORACLE_BINDINGS["fixture_libraries"][mode].as_str() {
             command.arg(fixture_library(common, model));
         }
         let text = super::ggml_oracle::batch(&mut command, input);
         let footer = format!("RESULT cases {expected_cases}\n");
-        let transcript = match mode {
-            "upstream-SWIGLU" => {
-                Some("8f96851eea2a120140823c8edb76eb8c6683589b8112bb847d48ab016395cd47")
-            }
-            "upstream-SET_ROWS_SCALAR" => {
-                Some("cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595")
-            }
-            "upstream-MUL_MAT_Q8_0_F32" => {
-                Some("98ccc36df39f889744f83d3afec15c00e033031c5220e564565b54f30332eddd")
-            }
-            "upstream-MUL_MAT_Q4_0_F32" => {
-                Some("dfa8e8d874e02e063285441939a67fcbc4a050a100a503706457ecd0390c578a")
-            }
-            _ => None,
-        };
+        let transcript = ORACLE_BINDINGS["factory_transcripts"][mode].as_str();
         if let Some(digest) = transcript {
             let rows = text.strip_suffix(&footer).expect("complete factory count");
             assert_eq!(
