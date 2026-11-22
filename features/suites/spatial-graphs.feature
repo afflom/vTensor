@@ -5,3 +5,9 @@ Feature: GGML spatial storage graphs
     When vTensor executes valid spatial graphs through Prism and Verdant
     Then complete encoded output and padding match the imported CPU reference
     And invalid shapes, missing operands and undefined circular empty-source graphs fail before writes
+
+  @VT-57 @build
+  Scenario: Prism plans GGML rotary position encodings and their backward graphs and Verdant computes each rotation against the imported GGML CPU
+    Given floating-point source rows with positions, optional frequency factors, modes and offsets
+    When vTensor executes the forward or backward rotation through Verdant
+    Then the 510 ROPE and 424 ROPE_BACK factory cases match the upstream evaluator

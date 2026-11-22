@@ -227,6 +227,18 @@ fn swiglu_rows_vt_56() {
     native_backend_oracle::verify(&root(), "upstream-SWIGLU", 36);
 }
 
+/// `VT-57`: Exercise the upstream rotary-position graph factory on the provider.
+#[test]
+fn rotary_graphs_vt_57() {
+    native_backend_oracle::verify(&root(), "upstream-ROPE", 510);
+}
+
+/// `VT-57`: Exercise all upstream inverse-rotation graphs.
+#[test]
+fn rotary_backward_graphs_vt_57() {
+    native_backend_oracle::verify(&root(), "upstream-ROPE_BACK", 424);
+}
+
 /// `VT-14`: Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers
 #[test]
 fn empty_graphs_vt_14() {
