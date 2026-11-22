@@ -14,3 +14,9 @@ Feature: native-backend
     Given a scheduled graph with an intermediate result and a dependent consumer
     When the application reuses the graph with the intermediate compute bit set or cleared
     Then both node outputs match the imported CPU and each compute node is assigned to the selected device
+
+  @VT-59 @build
+  Scenario: The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions
+    Given the CPU registry function names used by the pinned llama.cpp host
+    When an application creates two pools and attaches, switches and detaches them
+    Then the submitted graph outputs match the imported CPU through pool reuse and teardown

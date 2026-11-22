@@ -418,3 +418,9 @@ id = "VT-58"
 level = "build"
 suite = "spatial-graphs"
 statement = "Prism plans GGML extended flash attention views and Verdant computes the masked attention output against the imported GGML CPU evaluator"
+
+[[id]]
+id = "VT-59"
+level = "build"
+suite = "native-backend"
+statement = "The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions"

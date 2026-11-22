@@ -146,6 +146,7 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-11` | `build` | GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior |
 | `VT-52` | `build` | Prism selects graph nodes by the imported GGML compute flag and vTensor preserves inactive results across scheduled graph reuse |
+| `VT-59` | `build` | The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions |
 
 ## normalization-graphs
 

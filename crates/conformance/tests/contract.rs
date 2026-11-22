@@ -41,6 +41,9 @@ ggml_batches! {
     /// `VT-11`: GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior
     #[test]
     fn native_backend_vt_11() { "buffers", 108, ["layout", "native"] }
+    /// Exercise the CPU threadpool registry functions consumed by the upstream llama host.
+    #[test]
+    fn cpu_threadpool_vt_59() { "cpu-threadpool", 4, ["native"] }
     /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
     #[test]
     fn matrix_graphs_vt_12() { "matrix", 1280, ["matrix", "index"] => verify_matrix_graphs }
@@ -2239,6 +2242,39 @@ int main(int argc, char **argv) {
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
     ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
     ggml_backend_cpu_set_n_threads(reference,1);
+    if (!strcmp(argv[3],"cpu-threadpool")) {
+        std::array<float,4> expected{};
+        for(auto selected : {reference,backend}) {
+            auto registry=ggml_backend_dev_backend_reg(ggml_backend_get_device(selected));
+            auto lookup=[&](const char *name){return ggml_backend_reg_get_proc_address(registry,name);};
+            auto create=reinterpret_cast<decltype(&ggml_threadpool_new)>(lookup("ggml_threadpool_new"));
+            auto release=reinterpret_cast<decltype(&ggml_threadpool_free)>(lookup("ggml_threadpool_free"));
+            auto attach=reinterpret_cast<decltype(&ggml_backend_cpu_set_threadpool)>(lookup("ggml_backend_cpu_set_threadpool"));
+            CHECK(create && release && attach);
+            auto one=ggml_threadpool_params_default(1), two=ggml_threadpool_params_default(2);
+            two.paused=true;
+            auto first=create(&one), second=create(&two); CHECK(first && second && first!=second);
+            auto ctx=ggml_init({ggml_graph_overhead()+8*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+            auto input=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,1);
+            auto output=ggml_scale(ctx,input,2.0f); auto graph=ggml_new_graph(ctx);
+            ggml_build_forward_expand(graph,output);
+            auto storage=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(storage);
+            const std::array<ggml_threadpool_t,4> bindings={first,second,first,nullptr};
+            for(size_t step=0;step<bindings.size();step++) {
+                attach(selected,bindings[step]);
+                const float value=float(step+1);float result=0;
+                ggml_backend_tensor_set(input,&value,0,sizeof(value));
+                CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+                ggml_backend_tensor_get(output,&result,0,sizeof(result));
+                if(selected==reference) expected[step]=result;
+                else CHECK(result==expected[step]);
+            }
+            release(first);release(second);release(nullptr);
+            ggml_backend_buffer_free(storage);ggml_free(ctx);
+        }
+        ggml_backend_free(reference);ggml_backend_free(backend);
+        printf("RESULT cases %zu\n",expected.size()); return 0;
+    }
     if (!strcmp(argv[3],"iq2-identity-copy")) {
         for (auto selected : {reference, backend}) {
             auto ctx=ggml_init({ggml_graph_overhead()+8*ggml_tensor_overhead(),nullptr,true});
