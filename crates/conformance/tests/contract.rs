@@ -500,6 +500,28 @@ fn rms_runtime_edges_vt_46() {
     native_backend_oracle::verify(&root(), "rms-norm", 256);
 }
 
+/// `VT-47`: Prism supplies spatial fixture parameters and rejects undefined recipe queries.
+#[test]
+fn fixture_generation_vt_47() {
+    fixture_queries(&[
+        (43, 8, 3, 0, Some(4294967295)),
+        (43, 16, 3, 1, Some(2147483649)),
+        (46, 17, 3, 0, Some(1)),
+        (46, 17, 3, 1, Some(4294967295)),
+        (46, 21, 3, 0, Some(4294967294)),
+        (46, 21, 3, 1, Some(1)),
+        (44, 3, 3, 1, Some(2)),
+        (45, 1, 3, 0, Some(2)),
+        (45, 2, 3, 0, Some(4294967294)),
+        (43, 22, 3, 0, None),
+        (44, 4, 3, 0, None),
+        (45, 17, 3, 0, None),
+        (43, 0, 3, 2, None),
+        (43, 0, 2147483648, 0, None),
+        (47, 0, 0, 0, None),
+    ]);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};

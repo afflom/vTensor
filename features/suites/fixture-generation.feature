@@ -55,3 +55,10 @@ Feature: Certified graph fixtures
     Then construction aliases padding empty axes and source release states remain byte identical
     And the unchanged CPU oracle computes every expected numerical result
     And invalid queries and altered typed recipe bindings are rejected
+
+  @VT-47 @build
+  Scenario: Prism generates spatial fixture signed pad reflect and roll parameters and circular oracle adaptation while preserving all 2256 frozen construction and input cases
+    Given the frozen 2256 spatial fixture construction and input transcripts
+    When Prism supplies signed pad reflect roll and circular oracle parameters
+    Then every transcript and imported CPU comparison is preserved
+    And undefined parameter queries and altered signed bindings are rejected

@@ -1,0 +1,14 @@
+{
+  "spec": "vtensor/spatial-parameters/1",
+  "capability": "VT-47",
+  "status": "registered-failing-before-implementation",
+  "frozen_cases": 2256,
+  "initial_failure": {
+    "command": "cargo test --locked -p vtensor-backend --test contract fixture_generation_vt_47 -- --nocapture",
+    "exit_code": 101,
+    "diagnostic": "query 43 returned None instead of Some(4294967295)",
+    "log": "/tmp/vtensor-spatial-params-initial.log"
+  },
+  "scope": "Move signed pad, reflect, roll and circular reference argument construction into Prism. Preserve frozen construction/input transcripts and imported CPU expected values.",
+  "acceptance_not_claimed": true
+}

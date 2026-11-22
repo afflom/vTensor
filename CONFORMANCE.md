@@ -89,6 +89,7 @@ model does not sanction.
 | `VT-42` | `build` | Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results |
 | `VT-43` | `build` | Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results |
 | `VT-44` | `build` | Prism generates FILL and CAST fixture enumeration typed layouts constants and initial bytes while preserving all 17280 frozen cases source release states and independent GGML CPU expected results |
+| `VT-47` | `build` | Prism generates spatial fixture signed pad reflect and roll parameters and circular oracle adaptation while preserving all 2256 frozen construction and input cases |
 
 ## fold-graphs
 

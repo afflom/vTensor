@@ -346,3 +346,9 @@ id = "VT-46"
 level = "build"
 suite = "normalization-graphs"
 statement = "Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals"
+
+[[id]]
+id = "VT-47"
+level = "build"
+suite = "fixture-generation"
+statement = "Prism generates spatial fixture signed pad reflect and roll parameters and circular oracle adaptation while preserving all 2256 frozen construction and input cases"
