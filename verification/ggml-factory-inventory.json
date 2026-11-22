@@ -190,9 +190,8 @@
     "parameters"
   ],
   "factory_verdicts": {
-    "evidence_commit": "2ddd3a7",
     "source": "crates/conformance/tests/contract.rs",
-    "selection": "Passed groups match exact labels in the imported evaluator. Explicit ordinal results record targeted runs. Unmatched ordinals are untested. Supplemental fixtures do not contribute.",
+    "selection": "Match exact labels or the label and parameter prefix of a passed parameter group. Each group transcript contains its passing factory ordinal and full parameters. Refusals record the first rejected ordinal. All other ordinals are untested.",
     "passed_by_requirement": {
       "VT-37": [
         "ARANGE"
@@ -222,14 +221,24 @@
         "ADD_RMS_NORM"
       ]
     },
-    "passed": 455,
+    "passed": 577,
     "refused_ordinals": {
-      "10681": {
-        "commit": "f4c5923",
+      "10637": {
         "oracle": "make_test_cases_eval / test_case::eval",
+        "test_build": "VT-53 with Verdant 17f04e0c",
         "result": "not supported"
       }
     },
-    "untested": 27299
+    "untested": 27177,
+    "label_group_evidence_commit": "2ddd3a7",
+    "passed_parameter_groups": {
+      "VT-53": {
+        "label": "MUL_MAT",
+        "parameters_prefix": "type_a=q8_0,type_b=f32,",
+        "cases": 122,
+        "transcript_sha256": "98ccc36df39f889744f83d3afec15c00e033031c5220e564565b54f30332eddd",
+        "test": "symmetric_matrix_graphs_vt_53"
+      }
+    }
   }
 }

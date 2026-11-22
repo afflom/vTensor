@@ -1,0 +1,103 @@
+\begin{lexlean}{QuantizedMatrix}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{MatrixGraph}
+\title{Natural number}
+\begin{semanticmodule}
+structure{
+  name: Tensor,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: Nat},
+    {name: n0, type: Nat},
+    {name: n1, type: Nat},
+    {name: n2, type: Nat},
+    {name: n3, type: Nat},
+    {name: s0, type: Nat},
+    {name: s1, type: Nat},
+    {name: s2, type: Nat},
+    {name: s3, type: Nat}
+  ]
+}
+
+structure{
+  name: Plan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: blocks, type: Nat},
+    {name: weightBytes, type: Nat},
+    {name: rows, type: Nat},
+    {name: columns, type: Nat},
+    {name: batches, type: Nat},
+    {name: visits, type: Nat},
+    {name: outputs, type: Nat},
+    {name: ratio2, type: Nat},
+    {name: ratio3, type: Nat},
+    {name: w1, type: Nat},
+    {name: w2, type: Nat},
+    {name: w3, type: Nat},
+    {name: a1, type: Nat},
+    {name: a2, type: Nat},
+    {name: a3, type: Nat},
+    {name: o1, type: Nat},
+    {name: o2, type: Nat},
+    {name: o3, type: Nat}
+  ]
+}
+
+inductive{
+  name: Request,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: graph, fields: [Nat, Bool, Tensor, Tensor, Tensor]},
+    {name: column, fields: [Plan, Nat]},
+    {name: row, fields: [Plan, Nat, Nat]}
+  ]
+}
+
+inductive{
+  name: Response,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: refused, fields: []},
+    {name: planned, fields: [Plan]},
+    {name: columnOffsets, fields: [Nat, Nat, Nat]},
+    {name: weightOffset, fields: [Nat]}
+  ]
+}
+
+definition{
+  name: graphPlan,
+  parameters: [op : Nat, extra : Bool, w : Tensor, a : Tensor, o : Tensor],
+  result: Response,
+  body: (if (((((((((if extra then false else true) && ((project w kind) =? 8)) && ((prim remainder (project w n0) 32 0 : Nat) =? 0)) && ((project w s0) =? 34)) && ((project a s0) =? 4)) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))) then (match (MatrixGraph::planMatrix op 0 (project a kind) (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
+    | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor Response.planned (record Plan {blocks := (prim quotient (project w n0) 32 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) 32 0 : Nat) 34 : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply outputCount (prim multiply b2 b3 : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3)}))
+    | MatrixGraph::MatrixDecision.unsupported => (ctor Response.refused)
+    | MatrixGraph::MatrixDecision.invalidShape => (ctor Response.refused)) else (ctor Response.refused)),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [request : Request],
+  result: Response,
+  body: (match request
+    | Request.graph op extra w a o => (graphPlan op extra w a o)
+    | Request.column plan ordinal => (if (ordinal <? (project plan visits)) then (let col : Nat := (prim remainder ordinal (project plan columns) 0 : Nat); (let batch : Nat := (prim quotient ordinal (project plan columns) 0 : Nat); (let b2 : Nat := (prim remainder batch (project plan batches) 0 : Nat); (let b3 : Nat := (prim quotient batch (project plan batches) 0 : Nat); (ctor Response.columnOffsets ((prim multiply (prim quotient b2 (project plan ratio2) 0 : Nat) (project plan w2) : Nat) + (prim multiply (prim quotient b3 (project plan ratio3) 0 : Nat) (project plan w3) : Nat)) (((prim multiply col (project plan a1) : Nat) + (prim multiply b2 (project plan a2) : Nat)) + (prim multiply b3 (project plan a3) : Nat)) (((prim multiply col (project plan o1) : Nat) + (prim multiply b2 (project plan o2) : Nat)) + (prim multiply b3 (project plan o3) : Nat))))))) else (ctor Response.refused))
+    | Request.row plan base row => (if (row <? (project plan rows)) then (ctor Response.weightOffset (base + (prim multiply row (project plan w1) : Nat))) else (ctor Response.refused))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: refusesExtraSource,
+  parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor],
+  statement: ((graphPlan op true w a o) = (ctor Response.refused)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

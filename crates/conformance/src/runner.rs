@@ -478,6 +478,7 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
 enum ExecutionPlan {
     Standard(GraphPlan),
     Typed(vtensor_typed::Adt2),
+    Quantized(vtensor_matrix_q8::Adt2),
 }
 
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
@@ -544,7 +545,25 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             p1,
         )
         .map(|plan| Some(ExecutionPlan::Standard(plan))),
-        _ => Err(BackendError::InvalidTensor),
+        _ => {
+            let descriptor = |TensorDescriptor::C0(ty, a, b, c, d, e, f, g, h, _, _)| {
+                vtensor_matrix_q8::Adt1::C0(ty, a, b, c, d, e, f, g, h)
+            };
+            let (Some(w), Some(a)) = (primary, secondary) else {
+                return Err(BackendError::InvalidTensor);
+            };
+            let request = vtensor_matrix_q8::Adt0::C0(
+                operation,
+                tensor.src[2..].iter().any(|s| !s.is_null()),
+                descriptor(w),
+                descriptor(a),
+                descriptor(output),
+            );
+            match vtensor_matrix_q8::run(request).map_err(|_| BackendError::Overflow)? {
+                vtensor_matrix_q8::Adt3::C1(plan) => Ok(Some(ExecutionPlan::Quantized(plan))),
+                _ => Err(BackendError::InvalidTensor),
+            }
+        }
     }
 }
 
@@ -633,6 +652,82 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
                     .map_err(|_| BackendError::InvalidTensor)?;
             }
             _ => return Err(BackendError::InvalidTensor),
+        }
+    }
+    Ok(())
+}
+
+fn execute_quantized_matrix(
+    tensor: &Tensor,
+    plan: vtensor_matrix_q8::Adt2,
+) -> Result<(), BackendError> {
+    use verdant_tensor::linear::{dot_symmetric_q8_row, encode_symmetric_q8_block};
+    use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt3 as Response};
+    let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
+    // SAFETY: graph admission retained both typed GGML source descriptors.
+    let (w, a) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
+    let weights = graph_tensor_data(w)?;
+    let activations = graph_tensor_data(a)?;
+    let destination = graph_tensor_data(tensor)?;
+    let mut results = workspace(outputs, 0.0f32)?;
+    let mut offsets = workspace(visits, 0u64)?;
+    let mut prepared = Vec::new();
+    prepared
+        .try_reserve_exact(blocks as usize)
+        .map_err(|_| BackendError::Allocation)?;
+    for (column, (values, offset)) in results
+        .chunks_exact_mut(rows as usize)
+        .zip(&mut offsets)
+        .enumerate()
+    {
+        let Response::C2(weight_base, activation, dest) =
+            run(Request::C1(plan.clone(), column as u64)).map_err(|_| BackendError::Overflow)?
+        else {
+            return Err(BackendError::InvalidTensor);
+        };
+        *offset = dest;
+        prepared.clear();
+        for block in 0..blocks {
+            // SAFETY: the certified column lies in the admitted activation span and has
+            // exactly this many contiguous 32-lane blocks. GGML views may be unaligned.
+            let lanes = unsafe {
+                activations
+                    .add(activation as usize)
+                    .cast::<[f32; 32]>()
+                    .add(block as usize)
+                    .read_unaligned()
+            };
+            prepared
+                .push(encode_symmetric_q8_block(&lanes).map_err(|_| BackendError::InvalidTensor)?);
+        }
+        for (row, value) in values.iter_mut().enumerate() {
+            let Response::C3(start) = run(Request::C2(plan.clone(), weight_base, row as u64))
+                .map_err(|_| BackendError::Overflow)?
+            else {
+                return Err(BackendError::InvalidTensor);
+            };
+            let bytes = if weight_bytes == 0 {
+                &[]
+            } else {
+                // SAFETY: Prism bounds the complete contiguous encoded row in the
+                // live weight buffer. Writes are staged until all reads finish.
+                unsafe {
+                    std::slice::from_raw_parts(weights.add(start as usize), weight_bytes as usize)
+                }
+            };
+            *value =
+                dot_symmetric_q8_row(bytes, &prepared).map_err(|_| BackendError::InvalidTensor)?;
+        }
+    }
+    for (column, offset) in results.chunks_exact(rows as usize).zip(offsets) {
+        // SAFETY: each certified column fits the checked buffer and the private
+        // result workspace is disjoint from it. Byte copying permits unaligned views.
+        unsafe {
+            ptr::copy_nonoverlapping(
+                column.as_ptr().cast::<u8>(),
+                destination.add(offset as usize),
+                std::mem::size_of_val(column),
+            );
         }
     }
     Ok(())
@@ -1048,6 +1143,7 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
                 ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
+                ExecutionPlan::Quantized(plan) => execute_quantized_matrix(&*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),
             };
             if result.is_err() {

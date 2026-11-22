@@ -4360,3 +4360,39 @@ the PR #12 pin, including all 57 backend contract tests. Its source audit
 measured 11,784 non-Prism lines against the same immediate-parent total.
 Recovering the original project ceiling of 10,549 remains on the burndown.
 The subsequent PR #13 pin has the targeted dependency and host results above.
+
+## Quantized matrix execution
+
+VT-53 first failed at factory ordinal 10,681 in the registered test at
+`75e3b69`. After implementation, all 122 Q8_0 × F32 MUL_MAT cases passed
+the unchanged upstream evaluator against its independent CPU reference. The
+test binds the ordinal, label and complete constructor parameters of every
+passing case to SHA-256
+`98ccc36df39f889744f83d3afec15c00e033031c5220e564565b54f30332eddd`.
+These cases are a subset of the 3,213 MUL_MAT cases.
+[Case inventory](verification/ggml-factory-inventory.json)
+
+Verdant commit `17f04e0c21f814a49ff906bb640a747ca4cdda7c` provides the
+activation encoder and the complete signed row product. Its VTK-17 test checks
+256 rows against the pinned CPU type trait and rejects five malformed shapes.
+vTensor's certified matrix root checks graph geometry and computes byte offsets.
+The ABI adapter prepares each activation column once, calls the Verdant row
+product for each weight row and stages output until all input reads finish.
+Matrix attestation `b35189b57a8026bbe832c61a86acd63346d2da898e24ee985c387623073ddabf`.
+[Verdant numerical evidence](https://github.com/afflom/verdant-engine/blob/17f04e0c21f814a49ff906bb640a747ca4cdda7c/ENGINE-VERIFICATION.md#vtk-17-symmetric-row-contraction)
+· [Matrix certificate](generated/matrix/evidence/attestation.json)
+
+Forcing vTensor to read row zero for every weight row made the VT-53 gate
+fail on its first case with normalized mean square error 2.570212241 against
+the upstream limit 0.0005. Restoring row indexing passed all three factory
+instances sharing that exact parameter string. VT-02, VT-03, the 1,280 VT-12
+F32 matrix fixtures, workspace Clippy and cargo-deny also passed.
+
+With the same pinned model and command as the consumer probe above, llama.cpp
+accepted `output.weight` and first refused `blk.0.attn_q.weight` (Q4_0,
+288 × 288). The imported evaluator independently refused factory ordinal
+10,637, a Q4_0 × F32 matrix with 16 output rows, one column and inner
+dimension 256. vTensor prefill and decode logits remain unverified.
+
+The VT-53 source audit measured 11,897 non-Prism lines, 113 above the
+11,784 comparison baseline and 1,348 above the original 10,549 ceiling.

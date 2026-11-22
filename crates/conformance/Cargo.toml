@@ -10,6 +10,7 @@ license.workspace = true
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
+vtensor_matrix_q8 = { version = "=0.1.0", path = "../../generated/matrix/packages/rust-core/vtensor_matrix_q8" }
 vtensor_typed = { path = "../../generated/typed/packages/rust-core/vtensor_typed", version = "=0.1.0" }
 vtensor_l2 = { version = "0.1.0", path = "../../generated/norm/packages/rust-core/vtensor_l2" }
 vtensor_norm_plan = { version = "0.1.0", path = "../../generated/norm/packages/rust-core/vtensor_norm_plan" }
