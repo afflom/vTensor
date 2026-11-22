@@ -45,7 +45,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Finish the arbitrary-provider contract
 
-- [ ] Execute Q2_K ADD (809). vTensor alone refuses it. Use the pinned CPU evaluator for the output comparison.
+- [ ] Implement Q8_K activation encoding and the Q2_K × Q8_K row product in Verdant. In vTensor, bind the 55 Q2_K × F32 MUL_MAT cases and replay ADD case 809, which composes MUL_MAT, GET_ROWS, REPEAT and F32 ADD. [Upstream graph](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/tests/test-backend-ops.cpp#L2576)
 - [x] Execute BF16 GET_ROWS_BACK on vTensor. The two factory graphs match 10,240 CPU-reference bytes, and 1,680 strided, empty and invalid-index cases pass. The direct factory reports CPU-only refusal on both ordinals. [VT-62 evidence](verification/factory-bf16-row-gradient-vt62.json)
 - [x] Compare all 63 CPU-refused identity copies across seven IQ formats with the pinned CPU copy kernel. All destination bytes match, including permuted layouts. [63 direct comparisons](verification/factory-iq-copy.json) · [IQ2_XXS regression](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
 - [ ] Complete sorting, TOP_K and masks, expert routing, indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
