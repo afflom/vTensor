@@ -4341,3 +4341,16 @@ admission gap independently of model loading. Running the exact parameter
 filter from the [case transcript](verification/ggml-factory-cases.tsv.gz) via
 `test_case::eval` returned `not supported` and the oracle exited 2. It uses
 one F32 activation column, 16 Q8_0 weight rows and inner dimension 256.
+
+## Verdant Q8 dependency
+
+Verdant PR #13 builds on #12 and provides `encode_symmetric_q8_block`.
+Cargo resolves Verdant Tensor and all 31 numerical packages from Engine
+commit `32cbf30db6d3e0f708aebb7d2adb55f38c9d381a`. The imported
+quantizer supplied 9,214 expected bytes for 271 blocks. A corrupted lane
+failed the external comparison. Q8_0 block dot products and graph admission
+remain open. VT-02, VT-03 and cargo-deny passed for this pin. The rebuilt
+plugin also reproduced the same llama.cpp layer placement and output-weight
+refusal. Upstream fidelity still reports 1,168 native residue functions
+against 1,160 and 1,326 uncertified functions against 1,318.
+[Engine PR #13](https://github.com/afflom/verdant-engine/pull/13)
