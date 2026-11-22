@@ -494,12 +494,15 @@ dependencies = [
  "vtensor_arithmetic",
  "vtensor_fixtures",
  "vtensor_index",
+ "vtensor_l2",
  "vtensor_layout",
  "vtensor_matrix",
  "vtensor_matrix_execution",
  "vtensor_native_config",
  "vtensor_native_memory",
  "vtensor_native_predicates",
+ "vtensor_norm",
+ "vtensor_norm_plan",
  "vtensor_pointwise",
  "vtensor_repeat_offset",
  "vtensor_spatial",
@@ -528,6 +531,10 @@ name = "vtensor_index"
 version = "0.1.0"
 
 [[package]]
+name = "vtensor_l2"
+version = "0.1.0"
+
+[[package]]
 name = "vtensor_layout"
 version = "0.1.0"
 
@@ -549,6 +556,18 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_native_predicates"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_norm"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_norm_plan"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_normfixtures"
 version = "0.1.0"
 
 [[package]]

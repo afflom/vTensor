@@ -103,7 +103,7 @@ inductive{
     {name: arange, fields: [Nat, Nat, Nat, Nat]},
     {name: l2Norm, fields: [Nat]},
     {name: relativeAdd, fields: [Nat, Nat, Nat]},
-    {name: rmsNorm, fields: [Nat, Nat, Nat, Nat]}
+    {name: normalized, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -116,7 +116,8 @@ inductive{
     {name: invalidShape, fields: []},
     {name: execute, fields: [Nat, Bool, Nat, Nat, Nat, Nat, Nat]},
     {name: product, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: copyBlocks, fields: [Nat, Nat, IndexContext, IndexContext, CopyMode]}
+    {name: copyBlocks, fields: [Nat, Nat, IndexContext, IndexContext, CopyMode]},
+    {name: delegated, fields: [Nat]}
   ]
 }
 
@@ -242,12 +243,6 @@ inductive{
         TensorDescriptor
       ]
     },
-    {name: offsets, fields: [Nat, IndexContext, IndexContext, CopyMode]},
-    {name: selection, fields: [Nat, IndexContext, IndexContext, Nat]},
-    {name: scatter, fields: [Nat, IndexContext, IndexContext, IndexContext, Nat]},
-    {name: gather, fields: [Nat, Nat, IndexContext, IndexContext, IndexContext, Nat]},
-    {name: indexedAdd, fields: [Nat, IndexContext, IndexContext, IndexContext, IndexContext, Nat]},
-    {name: arangeStep, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: stateful, fields: [Nat, IndexContext, IndexContext, CopyMode, Nat]},
     {name: bindings, fields: [CopyMode]}
   ]
@@ -897,6 +892,7 @@ definition{
   result: PointwiseDecision,
   body: (match (numericDecision operation variant left right output)
     | PointwiseDecision.unsupported => (ctor PointwiseDecision.unsupported)
+    | PointwiseDecision.delegated kernel => (ctor PointwiseDecision.delegated kernel)
     | PointwiseDecision.invalidShape => (ctor PointwiseDecision.invalidShape)
     | PointwiseDecision.execute kind unary n0 n1 n2 n3 count => (ctor PointwiseDecision.copyBlocks count 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.arithmetic kind unary (match right
       | Option.none => (indexContext left 1)
@@ -1160,15 +1156,15 @@ definition{
   name: planRmsNorm,
   parameters: [options : OperationParameters, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (let storage : Nat := (project left ty); (let bytes : Nat := (RmsNormalization::wordBytes storage); (if (((((((((project left ty) =? 0) || ((project left ty) =? 30)) && ((project left ty) =? (project output ty))) && (sameShape left output)) && (RmsNormalization::epsilonAdmitted (project options p0))) && (rmsAligned left bytes)) && (rmsAligned output bytes)) && ((separateTensors left output) || (sameWordView left output))) then (let rows : Nat := (if (empty (project left n0) (project left n1) (project left n2) (project left n3)) then 0 else (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat)); (let slots : Nat := (if ((rows =? 0) || (rmsNested output bytes)) then 0 else (prim quotient (project output span) bytes 0 : Nat)); (ctor PointwiseDecision.copyBlocks (RmsNormalization::steps storage (project left n0) rows slots) bytes (indexContext left 1) (indexContext output 1) (ctor CopyMode.rmsNorm storage (project options p0) rows (RmsNormalization::scratchWords (project left n0) rows slots))))) else (ctor PointwiseDecision.invalidShape)))),
+  body: (let storage : Nat := (project left ty); (let bytes : Nat := (RmsNormalization::wordBytes storage); (if (((((((((project left ty) =? 0) || ((project left ty) =? 30)) && ((project left ty) =? (project output ty))) && (sameShape left output)) && (RmsNormalization::epsilonAdmitted (project options p0))) && (rmsAligned left bytes)) && (rmsAligned output bytes)) && ((separateTensors left output) || (sameWordView left output))) then (let rows : Nat := (if (empty (project left n0) (project left n1) (project left n2) (project left n3)) then 0 else (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat)); (let slots : Nat := (if ((rows =? 0) || (rmsNested output bytes)) then 0 else (prim quotient (project output span) bytes 0 : Nat)); (ctor PointwiseDecision.copyBlocks (RmsNormalization::steps storage (project left n0) rows slots) bytes (indexContext left 1) (indexContext output 1) (ctor CopyMode.normalized storage (project options p0) rows (RmsNormalization::scratchWords (project left n0) rows slots))))) else (ctor PointwiseDecision.invalidShape)))),
   executable: true
 }
 
 definition{
-  name: rmsMarkStep,
-  parameters: [index : Nat, destination : IndexContext, storage : Nat, rows : Nat, flag : Nat],
+  name: markWordsStep,
+  parameters: [index : Nat, destination : IndexContext, bytes : Nat, base : Nat, flag : Nat],
   result: GraphResponse,
-  body: (let at : Nat := ((3 + rows) + (prim quotient (blockOffset (prim quotient index 2 0 : Nat) destination) (RmsNormalization::wordBytes storage) 0 : Nat)); (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor GraphResponse.word 19 1 at 2 0 1 2) else (if (flag =? 0) then (ctor GraphResponse.word 19 2 1 2 0 1 at) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))),
+  body: (let at : Nat := (base + (prim quotient (blockOffset (prim quotient index 2 0 : Nat) destination) bytes 0 : Nat)); (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor GraphResponse.word 19 1 at 2 0 1 2) else (if (flag =? 0) then (ctor GraphResponse.word 19 2 1 2 0 1 at) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))),
   executable: true
 }
 
@@ -1208,7 +1204,7 @@ definition{
     flag : Nat
   ],
   result: GraphResponse,
-  body: (let slots : Nat := (prim subtract capacity (3 + rows) : Nat); (if (index <? (RmsNormalization::steps storage (project source u0) rows slots)) then (let marked : Nat := (RmsNormalization::bitmapSteps (project source u0) rows slots); (let factors : Nat := (RmsNormalization::factorSteps storage (project source u0) rows); (if (index <? marked) then (rmsMarkStep index destination storage rows flag) else (if (index <? (marked + factors)) then (let step : Nat := (prim subtract index marked : Nat); (let stride : Nat := (RmsNormalization::rowSteps storage (project source u0)); (rmsFactorStep (prim remainder step stride 0 : Nat) (prim quotient step stride 0 : Nat) source storage epsilon flag))) else (rmsOutputStep (prim subtract index (marked + factors) : Nat) source destination storage))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))),
+  body: (let slots : Nat := (prim subtract capacity (3 + rows) : Nat); (if (index <? (RmsNormalization::steps storage (project source u0) rows slots)) then (let marked : Nat := (RmsNormalization::bitmapSteps (project source u0) rows slots); (let factors : Nat := (RmsNormalization::factorSteps storage (project source u0) rows); (if (index <? marked) then (markWordsStep index destination (RmsNormalization::wordBytes storage) (3 + rows) flag) else (if (index <? (marked + factors)) then (let step : Nat := (prim subtract index marked : Nat); (let stride : Nat := (RmsNormalization::rowSteps storage (project source u0)); (rmsFactorStep (prim remainder step stride 0 : Nat) (prim quotient step stride 0 : Nat) source storage epsilon flag))) else (rmsOutputStep (prim subtract index (marked + factors) : Nat) source destination storage))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))),
   executable: true
 }
 
@@ -1217,35 +1213,6 @@ definition{
   parameters: [options : OperationParameters, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
   body: (if ((((((project left ty) =? 0) && ((project output ty) =? 0)) && (sameShape left output)) && (L2Normalization::epsilonAdmitted (project options p0))) && ((separateTensors left output) || (sameWordView left output))) then (let source : IndexContext := (indexContext left 1); (let rows : Nat := (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat); (ctor PointwiseDecision.copyBlocks (L2Normalization::steps (project source u0) rows) 4 source (indexContext output 1) (ctor CopyMode.l2Norm (project options p0))))) else (ctor PointwiseDecision.invalidShape)),
-  executable: true
-}
-
-definition{
-  name: l2RowStep,
-  parameters: [
-    phase : Nat,
-    row : Nat,
-    source : IndexContext,
-    destination : IndexContext,
-    epsilon : Nat,
-    flag : Nat
-  ],
-  result: GraphResponse,
-  body: (let width : Nat := (project source u0); (let end : Nat := (1 + (prim multiply 3 width : Nat)); (if (phase =? 0) then (resetReductionWord 0) else (if (phase <? end) then (let instruction : Nat := (prim subtract phase 1 : Nat); (let ordinal : Nat := ((prim multiply row width : Nat) + (prim quotient instruction 3 0 : Nat)); (let at : Nat := (blockOffset ordinal source); (let part : Nat := (prim remainder instruction 3 0 : Nat); (if (part =? 0) then (ctor GraphResponse.word 10 0 at 0 at 1 1) else (if (part =? 1) then (ctor GraphResponse.word 1 1 1 2 0 1 1) else (ctor GraphResponse.word 0 1 0 1 1 1 0))))))) else (if (phase =? end) then (ctor GraphResponse.word 2 1 0 2 0 1 1) else (if (phase =? (end + 1)) then (ctor GraphResponse.word 12 1 1 2 0 1 1) else (if (phase =? (end + 2)) then (ctor GraphResponse.word 16 1 1 2 epsilon 1 2) else (if (phase =? (end + 3)) then (if ((flag =? 1) || (flag =? 2)) then (ctor GraphResponse.word 11 2 1065353216 1 1 1 2) else (ctor GraphResponse.word 11 2 1065353216 2 epsilon 1 2)) else (let ordinal : Nat := ((prim multiply row width : Nat) + (prim subtract phase (end + 4) : Nat)); (ctor GraphResponse.word 10 0 (blockOffset ordinal source) 1 2 3 (blockOffset ordinal destination))))))))))),
-  executable: true
-}
-
-definition{
-  name: l2Offsets,
-  parameters: [
-    index : Nat,
-    source : IndexContext,
-    destination : IndexContext,
-    epsilon : Nat,
-    flag : Nat
-  ],
-  result: GraphResponse,
-  body: (let stride : Nat := (L2Normalization::rowSteps (project source u0)); (let rows : Nat := (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat); (if (index <? (L2Normalization::steps (project source u0) rows)) then (l2RowStep (prim remainder index stride 0 : Nat) (prim quotient index stride 0 : Nat) source destination epsilon flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))),
   executable: true
 }
 
@@ -1304,8 +1271,8 @@ definition{
     | CopyMode.scattered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.relativeAdd initial width biases => (relativeAddOffsets index initial width biases)
-    | CopyMode.rmsNorm storage epsilon rows capacity => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-    | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.normalized kind epsilon rows capacity => (if (kind =? 64) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))
+    | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
     | CopyMode.arange start stop step count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
@@ -1373,7 +1340,7 @@ definition{
     | CopyMode.relativePosition => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false)
     | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false)
-    | CopyMode.rmsNorm storage epsilon rows capacity => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.arange start stop step count => (ctor GraphResponse.bindings 0 0 0 false)),
   executable: true
@@ -1418,7 +1385,7 @@ definition{
     | CopyMode.relativePosition => 0
     | CopyMode.indexedAdd table indices => 0
     | CopyMode.relativeAdd initial width biases => 0
-    | CopyMode.rmsNorm storage epsilon rows capacity => (if ((opcode =? 6) || (opcode =? 7)) then storage else 0)
+    | CopyMode.normalized kind epsilon rows capacity => (if (((opcode =? 6) || (opcode =? 7)) && (kind =? 30)) then 30 else 0)
     | CopyMode.l2Norm epsilon => 0
     | CopyMode.arange start stop step count => 0),
   executable: true
@@ -1477,7 +1444,7 @@ definition{
     | CopyMode.relativePosition => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.indexedAdd table indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.relativeAdd initial width biases => (ctor WordOperation.storage sourceStorage destinationStorage true)
-    | CopyMode.rmsNorm storage epsilon rows capacity => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.normalized kind epsilon rows capacity => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.l2Norm epsilon => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.arange start stop step count => (ctor WordOperation.storage sourceStorage destinationStorage true)),
   executable: true
@@ -1512,7 +1479,7 @@ definition{
     | CopyMode.relativePosition => 0
     | CopyMode.indexedAdd table indices => 0
     | CopyMode.relativeAdd initial width biases => 0
-    | CopyMode.rmsNorm storage epsilon rows capacity => 0
+    | CopyMode.normalized kind epsilon rows capacity => 0
     | CopyMode.l2Norm epsilon => 0
     | CopyMode.arange start stop step count => 0),
   executable: true
@@ -1587,8 +1554,8 @@ definition{
     | CopyMode.relativePosition => (copyOffsets index source destination mode)
     | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
     | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
-    | CopyMode.rmsNorm storage epsilon rows capacity => (rmsOffsets index source destination storage epsilon rows capacity flag)
-    | CopyMode.l2Norm epsilon => (l2Offsets index source destination epsilon flag)
+    | CopyMode.normalized kind epsilon rows capacity => (if (kind =? 64) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
+    | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
     | CopyMode.arange start stop step count => (arangeOffsets index count start stop step flag))),
   executable: true
 }
@@ -1600,13 +1567,7 @@ definition{
   body: (match request
     | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 input7 input8 input9 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output)))))))
-    | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)
-    | GraphRequest.selection index source destination flag => (argmaxOffsets index source destination flag)
-    | GraphRequest.scatter index source destination indices flag => (rowGradientOffsets index source destination indices flag)
-    | GraphRequest.gather kind index source destination indices flag => (gatherOffsets kind index source destination indices flag)
-    | GraphRequest.indexedAdd index source destination table indices flag => (indexedAddOffsets index source destination table indices flag)
-    | GraphRequest.arangeStep index count start stop step flag => (arangeOffsets index count start stop step flag)
+      | Option.some left => (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (operation =? 23) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
     | GraphRequest.bindings mode => (sourceBindings mode)),
   executable: true,
@@ -2530,7 +2491,7 @@ theorem{
     epsilon : Nat,
     flag : Nat
   ],
-  statement: ((statefulOffsets index source destination (ctor CopyMode.l2Norm epsilon) flag) = (bindStep (ctor CopyMode.l2Norm epsilon) (l2Offsets index source destination epsilon flag))),
+  statement: ((statefulOffsets index source destination (ctor CopyMode.l2Norm epsilon) flag) = (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))),
   proof: reflexivity{}
 }
 
@@ -2665,6 +2626,57 @@ theorem{
   name: rmsMarksUnoccupiedOutput,
   parameters: [],
   statement: ((rmsOffsets 1 (record IndexContext {u0 := 5, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 2, n2 := 1, n3 := 1, s0 := 4, s1 := 20, s2 := 40, s3 := 40}) 0 0 2 15 0) = (ctor GraphResponse.word 19 2 1 2 0 1 5)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normalizationDelegatesNorm,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    epsilon : Nat,
+    rows : Nat,
+    capacity : Nat,
+    flag : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.normalized 64 epsilon rows capacity) flag) = (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unknownNormalizationKindRefused,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    epsilon : Nat,
+    rows : Nat,
+    capacity : Nat,
+    flag : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.normalized 3 epsilon rows capacity) flag) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normalizationPreservesBf16WordStorage,
+  parameters: [],
+  statement: ((wordStorage (ctor CopyMode.normalized 30 0 1 4) 6) = 30),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normalizationPreservesF32WordStorage,
+  parameters: [],
+  statement: ((wordStorage (ctor CopyMode.normalized 0 0 1 4) 6) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lowerTriangleIncludesBelowDiagonal,
+  parameters: [],
+  statement: (((keepElement 2 1 2) && (if (keepElement 2 2 1) then false else true)) = true),
   proof: reflexivity{}
 }
 \end{semanticmodule}

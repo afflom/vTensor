@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/normalization-next-audit/1",
-  "status": "source-audit-only-not-implemented",
+  "status": "NORM-implemented-oracle-checked-GROUP_NORM-audit-only",
   "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "source_sha256": {
     "ggml/src/ggml.c": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
@@ -28,7 +28,9 @@
       "variance": "Center and square in F32; each variance addition is F32, followed by F32 division."
     },
     "common_tail": "F32 epsilon addition, sqrtf, reciprocal and centered-output scaling.",
-    "factory_gap": "test_norm builds copied output only. Audit in-place, explicit output stride and grouped-rounding regressions separately."
+    "factory_gap": "test_norm builds copied output only. Audit in-place, explicit output stride and grouped-rounding regressions separately.",
+    "evidence": "verification/norm-authoring.json",
+    "row_count_domain": "Contiguous vector helpers take int; the Prism planner refuses nonempty unit-inner-stride rows above INT_MAX, while the scalar path retains its int64 row counter."
   },
   "GROUP_NORM": {
     "cpu_type": "F32",
@@ -39,16 +41,14 @@
     "warning": "Preserve nested row subtotal order, which differs from a single flat F64 fold."
   },
   "next_actions": [
-    "Register the next capability, acceptance scenario and failing imported test before implementing it.",
-    "Capture actual compiler feature macros for the imported vector variance path.",
-    "Add cancellation and grouping regressions through Prism fixtures and the imported CPU oracle.",
-    "Reuse certified Verdant arithmetic and Prism scratch planning, but preserve each normalization operation's own rounding points."
+    "Finish source-budget recovery and production dependency resolution; retain the rejecting acceptance gates.",
+    "Register GROUP_NORM and its failing imported test before implementing its distinct per-row subtotal semantics."
   ],
   "claims_not_made": [
-    "NORM implementation or conformance",
     "GROUP_NORM implementation or conformance",
     "Complete architecture coverage",
-    "General proof from finite oracle tests"
+    "General proof from finite oracle tests",
+    "Full vTensor acceptance or production dependency resolution"
   ],
   "oracle_compiler_feature_observation": {
     "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",

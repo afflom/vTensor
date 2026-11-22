@@ -1,0 +1,228 @@
+\begin{lexlean}{NormNormalization}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{RmsNormalization}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: unitInnerStrides,
+  parameters: [sourceStride : Nat, destinationStride : Nat],
+  result: Bool,
+  body: ((sourceStride =? 4) && (destinationStride =? 4)),
+  executable: true
+}
+
+definition{
+  name: meanElementSteps,
+  parameters: [contiguous : Bool],
+  result: Nat,
+  body: (if contiguous then 2 else 1),
+  executable: true
+}
+
+definition{
+  name: meanSteps,
+  parameters: [contiguous : Bool, width : Nat],
+  result: Nat,
+  body: ((if contiguous then 5 else 4) + (prim multiply (meanElementSteps contiguous) width : Nat)),
+  executable: true
+}
+
+definition{
+  name: groups,
+  parameters: [width : Nat],
+  result: Nat,
+  body: (prim quotient width 4 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: groupedWords,
+  parameters: [width : Nat],
+  result: Nat,
+  body: (prim multiply 4 (groups width) : Nat),
+  executable: true
+}
+
+definition{
+  name: groupLane,
+  parameters: [phase : Nat],
+  result: Nat,
+  body: (if (phase <? 5) then (if (phase <? 2) then 0 else 1) else (if (phase <? 7) then 2 else 3)),
+  executable: true
+}
+
+definition{
+  name: varianceSteps,
+  parameters: [contiguous : Bool, width : Nat],
+  result: Nat,
+  body: (if contiguous then ((prim multiply 13 (groups width) : Nat) + (prim multiply 4 (prim remainder width 4 0 : Nat) : Nat)) else (prim multiply 3 width : Nat)),
+  executable: true
+}
+
+definition{
+  name: finishSteps,
+  parameters: [contiguous : Bool],
+  result: Nat,
+  body: (if contiguous then 6 else 5),
+  executable: true
+}
+
+definition{
+  name: rowSteps,
+  parameters: [contiguous : Bool, width : Nat],
+  result: Nat,
+  body: ((((meanSteps contiguous width) + (varianceSteps contiguous width)) + (finishSteps contiguous)) + width),
+  executable: true
+}
+
+definition{
+  name: scratchWords,
+  parameters: [slots : Nat],
+  result: Nat,
+  body: (6 + slots),
+  executable: true
+}
+
+definition{
+  name: steps,
+  parameters: [contiguous : Bool, width : Nat, rows : Nat, slots : Nat],
+  result: Nat,
+  body: (if ((width =? 0) || (rows =? 0)) then 0 else ((RmsNormalization::bitmapSteps width rows slots) + (prim multiply rows (rowSteps contiguous width) : Nat))),
+  executable: true
+}
+
+definition{
+  name: rowSpan,
+  parameters: [width : Nat, stride : Nat],
+  result: Nat,
+  body: (if (width =? 0) then 0 else (4 + (prim multiply (prim subtract width 1 : Nat) stride : Nat))),
+  executable: true
+}
+
+definition{
+  name: innerAligned,
+  parameters: [width : Nat, stride : Nat],
+  result: Bool,
+  body: ((width <=? 1) || ((prim remainder stride 4 0 : Nat) =? 0)),
+  executable: true
+}
+
+definition{
+  name: innerSeparate,
+  parameters: [width : Nat, stride : Nat],
+  result: Bool,
+  body: ((width <=? 1) || (4 <=? stride)),
+  executable: true
+}
+
+theorem{
+  name: contiguousBoth,
+  parameters: [],
+  statement: ((unitInnerStrides 4 4) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: outputStrideSelectsScalar,
+  parameters: [],
+  statement: ((unitInnerStrides 4 8) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: sourceStrideSelectsScalar,
+  parameters: [],
+  statement: ((unitInnerStrides 8 4) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupFourCount,
+  parameters: [],
+  statement: ((varianceSteps true 4) = 13),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: groupFiveCount,
+  parameters: [],
+  statement: ((varianceSteps true 5) = 17),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fiveScalarCount,
+  parameters: [],
+  statement: ((varianceSteps false 5) = 15),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fiveContiguousRowCount,
+  parameters: [],
+  statement: ((rowSteps true 5) = 43),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fiveScalarRowCount,
+  parameters: [],
+  statement: ((rowSteps false 5) = 34),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyWidthHasNoSteps,
+  parameters: [],
+  statement: ((steps true 0 3 20) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyRowsHaveNoSteps,
+  parameters: [],
+  statement: ((steps false 7 0 20) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: threeScalarRows,
+  parameters: [],
+  statement: ((steps false 5 3 0) = 102),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: markedRowsCount,
+  parameters: [],
+  statement: ((steps false 5 3 20) = 132),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: arithmeticRegisters,
+  parameters: [],
+  statement: ((scratchWords 0) = 6),
+  proof: reflexivity{}
+}
+
+theorem{name: stridedRowSpan, parameters: [], statement: ((rowSpan 5 8) = 36), proof: reflexivity{}}
+
+theorem{
+  name: repeatedInputWordAligned,
+  parameters: [],
+  statement: ((innerAligned 5 0) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: repeatedOutputWordNotSeparate,
+  parameters: [],
+  statement: ((innerSeparate 5 0) = false),
+  proof: reflexivity{}
+}
+
+theorem{name: nextGroupLane, parameters: [], statement: ((groupLane 12) = 3), proof: reflexivity{}}
+\end{semanticmodule}
+\end{lexlean}

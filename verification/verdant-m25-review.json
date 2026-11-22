@@ -1,0 +1,26 @@
+{
+  "spec": "vtensor/verdant-upstream-review/1",
+  "upstream": "https://github.com/afflom/verdant-engine",
+  "reviewed_revision": "0d8ed4ed314cd09ff925deda6dd69d15082f263d",
+  "version": "2.17.0",
+  "milestone": "M25",
+  "previous_review": "55488e808bf88bd5ab1d62093f9417281d7b1f35",
+  "tensor_changes_since_review": [
+    "crates/verdant-tensor/src/scalars.rs",
+    "crates/verdant-tensor/src/scalars_gateway.rs"
+  ],
+  "observed_changes": "Gateway provider, readiness, HTTP status, failover and stakeholder routing predicates; these do not implement the missing numerical tensor APIs.",
+  "required_apis_absent": [
+    "evaluate_wide",
+    "evaluate_f32_scalar",
+    "F64Quotient",
+    "StorageBlock"
+  ],
+  "search_scope": [
+    "crates/verdant-tensor",
+    "app/src"
+  ],
+  "decision": "M25 alone cannot replace the certified development extension or satisfy VT-02. Preserve the development work; production dependency resolution remains open.",
+  "original_upstream_worktree_modified": false,
+  "candidate_pushed_to_engine_upstream": false
+}

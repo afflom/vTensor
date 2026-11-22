@@ -1,0 +1,575 @@
+\begin{lexlean}{NormGraph}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TensorIndex}
+\importmodule{NormNormalization}
+\importmodule{RmsNormalization}
+\importmodule{L2Normalization}
+\title{Natural number}
+\begin{semanticmodule}
+structure{
+  name: IndexContext,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: u0, type: Nat},
+    {name: n1, type: Nat},
+    {name: n2, type: Nat},
+    {name: n3, type: Nat},
+    {name: s0, type: Nat},
+    {name: s1, type: Nat},
+    {name: s2, type: Nat},
+    {name: s3, type: Nat}
+  ]
+}
+
+inductive{
+  name: Instruction,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: invalid, fields: []},
+    {name: step, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
+  ]
+}
+
+definition{
+  name: word,
+  parameters: [
+    operation : Nat,
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  result: Instruction,
+  body: (if (((operation <=? 4) || ((9 <=? operation) && (operation <=? 12))) || (((operation =? 16) || (operation =? 19)) || ((operation =? 21) || (operation =? 22)))) then (ctor Instruction.step (if ((operation <? 4) || (21 <=? operation)) then 0 else (if ((operation =? 16) || (operation =? 19)) then 2 else 1)) (if (operation <? 4) then operation else (if ((operation =? 4) || (operation =? 16)) then 0 else (if (operation =? 19) then 3 else (if (21 <=? operation) then (prim subtract operation 17 : Nat) else (prim subtract operation 8 : Nat))))) leftSlot leftAt rightSlot rightAt target to) else (ctor Instruction.invalid)),
+  executable: true
+}
+
+definition{
+  name: blockOffset,
+  parameters: [index : Nat, context : IndexContext],
+  result: Nat,
+  body: (let q0 : Nat := (prim quotient index (project context u0) 0 : Nat); (let q1 : Nat := (prim quotient q0 (project context n1) 0 : Nat); (TensorIndex::elementOffset (prim remainder index (project context u0) 0 : Nat) (prim remainder q0 (project context n1) 0 : Nat) (prim remainder q1 (project context n2) 0 : Nat) (prim quotient q1 (project context n2) 0 : Nat) (project context s0) (project context s1) (project context s2) (project context s3)))),
+  executable: true
+}
+
+definition{
+  name: resetReductionWord,
+  parameters: [register : Nat],
+  result: Instruction,
+  body: (word 0 2 0 2 0 1 register),
+  executable: true
+}
+
+definition{
+  name: markWordsStep,
+  parameters: [index : Nat, destination : IndexContext, bytes : Nat, base : Nat, flag : Nat],
+  result: Instruction,
+  body: (let at : Nat := (base + (prim quotient (blockOffset (prim quotient index 2 0 : Nat) destination) bytes 0 : Nat)); (if ((prim remainder index 2 0 : Nat) =? 0) then (word 19 1 at 2 0 1 2) else (if (flag =? 0) then (word 19 2 1 2 0 1 at) else (ctor Instruction.invalid)))),
+  executable: true
+}
+
+definition{
+  name: normMeanStep,
+  parameters: [phase : Nat, row : Nat, source : IndexContext, grouped : Bool],
+  result: Instruction,
+  body: (let width : Nat := (project source u0); (let end : Nat := (1 + (prim multiply width (NormNormalization::meanElementSteps grouped) : Nat)); (if (phase =? 0) then (resetReductionWord 0) else (if (phase <? end) then (let item : Nat := (prim subtract phase 1 : Nat); (let at : Nat := (blockOffset ((prim multiply row width : Nat) + (prim quotient item (NormNormalization::meanElementSteps grouped) 0 : Nat)) source); (if grouped then (if ((prim remainder item 2 0 : Nat) =? 0) then (word 1 0 at 2 0 1 1) else (word 0 1 0 1 1 1 0)) else (word 4 1 0 0 at 1 0)))) else (let finish : Nat := (prim subtract phase end : Nat); (if (finish =? 0) then (word 3 2 width 2 0 1 1) else (if (grouped && (finish =? 1)) then (word 2 1 0 2 0 1 0) else (if (finish =? (if grouped then 2 else 1)) then (word 11 1 0 1 1 1 3) else (if (finish =? (if grouped then 3 else 2)) then (resetReductionWord 0) else (ctor Instruction.invalid)))))))))),
+  executable: true
+}
+
+definition{
+  name: normGroupStep,
+  parameters: [
+    phase : Nat,
+    row : Nat,
+    group : Nat,
+    source : IndexContext,
+    destination : IndexContext
+  ],
+  result: Instruction,
+  body: (let ordinal : Nat := (((prim multiply row (project source u0) : Nat) + (prim multiply group 4 : Nat)) + (NormNormalization::groupLane phase)); (let from : Nat := (blockOffset ordinal source); (let to : Nat := (blockOffset ordinal destination); (if ((((phase =? 0) || (phase =? 2)) || (phase =? 5)) || (phase =? 7)) then (word 9 0 from 1 3 3 to) else (if ((((phase =? 1) || (phase =? 3)) || (phase =? 6)) || (phase =? 8)) then (word 10 3 to 3 to 1 (if (phase =? 1) then 4 else (if (phase =? 6) then 5 else 1))) else (if (phase =? 4) then (word 4 1 4 1 1 1 4) else (if (phase =? 9) then (word 4 1 5 1 1 1 5) else (if (phase =? 10) then (word 4 1 4 1 5 1 1) else (if (phase =? 11) then (word 1 1 1 2 0 1 1) else (if (phase =? 12) then (word 0 1 0 1 1 1 0) else (ctor Instruction.invalid))))))))))),
+  executable: true
+}
+
+definition{
+  name: normVarianceWord,
+  parameters: [
+    phase : Nat,
+    ordinal : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    grouped : Bool
+  ],
+  result: Instruction,
+  body: (let from : Nat := (blockOffset ordinal source); (let to : Nat := (blockOffset ordinal destination); (if (phase =? 0) then (word 9 0 from 1 3 3 to) else (if (phase =? 1) then (word 10 3 to 3 to 1 1) else (if grouped then (if (phase =? 2) then (word 1 1 1 2 0 1 1) else (if (phase =? 3) then (word 0 1 0 1 1 1 0) else (ctor Instruction.invalid))) else (if (phase =? 2) then (word 4 1 0 1 1 1 0) else (ctor Instruction.invalid))))))),
+  executable: true
+}
+
+definition{
+  name: normVarianceStep,
+  parameters: [
+    index : Nat,
+    row : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    grouped : Bool
+  ],
+  result: Instruction,
+  body: (let batch : Nat := (if grouped then (prim multiply 13 (NormNormalization::groups (project source u0)) : Nat) else 0); (if (index <? batch) then (normGroupStep (prim remainder index 13 0 : Nat) row (prim quotient index 13 0 : Nat) source destination) else (let part : Nat := (prim subtract index batch : Nat); (let stride : Nat := (if grouped then 4 else 3); (normVarianceWord (prim remainder part stride 0 : Nat) (((prim multiply row (project source u0) : Nat) + (if grouped then (NormNormalization::groupedWords (project source u0)) else 0)) + (prim quotient part stride 0 : Nat)) source destination grouped))))),
+  executable: true
+}
+
+definition{
+  name: normFinishStep,
+  parameters: [phase : Nat, width : Nat, epsilon : Nat, grouped : Bool],
+  result: Instruction,
+  body: (if (phase =? 0) then (word (if grouped then 22 else 3) 2 width 2 0 1 1) else (if (phase =? 1) then (word (if grouped then 21 else 11) 1 0 1 1 1 1) else (if (grouped && (phase =? 2)) then (word 2 1 1 2 0 1 1) else (if (phase =? (if grouped then 3 else 2)) then (word 4 1 1 2 epsilon 1 1) else (if (phase =? (if grouped then 4 else 3)) then (word 12 1 1 2 0 1 1) else (if (phase =? (if grouped then 5 else 4)) then (word 11 2 1065353216 1 1 1 1) else (ctor Instruction.invalid))))))),
+  executable: true
+}
+
+definition{
+  name: normRowStep,
+  parameters: [
+    phase : Nat,
+    row : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    epsilon : Nat,
+    grouped : Bool
+  ],
+  result: Instruction,
+  body: (let mean : Nat := (NormNormalization::meanSteps grouped (project source u0)); (let variance : Nat := (mean + (NormNormalization::varianceSteps grouped (project source u0))); (let finish : Nat := (variance + (NormNormalization::finishSteps grouped)); (if (phase <? mean) then (normMeanStep phase row source grouped) else (if (phase <? variance) then (normVarianceStep (prim subtract phase mean : Nat) row source destination grouped) else (if (phase <? finish) then (normFinishStep (prim subtract phase variance : Nat) (project source u0) epsilon grouped) else (if (phase <? (finish + (project source u0))) then (let at : Nat := (blockOffset ((prim multiply row (project source u0) : Nat) + (prim subtract phase finish : Nat)) destination); (word 10 3 at 1 1 3 at)) else (ctor Instruction.invalid)))))))),
+  executable: true
+}
+
+definition{
+  name: normOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    epsilon : Nat,
+    rows : Nat,
+    capacity : Nat,
+    flag : Nat
+  ],
+  result: Instruction,
+  body: (let slots : Nat := (prim subtract capacity 6 : Nat); (let grouped : Bool := (NormNormalization::unitInnerStrides (project source s0) (project destination s0)); (if (index <? (NormNormalization::steps grouped (project source u0) rows slots)) then (let marked : Nat := (RmsNormalization::bitmapSteps (project source u0) rows slots); (if (index <? marked) then (markWordsStep index destination 4 6 flag) else (let part : Nat := (prim subtract index marked : Nat); (let stride : Nat := (NormNormalization::rowSteps grouped (project source u0)); (normRowStep (prim remainder part stride 0 : Nat) (prim quotient part stride 0 : Nat) source destination epsilon grouped))))) else (ctor Instruction.invalid)))),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [
+    index : Nat,
+    width : Nat,
+    n1 : Nat,
+    n2 : Nat,
+    n3 : Nat,
+    s0 : Nat,
+    s1 : Nat,
+    s2 : Nat,
+    s3 : Nat,
+    t0 : Nat,
+    t1 : Nat,
+    t2 : Nat,
+    t3 : Nat,
+    epsilon : Nat,
+    rows : Nat,
+    capacity : Nat,
+    flag : Nat
+  ],
+  result: Instruction,
+  body: (normOffsets index (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := s0, s1 := s1, s2 := s2, s3 := s3}) (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := t0, s1 := t1, s2 := t2, s3 := t3}) epsilon rows capacity flag),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: normCountsAfterF64Sum,
+  parameters: [],
+  statement: ((normMeanStep 11 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) true) = (word 3 2 5 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normNarrowsSumBeforeDivision,
+  parameters: [],
+  statement: ((normMeanStep 12 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) true) = (word 2 1 0 2 0 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normMeanDivisionUsesF32,
+  parameters: [],
+  statement: ((normMeanStep 13 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) true) = (word 11 1 0 1 1 1 3)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normScalarCount,
+  parameters: [],
+  statement: ((normMeanStep 6 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 40, s2 := 40, s3 := 40}) false) = (word 3 2 5 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normFirstCenterWrite,
+  parameters: [],
+  statement: ((normGroupStep 0 0 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40})) = (word 9 0 0 1 3 3 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normFirstSquare,
+  parameters: [],
+  statement: ((normGroupStep 1 0 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40})) = (word 10 3 0 3 0 1 4)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normFirstPairRoundedInF32,
+  parameters: [],
+  statement: ((normGroupStep 4 0 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40})) = (word 4 1 4 1 1 1 4)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normSecondPairRoundedInF32,
+  parameters: [],
+  statement: ((normGroupStep 9 0 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40})) = (word 4 1 5 1 1 1 5)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normPairsAddedBeforeWidening,
+  parameters: [],
+  statement: ((normGroupStep 10 0 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40})) = (word 4 1 4 1 5 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normGroupWidenedAfterAddition,
+  parameters: [],
+  statement: ((normGroupStep 11 0 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40})) = (word 1 1 1 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normGroupAccumulatedInF64,
+  parameters: [],
+  statement: ((normGroupStep 12 0 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40})) = (word 0 1 0 1 1 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normVarianceDividedInF64,
+  parameters: [],
+  statement: ((normFinishStep 1 5 0 true) = (word 21 1 0 1 1 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normVarianceNarrowedAfterDivision,
+  parameters: [],
+  statement: ((normFinishStep 2 5 0 true) = (word 2 1 1 2 0 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normDoesNotRejectNonfiniteScale,
+  parameters: [],
+  statement: ((normFinishStep 5 5 0 true) = (word 11 2 1065353216 1 1 1 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normPreflightReadsOccupancy,
+  parameters: [],
+  statement: ((normOffsets 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) 0 1 11 0) = (word 19 1 6 2 0 1 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normOccupiedOutputIsRefused,
+  parameters: [],
+  statement: ((normOffsets 1 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) 0 1 11 1) = (ctor Instruction.invalid)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normPreflightFinishesBeforeWrites,
+  parameters: [],
+  statement: ((normOffsets 24 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) 0 1 11 0) = (word 0 2 0 2 0 1 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normCentersAfterPreflight,
+  parameters: [],
+  statement: ((normOffsets 25 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) 0 1 11 0) = (word 9 0 0 1 3 3 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normScalesTheCenteredOutput,
+  parameters: [],
+  statement: ((normRowStep 42 0 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) 0 true) = (word 10 3 16 1 1 3 16)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: normOutputStrideSelectsScalarPath,
+  parameters: [],
+  statement: ((normOffsets 33 (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 40, s2 := 40, s3 := 40}) (record IndexContext {u0 := 5, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 40, s2 := 40, s3 := 40}) 0 1 6 0) = (word 10 3 32 1 1 3 32)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation0,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 0 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 0 0 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation1,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 1 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 0 1 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation2,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 2 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 0 2 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation3,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 3 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 0 3 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation4,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 4 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 1 0 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation9,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 9 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 1 1 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation10,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 10 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 1 2 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation11,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 11 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 1 3 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation12,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 12 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 1 4 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation19,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 19 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 2 3 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation21,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 21 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 0 4 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bindsOperation22,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 22 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 0 5 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unknownOperationRefused,
+  parameters: [],
+  statement: ((word 8 0 0 2 0 1 1) = (ctor Instruction.invalid)),
+  proof: reflexivity{}
+}
+
+definition{
+  name: l2RowStep,
+  parameters: [
+    phase : Nat,
+    row : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    epsilon : Nat,
+    flag : Nat
+  ],
+  result: Instruction,
+  body: (let width : Nat := (project source u0); (let end : Nat := (1 + (prim multiply 3 width : Nat)); (if (phase =? 0) then (resetReductionWord 0) else (if (phase <? end) then (let instruction : Nat := (prim subtract phase 1 : Nat); (let ordinal : Nat := ((prim multiply row width : Nat) + (prim quotient instruction 3 0 : Nat)); (let at : Nat := (blockOffset ordinal source); (let part : Nat := (prim remainder instruction 3 0 : Nat); (if (part =? 0) then (word 10 0 at 0 at 1 1) else (if (part =? 1) then (word 1 1 1 2 0 1 1) else (word 0 1 0 1 1 1 0))))))) else (if (phase =? end) then (word 2 1 0 2 0 1 1) else (if (phase =? (end + 1)) then (word 12 1 1 2 0 1 1) else (if (phase =? (end + 2)) then (word 16 1 1 2 epsilon 1 2) else (if (phase =? (end + 3)) then (if ((flag =? 1) || (flag =? 2)) then (word 11 2 1065353216 1 1 1 2) else (word 11 2 1065353216 2 epsilon 1 2)) else (let ordinal : Nat := ((prim multiply row width : Nat) + (prim subtract phase (end + 4) : Nat)); (word 10 0 (blockOffset ordinal source) 1 2 3 (blockOffset ordinal destination))))))))))),
+  executable: true
+}
+
+definition{
+  name: l2Offsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    epsilon : Nat,
+    flag : Nat
+  ],
+  result: Instruction,
+  body: (let stride : Nat := (L2Normalization::rowSteps (project source u0)); (let rows : Nat := (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat); (if (index <? (L2Normalization::steps (project source u0) rows)) then (l2RowStep (prim remainder index stride 0 : Nat) (prim quotient index stride 0 : Nat) source destination epsilon flag) else (ctor Instruction.invalid)))),
+  executable: true
+}
+
+definition{
+  name: evaluateL2,
+  parameters: [
+    index : Nat,
+    width : Nat,
+    n1 : Nat,
+    n2 : Nat,
+    n3 : Nat,
+    s0 : Nat,
+    s1 : Nat,
+    s2 : Nat,
+    s3 : Nat,
+    t0 : Nat,
+    t1 : Nat,
+    t2 : Nat,
+    t3 : Nat,
+    epsilon : Nat,
+    flag : Nat
+  ],
+  result: Instruction,
+  body: (l2Offsets index (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := s0, s1 := s1, s2 := s2, s3 := s3}) (record IndexContext {u0 := width, n1 := n1, n2 := n2, n3 := n3, s0 := t0, s1 := t1, s2 := t2, s3 := t3}) epsilon flag),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: bindsL2Comparison,
+  parameters: [
+    leftSlot : Nat,
+    leftAt : Nat,
+    rightSlot : Nat,
+    rightAt : Nat,
+    target : Nat,
+    to : Nat
+  ],
+  statement: ((word 16 leftSlot leftAt rightSlot rightAt target to) = (ctor Instruction.step 2 0 leftSlot leftAt rightSlot rightAt target to)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

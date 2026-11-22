@@ -228,8 +228,14 @@ evidence. Full acceptance and source-budget recovery remain open.
 Spatial pad/reflect/roll fixture parameters now come from a separate certified
 Prism package (VT-47); all 2,256 frozen construction/input cases and imported
 CPU comparisons are preserved. Binding and certificate faults are rejected.
-The next normalization audit records NORM's distinct contiguous/strided and
-SIMD rounding paths in `verification/normalization-next-audit.json`.
+NORM (VT-48) now uses separate certified Prism planner and instruction roots
+with Verdant arithmetic. All 61 imported factory cases and 184 supplemental
+cases pass, including 55 atomic refusals. Its model preserves the imported
+SSE2 grouped variance, scalar stride path and mean narrowing point. The same
+normalization package carries L2's existing instruction stream to keep every
+certificate within the unchanged SDK limit. The pinned oracle compiler and
+source audit are recorded in `verification/normalization-next-audit.json`;
+GROUP_NORM remains to be implemented. Full acceptance remains open.
 
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:

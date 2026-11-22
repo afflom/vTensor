@@ -54,3 +54,7 @@ screens/
 /app/.lexlean-arithmetic/
 
 /app/.lexlean-spatial/
+
+/app/.lexlean-norm/
+
+/app/.lexlean-normfixtures/

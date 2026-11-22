@@ -3885,3 +3885,79 @@ or FMA flags. GROUP_NORM separately preserves F64 per-row subtotals. These
 findings, source hashes and implementation prerequisites are recorded in
 `verification/normalization-next-audit.json`; neither operation is claimed
 implemented by this audit.
+
+### VT-48: stride-selected NORM through certified normalization roots
+
+NORM now uses a Prism metadata planner and instruction generator with Verdant
+arithmetic. The imported source is GGML revision
+`9a080f44b503c64f66c84a6274b9d9ee5d5b09d5`. The model preserves F64 summation,
+F32 narrowing before mean division, the SSE2 four-square grouping before F64
+variance accumulation, F64 variance division before narrowing, and the separate
+sequential F32 path selected by nonunit input or output inner stride. The CPU
+reference retains both strides, because canonicalizing its input would select
+the wrong algorithm. Contiguous helper counts above their imported `int` bound
+are refused; the scalar counter remains wide. Boundary proofs cover INT_MAX,
+the next count, and the independent scalar domain.
+
+All 61 imported factory cases and 184 Prism supplemental cases pass. The latter
+include 129 successes and 55 atomic refusals across copied/in-place operation,
+padded, strided, permuted and non-nested layouts, cancellation, grouped rounding,
+nonfinite values, signed zero, tiny epsilon, empty axes, storage refusal and
+output overlap. Comparisons require exact non-NaN words, NaN classification,
+exact padding and unchanged bytes after refusals. The expected arithmetic comes
+from the independently imported CPU backend, never from local fixture answers.
+
+The initial monolithic and intermediate package designs exceeded the unchanged
+4,194,304-byte certificate limit. Bit packing also increased certificate size.
+The accepted design separates the NORM planner and NORM execution roots and
+moves L2's unchanged instruction stream into that same normalization bundle.
+Native code transports the certified ADTs and operands; it adds no numerical
+implementation. Only NORM planning makes a second Prism call; instruction
+execution makes one call per step, and existing modes retain their allocation
+behavior. Removing unused raw query constructors does not remove any operation
+from the generic stateful interface.
+
+The actual SDK production exports are:
+
+- Pointwise: result `a7d527fd057b5a48ed3c2e909da16dbdf8c00b0c2881cc10aa9e0450ae186591`, attestation `60b21e1fe3c0e75cbb6dad86743df9f99aa29f7891c02d549040824b60f54b28`, 749 verified declarations. Largest certificate B: 4,118,208 bytes.
+- Normalization: result `f77c100def3d5e50591f41020cbe05abd0d461d3498eddbf4c94f1e88a078253`, attestation `fb52f0449d7a468a5787db2309973e9f6d4403a7e1be2ed013745a875e87efe3`, 411 verified declarations across three production roots.
+- Supplemental fixtures: result `5f8eca73249754ddcbe9a329f9c198f87fc7fe82c5c5f3463151c234e47273e7`, attestation `313dbf2d3a5534a2e363d01de1985e941314ee43db2c4f5e30d08f5d3f7eead5`, 328 verified declarations.
+
+The full integration batch caught an unintended source replacement in
+`keepElement`: lower-triangle selector 2 had become 64. Its imported triangular
+oracle failed at width 3, row count 3, byte 16. The correction restores selector
+2 in Prism and adds `lowerTriangleIncludesBelowDiagonal` before exact SDK
+regeneration. This regression was not waived or hidden by a filtered suite.
+
+Three intentional defects establish the new gates. Passing zero instead of
+occupancy readback into NORM fails the imported graph-refusal assertion in
+4.90 seconds. Routing scratch target 4 into 5 corrupts grouped variance and
+fails the CPU comparison at width 5, byte 0 in 4.60 seconds. Zeroing the lock's
+attestation identity fails certificate validation before numerical execution in
+2.30 seconds. The native source and lock were restored byte for byte afterward.
+The restored full contract batch passes 49 of 50 tests in 44.74 seconds, including
+all L2, RMS and triangular cases; VT-02 alone rejects the development dependency
+override. Formatting, workspace/all-target/all-feature Clippy, cargo-deny, five
+frame tests, 62 xtask tests, template/SDK-lock checks and frame synchronization
+pass. No production dependency or complete vTensor acceptance is claimed.
+
+Verdant M25 (v2.17.0), revision
+`0d8ed4ed314cd09ff925deda6dd69d15082f263d`, was reviewed without changing the
+user's upstream working tree. Its tensor changes add gateway predicates and
+still omit `evaluate_wide`, `evaluate_f32_scalar`, `F64Quotient` and `StorageBlock`.
+It cannot alone resolve VT-02. See `verification/verdant-m25-review.json` and
+`verification/norm-authoring.json`. GROUP_NORM and the remaining imported
+requirements, original source-budget recovery and production packaging remain
+open.
+
+The complete exact-SDK `just vv` attempt completed its actual application proof
+and formatting checks, then exited 1 at the unchanged source ratchet. The kept
+application attestation is
+`fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942`.
+There are 11,532 non-Prism implementation lines versus 11,407 in parent
+`fdc3dbf543da`: growth of 125, and 983 above the original 10,549-line ceiling.
+Committing an implementation checkpoint does not recover that original ceiling.
+All 54 model IDs and the error/deferral/bootstrap checks passed before this
+refusal. Remaining gate components were checked separately as described above;
+this is not a successful full acceptance run. No proof-event reuse, source
+ceiling increase, certificate-limit increase or generated-code edit was used.

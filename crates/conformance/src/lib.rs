@@ -42,6 +42,7 @@ sources! {
     "native-kernel.lock" => "../../../native-kernel.lock",
     "matrix-kernel.lock" => "../../../matrix-kernel.lock",
     "index-kernel.lock" => "../../../index-kernel.lock",
+    "norm-kernel.lock" => "../../../norm-kernel.lock",
     "pointwise-kernel.lock" => "../../../pointwise-kernel.lock",
     "layout-kernel.lock" => "../../../layout-kernel.lock",
     "prismpm.lock" => "../../../prismpm.lock",
