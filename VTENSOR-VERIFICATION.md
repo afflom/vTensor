@@ -4768,3 +4768,15 @@ VT-64 admits six mixed scalar operand pairs in MUL_MAT. The shared Prism storage
 The locked SDK passed ten original dense and permuted matrix cases and the original high-range F32 case. Rounding the latter input to F16 produced NaN at coordinate zero. The GGML CPU produced −2,146,902.75. Restoring the storage rule passed all eleven comparisons. The standalone runs cover disjoint original factory ordinals. [Verdicts and binary identities](verification/factory-scalar-matrix-vt64.json)
 
 The existing F32 matrix, BF16 attention, small dense attention, L2, standard and group normalization, and RMS backward contract tests passed. Normalization instruction selection now lives in a single certified Prism root. The native implementation decreased from 12,158 to 12,151 lines. The locked workspace Clippy and dependency checks passed.
+
+## VT-63 complete checkpoint
+
+The locked SDK ran `just vv` on commit `04fb169920030555d4f6fabba31642c346455d5c`. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. All 70 backend contract tests passed, followed by the remaining workspace tests and cargo-deny. [Checked source](https://github.com/afflom/vTensor/commit/04fb169920030555d4f6fabba31642c346455d5c)
+
+## Grouped two-bit matrix products
+
+VT-65 directs GGML weight views, broadcast columns and destination writes through the existing Prism quantized matrix plan. Verdant owns activation encoding, packed two-bit coefficients, group minimums and numerical contraction. All 55 original Q2_K matrix cases and the original gather-after-product graph matched the imported GGML CPU. Their ordered case transcript is checksum-bound. [Factory and mutation results](verification/factory-grouped-matrix-vt65.json) · [Encoder](https://github.com/afflom/verdant-engine/pull/23) · [Row product](https://github.com/afflom/verdant-engine/pull/24)
+
+Reusing the first weight row for subsequent rows produced normalized error 1.880437132 at the final ADD against an allowed 0.0005. Restoring the Prism row offset passed all 56 cases. All 244 earlier Q4_0 and Q8_0 matrix cases passed the same shared runner. The implementation measures 12,151 non-Prism lines. VT-02 and all 56 grouped graphs passed on the final Verdant pin, and the locked workspace Clippy and dependency checks passed on the grouped implementation.
+
+The scalar matrix implementation also passed 18 Hadamard cases, 11 additional explicit precision cases and 15 fusion cases. The remaining 20 mixed scalar fusion cases in that selection were refused. [Standalone results](verification/factory-scalar-matrix-vt64.json)

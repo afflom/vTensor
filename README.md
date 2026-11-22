@@ -11,7 +11,7 @@ full GGML backend support. The imported source and oracle are pinned in
 [`vendor/llama.cpp-oracle`](vendor/llama.cpp-oracle/README.md).
 
 Cargo fetches the certified Verdant tensor primitives by the immutable commit in
-[Verdant Engine PR #23](https://github.com/afflom/verdant-engine/pull/23), which builds on PRs #12 through #22.
+[Verdant Engine PR #24](https://github.com/afflom/verdant-engine/pull/24), which builds on PRs #12 through #23.
 The [patch record](model/verdant-development.json) identifies the dependency
 until a published Verdant release includes these APIs.
 
@@ -105,6 +105,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-62` | build | Executes BF16 GET_ROWS_BACK through Verdant. Both factory graphs and 1,680 boundary cases match the imported GGML cast and F32 accumulation reference. [Oracle results](verification/factory-bf16-row-gradient-vt62.json) |
 | `VT-63` | build | Executes BF16 key/value attention with Verdant, including masked rows and sinks. [Factory results](verification/factory-bf16-attention-vt63.json) |
 | `VT-64` | build | Executes six F16/BF16 matrix operand pairs. The imported high-range F32 case confirms that F16 weights retain F32 activations. [Factory results](verification/factory-scalar-matrix-vt64.json) |
+| `VT-65` | build | Executes all 55 Q2_K matrix products and the upstream graph that gathers from the same weights. [Factory results](verification/factory-grouped-matrix-vt65.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
