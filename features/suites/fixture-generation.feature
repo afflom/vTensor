@@ -23,3 +23,11 @@ Feature: Certified graph fixtures
     And missing stale truncated or altered transcripts are rejected
     And each case executes only once in the complete workspace run
     And copied FILL source-buffer release is frozen at the actual execution boundary
+
+  @VT-41 @build
+  Scenario: Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results
+    Given the frozen COPY corpus for all 36 live storage types
+    When certified Prism recipes supply the native GGML constructors and initial byte blocks
+    Then every construction input alias and refusal record remains byte identical
+    And the unchanged CPU oracle computes every expected result
+    And invalid recipe requests and altered recipe bindings are rejected

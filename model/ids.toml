@@ -310,3 +310,9 @@ id = "VT-40"
 level = "build"
 suite = "fixture-generation"
 statement = "Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle"
+
+[[id]]
+id = "VT-41"
+level = "build"
+suite = "fixture-generation"
+statement = "Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results"

@@ -1,0 +1,306 @@
+\begin{lexlean}{CopyFixtures}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TensorTypes}
+\importmodule{TensorLayout}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: typeId,
+  parameters: [index : Nat],
+  result: Nat,
+  body: (if (index <? 4) then index else (if (index <? 29) then (index + 2) else (if (index <? 31) then (index + 5) else (index + 8)))),
+  executable: true
+}
+
+definition{
+  name: kind,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (typeId (prim quotient ordinal 96 0 : Nat)),
+  executable: true
+}
+
+definition{
+  name: layout,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim remainder (prim quotient ordinal 8 0 : Nat) 4 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: units,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (1 + (prim multiply 2 (prim remainder (prim quotient ordinal 4 0 : Nat) 2 0 : Nat) : Nat)),
+  executable: true
+}
+
+definition{
+  name: rows,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (1 + (prim multiply 2 (prim remainder (prim quotient ordinal 2 0 : Nat) 2 0 : Nat) : Nat)),
+  executable: true
+}
+
+definition{
+  name: batches,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (1 + (prim remainder ordinal 2 0 : Nat)),
+  executable: true
+}
+
+definition{
+  name: block,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (match (TensorTypes::tensorTypeStorage (kind ordinal))
+    | TensorTypes::TypeStorageDecision.unknownType => 0
+    | TensorTypes::TypeStorageDecision.knownType spec => (project spec blockSize)),
+  executable: true
+}
+
+definition{
+  name: bytes,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (match (TensorTypes::tensorTypeStorage (kind ordinal))
+    | TensorTypes::TypeStorageDecision.unknownType => 0
+    | TensorTypes::TypeStorageDecision.knownType spec => (project spec typeSize)),
+  executable: true
+}
+
+definition{
+  name: known,
+  parameters: [ordinal : Nat],
+  result: Bool,
+  body: (match (TensorTypes::tensorTypeStorage (kind ordinal))
+    | TensorTypes::TypeStorageDecision.unknownType => false
+    | TensorTypes::TypeStorageDecision.knownType spec => true),
+  executable: true
+}
+
+definition{
+  name: dimension,
+  parameters: [ordinal : Nat, source : Nat, axis : Nat],
+  result: Nat,
+  body: (if ((source =? 1) && ((layout ordinal) =? 3)) then (if (axis <? 2) then (if (axis =? 0) then (block ordinal) else (prim multiply (prim multiply (units ordinal) (rows ordinal) : Nat) (prim multiply 2 (batches ordinal) : Nat) : Nat)) else 1) else (if (axis <? 2) then (if (axis =? 0) then (prim multiply (block ordinal) (units ordinal) : Nat) else (rows ordinal)) else (if (axis =? 2) then 2 else (batches ordinal)))),
+  executable: true
+}
+
+definition{
+  name: padding,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (if ((source =? 1) || (((layout ordinal) =? 1) || ((layout ordinal) =? 2))) then (bytes ordinal) else 0),
+  executable: true
+}
+
+definition{
+  name: wordStride,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (prim multiply (bytes ordinal) (if ((source =? 0) && ((layout ordinal) =? 2)) then 2 else 1) : Nat),
+  executable: true
+}
+
+definition{
+  name: rowStride,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: ((prim multiply (wordStride ordinal source) (prim quotient (dimension ordinal source 0) (block ordinal) 0 : Nat) : Nat) + (padding ordinal source)),
+  executable: true
+}
+
+definition{
+  name: planeStride,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: ((prim multiply (rowStride ordinal source) (dimension ordinal source 1) : Nat) + (padding ordinal source)),
+  executable: true
+}
+
+definition{
+  name: batchStride,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: ((prim multiply (planeStride ordinal source) (dimension ordinal source 2) : Nat) + (padding ordinal source)),
+  executable: true
+}
+
+definition{
+  name: stride,
+  parameters: [ordinal : Nat, source : Nat, axis : Nat],
+  result: Nat,
+  body: (if (axis <? 2) then (if (axis =? 0) then (wordStride ordinal source) else (rowStride ordinal source)) else (if (axis =? 2) then (planeStride ordinal source) else (batchStride ordinal source))),
+  executable: true
+}
+
+definition{
+  name: span,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (match (TensorLayout::tensorByteSpan (record TensorLayout::TensorLayout {ne0 := (dimension ordinal source 0), ne1 := (dimension ordinal source 1), ne2 := (dimension ordinal source 2), ne3 := (dimension ordinal source 3), nb0 := (stride ordinal source 0), nb1 := (stride ordinal source 1), nb2 := (stride ordinal source 2), nb3 := (stride ordinal source 3), blockSize := (block ordinal), typeSize := (bytes ordinal)}))
+    | TensorLayout::ByteSpanDecision.invalidBlockSize => 0
+    | TensorLayout::ByteSpanDecision.span count => count),
+  executable: true
+}
+
+definition{
+  name: elements,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (prim multiply (prim multiply (dimension ordinal source 0) (dimension ordinal source 1) : Nat) (prim multiply (dimension ordinal source 2) (dimension ordinal source 3) : Nat) : Nat),
+  executable: true
+}
+
+definition{
+  name: operation,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim remainder (prim quotient ordinal 32 0 : Nat) 3 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: metadata,
+  parameters: [ordinal : Nat, item : Nat],
+  result: Nat,
+  body: (if (item =? 0) then (kind ordinal) else (if (item =? 1) then (operation ordinal) else (if (item =? 2) then 0 else (if (item =? 3) then (layout ordinal) else (if (item =? 4) then (units ordinal) else (if (item =? 5) then (rows ordinal) else (if (item =? 6) then (batches ordinal) else (if (item =? 7) then ((prim multiply (prim quotient ordinal 96 0 : Nat) 4 : Nat) + (layout ordinal)) else (if (((operation ordinal) =? 1) && ((layout ordinal) =? 3)) then 1 else 0))))))))),
+  executable: true
+}
+
+definition{
+  name: byte,
+  parameters: [ordinal : Nat, index : Nat],
+  result: Nat,
+  body: (prim remainder (((prim multiply index 37 : Nat) + (prim multiply (kind ordinal) 13 : Nat)) + (layout ordinal)) 256 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: chunkCount,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim quotient ((span ordinal 0) + 255) 256 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [query : Nat, ordinal : Nat, source : Nat, item : Nat],
+  result: (Option Nat),
+  body: (if (query =? 0) then (if (((ordinal =? 0) && (source =? 0)) && (item <? 5)) then (ctor Option.some [Nat] (if (item <? 2) then (if (item =? 0) then 3456 else 9) else (if (item <? 4) then (if (item =? 2) then 144 else 256) else 165))) else (ctor Option.none [Nat])) else (if ((ordinal <? 3456) && (known ordinal)) then (if (query <? 2) then (if (query =? 1) then (if ((source =? 0) && (item <? 9)) then (ctor Option.some [Nat] (metadata ordinal item)) else (ctor Option.none [Nat])) else (ctor Option.none [Nat])) else (if (query <? 4) then (if (query =? 2) then (if ((source <? 2) && (item <? 10)) then (ctor Option.some [Nat] (if (item <? 4) then (dimension ordinal source item) else (if (item <? 8) then (stride ordinal source (prim subtract item 4 : Nat)) else (if (item =? 8) then (span ordinal source) else (elements ordinal source))))) else (ctor Option.none [Nat])) else (if ((source =? 0) && (item <? 256)) then (ctor Option.some [Nat] (byte ordinal item)) else (ctor Option.none [Nat]))) else (if (query =? 4) then (if (item <? 2) then (if (source =? 0) then (if (item =? 0) then (ctor Option.some [Nat] (chunkCount ordinal)) else (ctor Option.none [Nat])) else (if (source <=? (chunkCount ordinal)) then (ctor Option.some [Nat] (if (item =? 0) then (prim multiply (prim subtract source 1 : Nat) 256 : Nat) else (let remaining : Nat := (prim subtract (span ordinal 0) (prim multiply (prim subtract source 1 : Nat) 256 : Nat) : Nat); (if (remaining <? 256) then remaining else 256)))) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])) else (ctor Option.none [Nat])))) else (ctor Option.none [Nat]))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: completeCopyCorpus,
+  parameters: [],
+  statement: ((evaluate 0 0 0 0) = (ctor Option.some [Nat] 3456)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lastStorageKind,
+  parameters: [],
+  statement: ((evaluate 1 3455 0 0) = (ctor Option.some [Nat] 43)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: removedKindsSkipped,
+  parameters: [],
+  statement: ((evaluate 1 384 0 0) = (ctor Option.some [Nat] 6)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: firstSourceSpan,
+  parameters: [],
+  statement: ((evaluate 2 0 0 8) = (ctor Option.some [Nat] 8)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: paddedQuantizedSpan,
+  parameters: [],
+  statement: ((evaluate 2 215 0 8) = (ctor Option.some [Nat] 1566)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: reshapedTargetSpan,
+  parameters: [],
+  statement: ((evaluate 2 31 1 8) = (ctor Option.some [Nat] 284)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: partialChunkLength,
+  parameters: [],
+  statement: ((evaluate 4 215 7 1) = (ctor Option.some [Nat] 30)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fullChunkOffset,
+  parameters: [],
+  statement: ((evaluate 4 215 7 0) = (ctor Option.some [Nat] 1536)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: rawPatternEnd,
+  parameters: [],
+  statement: ((evaluate 3 215 0 255) = (ctor Option.some [Nat] 247)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: contiguousFlattenSelected,
+  parameters: [],
+  statement: ((evaluate 1 63 0 8) = (ctor Option.some [Nat] 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseNextCase,
+  parameters: [],
+  statement: ((evaluate 1 3456 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseNextByte,
+  parameters: [],
+  statement: ((evaluate 3 0 0 256) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseUnknownQuery,
+  parameters: [],
+  statement: ((evaluate 5 0 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseMissingRole,
+  parameters: [],
+  statement: ((evaluate 2 0 2 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseNextChunk,
+  parameters: [],
+  statement: ((evaluate 4 215 8 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}
