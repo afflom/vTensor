@@ -3500,3 +3500,69 @@ enables preservation during migration; the native recipes are not yet Prism
 generated. Source-budget recovery, complete imported operation/type/API coverage
 and production dependency closure remain open. Detailed evidence is in
 `verification/native-fixture-freeze-runtime.json` and its two frozen manifests.
+
+## Prism COPY fixture recipes (VT-41)
+
+Prism now supplies COPY case enumeration, source and target dimensions and
+strides, byte-span and flatten counts, initial byte patterns and destination
+chunk plans. The native harness binds those values to public GGML constructors
+and literal byte-copy effects. COPY has no native recipe fallback. All 3,456
+cases across the 36 live storage types match their frozen construction, alias,
+input and refusal transcripts exactly. Other fixture families retain their
+existing builders and match their original transcripts after the shared loop
+refactor. The numerical reference remains unchanged imported GGML CPU code.
+
+The existing arithmetic fixture root routes the new request range to
+CopyFixtures, retaining its original requests and refusal boundary. CopyFixtures
+imports the existing type catalog and byte-span model. Its test-only C ABI
+adapter preserves Some, None and checked overflow separately, with no reserved
+payload value. Both Rust compilations keep debug and overflow checks enabled.
+The source/certificate, bridge, compiler recipe and compiler identity bind the
+cached model library. Its digest is checked before loading. No production
+backend exports or numerical execution code change.
+
+The model exposes 144 reusable 256-byte patterns. Metadata names each pattern;
+byte generation factors through that same identity. Two universal theorems
+establish this cache contract. A planted per-case byte change for ordinal 1
+leaves the earlier ground examples intact but fails bytesFollowThePattern with
+LLV7002 in the isolated SDK verifier. This protects against model changes that
+runtime memoization could otherwise hide. The isolated negative source is
+restored afterward; the repository source is never mutated by that probe.
+
+The final exact SDK export verifies all 338 declarations. Its result is
+`98e1ecd719f829e332d767745ff3b1f755ec08f0dcdeb0abfc9e358888e3bc5e`,
+with attestation
+`a2e35406de8292863405bed12ac5672fd43c8da50f7799993792e41309c806a1`.
+The final export uses an isolated project with identical model sources and
+lock; every installed artifact byte is compared to the SDK output. Current
+repository source and artifact checks pass in the final workspace run. Remote
+MCP authoring checks pass, but both remote verification attempts fail on gateway
+disk exhaustion. They supply no proof attestation; the full SDK proof is the
+verification evidence.
+
+XORing byte-query answers in the adapter passes all COPY CPU comparisons and the
+RESULT count, then fails the frozen input hash in 2.14 seconds. Corrupting the
+warm model library fails its digest check before oracle execution in 2.02
+seconds. Both mutations are restored byte for byte, including library timestamps.
+The adapter edit and the actual model-only cache-law refinement preserve every
+C++ executable path and nanosecond modification time. The model library changes
+without rebuilding the imported CPU oracle driver.
+
+The final workspace passes five model unit tests, four BDD tests and 40 contract
+tests; VT-02 alone rejects the development dependency. All 41 contract tests run
+without ignored or filtered cases in 19.38 seconds. The original matrix,
+arithmetic, 70,392-case native construction and 1,920-state FILL manifests remain
+byte-identical. Final all-target/all-feature Clippy, template/SDK lock and
+dependency checks pass. The license clarification binds the newly certified
+arithmetic output hash 0x12f6dc30.
+
+The complete pinned-SDK just vv passes the unchanged default application proof,
+formatting, all 47 model IDs and ownership/error/deferral checks, then rejects
+128-line native-source growth against cdd52c0. After the fixture-only cache-law
+refinement, its SDK export and every affected workspace, ownership, lint and
+dependency check are rerun. The default application proof inputs and native
+code remain unchanged. No complete acceptance or release pass is claimed.
+Current source is 11,345 lines, 796 above the original 10,549-line budget; no
+ceiling is raised. Further recipe migration, all remaining imported requirements
+and production dependency closure remain open. Detailed evidence is recorded
+in `verification/copy-fixtures-runtime.json`.

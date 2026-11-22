@@ -81,6 +81,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-38` | build | L2 normalization passes all 61 unchanged upstream ordinary/batched cases, 68 supplemental cases and 28 atomic refusal probes through the shared Prism/Verdant executor. |
 | `VT-39` | build | ADD_REL_POS passes 1,315 CPU comparisons and 42 descriptor refusals, including copied/in-place constructors, aliased biases, exact update order, IEEE values and empty outputs. |
 | `VT-40` | build | Freezes graph construction, aliases, initialized bytes and refusal mutations for 70,392 existing native fixture cases across 16 families, before their Prism recipe migration. |
+| `VT-41` | build | Prism supplies all 3,456 COPY fixture recipes, layouts and initial bytes; frozen transcripts and the independent CPU oracle remain unchanged. Universal model laws bind the byte-pattern cache to recipe semantics. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -124,7 +125,7 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current full contract run passes 39 checks; VT-02 still refuses the local
+The current full contract run passes 40 checks; VT-02 still refuses the local
 Verdant development dependency for release. It includes the expanded 1,280
 matrix cases, 384 GET_ROWS cases, 192 GET_REL_POS cases and 164 ADD_ID cases.
 All ten optional GGML tensor-source slots are now carried to the Prism planner;
@@ -142,7 +143,7 @@ unchanged upstream evaluator through a reusable constructor callback bridge;
 the pinned factory itself has no ADD_REL_POS cases.
 Development builds optimize dependency arithmetic and the pointwise kernel
 while keeping assertions and overflow checks. The complete contract group takes
-19.72 seconds with 39 passes and the explicit VT-02 refusal; these timings are
+19.38 seconds with 40 passes and the explicit VT-02 refusal; these timings are
 observations, not controlled benchmarks. Other imported operation families remain unfinished. Prism now generates all
 1,280 matrix and 120 arithmetic fixtures; both generated data and actual GGML
 tensor bindings match the frozen prior corpora. They share binary framing and
@@ -151,14 +152,16 @@ Before migrating the remaining native recipes to Prism, VT-40 freezes 70,392
 existing construction/input cases and 1,920 late FILL source-release states.
 The numerical oracle remains imported GGML CPU code. The existing tests emit
 and check each transcript during their normal execution; successful transient
-files are removed. A tested C ABI bridge to certified Prism fixture code is
-available for the migration without adding production backend APIs.
+files are removed. COPY now consumes certified Prism enumeration, source/target layouts and byte
+recipes through a test-only C ABI bridge. Model-named byte patterns are cached
+under universal coherence laws; model-only edits reuse the C++ driver. Other
+native fixture families remain to be migrated.
 Native oracle build identities bind the emitted C++ and compiler/linker recipe;
 host-only fixture orchestration edits reuse the driver. Imported evaluator edits
 invalidate only drivers that link it. Warm executions retain their upstream,
 executable and current-source integrity checks. Mutation evidence is recorded in
 [`verification/native-oracle-cache.json`](verification/native-oracle-cache.json).
-Non-Prism source is 11,217 lines, 668 above the last
+Non-Prism source is 11,345 lines, 796 above the last
 accepted budget, so the source budget remains unsatisfied.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in

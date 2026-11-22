@@ -1,0 +1,169 @@
+{
+  "spec": "vtensor/copy-fixture-runtime/1",
+  "status": "component-validated-source-budget-and-production-release-open",
+  "implementation_commits": [
+    "39ce8a5",
+    "f3c9f76"
+  ],
+  "claim": "VT-41: Prism supplies COPY enumeration, source/target descriptors, initial byte patterns and destination chunk recipes; native code binds public GGML constructors and copies model-supplied bytes.",
+  "scope": "All 3456 prior COPY cases across 36 live storage types. Other fixture families retain their native builders; this is not full vTensor completion.",
+  "model_source_sha256": {
+    "app/src/ArithmeticFixtures.lex.tex": "ad89f8d28dd14d07a03c2a2223b1a4e96e6b743a8f5478c3ee78951b816dd580",
+    "app/src/CopyFixtures.lex.tex": "8f0e67cf0f2ae25b01363cc323fddeb896983d57849ca0f38c84c76689c70e69",
+    "app/src/TensorTypes.lex.tex": "0cb980d56e3a1dd8ab44672f85a57d61424ac4a3eedb7f077e857755ff46d6d9",
+    "app/src/TensorLayout.lex.tex": "d3d9a33507c117011b75e25d222b3beaea444e8ba50760732f227550045e4436"
+  },
+  "sdk": {
+    "image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "result_id": "98e1ecd719f829e332d767745ff3b1f755ec08f0dcdeb0abfc9e358888e3bc5e",
+    "source": {
+      "lock_sha256": "af32498be321b950c036f7de6ea835b59f9a63f7df931cb4187466d2cd4e49d7",
+      "semantic_id": "0c9ddc3f22cb4c0a55c9ffbb1e098d5adc67611b4604ca138744655ac3d72d53",
+      "source_id": "6e16428e5aa1344c3055505aea4a0b9dc9b0ee41a87e7547311946e33bd8c23b"
+    },
+    "attestation_id": "a2e35406de8292863405bed12ac5672fd43c8da50f7799993792e41309c806a1",
+    "declarations": 338,
+    "all_declarations_ok": true,
+    "export_command": "just certified-export arithmetic",
+    "final_export_workspace": "/tmp/vtensor-analysis-target/copy-cache-laws-proof",
+    "installation": "Exact SDK bundle copied byte-for-byte after comparing all four model sources and the project lock. Final repository tests replay current-source and artifact verification."
+  },
+  "authoring": {
+    "final_canonical_draft": "prism-app/c18eabef85c909c5d2adecb68490e0f12545d50457251b3bf741834e05ead262",
+    "check": "passed",
+    "remote_proof": "not obtained; gateway storage errors",
+    "attempts": [
+      {
+        "task": "task-40",
+        "draft": "prism-app/3aa53b762176587c6fc382ebac6b8adb61c2031ddd2a2231390ebe6c26918dfc",
+        "scope": "all four files before cache refinement",
+        "error": "LLB6003: staging process/preserve/LexLeanPreservation.Primitives.json: No space left on device"
+      },
+      {
+        "task": "task-41",
+        "draft": "prism-app/e5feabc8c4fc3533d659d725d6d6ac6eaf1f6a2e2a83ad881eabc8a9c15a72f6",
+        "scope": "CopyFixtures module with imported dependencies",
+        "error": "LLB6003: staging process/preserve/LexLeanPreservation.Fixed.json: No space left on device"
+      }
+    ],
+    "proof_evidence": "The separate full pinned-SDK production proof checks all 338 declarations; no failed remote task is represented as verified."
+  },
+  "oracle": {
+    "revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "numerical_results": "Computed by unchanged imported GGML CPU code on every case; never taken from local fixture hashes.",
+    "unchanged_baselines": {
+      "verification/native-fixture-baseline.json": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+      "verification/native-fixture-source-release.json": "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
+      "verification/matrix-fixture-baseline.json": "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
+      "verification/arithmetic-fixture-baseline.json": "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4"
+    },
+    "copy_cases": 3456,
+    "entire_preserved_native_corpus_cases": 70392,
+    "preserved_fill_execution_states": 1920
+  },
+  "automation": {
+    "abi": "Test-only repr(C) {u64 status,u64 value}, mapped to None/Some/checked overflow. COPY requires the model library; no native recipe fallback. Production backend exports unchanged.",
+    "compiler_checks": [
+      "opt-level=2",
+      "debug-assertions=on",
+      "overflow-checks=on"
+    ],
+    "cache": "Certify arithmetic bundle once per process; cache compiled model by exact certified source, bridge source, compiler recipe and rustc version within SDK/source/architecture cache. Verify shared-library integrity at each load.",
+    "data": "Cache the 144 model-named 256-byte patterns; execute model-supplied chunk counts, offsets and lengths using literal byte-copy effects. No model query for every physical byte.",
+    "universal_laws": [
+      "metadata ordinal 7 = patternId ordinal",
+      "byte ordinal index = patternByte (patternId ordinal) index"
+    ],
+    "native_driver_reuse": "Adapter mutation and the actual model-only cache-law refinement preserve all C++ executable paths and nanosecond modification times."
+  },
+  "registration": {
+    "command": "just model-write; cargo test --locked -p vtensor-backend --test contract copy_fixture_generation_vt_41 -- --exact --nocapture",
+    "result": "Old artifact returns None where Some(3456) is required; exit 101."
+  },
+  "faults": [
+    {
+      "change": "XOR 1 into byte-query answers in the test-only adapter",
+      "test": "copy_graphs_vt_15",
+      "result": "All 3456 CPU comparisons and RESULT count pass; frozen input transcript rejects wrong model binding. C++ driver is reused.",
+      "seconds": 2.14,
+      "exit_code": 101,
+      "actual_sha256": "8c26ecaff0cedd4c754a02512761680b2bca05acf03196b608128efed9ccffd7",
+      "expected_sha256": "c34cb4b1c81bede0fbd1ad91e0a3ded372f4819af0756ef98f47354269fb6521"
+    },
+    {
+      "change": "Append one zero byte to cached model shared library",
+      "result": "Digest check rejects before native oracle execution.",
+      "seconds": 2.02,
+      "exit_code": 101,
+      "restoration": "Exact original bytes and timestamps restored."
+    },
+    {
+      "change": "Change bytes for ordinal 1 while retaining its cached pattern identity, in isolated source copy",
+      "command": "lexlean --project arithmetic.lexlean.toml verify src/CopyFixtures.lex.tex",
+      "result": "LLV7002: rfl fails at bytesFollowThePattern; earlier ground byte example is unaffected. This closes a cache/model coherence gap that runtime memoization could otherwise hide.",
+      "exit_code": 1,
+      "restoration": "Repository model never mutated; isolated negative source restored from verified source."
+    }
+  ],
+  "workspace": {
+    "command": "cargo test --workspace --locked",
+    "model_unit_passed": 5,
+    "bdd_meta_passed": 4,
+    "contract_passed": 40,
+    "contract_failed": 1,
+    "failure": "VT-02: development override is not pinned production dependency evidence",
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 19.38
+  },
+  "checks": {
+    "formatting": "passed",
+    "all_target_all_feature_clippy": "passed",
+    "template_and_sdk_lock": "passed",
+    "dependency_deny": "passed after binding license clarification to new certified output hash 0x12f6dc30"
+  },
+  "full_gate": {
+    "command": "just vv",
+    "exit_code": 1,
+    "proof_event_reuse": false,
+    "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+    "passes": [
+      "full unchanged default application proof",
+      "formatting",
+      "47-ID model coherence",
+      "typed errors",
+      "deferral",
+      "SDK/bootstrap ownership"
+    ],
+    "failure": "Source audit rejects 128-line growth against cdd52c0: 11217 to 11345.",
+    "refinement": "After the isolated fixture-only cache-law refinement, SDK fixture export, complete workspace, lint, deny and model ownership checks rerun on the final artifact. Default application proof inputs and native code are unchanged; no release pass is claimed."
+  },
+  "source_budget": {
+    "original_accepted": 10549,
+    "current": 11345,
+    "excess": 796,
+    "growth": 128,
+    "ceiling_raised": false
+  },
+  "measurement_limit": "Single local observations include build-cache effects and are not controlled performance benchmarks. Existing CPU case groups execute once per workspace run; VT-41 only exercises recipe queries.",
+  "logs": {
+    "before": "/tmp/vtensor-copy-fixtures-before.log",
+    "export": "/tmp/vtensor-copy-fixtures-export.log",
+    "workspace": "/tmp/vtensor-copy-fixtures-workspace.log",
+    "binding-fault": "/tmp/vtensor-copy-fixtures-binding-fault.log",
+    "library-fault": "/tmp/vtensor-copy-fixtures-library-fault.log",
+    "cache-laws-export": "/tmp/vtensor-copy-fixtures-cache-laws-export.log",
+    "cache-law-fault": "/tmp/vtensor-copy-fixtures-cache-law-fault.log",
+    "final-workspace": "/tmp/vtensor-copy-fixtures-final-workspace.log",
+    "final-policy": "/tmp/vtensor-copy-fixtures-final-policy.log",
+    "final-checks": "/tmp/vtensor-copy-fixtures-final-checks.log",
+    "final-model": "/tmp/vtensor-copy-fixtures-final-model.log",
+    "vv": "/tmp/vtensor-copy-fixtures-vv.log"
+  },
+  "open": [
+    "Migrate the other native fixture families using the same certified data/effect protocol.",
+    "Recover the original handwritten-source budget; bridge cost is not an accepted ceiling increase.",
+    "Complete all remaining imported operation/type/public API requirements.",
+    "Close production dependencies; VT-02 must pass."
+  ]
+}

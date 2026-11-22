@@ -1,0 +1,31 @@
+{
+  "spec": "vtensor/copy-fixture-build/1",
+  "phase": "initial export before explicit cache-law refinement",
+  "result_id": "bca36aca2deff5949420825c122ab5542c5ae6ff23f06f339fe3ec4a21e087eb",
+  "source": {
+    "lock_sha256": "af32498be321b950c036f7de6ea835b59f9a63f7df931cb4187466d2cd4e49d7",
+    "semantic_id": "9ae37fbad93c4c9222a96acf2573cab81960b3b73e1a343b723c818503d6a647",
+    "source_id": "8e882b36a0fe82ec4b32988448e1f78aef8df036de893615090d745f83662e5a"
+  },
+  "verification": {
+    "attestation": {
+      "byte_length": 1782257,
+      "path": "evidence/attestation.json",
+      "sha256": "50e1b071fbae73056ca0951569a3e96735b4e776abcf7c22a7f2ed1e4be5a212"
+    },
+    "attestation_id": "28c37a005173fdfb38549d59aa1ecef2e151780367ead2ea1a06baa3651c1950",
+    "build_id": "f8688e9f62edbd4694ac6042d996b13caf499988b8147b2f21520421d69f2e4b",
+    "compiler_input": {
+      "byte_length": 646070,
+      "path": "evidence/compiler-input.json",
+      "sha256": "c21ea9243064cc128a815f80c69b078a4c393b0036dff6307d897b6134a6588d"
+    },
+    "preservation": {
+      "byte_length": 4712,
+      "path": "evidence/preservation.json",
+      "sha256": "fa14287afbc450570b6a94ad6335a37faded9c1d7e18012927a6e0c5e8f493bd"
+    }
+  },
+  "declarations": 334,
+  "all_declarations_ok": true
+}
