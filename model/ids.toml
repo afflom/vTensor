@@ -406,3 +406,9 @@ id = "VT-56"
 level = "build"
 suite = "elementwise-graphs"
 statement = "Prism plans combined swapped and split GGML SWIGLU rows and Verdant evaluates the gated values across F32 F16 and BF16 against the imported GGML CPU"
+
+[[id]]
+id = "VT-57"
+level = "build"
+suite = "spatial-graphs"
+statement = "Prism plans GGML rotary position encodings and their backward graphs and Verdant computes each rotation against the imported GGML CPU"

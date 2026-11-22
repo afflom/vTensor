@@ -215,6 +215,7 @@ model does not sanction.
 | ID | Level | Statement |
 | --- | --- | --- |
 | `VT-18` | `build` | Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle |
+| `VT-57` | `build` | Prism plans GGML rotary position encodings and their backward graphs and Verdant computes each rotation against the imported GGML CPU |
 
 ## tensor-layout
 

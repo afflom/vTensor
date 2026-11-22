@@ -222,27 +222,21 @@
       ],
       "VT-56": [
         "SWIGLU"
+      ],
+      "VT-57": [
+        "ROPE",
+        "ROPE_BACK"
       ]
     },
-    "passed": 861,
+    "passed": 1795,
     "refused_ordinals": {
-      "17216": {
-        "oracle": "make_test_cases_eval / test_case::eval",
-        "test_build": "VT-55 with Verdant 97528328",
-        "result": "not supported"
-      },
-      "17604": {
-        "oracle": "make_test_cases_eval / test_case::eval",
-        "test_build": "VT-56 with Verdant 27c09ba0",
-        "result": "not supported"
-      },
       "19242": {
         "oracle": "make_test_cases_eval / test_case::eval",
         "test_build": "VT-55 with Verdant 97528328",
         "result": "not supported"
       }
     },
-    "untested": 26891,
+    "untested": 25959,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {

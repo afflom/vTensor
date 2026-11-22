@@ -99,6 +99,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-54` | build | All 122 Q4_0 × F32 MUL_MAT factory cases match the independent CPU. llama.cpp loads the quantized model and allocates its F16 KV cache on vTensor. |
 | `VT-55` | build | Prism validates scatter indices and plans destination writes. Verdant converts each scalar. All 126 selected SET_ROWS cases pass the imported CPU evaluator. |
 | `VT-56` | build | Prism selects the two SwiGLU operands and their row addresses. Verdant evaluates the gated product. All 36 imported factory cases pass. |
+| `VT-57` | build | Passes all 510 GGML ROPE and 424 ROPE_BACK factory cases using Verdant rotations. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

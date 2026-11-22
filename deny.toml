@@ -525,3 +525,9 @@ name = "verdant_rotation_step"
 version = "=2.22.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x8f1d53f3 }]
+
+[[licenses.clarify]]
+name = "vtensor_rotary"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x3d287b3a }]

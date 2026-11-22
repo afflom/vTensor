@@ -1,0 +1,197 @@
+\begin{lexlean}{RotaryGraph}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{NormPlan}
+\title{Natural number}
+\begin{semanticmodule}
+structure{
+  name: Layout,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: dimensions, type: Nat},
+    {name: mode, type: Nat},
+    {name: offset, type: Nat},
+    {name: timeSection, type: Nat},
+    {name: heightSection, type: Nat},
+    {name: widthSection, type: Nat},
+    {name: extraSection, type: Nat}
+  ]
+}
+
+structure{
+  name: Plan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: width, type: Nat},
+    {name: pairs, type: Nat},
+    {name: channels, type: Nat},
+    {name: heads, type: Nat},
+    {name: tokens, type: Nat},
+    {name: batches, type: Nat},
+    {name: layout, type: Layout},
+    {name: source, type: NormPlan::TensorDescriptor},
+    {name: output, type: NormPlan::TensorDescriptor}
+  ]
+}
+
+inductive{
+  name: Request,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {
+      name: graph,
+      fields: [
+        Nat,
+        Bool,
+        Layout,
+        NormPlan::TensorDescriptor,
+        NormPlan::TensorDescriptor,
+        (Option NormPlan::TensorDescriptor),
+        NormPlan::TensorDescriptor
+      ]
+    },
+    {name: row, fields: [Plan, Nat, Nat, Nat]},
+    {name: lane, fields: [Plan, Nat]},
+    {name: sector, fields: [Layout, Nat]}
+  ]
+}
+
+inductive{
+  name: Response,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: unsupported, fields: []},
+    {name: invalid, fields: []},
+    {name: planned, fields: [Plan]},
+    {name: rowOffsets, fields: [Nat, Nat]},
+    {name: rotate, fields: [Nat, Nat, Nat]},
+    {name: copyPair, fields: [Nat, Nat]},
+    {name: position, fields: [Nat, Nat]}
+  ]
+}
+
+definition{
+  name: multiMode,
+  parameters: [m : Nat],
+  result: Bool,
+  body: (((m =? 8) || (m =? 24)) || (m =? 40)),
+  executable: true
+}
+
+definition{
+  name: even,
+  parameters: [value : Nat],
+  result: Bool,
+  body: ((prim remainder value 2 0 : Nat) =? 0),
+  executable: true
+}
+
+definition{
+  name: legalLayout,
+  parameters: [layout : Layout, channels : Nat],
+  result: Bool,
+  body: (let m : Nat := (project layout mode); (let dims : Nat := (project layout dimensions); (let sectors : Nat := ((((project layout timeSection) + (project layout heightSection)) + (project layout widthSection)) + (project layout extraSection)); (((((((((0 <? dims) && (even dims)) && (even channels)) && (even (project layout offset))) && ((dims + (project layout offset)) <=? channels)) && (channels <=? 2147483647)) && (((m =? 0) || (m =? 2)) || (multiMode m))) && (if (multiMode m) then ((0 <? (((project layout timeSection) + (project layout heightSection)) + (project layout widthSection))) && (sectors <=? channels)) else true)) && (if (m =? 24) then (((project layout offset) =? 0) && ((prim multiply dims 2 : Nat) =? channels)) else true))))),
+  executable: true
+}
+
+definition{
+  name: factorStorage,
+  parameters: [
+    factors : (Option NormPlan::TensorDescriptor),
+    output : NormPlan::TensorDescriptor,
+    pairs : Nat
+  ],
+  result: Bool,
+  body: (match factors
+    | Option.none => true
+    | Option.some table => (((((project table ty) =? 0) && (pairs <=? (project table n0))) && ((prim multiply pairs 4 : Nat) <=? (project table span))) && (NormPlan::separateTensors table output))),
+  executable: true
+}
+
+definition{
+  name: planGraph,
+  parameters: [
+    op : Nat,
+    extra : Bool,
+    layout : Layout,
+    source : NormPlan::TensorDescriptor,
+    positions : NormPlan::TensorDescriptor,
+    factors : (Option NormPlan::TensorDescriptor),
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (if ((op =? 45) || (op =? 46)) then (let width : Nat := (if ((project source ty) =? 0) then 4 else 2); (let pairs : Nat := (prim quotient (if ((project layout mode) =? 24) then (project source n0) else (project layout dimensions)) 2 0 : Nat); (let positionWords : Nat := (prim multiply (project source n2) (if (multiMode (project layout mode)) then 4 else 1) : Nat); (if (((((((((((((((((if extra then false else true) && (((project source ty) =? 0) || ((project source ty) =? 1))) && ((project source ty) =? (project output ty))) && (NormPlan::sameShape source output)) && ((project source s0) =? width)) && ((project output s0) =? width)) && (legalLayout layout (project source n0))) && ((NormPlan::sameWordView source output) || (NormPlan::separateTensors source output))) && (NormPlan::separateTensors positions output)) && ((project positions ty) =? 26)) && ((project positions n0) =? positionWords)) && ((project positions n1) =? 1)) && ((project positions n2) =? 1)) && ((project positions n3) =? 1)) && ((prim multiply positionWords 4 : Nat) <=? (project positions span))) && (factorStorage factors output pairs)) && ((prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat) <=? 2147483647)) then (ctor Response.planned (record Plan {width := width, pairs := pairs, channels := (project source n0), heads := (project source n1), tokens := (project source n2), batches := (project source n3), layout := layout, source := source, output := output})) else (ctor Response.invalid))))) else (ctor Response.unsupported)),
+  executable: true
+}
+
+definition{
+  name: rowOffset,
+  parameters: [tensor : NormPlan::TensorDescriptor, head : Nat, token : Nat, batch : Nat],
+  result: Nat,
+  body: (((prim multiply head (project tensor s1) : Nat) + (prim multiply token (project tensor s2) : Nat)) + (prim multiply batch (project tensor s3) : Nat)),
+  executable: true
+}
+
+definition{
+  name: rowPlan,
+  parameters: [plan : Plan, head : Nat, token : Nat, batch : Nat],
+  result: Response,
+  body: (if (((head <? (project plan heads)) && (token <? (project plan tokens))) && (batch <? (project plan batches))) then (ctor Response.rowOffsets (rowOffset (project plan source) head token batch) (rowOffset (project plan output) head token batch)) else (ctor Response.invalid)),
+  executable: true
+}
+
+definition{
+  name: lanePlan,
+  parameters: [layout : Layout, channels : Nat, width : Nat, pairs : Nat, lane : Nat],
+  result: Response,
+  body: (let prefix : Nat := (prim quotient (project layout offset) 2 0 : Nat); (let relative : Nat := (prim subtract lane prefix : Nat); (let firstWord : Nat := ((project layout offset) + (if ((project layout mode) =? 0) then (prim multiply 2 relative : Nat) else relative)); (let stride : Nat := (if ((project layout mode) =? 0) then 1 else pairs); (if (lane <? (prim quotient channels 2 0 : Nat)) then (if ((prefix <=? lane) && (relative <? pairs)) then (ctor Response.rotate relative (prim multiply firstWord width : Nat) (prim multiply (firstWord + stride) width : Nat)) else (ctor Response.copyPair (prim multiply (prim multiply 2 lane : Nat) width : Nat) (prim multiply ((prim multiply 2 lane : Nat) + 1) width : Nat))) else (ctor Response.invalid)))))),
+  executable: true
+}
+
+definition{
+  name: sectorPlan,
+  parameters: [layout : Layout, pair : Nat],
+  result: Response,
+  body: (let t : Nat := (project layout timeSection); (let h : Nat := (project layout heightSection); (let w : Nat := (project layout widthSection); (let th : Nat := (t + h); (let thw : Nat := ((t + h) + w); (let size : Nat := (thw + (project layout extraSection)); (let sector : Nat := (prim remainder pair size 0 : Nat); (let interleaved : Nat := (if (((prim remainder sector 3 0 : Nat) =? 1) && (sector <? (prim multiply 3 h : Nat))) then 1 else (if (((prim remainder sector 3 0 : Nat) =? 2) && (sector <? (prim multiply 3 w : Nat))) then 2 else (if (((prim remainder sector 3 0 : Nat) =? 0) && (sector <? (prim multiply 3 t : Nat))) then 0 else 3))); (let normal : Nat := (if (sector <? t) then 0 else (if (sector <? th) then 1 else (if (sector <? thw) then 2 else 3))); (let selected : Nat := (if ((project layout mode) =? 40) then interleaved else (if (multiMode (project layout mode)) then normal else 0)); (let restart : Nat := (if (sector =? 0) then 1 else (if (sector =? t) then 2 else (if (sector =? th) then 3 else (if (sector =? thw) then 4 else 0)))); (ctor Response.position selected (if ((project layout mode) =? 24) then restart else 0))))))))))))),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [request : Request],
+  result: Response,
+  body: (match request
+    | Request.graph op extra layout source positions factors output => (planGraph op extra layout source positions factors output)
+    | Request.row plan head token batch => (rowPlan plan head token batch)
+    | Request.lane plan lane => (lanePlan (project plan layout) (project plan channels) (project plan width) (project plan pairs) lane)
+    | Request.sector layout pair => (sectorPlan layout pair)),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: paired,
+  parameters: [],
+  statement: ((lanePlan (record Layout {dimensions := 48, mode := 0, offset := 0, timeSection := 0, heightSection := 0, widthSection := 0, extraSection := 0}) 64 4 24 1) = (ctor Response.rotate 1 8 12)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: splitHalf,
+  parameters: [],
+  statement: ((lanePlan (record Layout {dimensions := 48, mode := 2, offset := 0, timeSection := 0, heightSection := 0, widthSection := 0, extraSection := 0}) 64 4 24 1) = (ctor Response.rotate 1 4 100)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: afterRotation,
+  parameters: [],
+  statement: ((lanePlan (record Layout {dimensions := 48, mode := 2, offset := 0, timeSection := 0, heightSection := 0, widthSection := 0, extraSection := 0}) 64 4 24 24) = (ctor Response.copyPair 192 196)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

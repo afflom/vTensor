@@ -20,6 +20,115 @@ fn declaration<'a>(model: &'a str, name: &str) -> &'a str {
         .0
 }
 
+// Keep each imported batch individually selectable with Cargo. The same entries
+// bind the frozen input counts to the test that calls the native evaluator.
+macro_rules! ggml_batches {
+    ($( $(#[$doc:meta])* $name:ident: $mode:literal, $cases:literal, [$($model:literal),*] $(=> $probe:ident)?; )+) => {
+        const GGML_BATCHES: &[(&str, usize)] = &[$(($mode, $cases)),+];
+        $(
+            $(#[$doc])*
+            #[test]
+            fn $name() {
+                let root = root();
+                $(tensor_layout::certified_current_model(&root, $model);)*
+                $($probe();)?
+                native_backend_oracle::verify(&root, $mode, $cases);
+            }
+        )+
+    };
+}
+
+ggml_batches! {
+    /// `VT-11`: GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior
+    native_backend_vt_11: "buffers", 108, ["layout", "native"];
+    /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
+    matrix_graphs_vt_12: "matrix", 1280, ["matrix", "index"] => verify_matrix_graphs;
+    /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
+    elementwise_graphs_vt_13: "elementwise", 120, ["typed", "pointwise"];
+    /// `VT-14`: Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers
+    empty_graphs_vt_14: "empty", 864, [];
+    /// `VT-15`: Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding
+    copy_graphs_vt_15: "copy", 3456, [];
+    /// `VT-16`: Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle
+    repeat_graphs_vt_16: "repeat", 160, [];
+    /// `VT-17`: Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types
+    concat_graphs_vt_17: "concat", 10368, [];
+    /// `VT-18`: Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle
+    spatial_graphs_vt_18: "spatial", 2256, [];
+    /// `VT-19`: Prism plans SET and ACC initialization, bounded update views and aliases and Verdant execution matches the imported GGML CPU oracle for supported float and integer storage
+    update_graphs_vt_19: "update", 4608, [];
+    /// `VT-20`: Prism models four-axis REPEAT_BACK initialization and accumulation order and Verdant execution matches the imported GGML F32 CPU oracle across strided and empty tensors
+    fold_graphs_vt_20: "fold", 672, [];
+    /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
+    diagonal_graphs_vt_21: "diagonal", 384, [];
+    /// `VT-22`: Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle
+    triangular_graphs_vt_22: "triangular", 1920, [];
+    /// `VT-23`: Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding
+    fill_graphs_vt_23: "fill", 15360, [];
+    /// `VT-24`: Prism plans mixed F32 F16 and BF16 casts and copies by logical element order and Verdant conversion matches the imported GGML CPU oracle across reshaped strided and empty layouts
+    cast_graphs_vt_24: "cast", 1920, [];
+    /// `VT-25`: Prism models window partition padding and window join logical indexing and Verdant transfers match the imported GGML CPU oracle for independent strided empty and bounded window inputs
+    window_graphs_vt_25: "window", 3024, [];
+    /// `VT-26`: Prism plans scale bias clamp and leaky ReLU graphs and Verdant matches the imported GGML CPU kernels for every supported float storage type across copied in-place strided and empty tensors
+    transform_graphs_vt_26: "transform", 18816, [];
+    /// `VT-27`: Prism plans thirteen unary operations for all five supported GGML float source destination pairs and Verdant matches copied in-place strided and empty CPU graphs with exact finite outputs and preserved padding
+    unary_graphs_vt_27: "unary", 4992, [];
+    /// `VT-28`: Prism models row-local F32 cumulative sums with exact first-word preservation and Verdant matches the imported GGML CPU scan across strided and empty graphs
+    scan_graphs_vt_28: "scan", 528, [];
+    /// `VT-29`: Prism models SUM SUM_ROWS and MEAN accumulation precision rounding and empty reductions and Verdant matches every supported float type against the imported GGML CPU oracle
+    reduction_graphs_vt_29: "reduction", 4080, [];
+    /// `VT-30`: Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs
+    row_graphs_vt_30: "rows", 2264, [] => verify_row_graphs;
+    /// `VT-31`: Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals
+    row_gradient_graphs_vt_31: "row-gradient", 3360, [];
+    /// `VT-32`: Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals
+    row_gather_graphs_vt_32: "row-gather", 384, [];
+    /// `VT-33`: Prism models GGML relative-position word selection and Verdant preserves F16 and BF16 source encodings in F16 outputs across strided empty and higher-dimensional source layouts
+    relative_position_graphs_vt_33: "relative-position", 192, [];
+    /// `VT-34`: Prism models three-source indexed row addition and Verdant matches GGML ADD_ID arithmetic and exact minus-one row copies across strides empty tensors and atomic invalid-index refusals
+    indexed_add_graphs_vt_34: "indexed-add", 164, [];
+    /// `VT-37`: Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals
+    generator_graphs_vt_37: "upstream-ARANGE", 13, ["pointwise"];
+    /// `VT-38`: Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals
+    normalization_graphs_vt_38: "upstream-L2_NORM,L2_NORM_BATCH", 129, ["pointwise", "norm"];
+    /// `VT-39`: Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals
+    relative_position_add_vt_39: "upstream-ADD_REL_POS", 1315, ["pointwise"] => verify_relative_position_add;
+    /// `VT-46`: Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals
+    rms_normalization_vt_46: "upstream-RMS_NORM", 121, ["pointwise"];
+    /// `VT-46`: Supplemental RMS normalization outputs and atomic refusals match Prism fixtures and the imported CPU oracle.
+    rms_runtime_edges_vt_46: "rms-norm", 256, ["pointwise"];
+    /// `VT-48`: NORM preserves stride-selected mean and variance rounding through Prism and Verdant.
+    normalization_graphs_vt_48: "upstream-NORM", 61, ["pointwise", "norm"];
+    /// `VT-48`: Prism NORM fixtures match exact CPU words and preserve atomic refusals and padding.
+    norm_runtime_edges_vt_48: "norm", 184, ["pointwise", "norm"];
+    /// `VT-49`: GROUP_NORM preserves nested row subtotals and matches ordinary and fused imported graphs.
+    group_normalization_vt_49: "upstream-GROUP_NORM,GROUP_NORM_MUL_ADD", 5, ["pointwise", "norm"];
+    /// `VT-49`: GROUP_NORM fixtures preserve nested rounding, physical spacing and atomic refusals.
+    group_runtime_edges_vt_49: "group-norm", 224, ["pointwise", "norm"];
+    /// `VT-50`: RMS_NORM_BACK preserves its two-source reductions and narrowing order.
+    backward_normalization_vt_50: "upstream-RMS_NORM_BACK", 10, ["pointwise", "norm"];
+    /// `VT-50`: Backward normalization fixtures preserve both sources, narrowing and atomic refusals.
+    backward_runtime_edges_vt_50: "rms-backward", 353, ["pointwise", "norm"];
+    /// `VT-51`: Full composed graphs preserve mixed storage, broadcasting and aliases.
+    composed_normalization_vt_51: "upstream-NORM_SCALE,RMS_NORM_SCALE,NORM_MUL_ADD,RMS_NORM_MUL_ADD,ADD_RMS_NORM", 187, ["typed", "pointwise", "norm"];
+    /// `VT-51`: Exact CPU words and atomic refusals cover every scalar storage tuple.
+    typed_runtime_edges_vt_51: "typed-binary", 977, ["pointwise", "typed"];
+    /// `VT-52`: Scheduled node selection and reuse match the imported CPU.
+    scheduled_compute_flags_vt_52: "scheduled-flags", 3, ["native"];
+    /// `VT-53`: The upstream factory evaluates all Q8_0 by F32 matrix cases.
+    symmetric_matrix_graphs_vt_53: "upstream-MUL_MAT_Q8_0_F32", 122, ["matrix"];
+    /// `VT-54`: The upstream factory evaluates all Q4_0 by F32 matrix cases.
+    packed_matrix_graphs_vt_54: "upstream-MUL_MAT_Q4_0_F32", 122, ["matrix"];
+    /// `VT-55`: Indexed scalar row writes match the independent CPU.
+    scalar_set_rows_vt_55: "upstream-SET_ROWS_SCALAR", 126, ["typed"];
+    /// `VT-56`: The imported CPU checks all split, combined and swapped SWIGLU rows.
+    swiglu_rows_vt_56: "upstream-SWIGLU", 36, ["typed"];
+    /// `VT-57`: Exercise the upstream rotary-position graph factory on the provider.
+    rotary_graphs_vt_57: "upstream-ROPE", 510, ["rotary"];
+    /// `VT-57`: Exercise all upstream inverse-rotation graphs.
+    rotary_backward_graphs_vt_57: "upstream-ROPE_BACK", 424, ["rotary"];
+}
+
 /// `TC-01`: The checker answers conformant exactly when every universal policy file's observed digest equals its locked digest
 #[test]
 fn contract_tc_01() {
@@ -154,48 +263,7 @@ fn buffer_allocation_vt_10() {
     }
 }
 
-/// `VT-11`: GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior
-#[test]
-fn native_backend_vt_11() {
-    tensor_layout::certified_current_model(&root(), "layout");
-    tensor_layout::certified_current_model(&root(), "native");
-    // Prism proves metadataClassification for every opcode and span.
-    native_backend_oracle::verify(&root(), "buffers", 108);
-}
-
-/// `VT-52`: Scheduled node selection and reuse match the imported CPU.
-#[test]
-fn scheduled_compute_flags_vt_52() {
-    tensor_layout::certified_current_model(&root(), "native");
-    native_backend_oracle::verify(&root(), "scheduled-flags", 3);
-}
-
-/// `VT-55`: Indexed scalar row writes match the independent CPU.
-#[test]
-fn scalar_set_rows_vt_55() {
-    tensor_layout::certified_current_model(&root(), "typed");
-    native_backend_oracle::verify(&root(), "upstream-SET_ROWS_SCALAR", 126);
-}
-
-/// `VT-53`: The upstream factory evaluates all Q8_0 by F32 matrix cases.
-#[test]
-fn symmetric_matrix_graphs_vt_53() {
-    tensor_layout::certified_current_model(&root(), "matrix");
-    native_backend_oracle::verify(&root(), "upstream-MUL_MAT_Q8_0_F32", 122);
-}
-
-/// `VT-54`: The upstream factory evaluates all Q4_0 by F32 matrix cases.
-#[test]
-fn packed_matrix_graphs_vt_54() {
-    tensor_layout::certified_current_model(&root(), "matrix");
-    native_backend_oracle::verify(&root(), "upstream-MUL_MAT_Q4_0_F32", 122);
-}
-
-/// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
-#[test]
-fn matrix_graphs_vt_12() {
-    tensor_layout::certified_current_model(&root(), "matrix");
-    tensor_layout::certified_current_model(&root(), "index");
+fn verify_matrix_graphs() {
     // The certified scalarDispatchForEveryOpcode theorem covers every Nat opcode.
     assert!(matches!(
         vtensor_matrix::run(28, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
@@ -209,123 +277,9 @@ fn matrix_graphs_vt_12() {
         ));
     }
     assert!(vtensor_index::run(u64::MAX, 0, 0, 0, 2, 0, 0, 0).is_err());
-    native_backend_oracle::verify(&root(), "matrix", 1280);
 }
 
-/// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
-#[test]
-fn elementwise_graphs_vt_13() {
-    tensor_layout::certified_current_model(&root(), "typed");
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    native_backend_oracle::verify(&root(), "elementwise", 120);
-}
-
-/// `VT-56`: The imported CPU checks all split, combined and swapped SWIGLU rows.
-#[test]
-fn swiglu_rows_vt_56() {
-    tensor_layout::certified_current_model(&root(), "typed");
-    native_backend_oracle::verify(&root(), "upstream-SWIGLU", 36);
-}
-
-/// `VT-14`: Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers
-#[test]
-fn empty_graphs_vt_14() {
-    native_backend_oracle::verify(&root(), "empty", 864);
-}
-
-/// `VT-15`: Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding
-#[test]
-fn copy_graphs_vt_15() {
-    native_backend_oracle::verify(&root(), "copy", 3456);
-}
-
-/// `VT-16`: Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle
-#[test]
-fn repeat_graphs_vt_16() {
-    native_backend_oracle::verify(&root(), "repeat", 160);
-}
-
-/// `VT-17`: Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types
-#[test]
-fn concat_graphs_vt_17() {
-    native_backend_oracle::verify(&root(), "concat", 10368);
-}
-
-/// `VT-18`: Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle
-#[test]
-fn spatial_graphs_vt_18() {
-    native_backend_oracle::verify(&root(), "spatial", 2256);
-}
-
-/// `VT-19`: Prism plans SET and ACC initialization, bounded update views and aliases and Verdant execution matches the imported GGML CPU oracle for supported float and integer storage
-#[test]
-fn update_graphs_vt_19() {
-    native_backend_oracle::verify(&root(), "update", 4608);
-}
-
-/// `VT-20`: Prism models four-axis REPEAT_BACK initialization and accumulation order and Verdant execution matches the imported GGML F32 CPU oracle across strided and empty tensors
-#[test]
-fn fold_graphs_vt_20() {
-    native_backend_oracle::verify(&root(), "fold", 672);
-}
-
-/// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
-#[test]
-fn diagonal_graphs_vt_21() {
-    native_backend_oracle::verify(&root(), "diagonal", 384);
-}
-
-/// `VT-22`: Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle
-#[test]
-fn triangular_graphs_vt_22() {
-    native_backend_oracle::verify(&root(), "triangular", 1920);
-}
-
-/// `VT-23`: Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding
-#[test]
-fn fill_graphs_vt_23() {
-    native_backend_oracle::verify(&root(), "fill", 15360);
-}
-
-/// `VT-24`: Prism plans mixed F32 F16 and BF16 casts and copies by logical element order and Verdant conversion matches the imported GGML CPU oracle across reshaped strided and empty layouts
-#[test]
-fn cast_graphs_vt_24() {
-    native_backend_oracle::verify(&root(), "cast", 1920);
-}
-
-/// `VT-25`: Prism models window partition padding and window join logical indexing and Verdant transfers match the imported GGML CPU oracle for independent strided empty and bounded window inputs
-#[test]
-fn window_graphs_vt_25() {
-    native_backend_oracle::verify(&root(), "window", 3024);
-}
-
-/// `VT-26`: Prism plans scale bias clamp and leaky ReLU graphs and Verdant matches the imported GGML CPU kernels for every supported float storage type across copied in-place strided and empty tensors
-#[test]
-fn transform_graphs_vt_26() {
-    native_backend_oracle::verify(&root(), "transform", 18816);
-}
-
-/// `VT-27`: Prism plans thirteen unary operations for all five supported GGML float source destination pairs and Verdant matches copied in-place strided and empty CPU graphs with exact finite outputs and preserved padding
-#[test]
-fn unary_graphs_vt_27() {
-    native_backend_oracle::verify(&root(), "unary", 4992);
-}
-
-/// `VT-28`: Prism models row-local F32 cumulative sums with exact first-word preservation and Verdant matches the imported GGML CPU scan across strided and empty graphs
-#[test]
-fn scan_graphs_vt_28() {
-    native_backend_oracle::verify(&root(), "scan", 528);
-}
-
-/// `VT-29`: Prism models SUM SUM_ROWS and MEAN accumulation precision rounding and empty reductions and Verdant matches every supported float type against the imported GGML CPU oracle
-#[test]
-fn reduction_graphs_vt_29() {
-    native_backend_oracle::verify(&root(), "reduction", 4080);
-}
-
-/// `VT-30`: Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs
-#[test]
-fn row_graphs_vt_30() {
+fn verify_row_graphs() {
     use vtensor_pointwise::{Adt0, Adt1, Adt2, Adt5, Adt6};
     for (operation, ty, output_type) in [(13, 0, 0), (18, 26, 27)] {
         let empty = Adt2::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
@@ -350,31 +304,6 @@ fn row_graphs_vt_30() {
             Ok(Adt5::C0(Adt6::C4(2, ..)))
         ));
     }
-    native_backend_oracle::verify(&root(), "rows", 2264);
-}
-
-/// `VT-31`: Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals
-#[test]
-fn row_gradient_graphs_vt_31() {
-    native_backend_oracle::verify(&root(), "row-gradient", 3360);
-}
-
-/// `VT-32`: Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals
-#[test]
-fn row_gather_graphs_vt_32() {
-    native_backend_oracle::verify(&root(), "row-gather", 384);
-}
-
-/// `VT-33`: Prism models GGML relative-position word selection and Verdant preserves F16 and BF16 source encodings in F16 outputs across strided empty and higher-dimensional source layouts
-#[test]
-fn relative_position_graphs_vt_33() {
-    native_backend_oracle::verify(&root(), "relative-position", 192);
-}
-
-/// `VT-34`: Prism models three-source indexed row addition and Verdant matches GGML ADD_ID arithmetic and exact minus-one row copies across strides empty tensors and atomic invalid-index refusals
-#[test]
-fn indexed_add_graphs_vt_34() {
-    native_backend_oracle::verify(&root(), "indexed-add", 164);
 }
 
 /// `VT-35`: Prism generates all matrix fixture dimensions layouts and input words matching the complete frozen prior oracle corpus while GGML independently computes every expected result
@@ -417,6 +346,9 @@ fn native_fixture_baselines_vt_40() {
     let source =
         std::fs::read_to_string(root().join("crates/conformance/tests/contract.rs")).unwrap();
     assert_eq!(source, include_str!("contract.rs"), "stale fixture gate");
+    assert!(source
+        .lines()
+        .any(|line| line.trim() == "native_backend_oracle::verify(&root, $mode, $cases);"));
     let modes = baseline["mode"].as_array().unwrap();
     assert_eq!(modes.len(), 16);
     for row in modes {
@@ -424,9 +356,15 @@ fn native_fixture_baselines_vt_40() {
             row["name"].as_str().unwrap(),
             row["cases"].as_u64().unwrap(),
         );
-        assert!(source.contains(&format!(
-            "native_backend_oracle::verify(&root(), \"{name}\", {cases});"
-        )));
+        assert_eq!(
+            GGML_BATCHES
+                .iter()
+                .filter(|(mode, _)| *mode == name)
+                .map(|(_, count)| *count as u64)
+                .collect::<Vec<_>>(),
+            [cases],
+            "frozen batch must run once with its registered count"
+        );
         assert!(row["bytes"].as_u64().unwrap() > 0);
         assert_eq!(row["sha256"].as_str().unwrap().len(), 64);
         assert_eq!(row["record"].as_array().unwrap().len() as u64, cases);
@@ -526,20 +464,6 @@ fn normalization_arithmetic_vt_45() {
     assert_eq!(evaluate_wide(6, 0, 0).unwrap(), None);
 }
 
-/// `VT-46`: Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals
-#[test]
-fn rms_normalization_vt_46() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    native_backend_oracle::verify(&root(), "upstream-RMS_NORM", 121);
-}
-
-/// `VT-46`: Supplemental RMS normalization outputs and atomic refusals match Prism fixtures and the imported CPU oracle.
-#[test]
-fn rms_runtime_edges_vt_46() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    native_backend_oracle::verify(&root(), "rms-norm", 256);
-}
-
 /// `VT-47`: Prism supplies spatial fixture parameters and rejects undefined recipe queries.
 #[test]
 fn fixture_generation_vt_47() {
@@ -555,67 +479,6 @@ fn fixture_generation_vt_47() {
         );
     }
     tensor_layout::certified_current_model(&root(), "spatial");
-}
-
-fn verify_normalization(mode: &str, cases: usize) {
-    let root = root();
-    tensor_layout::certified_current_model(&root, "pointwise");
-    tensor_layout::certified_current_model(&root, "norm");
-    native_backend_oracle::verify(&root, mode, cases);
-}
-
-/// `VT-48`: NORM preserves stride-selected mean and variance rounding through Prism and Verdant.
-#[test]
-fn normalization_graphs_vt_48() {
-    verify_normalization("upstream-NORM", 61);
-}
-
-/// `VT-48`: Prism NORM fixtures match exact CPU words and preserve atomic refusals and padding.
-#[test]
-fn norm_runtime_edges_vt_48() {
-    verify_normalization("norm", 184);
-}
-
-/// `VT-49`: GROUP_NORM preserves nested row subtotals and matches ordinary and fused imported graphs.
-#[test]
-fn group_normalization_vt_49() {
-    verify_normalization("upstream-GROUP_NORM,GROUP_NORM_MUL_ADD", 5);
-}
-
-/// `VT-49`: GROUP_NORM fixtures preserve nested rounding, physical spacing and atomic refusals.
-#[test]
-fn group_runtime_edges_vt_49() {
-    verify_normalization("group-norm", 224);
-}
-
-/// `VT-50`: RMS_NORM_BACK preserves its two-source reductions and narrowing order.
-#[test]
-fn backward_normalization_vt_50() {
-    verify_normalization("upstream-RMS_NORM_BACK", 10);
-}
-
-/// `VT-50`: Backward normalization fixtures preserve both sources, narrowing and atomic refusals.
-#[test]
-fn backward_runtime_edges_vt_50() {
-    verify_normalization("rms-backward", 353);
-}
-
-/// `VT-51`: Full composed graphs preserve mixed storage, broadcasting and aliases.
-#[test]
-fn composed_normalization_vt_51() {
-    tensor_layout::certified_current_model(&root(), "typed");
-    verify_normalization(
-        "upstream-NORM_SCALE,RMS_NORM_SCALE,NORM_MUL_ADD,RMS_NORM_MUL_ADD,ADD_RMS_NORM",
-        187,
-    );
-}
-
-/// `VT-51`: Exact CPU words and atomic refusals cover every scalar storage tuple.
-#[test]
-fn typed_runtime_edges_vt_51() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "typed");
-    native_backend_oracle::verify(&root(), "typed-binary", 977);
 }
 
 mod ggml_oracle {
@@ -1380,7 +1243,7 @@ mod tensor_layout {
             "native" => ("vtensor_native_config".to_owned(), "native"),
             "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" | "spatial"
             | "norm" | "normfixtures" | "groupfixtures" | "rmsbackfixtures" | "typed"
-            | "typedfixtures" => (format!("vtensor_{name}"), name),
+            | "rotary" | "typedfixtures" => (format!("vtensor_{name}"), name),
             _ => panic!("unknown certified model: {name}"),
         };
         let scope = if name == "layout" {
@@ -1719,25 +1582,8 @@ fn buffer_transfer_vt_09() {
     }
 }
 
-/// `VT-37`: Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals
-#[test]
-fn generator_graphs_vt_37() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    native_backend_oracle::verify(&root(), "upstream-ARANGE", 13);
-}
-
-/// `VT-38`: Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals
-#[test]
-fn normalization_graphs_vt_38() {
-    verify_normalization("upstream-L2_NORM,L2_NORM_BATCH", 129);
-}
-
-/// `VT-39`: Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals
-#[test]
-fn relative_position_add_vt_39() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
+fn verify_relative_position_add() {
     native_backend_oracle::verify(&root(), "upstream-ORACLE_CALIBRATION", 2);
-    native_backend_oracle::verify(&root(), "upstream-ADD_REL_POS", 1315);
 }
 
 mod native_backend_oracle {

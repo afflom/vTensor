@@ -4575,3 +4575,9 @@ The vTensor factory totals continue to count only actual provider executions. VT
 ### VT-56 complete checkpoint
 
 The exact locked SDK passed `just vv` at `748b5066afe57ca86bfd8526a252fe144fe4926f`, including 61 backend contract tests with zero failures, skips or filters. The source audit measured 11,910 native lines and cargo-deny passed. [Validated implementation](https://github.com/afflom/vTensor/commit/748b5066afe57ca86bfd8526a252fe144fe4926f)
+
+### Rotary graph execution
+
+The locked SDK ran the release plugin against all 510 forward and 424 backward rotary graphs from the pinned GGML factory. Both suites passed. Reversing the direction in the adapter failed the first forward F32 graph. Prism supplies the byte addresses and selects the position axis. Verdant computes the frequencies, coefficients, coordinate rotation and storage conversions. Each token shares its coefficients across heads and batches.
+
+The independent stories15M scheduler observation recorded 195 graph nodes and 192 compute nodes. The plugin admitted 186, including all 12 rotary nodes. Six FLASH_ATTN_EXT nodes still prevented graph reservation and prefill. [GGML oracle](vendor/llama.cpp-oracle/upstream.toml) · [Verdant plane rotations](https://github.com/afflom/verdant-engine/pull/20)
