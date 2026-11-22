@@ -12,7 +12,7 @@ full GGML backend support. The imported source and oracle are pinned in
 [`vendor/llama.cpp-oracle`](vendor/llama.cpp-oracle/README.md).
 
 Cargo fetches the certified Verdant tensor primitives by the immutable commit in
-[Verdant Engine PR #14](https://github.com/afflom/verdant-engine/pull/14), which builds on the primitives in PRs #12 and #13.
+[Verdant Engine PR #15](https://github.com/afflom/verdant-engine/pull/15), which builds on PRs #12 through #14.
 The [patch record](model/verdant-development.json) identifies the dependency
 until a published Verdant release includes these APIs.
 
@@ -96,6 +96,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-51` | build | All 187 non-RoPE composed normalization factory cases and 977 typed binary supplemental cases pass, including 240 atomic refusals, 12 metadata probes, every scalar storage tuple and a 65,537-batch case. |
 | `VT-52` | build | The upstream scheduler reuses an allocated graph across active, inactive and reactivated nodes. Both output buffers match the independent CPU on all three runs. |
 | `VT-53` | build | All 122 Q8_0 × F32 MUL_MAT factory cases match the independent CPU. The llama.cpp loader places the Q8_0 output projection. |
+| `VT-54` | build | All 122 Q4_0 × F32 MUL_MAT factory cases match the independent CPU. llama.cpp loads the quantized model and allocates its F16 KV cache on vTensor. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

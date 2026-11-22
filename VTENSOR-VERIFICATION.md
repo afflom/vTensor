@@ -4396,3 +4396,43 @@ dimension 256. vTensor prefill and decode logits remain unverified.
 
 The VT-53 source audit measured 11,897 non-Prism lines, 113 above the
 11,784 comparison baseline and 1,348 above the original 10,549 ceiling.
+
+## Packed matrix execution and KV-cache placement
+
+VT-54 first refused Q4_0 × F32 factory ordinal 10,637 at registration
+`41a9b85`. vTensor's matrix plan reads the block geometry from the existing
+GGML storage catalog and selects the Verdant contraction. Both weight formats
+use the same buffer handling, broadcast schedule and activation preparation.
+Verdant's four-bit path interprets the packed lanes and executes the two
+rounded products and addition in the order specified by the upstream CPU.
+[Matrix attestation](generated/matrix/evidence/attestation.json)
+· [Verdant PR #15 and numerical evidence](https://github.com/afflom/verdant-engine/blob/97528328fe73591dc1528fa96d2dcad5291966bc/ENGINE-VERIFICATION.md#vtk-18-packed-four-bit-row-contraction)
+
+On the PR #15 pin the upstream evaluator passed all 122 Q4_0 × F32 and
+all 122 Q8_0 × F32 matrix cases. The new group's passing transcript SHA-256
+is `dfa8e8d874e02e063285441939a67fcbc4a050a100a503706457ecd0390c578a`.
+Together these account for 244 of 3,213 MUL_MAT cases. The issued matrix
+attestation is `484ce89dffdcfcd6ba6b3485e6477ab55af06600ed5b8172447bd7855c1b5565`.
+
+Swapping the Verdant entry points at the vTensor dispatch boundary made the
+unchanged evaluator fail its first Q4_0 case. Restoring dispatch passed both
+factory instances matching those exact parameters. VT-02 and VT-03,
+workspace Clippy and cargo-deny passed on the PR #15 pin.
+
+The default llama.cpp memory-fitting probe reached the preallocated
+`cache_k_l0 (view)` and refused SET_ROWS. Repeating the same command with
+`--fit off` exercised real allocation (`no_alloc = 0`), loaded a 17.50 MiB
+vTensor model buffer and allocated 1.69 MiB for the six-layer F16 KV cache.
+The scheduler reached the same SET_ROWS refusal before the first logits.
+The standalone imported evaluator also refused factory ordinal 1,528, an
+F32 source, F16 destination and I64 indices. This case uses already available
+Verdant storage conversion. The missing behavior belongs to vTensor's
+indexed GGML write plan.
+[Upstream SET_ROWS contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/include/ggml.h#L1558)
+
+The locked SDK verified the VT-53 application attestation
+`fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942`.
+The retained proof and formatting passed when resumed in a separate Cargo
+target directory. The release gate stopped at the source audit. The finalized
+VT-53 commit measured 11,897 against its parent’s 11,793 lines. VT-54
+measured 11,919 against the VT-53 baseline, 1,370 above the original 10,549.

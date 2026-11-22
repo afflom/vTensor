@@ -661,9 +661,16 @@ fn execute_quantized_matrix(
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
 ) -> Result<(), BackendError> {
-    use verdant_tensor::linear::{dot_symmetric_q8_row, encode_symmetric_q8_block};
+    use verdant_tensor::linear::{
+        dot_symmetric_q4_row, dot_symmetric_q8_row, encode_symmetric_q8_block,
+    };
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt3 as Response};
-    let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
+    let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, .., packed) = plan;
+    let dot = if packed {
+        dot_symmetric_q4_row
+    } else {
+        dot_symmetric_q8_row
+    };
     // SAFETY: graph admission retained both typed GGML source descriptors.
     let (w, a) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
     let weights = graph_tensor_data(w)?;
@@ -715,8 +722,7 @@ fn execute_quantized_matrix(
                     std::slice::from_raw_parts(weights.add(start as usize), weight_bytes as usize)
                 }
             };
-            *value =
-                dot_symmetric_q8_row(bytes, &prepared).map_err(|_| BackendError::InvalidTensor)?;
+            *value = dot(bytes, &prepared).map_err(|_| BackendError::InvalidTensor)?;
         }
     }
     for (column, offset) in results.chunks_exact(rows as usize).zip(offsets) {

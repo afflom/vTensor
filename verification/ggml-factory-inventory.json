@@ -221,15 +221,15 @@
         "ADD_RMS_NORM"
       ]
     },
-    "passed": 577,
+    "passed": 699,
     "refused_ordinals": {
-      "10637": {
+      "1528": {
         "oracle": "make_test_cases_eval / test_case::eval",
-        "test_build": "VT-53 with Verdant 17f04e0c",
+        "test_build": "VT-54 with Verdant 97528328",
         "result": "not supported"
       }
     },
-    "untested": 27177,
+    "untested": 27055,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -238,6 +238,13 @@
         "cases": 122,
         "transcript_sha256": "98ccc36df39f889744f83d3afec15c00e033031c5220e564565b54f30332eddd",
         "test": "symmetric_matrix_graphs_vt_53"
+      },
+      "VT-54": {
+        "label": "MUL_MAT",
+        "parameters_prefix": "type_a=q4_0,type_b=f32,",
+        "cases": 122,
+        "transcript_sha256": "dfa8e8d874e02e063285441939a67fcbc4a050a100a503706457ecd0390c578a",
+        "test": "packed_matrix_graphs_vt_54"
       }
     }
   }
