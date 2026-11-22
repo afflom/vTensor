@@ -197,34 +197,6 @@ certified-install name artifact:
     fs.writeFileSync(`${name}-kernel.lock`, JSON.stringify(lock) + '\n');
     JS
 
-# Reproduce the development dependency without resetting an existing checkout.
+# Prefetch the same immutable dependencies used by normal Cargo builds.
 verdant-prepare:
-    #!/usr/bin/env node
-    const fs = require('node:fs'), path = require('node:path');
-    const cp = require('node:child_process'), crypto = require('node:crypto');
-    const root = process.cwd();
-    const m = JSON.parse(fs.readFileSync('model/verdant-development.json', 'utf8'));
-    if (m.spec !== 'vtensor/verdant-development/1' || !/^[0-9a-f]{40}$/.test(m.commit) || !/^[0-9a-f]{40}$/.test(m.base)) throw Error('invalid development source record');
-    if (m.directory !== '.verdant-engine' || m.bundle !== 'vendor/verdant-development.bundle') throw Error('unexpected development source path');
-    const bundle = path.join(root, m.bundle);
-    if (crypto.createHash('sha256').update(fs.readFileSync(bundle)).digest('hex') !== m.sha256) throw Error('development source bundle hash differs');
-    const target = path.join(root, m.directory);
-    const git = (cwd, ...args) => cp.execFileSync('git', ['-C', cwd, ...args], {encoding:'utf8'}).trim();
-    const check = directory => {
-      if (git(directory, 'rev-parse', 'HEAD') !== m.commit) throw Error('development checkout has a different commit; preserve it before preparing the recorded source');
-      if (git(directory, 'status', '--porcelain', '--untracked-files=all')) throw Error('development checkout has local changes; preserve them before preparing the recorded source');
-      git(directory, 'merge-base', '--is-ancestor', m.base, m.commit);
-    };
-    if (fs.existsSync(target)) {
-      check(target);
-      process.stdout.write(`Verdant development source already matches ${m.commit}\n`);
-    } else {
-      const staging = path.join(root, `.verdant-engine.prepare-${process.pid}`);
-      cp.execFileSync('git', ['clone', '--no-checkout', m.upstream, staging], {stdio:'inherit'});
-      git(staging, 'bundle', 'verify', bundle);
-      git(staging, 'fetch', bundle, m.ref);
-      git(staging, 'checkout', '--detach', m.commit);
-      check(staging);
-      fs.renameSync(staging, target);
-      process.stdout.write(`Prepared Verdant development source ${m.commit}\n`);
-    }
+    cargo fetch --locked

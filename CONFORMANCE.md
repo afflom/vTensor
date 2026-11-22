@@ -262,7 +262,7 @@ An authority is cited, never re-derived, and never gated on: what it states is n
 | Authority | Citation | Evidence here |
 | --- | --- | --- |
 | `LLAMA-CPP-GGML-BACKEND` | https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5 | -- |
-| `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/tree/34c827db624f951609e49f57bbf324671876eeff | -- |
+| `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/tree/4654da8724f142a248b32739f1d930066e281bd5 | -- |
 | `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
 
 ## Claims that are not conformance IDs

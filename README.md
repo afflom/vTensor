@@ -11,13 +11,10 @@ Numerical graph execution is under development and does **not** yet provide
 full GGML backend support. The imported source and oracle are pinned in
 [`vendor/llama.cpp-oracle`](vendor/llama.cpp-oracle/README.md).
 
-The current F32 matrix and arithmetic graph implementations use an isolated Verdant extension
-reproduced by `just verdant-prepare` from the hash-bound Git bundle in this
-repository. The checkout lives at `.verdant-engine`. This override is explicit in
-`Cargo.toml`; the unchanged exact-source guard rejects it as release evidence.
-The declared upstream base is Verdant M20 v2.12.0 commit `34c827db624f`. The
-exact extension commit and bundle digest are recorded in
-[`model/verdant-development.json`](model/verdant-development.json).
+Cargo fetches the certified Verdant tensor primitives by the immutable commit in
+[Verdant Engine PR #12](https://github.com/afflom/verdant-engine/pull/12).
+The [patch record](model/verdant-development.json) identifies the dependency
+until a published Verdant release includes these APIs.
 
 The extension now includes Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for the reduction work. All 1,213,940
@@ -34,15 +31,19 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
   operation contracts through its upstream headers and test suites.
 - **Prism** holds the normative model, imported authority records, executable
   acceptance vectors, and kernel-checked invariants.
-- **vTensor** implements the GGML backend interface and validates it against
-  the pinned upstream oracle.
+- **vTensor** owns the GGML ABI, device and buffer lifetimes, graph admission,
+  address plans and dispatch. It passes words, blocks or matrix slices to
+  Verdant. GGML graph objects and callbacks stay on the vTensor side of that
+  interface. The imported GGML CPU and SoftFloat implementations supply test
+  results. Only their required format data, such as quantization codebooks,
+  enters the numerical runtime.
 
 ## Current evidence
 
 | ID | Level | Status |
 | --- | --- | --- |
 | `VT-01` | build | Pins and checks the imported GGML contract and oracle source. |
-| `VT-02` | build | Checks the fifteen kernel descriptors and requires the pinned source; currently rejects the local development override. |
+| `VT-02` | build | Verifies Cargo resolves the exact upstream patch and Verdant exposes its fifteen ordered kernel descriptors. |
 | `VT-03` | build | Delegates one fixed 4×4 F64 matrix primitive to Verdant. |
 | `VT-04` | build | Inventories GGML operations, nested unary variants and storage-type declarations without claiming their implementation. |
 | `VT-05` | build | Executes upstream storage-size functions from the pinned source. |
@@ -135,8 +136,8 @@ storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
 The last full pinned-SDK `just vv` pass covers VT-11 before the numerical work.
-The current full contract run passes 40 checks; VT-02 still refuses the local
-Verdant development dependency for release. It includes the expanded 1,280
+An earlier full contract run passed 40 checks and VT-02 rejected the local
+Verdant override. That run included the expanded 1,280
 matrix cases, 384 GET_ROWS cases, 192 GET_REL_POS cases and 164 ADD_ID cases.
 All ten optional GGML tensor-source slots are now carried to the Prism planner;
 zero-source ARANGE now uses Prism preflight and exact output-count validation
@@ -252,10 +253,8 @@ Full acceptance remains open.
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:
 
-First run `just verdant-prepare` to materialize the recorded development source.
-It verifies the bundle SHA-256, exact commit and upstream ancestry, and refuses
-to overwrite an existing checkout with local changes. This preserves the
-current development state without treating it as an accepted release.
+Cargo resolves the patch directly. Use `just verdant-prepare` to prefetch
+locked dependencies for offline work.
 
 ```sh
 cargo test --locked -p vtensor-backend --test contract oracle_import
@@ -266,12 +265,10 @@ The machine-readable oracle pin is
 [`vendor/llama.cpp-oracle/upstream.toml`](vendor/llama.cpp-oracle/upstream.toml).
 The source snapshot retains llama.cpp's MIT license.
 
-The Verdant base revision is declared in the workspace manifest. The current
-local extension must acquire an authoritative immutable dependency before
-acceptance. The graph also contains Verdant's pinned `uor-matmul` upstream;
+The workspace manifest pins the submitted Verdant patch until its release. The graph also contains Verdant's pinned `uor-matmul` upstream;
 `deny.toml` permits only those two Git origins.
 
-## Typed unary checkpoint
+## Historical typed unary checkpoint
 
 The pinned Verdant development bundle now includes VTK-06: certified typed
 unary primitives for thirteen operations and all five GGML CPU float pairs.
@@ -287,12 +284,11 @@ Promotion, address and theorem defects are rejected. This development bundle
 retains the explicit VT-02 release-source refusal; it is not a published
 Verdant dependency or evidence of complete backend conformance.
 
-The current development checkpoint merges the Tensor extension with Verdant
-M20 v2.12.0 upstream `34c827d`. Its twenty-four certified SDK packages share one imported
+The M20 development checkpoint merged the Tensor extension with Verdant
+v2.12.0 upstream `34c827d`. Its twenty-four certified SDK packages share one imported
 Prism bundle and one certificate replay per process. Native source lifting now
 captures the exact generated package sources and separated test fixtures; the
-new omission checks reject missing roots and package manifests. This remains a
-development dependency until the authoritative production source and VT-02 pass.
+new omission checks reject missing roots and package manifests. VT-02 rejected the local source at that checkpoint.
 The isolated Engine integration passes its complete exact-SDK gate, including
 225 workspace tests and full Prism application verification. The actual Wasm
 artifacts fit stricter M20 ceilings; no budget was raised. Exact evidence is in
@@ -301,8 +297,7 @@ artifacts fit stricter M20 ceilings; no budget was raised. Exact evidence is in
 Verdant's native packager now includes the certified production dependency
 closure (36 crates), with exact registry versions and preserved SDK provenance.
 Its registry check requires a successful real Cargo consumer build and rejects
-missing or unresolvable dependencies. Production publication and VT-02 remain
-part of completion.
+missing or unresolvable dependencies. Production publication remains open.
 
 The current Verdant extension adds certified packed-scale and F8 word primitives
 for the remaining row-gathering work. Its 244,492 imported GGML comparisons pass;

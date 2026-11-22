@@ -4285,3 +4285,14 @@ Non-Prism implementation measures 11,738 lines, 1,189
 above the original 10,549 ceiling; the source ratchet remains a genuine
 failure. Production dependency packaging and the remaining imported
 requirements, including RMS/RoPE compositions, remain open.
+
+## Verdant PR dependency
+
+Cargo resolves `verdant-tensor` and its 30 certified packages from Engine commit
+`4654da8724f142a248b32739f1d930066e281bd5`. VT-02 and VT-03 passed in the
+locked SDK. Substituting an all-zero revision in the patch record made the
+same VT-02 executable fail with `wrong Verdant source`. VT-45 verified the
+quotient artifact in Cargo's resolved checkout. VT-51 passed all 977 typed
+runtime cases against the imported GGML oracle. The dependency audit passed.
+The source audit measured 11,737 non-Prism lines. Full provider acceptance and
+Verdant release publication remain open. [Engine PR #12](https://github.com/afflom/verdant-engine/pull/12)

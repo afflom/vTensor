@@ -37,8 +37,6 @@ sources! {
     "Cargo.toml" => "../../../Cargo.toml",
     "Cargo.lock" => "../../../Cargo.lock",
     "model/verdant-development.json" => "../../../model/verdant-development.json",
-    ".verdant-engine/quotient-kernel.lock" => "../../../.verdant-engine/quotient-kernel.lock",
-    ".verdant-engine/crates/verdant-tensor/src/linear.rs" => "../../../.verdant-engine/crates/verdant-tensor/src/linear.rs",
     "native-kernel.lock" => "../../../native-kernel.lock",
     "matrix-kernel.lock" => "../../../matrix-kernel.lock",
     "index-kernel.lock" => "../../../index-kernel.lock",

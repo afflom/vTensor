@@ -112,7 +112,7 @@ fn buffer_allocation_vt_10() {
         }
     }
     assert_eq!(cases.len(), 864);
-    let reference = ggml_oracle::placements(&root(), &input);
+    let reference = ggml_oracle::boundary("allocation", &input);
     assert_eq!(reference.len(), cases.len());
     fn outcome(decision: vtensor_allocation::Adt0) -> [u64; 4] {
         match decision {
@@ -471,7 +471,7 @@ fn typed_fixture_generation_vt_44() {
 #[test]
 fn normalization_arithmetic_vt_45() {
     use verdant_tensor::linear::evaluate_wide;
-    tensor_layout::certified_current_model(&root().join(".verdant-engine"), "quotient");
+    tensor_layout::certified_current_model(&verdant_api::ENGINE_ROOT, "quotient");
     assert_eq!(
         evaluate_wide(4, 0x3ff0000000000000, 0x4000000000000000).unwrap(),
         Some(0x3fe0000000000000)
@@ -647,6 +647,11 @@ mod ggml_oracle {
             .output()
             .expect("oracle build tool available in SDK");
         checked_output(command, output)
+    }
+
+    pub(super) fn tool_json(root: &Path, tool: &str, args: &[&str]) -> serde_json::Value {
+        let output = run(Command::new(tool).current_dir(root).args(args));
+        serde_json::from_slice(&output).expect("tool JSON response")
     }
 
     fn checked_output(command: &Command, output: Output) -> Vec<u8> {
@@ -885,21 +890,11 @@ mod ggml_oracle {
             .collect()
     }
 
-    /// Query upstream set/get guards without executing tensor computations.
-    pub fn transfers(root: &Path, input: &str) -> Vec<u64> {
-        let base = storage_oracle(root);
-        let executable = base.with_file_name("transfer-oracle");
-        verify_file(&executable, base.with_file_name("transfer.sha256"));
-        spans::<1>(&executable, input)
-            .into_iter()
-            .flatten()
-            .collect()
-    }
-
-    pub fn placements(root: &Path, input: &str) -> Vec<[u64; 4]> {
-        let base = storage_oracle(root);
-        let executable = base.with_file_name("allocation-oracle");
-        verify_file(&executable, base.with_file_name("allocation.sha256"));
+    /// Query an imported boundary oracle after checking its executable digest.
+    pub(super) fn boundary<const N: usize>(name: &str, input: &str) -> Vec<[u64; N]> {
+        let base = storage_oracle(&super::root());
+        let executable = base.with_file_name(format!("{name}-oracle"));
+        verify_file(&executable, base.with_file_name(format!("{name}.sha256")));
         spans(&executable, input)
     }
 
@@ -1353,15 +1348,14 @@ mod tensor_layout {
         let model_lock = format!("app/{scope}lexlean.lock");
         let bundle = format!("generated/{directory}");
         let result = super::ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
-        let checked = ggml_oracle::run(
-            std::process::Command::new("lexlean")
-                .current_dir(root)
-                .args(["--project", &project])
-                .args(["--diagnostic-format", "json"])
-                .arg("check"),
-        );
-        let current: serde_json::Value =
-            serde_json::from_slice(&checked).expect("model identities");
+        let check = [
+            "--project",
+            &project,
+            "--diagnostic-format",
+            "json",
+            "check",
+        ];
+        let current = ggml_oracle::tool_json(root, "lexlean", &check);
         for key in ["source_id", "semantic_id"] {
             assert_eq!(
                 current[key], result["source"][key],
@@ -1563,27 +1557,35 @@ mod verdant_api {
     use verdant_tensor::linear::multiply_mat4_cols_exact;
     use verdant_tensor::{verified_unified_tensor_kernels, TensorComputeError};
 
-    const VERDANT_ENGINE_REVISION: &str = "34c827db624f951609e49f57bbf324671876eeff";
+    use std::{path::PathBuf, sync::LazyLock};
+
+    pub(super) static ENGINE_ROOT: LazyLock<PathBuf> = LazyLock::new(|| {
+        let root = super::root();
+        let args = ["metadata", "--locked", "--offline", "--format-version=1"];
+        let metadata = super::ggml_oracle::tool_json(&root, "cargo", &args);
+        let packages = metadata["packages"].as_array().expect("resolved packages");
+        let engine = packages
+            .iter()
+            .find(|p| p["name"] == "verdant-tensor")
+            .expect("Verdant package");
+        let pin = super::ggml_oracle::read_json(root.join("model/verdant-development.json"));
+        let revision = pin["commit"].as_str().expect("Verdant patch revision");
+        let expected =
+            format!("git+https://github.com/afflom/verdant-engine?rev={revision}#{revision}");
+        assert_eq!(engine["source"], expected, "wrong Verdant source");
+        let manifest =
+            std::path::Path::new(engine["manifest_path"].as_str().expect("Cargo manifest"));
+        manifest
+            .ancestors()
+            .nth(3)
+            .expect("Engine workspace")
+            .to_owned()
+    });
 
     /// `VT-02`: The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API
     #[test]
     fn verdant_api_vt_02() {
-        let root = super::root();
-        let lock = super::ggml_oracle::read_toml(root.join("Cargo.lock"));
-        let verdant = lock["package"]
-            .as_array()
-            .expect("Cargo.lock package list exists")
-            .iter()
-            .find(|package| package["name"].as_str() == Some("verdant-tensor"))
-            .expect("Verdant Tensor is resolved in Cargo.lock");
-        let source = verdant.get("source")
-            .and_then(toml::Value::as_str)
-            .expect("Verdant Tensor must resolve to the pinned upstream source; local development overrides are not release evidence");
-        assert!(
-            source.ends_with(&format!("#{VERDANT_ENGINE_REVISION}")),
-            "Verdant Engine must resolve to the pinned origin/main revision: {source}"
-        );
-
+        LazyLock::force(&ENGINE_ROOT);
         let kernels = verified_unified_tensor_kernels().expect("Verdant verified kernel inventory");
         assert_eq!(kernels.len(), 15);
         for (index, kernel) in kernels.iter().enumerate() {
@@ -1640,7 +1642,6 @@ mod verdant_api {
 #[test]
 fn buffer_transfer_vt_09() {
     tensor_layout::verify_bundle();
-    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut input = String::new();
     let mut cases = Vec::new();
     use std::fmt::Write;
@@ -1654,7 +1655,7 @@ fn buffer_transfer_vt_09() {
         }
     }
     assert_eq!(cases.len(), 1024);
-    let reference = ggml_oracle::transfers(&root, &input);
+    let reference = ggml_oracle::boundary::<1>("transfer", &input);
     assert_eq!(reference.len(), cases.len());
     fn outcome(decision: vtensor_transfer::Adt0) -> u64 {
         match decision {
@@ -1665,7 +1666,7 @@ fn buffer_transfer_vt_09() {
             vtensor_transfer::Adt0::C4 => 1,
         }
     }
-    for (index, ((buffer, data, capacity, offset, size), expected)) in
+    for (index, ((buffer, data, capacity, offset, size), [expected])) in
         cases.into_iter().zip(reference).enumerate()
     {
         assert_eq!(

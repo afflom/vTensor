@@ -37,9 +37,9 @@ realized_by = []
 [[authority]]
 id = "VERDANT-ENGINE-TENSOR"
 name = "Verdant Engine tensor API"
-citation = "https://github.com/afflom/verdant-engine/tree/34c827db624f951609e49f57bbf324671876eeff"
+citation = "https://github.com/afflom/verdant-engine/tree/4654da8724f142a248b32739f1d930066e281bd5"
 checksum = "none"
-checksum_reason = "The workspace declares this exact upstream base revision. The general-matrix extension currently uses a local development override, which is not accepted as a shipped dependency by VT-02."
+checksum_reason = "Cargo.lock pins the upstream Git commit from Verdant Engine PR 12 pending release."
 statement = "The pinned Verdant Engine revision contains the verdant-tensor crate and its unified tensor-kernel inventory."
 realized_by = []
 

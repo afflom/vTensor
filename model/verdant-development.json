@@ -1,11 +1,7 @@
 {
-  "spec": "vtensor/verdant-development/1",
-  "upstream": "https://github.com/afflom/verdant-engine.git",
-  "base": "34c827db624f951609e49f57bbf324671876eeff",
-  "commit": "158402b84cf273dc303c16c70e3781809a568a37",
-  "ref": "refs/heads/vtensor/f64-quotient",
-  "bundle": "vendor/verdant-development.bundle",
-  "sha256": "ee4d9323f38681d701b6306b4ef4b75c1e54c33b61fa7ffbafa9e70beb615a0d",
-  "sdk_image": "ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c",
-  "directory": ".verdant-engine"
+  "spec": "vtensor/verdant-patch/1",
+  "upstream": "https://github.com/afflom/verdant-engine",
+  "base": "0d8ed4ed314cd09ff925deda6dd69d15082f263d",
+  "commit": "4654da8724f142a248b32739f1d930066e281bd5",
+  "pull_request": "https://github.com/afflom/verdant-engine/pull/12"
 }
