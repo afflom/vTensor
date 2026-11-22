@@ -35,6 +35,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 ## Accept and ship
 
 - [ ] Reconcile all 27,755 factory records to individual verdicts. Require every applicable case to execute and pass on the actual library. Resolve omissions, unsupported required cases and missing-oracle rows. Link supplemental evidence for constructor and ABI behavior outside the factory.
+- [x] Pass the complete locked-SDK `just vv` for the VT-52 checkpoint on the Verdant PR #12 pin. All 57 backend contract tests passed. [Verification](VTENSOR-VERIFICATION.md#verdant-q8-dependency)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 
 For each implementation batch, register the scenario and failing case first. Export only changed Prism roots, reuse hash-checked oracle objects, and run the affected cases together. Check a representative planted defect before closing the batch. [Repository workflow](AGENTS.md) · [Oracle cache](verification/native-oracle-cache.json)

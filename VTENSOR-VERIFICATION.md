@@ -4354,3 +4354,9 @@ plugin also reproduced the same llama.cpp layer placement and output-weight
 refusal. Upstream fidelity still reports 1,168 native residue functions
 against 1,160 and 1,326 uncertified functions against 1,318.
 [Engine PR #13](https://github.com/afflom/verdant-engine/pull/13)
+
+The complete vTensor `just vv` through `e3d5cf1` passed in the locked SDK on
+the PR #12 pin, including all 57 backend contract tests. Its source audit
+measured 11,784 non-Prism lines against the same immediate-parent total.
+Recovering the original project ceiling of 10,549 remains on the burndown.
+The subsequent PR #13 pin has the targeted dependency and host results above.
