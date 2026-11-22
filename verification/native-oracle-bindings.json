@@ -6,6 +6,13 @@
     "upstream-SET_ROWS_SCALAR": "cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595",
     "upstream-SWIGLU": "8f96851eea2a120140823c8edb76eb8c6683589b8112bb847d48ab016395cd47"
   },
+  "fixture_digests": {
+    "arithmetic-fixture-baseline": "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4",
+    "matrix-fixture-baseline": "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
+    "native-fixture-baseline": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+    "native-fixture-source-release": "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
+    "typed-binary-fixture-baseline": "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959"
+  },
   "fixture_libraries": {
     "cast": "arithmetic",
     "concat": "arithmetic",

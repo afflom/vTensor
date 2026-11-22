@@ -754,16 +754,22 @@ fn execute_quantized_matrix(
 ) -> Result<(), BackendError> {
     use verdant_tensor::linear;
     use vtensor_matrix_q8::Adt2::C0;
+    let invalid = |_| BackendError::InvalidTensor;
+    macro_rules! block_rows {
+        ($encode:expr, $dot:path) => {
+            execute_block_rows(
+                tensor,
+                plan,
+                |block| $encode(block).map_err(invalid),
+                |w, a| $dot(w, a).map_err(invalid),
+            )
+        };
+    }
     let symmetric = linear::encode_symmetric_q8_block::<32>;
     match plan {
-        C0(.., 2) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q4_row),
-        C0(.., 8) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q8_row),
-        C0(.., 10) => execute_block_rows(
-            tensor,
-            plan,
-            linear::encode_grouped_q8_block,
-            linear::dot_grouped_q2_row,
-        ),
+        C0(.., 2) => block_rows!(symmetric, linear::dot_symmetric_q4_row),
+        C0(.., 8) => block_rows!(symmetric, linear::dot_symmetric_q8_row),
+        C0(.., 10) => block_rows!(linear::encode_grouped_q8_block, linear::dot_grouped_q2_row),
         _ => Err(BackendError::InvalidTensor),
     }
 }
@@ -771,8 +777,8 @@ fn execute_quantized_matrix(
 fn execute_block_rows<const LANES: usize, Block>(
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
-    encode: impl Fn(&[f32; LANES]) -> Result<Block, verdant_tensor::TensorComputeError>,
-    dot: impl Fn(&[u8], &[Block]) -> Result<f32, verdant_tensor::TensorComputeError>,
+    encode: impl Fn(&[f32; LANES]) -> Result<Block, BackendError>,
+    dot: impl Fn(&[u8], &[Block]) -> Result<f32, BackendError>,
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt3 as Response};
     let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
@@ -809,7 +815,7 @@ fn execute_block_rows<const LANES: usize, Block>(
                     .add(block as usize)
                     .read_unaligned()
             };
-            prepared.push(encode(&lanes).map_err(|_| BackendError::InvalidTensor)?);
+            prepared.push(encode(&lanes)?);
         }
         for (row, value) in values.iter_mut().enumerate() {
             let Response::C3(start) = run(Request::C2(plan.clone(), weight_base, row as u64))
@@ -818,7 +824,7 @@ fn execute_block_rows<const LANES: usize, Block>(
                 return Err(BackendError::InvalidTensor);
             };
             let bytes = weights.region(start, weight_bytes as usize)?;
-            *value = dot(bytes, &prepared).map_err(|_| BackendError::InvalidTensor)?;
+            *value = dot(bytes, &prepared)?;
         }
     }
     for (column, offset) in results.chunks_exact(rows as usize).zip(offsets) {

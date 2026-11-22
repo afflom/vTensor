@@ -1610,48 +1610,35 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "21fd02406bf95d861f86e1b3543a55a8eabd38decec848a2b91f5f8d4d0f6a32",
+            "95bdba561442f9e9a15a7913e0f1d0501c6cf8089e7fa91ffa12a0730cc7af85",
         )
     });
 
-    pub(super) static NATIVE_FIXTURES: LazyLock<serde_json::Value> = LazyLock::new(|| {
+    fn fixture_record(name: &str) -> serde_json::Value {
         frozen_json(
-            "native-fixture-baseline",
-            "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+            name,
+            ORACLE_BINDINGS["fixture_digests"][name]
+                .as_str()
+                .expect("fixture digest"),
         )
-    });
-    pub(super) static FILL_RELEASE: LazyLock<serde_json::Value> = LazyLock::new(|| {
-        frozen_json(
-            "native-fixture-source-release",
-            "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
-        )
-    });
-    static TYPED_BINARY: LazyLock<serde_json::Value> = LazyLock::new(|| {
-        frozen_json(
-            "typed-binary-fixture-baseline",
-            "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959",
-        )
-    });
+    }
+    pub(super) static NATIVE_FIXTURES: LazyLock<serde_json::Value> =
+        LazyLock::new(|| fixture_record("native-fixture-baseline"));
+    pub(super) static FILL_RELEASE: LazyLock<serde_json::Value> =
+        LazyLock::new(|| fixture_record("native-fixture-source-release"));
+    static TYPED_BINARY: LazyLock<serde_json::Value> =
+        LazyLock::new(|| fixture_record("typed-binary-fixture-baseline"));
 
     pub(super) fn fixture_input(family: u64) -> &'static [u8] {
         static INPUT: [std::sync::OnceLock<Vec<u8>>; 2] = [const { std::sync::OnceLock::new() }; 2];
         INPUT[family as usize].get_or_init(|| {
             use vtensor_fixtures::Adt0 as Request;
-            let (name, model, digest) = match family {
-                0 => (
-                    "matrix",
-                    "fixtures",
-                    "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
-                ),
-                1 => (
-                    "arithmetic",
-                    "arithmetic",
-                    "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4",
-                ),
-                _ => panic!("unknown fixture family"),
-            };
+            let (model, record) = [
+                ("fixtures", "matrix-fixture-baseline"),
+                ("arithmetic", "arithmetic-fixture-baseline"),
+            ][family as usize];
             super::tensor_layout::certified_current_model(&super::root(), model);
-            let baseline = frozen_json(&format!("{name}-fixture-baseline"), digest);
+            let baseline = fixture_record(record);
             let query = |request| {
                 let result = if family == 0 {
                     vtensor_fixtures::run(0, request).unwrap()
@@ -1668,10 +1655,9 @@ mod native_backend_oracle {
             };
             let [cases, fields, sources, padding] =
                 [0, 1, 2, 3].map(|item| query(Request::C0(item)));
-            assert_eq!(
-                (cases, fields, sources, padding),
-                (if family == 0 { 1280 } else { 120 }, 24, 2, 165)
-            );
+            let header = ["cases", "metadata_fields", "sources", "padding_byte"]
+                .map(|key| baseline[key].as_u64().expect("fixture header"));
+            assert_eq!([cases, fields, sources, padding], header);
             let mut input: Vec<u8> = [cases, fields, sources, padding]
                 .into_iter()
                 .flat_map(u64::to_le_bytes)
