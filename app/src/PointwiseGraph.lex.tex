@@ -259,7 +259,8 @@ inductive{
     {name: unary, fields: [Nat, Nat, Bool]},
     {name: transformed, fields: [Nat, Nat, Nat, Nat]},
     {name: encoded, fields: [Nat]},
-    {name: invalid, fields: []}
+    {name: invalid, fields: []},
+    {name: elementary, fields: [Nat, Nat, Nat]}
   ]
 }
 
@@ -868,7 +869,9 @@ definition{
   name: unaryKind,
   parameters: [operation : Nat, variant : Nat],
   result: (Option Nat),
-  body: (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat])))),
+  body: (if ((10 <=? operation) && (operation <=? 12)) then (ctor Option.some [Nat] (operation + 3)) else
+    (if ((operation =? 89) && (variant =? 13)) then (ctor Option.some [Nat] 16) else
+      (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat])))))),
   executable: true
 }
 
@@ -1434,7 +1437,7 @@ definition{
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.windowed reverse size nx => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.transformed kind storage a b => (ctor WordOperation.transformed kind storage a b)
-    | CopyMode.unaryWord kind sourceType destinationType => (ctor WordOperation.unary sourceStorage destinationStorage true)
+    | CopyMode.unaryWord kind sourceType destinationType => (if (13 <=? kind) then (ctor WordOperation.elementary kind sourceStorage destinationStorage) else (ctor WordOperation.unary sourceStorage destinationStorage true))
     | CopyMode.scanned => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.reduced operation storage => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.argmaxRow => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -2715,5 +2718,19 @@ theorem{
   statement: ((numericPlan 2 0 (record TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}) (ctor Option.some [TensorDescriptor] (record TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192})) (record TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})) = (ctor PointwiseDecision.delegated 67)),
   proof: reflexivity{}
 }
+theorem{
+  name: logarithmUsesVerdantWord,
+  parameters: [],
+  statement: ((unaryKind 10 0) = (ctor Option.some [Nat] 13)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: exponentialPromotesHalf,
+  parameters: [],
+  statement: ((convertedOperation (ctor CopyMode.unaryWord 16 1 0) 1 0) = (ctor WordOperation.elementary 16 1 0)),
+  proof: reflexivity{}
+}
+
 \end{semanticmodule}
 \end{lexlean}
