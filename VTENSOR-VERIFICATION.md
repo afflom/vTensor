@@ -4760,3 +4760,11 @@ Removing the backing-view displacement failed VT-11's viewed-byte comparison. Re
 Prism admits two-byte BF16 key and value rows under the dense attention plan. Verdant rounds each query once to the key's dot-product storage, widens the operands, computes the dot product and updates the streaming weighted mean. The native host shares the same bounded input regions with quantized matrix reads.
 
 The pinned CPU factory initially reported a vTensor refusal for ordinal 19540. The original four mask/sink combinations pass on the implementation, as do the existing small attention probes. Misreading BF16 keys and values as F16 produced normalized error 0.698156352 against the upstream limit of 0.0005. Restoring BF16 decoding passed. The numerical transcript links the tested provider binary to individual factory ordinals. [Factory evidence](verification/factory-bf16-attention-vt63.json)
+
+## Scalar matrix storage and dot-product precision
+
+VT-64 admits six mixed scalar operand pairs in MUL_MAT. The shared Prism storage rule selects F32 activations for F16 and F32 weights, and BF16 activations for BF16 weights. Both matrix and attention execution consume this rule. Verdant converts the encoded operands and computes the products. [Upstream CPU traits](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.c#L219)
+
+The locked SDK passed ten original dense and permuted matrix cases and the original high-range F32 case. Rounding the latter input to F16 produced NaN at coordinate zero. The GGML CPU produced −2,146,902.75. Restoring the storage rule passed all eleven comparisons. The standalone runs cover disjoint original factory ordinals. [Verdicts and binary identities](verification/factory-scalar-matrix-vt64.json)
+
+The existing F32 matrix, BF16 attention, small dense attention, L2, standard and group normalization, and RMS backward contract tests passed. Normalization instruction selection now lives in a single certified Prism root. The native implementation decreased from 12,158 to 12,151 lines. The locked workspace Clippy and dependency checks passed.
