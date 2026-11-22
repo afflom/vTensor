@@ -456,6 +456,12 @@ suite = "native-backend"
 statement = "GGML Q2_K matrix products use Verdant grouped activation blocks and match the imported CPU in standalone and row-gather graphs"
 
 [[id]]
+id = "VT-66"
+level = "build"
+suite = "native-backend"
+statement = "GGML extended attention with Q4_0 and Q8_0 keys and values executes through Verdant block conversion and row products and matches the imported CPU"
+
+[[id]]
 id = "VT-67"
 level = "build"
 suite = "native-backend"

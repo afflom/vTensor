@@ -4780,3 +4780,13 @@ VT-65 directs GGML weight views, broadcast columns and destination writes throug
 Reusing the first weight row for subsequent rows produced normalized error 1.880437132 at the final ADD against an allowed 0.0005. Restoring the Prism row offset passed all 56 cases. All 244 earlier Q4_0 and Q8_0 matrix cases passed the same shared runner. The implementation measures 12,151 non-Prism lines. VT-02 and all 56 grouped graphs passed on the final Verdant pin, and the locked workspace Clippy and dependency checks passed on the grouped implementation.
 
 The scalar matrix implementation also passed 18 Hadamard cases, 11 additional explicit precision cases and 15 fusion cases. The remaining 20 mixed scalar fusion cases in that selection were refused. [Standalone results](verification/factory-scalar-matrix-vt64.json)
+
+### VT-65 callback error boundary
+
+The full gate at `77d63f6` stopped at the model audit. Two private row-kernel callbacks named Verdant’s error type in their signatures. The adapter now translates rejected Verdant inputs to vTensor’s declared `BackendError::InvalidTensor` when it binds the callbacks. The locked model audit passes and measures 12,143 native lines. All 56 original grouped-matrix cases pass. The shared fixture-digest registry preserves the two complete matrix and arithmetic input transcripts and the native fixture baseline.
+
+### Packed key and value attention
+
+VT-66 uses the imported GGML tensor-type table for block strides and whole-row admission. Prism selects Q8_0 query storage for both packed key types. The backend calls the pinned Verdant encoder once per query row, contracts each key with the corresponding Verdant row product, and uses the Verdant decoder for value blocks. The eight mask/sink cases passed on the plugin. Reusing the first packed key row produced an error of 0.126766720 on ordinal 19541 against GGML’s limit of 0.0005. Restoring row selection passed all eight cases. [Factory results](verification/factory-packed-attention-vt66.json)
+
+The imported evaluator now reads selected factory ordinals from its test input. Its output includes the actual upstream operation name and parameters. Each selection has a checksum-pinned transcript. Changing the selection can reuse the compiled GGML driver. Typed and normalization word dispatch now share the Prism operand and target model. The pointwise certificate required 4,207,708 bytes, so its project permits 8 MiB per file. All 15 compatibility tests passed, as did the additional SwiGLU and group normalization checks.

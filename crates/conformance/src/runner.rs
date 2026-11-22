@@ -24,6 +24,12 @@ pub enum BackendError {
     OutOfBounds,
 }
 
+impl From<verdant_tensor::TensorComputeError> for BackendError {
+    fn from(_: verdant_tensor::TensorComputeError) -> Self {
+        Self::InvalidTensor
+    }
+}
+
 struct State {
     reg: UnsafeCell<Registry>,
     dev: UnsafeCell<Device>,
@@ -702,8 +708,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
             Instruction::C2 => {
                 let (left, rest) = values.split_at_mut(left_count as usize);
                 let (right, output) = rest.split_at_mut(right_count as usize);
-                verdant_tensor::linear::multiply_matrix_rows_f32(m, k, n, left, right, output)
-                    .map_err(|_| BackendError::InvalidTensor)?;
+                verdant_tensor::linear::multiply_matrix_rows_f32(m, k, n, left, right, output)?;
             }
             _ => return Err(BackendError::InvalidTensor),
         }
@@ -754,16 +759,21 @@ fn execute_quantized_matrix(
 ) -> Result<(), BackendError> {
     use verdant_tensor::linear;
     use vtensor_matrix_q8::Adt2::C0;
+    macro_rules! block_rows {
+        ($encode:expr, $dot:path) => {
+            execute_block_rows(
+                tensor,
+                plan,
+                |block| $encode(block).map_err(BackendError::from),
+                |w, a| $dot(w, a).map_err(BackendError::from),
+            )
+        };
+    }
     let symmetric = linear::encode_symmetric_q8_block::<32>;
     match plan {
-        C0(.., 2) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q4_row),
-        C0(.., 8) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q8_row),
-        C0(.., 10) => execute_block_rows(
-            tensor,
-            plan,
-            linear::encode_grouped_q8_block,
-            linear::dot_grouped_q2_row,
-        ),
+        C0(.., 2) => block_rows!(symmetric, linear::dot_symmetric_q4_row),
+        C0(.., 8) => block_rows!(symmetric, linear::dot_symmetric_q8_row),
+        C0(.., 10) => block_rows!(linear::encode_grouped_q8_block, linear::dot_grouped_q2_row),
         _ => Err(BackendError::InvalidTensor),
     }
 }
@@ -771,8 +781,8 @@ fn execute_quantized_matrix(
 fn execute_block_rows<const LANES: usize, Block>(
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
-    encode: impl Fn(&[f32; LANES]) -> Result<Block, verdant_tensor::TensorComputeError>,
-    dot: impl Fn(&[u8], &[Block]) -> Result<f32, verdant_tensor::TensorComputeError>,
+    encode: impl Fn(&[f32; LANES]) -> Result<Block, BackendError>,
+    dot: impl Fn(&[u8], &[Block]) -> Result<f32, BackendError>,
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt3 as Response};
     let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
@@ -809,7 +819,7 @@ fn execute_block_rows<const LANES: usize, Block>(
                     .add(block as usize)
                     .read_unaligned()
             };
-            prepared.push(encode(&lanes).map_err(|_| BackendError::InvalidTensor)?);
+            prepared.push(encode(&lanes)?);
         }
         for (row, value) in values.iter_mut().enumerate() {
             let Response::C3(start) = run(Request::C2(plan.clone(), weight_base, row as u64))
@@ -818,7 +828,7 @@ fn execute_block_rows<const LANES: usize, Block>(
                 return Err(BackendError::InvalidTensor);
             };
             let bytes = weights.region(start, weight_bytes as usize)?;
-            *value = dot(bytes, &prepared).map_err(|_| BackendError::InvalidTensor)?;
+            *value = dot(bytes, &prepared)?;
         }
     }
     for (column, offset) in results.chunks_exact(rows as usize).zip(offsets) {
@@ -914,15 +924,13 @@ fn execute_word(
         }
     };
     let value = match operation {
-        WordOperation::C0(kind) => verdant_tensor::linear::evaluate_wide(kind, a, b)
-            .map_err(|_| BackendError::InvalidTensor)?,
+        WordOperation::C0(kind) => verdant_tensor::linear::evaluate_wide(kind, a, b)?,
         WordOperation::C1(kind) => Some(u64::from(
             verdant_tensor::linear::evaluate_f32_scalar(
                 kind,
                 f32::from_bits(a as u32),
                 f32::from_bits(b as u32),
-            )
-            .map_err(|_| BackendError::InvalidTensor)?
+            )?
             .to_bits(),
         )),
         WordOperation::C2(source, destination, overflow) => {
@@ -1034,41 +1042,10 @@ fn normalization_word(
     else {
         return Err(BackendError::InvalidTensor);
     };
-    instruction_response([
-        family, operation, 0, 0, a, from, b, right, target, to, bytes, bytes,
-    ])
-}
-
-fn instruction_response(
-    [family, operation, source_type, destination_type, a, from, b, right, target, to, read_bytes, write_bytes]: [u64; 12],
-) -> Result<GraphResponse, BackendError> {
-    let operand = |kind, at| match kind {
-        0 => Ok(WordOperand::C0(0, at)),
-        1 => Ok(WordOperand::C1(at)),
-        2 => Ok(WordOperand::C2(at)),
-        3 => Ok(WordOperand::C3(at)),
-        4 => Ok(WordOperand::C0(1, at)),
-        _ => Err(BackendError::InvalidTensor),
-    };
-    Ok(GraphResponse::C7(
-        match family {
-            0 => WordOperation::C0(operation),
-            1 => WordOperation::C1(operation),
-            2 => WordOperation::C5(operation),
-            3 => WordOperation::C3(operation, operation, false),
-            4 => WordOperation::C2(source_type, destination_type, false),
-            _ => return Err(BackendError::InvalidTensor),
-        },
-        operand(a, from)?,
-        operand(b, right)?,
-        match target {
-            0 | 1 => WordTarget::C0(to),
-            3 => WordTarget::C1(to),
-            _ => return Err(BackendError::InvalidTensor),
-        },
-        read_bytes,
-        write_bytes,
+    vtensor_pointwise::run(GraphRequest::C3(
+        false, family, operation, 0, 0, a, from, b, right, target, to, bytes, bytes,
     ))
+    .map_err(|_| BackendError::Overflow)
 }
 
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
@@ -1090,8 +1067,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                     .map(|word| f32::from_bits(*word as u32))
                     .ok_or(BackendError::InvalidTensor)
             };
-            let value = verdant_tensor::linear::swiglu_f32(operand(first)?, operand(second)?)
-                .map_err(|_| BackendError::InvalidTensor)?;
+            let value = verdant_tensor::linear::swiglu_f32(operand(first)?, operand(second)?)?;
             *words
                 .get_mut(target as usize)
                 .ok_or(BackendError::InvalidTensor)? = u64::from(value.to_bits());
@@ -1115,8 +1091,9 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
             return Err(BackendError::InvalidTensor);
         };
         execute_word(
-            instruction_response([
-                if family == 0 { 4 } else { family },
+            vtensor_pointwise::run(GraphRequest::C3(
+                true,
+                family,
                 operation,
                 source_type,
                 destination_type,
@@ -1128,7 +1105,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 to,
                 read_bytes,
                 write_bytes,
-            ])?,
+            ))
+            .map_err(|_| BackendError::Overflow)?,
             &pointers,
             output,
             &mut words,
@@ -1214,8 +1192,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                     destination_data.add(to as usize),
                     span as usize,
                 );
-                verdant_tensor::linear::decode_storage_block(kind, input, output, stride as usize)
-                    .map_err(|_| BackendError::InvalidTensor)?;
+                verdant_tensor::linear::decode_storage_block(kind, input, output, stride as usize)?;
             }
             continue;
         }
@@ -1228,8 +1205,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
             ptr::copy_nonoverlapping(pointer, block.as_mut_ptr(), block.len());
             let target =
                 std::slice::from_raw_parts_mut(destination_data.add(to as usize), block.len());
-            verdant_tensor::memory::copy_storage_block(&block, target)
-                .map_err(|_| BackendError::InvalidTensor)?;
+            verdant_tensor::memory::copy_storage_block(&block, target)?;
         }
     }
     Ok(())
@@ -1390,7 +1366,7 @@ mod rotary {
                         None,
                     )?
                 };
-                *value = signed_word_f32(word as i32).map_err(|_| BackendError::InvalidTensor)?;
+                *value = signed_word_f32(word as i32)?;
             }
             let mut phase = base;
             for (lane, (weight, &(axis, reset, factor))) in
@@ -1399,13 +1375,9 @@ mod rotary {
                 if let Some(reset) = reset {
                     phase[reset] = base[reset];
                 }
-                *weight = spectrum
-                    .weights(phase[axis], factor, lane as u32, tensor.op == 46)
-                    .map_err(|_| BackendError::InvalidTensor)?;
+                *weight = spectrum.weights(phase[axis], factor, lane as u32, tensor.op == 46)?;
                 for value in phase.iter_mut().take(axis_count) {
-                    *value = spectrum
-                        .advance(*value)
-                        .map_err(|_| BackendError::InvalidTensor)?;
+                    *value = spectrum.advance(*value)?;
                 }
             }
             for batch in 0..*batches {
@@ -1425,8 +1397,7 @@ mod rotary {
                             let (x, y) = match slot {
                                 Some(slot) => {
                                     let pair = (decode_float(format, x)?, decode_float(format, y)?);
-                                    let (x, y) = rotate_pair_f32(pair, coefficients[slot])
-                                        .map_err(|_| BackendError::InvalidTensor)?;
+                                    let (x, y) = rotate_pair_f32(pair, coefficients[slot])?;
                                     (
                                         convert(0, format, u64::from(x.to_bits()))?,
                                         convert(0, format, u64::from(y.to_bits()))?,
@@ -1449,7 +1420,9 @@ mod attention {
     use super::{
         graph_tensor_data, workspace, BackendError, Tensor, TensorDescriptor, TensorInput,
     };
-    use verdant_tensor::linear::{evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32};
+    use verdant_tensor::linear::{
+        self, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
+    };
     use vtensor_attention::{Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as Response};
 
     fn request(query: Request) -> Result<Response, BackendError> {
@@ -1491,10 +1464,34 @@ mod attention {
             ))
         }
 
+        fn blocks(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
+            let bytes = count
+                .checked_mul(self.tensor.nb[0])
+                .ok_or(BackendError::Overflow)?;
+            self.region(offset, bytes)
+        }
+
         fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
             let width = self.tensor.nb[0];
-            let size = out.len().checked_mul(width).ok_or(BackendError::Overflow)?;
-            for (bytes, value) in self.region(offset, size)?.chunks_exact(width).zip(out) {
+            if matches!(self.tensor.ty, 2 | 8) {
+                let (blocks, tail) = out.as_chunks_mut::<32>();
+                if !tail.is_empty() {
+                    return Err(BackendError::InvalidTensor);
+                }
+                let source = self.blocks(offset, blocks.len())?;
+                for (input, block) in source.chunks_exact(width).zip(blocks) {
+                    // SAFETY: this byte view exclusively borrows an initialized F32 array.
+                    let dst = unsafe {
+                        std::slice::from_raw_parts_mut(
+                            block.as_mut_ptr().cast(),
+                            std::mem::size_of_val(block),
+                        )
+                    };
+                    linear::decode_storage_block(self.tensor.ty as u64, input, dst, 4)?;
+                }
+                return Ok(());
+            }
+            for (bytes, value) in self.blocks(offset, out.len())?.chunks_exact(width).zip(out) {
                 *value = match (self.tensor.ty as u64, bytes) {
                     (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
                     (kind @ (1 | 30), &[a, b]) => {
@@ -1522,8 +1519,15 @@ mod attention {
         let shape = q.tensor.ne;
         let key_rows = k.tensor.ne[1] as u64;
         let mut query = workspace(shape[0] as u64, 0.0)?;
-        let mut key = workspace(shape[0] as u64, 0.0)?;
+        let packed_key = matches!(k.tensor.ty, 2 | 8);
+        let mut key = workspace(if packed_key { 0 } else { shape[0] as u64 }, 0.0)?;
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
+        let mut packed = Vec::new();
+        if packed_key {
+            packed
+                .try_reserve_exact(query.len() / 32)
+                .map_err(|_| BackendError::Allocation)?;
+        }
         let output = graph_tensor_data(tensor)?;
         let scale = f32::from_bits(tensor.op_params[0] as u32);
         for batch in 0..shape[3] as u64 {
@@ -1536,7 +1540,12 @@ mod attention {
                     };
                     q.decode(qoff, &mut query)?;
                     // GGML prepares the query in the key's dot-product storage once per head.
-                    if dot_type != 0 {
+                    if dot_type == 8 {
+                        packed.clear();
+                        for block in query.as_chunks::<32>().0 {
+                            packed.push(linear::encode_symmetric_q8_block(block)?);
+                        }
+                    } else if dot_type != 0 {
                         for word in &mut query {
                             *word = super::prepare_float(0, dot_type, word.to_bits().into())?;
                         }
@@ -1553,12 +1562,23 @@ mod attention {
                             }
                             None => 0.0,
                         };
-                        k.decode(koff + row * ks, &mut key)?;
+                        let key_offset = koff + row * ks;
+                        let dot = if dot_type == 8 {
+                            let bytes = k.blocks(key_offset, packed.len())?;
+                            let product = match k.tensor.ty {
+                                2 => linear::dot_symmetric_q4_row,
+                                8 => linear::dot_symmetric_q8_row,
+                                _ => return Err(BackendError::InvalidTensor),
+                            };
+                            product(bytes, &packed)?
+                        } else {
+                            k.decode(key_offset, &mut key)?;
+                            let mut dot = [0.0];
+                            multiply_matrix_rows_f32(1, key.len(), 1, &key, &query, &mut dot)?;
+                            dot[0]
+                        };
                         v.decode(voff + row * vs, &mut value)?;
-                        let mut dot = [0.0];
-                        multiply_matrix_rows_f32(1, key.len(), 1, &key, &query, &mut dot)
-                            .map_err(|_| BackendError::InvalidTensor)?;
-                        let scaled = evaluate_f32_scalar(2, dot[0], scale)
+                        let scaled = evaluate_f32_scalar(2, dot, scale)
                             .map_err(|_| BackendError::Overflow)?;
                         let score = evaluate_f32_scalar(0, scaled, bias)
                             .map_err(|_| BackendError::Overflow)?;

@@ -244,7 +244,8 @@ inductive{
       ]
     },
     {name: stateful, fields: [Nat, IndexContext, IndexContext, CopyMode, Nat]},
-    {name: bindings, fields: [CopyMode]}
+    {name: bindings, fields: [CopyMode]},
+    {name: machineWord, fields: [Bool, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -1570,6 +1571,50 @@ definition{
 }
 
 definition{
+  name: machineOperation,
+  parameters: [typed : Bool, family : Nat, operation : Nat, source : Nat, destination : Nat],
+  result: WordOperation,
+  body: (if (family =? 0) then (if typed then (ctor WordOperation.storage source destination false) else (ctor WordOperation.wide operation)) else (if (family =? 1) then (ctor WordOperation.scalar operation) else (if (family =? 2) then (ctor WordOperation.encoded operation) else (if (family =? 3) then (ctor WordOperation.unary operation operation false) else (if (family =? 4) then (ctor WordOperation.storage source destination false) else (ctor WordOperation.invalid)))))),
+  executable: true
+}
+
+definition{
+  name: machineWord,
+  parameters: [
+    typed : Bool,
+    family : Nat,
+    operation : Nat,
+    source : Nat,
+    destination : Nat,
+    left : Nat,
+    from : Nat,
+    right : Nat,
+    at : Nat,
+    target : Nat,
+    to : Nat,
+    readBytes : Nat,
+    writeBytes : Nat
+  ],
+  result: GraphResponse,
+  body: (if ((((family <? 5) && (left <? 5)) && (right <? 5)) && ((target <? 2) || (target =? 3))) then (ctor GraphResponse.instruction (machineOperation typed family operation source destination) (wordOperand left from) (wordOperand right at) (wordTarget (if (target =? 0) then 1 else target) to) readBytes writeBytes) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+theorem{
+  name: refuseUnboundMachineSource,
+  parameters: [],
+  statement: ((machineWord true 0 0 0 1 5 0 1 0 3 0 4 2) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: machineConversionUsesSeparateWidths,
+  parameters: [],
+  statement: ((machineWord true 0 0 0 1 4 8 1 2 3 4 4 2) = (ctor GraphResponse.instruction (ctor WordOperation.storage 0 1 false) (ctor WordOperand.source 1 8) (ctor WordOperand.scratch 2) (ctor WordTarget.output 4) 4 2)),
+  proof: reflexivity{}
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
@@ -1578,7 +1623,8 @@ definition{
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
       | Option.some left => (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
-    | GraphRequest.bindings mode => (sourceBindings mode)),
+    | GraphRequest.bindings mode => (sourceBindings mode)
+    | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
