@@ -166,10 +166,26 @@ definition{
 }
 
 definition{
+  name: patternId,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: ((prim multiply (prim quotient ordinal 96 0 : Nat) 4 : Nat) + (layout ordinal)),
+  executable: true
+}
+
+definition{
   name: metadata,
   parameters: [ordinal : Nat, item : Nat],
   result: Nat,
-  body: (if (item =? 0) then (kind ordinal) else (if (item =? 1) then (operation ordinal) else (if (item =? 2) then 0 else (if (item =? 3) then (layout ordinal) else (if (item =? 4) then (units ordinal) else (if (item =? 5) then (rows ordinal) else (if (item =? 6) then (batches ordinal) else (if (item =? 7) then ((prim multiply (prim quotient ordinal 96 0 : Nat) 4 : Nat) + (layout ordinal)) else (if (((operation ordinal) =? 1) && ((layout ordinal) =? 3)) then 1 else 0))))))))),
+  body: (if (item =? 0) then (kind ordinal) else (if (item =? 1) then (operation ordinal) else (if (item =? 2) then 0 else (if (item =? 3) then (layout ordinal) else (if (item =? 4) then (units ordinal) else (if (item =? 5) then (rows ordinal) else (if (item =? 6) then (batches ordinal) else (if (item =? 7) then (patternId ordinal) else (if (((operation ordinal) =? 1) && ((layout ordinal) =? 3)) then 1 else 0))))))))),
+  executable: true
+}
+
+definition{
+  name: patternByte,
+  parameters: [pattern : Nat, index : Nat],
+  result: Nat,
+  body: (prim remainder (((prim multiply index 37 : Nat) + (prim multiply (typeId (prim quotient pattern 4 0 : Nat)) 13 : Nat)) + (prim remainder pattern 4 0 : Nat)) 256 0 : Nat),
   executable: true
 }
 
@@ -177,7 +193,7 @@ definition{
   name: byte,
   parameters: [ordinal : Nat, index : Nat],
   result: Nat,
-  body: (prim remainder (((prim multiply index 37 : Nat) + (prim multiply (kind ordinal) 13 : Nat)) + (layout ordinal)) 256 0 : Nat),
+  body: (patternByte (patternId ordinal) index),
   executable: true
 }
 
@@ -300,6 +316,20 @@ theorem{
   name: refuseNextChunk,
   parameters: [],
   statement: ((evaluate 4 215 8 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: metadataNamesThePattern,
+  parameters: [ordinal : Nat],
+  statement: ((metadata ordinal 7) = (patternId ordinal)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bytesFollowThePattern,
+  parameters: [ordinal : Nat, index : Nat],
+  statement: ((byte ordinal index) = (patternByte (patternId ordinal) index)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

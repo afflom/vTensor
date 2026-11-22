@@ -261,7 +261,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xf77d0560 }]
 name = "vtensor_arithmetic"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x7d3b1b8d }]
+license-files = [{ path = "src/lib.rs", hash = 0x12f6dc30 }]
 
 [[licenses.clarify]]
 name = "vtensor_fixtures"
