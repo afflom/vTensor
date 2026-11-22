@@ -86,6 +86,8 @@ model does not sanction.
 | `VT-36` | `build` | Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle |
 | `VT-40` | `build` | Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle |
 | `VT-41` | `build` | Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results |
+| `VT-42` | `build` | Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results |
+| `VT-43` | `build` | Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results |
 
 ## fold-graphs
 

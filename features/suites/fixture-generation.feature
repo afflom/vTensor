@@ -31,3 +31,19 @@ Feature: Certified graph fixtures
     Then every construction input alias and refusal record remains byte identical
     And the unchanged CPU oracle computes every expected result
     And invalid recipe requests and altered recipe bindings are rejected
+
+  @VT-42 @build
+  Scenario: Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results
+    Given the frozen REPEAT corpus for all five admitted storage types
+    When Prism supplies source layouts repeated targets padded outputs and byte recipes
+    Then all construction alias input and refusal records remain byte identical
+    And the unchanged CPU oracle computes every expected result
+    And invalid recipe requests and altered output bindings are rejected
+
+  @VT-43 @build
+  Scenario: Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results
+    Given the frozen CONCAT corpus across 36 storage types and four axes
+    When Prism supplies both operand layouts empty cases padded outputs and byte recipes
+    Then every construction alias input and refusal record remains byte identical
+    And the unchanged CPU oracle computes every expected result
+    And invalid recipe requests and swapped operand recipes are rejected

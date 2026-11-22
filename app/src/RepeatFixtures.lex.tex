@@ -1,0 +1,205 @@
+\begin{lexlean}{RepeatFixtures}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{CopyFixtures}
+\importmodule{TensorLayout}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: copyOrdinal,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (let kind : Nat := (prim quotient ordinal 32 0 : Nat); ((prim multiply (if (kind <? 2) then kind else (if (kind =? 2) then 23 else (if (kind =? 3) then 24 else 28))) 96 : Nat) + (prim remainder ordinal 32 0 : Nat))),
+  executable: true
+}
+
+definition{
+  name: layout,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (CopyFixtures::layout (copyOrdinal ordinal)),
+  executable: true
+}
+
+definition{
+  name: bytes,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (CopyFixtures::bytes (copyOrdinal ordinal)),
+  executable: true
+}
+
+definition{
+  name: dimension,
+  parameters: [ordinal : Nat, source : Nat, axis : Nat],
+  result: Nat,
+  body: (if (source <? 2) then (CopyFixtures::dimension (copyOrdinal ordinal) source axis) else (prim multiply (CopyFixtures::dimension (copyOrdinal ordinal) 0 axis) (if (axis <? 2) then (if (axis =? 0) then 2 else (if ((prim remainder (layout ordinal) 2 0 : Nat) =? 1) then 3 else 1)) else (if (axis =? 2) then (if (2 <=? (layout ordinal)) then 2 else 1) else 2)) : Nat)),
+  executable: true
+}
+
+definition{
+  name: padding,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (if (source =? 3) then (bytes ordinal) else 0),
+  executable: true
+}
+
+definition{
+  name: rowStride,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: ((prim multiply (bytes ordinal) (dimension ordinal source 0) : Nat) + (padding ordinal source)),
+  executable: true
+}
+
+definition{
+  name: planeStride,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: ((prim multiply (rowStride ordinal source) (dimension ordinal source 1) : Nat) + (padding ordinal source)),
+  executable: true
+}
+
+definition{
+  name: batchStride,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: ((prim multiply (planeStride ordinal source) (dimension ordinal source 2) : Nat) + (padding ordinal source)),
+  executable: true
+}
+
+definition{
+  name: stride,
+  parameters: [ordinal : Nat, source : Nat, axis : Nat],
+  result: Nat,
+  body: (if (source <? 2) then (CopyFixtures::stride (copyOrdinal ordinal) source axis) else (if (axis <? 2) then (if (axis =? 0) then (bytes ordinal) else (rowStride ordinal source)) else (if (axis =? 2) then (planeStride ordinal source) else (batchStride ordinal source)))),
+  executable: true
+}
+
+definition{
+  name: span,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (if (source <? 2) then (CopyFixtures::span (copyOrdinal ordinal) source) else (match (TensorLayout::tensorByteSpan (record TensorLayout::TensorLayout {ne0 := (dimension ordinal source 0), ne1 := (dimension ordinal source 1), ne2 := (dimension ordinal source 2), ne3 := (dimension ordinal source 3), nb0 := (stride ordinal source 0), nb1 := (stride ordinal source 1), nb2 := (stride ordinal source 2), nb3 := (stride ordinal source 3), blockSize := 1, typeSize := (bytes ordinal)}))
+    | TensorLayout::ByteSpanDecision.invalidBlockSize => 0
+    | TensorLayout::ByteSpanDecision.span count => count)),
+  executable: true
+}
+
+definition{
+  name: elements,
+  parameters: [ordinal : Nat, source : Nat],
+  result: Nat,
+  body: (prim multiply (prim multiply (dimension ordinal source 0) (dimension ordinal source 1) : Nat) (prim multiply (dimension ordinal source 2) (dimension ordinal source 3) : Nat) : Nat),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [query : Nat, ordinal : Nat, source : Nat, item : Nat],
+  result: (Option Nat),
+  body: (if (query =? 0) then (if (((ordinal =? 0) && (source =? 0)) && (item <? 5)) then (if (item =? 0) then (ctor Option.some [Nat] 160) else (CopyFixtures::evaluate 0 0 0 item)) else (ctor Option.none [Nat])) else (if (ordinal <? 160) then (if (query =? 2) then (if ((source <? 4) && (item <? 10)) then (ctor Option.some [Nat] (if (item <? 4) then (dimension ordinal source item) else (if (item <? 8) then (stride ordinal source (prim subtract item 4 : Nat)) else (if (item =? 8) then (span ordinal source) else (elements ordinal source))))) else (ctor Option.none [Nat])) else (CopyFixtures::evaluate query (copyOrdinal ordinal) source item)) else (ctor Option.none [Nat]))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: completeRepeatCorpus,
+  parameters: [],
+  statement: ((evaluate 0 0 0 0) = (ctor Option.some [Nat] 160)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: lastStorageKind,
+  parameters: [],
+  statement: ((evaluate 1 159 0 0) = (ctor Option.some [Nat] 30)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: integerKindSelected,
+  parameters: [],
+  statement: ((evaluate 1 64 0 0) = (ctor Option.some [Nat] 25)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unusedTargetPreserved,
+  parameters: [],
+  statement: ((evaluate 2 31 1 8) = (ctor Option.some [Nat] 284)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: repeatedTargetSpan,
+  parameters: [],
+  statement: ((evaluate 2 31 2 8) = (ctor Option.some [Nat] 3456)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: paddedOutputSpan,
+  parameters: [],
+  statement: ((evaluate 2 31 3 8) = (ctor Option.some [Nat] 4100)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: halfOutputSpan,
+  parameters: [],
+  statement: ((evaluate 2 159 3 8) = (ctor Option.some [Nat] 2050)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: inheritedBytePattern,
+  parameters: [],
+  statement: ((evaluate 3 159 0 255) = (ctor Option.some [Nat] 100)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseNextCase,
+  parameters: [],
+  statement: ((evaluate 1 160 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseMissingRole,
+  parameters: [],
+  statement: ((evaluate 2 0 4 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseNextByte,
+  parameters: [],
+  statement: ((evaluate 3 0 0 256) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refuseUnknownQuery,
+  parameters: [],
+  statement: ((evaluate 5 0 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: metadataNamesThePattern,
+  parameters: [ordinal : Nat],
+  statement: ((CopyFixtures::metadata (copyOrdinal ordinal) 7) = (CopyFixtures::patternId (copyOrdinal ordinal))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bytesFollowThePattern,
+  parameters: [ordinal : Nat, index : Nat],
+  statement: ((CopyFixtures::byte (copyOrdinal ordinal) index) = (CopyFixtures::patternByte (CopyFixtures::patternId (copyOrdinal ordinal)) index)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

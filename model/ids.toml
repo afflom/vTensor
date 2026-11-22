@@ -316,3 +316,15 @@ id = "VT-41"
 level = "build"
 suite = "fixture-generation"
 statement = "Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results"
+
+[[id]]
+id = "VT-42"
+level = "build"
+suite = "fixture-generation"
+statement = "Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results"
+
+[[id]]
+id = "VT-43"
+level = "build"
+suite = "fixture-generation"
+statement = "Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results"
