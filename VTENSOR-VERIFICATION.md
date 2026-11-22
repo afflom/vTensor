@@ -4610,3 +4610,15 @@ through `GGML_BACKEND_PATH` and run `test-backend-ops test -b vTensor -o <labels
 at the pinned llama.cpp revision. Check the device, case count, support and
 comparison verdicts. The run record also identifies the SDK, exact provider
 binary, source snapshot and oracle executable.
+
+## Verdant weighted-row dependency
+
+VT-02 resolves the submitted Verdant PR #21 at
+`53dfc67d4382c6d9b01eb04ae053ba6a9cd1c862`. All fifteen descriptor
+checks and cargo-deny's source, license, advisory and ban checks passed.
+The numerical API takes scores and row slices. GGML objects, mask addressing
+and scheduling stay in vTensor. All 5,940 weighted output coordinates matched
+the imported reference within 0.000001. Reversing the rescaling branch
+produced 0 for GGML's −0.75. The Verdant release gate still reports fidelity
+failures in the earlier logarithm and rotary stack.
+[Upstream evidence](https://github.com/afflom/verdant-engine/pull/21)

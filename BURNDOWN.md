@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **2,843 passed**, **4 refused** and **24,908 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **3,270 passed**, **4 refused** and **24,481 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -10,7 +10,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pin the submitted Verdant primitives. VT-02 checks Cargo's exact upstream source and the 15 descriptors. [Engine PR #12](https://github.com/afflom/verdant-engine/pull/12) · [Stacked Engine PR #13](https://github.com/afflom/verdant-engine/pull/13) · [Engine PR #14](https://github.com/afflom/verdant-engine/pull/14) · [Engine PR #15](https://github.com/afflom/verdant-engine/pull/15) · [Engine PR #16](https://github.com/afflom/verdant-engine/pull/16) · [Engine PR #17](https://github.com/afflom/verdant-engine/pull/17) · [Engine PR #18](https://github.com/afflom/verdant-engine/pull/18) · [Engine PR #19](https://github.com/afflom/verdant-engine/pull/19) · [Engine PR #20](https://github.com/afflom/verdant-engine/pull/20) · [Engine PR #21](https://github.com/afflom/verdant-engine/pull/21) · [Patch record](model/verdant-development.json)
 - [ ] When Verdant releases these primitives, switch to the published production packages, verify provenance and checksums, and build a clean consumer. Continue implementation on the PR pin until then.
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
-- [ ] Recover **1,384 non-Prism lines** (11,933 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,427 non-Prism lines** (11,976 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -32,7 +32,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 252 GET_ROWS factory cases on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [ ] Complete embedding, projection and KV-cache operations. Close the remaining 641 SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, MUL_MAT precision modes, MUL_MAT_ID and OUT_PROD across their legal formats. Reuse the verified decoders and F32 matrix path.
 - [ ] Complete rotary cache updates, fused normalization/rotation, masked softmax and attention. Run the 77 ROPE_SET_ROWS, 281 RMS_NORM_MUL_ROPE and 5,775 FLASH_ATTN_EXT factory cases in their assigned batches.
-- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, all GLU variants, and their composed graphs. Exercise typed arithmetic against the 600 standalone ADD/SUB/MUL/DIV factory cases.
+- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, all GLU variants, and their composed graphs. Close the remaining 173 standalone ADD cases. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [ ] Run a checksum-pinned small GGUF in floating-point and quantized form. Compare prompt prefill, successive decode logits and KV-cache reuse to the separate upstream CPU run. Record device assignment for every compute node and require zero numerical fallback.
 
 ## Finish the arbitrary-provider contract
