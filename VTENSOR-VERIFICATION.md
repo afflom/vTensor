@@ -3566,3 +3566,69 @@ Current source is 11,345 lines, 796 above the original 10,549-line budget; no
 ceiling is raised. Further recipe migration, all remaining imported requirements
 and production dependency closure remain open. Detailed evidence is recorded
 in `verification/copy-fixtures-runtime.json`.
+
+## Prism REPEAT and CONCAT fixture recipes (VT-42, VT-43)
+
+Prism now generates all 160 REPEAT and 10,368 CONCAT fixture recipes. The shared
+test-only bridge binds their operand, unused target and output descriptors,
+initial byte patterns and copy chunks to public GGML constructors. The unused
+target remains represented because its allocation is part of the frozen
+construction transcript. Both modes require the certified model library and
+have no native recipe fallback. Numerical results still come from unchanged
+imported GGML CPU code; production execution and backend exports do not change.
+
+Both capabilities were registered with scenarios and failing tests before
+implementation: the previous artifact returned None instead of Some(160) or
+Some(10368). The final pinned-SDK arithmetic export verifies all 410 declarations.
+Its result is
+`a67b8f5a4b7a64ad854bd8037c6a6753365fde449fc4f625ae1e85584330c03d`,
+with attestation
+`66cf7647bfd201d25e963e5e0fbf07eeae81922ad4c1443892ed5f132f9bf6cb`.
+Both canonical MCP authoring checks pass. Their remote proof tasks fail with
+LLB6003 staging storage exhaustion and supply no proof evidence. The separate
+SDK production proof supplies the attestation.
+
+REPEAT reuses COPY's catalog projection and byte patterns. CONCAT models both
+operands with distinct pattern identities, all four concatenation axes, packed
+storage types, padded outputs and empty dimensions. Universal model theorems
+bind cached patterns to metadata and byte generation. The model library remains
+bound to its certificate, adapter and compiler identity and is checked before
+loading. Assertions and overflow checks remain enabled.
+
+Two planted adapter defects distinguish recipe preservation from numerical
+agreement. Selecting REPEAT's contiguous target descriptor for its padded output
+passes all 160 CPU comparisons, then fails the frozen transcript length:
+563,768 instead of 583,928 bytes, in 2.45 seconds. Selecting CONCAT's left byte
+pattern for its right operand passes all 10,368 CPU comparisons, then fails the
+frozen input hash in 3.44 seconds. Both edits are restored byte for byte. Every
+native driver path and nanosecond modification time remains unchanged across
+these faults; the bridge recompiles without rebuilding the imported CPU driver.
+
+The workspace run passes five model unit tests, four BDD tests and 42 contract
+tests; VT-02 alone rejects the development dependency. All 43 contract tests run
+without ignored or filtered cases in 24.48 seconds. These are local observations
+with cache effects, not controlled benchmarks. The original 70,392-case native,
+1,920-state FILL, matrix and arithmetic manifests remain byte-identical.
+All-target/all-feature Clippy and dependency checks pass; license clarification
+binds the new certified arithmetic output hash 0x210ef6da.
+
+The remaining template and SDK-lock checks pass separately. Their initial
+isolated model regeneration runs out of local disk space; removing an obsolete
+ignored task-owned Prism build cache allows the retry to pass. The completed
+proof, generated certified artifacts and native driver cache are preserved.
+
+The complete pinned-SDK `just vv` passes the full default application proof,
+formatting, all 49 model IDs and ownership/error/deferral checks, then rejects
+36-line handwritten-source growth against 718d063169a7: 11,345 to 11,381.
+The full gate therefore fails. The original accepted 10,549-line budget remains
+exceeded by 832 lines; committing intermediate work does not establish a new
+accepted ceiling. No proof-event reuse or acceptance waiver is used.
+
+A read-only upstream reference check finds Verdant Engine 2.15.0 at
+4e1e7bbe8b0554a2aac0681663c899a67b8b956c. Its linear module is unchanged from
+the prior inspected revision. No dependency pin or development checkout is
+changed, and this upstream observation establishes no additional vTensor
+coverage. Remaining recipe migrations, complete imported operation/type/API
+coverage, source-budget recovery and production dependency closure remain open.
+Detailed evidence is recorded in
+`verification/repeat-concat-fixtures-runtime.json`.

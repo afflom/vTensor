@@ -1,0 +1,176 @@
+{
+  "spec": "vtensor/repeat-concat-fixture-runtime/1",
+  "status": "component-validated-source-budget-and-production-release-open",
+  "implementation_commits": [
+    "d3de6b2"
+  ],
+  "claims": [
+    "VT-42: Prism generates REPEAT enumeration, source/target/output descriptors and initial bytes.",
+    "VT-43: Prism generates CONCAT enumeration, left/right/output descriptors and initial bytes."
+  ],
+  "scope": "160 REPEAT and 10368 CONCAT frozen cases; existing 3456 COPY cases remain preserved. This does not establish complete imported coverage or release acceptance.",
+  "authoring": {
+    "check": "passed for both canonical MCP drafts",
+    "drafts": [
+      "prism-app/2a05672aa587a1faa10d11f7e63fac9d9232a106073061fa00316e2ce1e42c63",
+      "prism-app/307bfafe078925f41ef451527212c7e8ef875ef9e9c9286aafc73f3678d44e94"
+    ],
+    "remote_verification": "Tasks 42 and 43 failed LLB6003 staging process/preserve/LexLeanPreservation.Primitives.json: No space left on device. Neither task supplies proof evidence.",
+    "proof_evidence": "Separate exact pinned-SDK production export verifies all 410 declarations."
+  },
+  "registration": {
+    "repeat": {
+      "expected": "Some(160)",
+      "actual": "None",
+      "exit_code": 101,
+      "seconds": 1.55
+    },
+    "concat": {
+      "expected": "Some(10368)",
+      "actual": "None",
+      "exit_code": 101,
+      "seconds": 0
+    },
+    "sequence": "Registered IDs, scenarios and failing contract tests precede model implementation."
+  },
+  "oracle": {
+    "revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "numerical_results": "Unchanged imported GGML CPU code computes expected results for every case. Frozen transcripts independently check graph construction and input bytes.",
+    "repeat_cases": 160,
+    "concat_cases": 10368,
+    "entire_preserved_native_corpus_cases": 70392,
+    "preserved_fill_execution_states": 1920,
+    "unchanged_baselines": {
+      "verification/native-fixture-baseline.json": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+      "verification/native-fixture-source-release.json": "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
+      "verification/matrix-fixture-baseline.json": "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
+      "verification/arithmetic-fixture-baseline.json": "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4"
+    }
+  },
+  "automation": {
+    "abi": "Shared mandatory test-only model library for COPY, REPEAT and CONCAT; no native recipe fallback for these modes. Production backend unchanged.",
+    "cache": "Model-named 256-byte patterns with universal metadata/pattern coherence laws; separate left and right identities for CONCAT. Source/certificate/bridge/compiler identity binds model library, whose digest is checked before loading.",
+    "compiler_checks": [
+      "opt-level=2",
+      "debug-assertions=on",
+      "overflow-checks=on"
+    ],
+    "native_driver_reuse": "Every C++ executable path and nanosecond mtime matches the captured pre-mutation inventory across both adapter faults.",
+    "restoration": "Both adapter edits restored byte-for-byte before final formatting and full gate."
+  },
+  "faults": [
+    {
+      "change": "REPEAT descriptor query 13 maps output role 3 to target role 2",
+      "test": "repeat_graphs_vt_16",
+      "result": "All 160 CPU comparisons and RESULT count pass, then frozen transcript length rejects.",
+      "actual_bytes": 563768,
+      "expected_bytes": 583928,
+      "seconds": 2.45,
+      "exit_code": 101
+    },
+    {
+      "change": "CONCAT byte query 20 maps right operand source 1 to left source 0",
+      "test": "concat_graphs_vt_17",
+      "result": "All 10368 CPU comparisons and RESULT count pass, then frozen input hash rejects.",
+      "actual_sha256": "e668201c99e03cfe5b5489ffc4917a9ab6120c1dd7605db8e11429a2a3bbdc5f",
+      "expected_sha256": "aecba0dec6da7f6573c7ddeb0ee8842041275f4497cc53d4e4e0d674036067a0",
+      "seconds": 3.44,
+      "exit_code": 101
+    }
+  ],
+  "workspace": {
+    "command": "cargo test --workspace --locked",
+    "model_unit_passed": 5,
+    "bdd_meta_passed": 4,
+    "contract_passed": 42,
+    "contract_failed": 1,
+    "failure": "VT-02 rejects the Verdant development path override as production dependency evidence.",
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 24.48,
+    "source_restoration": "Complete workspace run precedes fault probes; exact byte restoration and formatting are verified afterward. No production or model source changes after that run, and full-gate default kernel regeneration leaves tracked artifact bytes unchanged."
+  },
+  "checks": {
+    "formatting": "passed",
+    "all_target_all_feature_clippy": "passed",
+    "dependency_deny": "passed after updating certified arithmetic license clarification to 0x210ef6da",
+    "template_and_sdk_lock": "passed on retry after removing obsolete ignored task-owned Prism build cache; first isolated regeneration failed with no space left on device."
+  },
+  "upstream_reference": {
+    "repository": "afflom/verdant-engine",
+    "revision": "4e1e7bbe8b0554a2aac0681663c899a67b8b956c",
+    "version": "2.15.0",
+    "linear_rs_blob": "ff05d8d9a120ad2f042c255eff16ddc0aac75849",
+    "observation": "Read-only reference check. Linear module is unchanged from the prior inspected upstream version. No dependency pin or development checkout changed; upstream progress does not establish vTensor coverage or production closure."
+  },
+  "measurement_limit": "Single local timings include build/cache effects and are not controlled benchmarks. Capability query tests do not repeat native CPU case groups.",
+  "open": [
+    "Migrate remaining native fixture families through certified Prism recipes.",
+    "Recover original 10549-line handwritten-source budget without raising its ceiling.",
+    "Complete remaining imported operation/type/public API requirements.",
+    "Close production dependencies and pass VT-02 and the complete acceptance gate."
+  ],
+  "model_source_sha256": {
+    "app/src/ArithmeticFixtures.lex.tex": "ffea0e724c5163bdfb855386fb28a6c040778aa449108f944fc3ee909861e6a4",
+    "app/src/RepeatFixtures.lex.tex": "2ef5d885d83696161c8f34d2285969e7a8156fcb3eaf04f792f8e82b0d31a58b",
+    "app/src/ConcatFixtures.lex.tex": "3d965368f2d17676b843e53f5695e2953800922c383dd9375a1f2ea7924bd8ef",
+    "app/src/CopyFixtures.lex.tex": "8f0e67cf0f2ae25b01363cc323fddeb896983d57849ca0f38c84c76689c70e69",
+    "app/src/TensorTypes.lex.tex": "0cb980d56e3a1dd8ab44672f85a57d61424ac4a3eedb7f077e857755ff46d6d9",
+    "app/src/TensorLayout.lex.tex": "d3d9a33507c117011b75e25d222b3beaea444e8ba50760732f227550045e4436"
+  },
+  "sdk": {
+    "image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "result_id": "a67b8f5a4b7a64ad854bd8037c6a6753365fde449fc4f625ae1e85584330c03d",
+    "attestation_id": "66cf7647bfd201d25e963e5e0fbf07eeae81922ad4c1443892ed5f132f9bf6cb",
+    "source": {
+      "source_id": "6c613fdfa1ae9b33745363b88ff4e82df5d4b0ab0684556396d8f5f38ae299ff",
+      "semantic_id": "04840cb4a253e2907b34b4d7638be78792f44c2676cc4c1af936f07980860ece",
+      "lock_sha256": "af32498be321b950c036f7de6ea835b59f9a63f7df931cb4187466d2cd4e49d7"
+    },
+    "declarations": 410,
+    "all_declarations_ok": true,
+    "intermediate_repeat": {
+      "result_id": "d027cd8a9d27535a256d39eedbc91e64eab24c60460abc938d5b823e96acae18",
+      "attestation_id": "a3f7d5f9470f27c03bba662b65c709b505839756ab75a75a08a1885e649a220c",
+      "declarations": 364
+    },
+    "installation": "Exact SDK production output installed without reformatting; current-source and certificate/artifact binding checked by workspace contract."
+  },
+  "full_gate": {
+    "command": "just vv",
+    "exit_code": 1,
+    "proof_event_reuse": false,
+    "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+    "passes": [
+      "full default application proof",
+      "formatting",
+      "49-ID model coherence",
+      "typed errors",
+      "deferral",
+      "SDK/bootstrap ownership"
+    ],
+    "failure": "Source audit rejects 36-line growth against 718d063169a7: 11345 to 11381.",
+    "release_pass": false
+  },
+  "source_budget": {
+    "original_accepted": 10549,
+    "current": 11381,
+    "excess": 832,
+    "growth": 36,
+    "ceiling_raised": false
+  },
+  "logs": {
+    "repeat_before": "/tmp/vtensor-repeat-fixtures-before.log",
+    "concat_before": "/tmp/vtensor-concat-fixtures-before.log",
+    "repeat_first": "/tmp/vtensor-repeat-fixtures-first.log",
+    "concat_first": "/tmp/vtensor-concat-fixtures-first.log",
+    "workspace": "/tmp/vtensor-repeat-concat-workspace.log",
+    "repeat_binding_fault": "/tmp/vtensor-repeat-fixtures-binding-fault.log",
+    "concat_binding_fault": "/tmp/vtensor-concat-fixtures-binding-fault.log",
+    "lint": "/tmp/vtensor-repeat-concat-checks.log",
+    "deny": "/tmp/vtensor-repeat-concat-deny.log",
+    "template": "/tmp/vtensor-repeat-concat-template.log",
+    "vv": "/tmp/vtensor-repeat-concat-vv.log",
+    "template_retry": "/tmp/vtensor-repeat-concat-template-retry.log"
+  }
+}
