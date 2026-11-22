@@ -1,0 +1,185 @@
+{
+  "spec": "vtensor/native-fixture-freeze-runtime/1",
+  "status": "fixture-preservation-gates-validated-source-and-production-release-gates-open",
+  "implementation_commit": "83a6295",
+  "baseline": {
+    "path": "verification/native-fixture-baseline.json",
+    "sha256": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+    "bytes": 5356877,
+    "modes": 16,
+    "cases": 70392,
+    "positive_cpu_comparisons": 69592,
+    "constructed_refusals": 800,
+    "descriptor_refusal_probes": 1001,
+    "captured_trace_bytes": 249175264,
+    "capture_cpp_sha256": "506090a890660da8965c7ecdbf339e52d2507f367fd66617d2f64b2418b457da"
+  },
+  "scope": "Pre-migration local fixture corpus only. Numerical expected values continue to come from pinned GGML CPU code; these fixture recipes are not yet Prism generated. Production model and runner are unchanged.",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "registration": {
+    "command": "just model-write; cargo test --locked -p vtensor-backend --test contract native_fixture_baselines_vt_40 -- --exact --nocapture",
+    "result": "VT-40 fails because the baseline does not exist; exit 101"
+  },
+  "validated_run": {
+    "command": "cargo test --locked -p vtensor-backend --test contract",
+    "passed": 39,
+    "failed": 1,
+    "failure": "VT-02 rejects local development override",
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 16.04,
+    "phase": "Initial construction-only checkpoint, before the execution-state supplement; superseded by final workspace run."
+  },
+  "gate_design": [
+    "One graph execution per existing fixture case; the new VT-40 test checks immutable baseline structure and correspondence to existing oracle invocations.",
+    "OnceLock loads and verifies the manifest once per test process. Each executed family hashes its freshly emitted transcript once.",
+    "Per-process snapshot paths prevent competing test processes from sharing transient files. Prior transcript is removed before invocation. Successful source snapshots, recipe transcripts and matrix/arithmetic binding transcripts are removed after verification.",
+    "Full transcript hash covers graph tensor identities, descriptors, aliases, initial physical bytes, all descriptor-refusal mutations and every positive/refusal outcome. Per-case hashes preserve diagnostic evidence for migration.",
+    "No numerical result is accepted from this local baseline; unchanged upstream CPU computations remain mandatory."
+  ],
+  "mutations": [
+    {
+      "change": "Add one to the existing byte-pattern generator",
+      "test": "repeat_graphs_vt_16",
+      "result": "All 160 CPU comparisons and exact RESULT count pass; the frozen corpus hash rejects changed input bytes.",
+      "exit_code": 101,
+      "seconds": 2.82,
+      "actual_sha256": "d38dd8880bd1ba605e082b7033ea7ec611e2f7694f0b2230a229e13b7d839615",
+      "expected_sha256": "7ad5bdaebdbcefddc69edebd2970747093620abfdad0c15419bf15396ef51a02"
+    },
+    {
+      "change": "Seed a byte-identical valid old repeat transcript before the clearing step and redirect the producer to another filename",
+      "test": "repeat_graphs_vt_16",
+      "result": "Clearing removes the valid stale transcript; missing current-execution transcript fails after the 160 CPU comparisons.",
+      "exit_code": 101,
+      "seconds": 3.03
+    },
+    {
+      "change": "Alter one frozen per-case SHA-256 character",
+      "test": "native_fixture_baselines_vt_40",
+      "result": "Immutable manifest digest rejects the changed corpus before oracle invocation.",
+      "exit_code": 101,
+      "seconds": 0.03
+    },
+    {
+      "change": "Omit the copied-FILL source data and buffer release",
+      "test": "fill_graphs_vt_23",
+      "result": "All 15360 CPU comparisons and the original construction transcript pass; the supplemental execution-state hash rejects the missing source-release edge.",
+      "exit_code": 101,
+      "seconds": 3.61,
+      "actual_sha256": "3bbb6fcdf18a96358feff2811d1d8fc874688e3050a88602384aeca51fbe9a55",
+      "expected_sha256": "c98582e99c8811b80bd375a515f856e6c452cbba12b13f5b6db61b2da11fc80d",
+      "restored": "source byte-for-byte; only subsequent diagnostic formatting changed"
+    }
+  ],
+  "restoration": "Every temporary source and corpus mutation restored byte-for-byte before complete SDK gate.",
+  "performance_limit": "Single local observations include build-cache effects and are not controlled benchmarks. Final forty-test contract run including both immutable corpora takes 19.72 seconds; existing case executions are not repeated by the new manifest test.",
+  "full_gate": {
+    "command": "just vv",
+    "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "status": "failed-source-audit",
+    "proof_event_reuse": false,
+    "exit_code": 1,
+    "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+    "passes": [
+      "full Prism application verification",
+      "formatting",
+      "46-ID model coherence",
+      "typed error registry",
+      "deferral audit",
+      "SDK/dependency ownership",
+      "bootstrap trust-root checks"
+    ],
+    "failure": "Source audit refuses 134-line growth against 3a08947: 11083 to 11217; later stages not reached."
+  },
+  "logs": {
+    "before": "/tmp/vtensor-fixture-freeze-before.log",
+    "final-capture": "/tmp/vtensor-fixture-freeze-final-capture.log",
+    "check": "/tmp/vtensor-fixture-freeze-check.log",
+    "input-fault": "/tmp/vtensor-fixture-freeze-input-fault.log",
+    "stale-fault": "/tmp/vtensor-fixture-freeze-stale-fault.log",
+    "manifest-fault": "/tmp/vtensor-fixture-freeze-manifest-fault.log",
+    "vv": "/tmp/vtensor-fixture-freeze-vv.log",
+    "release-before": "/tmp/vtensor-fixture-freeze-release-before.log",
+    "release-check": "/tmp/vtensor-fixture-freeze-release-check.log",
+    "release-fault": "/tmp/vtensor-fixture-freeze-release-fault.log",
+    "checks": "/tmp/vtensor-fixture-freeze-checks.log",
+    "workspace": "/tmp/vtensor-fixture-freeze-workspace.log"
+  },
+  "open": [
+    "Move the frozen native recipes into certified Prism models; this checkpoint does not claim that migration is implemented.",
+    "Recover original 10549-line handwritten-source budget; no ceiling may be raised.",
+    "Complete remaining imported operation, type and API requirements.",
+    "Replace development override with production dependency closure; VT-02 remains required."
+  ],
+  "fixture_bridge_experiment": {
+    "scope": "SDK-only development probe using an existing certified model; no new model capability and no production backend API or numerical kernel.",
+    "root": "PrismTemplateContract.ArithmeticFixtures.evaluate",
+    "production_result_id": "2274da2bfa92dafbec0d082cc23a6410cf61c6a7babdb891a8a41d9ac001ae32",
+    "production_attestation_id": "907a47178ee7302704a2773acbe8151aede5f23477b0ecf0edd3c98b1e811f84",
+    "generated_rust_sha256": "dbbfc5796beec6dadec195aa3ba6f4fbf74d56970ca86b605ad17f632c4d4127",
+    "bridge_sha256": "c4c11e462bd466ec0b93de51eab4645cb6f85b7981c74398ab7d2d3b877eb08c",
+    "cpp_probe_sha256": "e8d83e067010ec1bca073d18aa4a3976612dc8344c3c5aa523710447e2abfb9c",
+    "shared_library_sha256": "6e046e68b43e18691366103d0988688bbdf5d69e46688241fdb61d313bda6e47",
+    "abi": "repr(C) pair of u64 status and u64 payload, matching C++ size 16 and value offset 8; status 0 none, 1 some, 2 checked overflow",
+    "queries_passed": 6,
+    "method": "Compile exact certified Rust as rlib, compile a thin cdylib effect adapter, dlopen/dlsym from C++ and compare all requested answers. Accepted raw words and invalid requests including all UINT64_MAX fields are exercised.",
+    "log": "/tmp/vtensor-fixture-freeze-ffi-probe.log",
+    "next_action": "Use this test-only bridge for certified Prism native fixture recipes, preserving VT-40 transcripts. This avoids modifying production backend exports or recompiling the C++ driver for each fixture-model edit."
+  },
+  "source_release_supplement": {
+    "path": "verification/native-fixture-source-release.json",
+    "sha256": "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
+    "construction_baseline_unchanged": true,
+    "cases": 1920,
+    "trace_bytes": 4961304,
+    "trace_sha256": "c98582e99c8811b80bd375a515f856e6c452cbba12b13f5b6db61b2da11fc80d",
+    "reason": "The original construction trace precedes the copied-FILL source pointer and buffer release. The supplement records the actual execution descriptors for every affected original case without changing the original frozen corpus.",
+    "registration_failure": "The expanded VT-40 test fails with missing supplemental file before producer implementation.",
+    "validated_scoped_run": {
+      "manifest_test_seconds": 0.05,
+      "fill_cpu_and_both_frozen_transcripts_seconds": 0.9
+    }
+  },
+  "source_budget": {
+    "original_accepted": 10549,
+    "current": 11217,
+    "excess": 668,
+    "parent": 11083,
+    "growth": 134,
+    "ceiling_raised": false,
+    "status": "unsatisfied; added preservation instrumentation must be offset by the upcoming Prism recipe migration"
+  },
+  "implementation_commits": [
+    "83a6295",
+    "1d2721c"
+  ],
+  "workspace_run": {
+    "command": "just test",
+    "model_unit_passed": 5,
+    "bdd_meta_passed": 4,
+    "contract_passed": 39,
+    "contract_failed": 1,
+    "failure": "VT-02 rejects local development override",
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 19.72,
+    "log": "/tmp/vtensor-fixture-freeze-workspace.log"
+  },
+  "remaining_checks": {
+    "command": "just template-check lint deny",
+    "exit_code": 0,
+    "passed": [
+      "template contract",
+      "canonical SDK lock",
+      "all-target all-feature Clippy with -D warnings",
+      "advisories, bans, licenses and sources"
+    ],
+    "log": "/tmp/vtensor-fixture-freeze-checks.log"
+  },
+  "unchanged_source_sha256": {
+    "app/src/PointwiseGraph.lex.tex": "81e226efae91786178742b1e7ada725b76770865d820b0ac7241da574b61c7b1",
+    "crates/conformance/src/runner.rs": "89d3cfc7294f6aa4507209ee3f067786f52f96b4c3aea4278f06e036fb41a351",
+    "vendor/llama.cpp-oracle/tests/test-backend-ops.cpp": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52"
+  }
+}

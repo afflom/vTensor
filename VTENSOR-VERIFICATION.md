@@ -3449,3 +3449,54 @@ The source audit measures 11,083 lines in 51 files, one line smaller than the
 parent. The original accepted 10,549-line budget remains exceeded by 534; no
 ceiling is raised. Fixture generation migration, remaining imported operation
 and API coverage, and production dependency closure remain open.
+
+## Frozen native fixture recipes (VT-40)
+
+The construction corpus is frozen before replacing its native recipe builders
+with Prism. It contains 70,392 cases across sixteen existing families: 69,592
+successful CPU-reference cases, 800 constructed refusals and 1,001 descriptor
+mutation probes. These include the original empty and IEEE cases. The immutable
+manifest records each case hash and complete transcript hashes; expected
+numerical outputs continue to come from the pinned GGML CPU implementation.
+
+Transcripts include creation-ordered tensor descriptors, source and view
+identities, parameters, normalized buffer offsets, initialized physical bytes,
+refusal mutations and each positive/refusal outcome. A separate immutable
+supplement covers 1,920 copied-FILL execution states after releasing the unused
+source pointer and buffer. The original construction manifest remains unchanged.
+
+The baseline test initially fails because its manifest is absent. Adding one
+to the input-byte pattern passes all 160 REPEAT CPU comparisons but fails the
+construction hash in 2.82 seconds. Seeding a valid stale transcript and redirecting
+the producer to another file fails the fresh-output requirement in 3.03 seconds.
+Altering a frozen case hash fails manifest integrity in 0.03 seconds. Omitting
+FILL source release passes all 15,360 CPU comparisons and the original construction
+hash, then fails the supplemental execution-state hash in 3.61 seconds. Every
+temporary source and corpus mutation is restored before final checks.
+
+Each existing oracle test emits its transcript during its normal graph execution;
+the additional VT-40 test checks immutable manifest structure without executing
+the cases again. Manifests are cached once per process. Snapshot paths include
+the process ID, prior output is cleared before invocation, and successful
+temporary files are removed. Per-case hashes preserve migration diagnostics
+without committing the 249 MB of raw construction traces. A pinned-SDK experiment
+also compiles the existing certified arithmetic fixture root behind a thin C ABI
+adapter and passes six C++ queries. It provides a tested path for the upcoming
+recipe migration while keeping production backend APIs unchanged.
+
+Complete pinned-SDK `just vv` freshly verifies the Prism application with
+attestation `fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942`.
+Formatting, all 46 model IDs, typed-error/deferral checks and bootstrap checks pass.
+The source audit rejects 134-line growth against 3a08947: 11,083 to 11,217.
+No proof-event reuse or reduced acceptance boundary is used. The remaining
+template, SDK-lock, all-target/all-feature Clippy and dependency checks pass
+separately. The final workspace run passes five model unit tests, four BDD tests
+and 39 contract tests; VT-02 alone rejects the development dependency. The forty
+contract tests take 19.72 seconds, with no ignored or filtered tests. Timings
+include cache effects and are not controlled benchmarks.
+
+The original 10,549-line budget is still exceeded by 668. The instrumentation
+enables preservation during migration; the native recipes are not yet Prism
+generated. Source-budget recovery, complete imported operation/type/API coverage
+and production dependency closure remain open. Detailed evidence is in
+`verification/native-fixture-freeze-runtime.json` and its two frozen manifests.
