@@ -4658,3 +4658,12 @@ the vTensor processes loaded only the vTensor plugin.
 [F32 per-step results](verification/llama-stories15m-float-vt58.json) ·
 [Q4_0 per-step results](verification/llama-stories15m-vt58.json) ·
 [Per-node placement transcript](verification/llama-stories15m-vt58-placement.tsv.gz)
+
+## VT-57 complete checkpoint
+
+The complete locked-SDK `just vv` passed for VT-57 with the source at
+`e527c3c` and Verdant pinned to `53dfc67d4382c6d9b01eb04ae053ba6a9cd1c862`.
+All 63 backend contract tests passed, including the upstream rotary suite.
+The run covered the application proof, format, model, template, lint, workspace
+tests and dependency checks. The later dense attention implementation has its
+own scoped oracle and consumer results above.
