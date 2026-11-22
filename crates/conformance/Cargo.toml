@@ -25,6 +25,7 @@ vtensor_repeat_offset = { version = "0.1.0", path = "../../generated/pointwise/p
 verdant-tensor = { workspace = true }
 vtensor_layout = { version = "0.1.0", path = "../../generated/layout/packages/rust-core/vtensor_layout" }
 vtensor_types = { version = "0.1.0", path = "../../generated/layout/packages/rust-core/vtensor_types" }
+vtensor_buffer_region = { version = "=0.1.0", path = "../../generated/layout/packages/rust-core/vtensor_buffer_region" }
 vtensor_transfer = { version = "0.1.0", path = "../../generated/layout/packages/rust-core/vtensor_transfer" }
 vtensor_native_config = { version = "0.1.0", path = "../../generated/native/packages/rust-core/vtensor_native_config" }
 vtensor_native_predicates = { version = "0.1.0", path = "../../generated/native/packages/rust-core/vtensor_native_predicates" }

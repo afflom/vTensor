@@ -2651,9 +2651,11 @@ int main(int argc, char **argv) {
         input->nb[0]=bytes*(layout==2?2:1);input->nb[1]=input->nb[0]*width+bytes*layout;input->nb[2]=input->nb[3]=input->nb[1]*input->ne[1];
         indices->nb[0]=4*(layout+1);indices->nb[1]=indices->nb[2]=indices->nb[3]=indices->nb[0]*rows;
         ggml_tensor *result=ggml_get_rows_back(ctx,input,indices,shape);
-        auto oracle_input=input->nb[0]==bytes?input:canonical_copy(ctx,input);
-        if (bf16_gradient) oracle_input=ggml_cast(ctx,oracle_input,GGML_TYPE_F32);
-        auto oracle=ggml_get_rows_back(ctx,oracle_input,indices->nb[0]==4?indices:canonical_copy(ctx,indices),shape);
+        auto gradient_input=[&]() {
+          auto source=input->nb[0]==bytes?input:canonical_copy(ctx,input);
+          return bf16_gradient?ggml_cast(ctx,source,GGML_TYPE_F32):source;
+        };
+        auto oracle=ggml_get_rows_back(ctx,gradient_input(),indices->nb[0]==4?indices:canonical_copy(ctx,indices),shape);
         result->nb[0]=4*(layout+1);result->nb[1]=result->nb[0]*width+4*layout;result->nb[2]=result->nb[3]=result->nb[1]*output_rows;
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer || (!ggml_nbytes(input)&&!ggml_nbytes(indices)&&!ggml_nbytes(result)));
         std::vector<unsigned char> data(ggml_nbytes(input),0xA5), index_data(ggml_nbytes(indices),0xA5), initial(ggml_nbytes(result),0xA5);
