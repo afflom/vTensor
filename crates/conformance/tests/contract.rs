@@ -358,18 +358,13 @@ fn fixture_generation_vt_35() {
 #[test]
 fn arithmetic_fixture_generation_vt_36() {
     native_backend_oracle::fixture_input(1);
-    for query in [
-        (1, 120, 0, 0),
-        (1, 0, 0, 24),
-        (2, 0, 2, 0),
-        (3, 96, 1, 0),
-        (4, 0, 0, 0),
-    ] {
-        assert_eq!(
-            vtensor_arithmetic::run(query.0, query.1, query.2, query.3).unwrap(),
-            None
-        );
-    }
+    fixture_queries(&[
+        (1, 120, 0, 0, None),
+        (1, 0, 0, 24, None),
+        (2, 0, 2, 0, None),
+        (3, 96, 1, 0, None),
+        (4, 0, 0, 0, None),
+    ]);
 }
 
 /// `VT-40`: Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
@@ -402,64 +397,73 @@ fn native_fixture_baselines_vt_40() {
     }
 }
 
+fn fixture_queries(cases: &[(u64, u64, u64, u64, Option<u64>)]) {
+    for &(query, case, source, item, expected) in cases {
+        assert_eq!(
+            vtensor_arithmetic::run(query, case, source, item).unwrap(),
+            expected
+        );
+    }
+    tensor_layout::verify_arithmetic_bundle();
+}
+
 /// `VT-41`: Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results
 #[test]
 fn copy_fixture_generation_vt_41() {
-    tensor_layout::verify_arithmetic_bundle();
-    assert_eq!(vtensor_arithmetic::run(5, 0, 0, 0).unwrap(), Some(3456));
-    for request in [
-        (5, 0, 0, 5),
-        (5, 1, 0, 0),
-        (6, 3456, 0, 0),
-        (6, 0, 0, 9),
-        (7, 0, 2, 0),
-        (7, 0, 0, 10),
-        (8, 0, 0, 256),
-        (9, 215, 8, 0),
-        (10, 0, 0, 0),
-        (u64::MAX, u64::MAX, u64::MAX, u64::MAX),
-    ] {
-        assert_eq!(
-            vtensor_arithmetic::run(request.0, request.1, request.2, request.3).unwrap(),
-            None
-        );
-    }
+    fixture_queries(&[
+        (5, 0, 0, 0, Some(3456)),
+        (5, 0, 0, 5, None),
+        (5, 1, 0, 0, None),
+        (6, 3456, 0, 0, None),
+        (6, 0, 0, 9, None),
+        (7, 0, 2, 0, None),
+        (7, 0, 0, 10, None),
+        (8, 0, 0, 256, None),
+        (9, 215, 8, 0, None),
+        (10, 0, 0, 0, None),
+        (u64::MAX, u64::MAX, u64::MAX, u64::MAX, None),
+    ]);
 }
 
 /// `VT-42`: Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results
 #[test]
 fn repeat_fixture_generation_vt_42() {
-    tensor_layout::verify_arithmetic_bundle();
-    assert_eq!(vtensor_arithmetic::run(11, 0, 0, 0).unwrap(), Some(160));
-    for request in [
-        (12, 160, 0, 0),
-        (13, 0, 4, 0),
-        (14, 0, 0, 256),
-        (16, 0, 0, 0),
-    ] {
-        assert_eq!(
-            vtensor_arithmetic::run(request.0, request.1, request.2, request.3).unwrap(),
-            None
-        );
-    }
+    fixture_queries(&[
+        (11, 0, 0, 0, Some(160)),
+        (12, 160, 0, 0, None),
+        (13, 0, 4, 0, None),
+        (14, 0, 0, 256, None),
+        (16, 0, 0, 0, None),
+    ]);
 }
 
 /// `VT-43`: Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results
 #[test]
 fn concat_fixture_generation_vt_43() {
-    assert_eq!(vtensor_arithmetic::run(17, 0, 0, 0).unwrap(), Some(10368));
-    tensor_layout::verify_arithmetic_bundle();
-    for request in [
-        (18, 10368, 0, 0),
-        (19, 0, 4, 0),
-        (20, 0, 2, 0),
-        (23, 0, 0, 0),
-    ] {
-        assert_eq!(
-            vtensor_arithmetic::run(request.0, request.1, request.2, request.3).unwrap(),
-            None
-        );
-    }
+    fixture_queries(&[
+        (17, 0, 0, 0, Some(10368)),
+        (18, 10368, 0, 0, None),
+        (19, 0, 4, 0, None),
+        (20, 0, 2, 0, None),
+        (23, 0, 0, 0, None),
+    ]);
+}
+
+/// `VT-44`: Prism generates FILL and CAST fixture enumeration typed layouts constants and initial bytes while preserving all 17280 frozen cases source release states and independent GGML CPU expected results
+#[test]
+fn typed_fixture_generation_vt_44() {
+    fixture_queries(&[
+        (24, 0, 0, 0, Some(15360)),
+        (31, 0, 0, 0, Some(1920)),
+        (25, 15360, 0, 0, None),
+        (32, 1920, 0, 0, None),
+        (26, 0, 2, 0, None),
+        (33, 0, 2, 0, None),
+        (27, 0, 1, 0, None),
+        (34, 0, 0, 192, None),
+        (30, 0, 0, 0, None),
+        (37, 0, 0, 0, None),
+    ]);
 }
 
 mod ggml_oracle {
@@ -2039,7 +2043,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         }
         let mut command = Command::new(&program);
         command.arg(&library).arg(&expected_snapshot).arg(mode);
-        if matches!(mode, "copy" | "repeat" | "concat") {
+        if matches!(mode, "copy" | "repeat" | "concat" | "fill" | "cast") {
             command.arg(fixture_library(common));
         }
         let text = super::ggml_oracle::batch(&mut command, &input);
@@ -2629,14 +2633,13 @@ int main(int argc, char **argv) {
       std::ofstream released;
       if(filling) {released.open(std::string(argv[2])+".fill-source-release",std::ios::binary);CHECK(released);recipe_trace=&released;recipe_word(1);recipe_trace=&trace;}
       static const int window_sizes[]={1,2,4};
-      static const ggml_type float_types[]={GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16};
       static const uint32_t fill_words[]={0,0x80000000,0x3f800000,0xbf800000,0x7f800000,0xff800000,
         0x7fc00001,0x7f800001,0xff800001,1,0x80000001,0x00800000,0x7f7fffff,0xff7fffff,
         0x33800000,0x33000000,0x33000001,0x32ffffff,0x3f801000,0x3f803000,0x477fe000,0x477ff000,0x477fefff,0x38800000};
       size_t cases=0, refused=0, source_releases=0; int kind;
       const bool copying=!strcmp(argv[3],"copy");
-      const bool modeled=copying || repeating || concatenating;
-      const uint64_t fixture_base=copying?5:repeating?11:17;
+      const bool modeled=copying || repeating || concatenating || filling || casting;
+      const uint64_t fixture_base=copying?5:repeating?11:concatenating?17:filling?24:31;
       struct FixtureAnswer {uint64_t status,value;};
       static_assert(sizeof(FixtureAnswer)==16 && offsetof(FixtureAnswer,value)==8);
       using FixtureQuery=FixtureAnswer(*)(uint64_t,uint64_t,uint64_t,uint64_t);
@@ -2646,18 +2649,18 @@ int main(int argc, char **argv) {
       uint64_t config[5]={};
       std::vector<uint64_t> fixture_plan;
       std::vector<std::vector<unsigned char>> patterns;
-      if(modeled) {for(uint64_t i=0;i<5;++i)config[i]=fixture(0,0,0,i);CHECK(query(10,0,0,0).status==0 && query(fixture_base+1,config[0],0,0).status==0);fixture_plan.resize(config[1]);CHECK(fixture_plan.size()==9);patterns.resize(config[2]);}
+      if(modeled) {for(uint64_t i=0;i<5;++i)config[i]=fixture(0,0,0,i);CHECK(query(10,0,0,0).status==0 && query(fixture_base+1,config[0],0,0).status==0);fixture_plan.resize(config[1]);CHECK(fixture_plan.size()==size_t(filling || casting?10:9));patterns.resize(config[2]);}
       auto exercise=[&](int kind,int operation,int pattern,int layout,int units,int rows,int batches)->int {
         if(relative && ((kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || (pattern && units!=1))) return 0;
-        if((casting && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || (filling && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16) || ((diagonal || triangular || wordwise) && !selecting && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || ((spatial || folding || windowing || scanning) && kind!=GGML_TYPE_F32)) return 0;
+        if(((diagonal || triangular || wordwise) && !selecting && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || ((spatial || folding || windowing || scanning) && kind!=GGML_TYPE_F32)) return 0;
         if(reducing && operation && kind!=GGML_TYPE_F32) return 0;
         if(selecting && (kind!=(operation?GGML_TYPE_I32:GGML_TYPE_F32) || (!operation && pattern>=16))) return 0;
         if(((selecting && pattern>=14) || (reducing && pattern>=10) || (scanning && pattern>=8) || (transforming && pattern>=24) || (unarying && pattern)) && (units!=1 || rows!=1 || batches!=1)) return 0;
         ggml_init_params params={8*1024*1024,nullptr,true}; ggml_context *ctx=ggml_init(params); CHECK(ctx);
         const auto type=(ggml_type)kind; const int64_t block=ggml_blck_size(type); const size_t bytes=ggml_type_size(type);
-        const ggml_type output_type=relative?GGML_TYPE_F16:selecting?(operation?GGML_TYPE_I64:GGML_TYPE_I32):casting?float_types[operation%3]:(unarying && operation%3==2)?GGML_TYPE_F32:type;
+        const ggml_type output_type=relative?GGML_TYPE_F16:selecting?(operation?GGML_TYPE_I64:GGML_TYPE_I32):casting?(ggml_type)fixture_plan[9]:(unarying && operation%3==2)?GGML_TYPE_F32:type;
         const size_t output_bytes=ggml_type_size(output_type);
-        if((casting && type==output_type) || (unarying && operation%3==2 && type==GGML_TYPE_F32)) return 0;
+        if(unarying && operation%3==2 && type==GGML_TYPE_F32) return 0;
         const int window_case=windowing?pattern%(operation?10:4):0;
         const int window_size=windowing?window_sizes[pattern/(operation?10:4)]:1;
         const int image_width=window_case==2?0:rows, image_height=window_case==3?0:batches;
@@ -2677,8 +2680,7 @@ int main(int argc, char **argv) {
             if(window_case>=8) {int last=0;for(int y=0;y<image_height;y++) for(int x=0;x<image_width;x++) last=std::max(last,(y/window_size)*((image_width+window_size-1)/window_size)+x/window_size+y%window_size+x%window_size);shape[3]=last+1-(window_case==9);}
           }
         }
-        if(filling && pattern%5) shape[pattern%5-1]=0;
-        if((casting || unarying) && pattern) shape[pattern-1]=0;
+        if(unarying && pattern) shape[pattern-1]=0;
         if(transforming && pattern>=24) shape[pattern-24]=0;
         if(scanning && pattern>=8) shape[pattern-8]=0;
         if(reducing && pattern>=10) shape[pattern-10]=0;
@@ -2687,7 +2689,7 @@ int main(int argc, char **argv) {
         if(diagonal) {shape[1]=1;shape[2]=rows;if(pattern)shape[pattern==1?0:pattern]=0;}
         if(folding) for(int axis=0;axis<4;axis++) shape[axis]=(pattern==16 && axis==0) || (pattern>=17 && axis==pattern-17)?0:shape[axis]*((pattern&(1<<axis))?2:1);
         ggml_tensor *input=ggml_new_tensor(ctx,type,4,shape);
-        const uint32_t word=(filling || transforming)?fill_words[transforming?std::min(pattern,23):pattern/5]:0; float constant; memcpy(&constant,&word,4);
+        const uint32_t word=filling?fixture_plan[9]:transforming?fill_words[std::min(pattern,23)]:0; float constant; memcpy(&constant,&word,4);
         const uint32_t bias_word=fill_words[((transforming?std::min(pattern,23):pattern/5)*7+3)%24];float bias;memcpy(&bias,&bias_word,4);
         const bool inplace=(filling && operation) || (transforming && operation%2) || (unarying && operation%3==1);
         auto word_operation = [&](ggml_tensor *a, bool inplace) {
@@ -2743,7 +2745,7 @@ int main(int argc, char **argv) {
         if(inplace) memcpy(result->nb,input->nb,sizeof input->nb);
         if((scanning || reducing || selecting) && layout==3) for(int axis=0;axis<4;axis++) result->nb[axis]*=2;
         ggml_tensor *expected_tensor=relative?ggml_get_rel_pos(ctx,canonical_copy(ctx,input),rows,rows):selecting?(operation?ggml_count_equal(ctx,(ggml_is_matrix(input) || pattern==9)?input:ggml_cont_2d(ctx,input,input->ne[0],ggml_nrows(input)),(ggml_is_matrix(input) || pattern==9)?right:ggml_cont_2d(ctx,right,right->ne[0],ggml_nrows(right))):ggml_argmax(ctx,input->nb[0]==sizeof(float)?input:canonical_copy(ctx,input))):wordwise?word_operation(reducing && !operation && type==GGML_TYPE_F32?input:canonical_copy(ctx,input),false):windowing?(operation?ggml_win_unpart(ctx,canonical_copy(ctx,input),image_width,image_height,window_size):ggml_win_part(ctx,canonical_copy(ctx,input),window_size)):casting?ggml_cast(ctx,canonical_copy(ctx,input),output_type):filling?ggml_fill(ctx,canonical_copy(ctx,input),constant):triangular?ggml_tri(ctx,canonical_copy(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,canonical_copy(ctx,input)):folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
-        if(repeating || concatenating) {for(int axis=0;axis<4;++axis)result->nb[axis]=fixture(2,cases,3,axis+4);}
+        if(modeled && !copying) {for(int axis=0;axis<4;++axis)result->nb[axis]=fixture(2,cases,3,axis+4);}
         else if(relative || spatial || folding || diagonal || triangular || (filling && !operation) || (casting && operation<3) || windowing || (wordwise && !inplace)) {result->nb[1]+=output_bytes;result->nb[2]=result->nb[1]*result->ne[1]+output_bytes;result->nb[3]=result->nb[2]*result->ne[2]+output_bytes;}
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer || (!ggml_nbytes(input)&&(!right||!ggml_nbytes(right))&&!ggml_nbytes(result)));
         std::vector<unsigned char> output(ggml_nbytes(result),modeled?config[4]:0xA5);
@@ -2756,7 +2758,7 @@ int main(int argc, char **argv) {
             const auto chunks=fixture(chunk_query,cases,0,0);
             for(uint64_t i=1;i<=chunks;++i) {auto offset=fixture(chunk_query,cases,i,0),length=fixture(chunk_query,cases,i,1);CHECK(length<=pattern.size() && offset<=initial.size() && length<=initial.size()-offset);std::copy_n(pattern.begin(),length,initial.begin()+offset);}
           }
-          else if(casting || wordwise || relative) for(size_t i=0;i<((reducing || selecting)?size_t(ggml_nelements(operand)):initial.size()/bytes);i++) {
+          else if(wordwise || relative) for(size_t i=0;i<((reducing || selecting)?size_t(ggml_nelements(operand)):initial.size()/bytes);i++) {
             size_t ordinal=i, at=i*bytes;
             if(reducing || selecting) {at=0;for(int axis=0;axis<4;axis++){at+=(ordinal%operand->ne[axis])*operand->nb[axis];ordinal/=operand->ne[axis];}}
             static const uint16_t small[]={0,0x8000,0x3c00,0x3f80,0xbc00,0xbf80,0x7c00,0x7f80,0xfc00,0xff80,0x7e00,0x7fc0,0x7c01,0x7f81,0xfe01,0xff81,1,0x8001,0x03ff,0x007f,0x0400,0x0080,0x7bff,0x7f7f};
@@ -2839,13 +2841,13 @@ int main(int argc, char **argv) {
       };
       if(modeled) {
         const auto count=config[0];
-        for(uint64_t ordinal=0;ordinal<count;++ordinal) {CHECK(cases==ordinal);for(size_t field=0;field<fixture_plan.size();++field) {fixture_plan[field]=fixture(1,ordinal,0,field);CHECK(fixture_plan[field]<=std::numeric_limits<int>::max());}CHECK(exercise(fixture_plan[0],fixture_plan[1],fixture_plan[2],fixture_plan[3],fixture_plan[4],fixture_plan[5],fixture_plan[6])==0);}
+        for(uint64_t ordinal=0;ordinal<count;++ordinal) {CHECK(cases==ordinal);for(size_t field=0;field<fixture_plan.size();++field) {fixture_plan[field]=fixture(1,ordinal,0,field);CHECK(fixture_plan[field]<=uint64_t(field<7?std::numeric_limits<int>::max():UINT32_MAX));}CHECK(exercise(fixture_plan[0],fixture_plan[1],fixture_plan[2],fixture_plan[3],fixture_plan[4],fixture_plan[5],fixture_plan[6])==0);}
       } else {
-      while (scanf("%d",&kind)==1) for(int operation=0;operation<(relative?1:selecting?2:reducing?3:scanning?1:unarying?39:transforming?8:windowing?2:casting?6:filling?2:triangular?4:(folding || diagonal || triangular || filling || casting || windowing)?1:3);operation++) {
+      while (scanf("%d",&kind)==1) for(int operation=0;operation<(relative?1:selecting?2:reducing?3:scanning?1:unarying?39:transforming?8:windowing?2:triangular?4:(folding || diagonal || triangular || windowing)?1:3);operation++) {
       const std::vector<int> extents=relative?std::vector<int>{1,3,17}:(spatial && operation==0)?std::vector<int>{0,1,3}:windowing?std::vector<int>{1,3,5}:spatial?std::vector<int>{2,3}:(reducing || selecting)?std::vector<int>{1,2,3,17,65}:scanning?std::vector<int>{1,3,17,65}:std::vector<int>{1,3};
       const auto row_extents=relative?std::vector<int>{1,3,7}:(scanning || reducing || selecting)?std::vector<int>{1,3}:extents;
       const std::vector<int> batches_list=(spatial && operation==2)?std::vector<int>{2,3}:std::vector<int>{1,2};
-      for(int pattern=0;pattern<(relative?2:selecting?18:reducing?14:scanning?12:unarying?5:transforming?28:windowing?(operation?30:12):casting?5:filling?120:triangular?5:diagonal?4:folding?21:spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
+      for(int pattern=0;pattern<(relative?2:selecting?18:reducing?14:scanning?12:unarying?5:transforming?28:windowing?(operation?30:12):triangular?5:diagonal?4:folding?21:spatial?(operation==0?22:operation==1?4:17):1);pattern++) for(int layout=0;layout<4;layout++)
       for(int units : extents) for(int rows : row_extents) for(int batches : batches_list) {
         CHECK(exercise(kind,operation,pattern,layout,units,rows,batches)==0);
       }

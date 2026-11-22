@@ -47,3 +47,11 @@ Feature: Certified graph fixtures
     Then every construction alias input and refusal record remains byte identical
     And the unchanged CPU oracle computes every expected result
     And invalid recipe requests and swapped operand recipes are rejected
+
+  @VT-44 @build
+  Scenario: Prism generates FILL and CAST fixture enumeration typed layouts constants and initial bytes while preserving all 17280 frozen cases source release states and independent GGML CPU expected results
+    Given all frozen copied and in-place FILL cases and CAST destination variants
+    When Prism supplies enumeration typed operands outputs constants and physical input bytes
+    Then construction aliases padding empty axes and source release states remain byte identical
+    And the unchanged CPU oracle computes every expected numerical result
+    And invalid queries and altered typed recipe bindings are rejected
