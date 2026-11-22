@@ -3393,10 +3393,14 @@ or filtered tests. Five model unit tests and all four BDD meta-tests pass.
 All-target/all-feature Clippy, formatting and dependencies pass. Timings are
 observations, not controlled benchmarks.
 
-The complete pinned-SDK just vv remains pending at this checkpoint. Current
-source is 11,084 lines: 112 above the previous component checkpoint and 535 above
-the original accepted 10,549. The observed audit rejects growth; no ceiling is
-raised. Production dependency closure and all remaining imported operation/API
+The complete pinned-SDK just vv passes full Prism application verification
+with attestation fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942
+and formatting, then rejects the 112-line source increase against 755dc29.
+It exits 1 before the later stages. Separate current-source workspace, Clippy,
+and dependency checks are recorded above; separate template and canonical SDK
+lock checks also pass.
+No proof-event reuse or reduced gate is used. Current source is 11,084 lines,
+535 above the original accepted 10,549, and no ceiling is raised. Production dependency closure and all remaining imported operation/API
 coverage remain open. Detailed source-bound evidence is recorded in
 verification/relative-position-add-runtime.json and the signed authoring and
 imported build manifests beside it.

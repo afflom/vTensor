@@ -1,7 +1,7 @@
 {
   "spec": "vtensor/relative-position-add-runtime/1",
   "id": "VT-39",
-  "status": "implemented-and-scoped-and-workspace-verified-full-gate-not-yet-run",
+  "status": "implemented-and-model-and-oracle-verified-full-gate-refuses-source-growth",
   "authority": {
     "repository": "https://github.com/ggml-org/llama.cpp",
     "commit": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
@@ -124,8 +124,20 @@
     "format": "passed, generated Rust excluded",
     "dependencies": "all-feature check passed after updating only the exact generated-source license clarification hash reported by cargo-deny",
     "model_consistency_errors_deferral_bootstrap": "passed",
-    "full_just_vv": "pending",
-    "unchanged": "Native production adapter, repeat-offset Rust and all 24 imported Verdant generated libraries unchanged. No generated Rust manually edited or formatted."
+    "full_just_vv": {
+      "command": "just vv",
+      "exit_code": 1,
+      "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+      "app": "passed full Prism application verification",
+      "app_attestation_id": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+      "format": "passed",
+      "model_consistency_typed_errors_deferral_bootstrap_sdk_ownership": "passed",
+      "refusal": "Source audit rejects 112-line growth against 755dc29: 10972 to 11084. Original 10549-line budget remains exceeded by 535.",
+      "remaining_stages": "Not reached after model/source failure; current-source workspace, Clippy, dependency and template checks are separate evidence.",
+      "proof_reuse": "No proof-event reuse or reduced gate."
+    },
+    "unchanged": "Native production adapter, repeat-offset Rust and all 24 imported Verdant generated libraries unchanged. No generated Rust manually edited or formatted.",
+    "template_and_sdk_lock": "Separate exact-SDK template contract and canonical SDK lock checks passed after the full gate stopped at source growth."
   },
   "source_budget": {
     "current": 11084,
@@ -137,7 +149,7 @@
     "observed_registration_audit": "Rejected 128 lines growth against parent 9609af9 (10956 to 11084)."
   },
   "remaining": [
-    "Complete pinned-SDK just vv still required for this checkpoint.",
+    "The complete gate refuses source growth; the original accepted budget is still exceeded by 535 lines.",
     "Production dependency closure, original source budget and remaining imported operation/API coverage remain open."
   ],
   "logs": {
@@ -184,6 +196,14 @@
     "export": {
       "path": "/tmp/vtensor-relative-add-export.log",
       "sha256": "08676c504967adaedab5c67228e2688f418c6dc6b48afef39c5947dec1375309"
+    },
+    "full_gate": {
+      "path": "/tmp/vtensor-relative-add-vv.log",
+      "sha256": "865f8a4e5b5452e0c79dae535e4733dc80e8e1a7056750ccd7ddbeaa67e21188"
+    },
+    "template_and_sdk_lock": {
+      "path": "/tmp/vtensor-relative-add-template.log",
+      "sha256": "45622158f0fc2b926015f0c597a57c0567a6819309c1c471fbe52035740a5206"
     }
   }
 }

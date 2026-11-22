@@ -188,6 +188,17 @@ reference builds are keyed by source, compiler, SDK, architecture and normalized
 build implementation; cached bytes are checked and behavior is always rerun.
 Run workspace checks after a coherent batch and the full gate at acceptance.
 
+The next source-budget reduction should move constructor and operand recipes
+into Prism. Freeze each existing corpus before migration and require identical
+construction and input transcripts afterward. Reuse the shared imported
+constructor/evaluator bridge; retain direct CPU comparisons for IEEE cases
+that the upstream evaluator rejects. Preserve padding, alias, refusal and
+corruption probes while removing duplicated host fixture logic.
+
+Before each operation family, audit its public constructors, parameter flags
+and CPU implementation. Factory coverage alone is insufficient: L2 omitted an
+in-place constructor, and ADD_REL_POS had no factory cases at all.
+
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:
 
