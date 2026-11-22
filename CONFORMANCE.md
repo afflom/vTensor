@@ -195,6 +195,7 @@ model does not sanction.
 | `VT-30` | `build` | Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs |
 | `VT-31` | `build` | Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals |
 | `VT-32` | `build` | Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals |
+| `VT-55` | `build` | Prism plans SET_ROWS for F32 and F16 sources with F32 F16 or BF16 destinations and Verdant executes indexed writes against the imported GGML CPU |
 
 ## scan-graphs
 

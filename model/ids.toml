@@ -394,3 +394,9 @@ id = "VT-54"
 level = "build"
 suite = "matrix-graphs"
 statement = "Prism admits Q4_0 by F32 GGML matrix graphs and Verdant executes their block products against the imported GGML CPU"
+
+[[id]]
+id = "VT-55"
+level = "build"
+suite = "row-graphs"
+statement = "Prism plans SET_ROWS for F32 and F16 sources with F32 F16 or BF16 destinations and Verdant executes indexed writes against the imported GGML CPU"

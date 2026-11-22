@@ -166,6 +166,13 @@ fn scheduled_compute_flags_vt_52() {
     native_backend_oracle::verify(&root(), "scheduled-flags", 3);
 }
 
+/// `VT-55`: Indexed scalar row writes match the independent CPU.
+#[test]
+fn scalar_set_rows_vt_55() {
+    tensor_layout::certified_current_model(&root(), "typed");
+    native_backend_oracle::verify(&root(), "upstream-SET_ROWS_SCALAR", 126);
+}
+
 /// `VT-53`: The upstream factory evaluates all Q8_0 by F32 matrix cases.
 #[test]
 fn symmetric_matrix_graphs_vt_53() {
@@ -2207,6 +2214,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let text = super::ggml_oracle::batch(&mut command, &input);
         let footer = format!("RESULT cases {expected_cases}\n");
         let transcript = match mode {
+            "upstream-SET_ROWS_SCALAR" => {
+                Some("cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595")
+            }
             "upstream-MUL_MAT_Q8_0_F32" => {
                 Some("98ccc36df39f889744f83d3afec15c00e033031c5220e564565b54f30332eddd")
             }
@@ -2216,13 +2226,11 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             _ => None,
         };
         if let Some(digest) = transcript {
-            let rows = text
-                .strip_suffix(&footer)
-                .expect("complete matrix factory count");
+            let rows = text.strip_suffix(&footer).expect("complete factory count");
             assert_eq!(
                 repo_model::artifact::sha256_hex(rows.as_bytes()),
                 digest,
-                "matrix factory ordinals or parameters differ from the pinned transcript"
+                "factory ordinals or parameters differ from the pinned transcript"
             );
         } else {
             assert_eq!(text, footer);
@@ -2281,16 +2289,24 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     const ggml_type weight_type = !std::strcmp(op, "MUL_MAT_Q8_0_F32") ? GGML_TYPE_Q8_0 :
                                   !std::strcmp(op, "MUL_MAT_Q4_0_F32") ? GGML_TYPE_Q4_0 : GGML_TYPE_COUNT;
     const bool matrix_group = weight_type != GGML_TYPE_COUNT;
+    const bool set_rows = !std::strcmp(op, "SET_ROWS_SCALAR");
+    const char *label = set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
     for(auto &test:make_test_cases_eval()) {
       const auto id = ordinal++;
       if (matrix_group) {
         const auto *matrix = dynamic_cast<const test_mul_mat *>(test.get());
         if (!matrix || matrix->type_a != weight_type || matrix->type_b != GGML_TYPE_F32) continue;
       }
-      const auto status=test->eval(backend,reference,matrix_group ? "MUL_MAT" : op,&observed);
+      if (set_rows) {
+        const auto *row = dynamic_cast<const test_set_rows *>(test.get());
+        if (!row || (row->type_src != GGML_TYPE_F32 && row->type_src != GGML_TYPE_F16) ||
+            (row->type_dst != GGML_TYPE_F32 && row->type_dst != GGML_TYPE_F16 && row->type_dst != GGML_TYPE_BF16) ||
+            (row->type_idx != GGML_TYPE_I32 && row->type_idx != GGML_TYPE_I64)) continue;
+      }
+      const auto status=test->eval(backend,reference,label,&observed);
       if(status==test_status_t::SKIPPED) continue;
       if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
-      if(matrix_group) std::printf("CASE\t%zu\tMUL_MAT\t%s\n",id,test->vars().c_str());
+      if(matrix_group || set_rows) std::printf("CASE\t%zu\t%s\t%s\n",id,label,test->vars().c_str());
       ++cases;
     }
     return observed.records==cases ? cases : SIZE_MAX;

@@ -19,3 +19,10 @@ Feature: GGML selection and equality row graphs
     When Prism admits every indexed address and orders Verdant block decoding and source-word transfers
     Then gathered logical words match the imported GGML CPU and output padding remains unchanged
     And empty tensors need no buffers and every invalid index is refused before any output write
+
+  @VT-55 @build
+  Scenario: Prism plans SET_ROWS for F32 and F16 sources with F32 F16 or BF16 destinations and Verdant executes indexed writes against the imported GGML CPU
+    Given a GGML destination view and I32 or I64 row indices
+    When the factory executes indexed writes across all matching constructors
+    Then the updated rows and preserved destination values match the independent CPU
+    And an invalid index fails before any destination write
