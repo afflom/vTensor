@@ -1,0 +1,61 @@
+{
+  "spec": "vtensor/rms-normalization-authoring/1",
+  "status": "registered-initial-oracle-test-fails",
+  "operation_implemented": false,
+  "capability": "VT-46",
+  "prerequisite_commit": "70d1bc5",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "authority_files": [
+    "ggml/src/ggml.c",
+    "ggml/src/ggml-cpu/ops.cpp",
+    "tests/test-backend-ops.cpp"
+  ],
+  "constructors": [
+    "ggml_rms_norm",
+    "ggml_rms_norm_inplace"
+  ],
+  "cpu_types": [
+    "F32",
+    "BF16"
+  ],
+  "arithmetic_order": [
+    "Convert BF16 source to F32 where applicable.",
+    "Square each input in F32.",
+    "Accumulate squared words in F64.",
+    "Convert row count to F64 and divide the F64 sum.",
+    "Narrow mean to F32, add epsilon, apply sqrtf and reciprocal.",
+    "Require scale > 0 as the CPU implementation asserts.",
+    "Multiply in F32 and convert output back to BF16 where applicable."
+  ],
+  "initial_test": {
+    "command": "cargo test --locked -p vtensor-backend --test contract rms_normalization_vt_46 -- --nocapture",
+    "exit_code": 101,
+    "seconds": 2.07,
+    "diagnostic": "imported case rejected: RMS_NORM(type=f32,ne=[64,5,4,3],v=0,eps=0.000000,inplace=0): not supported",
+    "expected_factory_count_in_test": 121,
+    "full_factory_count_not_yet_confirmed": true,
+    "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3"
+  },
+  "implementation_plan": [
+    "Define scratch counts, instruction phases, row layout admission and numeric scale admission in Prism.",
+    "Append a CopyMode carrying the model-computed scratch allocation; retain the existing three stack words for legacy modes.",
+    "Use the certified Verdant F64 division/count primitives through new model-defined instruction codes.",
+    "Preflight and cache all row factors before output writes; never recompute the sums as a validation pass.",
+    "Use a cheap sufficient row-disjointness check for normal and permuted nested layouts; investigate an exact scratch-occupancy preflight for other aligned strided output layouts.",
+    "Validate the complete imported factory plus supplemental copied/in-place, stride, empty, rounding and atomic-refusal cases.",
+    "Plant numeric-order and later-row atomicity defects, recover source growth, and run the coherent acceptance gate."
+  ],
+  "audit_cautions": [
+    "RMS_NORM_BACK explicitly narrows its accumulator at a different point; audit and implement it separately.",
+    "Positive infinity epsilon and non-finite inputs can yield a zero or NaN scale and trigger the CPU assertion.",
+    "Zero sum with zero epsilon gives positive infinity scale; this passes the CPU scale assertion.",
+    "Caching factors assumes output writes cannot alter later source rows; handle internal row overlap explicitly.",
+    "Audit empty-tensor graph skipping rather than assuming the scalar row kernel defines every empty case."
+  ],
+  "claims_not_made": [
+    "Complete RMS_NORM conformance",
+    "Production dependency release",
+    "Recovery of the original source budget"
+  ]
+}

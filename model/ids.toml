@@ -340,3 +340,9 @@ id = "VT-45"
 level = "build"
 suite = "normalization-graphs"
 statement = "Verdant supplies certified F64 division and unsigned count to F64 conversion for normalization and preserves the imported GGML accumulator division before narrowing regression"
+
+[[id]]
+id = "VT-46"
+level = "build"
+suite = "normalization-graphs"
+statement = "Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals"

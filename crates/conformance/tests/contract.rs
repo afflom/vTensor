@@ -486,6 +486,13 @@ fn normalization_arithmetic_vt_45() {
     assert_eq!(evaluate_wide(6, 0, 0).unwrap(), None);
 }
 
+/// `VT-46`: Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals
+#[test]
+fn rms_normalization_vt_46() {
+    tensor_layout::verify_pointwise_bundle();
+    native_backend_oracle::verify(&root(), "upstream-RMS_NORM", 121);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};

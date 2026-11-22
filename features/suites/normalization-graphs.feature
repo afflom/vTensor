@@ -16,3 +16,12 @@ Feature: normalization-graphs
     And copied and in-place constructors match the actual CPU across contiguous and padded layouts
     And invalid epsilon type shape and unsafe alias metadata are refused before any output write
     And altered numeric and state bindings are rejected
+
+  @VT-46 @build
+  Scenario: Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals
+    Given the pinned unchanged upstream RMS_NORM constructors test factory and CPU reference backend
+    When vTensor executes F32 and BF16 copied and in-place graphs through certified Prism instructions and Verdant arithmetic
+    Then every imported ordinary RMS_NORM case passes without unsupported or omitted cases
+    And F64 accumulation is divided before narrowing the mean to F32
+    And all row scales are validated before any output write
+    And invalid parameters layouts aliases and numeric rows are typed atomic refusals
