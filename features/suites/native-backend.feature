@@ -43,4 +43,10 @@ Feature: native-backend
   Scenario: GGML matrix products with F16 and BF16 operands honor the input dot-product storage and match the imported CPU across six scalar type pairs
     Given the pinned GGML matrix factory and reference CPU
     When vTensor executes dense and permuted matrix products with the six F16 or BF16 operand pairs
-    Then all ten representative graphs match the reference
+    Then all ten representative graphs and the high-range F32 case match the reference
+
+  @VT-65 @build
+  Scenario: GGML Q2_K matrix products use Verdant grouped activation blocks and match the imported CPU in standalone and row-gather graphs
+    Given the pinned GGML Q2_K matrix factory and row-gather-after-product graph
+    When vTensor executes each graph on its own device
+    Then all 55 matrix cases and the composed ADD case match the upstream CPU

@@ -448,3 +448,9 @@ id = "VT-64"
 level = "build"
 suite = "native-backend"
 statement = "GGML matrix products with F16 and BF16 operands honor the input dot-product storage and match the imported CPU across six scalar type pairs"
+
+[[id]]
+id = "VT-65"
+level = "build"
+suite = "native-backend"
+statement = "GGML Q2_K matrix products use Verdant grouped activation blocks and match the imported CPU in standalone and row-gather graphs"

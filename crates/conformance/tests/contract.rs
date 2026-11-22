@@ -161,6 +161,9 @@ ggml_batches! {
     /// `VT-54`: The upstream factory evaluates all Q4_0 by F32 matrix cases.
     #[test]
     fn packed_matrix_graphs_vt_54() { "upstream-MUL_MAT_Q4_0_F32", 122, ["matrix"] }
+    /// The original GGML graphs exercise grouped Q2_K products with contiguous and viewed weights.
+    #[test]
+    fn grouped_matrix_graphs_vt_65() { "upstream-MUL_MAT_Q2_K_F32", 56, ["matrix"] }
     /// `VT-55`: Indexed scalar row writes match the independent CPU.
     #[test]
     fn scalar_set_rows_vt_55() { "upstream-SET_ROWS_SCALAR", 126, ["typed"] }
@@ -2063,7 +2066,8 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     vtensor_observation observed;size_t cases=0;
     size_t ordinal = 0;
     const ggml_type weight_type = !std::strcmp(op, "MUL_MAT_Q8_0_F32") ? GGML_TYPE_Q8_0 :
-                                  !std::strcmp(op, "MUL_MAT_Q4_0_F32") ? GGML_TYPE_Q4_0 : GGML_TYPE_COUNT;
+                                  !std::strcmp(op, "MUL_MAT_Q4_0_F32") ? GGML_TYPE_Q4_0 :
+                                  !std::strcmp(op, "MUL_MAT_Q2_K_F32") ? GGML_TYPE_Q2_K : GGML_TYPE_COUNT;
     const bool matrix_group = weight_type != GGML_TYPE_COUNT;
     const bool set_rows = !std::strcmp(op, "SET_ROWS_SCALAR");
     // Keep the ordinal selections tied to the imported make_test_cases_eval order.
@@ -2075,7 +2079,8 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for(auto &test:make_test_cases_eval()) {
       const auto id = ordinal++;
       if (!selected.empty() && std::find(selected.begin(),selected.end(),id)==selected.end()) continue;
-      if (matrix_group) {
+      const bool gathered_product = weight_type == GGML_TYPE_Q2_K && id == 809;
+      if (matrix_group && !gathered_product) {
         const auto *matrix = dynamic_cast<const test_mul_mat *>(test.get());
         if (!matrix || matrix->type_a != weight_type || matrix->type_b != GGML_TYPE_F32) continue;
       }
@@ -2085,10 +2090,11 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
             (row->type_dst != GGML_TYPE_F32 && row->type_dst != GGML_TYPE_F16 && row->type_dst != GGML_TYPE_BF16) ||
             (row->type_idx != GGML_TYPE_I32 && row->type_idx != GGML_TYPE_I64)) continue;
       }
-      const auto status=test->eval(backend,reference,label,&observed);
+      const char *case_label = gathered_product ? "ADD" : label;
+      const auto status=test->eval(backend,reference,case_label,&observed);
       if(status==test_status_t::SKIPPED) continue;
       if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
-      if(matrix_group || set_rows || !std::strcmp(op, "SWIGLU")) std::printf("CASE\t%zu\t%s\t%s\n",id,label,test->vars().c_str());
+      if(matrix_group || set_rows || !std::strcmp(op, "SWIGLU")) std::printf("CASE\t%zu\t%s\t%s\n",id,case_label,test->vars().c_str());
       ++cases;
     }
     return observed.records==cases ? cases : SIZE_MAX;
