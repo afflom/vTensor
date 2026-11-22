@@ -173,40 +173,16 @@ host-only fixture orchestration edits reuse the driver. Imported evaluator edits
 invalidate only drivers that link it. Warm executions retain their upstream,
 executable and current-source integrity checks. Mutation evidence is recorded in
 [`verification/native-oracle-cache.json`](verification/native-oracle-cache.json).
-Non-Prism source is 11,407 lines, 858 above the original
-accepted budget, so the source budget remains unsatisfied.
+The VT-51 checkpoint measures 11,738 non-Prism lines, 1,189 above the
+original ceiling of 10,549.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in
 [`VTENSOR-VERIFICATION.md`](VTENSOR-VERIFICATION.md).
 
 ## Development
 
-The completion sequence uses shared models, execution primitives and the same
-imported oracle throughout:
-
-1. Keep the complete imported contract inventory, including public constructor and in-place variants as well as nested operation
-   variants, tied to exact upstream bytes. Map each requirement to its Prism
-   definition, Verdant implementation, oracle cases and observed failure test.
-2. Complete the shared tensor execution interface: typed shapes, strides,
-   views, addressing, ownership, layout conversion and numeric behavior for
-   all 36 live storage types. Extend Verdant primitives as needed; production
-   tensor arithmetic stays in Verdant.
-3. Implement every operation family and variant from the imported inventory:
-   elementwise/unary, reductions, row/index operations, copies and casts,
-   matrix products, normalization, position/masking, convolution/pooling,
-   attention, recurrent/state-space, optimizer and callback operations. Compose
-   shared primitives and model their exact GGML edge conditions.
-4. Complete backend lifecycle and graph interfaces, including allocation,
-   transfers, synchronization, reusable plans and capability reporting. Prove
-   model invariants and exercise real ABI effects and typed refusals against
-   upstream implementations.
-5. Run the imported upstream backend operation suite against the actual
-   vTensor library. Refuse missing, stale, wrong-file, skipped or unsupported
-   required cases. Exercise representative defects in data, layout, dispatch,
-   ABI and provenance; distinguish finite oracle evidence from general proofs.
-6. Resolve the authoritative Verdant extension and production dependency
-   packaging, then run the complete pinned-SDK acceptance gate and audit every
-   imported requirement. Component milestones cannot establish completion.
+Use the [completion checklist](BURNDOWN.md) to track the remaining GGML contract,
+Verdant release, llama.cpp integration and acceptance work.
 
 During iteration, run the cheapest affected model/code check, export only
 changed Prism roots, and batch numerical cases through the shared oracle.
