@@ -191,7 +191,7 @@
   ],
   "factory_verdicts": {
     "source": "crates/conformance/tests/contract.rs",
-    "selection": "Match exact labels or the label and parameter prefix of a passed parameter group. Each group transcript contains its passing factory ordinal and full parameters. Refusals record the first rejected ordinal. All other ordinals are untested.",
+    "selection": "Match exact labels, passed parameter groups and the individually attributed refusals below. Add the disjoint factory ordinals in standalone_evidence. Every remaining ordinal is untested.",
     "passed_by_requirement": {
       "VT-37": [
         "ARANGE"
@@ -296,7 +296,7 @@
         "ADD_ID"
       ]
     },
-    "passed": 3631,
+    "passed": 4229,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -330,7 +330,7 @@
         "attribution_oracle_sha256": "26c67a377e7de1bfe45b9f2ec5388ca326c1143d5d68c6867f5091b232a90e84"
       }
     },
-    "untested": 24121,
+    "untested": 13819,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -386,6 +386,9 @@
       }
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
-    "rotary_composition_evidence": "verification/factory-rotary-compositions.json"
+    "rotary_composition_evidence": "verification/factory-rotary-compositions.json",
+    "refused": 9707,
+    "failed": 0,
+    "standalone_evidence": "verification/factory-standalone-vt59.json"
   }
 }

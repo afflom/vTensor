@@ -1,0 +1,144 @@
+{
+  "provider_revision": "d232e00ae9dcf383c900d8a3792d1201ef19b26e",
+  "provider_sha256": "58b0658b26de3a47c90f777ea62e265ace11a297a3f50f022baed76071a72614",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "oracle": "Unmodified llama.cpp test-backend-ops test -b vTensor --output csv -o LABELS -j 1. Load the original CPU first, then the vTensor plugin via GGML_BACKEND_PATH. test_backend selects the CPU reference evaluator.",
+  "test_backend_ops_sha256": "b32cc65fd893f3f9aa9bc062ea6051a61ea8a7a62b21cea0b690007f730a11bf",
+  "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "case_transcript_sha256": "b8db09b2a7176384d84ed4b56e0a3eeed86437405bd2c45211c35df4cbd064a9",
+  "verdict_table": "factory-standalone-vt59.tsv.gz",
+  "uncompressed_verdicts_sha256": "505a2279be0a9c8202ad65771f4e9767a43e44e891786ac59f2170baf1269c98",
+  "mapping": "Match each label\u2019s complete ordered parameter sequence to the imported factory inventory. The table preserves the evaluator\u2019s backend names and error field. Multiple occurrences of a backend indicate separate refusals inside one graph.",
+  "runs": {
+    "activations": {
+      "labels": [
+        "TANH",
+        "ELU",
+        "SIGMOID",
+        "GELU",
+        "GELU_QUICK",
+        "SILU",
+        "EXP",
+        "EXPM1",
+        "SOFTPLUS",
+        "GELU_ERF",
+        "GELU_MUL",
+        "ADD_SILU_MUL",
+        "ADD_SIGMOID_MUL",
+        "ADD_SOFTPLUS_MUL",
+        "ADD_GELU_MUL",
+        "REGLU",
+        "GEGLU",
+        "GEGLU_ERF",
+        "GEGLU_QUICK",
+        "SILU_BACK",
+        "ADD_ADD",
+        "LOG",
+        "SIN",
+        "COS"
+      ],
+      "rows": 374,
+      "csv_sha256": "154e6e6d1ef2bb0fabae9acf746918fd707595271d0dfbdf7b65c0dc751eb0d6"
+    },
+    "convs": {
+      "labels": [
+        "IM2COL",
+        "IM2COL_3D",
+        "CONV_2D",
+        "CONV_1D_DW",
+        "CONV_2D_DW",
+        "CONV_3D",
+        "CONV_TRANSPOSE_1D",
+        "COL2IM_1D",
+        "CONV_TRANSPOSE_2D"
+      ],
+      "rows": 5774,
+      "csv_sha256": "f2b95131891943834912bb2442e5e10daa6b1e8e611614153a1f1509d5ab8c90"
+    },
+    "diag": {
+      "labels": [
+        "DIAG"
+      ],
+      "rows": 9,
+      "csv_sha256": "d10766211c17327c31268386886b6c791495db61afb7ffc95eef825e1ac6d373"
+    },
+    "routing": {
+      "labels": [
+        "TOP_K_MASK",
+        "MUL_MAT_ID_W4A8",
+        "MUL_MAT_ID_W4A4",
+        "MUL_MAT_ID",
+        "MUL_MAT_ID_FUSION",
+        "MUL_MAT_ID_SHARED",
+        "ARGSORT",
+        "TOP_K",
+        "TOPK_QSA",
+        "TOPK_MOE",
+        "MOE_REDUCE",
+        "LIGHTNING_INDEXER"
+      ],
+      "rows": 2867,
+      "csv_sha256": "f9069d287f2cc9669b1f893c5304449c2b8b6c704fa8763b761963175538e8dd"
+    },
+    "sequence": {
+      "labels": [
+        "DSV4_HC_COMB",
+        "DSV4_HC_PRE",
+        "DSV4_HC_POST",
+        "SSM_CONV",
+        "SSM_CONV_BIAS_SILU",
+        "SSM_SCAN",
+        "SSM_SCAN_ROLLBACK",
+        "SSM_SCAN_CACHE_FUSION",
+        "RWKV_WKV6",
+        "RWKV_WKV7",
+        "GATED_LINEAR_ATTN",
+        "TRI",
+        "SOLVE_TRI",
+        "GATED_DELTA_NET",
+        "GATED_DELTA_NET_CACHE_FUSION"
+      ],
+      "rows": 366,
+      "csv_sha256": "4437d1c4cef304228de502ffdf6ad2923fc5d5d1fd0251a463d3be50eac2e033"
+    },
+    "misc": {
+      "labels": [
+        "RELU_SQR",
+        "SILU_MUL",
+        "RELU_MUL",
+        "SIGMOID_MUL",
+        "SOFTPLUS_MUL",
+        "SNAKE_FUSE",
+        "SWIGLU_OAI",
+        "SWIGLU_CLAMP",
+        "POOL_2D",
+        "POOL_1D",
+        "SOFTCAP",
+        "SOFT_MAX",
+        "SOFT_MAX_BACK",
+        "UPSCALE",
+        "TIMESTEP_EMBEDDING",
+        "XIELU",
+        "SLEEP",
+        "CROSS_ENTROPY_LOSS",
+        "CROSS_ENTROPY_LOSS_BACK",
+        "OPT_STEP_ADAMW",
+        "OPT_STEP_SGD"
+      ],
+      "rows": 912,
+      "csv_sha256": "5e18129a1862117cd7654af4afe2ac73537edffa29b945aa00d97e55000d4940"
+    }
+  },
+  "new_verdicts": {
+    "passed": 598,
+    "refused": 9704,
+    "failed": 0
+  },
+  "cumulative_verdicts": {
+    "passed": 4229,
+    "refused": 9707,
+    "failed": 0,
+    "untested": 13819
+  }
+}
