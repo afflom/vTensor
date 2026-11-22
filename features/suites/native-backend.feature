@@ -50,3 +50,9 @@ Feature: native-backend
     Given the pinned GGML Q2_K matrix factory and row-gather-after-product graph
     When vTensor executes each graph on its own device
     Then all 55 matrix cases and the composed ADD case match the upstream CPU
+
+  @VT-66 @build
+  Scenario: GGML extended attention with Q4_0 and Q8_0 keys and values executes through Verdant block conversion and row products and matches the imported CPU
+    Given the original GGML attention factory with packed keys and values
+    When vTensor executes each combination of mask and sink presence for the two formats
+    Then all eight graphs match the GGML CPU evaluator
