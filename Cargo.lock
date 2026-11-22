@@ -696,7 +696,6 @@ dependencies = [
  "vtensor_buffer_region",
  "vtensor_fixtures",
  "vtensor_index",
- "vtensor_l2",
  "vtensor_layout",
  "vtensor_matrix",
  "vtensor_matrix_execution",
@@ -704,12 +703,11 @@ dependencies = [
  "vtensor_native_config",
  "vtensor_native_memory",
  "vtensor_native_predicates",
- "vtensor_norm",
+ "vtensor_norm_dispatch",
  "vtensor_norm_plan",
  "vtensor_pointwise",
  "vtensor_probes",
  "vtensor_repeat_offset",
- "vtensor_rms_backward",
  "vtensor_rotary",
  "vtensor_spatial",
  "vtensor_transfer",
@@ -787,6 +785,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_norm"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_norm_dispatch"
 version = "0.1.0"
 
 [[package]]

@@ -1,6 +1,7 @@
 \begin{lexlean}{MatrixExecution}
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
+\importmodule{ScalarDotStorage}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -23,7 +24,8 @@ inductive{
     {name: schedule, fields: [Nat, Nat]},
     {name: transfer, fields: [Bool, Nat, Nat, Nat]},
     {name: multiply, fields: []},
-    {name: refused, fields: []}
+    {name: refused, fields: []},
+    {name: loadConverted, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -62,6 +64,49 @@ definition{
   body: (if (emptyExecution m n b2 b3) then (if (index =? 0) then (ctor Instruction.schedule 1 0) else (ctor Instruction.refused)) else (if ((0 <? r2) && (0 <? r3)) then (let lc : Nat := (prim multiply m k : Nat); (let rc : Nat := (prim multiply k n : Nat); (let oc : Nat := (prim multiply m n : Nat); (let block : Nat := (((lc + rc) + 1) + oc); (let steps : Nat := (1 + (prim multiply (prim multiply b2 b3 : Nat) block : Nat)); (if (index =? 0) then (ctor Instruction.schedule steps ((lc + rc) + oc)) else (if (index <? steps) then (let ordinal : Nat := (prim subtract index 1 : Nat); (let batch : Nat := (prim quotient ordinal block 0 : Nat); (let phase : Nat := (prim remainder ordinal block 0 : Nat); (let i2 : Nat := (prim remainder batch b2 0 : Nat); (let i3 : Nat := (prim quotient batch b2 0 : Nat); (if (phase <? lc) then (ctor Instruction.transfer false 0 phase (address (prim remainder phase k 0 : Nat) (prim quotient phase k 0 : Nat) (prim quotient i2 r2 0 : Nat) (prim quotient i3 r3 0 : Nat) left)) else (if (phase <? (lc + rc)) then (let element : Nat := (prim subtract phase lc : Nat); (ctor Instruction.transfer false 1 phase (address (prim quotient element n 0 : Nat) (prim remainder element n 0 : Nat) i2 i3 right))) else (if (phase =? (lc + rc)) then (ctor Instruction.multiply) else (let element : Nat := (prim subtract (prim subtract phase (lc + rc) : Nat) 1 : Nat); (ctor Instruction.transfer true 2 ((lc + rc) + element) (address (prim quotient element n 0 : Nat) (prim remainder element n 0 : Nat) i2 i3 output))))))))))) else (ctor Instruction.refused)))))))) else (ctor Instruction.refused))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
+}
+
+definition{
+  name: scalarLoad,
+  parameters: [slot : Nat, at : Nat, offset : Nat, source : Nat, dotType : Nat],
+  result: Instruction,
+  body: (if ((source =? 0) && (dotType =? 0)) then (ctor Instruction.transfer false slot at offset) else (ctor Instruction.loadConverted slot at offset source dotType (if (source =? 0) then 4 else 2))),
+  executable: true
+}
+
+definition{
+  name: evaluateStorage,
+  parameters: [
+    index : Nat,
+    m : Nat,
+    k : Nat,
+    n : Nat,
+    b2 : Nat,
+    b3 : Nat,
+    r2 : Nat,
+    r3 : Nat,
+    left : Strides,
+    right : Strides,
+    output : Strides,
+    leftType : Nat,
+    rightType : Nat
+  ],
+  result: Instruction,
+  body: (match (evaluate index m k n b2 b3 r2 r3 left right output)
+    | Instruction.transfer writing slot at offset => (if writing then (ctor Instruction.transfer true slot at offset) else (scalarLoad slot at offset (if (slot =? 0) then leftType else rightType) (ScalarDotStorage::activationType leftType)))
+    | Instruction.schedule steps total => (ctor Instruction.schedule steps total)
+    | Instruction.multiply => (ctor Instruction.multiply)
+    | Instruction.refused => (ctor Instruction.refused)
+    | Instruction.loadConverted slot at offset source dotType width => (ctor Instruction.loadConverted slot at offset source dotType width)),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: rightWordRoundedToWeightPrecision,
+  parameters: [],
+  statement: ((scalarLoad 1 3 8 0 30) = (ctor Instruction.loadConverted 1 3 8 0 30 4)),
+  proof: reflexivity{}
 }
 
 theorem{

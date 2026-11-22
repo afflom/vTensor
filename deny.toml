@@ -111,7 +111,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x547f9957 }]
+license-files = [{ path = "src/lib.rs", hash = 0x752062df }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -273,7 +273,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xba1d26b1 }]
 name = "vtensor_matrix_execution"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xcf7e0505 }]
+license-files = [{ path = "src/lib.rs", hash = 0xef8cf836 }]
 [[licenses.clarify]]
 name = "verdant_count_f64"
 version = "=2.12.0"
@@ -560,7 +560,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x1a27f392 }]
 name = "vtensor_attention"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x69db2180 }]
+license-files = [{ path = "src/lib.rs", hash = 0x26a25edb }]
 
 [[licenses.clarify]]
 name = "vtensor_attention_mask"
@@ -573,3 +573,9 @@ name = "vtensor_buffer_region"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x5fda0429 }]
+
+[[licenses.clarify]]
+name = "vtensor_norm_dispatch"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x4a9980c6 }]

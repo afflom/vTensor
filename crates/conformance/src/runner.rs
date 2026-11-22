@@ -668,6 +668,8 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
             left_stride.clone(),
             right_stride.clone(),
             output_stride.clone(),
+            left.ty as u64,
+            right.ty as u64,
         )
         .map_err(|_| BackendError::Overflow)
     };
@@ -682,15 +684,21 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
             // slot and byte offset. Native F32 words may be unaligned; byte
             // transfers preserve all encodings without creating foreign borrows.
             Instruction::C1(writing, slot, at, offset) => unsafe {
-                let temporary = values.as_mut_ptr().add(at as usize).cast::<u8>();
-                let external = pointers[slot as usize].add(offset as usize);
-                let (from, to) = if writing {
-                    (temporary, external)
+                let external = pointers[slot as usize].add(offset as usize).cast::<f32>();
+                let word = &mut values[at as usize];
+                if writing {
+                    external.write_unaligned(*word);
                 } else {
-                    (external, temporary)
-                };
-                ptr::copy_nonoverlapping(from, to, 4);
+                    *word = external.read_unaligned();
+                }
             },
+            Instruction::C4(slot, at, offset, source, dot_type, width) => {
+                // SAFETY: the certified load carries the encoded width and bounded offset.
+                let word = unsafe {
+                    scalar_word(pointers[slot as usize].add(offset as usize), width, None)?
+                };
+                values[at as usize] = prepare_float(source, dot_type, word)?;
+            }
             Instruction::C2 => {
                 let (left, rest) = values.split_at_mut(left_count as usize);
                 let (right, output) = rest.split_at_mut(right_count as usize);
@@ -813,27 +821,26 @@ unsafe fn scalar_word(
     width: u64,
     value: Option<u64>,
 ) -> Result<u64, BackendError> {
-    let width = usize::try_from(width).map_err(|_| BackendError::InvalidTensor)?;
-    if !matches!(width, 1 | 2 | 4 | 8) {
-        return Err(BackendError::InvalidTensor);
+    // SAFETY: each caller supplies the admitted span. Unaligned integer access
+    // preserves the native word encoding for both packed and padded GGML views.
+    macro_rules! access {
+        ($ty:ty) => {
+            match value {
+                Some(word) => {
+                    unsafe { pointer.cast::<$ty>().write_unaligned(word as $ty) };
+                    word
+                }
+                None => u64::from(unsafe { pointer.cast::<$ty>().read_unaligned() }),
+            }
+        };
     }
-    let mut bytes = value.unwrap_or(0).to_ne_bytes();
-    let start = if cfg!(target_endian = "little") {
-        0
-    } else {
-        bytes.len() - width
-    };
-    let selected = &mut bytes[start..start + width];
-    // SAFETY: the caller supplies one admitted scalar region; selected is exactly
-    // its validated width. Selecting the native low bytes also preserves big endian words.
-    unsafe {
-        if value.is_some() {
-            ptr::copy_nonoverlapping(selected.as_ptr(), pointer, width);
-        } else {
-            ptr::copy_nonoverlapping(pointer, selected.as_mut_ptr(), width);
-        }
-    }
-    Ok(u64::from_ne_bytes(bytes))
+    Ok(match width {
+        1 => access!(u8),
+        2 => access!(u16),
+        4 => access!(u32),
+        8 => access!(u64),
+        _ => return Err(BackendError::InvalidTensor),
+    })
 }
 
 fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
@@ -844,6 +851,14 @@ fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
 
 fn decode_float(storage: u64, word: u64) -> Result<f32, BackendError> {
     convert(storage, 0, word).map(|bits| f32::from_bits(bits as u32))
+}
+
+fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendError> {
+    if source == dot_type || dot_type == 0 {
+        decode_float(source, word)
+    } else {
+        decode_float(dot_type, convert(source, dot_type, word)?)
+    }
 }
 
 fn execute_word(
@@ -988,44 +1003,23 @@ fn normalization_word(
 ) -> Result<GraphResponse, BackendError> {
     let IndexContext::C0(width, n1, n2, n3, s0, s1, s2, s3) = *source;
     let IndexContext::C0(_, _, _, _, t0, t1, t2, t3) = *destination;
-    let [family, operation, a, from, b, right, target, to] = match *mode {
-        CopyMode::C26(kind @ (64 | 65), epsilon, rows, capacity) => {
-            let vtensor_norm::Adt0::C1(family, operation, a, from, b, right, target, to) =
-                vtensor_norm::run(
-                    kind, index, width, n1, n2, n3, s0, s1, s2, s3, t0, t1, t2, t3, epsilon, rows,
-                    capacity, flag,
-                )
-                .map_err(|_| BackendError::Overflow)?
-            else {
-                return Err(BackendError::InvalidTensor);
-            };
-            [family, operation, a, from, b, right, target, to]
-        }
-        CopyMode::C26(66, epsilon, rows, capacity) => {
-            let [x0, x1, x2, x3] = secondary_strides;
-            let vtensor_rms_backward::Adt0::C1(family, operation, a, from, b, right, target, to) =
-                vtensor_rms_backward::run(
-                    index, width, n1, n2, n3, s0, s1, s2, s3, x0, x1, x2, x3, t0, t1, t2, t3,
-                    epsilon, rows, capacity, flag,
-                )
-                .map_err(|_| BackendError::Overflow)?
-            else {
-                return Err(BackendError::InvalidTensor);
-            };
-            [family, operation, a, from, b, right, target, to]
-        }
-        CopyMode::C24(epsilon) => {
-            let vtensor_l2::Adt0::C1(family, operation, a, from, b, right, target, to) =
-                vtensor_l2::run(
-                    index, width, n1, n2, n3, s0, s1, s2, s3, t0, t1, t2, t3, epsilon, flag,
-                )
-                .map_err(|_| BackendError::Overflow)?
-            else {
-                return Err(BackendError::InvalidTensor);
-            };
-            [family, operation, a, from, b, right, target, to]
+    use vtensor_norm_dispatch::{Adt0 as Selection, Adt1 as Instruction};
+    let selection = match *mode {
+        CopyMode::C24(epsilon) => Selection::C0(epsilon),
+        CopyMode::C26(kind, epsilon, rows, capacity) => {
+            Selection::C1(kind, epsilon, rows, capacity)
         }
         _ => return Err(BackendError::InvalidTensor),
+    };
+    let [x0, x1, x2, x3] = secondary_strides;
+    let Instruction::C1(family, operation, a, from, b, right, target, to) =
+        vtensor_norm_dispatch::run(
+            selection, index, width, n1, n2, n3, s0, s1, s2, s3, x0, x1, x2, x3, t0, t1, t2, t3,
+            flag,
+        )
+        .map_err(|_| BackendError::Overflow)?
+    else {
+        return Err(BackendError::InvalidTensor);
     };
     instruction_response([
         family, operation, 0, 0, a, from, b, right, target, to, bytes, bytes,
@@ -1514,7 +1508,6 @@ mod attention {
         };
         let shape = q.tensor.ne;
         let key_rows = k.tensor.ne[1] as u64;
-        let dot_type = k.tensor.ty as u64;
         let mut query = workspace(shape[0] as u64, 0.0)?;
         let mut key = workspace(shape[0] as u64, 0.0)?;
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
@@ -1523,7 +1516,7 @@ mod attention {
         for batch in 0..shape[3] as u64 {
             for head in 0..shape[2] as u64 {
                 for token in 0..shape[1] as u64 {
-                    let Response::C2(qoff, koff, voff, moff, soff, dst, ks, vs) =
+                    let Response::C2(qoff, koff, voff, moff, soff, dst, ks, vs, dot_type) =
                         request(Request::C1(plan.clone(), token, head, batch))?
                     else {
                         return Err(BackendError::InvalidTensor);
@@ -1532,8 +1525,7 @@ mod attention {
                     // GGML prepares the query in the key's dot-product storage once per head.
                     if dot_type != 0 {
                         for word in &mut query {
-                            let encoded = super::convert(0, dot_type, word.to_bits().into())?;
-                            *word = super::decode_float(dot_type, encoded)?;
+                            *word = super::prepare_float(0, dot_type, word.to_bits().into())?;
                         }
                     }
                     let mut mean = WeightedMeanF32::new(value.len());

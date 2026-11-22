@@ -175,7 +175,7 @@ ggml_batches! {
     fn rotary_backward_graphs_vt_57() { "upstream-ROPE_BACK", 424, ["rotary"] }
     /// Six scalar input pairs in upstream dense and permuted matrix products.
     #[test]
-    fn float_matrix_graphs_vt_64() { "upstream-MUL_MAT_FLOAT_STORAGE", 10, ["pointwise", "matrix"] }
+    fn float_matrix_graphs_vt_64() { "upstream-MUL_MAT_FLOAT_STORAGE", 11, ["pointwise", "matrix"] }
 
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
@@ -2068,10 +2068,10 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     const bool set_rows = !std::strcmp(op, "SET_ROWS_SCALAR");
     // Keep the ordinal selections tied to the imported make_test_cases_eval order.
     const bool float_matrix = !std::strcmp(op, "MUL_MAT_FLOAT_STORAGE");
-    const std::vector<size_t> selected = float_matrix ? std::vector<size_t>{12452,12471,12520,12539,12588,12607,13423,13432,13495,13650} : !std::strcmp(op, "FLASH_ATTN_EXT_FIRST") ? std::vector<size_t>{19242} :
+    const std::vector<size_t> selected = float_matrix ? std::vector<size_t>{10551,12452,12471,12520,12539,12588,12607,13423,13432,13495,13650} : !std::strcmp(op, "FLASH_ATTN_EXT_FIRST") ? std::vector<size_t>{19242} :
         !std::strcmp(op, "FLASH_ATTN_EXT_SMALL") ? std::vector<size_t>{19314, 19394} :
         !std::strcmp(op, "FLASH_ATTN_EXT_BF16") ? std::vector<size_t>{19540, 20260, 20980, 21268} : std::vector<size_t>{};
-    const char *label = float_matrix ? "MUL_MAT" : !selected.empty() ? "FLASH_ATTN_EXT" : set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
+    const char *label = float_matrix ? "MUL_MAT,MUL_MAT_PREC_SRC1_F32" : !selected.empty() ? "FLASH_ATTN_EXT" : set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
     for(auto &test:make_test_cases_eval()) {
       const auto id = ordinal++;
       if (!selected.empty() && std::find(selected.begin(),selected.end(),id)==selected.end()) continue;
