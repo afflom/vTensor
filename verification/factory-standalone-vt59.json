@@ -8,7 +8,7 @@
   "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "case_transcript_sha256": "b8db09b2a7176384d84ed4b56e0a3eeed86437405bd2c45211c35df4cbd064a9",
   "verdict_table": "factory-standalone-vt59.tsv.gz",
-  "uncompressed_verdicts_sha256": "a1f222e5916b5065f370762e44d596cb541109f1554f7f11ca3fbdfc3ba40d06",
+  "uncompressed_verdicts_sha256": "141c66d6f3f57524e125178642cd637e4242a99a42cb89e7061fd172b7ffd043",
   "mapping": "Match the complete ordered parameter sequence of each label and optional parameters_regex to the imported factory inventory. The table preserves the evaluator\u2019s backend names and error field. Multiple occurrences of a backend indicate separate refusals inside one graph.",
   "runs": {
     "activations": {
@@ -192,17 +192,33 @@
       "rows": 1144,
       "csv_sha256": "69bd2a14c52339d819c3de66c3acac08ce6a499ad2c9f2ffb97f4082ea289912",
       "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?=.*(?:max_bias|logit_softcap)=(?!0\\.000000,))"
+    },
+    "matrix": {
+      "labels": [
+        "MUL_MAT"
+      ],
+      "rows": 2969,
+      "csv_sha256": "27e030682f5fc6ac9a30fcc190dc5e7b64df6201929275c04ccae3bfcaee35cc",
+      "parameters_regex": "^(?!type_a=(q8_0|q4_0),type_b=f32,)"
+    },
+    "attention-small": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 524,
+      "csv_sha256": "8de1efe70fb402722fdfd6487ce7be07543ec029a8e0d7e7fd05e25f9e492067",
+      "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?=.*\\bnb=1,)"
     }
   },
   "new_verdicts": {
-    "passed": 1285,
-    "refused": 17709,
+    "passed": 2085,
+    "refused": 20402,
     "failed": 0
   },
   "cumulative_verdicts": {
-    "passed": 4916,
-    "refused": 17712,
+    "passed": 5716,
+    "refused": 20405,
     "failed": 0,
-    "untested": 5127
+    "untested": 1634
   }
 }
