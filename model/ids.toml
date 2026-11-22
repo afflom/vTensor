@@ -454,3 +454,9 @@ id = "VT-65"
 level = "build"
 suite = "native-backend"
 statement = "GGML Q2_K matrix products use Verdant grouped activation blocks and match the imported CPU in standalone and row-gather graphs"
+
+[[id]]
+id = "VT-67"
+level = "build"
+suite = "native-backend"
+statement = "GGML hyperbolic tangent and composed soft-cap graphs execute through the pinned Verdant binary32 activation and match the imported CPU evaluator"

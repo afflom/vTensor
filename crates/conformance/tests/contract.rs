@@ -180,6 +180,9 @@ ggml_batches! {
     #[test]
     fn float_matrix_graphs_vt_64() { "upstream-MUL_MAT_FLOAT_STORAGE", 11, ["pointwise", "matrix"] }
 
+    #[test]
+    fn hyperbolic_graphs_vt_67() { "upstream-TANH,SOFTCAP", 13, ["pointwise"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }

@@ -50,3 +50,9 @@ Feature: native-backend
     Given the pinned GGML Q2_K matrix factory and row-gather-after-product graph
     When vTensor executes each graph on its own device
     Then all 55 matrix cases and the composed ADD case match the upstream CPU
+
+  @VT-67 @build
+  Scenario: GGML hyperbolic tangent and composed soft-cap graphs execute through the pinned Verdant binary32 activation and match the imported CPU evaluator
+    Given the pinned GGML factory for TANH and SOFTCAP
+    When the backend executes scalar storage variants, views and composed scale operations
+    Then every result matches the upstream CPU evaluator
