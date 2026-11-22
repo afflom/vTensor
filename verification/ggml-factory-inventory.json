@@ -301,17 +301,33 @@
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
         "test_build": "24af3523a59853c20de26c673cf3ef259ae89389",
-        "result": "not supported"
+        "result": "not supported",
+        "refused_by": [
+          "vTensor",
+          "CPU"
+        ],
+        "attribution_test_revision": "66f9b57f7685e3784e73308f9bf38c0ebbaa4cd4",
+        "attribution_oracle_sha256": "26c67a377e7de1bfe45b9f2ec5388ca326c1143d5d68c6867f5091b232a90e84"
       },
       "809": {
         "oracle": "make_test_cases_eval / test_case::eval",
         "test_build": "24af3523a59853c20de26c673cf3ef259ae89389",
-        "result": "not supported"
+        "result": "not supported",
+        "refused_by": [
+          "vTensor"
+        ],
+        "attribution_test_revision": "66f9b57f7685e3784e73308f9bf38c0ebbaa4cd4",
+        "attribution_oracle_sha256": "26c67a377e7de1bfe45b9f2ec5388ca326c1143d5d68c6867f5091b232a90e84"
       },
       "8368": {
         "oracle": "make_test_cases_eval / test_case::eval",
         "test_build": "24af3523a59853c20de26c673cf3ef259ae89389",
-        "result": "not supported"
+        "result": "not supported",
+        "refused_by": [
+          "CPU"
+        ],
+        "attribution_test_revision": "66f9b57f7685e3784e73308f9bf38c0ebbaa4cd4",
+        "attribution_oracle_sha256": "26c67a377e7de1bfe45b9f2ec5388ca326c1143d5d68c6867f5091b232a90e84"
       }
     },
     "untested": 24121,

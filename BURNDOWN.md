@@ -39,7 +39,9 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Finish the arbitrary-provider contract
 
-- [ ] Resolve factory refusals 809 (Q2_K ADD), 1,069 (BF16 GET_ROWS_BACK) and 8,368 (IQ2_XXS CPY). Identify the refusing backend and validate each case against its authoritative oracle. [Exact inputs](verification/factory-checkpoint-vt57.json)
+- [ ] Execute Q2_K ADD (809). vTensor alone refuses it. Use the pinned CPU evaluator for the output comparison.
+- [ ] Complete BF16 GET_ROWS_BACK (1069). Both devices refuse it. Import a GGML reference that executes this format.
+- [ ] Verify same-format IQ2_XXS CPY (8368) against a GGML reference that executes it. vTensor admits it and the CPU evaluator refuses it. [Upstream verdicts for all three cases](verification/ggml-factory-inventory.json)
 - [ ] Complete sorting, TOP_K and masks, expert routing, indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
 - [ ] Complete convolution, im2col/col2im, transpose/depthwise forms, pooling, upscaling, timestep embeddings and their defined backward paths.
 - [ ] Complete SSM convolution/scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
