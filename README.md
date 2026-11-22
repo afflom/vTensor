@@ -84,6 +84,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-41` | build | Prism supplies all 3,456 COPY fixture recipes, layouts and initial bytes; frozen transcripts and the independent CPU oracle remain unchanged. Universal model laws bind the byte-pattern cache to recipe semantics. |
 | `VT-42` | build | Prism supplies all 160 REPEAT fixture recipes, source/target/output layouts and initial bytes, preserving frozen transcripts and independent CPU results. |
 | `VT-43` | build | Prism supplies all 10,368 CONCAT fixture recipes, both operand layouts, output layouts and initial bytes, preserving frozen transcripts and independent CPU results. |
+| `VT-44` | build | Prism supplies 15,360 FILL and 1,920 CAST fixture recipes, typed layouts, fill constants and physical byte patterns; frozen transcripts, FILL source-release states and independent CPU results are preserved. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -145,7 +146,7 @@ unchanged upstream evaluator through a reusable constructor callback bridge;
 the pinned factory itself has no ADD_REL_POS cases.
 Development builds optimize dependency arithmetic and the pointwise kernel
 while keeping assertions and overflow checks. The complete contract group takes
-24.48 seconds with 42 passes and the explicit VT-02 refusal; these timings are
+25.55 seconds with 43 passes and the explicit VT-02 refusal; these timings are
 observations, not controlled benchmarks. Other imported operation families remain unfinished. Prism now generates all
 1,280 matrix and 120 arithmetic fixtures; both generated data and actual GGML
 tensor bindings match the frozen prior corpora. They share binary framing and
@@ -154,9 +155,10 @@ Before migrating the remaining native recipes to Prism, VT-40 freezes 70,392
 existing construction/input cases and 1,920 late FILL source-release states.
 The numerical oracle remains imported GGML CPU code. The existing tests emit
 and check each transcript during their normal execution; successful transient
-files are removed. COPY, REPEAT and CONCAT now consume certified Prism enumeration,
+files are removed. COPY, REPEAT, CONCAT, FILL and CAST now consume certified Prism enumeration,
 operand/output layouts and byte recipes through a shared test-only C ABI bridge.
-Their 13,984 cases preserve the complete frozen construction and input transcripts.
+Their 31,264 cases preserve the complete frozen construction and input transcripts,
+including all 1,920 FILL source-release states.
 Model-named byte patterns are cached under universal coherence laws; model-only
 edits reuse the C++ driver. Other native fixture families remain to be migrated.
 Native oracle build identities bind the emitted C++ and compiler/linker recipe;
@@ -164,7 +166,7 @@ host-only fixture orchestration edits reuse the driver. Imported evaluator edits
 invalidate only drivers that link it. Warm executions retain their upstream,
 executable and current-source integrity checks. Mutation evidence is recorded in
 [`verification/native-oracle-cache.json`](verification/native-oracle-cache.json).
-Non-Prism source is 11,381 lines, 832 above the original
+Non-Prism source is 11,380 lines, 831 above the original
 accepted budget, so the source budget remains unsatisfied.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in
@@ -216,6 +218,10 @@ corruption probes while removing duplicated host fixture logic.
 Before each operation family, audit its public constructors, parameter flags
 and CPU implementation. Factory coverage alone is insufficient: L2 omitted an
 in-place constructor, and ADD_REL_POS had no factory cases at all.
+The RMS_NORM audit identifies a required Verdant primitive: divide the F64
+accumulator by the row count before narrowing to F32. Narrowing the sum first
+changes rounding. Complete and certify that primitive before implementing
+RMS_NORM's F32/BF16 copied and in-place paths.
 
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:

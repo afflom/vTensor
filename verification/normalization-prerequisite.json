@@ -1,0 +1,46 @@
+{
+  "spec": "vtensor/normalization-prerequisite/1",
+  "status": "missing-certified-verdant-f64-division",
+  "operation_implemented": false,
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "scope": "Extracted authoritative RMS_NORM accumulation and mean expression, not a complete operation conformance test.",
+  "source_sha256": {
+    "ggml/src/ggml-cpu/ops.cpp": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+    "ggml/src/ggml-cpu/vec.h": "7ad7cf31d4787fa9c112e087b929fff456761b97bd4e523d60d5a01ceb2409af"
+  },
+  "snippet": "ggml_float sum = 0.0;\n                // worth switching to explicit SIMD?\n                for (int64_t i00 = 0; i00 < ne00; i00++) {\n                    sum += (ggml_float)(x[i00] * x[i00]);\n                }\n\n                const float mean  = sum/ne00;",
+  "typedef": "typedef double ggml_float;",
+  "program_sha256": "fc5915774394d1665054bb66dc4e4e8a96afe655a68454214432a81819b88627",
+  "regression": {
+    "row_f32": [
+      4096,
+      1,
+      0,
+      0,
+      0
+    ],
+    "squared_accumulator_f64": 16777217,
+    "count": 5,
+    "authoritative_mean_f32": {
+      "value": 3355443.5,
+      "bits_hex": "4a4cccce"
+    },
+    "premature_narrowing_mean_f32": {
+      "value": 3355443.25,
+      "bits_hex": "4a4ccccd"
+    }
+  },
+  "execution": {
+    "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "compiler_command": "c++ -std=c++17 -O0 rms-mean-order.cpp -o rms-mean-order",
+    "exit_code": 0,
+    "stdout": "mean 3355443.5 4a4cccce; premature 3355443.25 4a4ccccd",
+    "source_path": "/tmp/vtensor-analysis-target/rms-mean-order.cpp",
+    "log": "/tmp/vtensor-rms-mean-order.log"
+  },
+  "requirement": "Implement and certify F64 division/count conversion in Verdant, preserving intermediate F64 rounding before F32 narrowing. Use the same imported GGML CPU oracle for complete operation validation afterward.",
+  "authoritative_sources": [
+    "https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ops.cpp",
+    "https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/vec.h"
+  ]
+}

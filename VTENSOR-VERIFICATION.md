@@ -3632,3 +3632,81 @@ coverage. Remaining recipe migrations, complete imported operation/type/API
 coverage, source-budget recovery and production dependency closure remain open.
 Detailed evidence is recorded in
 `verification/repeat-concat-fixtures-runtime.json`.
+
+## Shared Prism FILL and CAST fixture recipes (VT-44)
+
+The typed fixture model generates all 15,360 FILL and 1,920 CAST cases through
+the existing arithmetic fixture root and shared test-only C ABI bridge. It
+defines case order, storage types, copied/in-place variants, empty dimensions,
+source/unused-target/output layouts, fill constants and physical input bytes.
+FILL uses eight reusable 256-byte patterns; CAST uses three 192-byte patterns
+that retain the original 24-word cycles for F32, F16 and BF16. Universal
+metadata/pattern and byte/pattern theorems justify caching. Chunk offsets and
+lengths remain model supplied. Neither mode retains a native recipe fallback.
+
+VT-44's registered scenario and test precede implementation; the previous
+artifact returns None where Some(15360) is required. Canonical MCP checks pass.
+Remote proof task-44 fails with LLB6003 while staging
+LexLeanPreservation.Values.json because the gateway has no disk space. That
+failed task supplies no proof evidence. The separate pinned-SDK production
+export verifies all 461 declarations, with result
+`b9ef9c6477f466e0eef04b3bc1a58fbb5aa6bb0ca9b221725d9cc34b6b594b2d`
+and attestation
+`f29b6c7da5457b10a1ab8a59bced4aa3e941271a4b1674f1b42688020378563a`.
+All installed artifact bytes are SDK output; generated Rust is not reformatted.
+
+The affected tests pass: model queries in 1.47 seconds, all FILL CPU comparisons
+and frozen records in 6.41 seconds, and all CAST CPU comparisons and frozen
+records in 2.24 seconds. The FILL test also preserves all 1,920 late source
+buffer-release states. These local timings include compilation/cache effects
+and do not establish a controlled performance result. Expected numerical
+results remain computed by unchanged imported GGML CPU code.
+
+XORing one bit into FILL's constant metadata binding passes all 15,360 CPU
+comparisons and the RESULT count, then fails the frozen construction/input hash
+in 3.10 seconds. XORing one bit into CAST's byte binding passes all 1,920 CPU
+comparisons and the RESULT count, then fails its frozen input hash in 2.80
+seconds. Both mutations are restored byte for byte before the final gate. All
+41 native driver paths and nanosecond modification times remain unchanged;
+neither fault rebuilds the imported CPU driver. Existing arithmetic and native
+fixture query assertions now share one helper with their original requests and
+expected answers retained.
+
+Production numerical execution is unchanged by this recipe migration. A separate
+audit of imported RMS_NORM identifies the next numerical prerequisite: its F64
+sum must be divided by the row count before narrowing to F32. The current
+Verdant wide interface has addition, widening, narrowing and count-to-F32 but
+no F64 division primitive. Narrowing the sum first changes the required rounding.
+No RMS_NORM implementation or conformance pass is claimed.
+
+An extracted, unchanged RMS_NORM accumulation/mean expression and its imported
+ggml_float typedef reproduce the rounding distinction in the pinned SDK. For
+the F32 row [4096, 1, 0, 0, 0], the F64 squared sum is 16,777,217. Dividing before
+narrowing gives F32 3,355,443.5 (0x4a4cccce); narrowing first gives 3,355,443.25
+(0x4a4ccccd). The source hashes, exact extracted snippet and observed values are
+recorded in `verification/normalization-prerequisite.json`. This is a prerequisite
+regression observation, not full operation conformance evidence.
+
+The complete pinned-SDK `just vv` proves the default application again, with
+attestation fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942,
+then passes formatting, all 50 model IDs, ownership/error/deferral checks, frame
+sync, the template/SDK locks and all-target/all-feature Clippy. Its source audit
+counts 11,380 lines in 51 files, down one line from the parent. The original
+10,549-line budget is still exceeded by 831; the branch's parent comparison
+does not establish an accepted increase.
+
+The workspace stage passes five model unit tests, four BDD tests and 43 contract
+tests, with VT-02 alone rejecting the Verdant development override. All 44
+contract tests run without ignored or filtered cases in 25.55 seconds. The gate
+therefore fails, and no release acceptance is claimed. Cargo stops at that
+contract failure; remaining test binaries and checks are run separately to
+avoid repeating the completed numerical oracle groups.
+
+Those remaining checks pass: all five frame tests, all 62 xtask unit tests, all
+available doctest targets and the dependency advisory/ban/license/source checks.
+No tests are ignored or filtered in those runs. The new license clarification
+binds certified arithmetic output hash 0x0bed3672. The original native, FILL
+source-release, matrix and arithmetic baselines remain byte-identical. Detailed
+evidence is in `verification/typed-fixtures-runtime.json`. Complete imported
+coverage, remaining recipe migrations, original source-budget recovery and
+production dependency closure remain open.

@@ -1,0 +1,211 @@
+{
+  "spec": "vtensor/typed-fixture-runtime/1",
+  "status": "component-validated-full-acceptance-open",
+  "implementation_commits": [
+    "273680c"
+  ],
+  "claim": "VT-44: Shared Prism recipes supply FILL and CAST enumeration, typed source/target/output layouts, fill constants and physical byte patterns, preserving all 17280 frozen cases and independent GGML CPU expected results.",
+  "model_source_sha256": {
+    "app/src/ArithmeticFixtures.lex.tex": "b8a7d7d0fb029faaad92b98ebd3b731cba733e0fbed6a62f9a7f7ebf70a9f5bd",
+    "app/src/TypedFixtures.lex.tex": "553484a292bc4b893334092d17a4d427e3cd001cda65834bd64c4ac6284877db",
+    "app/src/CopyFixtures.lex.tex": "8f0e67cf0f2ae25b01363cc323fddeb896983d57849ca0f38c84c76689c70e69",
+    "app/src/RepeatFixtures.lex.tex": "2ef5d885d83696161c8f34d2285969e7a8156fcb3eaf04f792f8e82b0d31a58b",
+    "app/src/ConcatFixtures.lex.tex": "3d965368f2d17676b843e53f5695e2953800922c383dd9375a1f2ea7924bd8ef",
+    "app/src/TensorTypes.lex.tex": "0cb980d56e3a1dd8ab44672f85a57d61424ac4a3eedb7f077e857755ff46d6d9",
+    "app/src/TensorLayout.lex.tex": "d3d9a33507c117011b75e25d222b3beaea444e8ba50760732f227550045e4436"
+  },
+  "sdk": {
+    "image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+    "result_id": "b9ef9c6477f466e0eef04b3bc1a58fbb5aa6bb0ca9b221725d9cc34b6b594b2d",
+    "source": {
+      "lock_sha256": "af32498be321b950c036f7de6ea835b59f9a63f7df931cb4187466d2cd4e49d7",
+      "semantic_id": "d35a801aa47e954264a4aa4b2750f045837993a497b4d787d535d85f7b180e26",
+      "source_id": "f2facfb20752ff7c94e9a33d93a2663be8cadb24e71ff350a3b8b56f6f619367"
+    },
+    "attestation_id": "f29b6c7da5457b10a1ab8a59bced4aa3e941271a4b1674f1b42688020378563a",
+    "declarations": 461,
+    "all_declarations_ok": true,
+    "command": "just certified-export arithmetic",
+    "installation": "Exact certified SDK output; generated Rust is not reformatted."
+  },
+  "authoring": {
+    "canonical_draft": "prism-app/8f50f580f68a3e6c09cdbf7cb26bbe0674c4d39d2859071a04e9dd6b8d1b569e",
+    "check": "passed",
+    "remote_verification": {
+      "task": "task-44",
+      "state": "failed",
+      "diagnostic": "LLB6003: staging process/preserve/LexLeanPreservation.Values.json: No space left on device (os error 28)"
+    },
+    "proof_evidence": "Only the separate pinned-SDK production proof supplies verified evidence; the remote task does not."
+  },
+  "registration": {
+    "sequence": "ID, scenario and failing test precede model implementation.",
+    "command": "cargo test --locked -p vtensor-backend --test contract typed_fixture_generation_vt_44 -- --exact --nocapture",
+    "actual": "None",
+    "expected": "Some(15360)",
+    "seconds": 0,
+    "exit_code": 101
+  },
+  "oracle": {
+    "revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "numerical_results": "Computed by unchanged imported GGML CPU code on every case, independently of frozen recipe hashes.",
+    "fill_cases": 15360,
+    "cast_cases": 1920,
+    "fill_source_release_states": 1920,
+    "unchanged_baselines": {
+      "verification/native-fixture-baseline.json": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+      "verification/native-fixture-source-release.json": "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
+      "verification/matrix-fixture-baseline.json": "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
+      "verification/arithmetic-fixture-baseline.json": "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4"
+    },
+    "scope": "Component evidence; remaining imported operations/types/public APIs and other native fixture families remain open."
+  },
+  "automation": {
+    "bridge": "Shared mandatory test-only certified model library for COPY, REPEAT, CONCAT, FILL and CAST; these modes have no native recipe fallback. Production numerical execution unchanged.",
+    "patterns": {
+      "fill": {
+        "identities": 8,
+        "bytes_each": 256
+      },
+      "cast": {
+        "identities": 3,
+        "bytes_each": 192
+      },
+      "contract": "Universal metadataNamesThePattern and bytesFollowThePattern theorems bind memoization to the exact model semantics; chunk size and offsets come from the model."
+    },
+    "source_budget_work": "Consolidate repeated query assertions across arithmetic, COPY, REPEAT, CONCAT and the new typed fixtures while preserving their exact requests and expected answers.",
+    "compiler_checks": [
+      "debug-assertions=on",
+      "overflow-checks=on",
+      "model opt-level=2"
+    ],
+    "native_driver_reuse": "All 41 executable paths and nanosecond mtimes remain identical across both adapter faults.",
+    "restoration": "Both adapter mutations restored byte-for-byte and checked with cmp before final formatting, commit and full gate."
+  },
+  "affected_tests": [
+    {
+      "name": "typed_fixture_generation_vt_44",
+      "passed": true,
+      "seconds": 1.47
+    },
+    {
+      "name": "fill_graphs_vt_23",
+      "passed": true,
+      "seconds": 6.41
+    },
+    {
+      "name": "cast_graphs_vt_24",
+      "passed": true,
+      "seconds": 2.24
+    }
+  ],
+  "faults": [
+    {
+      "change": "XOR 1 into FILL constant metadata answers (query25,item9) in the C ABI adapter",
+      "test": "fill_graphs_vt_23",
+      "result": "All 15360 CPU comparisons and RESULT count pass, then frozen construction/input transcript hash rejects.",
+      "actual_sha256": "df6df82e7eca791affa8ae8cdb5e0a46601c7a2750440ff9c670b316a49aa246",
+      "expected_sha256": "d6723b95d277372d01fc6a838f0ae61904e35d3be4a2bd339a037b9803da4279",
+      "seconds": 3.1,
+      "exit_code": 101
+    },
+    {
+      "change": "XOR 1 into CAST physical input byte answers (query34) in the C ABI adapter",
+      "test": "cast_graphs_vt_24",
+      "result": "All 1920 CPU comparisons and RESULT count pass, then frozen physical input transcript hash rejects.",
+      "actual_sha256": "505160ae1bdbf466f62a2bfa3ce7d3d1e0a7aefd9b5f5b2dbd16aff812e214b6",
+      "expected_sha256": "48e9f8f0d5af3601fe1c4dd8e00378c7c9470feda73c6d0454e2c9df70acee75",
+      "seconds": 2.8,
+      "exit_code": 101
+    }
+  ],
+  "normalization_audit": {
+    "imported_source": "ggml/src/ggml-cpu/ops.cpp (pinned source archive)",
+    "finding": "RMS_NORM computes `const float mean = sum/ne00` with a ggml_float/F64 accumulator. The current Verdant evaluate_wide interface has add, widen, narrow and count-to-F32, but no F64 division primitive.",
+    "next_requirement": "Certify F64 accumulator/count division with F64 rounding before F32 narrowing, then implement the imported F32/BF16 copied/in-place paths.",
+    "implementation_claimed": false,
+    "regression_evidence": "verification/normalization-prerequisite.json"
+  },
+  "measurement_limit": "Single local observations include cache and compilation effects; no controlled performance benchmark is claimed.",
+  "logs": {
+    "before": "/tmp/vtensor-typed-fixtures-before.log",
+    "export": "/tmp/vtensor-typed-fixtures-export.log",
+    "first": "/tmp/vtensor-typed-fixtures-first.log",
+    "fill_fault": "/tmp/vtensor-typed-fill-binding-fault.log",
+    "cast_fault": "/tmp/vtensor-typed-cast-binding-fault.log",
+    "license": "/tmp/vtensor-typed-fixtures-license.log",
+    "vv": "/tmp/vtensor-typed-fixtures-vv.log",
+    "remaining": "/tmp/vtensor-typed-fixtures-remaining.log"
+  },
+  "full_gate": {
+    "command": "just vv",
+    "exit_code": 101,
+    "proof_event_reuse": false,
+    "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+    "passes": [
+      "full default application proof",
+      "formatting",
+      "50-ID model coherence",
+      "typed errors",
+      "deferral",
+      "SDK/bootstrap ownership",
+      "source parent ratchet:11381 to11380",
+      "52-file frame sync",
+      "template contract",
+      "canonical SDK lock",
+      "all-target/all-feature Clippy"
+    ],
+    "failure": "VT-02 rejects Verdant development override as production dependency evidence.",
+    "release_pass": false
+  },
+  "workspace": {
+    "command": "cargo test --workspace --locked (full gate test stage)",
+    "model_unit_passed": 5,
+    "bdd_passed": 4,
+    "contract_passed": 43,
+    "contract_failed": 1,
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 25.55,
+    "failure": "verdant_api::verdant_api_vt_02: Verdant Tensor must resolve to pinned upstream source; local development overrides are not release evidence.",
+    "scope": "Cargo stops at the failing contract binary; remaining binaries/doc tests are run separately without rerunning numerical groups."
+  },
+  "remaining_checks": {
+    "commands": [
+      "cargo test --locked -p vtensor-backend --test frame",
+      "cargo test --locked -p xtask",
+      "cargo test --workspace --doc --locked",
+      "just deny"
+    ],
+    "frame": {
+      "passed": 5,
+      "seconds": 0.24
+    },
+    "xtask": {
+      "passed": 62,
+      "seconds": 0.19
+    },
+    "ignored": 0,
+    "filtered": 0,
+    "doctests": "All available targets pass; no executable doctest examples are present.",
+    "dependency_deny": "Advisories, bans, licenses and sources pass. Arithmetic license clarification binds exact certified output hash0x0bed3672.",
+    "exit_code": 0
+  },
+  "source_budget": {
+    "original_accepted": 10549,
+    "current": 11380,
+    "excess": 831,
+    "parent": 11381,
+    "change": -1,
+    "files": 51,
+    "ceiling_raised": false,
+    "note": "A branch-parent ratchet pass does not recover or raise the original accepted source budget."
+  },
+  "cache_maintenance": "Clear only obsolete ignored root target/debug/incremental contents, isolated from the active /tmp/vtensor-analysis-target build and native driver caches. Certified artifacts and active proof preserved.",
+  "open": [
+    "Recover original handwritten-source budget.",
+    "Migrate remaining native fixture recipes.",
+    "Implement remaining imported operation/type/public API requirements, including the audited normalization prerequisite.",
+    "Close Verdant production dependency packaging and pass VT-02 and full acceptance."
+  ]
+}
