@@ -475,12 +475,12 @@ enum ExecutionPlan {
 }
 
 // Each certified graph bundle renders its own type for the same GGML metadata.
-fn descriptor_for<T>(
-    construct: fn(u64, u64, u64, u64, u64, u64, u64, u64, u64, u64, u64) -> T,
-) -> impl Fn(TensorDescriptor) -> T + Copy {
-    move |TensorDescriptor::C0(kind, n0, n1, n2, n3, s0, s1, s2, s3, span, address)| {
-        construct(kind, n0, n1, n2, n3, s0, s1, s2, s3, span, address)
-    }
+macro_rules! descriptor_for {
+    ($construct:path) => {
+        |TensorDescriptor::C0(kind, n0, n1, n2, n3, s0, s1, s2, s3, span, address)| {
+            $construct(kind, n0, n1, n2, n3, s0, s1, s2, s3, span, address)
+        }
+    };
 }
 
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
@@ -537,7 +537,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         output.clone(),
     ))
     .map_err(|_| BackendError::Overflow)?;
-    let metadata = descriptor_for(vtensor_typed::Adt1::C0);
+    let metadata = descriptor_for!(vtensor_typed::Adt1::C0);
     let typed_plan =
         |request| match vtensor_typed::run(request).map_err(|_| BackendError::Overflow)? {
             vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan))),
@@ -1299,7 +1299,7 @@ mod rotary {
         factors: Option<TensorDescriptor>,
         output: TensorDescriptor,
     ) -> Result<Option<Plan>, BackendError> {
-        let descriptor = super::descriptor_for(Descriptor::C0);
+        let descriptor = descriptor_for!(Descriptor::C0);
         match request(Request::C0(
             tensor.op as u64,
             tensor.src[3..].iter().any(|v| !v.is_null()),
@@ -1458,7 +1458,7 @@ mod attention {
             return Err(BackendError::InvalidTensor);
         };
         let word = |index: usize| u64::from(tensor.op_params[index] as u32);
-        let descriptor = super::descriptor_for(Descriptor::C0);
+        let descriptor = descriptor_for!(Descriptor::C0);
         match request(Request::C0(
             tensor.op as u64,
             tensor.src[5..].iter().any(|p| !p.is_null()),
