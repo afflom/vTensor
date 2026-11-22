@@ -4731,3 +4731,16 @@ The upstream factory previously reported a vTensor refusal for each of these
 multiplied forms and their add/multiply compositions. Routing sigmoid to SiLU
 failed the first F16 sigmoid case. Restoring the correct binding passed all
 122 cases. VT-02 accepted the exact Git dependency. [GGML results](verification/factory-logistic-vt61.json) · [Verdant scalar oracle](https://github.com/afflom/verdant-engine/pull/22)
+
+## VT-60 and VT-61 checkpoints
+
+At `2146195`, the complete locked-SDK run proved the application and passed
+all 67 backend contract tests in 578.52 seconds. Its final dependency check
+rejected the old license clarification hash for the regenerated pointwise
+kernel. Revision `ada8c2d` bound the clarification to the new certified bytes
+and the dependency check passed.
+
+On the VT-61 Verdant pin, the 122 logistic cases, the 39 elementary cases,
+the complete 510-case forward rotary group, the two small attention cases
+and VT-02 passed together. Scoped Clippy and the dependency check passed.
+VT-58 remains the most recent full `just vv` checkpoint.
