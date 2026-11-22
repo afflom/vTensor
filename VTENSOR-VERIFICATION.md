@@ -4335,3 +4335,9 @@ output.weight`. This GGUF stores the output weight as Q8_0 with dimensions
 Per-node placement, prefill logits, and KV-cache reuse on vTensor remain open.
 [Upstream weight probe](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/src/llama-model-loader.cpp#L1048)
 · [Upstream example and model hash](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/examples/eval-callback/CMakeLists.txt)
+
+At `f4c5923`, upstream factory ordinal 10,681 reproduced the same matrix
+admission gap independently of model loading. Running the exact parameter
+filter from the [case transcript](verification/ggml-factory-cases.tsv.gz) via
+`test_case::eval` returned `not supported` and the oracle exited 2. It uses
+one F32 activation column, 16 Q8_0 weight rows and inner dimension 256.

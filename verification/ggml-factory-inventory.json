@@ -192,7 +192,7 @@
   "factory_verdicts": {
     "evidence_commit": "2ddd3a7",
     "source": "crates/conformance/tests/contract.rs",
-    "selection": "Join each ordinal to the completed CPU factory test by exact label. Rows without a matching label have an open verdict. Supplemental fixtures do not contribute.",
+    "selection": "Passed groups match exact labels in the imported evaluator. Explicit ordinal results record targeted runs. Unmatched ordinals are untested. Supplemental fixtures do not contribute.",
     "passed_by_requirement": {
       "VT-37": [
         "ARANGE"
@@ -223,6 +223,13 @@
       ]
     },
     "passed": 455,
-    "open": 27300
+    "refused_ordinals": {
+      "10681": {
+        "commit": "f4c5923",
+        "oracle": "make_test_cases_eval / test_case::eval",
+        "result": "not supported"
+      }
+    },
+    "untested": 27299
   }
 }
