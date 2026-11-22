@@ -4561,3 +4561,7 @@ phase reduction for two results. The pinned Engine passed all 520,568
 independent GGML scalar comparisons. A fresh vTensor build passed VT-02,
 the 36-case SwiGLU regression and cargo-deny. The rotary GGML graph work
 remains open in VT-57. [Upstream numerical evidence](https://github.com/afflom/verdant-engine/blob/db211ab9efc25855162be786bc2db6034a0c483a/ENGINE-VERIFICATION.md#vtk-21-binary32-sine-and-cosine)
+
+### Rotary address plan
+
+Prism certified the admission decision, input/output row offsets, paired channel addresses and multimodal position selection for VT-57. The SDK replayed export `4ac3f3de27fdeca5640eb07367ca41ea0d361e5c6a4d689b74e7cf22e655c761`. The backend built with the exported package and passed dependency checks. The forward and backward GGML factory runs remain open pending numerical dispatch. [Model and certificate](https://github.com/afflom/vTensor/commit/7774ee045cf44352cdb85531ef752af1fde6394e)
