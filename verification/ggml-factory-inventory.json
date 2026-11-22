@@ -191,7 +191,7 @@
   ],
   "factory_verdicts": {
     "source": "crates/conformance/tests/contract.rs",
-    "selection": "Match exact labels, passed parameter groups and the individually attributed refusals below. Add the disjoint factory ordinals in standalone_evidence. Every remaining ordinal is untested.",
+    "selection": "Match exact labels, passed parameter groups and the individually attributed refusals below. Add the disjoint factory ordinals in standalone_evidence. Every remaining ordinal is untested. Apply superseded_standalone_verdicts last, replacing the previous verdict for each identical ordinal.",
     "passed_by_requirement": {
       "VT-37": [
         "ARANGE"
@@ -294,9 +294,15 @@
       ],
       "VT-34": [
         "ADD_ID"
+      ],
+      "VT-60": [
+        "LOG",
+        "SIN",
+        "COS",
+        "EXP"
       ]
     },
-    "passed": 5716,
+    "passed": 5755,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -387,8 +393,11 @@
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
     "rotary_composition_evidence": "verification/factory-rotary-compositions.json",
-    "refused": 20405,
+    "refused": 20366,
     "failed": 0,
-    "standalone_evidence": "verification/factory-standalone-vt59.json"
+    "standalone_evidence": "verification/factory-standalone-vt59.json",
+    "superseded_standalone_verdicts": {
+      "VT-60": "verification/factory-elementary-vt60.json"
+    }
   }
 }
