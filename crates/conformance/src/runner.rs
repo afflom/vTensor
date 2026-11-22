@@ -199,30 +199,28 @@ impl BufferContext {
 
 fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
     let ty = u64::try_from(tensor.ty).map_err(|_| BackendError::InvalidTensor)?;
-    let (block, element) = match vtensor_types::run(ty) {
-        vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(_, block, element)) => (block, element),
-        _ => return Err(BackendError::InvalidTensor),
+    let vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(_, block, element)) =
+        vtensor_types::run(ty)
+    else {
+        return Err(BackendError::InvalidTensor);
     };
     // Zero extents are empty. Negative ABI extents cannot inhabit the Prism
     // model's natural-number domain and must fail before buffer admission.
     let [Ok(n0), Ok(n1), Ok(n2), Ok(n3)] = tensor.ne.map(u64::try_from) else {
         return Err(BackendError::InvalidTensor);
     };
-    let nb = tensor.nb.map(|n| n as u64);
+    let [s0, s1, s2, s3] = tensor.nb.map(|n| n as u64);
+    let layout = vtensor_layout::Adt0::C0(n0, n1, n2, n3, s0, s1, s2, s3, block, element);
+    let vtensor_layout::Adt1::C1(size) =
+        vtensor_layout::run(layout).map_err(|_| BackendError::Overflow)?
+    else {
+        return Err(BackendError::InvalidTensor);
+    };
+    usize::try_from(size).map_err(|_| BackendError::Overflow)?;
     let address = tensor.data as usize as u64;
-    match vtensor_layout::run(vtensor_layout::Adt0::C0(
-        n0, n1, n2, n3, nb[0], nb[1], nb[2], nb[3], block, element,
+    Ok(TensorDescriptor::C0(
+        ty, n0, n1, n2, n3, s0, s1, s2, s3, size, address,
     ))
-    .map_err(|_| BackendError::Overflow)?
-    {
-        vtensor_layout::Adt1::C1(size) => {
-            usize::try_from(size).map_err(|_| BackendError::Overflow)?;
-            Ok(TensorDescriptor::C0(
-                ty, n0, n1, n2, n3, nb[0], nb[1], nb[2], nb[3], size, address,
-            ))
-        }
-        _ => Err(BackendError::InvalidTensor),
-    }
 }
 
 fn tensor_span(tensor: &Tensor) -> Result<usize, BackendError> {
@@ -476,6 +474,15 @@ enum ExecutionPlan {
     Attention(Box<vtensor_attention::Adt2>),
 }
 
+// Each certified graph bundle renders its own type for the same GGML metadata.
+fn descriptor_for<T>(
+    construct: fn(u64, u64, u64, u64, u64, u64, u64, u64, u64, u64, u64) -> T,
+) -> impl Fn(TensorDescriptor) -> T + Copy {
+    move |TensorDescriptor::C0(kind, n0, n1, n2, n3, s0, s1, s2, s3, span, address)| {
+        construct(kind, n0, n1, n2, n3, s0, s1, s2, s3, span, address)
+    }
+}
+
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
     let output = tensor_metadata(tensor)?;
     let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span, _) = &output;
@@ -530,9 +537,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         output.clone(),
     ))
     .map_err(|_| BackendError::Overflow)?;
-    let metadata = |TensorDescriptor::C0(a, b, c, d, e, f, g, h, i, j, k)| {
-        vtensor_typed::Adt1::C0(a, b, c, d, e, f, g, h, i, j, k)
-    };
+    let metadata = descriptor_for(vtensor_typed::Adt1::C0);
     let typed_plan =
         |request| match vtensor_typed::run(request).map_err(|_| BackendError::Overflow)? {
             vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan))),
@@ -646,10 +651,10 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
         graph_tensor_data(right)?,
         graph_tensor_data(tensor)?,
     ];
-    let strides = |tensor: &Tensor| {
-        let [s0, s1, s2, s3] = tensor.nb.map(|s| s as u64);
+    let [left_stride, right_stride, output_stride] = [left, right, tensor].map(|t| {
+        let [s0, s1, s2, s3] = t.nb.map(|s| s as u64);
         Strides::C0(s0, s1, s2, s3)
-    };
+    });
     let step = |index| {
         vtensor_matrix_execution::run(
             index,
@@ -660,9 +665,9 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
             b3,
             r2,
             r3,
-            strides(left),
-            strides(right),
-            strides(tensor),
+            left_stride.clone(),
+            right_stride.clone(),
+            output_stride.clone(),
         )
         .map_err(|_| BackendError::Overflow)
     };
@@ -706,6 +711,35 @@ unsafe fn write_float_row(destination: *mut u8, row: &[f32]) {
     }
 }
 
+struct TensorInput<'a> {
+    bytes: &'a [u8],
+    tensor: &'a Tensor,
+}
+
+impl<'a> TensorInput<'a> {
+    fn new(t: &'a Tensor) -> Result<Self, BackendError> {
+        let span = tensor_span(t)?;
+        let bytes = if span == 0 {
+            &[]
+        } else {
+            // SAFETY: GGML retains this checked native region throughout graph execution.
+            unsafe { std::slice::from_raw_parts(graph_tensor_region(t, span)?, span) }
+        };
+        Ok(Self { bytes, tensor: t })
+    }
+
+    fn region(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
+        if count == 0 {
+            return Ok(&[]);
+        }
+        let offset = usize::try_from(offset).map_err(|_| BackendError::Overflow)?;
+        self.bytes
+            .get(offset..)
+            .and_then(|b| b.get(..count))
+            .ok_or(BackendError::OutOfBounds)
+    }
+}
+
 fn execute_quantized_matrix(
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
@@ -722,7 +756,7 @@ fn execute_quantized_matrix(
     };
     // SAFETY: graph admission retained both typed GGML source descriptors.
     let (w, a) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
-    let weights = graph_tensor_data(w)?;
+    let weights = TensorInput::new(w)?;
     let activations = graph_tensor_data(a)?;
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
@@ -762,15 +796,7 @@ fn execute_quantized_matrix(
             else {
                 return Err(BackendError::InvalidTensor);
             };
-            let bytes = if weight_bytes == 0 {
-                &[]
-            } else {
-                // SAFETY: Prism bounds the complete contiguous encoded row in the
-                // live weight buffer. Writes are staged until all reads finish.
-                unsafe {
-                    std::slice::from_raw_parts(weights.add(start as usize), weight_bytes as usize)
-                }
-            };
+            let bytes = weights.region(start, weight_bytes as usize)?;
             *value = dot(bytes, &prepared).map_err(|_| BackendError::InvalidTensor)?;
         }
     }
@@ -1265,12 +1291,6 @@ mod rotary {
         vtensor_rotary::run(query).map_err(|_| BackendError::Overflow)
     }
 
-    fn descriptor(
-        TensorDescriptor::C0(a, b, c, d, e, f, g, h, i, j, k): TensorDescriptor,
-    ) -> Descriptor {
-        Descriptor::C0(a, b, c, d, e, f, g, h, i, j, k)
-    }
-
     pub(super) fn plan(
         tensor: &Tensor,
         layout: Layout,
@@ -1279,6 +1299,7 @@ mod rotary {
         factors: Option<TensorDescriptor>,
         output: TensorDescriptor,
     ) -> Result<Option<Plan>, BackendError> {
+        let descriptor = super::descriptor_for(Descriptor::C0);
         match request(Request::C0(
             tensor.op as u64,
             tensor.src[3..].iter().any(|v| !v.is_null()),
@@ -1418,18 +1439,14 @@ mod rotary {
 }
 
 mod attention {
-    use super::{graph_tensor_data, workspace, BackendError, Tensor, TensorDescriptor};
+    use super::{
+        graph_tensor_data, workspace, BackendError, Tensor, TensorDescriptor, TensorInput,
+    };
     use verdant_tensor::linear::{evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32};
     use vtensor_attention::{Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as Response};
 
     fn request(query: Request) -> Result<Response, BackendError> {
         vtensor_attention::run(query).map_err(|_| BackendError::Overflow)
-    }
-
-    fn descriptor(
-        TensorDescriptor::C0(a, b, c, d, e, f, g, h, i, j, k): TensorDescriptor,
-    ) -> Descriptor {
-        Descriptor::C0(a, b, c, d, e, f, g, h, i, j, k)
     }
 
     pub(super) fn plan(
@@ -1441,6 +1458,7 @@ mod attention {
             return Err(BackendError::InvalidTensor);
         };
         let word = |index: usize| u64::from(tensor.op_params[index] as u32);
+        let descriptor = super::descriptor_for(Descriptor::C0);
         match request(Request::C0(
             tensor.op as u64,
             tensor.src[5..].iter().any(|p| !p.is_null()),
@@ -1459,37 +1477,7 @@ mod attention {
         }
     }
 
-    struct Input<'a> {
-        bytes: &'a [u8],
-        kind: u64,
-        width: usize,
-    }
-
-    impl<'a> Input<'a> {
-        fn new(t: &'a Tensor) -> Result<Self, BackendError> {
-            let span = super::tensor_span(t)?;
-            let data = super::graph_tensor_region(t, span)?;
-            let bytes = if span == 0 {
-                &[]
-            } else {
-                // SAFETY: GGML retains this checked native region throughout graph execution.
-                unsafe { std::slice::from_raw_parts(data, span) }
-            };
-            Ok(Self {
-                bytes,
-                kind: t.ty as u64,
-                width: t.nb[0],
-            })
-        }
-
-        fn region(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
-            let offset = usize::try_from(offset).map_err(|_| BackendError::Overflow)?;
-            self.bytes
-                .get(offset..)
-                .and_then(|b| b.get(..count))
-                .ok_or(BackendError::OutOfBounds)
-        }
-
+    impl TensorInput<'_> {
         fn half(&self, offset: u64) -> Result<u16, BackendError> {
             Ok(u16::from_ne_bytes(
                 self.region(offset, 2)?.try_into().unwrap(),
@@ -1497,14 +1485,14 @@ mod attention {
         }
 
         fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
-            let size = out
-                .len()
-                .checked_mul(self.width)
-                .ok_or(BackendError::Overflow)?;
-            for (bytes, value) in self.region(offset, size)?.chunks_exact(self.width).zip(out) {
-                *value = match (self.kind, bytes) {
+            let width = self.tensor.nb[0];
+            let size = out.len().checked_mul(width).ok_or(BackendError::Overflow)?;
+            for (bytes, value) in self.region(offset, size)?.chunks_exact(width).zip(out) {
+                *value = match (self.tensor.ty as u64, bytes) {
                     (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
-                    (1, &[a, b]) => super::decode_float(1, u16::from_ne_bytes([a, b]).into())?,
+                    (kind @ (1 | 30), &[a, b]) => {
+                        super::decode_float(kind, u16::from_ne_bytes([a, b]).into())?
+                    }
                     _ => return Err(BackendError::InvalidTensor),
                 };
             }
@@ -1516,7 +1504,7 @@ mod attention {
         let input = |i: usize| {
             // SAFETY: GGML retains all present sources during the synchronous graph execution.
             unsafe { tensor.src[i].as_ref() }
-                .map(Input::new)
+                .map(TensorInput::new)
                 .transpose()
         };
         let (Some(q), Some(k), Some(v), mask, sink) =
@@ -1524,8 +1512,9 @@ mod attention {
         else {
             return Err(BackendError::InvalidTensor);
         };
-        // SAFETY: admission required live query, key and value descriptors and their layouts.
-        let (shape, key_rows) = unsafe { ((*tensor.src[0]).ne, (*tensor.src[1]).ne[1] as u64) };
+        let shape = q.tensor.ne;
+        let key_rows = k.tensor.ne[1] as u64;
+        let dot_type = k.tensor.ty as u64;
         let mut query = workspace(shape[0] as u64, 0.0)?;
         let mut key = workspace(shape[0] as u64, 0.0)?;
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
@@ -1540,11 +1529,18 @@ mod attention {
                         return Err(BackendError::InvalidTensor);
                     };
                     q.decode(qoff, &mut query)?;
+                    // GGML prepares the query in the key's dot-product storage once per head.
+                    if dot_type != 0 {
+                        for word in &mut query {
+                            let encoded = super::convert(0, dot_type, word.to_bits().into())?;
+                            *word = super::decode_float(dot_type, encoded)?;
+                        }
+                    }
                     let mut mean = WeightedMeanF32::new(value.len());
                     for row in 0..key_rows {
                         let bias = match &mask {
                             Some(m) => {
-                                let half = m.half(moff + row * m.width as u64)?;
+                                let half = m.half(moff + row * m.tensor.nb[0] as u64)?;
                                 if vtensor_attention_mask::run(u64::from(half)) {
                                     continue;
                                 }

@@ -86,7 +86,7 @@ definition{
     o : NormPlan::TensorDescriptor
   ],
   result: Bool,
-  body: (((((((project t ty) =? 1) && ((project t s0) =? 2)) || (((project t ty) =? 0) && ((project t s0) =? 4))) && (multiple (project q n2) (project t n2))) && (multiple (project q n3) (project t n3))) && (NormPlan::separateTensors t o)),
+  body: ((((((((project t ty) =? 1) || ((project t ty) =? 30)) && ((project t s0) =? 2)) || (((project t ty) =? 0) && ((project t s0) =? 4))) && (multiple (project q n2) (project t n2))) && (multiple (project q n3) (project t n3))) && (NormPlan::separateTensors t o)),
   executable: true
 }
 
