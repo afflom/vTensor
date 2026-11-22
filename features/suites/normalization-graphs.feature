@@ -25,3 +25,11 @@ Feature: normalization-graphs
     And F64 accumulation is divided before narrowing the mean to F32
     And all row scales are validated before any output write
     And invalid parameters layouts aliases and numeric rows are typed atomic refusals
+
+  @VT-48 @build
+  Scenario: Prism models copied and in-place F32 NORM with stride-selected accumulation and grouped contiguous variance while Verdant matches the pinned imported GGML CPU oracle
+    Given the pinned GGML constructors CPU implementation and factory cases
+    When Prism selects contiguous or strided mean and variance instruction phases
+    Then Verdant results match every imported NORM case
+    And copied and in-place edge cases preserve padding and atomic metadata refusals
+    And cancellation and grouped-rounding defects are rejected

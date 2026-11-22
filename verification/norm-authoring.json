@@ -1,0 +1,22 @@
+{
+  "spec": "vtensor/norm-authoring/1",
+  "capability": "VT-48",
+  "status": "registered-failing-before-implementation",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "audit": "verification/normalization-next-audit.json",
+  "initial_failure": {
+    "command": "cargo test --locked -p vtensor-backend --test contract normalization_graphs_vt_48 -- --nocapture",
+    "exit_code": 101,
+    "diagnostic": "NORM(type=f32,ne=[64,5,4,3],v=0,eps=0.000000,noncontig_rows=0): not supported",
+    "expected_factory_count": 61,
+    "count_basis": "5 epsilons times (2 widths times 3 layouts plus 3 widths times 2 views), plus the 65536-plane regression."
+  },
+  "design": {
+    "arithmetic": "Separate contiguous SSE2 grouped variance and scalar strided paths. Preserve F32 narrowing before mean division and F64 variance division where the imported CPU does.",
+    "scratch": "Six arithmetic words, plus exact output occupancy slots only for non-nested layouts. No per-row factor cache is needed because the CPU imposes no numeric scale refusal for NORM.",
+    "execution": "Preflight output injectivity before writing. Compute each mean once, center output once while accumulating variance, and scale that centered output once.",
+    "legacy": "No extra Prism request or heap allocation for older modes.",
+    "validation": "Imported factory, independently imported CPU exact-word supplemental comparisons, metadata/alias/overlap refusals and grouped-rounding planted faults."
+  },
+  "acceptance_not_claimed": true
+}

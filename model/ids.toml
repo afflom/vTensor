@@ -352,3 +352,9 @@ id = "VT-47"
 level = "build"
 suite = "fixture-generation"
 statement = "Prism generates spatial fixture signed pad reflect and roll parameters and circular oracle adaptation while preserving all 2256 frozen construction and input cases"
+
+[[id]]
+id = "VT-48"
+level = "build"
+suite = "normalization-graphs"
+statement = "Prism models copied and in-place F32 NORM with stride-selected accumulation and grouped contiguous variance while Verdant matches the pinned imported GGML CPU oracle"

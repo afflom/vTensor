@@ -517,6 +517,13 @@ fn fixture_generation_vt_47() {
     tensor_layout::certified_current_model(&root(), "spatial");
 }
 
+/// `VT-48`: NORM preserves stride-selected mean and variance rounding through Prism and Verdant.
+#[test]
+fn normalization_graphs_vt_48() {
+    tensor_layout::certified_current_model(&root(), "pointwise");
+    native_backend_oracle::verify(&root(), "upstream-NORM", 61);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
