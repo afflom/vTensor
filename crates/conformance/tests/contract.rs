@@ -173,6 +173,10 @@ ggml_batches! {
     /// `VT-57`: Exercise all upstream inverse-rotation graphs.
     #[test]
     fn rotary_backward_graphs_vt_57() { "upstream-ROPE_BACK", 424, ["rotary"] }
+    /// Four imported BF16 attention cases vary mask and sink presence independently.
+    #[test]
+    fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
+
     /// The first dense attention graph from the imported GGML factory.
     #[test]
     fn bf16_row_gradient_vt_62() { "row-gradient-bf16", 1680, ["pointwise"] }
@@ -2058,13 +2062,14 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
                                   !std::strcmp(op, "MUL_MAT_Q4_0_F32") ? GGML_TYPE_Q4_0 : GGML_TYPE_COUNT;
     const bool matrix_group = weight_type != GGML_TYPE_COUNT;
     const bool set_rows = !std::strcmp(op, "SET_ROWS_SCALAR");
-    const bool small_attention = !std::strcmp(op, "FLASH_ATTN_EXT_SMALL");
-    const bool first_attention = !std::strcmp(op, "FLASH_ATTN_EXT_FIRST");
-    const char *label = (small_attention || first_attention) ? "FLASH_ATTN_EXT" : set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
+    // Keep the ordinal selections tied to the imported make_test_cases_eval order.
+    const std::vector<size_t> attention = !std::strcmp(op, "FLASH_ATTN_EXT_FIRST") ? std::vector<size_t>{19242} :
+        !std::strcmp(op, "FLASH_ATTN_EXT_SMALL") ? std::vector<size_t>{19314, 19394} :
+        !std::strcmp(op, "FLASH_ATTN_EXT_BF16") ? std::vector<size_t>{19540, 20260, 20980, 21268} : std::vector<size_t>{};
+    const char *label = !attention.empty() ? "FLASH_ATTN_EXT" : set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
     for(auto &test:make_test_cases_eval()) {
       const auto id = ordinal++;
-      if (first_attention && id != 19242) continue;
-      if (small_attention && id != 19314 && id != 19394) continue;
+      if (!attention.empty() && std::find(attention.begin(),attention.end(),id)==attention.end()) continue;
       if (matrix_group) {
         const auto *matrix = dynamic_cast<const test_mul_mat *>(test.get());
         if (!matrix || matrix->type_a != weight_type || matrix->type_b != GGML_TYPE_F32) continue;

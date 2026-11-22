@@ -436,3 +436,9 @@ id = "VT-62"
 level = "build"
 suite = "native-backend"
 statement = "GGML BF16 row gradients accumulate into F32 with repeated and strided indices and match the pinned CPU widening and row-gradient operators"
+
+[[id]]
+id = "VT-63"
+level = "build"
+suite = "native-backend"
+statement = "GGML attention with BF16 key and value rows uses Verdant conversion and contraction and matches the imported CPU with optional masks and sinks"

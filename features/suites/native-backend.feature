@@ -32,3 +32,9 @@ Feature: native-backend
     Given the pinned GGML CPU cast and F32 GET_ROWS_BACK operators
     When vTensor accumulates encoded BF16 gradients into the requested F32 rows
     Then the output and unchanged padding match GGML and invalid indices are refused atomically
+
+  @VT-63 @build
+  Scenario: GGML attention with BF16 key and value rows uses Verdant conversion and contraction and matches the imported CPU with optional masks and sinks
+    Given the pinned GGML BF16 attention factory with 64 channels and 113 keys
+    When vTensor evaluates all four combinations of mask and sink presence
+    Then each output matches the imported GGML CPU evaluator
