@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **861 passed**, **2 refused** and **26,892 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **861 passed**, **3 refused** and **26,891 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -22,7 +22,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 126 scalar SET_ROWS factory cases, including all 20 F32 → F16 / I64 cases. Confirm llama.cpp admits all 12 KV-cache writes (VT-55). [Factory and scheduler evidence](VTENSOR-VERIFICATION.md#scalar-indexed-row-writes)
 - [x] Supply the shared binary32 exponential for SwiGLU and attention in Verdant. All 166,856 imported scalar comparisons pass. [Engine oracle and certificate](https://github.com/afflom/verdant-engine/blob/5b2f0c66e4e51a6e34d5deaf9212738924747912/ENGINE-VERIFICATION.md#vtk-19-binary32-exponential)
 - [x] Pass all 36 split, combined and swapped SWIGLU factory cases. Confirm llama.cpp admits all six feed-forward gates (VT-56). [Factory and scheduler evidence](VTENSOR-VERIFICATION.md#swiglu-rows)
-- [ ] Admit the 18 remaining compute nodes in stories15M. Close 12 F32 ROPE and six F16 K/V FLASH_ATTN_EXT nodes, then execute prefill and verify the first cache update. [Observed graph](verification/llama-stories15m-reserve-vt56.tsv)
+- [ ] Admit the 18 remaining compute nodes in stories15M. Close 12 normal-mode F32 ROPE nodes (48 rotated channels) and six FLASH_ATTN_EXT nodes (F32 queries, F16 K/V and mask), then execute prefill and verify the first cache update. [Observed graph](verification/llama-stories15m-reserve-vt56.tsv) · [Exact operands](verification/llama-stories15m-reserve-vt56-operands.tsv)
 - [ ] Complete embedding, projection and KV-cache operations. Close GET_ROWS, the remaining 641 SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, MUL_MAT precision modes, MUL_MAT_ID and OUT_PROD across their legal formats. Reuse the verified decoders and F32 matrix path.
 - [ ] Complete RoPE, its backward and cache-update variants, masked softmax, and attention. Run the 510 ROPE, 424 ROPE_BACK, 77 ROPE_SET_ROWS, 281 RMS_NORM_MUL_ROPE and 5,775 FLASH_ATTN_EXT factory cases in their assigned batches.
 - [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, all GLU variants, and their composed graphs. Exercise typed arithmetic against the 600 standalone ADD/SUB/MUL/DIV factory cases.
