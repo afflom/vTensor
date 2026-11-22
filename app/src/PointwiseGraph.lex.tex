@@ -893,10 +893,10 @@ definition{
   body: (match (numericDecision operation variant left right output)
     | PointwiseDecision.unsupported => (ctor PointwiseDecision.unsupported)
     | PointwiseDecision.delegated kernel => (ctor PointwiseDecision.delegated kernel)
-    | PointwiseDecision.invalidShape => (ctor PointwiseDecision.invalidShape)
-    | PointwiseDecision.execute kind unary n0 n1 n2 n3 count => (ctor PointwiseDecision.copyBlocks count 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.arithmetic kind unary (match right
+    | PointwiseDecision.invalidShape => (if ((((operation =? 2) || (operation =? 5)) || (operation =? 6)) || (operation =? 7)) then (ctor PointwiseDecision.delegated 67) else (ctor PointwiseDecision.invalidShape))
+    | PointwiseDecision.execute kind unary n0 n1 n2 n3 count => (if unary then (ctor PointwiseDecision.copyBlocks count 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.arithmetic kind unary (match right
       | Option.none => (indexContext left 1)
-      | Option.some value => (indexContext value 1))))
+      | Option.some value => (indexContext value 1)))) else (ctor PointwiseDecision.delegated 67))
     | PointwiseDecision.product m k n b2 b3 r2 r3 lc rc oc => (ctor PointwiseDecision.product m k n b2 b3 r2 r3 lc rc oc)
     | PointwiseDecision.copyBlocks count bytes source destination mode => (ctor PointwiseDecision.copyBlocks count bytes source destination mode)),
   executable: true
@@ -2706,6 +2706,13 @@ theorem{
   name: backwardDoesNotAddBindingsToForwardNorm,
   parameters: [],
   statement: ((sourceBindings (ctor CopyMode.normalized 64 0 4 6)) = (ctor GraphResponse.bindings 1 0 0 false)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: binaryArithmeticUsesIndependentPlanner,
+  parameters: [],
+  statement: ((numericPlan 2 0 (record TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}) (ctor Option.some [TensorDescriptor] (record TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192})) (record TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})) = (ctor PointwiseDecision.delegated 67)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

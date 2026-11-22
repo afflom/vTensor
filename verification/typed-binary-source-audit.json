@@ -67,15 +67,15 @@
     "Row and repeat counters are int64_t; do not introduce a 65536-row or INT32_MAX total-width cap where the authoritative loop does not have one."
   ],
   "implementation_sequence": [
-    "Keep the existing F32 arithmetic path and existing normalization instruction roots byte-identical where possible.",
+    "Audit the existing F32 binary path too. Route ADD SUB MUL DIV through the same typed planner because the legacy path lacks the imported unit-inner-stride, alias and signed-counter guards.",
     "Use separate bounded Prism roots for shared typed arithmetic planning and instruction generation; avoid growing the nearly full Pointwise certificate or adding a new mode variant.",
-    "Model all seven tuples, broadcasting, per-operand byte widths, exact conversions, signed counter bounds, empty tensors and safe alias/occupancy behavior. All numerical primitives remain imported Verdant calls.",
+    "Model all seven tuples, broadcasting, per-operand byte widths, exact conversions, signed counter bounds, empty tensors and safe alias/occupancy behavior. Decode and encode only when a type conversion is needed: F32 uses one phase, equal small storage uses four, mixed small/F32-to-small uses three, and mixed small/F32-to-F32 uses two. All numerical primitives remain imported Verdant calls.",
     "Use shared operand/target/operation transport; bind right shape/strides once per graph operation, never validate metadata per element. Recover native source lines through shared transport before adding family-specific plumbing.",
     "Run the 187-case imported composed test once after the changed root is certified. Generate targeted independent CPU supplemental fixtures in Prism for seven tuples and the boundaries not covered by factory construction.",
     "Plant type/rounding/broadcast/alias/certificate defects, restore each source, and rerun only the affected cheapest gate. Run exact-SDK just vv at coherent capability acceptance."
   ],
   "acceptance_limits": [
-    "The 187-case test is currently a genuine failure at BF16/F32 arithmetic.",
+    "The registered initial 187-case test genuinely failed at BF16/F32 arithmetic. Its unified typed implementation is in progress and has not yet completed the independent comparison.",
     "RoPE compositions require their own implementation and factory coverage.",
     "VT-02 production dependencies and original source-ceiling recovery remain mandatory."
   ]

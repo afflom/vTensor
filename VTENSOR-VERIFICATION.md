@@ -4190,3 +4190,49 @@ one below the prior implementation checkpoint. The original ceiling remains
 10,549, leaving 1,078 lines to recover. No parent movement erases that debt.
 Formatting passes. The unchanged full application proof was not repeated for
 this red-test checkpoint; this is not a successful full acceptance run.
+
+VT-51 now has a separate certified `TypedArithmetic.evaluate` root. Its 569
+declarations and preservation certificate are verified in the exact pinned
+SDK, with attestation
+`7006f6825c8797226f3696673354fa143738628cf90956b9fbc070695979e140`.
+The largest typed certificate is 530,577 bytes. Pointwise delegates all four
+scalar binary operations, including F32, to this shared planner; its 753
+declarations are verified with attestation
+`df2e281f5825b6c3363a594f8b9cf2c5f84a247879a2f09f27eb0329e0e6a540`.
+Its largest certificate is 4,140,076 bytes, below the unchanged 4,194,304 limit.
+The remote MCP proof service failed twice with LLB6003 and an external
+no-space diagnostic; these local SDK results are actual successful kernel
+and preservation proofs, not inferred remote attestations.
+
+The audit found that the legacy F32 path also needed the imported stride,
+alias and signed-counter guards. The new Prism plan covers all seven scalar
+type tuples, broadcasts, empty tensors, natural word alignment, permitted
+aliases and output occupancy before any stores. It retains source/output
+metadata once per graph operation. Its schedule emits one instruction per
+F32 element, four for equal F16/BF16 storage, three for mixed small/F32
+storage outputting small storage, or two for mixed input outputting F32.
+All conversion and numerical operations remain imported Verdant calls.
+The native adapter retains this plan and shares instruction transport with
+the existing normalization roots.
+
+The 120 frozen F32 arithmetic/unary cases pass in 4.75 seconds, and all 353
+backward-normalization edge cases pass in 6.99 seconds. Redirecting BF16
+encoding to F32 in the native transport fails the imported CPU comparison
+in 10.28 seconds: ADD error 3.190350070 exceeds 0.000100000 on the BF16
+[127,3,2,1] graph with F32 weights. Zeroing the typed lock attestation fails
+before numerical execution in 0.59 seconds. Both files were restored byte
+for byte. A separate temporary model encoding defect is rejected with
+LLV7002 at phases 2 and 5; the correct repository model was never replaced.
+The rejected project was removed from the repository after the check.
+
+The initial composed run was deliberately stopped when its mixed-only
+dispatch was superseded by the unified planner and minimal instruction
+schedule. It establishes no pass. The corrected 187-case comparison is
+running; exact-word supplemental coverage for every tuple and typed refusal
+case remains required. Full acceptance is unproven. Formatting, workspace
+Clippy and all-feature cargo-deny pass; source-bound license clarifications
+were refreshed without editing generated code. Source accounting measures
+11,708 non-Prism lines, 1,159 above the original ceiling and 81 above the
+prior implementation checkpoint. The source ratchet still fails. Production
+dependency packaging, original source-budget recovery, typed supplemental
+coverage and the remaining imported requirements remain open.

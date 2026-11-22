@@ -1,0 +1,125 @@
+{
+  "spec": "vtensor/typed-arithmetic-authoring/1",
+  "status": "core-implementation-verifying-not-full-acceptance",
+  "requirement": "VT-51",
+  "r3_checkpoint": "6d1e2a26d4d5",
+  "prior_implementation_checkpoint": "04c6e0e59eaef68b1943b115e3b45b7e40ecbe7e",
+  "authority_audit": "verification/typed-binary-source-audit.json",
+  "factory_inventory": "verification/composed-normalization-cases.json",
+  "authoring": {
+    "typed_draft": "prism-app/c5b494ca5eee21d29dc103f3f891e44956e89841c4deef9dfb6772ec99da3e74",
+    "pointwise_draft": "prism-app/caad6c2e57987b5c29496c36d22bcdeef520c7f96264550ef919ce49ca2e1920",
+    "structural_checks": "both passed",
+    "remote_proof_failures": [
+      {
+        "task": "task-59",
+        "scope": "initial sixteen-file typed draft",
+        "state": "failed",
+        "diagnostic": "LLB6003: staging preserve-src/LexLeanPreservation/RustSound.lean: No space left on device"
+      },
+      {
+        "task": "task-60",
+        "scope": "seven-file typed draft",
+        "state": "failed",
+        "diagnostic": "same external proof-service disk failure"
+      }
+    ],
+    "local_proofs": "Successful production exports in the exact pinned SDK; actual Lean and preservation proofs, no fabricated or reused event."
+  },
+  "models": {
+    "typed": {
+      "result": "1c2a507e5a31b8a247d4beacc11871f9978b190b5d8070fedec024930178a4de",
+      "attestation": "7006f6825c8797226f3696673354fa143738628cf90956b9fbc070695979e140",
+      "verified_declarations": 569,
+      "largest_certificate_bytes": 530577,
+      "source_sha256": "1d351ab08ef5fee274a71608c3fcf6584531de1f065006832d645e231378a379"
+    },
+    "pointwise": {
+      "result": "85d3c2afed3750f7e9dd5a931d09c539954f0b48302965aa3264123151158630",
+      "attestation": "df2e281f5825b6c3363a594f8b9cf2c5f84a247879a2f09f27eb0329e0e6a540",
+      "verified_declarations": 753,
+      "largest_certificate_bytes": 4140076,
+      "source_sha256": "def04b73a498030d556e29362ca12f788dc9d707afc7c7cc44dd68d02c7aa2d5"
+    }
+  },
+  "implementation": [
+    "Prism plans all ADD SUB MUL DIV scalar operations, including the legacy F32 path.",
+    "Prism admits precisely the seven scalar storage tuples and models CPU counter widths, independent broadcast strides, empty tensors, aliases and output occupancy.",
+    "Prism emits one F32 instruction per element, four equal-small-storage instructions, three mixed-small/F32-to-small instructions or two mixed-small/F32-to-F32 instructions. Identity conversions are omitted.",
+    "The native graph preflight retains the certified typed plan. A shared transport realizes both normalization and typed instructions; all arithmetic and conversion remain Verdant calls.",
+    "Nonnested output views are checked before stores using a per-output-word occupancy workspace; copied and identical input/output views are separated from unsafe overlap."
+  ],
+  "checks": {
+    "frozen_f32_arithmetic_and_unary": {
+      "test": "elementwise_graphs_vt_13",
+      "cases": 120,
+      "result": "pass",
+      "seconds": 4.75
+    },
+    "shared_normalization_transport": {
+      "test": "backward_runtime_edges_vt_50",
+      "cases": 353,
+      "result": "pass",
+      "seconds": 6.99
+    },
+    "composed_normalization": {
+      "test": "composed_normalization_vt_51",
+      "cases": 187,
+      "result": "running"
+    },
+    "clippy": "workspace/all targets/all features passed",
+    "dependencies": "all-feature cargo-deny passed after refreshing exact generated-source license clarifications; one existing unused-source warning",
+    "format": "passed",
+    "model": "57 IDs, errors/deferral/bootstrap pass; source ratchet refuses growth"
+  },
+  "planted_defects": [
+    {
+      "kind": "native encoding",
+      "change": "Redirect the BF16 destination conversion to F32 while retaining the two-byte output transfer.",
+      "test": "composed_normalization_vt_51",
+      "result": "rejected",
+      "diagnostic": "Independent imported CPU ADD comparison ERR=3.190350070 exceeds 0.000100000 at BF16 [127,3,2,1] with F32 weights.",
+      "seconds": 10.28,
+      "restoration": "Native runner restored byte-for-byte from task backup."
+    },
+    {
+      "kind": "certificate binding",
+      "change": "Replace typed kernel lock attestation with 64 zeroes.",
+      "test": "composed_normalization_vt_51",
+      "result": "rejected before numerical execution",
+      "seconds": 0.59,
+      "restoration": "Typed lock restored byte-for-byte from task backup."
+    },
+    {
+      "kind": "model encoding",
+      "change": "Separate TypedArithmeticFault module encodes the output as F32 instead of BF16.",
+      "command": "lexlean --project typedfault.lexlean.toml --diagnostic-format json verify",
+      "result": "LLV7002 at phases 2 and 5; expected BF16 output type 30 differs from modeled type 0.",
+      "restoration": "Correct TypedArithmetic model never replaced; temporary rejected project removed from the repository and preserved in task RAM."
+    }
+  ],
+  "superseded_validation": {
+    "test": "composed_normalization_vt_51",
+    "result": "deliberately stopped without a conformance claim",
+    "reason": "The source audit showed legacy F32 must use the new safety planner too. The initial fixed four-phase mixed schedule was superseded by type-specific minimal phases before final numerical acceptance."
+  },
+  "source_budget": {
+    "current": 11708,
+    "original_ceiling": 10549,
+    "original_excess": 1159,
+    "prior_implementation": 11627,
+    "growth_since_prior_implementation": 81,
+    "gate_parent": "6d1e2a26d4d5",
+    "gate_parent_lines": 11662,
+    "gate_reported_growth": 46,
+    "status": "failing; original debt is not reset by checkpoint parents"
+  },
+  "remaining_required_work": [
+    "Finish the 187-case independent composed comparison.",
+    "Add Prism-generated exact-word supplemental CPU fixtures for all seven tuples, source/output padding and permutations, nonnested occupancy, broadcasts, alias modes, NaNs, signed zero, empty axes and wide counters.",
+    "Prove the new typed metadata and overlap refusal gates with targeted negative cases; factory success alone is insufficient.",
+    "Recover the original source ceiling and replace the forbidden development dependency with an authoritative locked production release.",
+    "Run complete exact-SDK just vv at coherent acceptance; no full success is claimed here.",
+    "Implement and validate remaining imported requirements, including RoPE compositions and non-scalar binary formats."
+  ]
+}

@@ -62,3 +62,5 @@ screens/
 /app/.lexlean-groupfixtures/
 
 /app/.lexlean-rmsbackfixtures/
+
+/app/.lexlean-typed/

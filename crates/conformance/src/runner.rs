@@ -475,7 +475,12 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
     }
 }
 
-fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
+enum ExecutionPlan {
+    Standard(GraphPlan),
+    Typed(vtensor_typed::Adt2),
+}
+
+fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
     let output = tensor_metadata(tensor)?;
     let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span, _) = &output;
     let operation = u64::try_from(tensor.op).map_err(|_| BackendError::InvalidTensor)?;
@@ -511,7 +516,25 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
     ))
     .map_err(|_| BackendError::Overflow)?;
     match response {
-        GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..))) => Ok(Some(plan)),
+        GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..))) => {
+            Ok(Some(ExecutionPlan::Standard(plan)))
+        }
+        GraphResponse::C0(GraphPlan::C5(67)) => {
+            let metadata = |TensorDescriptor::C0(a, b, c, d, e, f, g, h, i, j, k)| {
+                vtensor_typed::Adt1::C0(a, b, c, d, e, f, g, h, i, j, k)
+            };
+            let vtensor_typed::Adt3::C2(plan) = vtensor_typed::run(vtensor_typed::Adt0::C0(
+                operation,
+                primary.map(metadata),
+                secondary.map(metadata),
+                metadata(output),
+            ))
+            .map_err(|_| BackendError::Overflow)?
+            else {
+                return Err(BackendError::InvalidTensor);
+            };
+            Ok(Some(ExecutionPlan::Typed(plan)))
+        }
         GraphResponse::C0(GraphPlan::C5(64)) => normalization_plan(
             primary.as_ref().ok_or(BackendError::InvalidTensor)?,
             secondary.as_ref(),
@@ -520,7 +543,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<GraphPlan>, BackendError> {
             p0,
             p1,
         )
-        .map(Some),
+        .map(|plan| Some(ExecutionPlan::Standard(plan))),
         _ => Err(BackendError::InvalidTensor),
     }
 }
@@ -807,6 +830,14 @@ fn normalization_word(
         }
         _ => return Err(BackendError::InvalidTensor),
     };
+    instruction_response([
+        family, operation, 0, 0, a, from, b, right, target, to, bytes, bytes,
+    ])
+}
+
+fn instruction_response(
+    [family, operation, source_type, destination_type, a, from, b, right, target, to, read_bytes, write_bytes]: [u64; 12],
+) -> Result<GraphResponse, BackendError> {
     let operand = |kind, at| match kind {
         0 => Ok(WordOperand::C0(0, at)),
         1 => Ok(WordOperand::C1(at)),
@@ -821,18 +852,68 @@ fn normalization_word(
             1 => WordOperation::C1(operation),
             2 => WordOperation::C5(operation),
             3 => WordOperation::C3(operation, operation, false),
+            4 => WordOperation::C2(source_type, destination_type, false),
             _ => return Err(BackendError::InvalidTensor),
         },
         operand(a, from)?,
         operand(b, right)?,
         match target {
-            1 => WordTarget::C0(to),
+            0 | 1 => WordTarget::C0(to),
             3 => WordTarget::C1(to),
             _ => return Err(BackendError::InvalidTensor),
         },
-        bytes,
-        bytes,
+        read_bytes,
+        write_bytes,
     ))
+}
+
+fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
+    let vtensor_typed::Adt2::C0(count, capacity, ..) = &plan;
+    let mut words = workspace(*capacity, 0_u64)?;
+    // SAFETY: the certified plan admitted both retained source descriptors.
+    let (left, right) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
+    let pointers = [graph_tensor_data(left)?, graph_tensor_data(right)?];
+    let output = graph_tensor_data(tensor)?;
+    for index in 0..*count {
+        let vtensor_typed::Adt3::C3(
+            family,
+            operation,
+            source_type,
+            destination_type,
+            a,
+            from,
+            b,
+            right,
+            target,
+            to,
+            read_bytes,
+            write_bytes,
+        ) = vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
+            .map_err(|_| BackendError::Overflow)?
+        else {
+            return Err(BackendError::InvalidTensor);
+        };
+        execute_word(
+            instruction_response([
+                if family == 0 { 4 } else { family },
+                operation,
+                source_type,
+                destination_type,
+                a,
+                from,
+                b,
+                right,
+                target,
+                to,
+                read_bytes,
+                write_bytes,
+            ])?,
+            &pointers,
+            output,
+            &mut words,
+        )?;
+    }
+    Ok(())
 }
 
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
@@ -960,8 +1041,9 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
         }
         for (tensor, plan) in plans {
             let result = match plan {
-                GraphPlan::C3(..) => execute_matrix(&*tensor, plan),
-                GraphPlan::C4(..) => execute_copy(&*tensor, plan),
+                ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
+                ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
+                ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),
             };
             if result.is_err() {

@@ -183,6 +183,7 @@ fn matrix_graphs_vt_12() {
 /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
 #[test]
 fn elementwise_graphs_vt_13() {
+    tensor_layout::certified_current_model(&root(), "typed");
     tensor_layout::certified_current_model(&root(), "pointwise");
     native_backend_oracle::verify(&root(), "elementwise", 120);
 }
@@ -563,6 +564,7 @@ fn backward_runtime_edges_vt_50() {
 /// `VT-51`: Full composed graphs preserve mixed storage, broadcasting and aliases.
 #[test]
 fn composed_normalization_vt_51() {
+    tensor_layout::certified_current_model(&root(), "typed");
     verify_normalization(
         "upstream-NORM_SCALE,RMS_NORM_SCALE,NORM_MUL_ADD,RMS_NORM_MUL_ADD,ADD_RMS_NORM",
         187,
@@ -1330,7 +1332,7 @@ mod tensor_layout {
             "quotient" => ("verdant_quotient_f64".to_owned(), "tensor-quotient"),
             "native" => ("vtensor_native_config".to_owned(), "native"),
             "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" | "spatial"
-            | "norm" | "normfixtures" | "groupfixtures" | "rmsbackfixtures" => {
+            | "norm" | "normfixtures" | "groupfixtures" | "rmsbackfixtures" | "typed" => {
                 (format!("vtensor_{name}"), name)
             }
             _ => panic!("unknown certified model: {name}"),

@@ -508,6 +508,7 @@ dependencies = [
  "vtensor_rms_backward",
  "vtensor_spatial",
  "vtensor_transfer",
+ "vtensor_typed",
  "vtensor_types",
 ]
 
@@ -597,6 +598,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_transfer"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_typed"
 version = "0.1.0"
 
 [[package]]

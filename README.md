@@ -251,11 +251,18 @@ are preserved; source-1 geometry is captured once for execution. Its narrowing
 order and sign composition are recorded in `verification/backward-normalization-authoring.json`.
 The pinned factory inventory contains 27,755 cases. VT-51 now registers all
 187 NORM_SCALE, RMS_NORM_SCALE, NORM_MUL_ADD, RMS_NORM_MUL_ADD and ADD_RMS_NORM
-graphs, including 69 BF16 cases. Its test currently fails at mixed BF16/F32
-arithmetic; it is not an implemented capability. The imported constructors
+graphs, including 69 BF16 cases. Its registered failure exposed mixed BF16/F32
+arithmetic. A new certified Prism typed-arithmetic root now plans all four
+binary operations and all seven scalar storage tuples, including F32 safety
+guards. The complete composed comparison is in progress, so this capability
+is not yet accepted. The imported constructors
 and parameters are recorded in `verification/composed-normalization-cases.json`.
-The next shared implementation is Prism-planned typed binary arithmetic using
-Verdant conversions and F32 operations, with rounding at each graph node.
+The implementation uses Verdant conversions and F32 operations, with rounding
+at each graph node and identity conversions omitted by the Prism schedule.
+The existing 120 F32 arithmetic/unary cases and 353 backward-normalization
+edge cases pass; planted native encoding, model encoding and certificate
+binding defects are rejected. Exact-word typed supplemental CPU coverage
+remains required. Evidence is in `verification/typed-arithmetic-authoring.json`.
 Its authoritative type, stride and counter audit is in
 `verification/typed-binary-source-audit.json`. Another 281 factory graphs combine
 RMS normalization with RoPE and require separate coverage.
