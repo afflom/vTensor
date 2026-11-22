@@ -147,6 +147,7 @@ model does not sanction.
 | ID | Level | Statement |
 | --- | --- | --- |
 | `VT-38` | `build` | Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals |
+| `VT-45` | `build` | Verdant supplies certified F64 division and unsigned count to F64 conversion for normalization and preserves the imported GGML accumulator division before narrowing regression |
 
 ## oracle-import
 

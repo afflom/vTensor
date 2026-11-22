@@ -1,5 +1,13 @@
 Feature: normalization-graphs
 
+  @VT-45 @build
+  Scenario: Verdant supplies certified F64 division and unsigned count to F64 conversion for normalization and preserves the imported GGML accumulator division before narrowing regression
+    Given the imported GGML RMS normalization mean expression and its frozen rounding counterexample
+    When Verdant converts the row count divides the F64 accumulator and narrows the quotient
+    Then the result matches the authoritative expression without premature rounding
+    And large unsigned counts preserve F64 nearest even conversion
+    And unsupported operation codes are typed refusals
+
   @VT-38 @build
   Scenario: Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals
     Given the pinned unchanged upstream backend operation test factory and CPU reference backend

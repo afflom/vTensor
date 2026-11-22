@@ -334,3 +334,9 @@ id = "VT-44"
 level = "build"
 suite = "fixture-generation"
 statement = "Prism generates FILL and CAST fixture enumeration typed layouts constants and initial bytes while preserving all 17280 frozen cases source release states and independent GGML CPU expected results"
+
+[[id]]
+id = "VT-45"
+level = "build"
+suite = "normalization-graphs"
+statement = "Verdant supplies certified F64 division and unsigned count to F64 conversion for normalization and preserves the imported GGML accumulator division before narrowing regression"

@@ -466,6 +466,26 @@ fn typed_fixture_generation_vt_44() {
     ]);
 }
 
+/// `VT-45`: Verdant supplies certified F64 division and unsigned count to F64 conversion for normalization and preserves the imported GGML accumulator division before narrowing regression
+#[test]
+fn normalization_arithmetic_vt_45() {
+    use verdant_tensor::linear::evaluate_wide;
+    assert_eq!(
+        evaluate_wide(4, 0x3ff0000000000000, 0x4000000000000000).unwrap(),
+        Some(0x3fe0000000000000)
+    );
+    assert_eq!(
+        evaluate_wide(5, u64::MAX, 0).unwrap(),
+        Some(0x43f0000000000000)
+    );
+    let count = evaluate_wide(5, 5, 0).unwrap().unwrap();
+    let mean = evaluate_wide(4, 16777217_f64.to_bits(), count)
+        .unwrap()
+        .unwrap();
+    assert_eq!(evaluate_wide(2, mean, 0).unwrap(), Some(0x4a4cccce));
+    assert_eq!(evaluate_wide(6, 0, 0).unwrap(), None);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
