@@ -191,7 +191,7 @@
   ],
   "factory_verdicts": {
     "source": "crates/conformance/tests/contract.rs",
-    "selection": "Match exact labels, passed parameter groups and the individually attributed refusals below. Add the disjoint factory ordinals in standalone_evidence. Every remaining ordinal is untested. Apply superseded_standalone_verdicts last, replacing the previous verdict for each identical ordinal.",
+    "selection": "Match exact labels, passed parameter groups and the individually attributed refusals below. Add the disjoint factory ordinals in standalone_evidence. Apply superseded_standalone_verdicts last. Every remaining ordinal is untested.",
     "passed_by_requirement": {
       "VT-37": [
         "ARANGE"
@@ -310,7 +310,7 @@
         "ADD_SILU_MUL"
       ]
     },
-    "passed": 5877,
+    "passed": 6299,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -344,7 +344,7 @@
         "attribution_oracle_sha256": "26c67a377e7de1bfe45b9f2ec5388ca326c1143d5d68c6867f5091b232a90e84"
       }
     },
-    "untested": 1634,
+    "untested": 1212,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
