@@ -3808,10 +3808,12 @@ query; adding that query in Prism fixed the protocol without a native fallback.
 The workspace contract suite reports 46 passes and the existing VT-02 failure
 in 24.19 seconds. All-target Clippy, frame tests, 62 xtask tests, generated
 library targets, documentation, dependency/license and template checks pass.
-The current full `just vv` invocation is still running in the exact SDK;
-this checkpoint does not claim that it passed. The source audit reports
-11,402 lines, growth of 22 from the checked parent and 853 above the original
-10,549-line ceiling. Neither limit nor acceptance policy was relaxed.
+The full `just vv` invocation passed the application proof
+`fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942`
+and formatting, then failed the source audit. It reports 11,402 lines, growth
+of 17 from its immediate parent bfe5333 (11,385 lines), and 853 above the
+original 10,549-line ceiling. The pre-commit comparison against 70d1bc5
+reported 22 lines because it also included the registered failing test. Neither limit nor acceptance policy was relaxed.
 Machine-readable details are in `verification/rms-normalization-authoring.json`.
 
 Verdant upstream M24 at `55488e808bf88bd5ab1d62093f9417281d7b1f35` was
@@ -3821,3 +3823,7 @@ its newer source ratchets need an isolated migration. The audit is recorded in
 `verification/verdant-m24-review.json`. Full RMS acceptance, original source
 budget recovery, production dependency releases and the remaining imported
 operations are still open.
+
+After the full gate exited, the task-owned SDK cache was restored to its normal
+workspace path. Only superseded private oracle binaries/libraries were removed;
+current outputs and dependency caches were retained.

@@ -133,15 +133,26 @@
     "all_documentation_targets_ran": true,
     "dependency_and_license_checks_passed": true,
     "template_and_sdk_checks_passed": true,
-    "full_just_vv": "running"
+    "full_just_vv": {
+      "exit_code": 1,
+      "application_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+      "application_proof_passed": true,
+      "formatting_passed": true,
+      "stopped_at": "audit-prism: 17 lines growth against bfe5333da4c9 (11385 to 11402)",
+      "remaining_stages": "Already executed separately; contract VT-02 remains a failure. No successful full gate claimed."
+    },
+    "sdk_cache_restored_to_workspace": true
   },
   "source_budget": {
     "lines": 11402,
-    "checked_parent_lines": 11380,
-    "growth": 22,
+    "checked_parent_lines": 11385,
+    "growth": 17,
     "original_ceiling": 10549,
     "excess_over_original": 853,
     "ceiling_raised": false,
-    "recovery_required": true
+    "recovery_required": true,
+    "initial_audit_parent_lines": 11380,
+    "initial_audit_growth": 22,
+    "checked_parent": "bfe5333da4c9"
   }
 }
