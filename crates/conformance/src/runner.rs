@@ -1,5 +1,8 @@
 //! Native effects realizing the Prism plans at the imported GGML boundary.
 
+#[path = "runner/rotary.rs"]
+mod rotary;
+
 use crate::abi::*;
 use std::cell::UnsafeCell;
 use std::ffi::{c_char, c_int, c_void};
@@ -479,6 +482,7 @@ enum ExecutionPlan {
     Standard(GraphPlan),
     Typed(vtensor_typed::Adt2),
     Quantized(vtensor_matrix_q8::Adt2),
+    Rotary(vtensor_rotary::Adt3),
 }
 
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
@@ -567,6 +571,10 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 }
             }
             let a = secondary.ok_or(BackendError::InvalidTensor)?;
+            if matches!(operation, 45 | 46) {
+                return rotary::plan(tensor, w, a, base, output)
+                    .map(|plan| plan.map(ExecutionPlan::Rotary));
+            }
             if let Some(base) = base {
                 return typed_plan(vtensor_typed::Adt0::C2(
                     operation,
@@ -1190,6 +1198,7 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
             let result = match plan {
                 ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
+                ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
                 ExecutionPlan::Quantized(plan) => execute_quantized_matrix(&*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),

@@ -32,6 +32,7 @@ macro_rules! sources {
 sources! {
     "crates/conformance/src/lib.rs" => "lib.rs",
     "crates/conformance/src/meta.rs" => "meta.rs",
+    "crates/conformance/src/runner/rotary.rs" => "runner/rotary.rs",
     "crates/conformance/src/runner.rs" => "runner.rs",
     "crates/conformance/Cargo.toml" => "../Cargo.toml",
     "Cargo.toml" => "../../../Cargo.toml",
