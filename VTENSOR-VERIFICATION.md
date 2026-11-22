@@ -4594,3 +4594,19 @@ VT-02 and all four Cargo deny checks passed. [Prism lock](probes-kernel.lock)
 
 Both VT-57 batches also passed on the release plugin built from
 `fb2bada`, covering all 510 forward and 424 backward upstream rotary cases.
+
+## Existing provider factory cases
+
+The VT-58 registration branch exercised the VT-57 plugin against the pinned
+factory across the exact label groups in the [run record](verification/factory-checkpoint-vt57.json).
+The native driver checked the loaded library's identity and embedded source,
+selected the separate GGML reference CPU backend, and invoked the unchanged
+upstream evaluator. Each successful batch reported the full number of matching
+ordinals in the pinned case transcript. The inventory counts only complete
+passing groups and the individual refusals that the evaluator printed.
+
+To replay a group with the upstream test executable, load the same plugin
+through `GGML_BACKEND_PATH` and run `test-backend-ops test -b vTensor -o <labels> --output csv`
+at the pinned llama.cpp revision. Check the device, case count, support and
+comparison verdicts. The run record also identifies the SDK, exact provider
+binary, source snapshot and oracle executable.
