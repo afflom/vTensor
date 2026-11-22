@@ -169,7 +169,7 @@ definition{
   ],
   result: PointwiseDecision,
   body: (match (scalarKind operation variant)
-    | Option.none => (if rightPresent then (match (MatrixGraph::planMatrix operation leftType rightType outputType n0 n1 n2 n3 r0 r1 r2 r3 o0 o1 o2 o3)
+    | Option.none => (if rightPresent then (match (MatrixGraph::planScalarProduct operation leftType rightType outputType n0 n1 n2 n3 r0 r1 r2 r3 o0 o1 o2 o3)
       | MatrixGraph::MatrixDecision.unsupported => (ctor PointwiseDecision.unsupported)
       | MatrixGraph::MatrixDecision.invalidShape => (ctor PointwiseDecision.invalidShape)
       | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor PointwiseDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount)) else (ctor PointwiseDecision.invalidShape))

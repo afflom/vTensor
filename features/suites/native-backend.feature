@@ -38,3 +38,9 @@ Feature: native-backend
     Given the pinned GGML BF16 attention factory with 64 channels and 113 keys
     When vTensor evaluates all four combinations of mask and sink presence
     Then each output matches the imported GGML CPU evaluator
+
+  @VT-64 @build
+  Scenario: GGML matrix products with F16 and BF16 operands honor the input dot-product storage and match the imported CPU across six scalar type pairs
+    Given the pinned GGML matrix factory and reference CPU
+    When vTensor executes dense and permuted matrix products with the six F16 or BF16 operand pairs
+    Then all ten representative graphs match the reference

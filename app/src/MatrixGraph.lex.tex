@@ -40,6 +40,39 @@ definition{
   production: {effects: [overflow], targets: [rust-core]}
 }
 
+definition{
+  name: floatWord,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: (((kind =? 0) || (kind =? 1)) || (kind =? 30)),
+  executable: true
+}
+
+definition{
+  name: planScalarProduct,
+  parameters: [
+    operation : Nat,
+    leftType : Nat,
+    rightType : Nat,
+    outputType : Nat,
+    inner : Nat,
+    rows : Nat,
+    leftBatch2 : Nat,
+    leftBatch3 : Nat,
+    rightInner : Nat,
+    columns : Nat,
+    batch2 : Nat,
+    batch3 : Nat,
+    outputRows : Nat,
+    outputColumns : Nat,
+    outputBatch2 : Nat,
+    outputBatch3 : Nat
+  ],
+  result: MatrixDecision,
+  body: (if (((floatWord leftType) && (floatWord rightType)) && (((leftType =? 0) || (rightType =? 0)) || (leftType =? rightType))) then (planMatrix operation 0 0 outputType inner rows leftBatch2 leftBatch3 rightInner columns batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported)),
+  executable: true
+}
+
 theorem{
   name: scalarProductAdmitted,
   parameters: [],

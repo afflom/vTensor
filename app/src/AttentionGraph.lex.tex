@@ -2,6 +2,7 @@
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{NormPlan}
+\importmodule{ScalarDotStorage}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -50,7 +51,7 @@ inductive{
   constructors: [
     {name: invalid, fields: []},
     {name: admitted, fields: [Plan]},
-    {name: offsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: offsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -145,7 +146,7 @@ definition{
   result: Response,
   body: (if (((token <? (project (project plan query) n1)) && (head <? (project (project plan query) n2))) && (batch <? (project (project plan query) n3))) then (ctor Response.offsets (rowOffset (project plan query) token head batch) (rowOffset (project plan key) 0 (prim quotient head (prim quotient (project (project plan query) n2) (project (project plan key) n2) 0 : Nat) 0 : Nat) (prim quotient batch (prim quotient (project (project plan query) n3) (project (project plan key) n3) 0 : Nat) 0 : Nat)) (rowOffset (project plan value) 0 (prim quotient head (prim quotient (project (project plan query) n2) (project (project plan value) n2) 0 : Nat) 0 : Nat) (prim quotient batch (prim quotient (project (project plan query) n3) (project (project plan value) n3) 0 : Nat) 0 : Nat)) (match (project plan mask)
     | Option.none => 0
-    | Option.some m => (rowOffset m token (prim remainder head (project m n2) 0 : Nat) (prim remainder batch (project m n3) 0 : Nat))) (prim multiply head 4 : Nat) (rowOffset (project plan output) head token batch) (project (project plan key) s1) (project (project plan value) s1)) else (ctor Response.invalid)),
+    | Option.some m => (rowOffset m token (prim remainder head (project m n2) 0 : Nat) (prim remainder batch (project m n3) 0 : Nat))) (prim multiply head 4 : Nat) (rowOffset (project plan output) head token batch) (project (project plan key) s1) (project (project plan value) s1) (ScalarDotStorage::activationType (project (project plan key) ty))) else (ctor Response.invalid)),
   executable: true
 }
 

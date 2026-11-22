@@ -1,0 +1,28 @@
+\begin{lexlean}{ScalarDotStorage}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: activationType,
+  parameters: [weightType : Nat],
+  result: Nat,
+  body: (if (weightType =? 30) then 30 else 0),
+  executable: true
+}
+
+theorem{
+  name: halfWeightsRetainFloatActivations,
+  parameters: [],
+  statement: ((activationType 1) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bfloatWeightsUseBfloatActivations,
+  parameters: [],
+  statement: ((activationType 30) = 30),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

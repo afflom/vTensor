@@ -104,6 +104,51 @@ definition{
   production: {effects: [overflow], targets: [rust-core]}
 }
 
+inductive{
+  name: Selection,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: l2, fields: [Nat]}, {name: grouped, fields: [Nat, Nat, Nat, Nat]}]
+}
+
+definition{
+  name: dispatch,
+  parameters: [
+    selected : Selection,
+    index : Nat,
+    width : Nat,
+    n1 : Nat,
+    n2 : Nat,
+    n3 : Nat,
+    s0 : Nat,
+    s1 : Nat,
+    s2 : Nat,
+    s3 : Nat,
+    x0 : Nat,
+    x1 : Nat,
+    x2 : Nat,
+    x3 : Nat,
+    t0 : Nat,
+    t1 : Nat,
+    t2 : Nat,
+    t3 : Nat,
+    flag : Nat
+  ],
+  result: NormGraph::Instruction,
+  body: (match selected
+    | Selection.l2 epsilon => (NormGraph::evaluateL2 index width n1 n2 n3 s0 s1 s2 s3 t0 t1 t2 t3 epsilon flag)
+    | Selection.grouped kind epsilon rows capacity => (if (kind =? 66) then (evaluate index width n1 n2 n3 s0 s1 s2 s3 x0 x1 x2 x3 t0 t1 t2 t3 epsilon rows capacity flag) else (NormGraph::evaluate kind index width n1 n2 n3 s0 s1 s2 s3 t0 t1 t2 t3 epsilon rows capacity flag))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: unknownNormalizationKindRefused,
+  parameters: [],
+  statement: ((dispatch (ctor Selection.grouped 67 0 1 8) 0 1 1 1 1 4 4 4 4 4 4 4 4 4 4 4 4 0) = (ctor NormGraph::Instruction.invalid)),
+  proof: reflexivity{}
+}
+
 theorem{
   name: resetSquaredSum,
   parameters: [],
