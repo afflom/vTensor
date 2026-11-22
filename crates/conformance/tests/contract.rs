@@ -175,6 +175,9 @@ ggml_batches! {
     fn rotary_backward_graphs_vt_57() { "upstream-ROPE_BACK", 424, ["rotary"] }
     /// The first dense attention graph from the imported GGML factory.
     #[test]
+    fn elementary_graphs_vt_60() { "upstream-LOG,SIN,COS,EXP", 39, ["pointwise"] }
+
+    #[test]
     fn extended_attention_vt_58() { "upstream-FLASH_ATTN_EXT_FIRST", 1, ["attention"] }
     /// Two short attention graphs cover a populated sink and its absence.
     #[test]
