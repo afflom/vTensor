@@ -219,20 +219,13 @@
         "NORM_MUL_ADD",
         "RMS_NORM_MUL_ADD",
         "ADD_RMS_NORM"
+      ],
+      "VT-56": [
+        "SWIGLU"
       ]
     },
-    "passed": 825,
+    "passed": 861,
     "refused_ordinals": {
-      "596": {
-        "oracle": "make_test_cases_eval / test_case::eval",
-        "test_build": "VT-55 with Verdant 5b2f0c66",
-        "result": "not supported"
-      },
-      "660": {
-        "oracle": "make_test_cases_eval / test_case::eval",
-        "test_build": "VT-55 with Verdant 97528328",
-        "result": "not supported"
-      },
       "17216": {
         "oracle": "make_test_cases_eval / test_case::eval",
         "test_build": "VT-55 with Verdant 97528328",
@@ -244,7 +237,7 @@
         "result": "not supported"
       }
     },
-    "untested": 26926,
+    "untested": 26892,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {

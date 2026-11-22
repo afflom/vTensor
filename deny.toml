@@ -362,7 +362,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x89b06a87 }]
+license-files = [{ path = "src/lib.rs", hash = 0xc2d2f2dc }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"
@@ -417,3 +417,9 @@ name = "verdant_exponential_step"
 version = "=2.19.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x2ca5ea94 }]
+
+[[licenses.clarify]]
+name = "verdant_swiglu"
+version = "=2.20.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xd3157ae3 }]

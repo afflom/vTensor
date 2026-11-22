@@ -548,13 +548,29 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             let descriptor = |TensorDescriptor::C0(ty, a, b, c, d, e, f, g, h, _, _)| {
                 vtensor_matrix_q8::Adt1::C0(ty, a, b, c, d, e, f, g, h)
             };
-            let (Some(w), Some(a)) = (primary, secondary) else {
-                return Err(BackendError::InvalidTensor);
-            };
+            let extra = tensor.src[3..].iter().any(|ptr| !ptr.is_null());
+            let w = primary.ok_or(BackendError::InvalidTensor)?;
+            if base.is_none() {
+                let query = vtensor_typed::Adt0::C3(
+                    operation,
+                    p0,
+                    p1,
+                    extra,
+                    metadata(w.clone()),
+                    secondary.clone().map(metadata),
+                    metadata(output.clone()),
+                );
+                match vtensor_typed::run(query).map_err(|_| BackendError::Overflow)? {
+                    vtensor_typed::Adt3::C2(plan) => return Ok(Some(ExecutionPlan::Typed(plan))),
+                    vtensor_typed::Adt3::C0 => {}
+                    _ => return Err(BackendError::InvalidTensor),
+                }
+            }
+            let a = secondary.ok_or(BackendError::InvalidTensor)?;
             if let Some(base) = base {
                 return typed_plan(vtensor_typed::Adt0::C2(
                     operation,
-                    tensor.src[3..].iter().any(|ptr| !ptr.is_null()),
+                    extra,
                     metadata(w),
                     metadata(a),
                     metadata(base),
@@ -563,7 +579,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             }
             let request = vtensor_matrix_q8::Adt0::C0(
                 operation,
-                tensor.src[3..].iter().any(|s| !s.is_null()),
+                extra,
                 descriptor(w),
                 descriptor(a),
                 descriptor(output),
@@ -980,11 +996,29 @@ fn instruction_response(
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
     let vtensor_typed::Adt2::C0(count, capacity, ..) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
-    // SAFETY: the certified plan admitted both retained source descriptors.
-    let (left, right) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
-    let pointers = [graph_tensor_data(left)?, graph_tensor_data(right)?];
+    // SAFETY: admission retained the primary descriptor and each present secondary.
+    let (left, secondary) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
+    let primary = graph_tensor_data(left)?;
+    let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
     let output = graph_tensor_data(tensor)?;
     for index in 0..*count {
+        let instruction =
+            vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
+                .map_err(|_| BackendError::Overflow)?;
+        if let vtensor_typed::Adt3::C4(first, second, target) = instruction {
+            let operand = |slot: u64| {
+                words
+                    .get(slot as usize)
+                    .map(|word| f32::from_bits(*word as u32))
+                    .ok_or(BackendError::InvalidTensor)
+            };
+            let value = verdant_tensor::linear::swiglu_f32(operand(first)?, operand(second)?)
+                .map_err(|_| BackendError::InvalidTensor)?;
+            *words
+                .get_mut(target as usize)
+                .ok_or(BackendError::InvalidTensor)? = u64::from(value.to_bits());
+            continue;
+        }
         let vtensor_typed::Adt3::C3(
             family,
             operation,
@@ -998,8 +1032,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
             to,
             read_bytes,
             write_bytes,
-        ) = vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
-            .map_err(|_| BackendError::Overflow)?
+        ) = instruction
         else {
             return Err(BackendError::InvalidTensor);
         };

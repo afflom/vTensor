@@ -724,7 +724,8 @@ mod ggml_oracle {
             let Some(&name) = fields.get(5) else {
                 panic!("unrecognized archive listing: {line}");
             };
-            let relevant = name.starts_with("ggml/include/")
+            let relevant = name == "tests/test-backend-ops.cpp"
+                || name.starts_with("ggml/include/")
                 || name.starts_with("ggml/src/ggml-cpu/")
                 || name
                     .strip_prefix("ggml/src/")
@@ -893,9 +894,7 @@ mod ggml_oracle {
         executable
     }
 
-    /// Send a batch of tensor descriptions to the actual upstream `ggml_nbytes`.
-    pub(super) fn batch(command: &mut Command, input: impl AsRef<[u8]>) -> String {
-        let input = input.as_ref();
+    pub(super) fn pipe_input(command: &mut Command, input: &[u8]) -> Output {
         let mut child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -905,12 +904,16 @@ mod ggml_oracle {
         let mut stdin = child.stdin.take().expect("oracle input");
         // Drain output while writing so large differential batches cannot fill
         // both pipe buffers and block each other.
-        let output = std::thread::scope(|scope| {
+        std::thread::scope(|scope| {
             let writer = scope.spawn(move || stdin.write_all(input));
             let output = child.wait_with_output().expect("oracle result");
             writer.join().expect("input writer").expect("write input");
             output
-        });
+        })
+    }
+
+    pub(super) fn batch(command: &mut Command, input: impl AsRef<[u8]>) -> String {
+        let output = pipe_input(command, input.as_ref());
         String::from_utf8(checked_output(command, output)).expect("oracle text")
     }
 
@@ -1070,6 +1073,22 @@ mod ggml_inventory {
 
     use std::collections::BTreeSet;
 
+    pub(super) static STORAGE_TYPES: std::sync::LazyLock<Vec<u64>> =
+        std::sync::LazyLock::new(|| {
+            let inventory =
+                super::ggml_oracle::read_toml(super::root().join("model/ggml-declarations.toml"));
+            inventory["tensor_type"]
+                .as_array()
+                .expect("types")
+                .iter()
+                .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
+                .map(|row| {
+                    u64::try_from(row["value"].as_integer().expect("numeric type"))
+                        .expect("positive type")
+                })
+                .collect()
+        });
+
     // Refuse unfamiliar enum syntax rather than silently dropping declarations.
     fn declarations(header: &str, name: &str, prefix: &str) -> Vec<(String, i64)> {
         let start = format!("enum {name} {{");
@@ -1221,34 +1240,20 @@ mod ggml_storage_oracle {
                 [0, 1, 4]
             ]
         );
-        use std::io::Write;
-        let mut child = std::process::Command::new(&executable)
-            .stdin(std::process::Stdio::piped())
-            .spawn()
-            .expect("oracle");
-        child
-            .stdin
-            .take()
-            .expect("input")
-            .write_all(b"malformed\n")
-            .expect("write");
-        assert_eq!(child.wait().expect("result").code(), Some(2));
+        let malformed =
+            ggml_oracle::pipe_input(&mut std::process::Command::new(&executable), b"malformed\n");
+        assert_eq!(malformed.status.code(), Some(2));
 
         // Exercise enough input and output to exceed pipe capacity in both
         // directions without starting a separate oracle process for every case.
         let batch = ggml_oracle::spans(&executable, &"0 1 1 1 1 4 4 4 4\n".repeat(8192));
         assert_eq!(batch.len(), 8192);
         assert!(batch.iter().all(|row| *row == [4, 1, 4]));
-        let built_at = std::fs::metadata(&executable)
-            .expect("oracle metadata")
-            .modified()
-            .expect("mtime");
+        let modified = || std::fs::metadata(&executable).unwrap().modified().unwrap();
+        let built_at = modified();
         assert_eq!(ggml_oracle::storage_oracle(&root), executable);
         assert_eq!(
-            std::fs::metadata(&executable)
-                .expect("oracle metadata")
-                .modified()
-                .expect("mtime"),
+            modified(),
             built_at,
             "unchanged oracle was unnecessarily rebuilt"
         );
@@ -1464,7 +1469,7 @@ mod tensor_layout {
 
     struct Fixture {
         executable: std::path::PathBuf,
-        kinds: Vec<u64>,
+        kinds: &'static [u64],
         metadata: Vec<[u64; 3]>,
     }
 
@@ -1474,20 +1479,9 @@ mod tensor_layout {
             let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
             certified_current_model(&root, "layout");
             let executable = ggml_oracle::storage_oracle(&root);
-            let inventory =
-                super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
-            let kinds: Vec<_> = inventory["tensor_type"]
-                .as_array()
-                .expect("types")
-                .iter()
-                .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
-                .map(|row| {
-                    u64::try_from(row["value"].as_integer().expect("numeric type"))
-                        .expect("positive type")
-                })
-                .collect();
+            let kinds = &*super::ggml_inventory::STORAGE_TYPES;
             let mut metadata_requests = String::new();
-            for &kind in &kinds {
+            for &kind in kinds {
                 request(&mut metadata_requests, kind, [0; 4], [0; 4]);
             }
             let metadata = ggml_oracle::spans(&executable, &metadata_requests);
@@ -1862,6 +1856,17 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 }
 "#;
 
+    fn recipe_tokens(start: &str, end: &str, closing: &str) -> String {
+        let (_, tail) = include_str!("contract.rs")
+            .split_once(start)
+            .expect("recipe start");
+        let (body, _) = tail.split_once(end).expect("recipe end");
+        format!("{start}{body}{closing}")
+            .parse::<proc_macro2::TokenStream>()
+            .unwrap()
+            .to_string()
+    }
+
     fn fixture_library(common: &Path, model: &'static str) -> std::path::PathBuf {
         use std::{collections::BTreeMap, path::PathBuf, sync::Mutex};
         static LIBRARIES: Mutex<BTreeMap<&str, PathBuf>> = Mutex::new(BTreeMap::new());
@@ -1871,22 +1876,14 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             let source = super::root().join(format!(
                 "generated/{model}/packages/rust-core/vtensor_{model}/src/lib.rs"
             ));
-            let recipe = include_str!("contract.rs")
-                .split_once("\n    fn fixture_library(")
-                .unwrap()
-                .1
-                .split_once("\n    fn compiled_object(")
-                .unwrap()
-                .0;
             let mut identity = Sha256::new();
             identity.update(std::fs::read(&source).unwrap());
             identity.update(FIXTURE_BRIDGE);
-            identity.update(
-                format!("fn fixture_library({recipe}")
-                    .parse::<proc_macro2::TokenStream>()
-                    .unwrap()
-                    .to_string(),
-            );
+            identity.update(recipe_tokens(
+                "\n    fn fixture_library(",
+                "\n    fn compiled_object(",
+                "",
+            ));
             identity.update(run(Command::new("rustc").args(["--version", "--verbose"])));
             let cache = common
                 .join("fixture-model")
@@ -1942,21 +1939,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let _access = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let oracle = storage_oracle(root);
         let common = oracle.parent().unwrap();
-        if mode.starts_with("upstream-") {
-            let source = "tests/test-backend-ops.cpp";
-            let lock =
-                super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
-            let expected = lock["file"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .find(|row| row["path"].as_str() == Some(source))
-                .unwrap();
-            assert_eq!(
-                expected["sha256"].as_str().unwrap(),
-                file_digest(common.join(source))
-            );
-        }
         let objects = super::ggml_oracle::read_json(common.join("objects.json"));
         for name in ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"] {
             assert_eq!(objects[name], file_digest(common.join(name)));
@@ -1993,19 +1975,11 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         identity.update(common.as_os_str().as_encoded_bytes());
         // Bind the compiler/linker recipe, not fixture generation or runtime orchestration.
         // The synthetic closing brace completes `verify` for lossless Rust tokenization.
-        let recipe = include_str!("contract.rs")
-            .split_once("\n    fn compiled_object(")
-            .unwrap()
-            .1
-            .split_once("\n        verify_file(&program,")
-            .unwrap()
-            .0;
-        identity.update(
-            format!("fn compiled_object({recipe}\n}}")
-                .parse::<proc_macro2::TokenStream>()
-                .unwrap()
-                .to_string(),
-        );
+        identity.update(recipe_tokens(
+            "\n    fn compiled_object(",
+            "\n        verify_file(&program,",
+            "\n}",
+        ));
         if mode.starts_with("upstream-") {
             identity.update(UPSTREAM_SUITE.as_bytes());
         }
@@ -2097,13 +2071,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         }
         verify_file(&program, cache.join("program.sha256"));
         static STORAGE_TYPES: LazyLock<Vec<u8>> = LazyLock::new(|| {
-            super::ggml_oracle::read_toml(super::root().join("model/ggml-declarations.toml"))
-                ["tensor_type"]
-                .as_array()
-                .unwrap()
+            super::ggml_inventory::STORAGE_TYPES
                 .iter()
-                .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
-                .map(|row| format!("{}\n", row["value"].as_integer().unwrap()))
+                .map(|kind| format!("{kind}\n"))
                 .collect::<String>()
                 .into_bytes()
         });
@@ -2171,6 +2141,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let text = super::ggml_oracle::batch(&mut command, input);
         let footer = format!("RESULT cases {expected_cases}\n");
         let transcript = match mode {
+            "upstream-SWIGLU" => {
+                Some("8f96851eea2a120140823c8edb76eb8c6683589b8112bb847d48ab016395cd47")
+            }
             "upstream-SET_ROWS_SCALAR" => {
                 Some("cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595")
             }
@@ -2264,7 +2237,7 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
       const auto status=test->eval(backend,reference,label,&observed);
       if(status==test_status_t::SKIPPED) continue;
       if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
-      if(matrix_group || set_rows) std::printf("CASE\t%zu\t%s\t%s\n",id,label,test->vars().c_str());
+      if(matrix_group || set_rows || !std::strcmp(op, "SWIGLU")) std::printf("CASE\t%zu\t%s\t%s\n",id,label,test->vars().c_str());
       ++cases;
     }
     return observed.records==cases ? cases : SIZE_MAX;
@@ -3130,44 +3103,77 @@ int main(int argc, char **argv) {
       ggml_backend_free(reference); ggml_backend_free(backend);
       printf("RESULT cases %zu\n",cases); return 0;
     }
-    if (!strcmp(argv[3], "elementwise")) {
-      size_t cases = 0;
-      std::ofstream trace(std::string(argv[2])+".elementwise-fixtures",std::ios::binary);CHECK(trace.good());
-      uint64_t header[4];for(auto &value:header)CHECK(read_fixture_word(value));
-      CHECK(header[0]==120 && header[1]==24 && header[2]==2 && header[3]==165);
+    const bool matrix = !strcmp(argv[3], "matrix");
+    if (matrix || !strcmp(argv[3], "elementwise")) {
+      bool matrix_refusals_checked = false;
+      std::ofstream trace(std::string(argv[2])+"."+argv[3]+"-fixtures",std::ios::binary); CHECK(trace.good());
+      uint64_t header[4]; for(auto &value:header) CHECK(read_fixture_word(value));
+      CHECK(header[0]==(matrix?1280:120) && header[1]==24 && header[2]==2 && header[3]==165);
       for(size_t ordinal=0;ordinal<header[0];ordinal++) {
-        uint64_t fixture[24];for(auto &value:fixture)CHECK(read_fixture_word(value));
-        CHECK(fixture[23]==ordinal && fixture[0]<8);
-        const int kind=fixture[0];
+        uint64_t fixture[24]; for(auto &value:fixture) CHECK(read_fixture_word(value));
+        CHECK(fixture[23]==ordinal);
         ggml_init_params params = {8*1024*1024, nullptr, true};
         ggml_context *ctx = ggml_init(params); CHECK(ctx);
-        ggml_tensor *left=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,fixture[4],fixture[5],fixture[6],fixture[7]);
-        ggml_tensor *right=kind<4?ggml_new_tensor_4d(ctx,GGML_TYPE_F32,fixture[8],fixture[9],fixture[10],fixture[11]):nullptr;
-        for(int source=0;source<2;source++) {auto operand=source?right:left;if(operand)for(int axis=0;axis<4;axis++)operand->nb[axis]=fixture[12+source*4+axis];}
-        ggml_tensor *(*binary[])(ggml_context *,ggml_tensor *,ggml_tensor *)={ggml_add,ggml_sub,ggml_mul,ggml_div};
-        ggml_tensor *(*unary[])(ggml_context *,ggml_tensor *)={ggml_sqrt,ggml_sqr,ggml_neg,ggml_abs};
-        auto operation = [&](ggml_tensor *a, ggml_tensor *b) { return kind<4?binary[kind](ctx,a,b):unary[kind-4](ctx,a); };
-        ggml_tensor *result=operation(left,right);
-        ggml_tensor *reference_result=operation(ggml_cont(ctx,left),right?ggml_cont(ctx,right):nullptr);
-        CHECK(result && uint64_t(result->op)==fixture[1]);
-        if (kind>=6) CHECK(uint64_t(ggml_get_unary_op(result))==fixture[2]);
-        ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
+        ggml_tensor *left, *right, *result, *oracle;
+        const auto kind=fixture[0];
+        if (matrix) {
+          left = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, fixture[2], fixture[0], fixture[4], fixture[5]);
+          right = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, fixture[2], fixture[1], fixture[6], fixture[7]);
+          for(int source=0;source<2;source++) for(int axis=0;axis<4;axis++) (source?right:left)->nb[axis]=fixture[8+source*4+axis];
+          result = ggml_mul_mat(ctx, left, right); CHECK(result);
+          oracle = ggml_mul_mat(ctx, left, right); CHECK(oracle);
+          for(int axis=0;axis<4;axis++)result->nb[axis]=fixture[16+axis];
+        } else {
+          CHECK(kind<8);
+          left=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,fixture[4],fixture[5],fixture[6],fixture[7]);
+          right=kind<4?ggml_new_tensor_4d(ctx,GGML_TYPE_F32,fixture[8],fixture[9],fixture[10],fixture[11]):nullptr;
+          for(int source=0;source<2;source++) {auto operand=source?right:left;if(operand)for(int axis=0;axis<4;axis++)operand->nb[axis]=fixture[12+source*4+axis];}
+          ggml_tensor *(*binary[])(ggml_context *,ggml_tensor *,ggml_tensor *)={ggml_add,ggml_sub,ggml_mul,ggml_div};
+          ggml_tensor *(*unary[])(ggml_context *,ggml_tensor *)={ggml_sqrt,ggml_sqr,ggml_neg,ggml_abs};
+          auto operation = [&](ggml_tensor *a, ggml_tensor *b) { return kind<4?binary[kind](ctx,a,b):unary[kind-4](ctx,a); };
+          result=operation(left,right);
+          oracle=operation(ggml_cont(ctx,left),right?ggml_cont(ctx,right):nullptr);
+          CHECK(result && uint64_t(result->op)==fixture[1]);
+          if (kind>=6) CHECK(uint64_t(ggml_get_unary_op(result))==fixture[2]);
+        }
+        ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);
+        CHECK(buffer || (matrix && !ggml_nbytes(left) && !ggml_nbytes(right) && !ggml_nbytes(result)));
         CHECK(bind_fixture_words(left,right,header[3])==0);
-        const uint64_t fields[]={uint64_t(kind),uint64_t(result->op),uint64_t(kind>=6?ggml_get_unary_op(result):0),fixture[3],
-          uint64_t(left->ne[0]),uint64_t(left->ne[1]),uint64_t(left->ne[2]),uint64_t(left->ne[3]),
-          uint64_t(right?right->ne[0]:0),uint64_t(right?right->ne[1]:0),uint64_t(right?right->ne[2]:0),uint64_t(right?right->ne[3]:0),
-          left->nb[0],left->nb[1],left->nb[2],left->nb[3],right?right->nb[0]:0,right?right->nb[1]:0,right?right->nb[2]:0,right?right->nb[3]:0,
-          uint64_t(ggml_nelements(left)),uint64_t(right?ggml_nelements(right):0),fixture[22],cases};
-        observe_fixture(trace,fields,left,right);
-        ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
+        if (matrix) {
+          const uint64_t fields[]={uint64_t(left->ne[1]),uint64_t(right->ne[1]),uint64_t(left->ne[0]),fixture[3],uint64_t(left->ne[2]),uint64_t(left->ne[3]),uint64_t(right->ne[2]),uint64_t(right->ne[3]),
+              left->nb[0],left->nb[1],left->nb[2],left->nb[3],right->nb[0],right->nb[1],right->nb[2],right->nb[3],result->nb[0],result->nb[1],result->nb[2],result->nb[3],
+              uint64_t(ggml_nelements(left)),uint64_t(ggml_nelements(right)),uint64_t(fixture[22]!=0),ordinal};
+          observe_fixture(trace,fields,left,right);
+        } else {
+          const uint64_t fields[]={uint64_t(kind),uint64_t(result->op),uint64_t(kind>=6?ggml_get_unary_op(result):0),fixture[3],
+            uint64_t(left->ne[0]),uint64_t(left->ne[1]),uint64_t(left->ne[2]),uint64_t(left->ne[3]),
+            uint64_t(right?right->ne[0]:0),uint64_t(right?right->ne[1]:0),uint64_t(right?right->ne[2]:0),uint64_t(right?right->ne[3]:0),
+            left->nb[0],left->nb[1],left->nb[2],left->nb[3],right?right->nb[0]:0,right?right->nb[1]:0,right?right->nb[2]:0,right?right->nb[3]:0,
+            uint64_t(ggml_nelements(left)),uint64_t(right?ggml_nelements(right):0),fixture[22],ordinal};
+          observe_fixture(trace,fields,left,right);
+        }
+        auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
+        auto reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,oracle);
         CHECK(ggml_backend_dev_supports_op(dev,result));
-        ggml_cgraph *reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,reference_result);
-        CHECK(ggml_backend_dev_supports_op(ggml_backend_get_device(reference),reference_result));
+        CHECK(ggml_backend_dev_supports_op(ggml_backend_get_device(reference),oracle));
         CHECK(ggml_backend_graph_compute(reference,reference_graph)==GGML_STATUS_SUCCESS);
-        ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
+        const std::vector<unsigned char> expected(ggml_nbytes(result),0xA5);
+        if (!expected.empty()) ggml_backend_tensor_memset(result,0xA5,0,expected.size());
+        if (matrix && fixture[22]) {
+          CHECK(!matrix_refusals_checked && ggml_nbytes(result) && ggml_nbytes(left));
+          matrix_refusals_checked = true;
+          CHECK(refuses_change(backend,dev,graph,result,result->ne[0],result->ne[0]+1));
+          CHECK(refuses_change(backend,dev,graph,result,result->src[0],nullptr));
+          CHECK(refuses_change(backend,dev,graph,result,result->buffer,nullptr,false));
+          ggml_backend_buffer_t foreign=ggml_backend_cpu_buffer_from_ptr(left->data,ggml_nbytes(left)); CHECK(foreign);
+          CHECK(refuses_change(backend,dev,graph,result,left->buffer,foreign,false)); ggml_backend_buffer_free(foreign);
+          ggml_tensor *unsupported=ggml_dup(ctx,result);
+          ggml_cgraph *bad_graph=ggml_new_graph(ctx); ggml_build_forward_expand(bad_graph,unsupported);
+          CHECK(refuses_change(backend,dev,bad_graph,result,unsupported->op,GGML_OP_COUNT,false));
+        }
         CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-        CHECK(compare_result(result,reference_result,std::vector<unsigned char>(ggml_nbytes(result),0xA5),1));
-        if (fixture[22]) {
+        CHECK(compare_result(result,oracle,expected,1));
+        if (!matrix && fixture[22]) {
           CHECK((fixture[22]==1 && kind==0) || (fixture[22]==2 && kind==6));
           if (kind==0) {
             CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
@@ -3176,62 +3182,12 @@ int main(int argc, char **argv) {
             CHECK(refuses_change(backend,dev,graph,result,left->type,GGML_TYPE_COUNT));
           } else CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(GGML_UNARY_OP_COUNT)));
         }
-        ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
+        ggml_backend_buffer_free(buffer); ggml_free(ctx);
       }
-      CHECK(refusal_probes==5 && fgetc(stdin)==EOF);
+      CHECK((!matrix || matrix_refusals_checked) && refusal_probes==5 && fgetc(stdin)==EOF);
       CHECK(ggml_backend_reg_count()==1 && ggml_backend_dev_count()==1);
       ggml_backend_free(reference); ggml_backend_free(backend);
-      printf("RESULT cases %zu\n",cases); return 0;
-    }
-    if (!strcmp(argv[3], "matrix")) {
-      size_t matrix_cases = 0; bool negatives_checked = false;
-      std::ofstream trace(std::string(argv[2])+".matrix-fixtures",std::ios::binary);CHECK(trace.good());
-      uint64_t header[4];for(auto &value:header)CHECK(read_fixture_word(value));
-      CHECK(header[0]==1280 && header[1]==24 && header[2]==2 && header[3]==165);
-      for(size_t ordinal=0;ordinal<header[0];ordinal++) {
-        uint64_t fixture[24];for(auto &value:fixture)CHECK(read_fixture_word(value));
-        CHECK(fixture[23]==ordinal);
-        ggml_init_params params = {8*1024*1024, nullptr, true};
-        ggml_context *ctx = ggml_init(params); CHECK(ctx);
-        ggml_tensor *left = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, fixture[2], fixture[0], fixture[4], fixture[5]);
-        ggml_tensor *right = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, fixture[2], fixture[1], fixture[6], fixture[7]);
-        for(int source=0;source<2;source++) for(int axis=0;axis<4;axis++) (source?right:left)->nb[axis]=fixture[8+source*4+axis];
-        ggml_tensor *product = ggml_mul_mat(ctx, left, right); CHECK(product);
-        ggml_tensor *oracle = ggml_mul_mat(ctx, left, right); CHECK(oracle);
-        for(int axis=0;axis<4;axis++)product->nb[axis]=fixture[16+axis];
-        ggml_backend_buffer_t buffer = ggml_backend_alloc_ctx_tensors(ctx, backend);
-        CHECK(buffer || (!ggml_nbytes(left) && !ggml_nbytes(right) && !ggml_nbytes(product)));
-        CHECK(bind_fixture_words(left,right,header[3])==0);
-        const uint64_t fields[]={uint64_t(left->ne[1]),uint64_t(right->ne[1]),uint64_t(left->ne[0]),fixture[3],uint64_t(left->ne[2]),uint64_t(left->ne[3]),uint64_t(right->ne[2]),uint64_t(right->ne[3]),
-            left->nb[0],left->nb[1],left->nb[2],left->nb[3],right->nb[0],right->nb[1],right->nb[2],right->nb[3],product->nb[0],product->nb[1],product->nb[2],product->nb[3],
-            uint64_t(ggml_nelements(left)),uint64_t(ggml_nelements(right)),uint64_t(fixture[22]!=0),matrix_cases};
-        observe_fixture(trace,fields,left,right);
-        ggml_cgraph *graph = ggml_new_graph(ctx); ggml_build_forward_expand(graph, product);
-        CHECK(ggml_backend_dev_supports_op(dev, product));
-        ggml_cgraph *reference_graph=ggml_new_graph(ctx); ggml_build_forward_expand(reference_graph,oracle);
-        CHECK(ggml_backend_graph_compute(reference, reference_graph) == GGML_STATUS_SUCCESS);
-        const std::vector<unsigned char> expected(ggml_nbytes(product),0xA5);
-        if(!expected.empty()) ggml_backend_tensor_memset(product,0xA5,0,expected.size());
-        if (fixture[22]) {
-          CHECK(!negatives_checked && ggml_nbytes(product) && ggml_nbytes(left));
-          negatives_checked = true;
-          CHECK(refuses_change(backend,dev,graph,product,product->ne[0],product->ne[0]+1));
-          CHECK(refuses_change(backend,dev,graph,product,product->src[0],nullptr));
-          CHECK(refuses_change(backend,dev,graph,product,product->buffer,nullptr,false));
-          ggml_backend_buffer_t foreign=ggml_backend_cpu_buffer_from_ptr(left->data,ggml_nbytes(left)); CHECK(foreign);
-          CHECK(refuses_change(backend,dev,graph,product,left->buffer,foreign,false)); ggml_backend_buffer_free(foreign);
-          ggml_tensor *unsupported=ggml_dup(ctx,product);
-          ggml_cgraph *bad_graph=ggml_new_graph(ctx); ggml_build_forward_expand(bad_graph,unsupported);
-          CHECK(refuses_change(backend,dev,bad_graph,product,unsupported->op,GGML_OP_COUNT,false));
-        }
-        CHECK(ggml_backend_graph_compute(backend, graph) == GGML_STATUS_SUCCESS);
-        CHECK(compare_result(product,oracle,expected,1));
-        ggml_backend_buffer_free(buffer); ggml_free(ctx); matrix_cases++;
-      }
-      CHECK(negatives_checked && refusal_probes==5 && fgetc(stdin)==EOF);
-      CHECK(ggml_backend_reg_count() == 1 && ggml_backend_dev_count() == 1);
-      ggml_backend_free(reference); ggml_backend_free(backend);
-      printf("RESULT cases %zu\n", matrix_cases); return 0;
+      printf("RESULT cases %zu\n",size_t(header[0])); return 0;
     }
     ggml_backend_buffer_t empty = ggml_backend_alloc_buffer(backend, 0);
     CHECK(empty && !ggml_backend_buffer_get_base(empty) && ggml_backend_buffer_get_size(empty) == 0);

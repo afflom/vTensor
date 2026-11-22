@@ -28,7 +28,8 @@ inductive{
     {name: unsupported, fields: []},
     {name: invalid, fields: []},
     {name: planned, fields: [Plan]},
-    {name: instruction, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: instruction, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: gated, fields: [Nat, Nat, Nat]}
   ]
 }
 
@@ -55,6 +56,18 @@ inductive{
         NormPlan::TensorDescriptor,
         NormPlan::TensorDescriptor,
         NormPlan::TensorDescriptor,
+        NormPlan::TensorDescriptor
+      ]
+    },
+    {
+      name: gate,
+      fields: [
+        Nat,
+        Nat,
+        Nat,
+        Bool,
+        NormPlan::TensorDescriptor,
+        (Option NormPlan::TensorDescriptor),
         NormPlan::TensorDescriptor
       ]
     }
@@ -195,6 +208,36 @@ definition{
 }
 
 definition{
+  name: gateRows,
+  parameters: [tensor : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: (let rowSpan : Nat := (prim multiply (project tensor n1) (project tensor s1) : Nat); (((contiguousRightRows tensor) && (((project tensor n2) =? 1) || ((project tensor s2) =? rowSpan))) && (((project tensor n3) =? 1) || ((project tensor s3) =? (prim multiply rowSpan (project tensor n2) : Nat))))),
+  executable: true
+}
+
+definition{
+  name: gatePlan,
+  parameters: [
+    split : Bool,
+    swapped : Nat,
+    left : NormPlan::TensorDescriptor,
+    rhs : NormPlan::TensorDescriptor,
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (if (((((((((((((((swapped <=? 1) && (0 <? (bytes (project left ty)))) && ((project left ty) =? (project rhs ty))) && ((project left ty) =? (project output ty))) && (NormPlan::sameShape left rhs)) && (gateRows left)) && (gateRows rhs)) && (gateRows output)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project output n0) =? (if split then (project left n0) else (prim quotient (project left n0) 2 0 : Nat)))) && ((project output n0) <=? 2147483647)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) then (ctor Response.planned (record Plan {steps := (prim multiply 4 (elements output) : Nat), capacity := 3, operation := (if split then 98 else (99 + swapped)), left := left, rhs := rhs, output := output})) else (ctor Response.invalid)),
+  executable: true
+}
+
+definition{
+  name: gateStep,
+  parameters: [index : Nat, execution : Plan],
+  result: Response,
+  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let rhs : NormPlan::TensorDescriptor := (project execution rhs); (let output : NormPlan::TensorDescriptor := (project execution output); (let mode : Nat := (project execution operation); (let phase : Nat := (prim remainder index 4 0 : Nat); (let item : Nat := (prim quotient index 4 0 : Nat); (let row : Nat := (prim quotient item (project output n0) 0 : Nat); (let width : Nat := (bytes (project output ty)); (let column : Nat := (prim multiply (prim remainder item (project output n0) 0 : Nat) width : Nat); (let half : Nat := (prim multiply (project output n0) width : Nat); (if (index <? (project execution steps)) then (if (phase =? 0) then (ctor Response.instruction 0 0 (project left ty) 0 0 (((prim multiply row (project left s1) : Nat) + column) + (if (mode =? 100) then half else 0)) 2 0 0 0 width 4) else (if (phase =? 1) then (ctor Response.instruction 0 0 (project rhs ty) 0 (if (mode =? 98) then 4 else 0) (((prim multiply row (project rhs s1) : Nat) + column) + (if (mode =? 99) then half else 0)) 2 0 0 1 width 4) else (if (phase =? 2) then (ctor Response.gated 0 1 0) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 ((prim multiply row (project output s1) : Nat) + column) 4 width)))) else (ctor Response.invalid)))))))))))),
+  executable: true
+}
+
+definition{
   name: destinationView,
   parameters: [base : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
   result: Bool,
@@ -274,7 +317,10 @@ definition{
           | Option.none => (ctor Response.invalid)
           | Option.some rhs => (plan kind left rhs output))))
     | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
-    | Request.step index execution flag => (if ((project execution operation) =? 41) then (rowStep index execution flag) else (step index execution flag))),
+    | Request.gate operation variant swapped extra left secondary output => (if (operation =? 98) then (if ((variant =? 2) && (if extra then false else true)) then (match secondary
+      | Option.none => (gatePlan false swapped left left output)
+      | Option.some rhs => (gatePlan true swapped left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))
+    | Request.step index execution flag => (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (gateStep index execution) else (step index execution flag)))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }

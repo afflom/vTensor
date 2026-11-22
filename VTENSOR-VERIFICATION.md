@@ -4499,3 +4499,42 @@ cases and both late-index refusal probes on the rebuilt backend. Cargo-deny
 passed. The imported SWIGLU evaluator still refused combined F16 ordinal 596.
 Graph planning and gated execution remain open in the provider checklist.
 [Patch record](model/verdant-development.json) · [Burndown](BURNDOWN.md)
+
+## VT-55 complete checkpoint
+
+The locked SDK passed the complete `just vv` at vTensor `47632c4`, with
+all 60 backend contract tests passing in 1,341.58 seconds. This run used
+the immutable Verdant PR #15 pin. [Tested revision](https://github.com/afflom/vTensor/commit/47632c4a7e4b014e4a3382d43311e30a64521151)
+
+## SwiGLU rows
+
+VT-56 admits F32, F16 and BF16 GGML SwiGLU layouts. Its certified Prism
+plan selects each input row, the half-row offset for packed inputs, and
+the argument order. vTensor passes the selected words through Verdant's
+storage conversions and `linear::swiglu_f32`. All scalar activation
+semantics are defined in Verdant. The upstream scalar implementation
+passed 110,700 independent comparisons with GGML. [Provider certificate](generated/typed/result.json) · [Verdant implementation and oracle](https://github.com/afflom/verdant-engine/blob/27c09ba01e661b5d4687dfc0f4e7b291277c6409/ENGINE-VERIFICATION.md#vtk-20-binary32-swiglu)
+
+The original provider refused factory ordinal 596. All 36 cases from the
+unchanged upstream evaluator now pass, including 12 split, 12 packed and
+12 swapped packed cases. Reversing the Verdant arguments failed the first
+packed F16 case with NMSE 1.072415188 against the upstream threshold of
+0.000000100. The dependency check verifies the exact PR #17 Cargo source
+and all 15 existing kernel descriptors. [Patch pin](model/verdant-development.json) · [Factory ledger](verification/ggml-factory-inventory.json)
+
+The isolated, unmodified stories15M host still stops in graph reservation
+at `ggml-backend.cpp:1711`. The scheduler admits 174 of its 192 compute
+nodes, including all six SwiGLU and all 12 cache writes. It refuses 12
+RoPE and six flash-attention nodes. Prompt execution and logits remain
+unverified. [Per-node observations](verification/llama-stories15m-reserve-vt56.tsv)
+
+Matrix and elementwise fixtures now share the native execution loop.
+Their individual frozen transcript comparisons and five refusal checks
+per family still run. The imported factory source is checked together
+with the CPU sources against the pinned archive once per test process.
+The source audit measured 11,910 non-Prism lines, eight fewer than VT-55.
+
+Changing one byte in the cached upstream factory preserved the file length
+and failed archive verification. The restored nine-test batch passed the
+SWIGLU and scalar SET_ROWS groups, typed arithmetic, matrix and elementwise
+regressions, their frozen fixtures, dependency provenance and the storage oracle.
