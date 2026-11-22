@@ -4483,3 +4483,19 @@ the release checklist.
 Flipping one bit in the generated matrix input failed the frozen transcript
 digest. Flipping one bit in the observed elementwise binding independently
 failed the byte comparison.
+
+## Verdant exponential dependency
+
+Verdant PR #16 supplies `linear::exponential_f32` for the activations and
+attention observed on stories15M. The Engine compares the certified
+implementation to unchanged `ggml_vec_exp_f32` from the pinned GGML source.
+All 166,856 sampled binary32 inputs met the stated one-ULP or exceptional
+class criterion. The final-term mutation failed that comparison. [Engine evidence](https://github.com/afflom/verdant-engine/blob/5b2f0c66e4e51a6e34d5deaf9212738924747912/ENGINE-VERIFICATION.md#vtk-19-binary32-exponential)
+
+A fresh consumer build resolved the patch at
+`5b2f0c66e4e51a6e34d5deaf9212738924747912`. VT-02 verified the exact Cargo
+source and the 15 kernel descriptors. VT-55 passed its 126 imported factory
+cases and both late-index refusal probes on the rebuilt backend. Cargo-deny
+passed. The imported SWIGLU evaluator still refused combined F16 ordinal 596.
+Graph planning and gated execution remain open in the provider checklist.
+[Patch record](model/verdant-development.json) · [Burndown](BURNDOWN.md)
