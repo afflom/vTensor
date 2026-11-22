@@ -16,7 +16,8 @@ structure{
     {name: value, type: NormPlan::TensorDescriptor},
     {name: mask, type: (Option NormPlan::TensorDescriptor)},
     {name: sink, type: (Option NormPlan::TensorDescriptor)},
-    {name: output, type: NormPlan::TensorDescriptor}
+    {name: output, type: NormPlan::TensorDescriptor},
+    {name: capBeforeMask, type: (Option Nat)}
   ]
 }
 
@@ -155,6 +156,28 @@ definition{
 }
 
 definition{
+  name: capBeforeMask,
+  parameters: [bits : Nat],
+  result: (Option Nat),
+  body: (if ((bits =? 0) || (bits =? 2147483648)) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] bits)),
+  executable: true
+}
+
+theorem{
+  name: negativeZeroPreservesDotScale,
+  parameters: [],
+  statement: ((capBeforeMask 2147483648) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: tenCapsBeforeMask,
+  parameters: [],
+  statement: ((capBeforeMask 1092616192) = (ctor Option.some [Nat] 1092616192)),
+  proof: reflexivity{}
+}
+
+definition{
   name: graphPlan,
   parameters: [
     opcode : Nat,
@@ -170,7 +193,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if (((((((((((((((((((opcode =? 71) && (if extra then false else true)) && ((bias =? 0) || (bias =? 2147483648))) && ((softcap =? 0) || (softcap =? 2147483648))) && (((precision =? 0) || (precision =? 10)) || (precision =? 15))) && ((project query ty) =? 0)) && ((project query s0) =? 4)) && (denseOutput output)) && (rowTensor key query output)) && (rowTensor value query output)) && ((project query n0) =? (project key n0))) && ((project key n1) =? (project value n1))) && ((project output n0) =? (project value n0))) && ((project output n1) =? (project query n2))) && ((project output n2) =? (project query n1))) && ((project output n3) =? (project query n3))) && (NormPlan::separateTensors query output)) && (maskValid mask query key output)) && (sinkValid sink query output)) then (ctor Response.admitted (record Plan {query := query, key := key, value := value, mask := mask, sink := sink, output := output})) else (ctor Response.invalid)),
+  body: (if ((((((((((((((((((opcode =? 71) && (if extra then false else true)) && ((bias =? 0) || (bias =? 2147483648))) && (((precision =? 0) || (precision =? 10)) || (precision =? 15))) && ((project query ty) =? 0)) && ((project query s0) =? 4)) && (denseOutput output)) && (rowTensor key query output)) && (rowTensor value query output)) && ((project query n0) =? (project key n0))) && ((project key n1) =? (project value n1))) && ((project output n0) =? (project value n0))) && ((project output n1) =? (project query n2))) && ((project output n2) =? (project query n1))) && ((project output n3) =? (project query n3))) && (NormPlan::separateTensors query output)) && (maskValid mask query key output)) && (sinkValid sink query output)) then (ctor Response.admitted (record Plan {query := query, key := key, value := value, mask := mask, sink := sink, output := output, capBeforeMask := (capBeforeMask softcap)})) else (ctor Response.invalid)),
   executable: true
 }
 

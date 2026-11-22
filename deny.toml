@@ -111,7 +111,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x86c1ccf8 }]
+license-files = [{ path = "src/lib.rs", hash = 0x3f303ff5 }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -560,7 +560,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x1a27f392 }]
 name = "vtensor_attention"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x9f5e29ba }]
+license-files = [{ path = "src/lib.rs", hash = 0x75f882c2 }]
 
 [[licenses.clarify]]
 name = "vtensor_attention_mask"
@@ -591,3 +591,9 @@ name = "verdant_grouped_dot"
 version = "=2.26.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x1e204d74 }]
+
+[[licenses.clarify]]
+name = "verdant_tanh"
+version = "=2.27.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x5c3364f3 }]

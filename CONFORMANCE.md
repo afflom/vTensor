@@ -153,6 +153,8 @@ model does not sanction.
 | `VT-64` | `build` | GGML matrix products with F16 and BF16 operands honor the input dot-product storage and match the imported CPU across six scalar type pairs |
 | `VT-65` | `build` | GGML Q2_K matrix products use Verdant grouped activation blocks and match the imported CPU in standalone and row-gather graphs |
 | `VT-66` | `build` | GGML extended attention with Q4_0 and Q8_0 keys and values executes through Verdant block conversion and row products and matches the imported CPU |
+| `VT-67` | `build` | GGML hyperbolic tangent and composed soft-cap graphs execute through the pinned Verdant binary32 activation and match the imported CPU evaluator |
+| `VT-68` | `build` | Prism places attention logit soft caps before the mask and Verdant evaluates the scaled hyperbolic tangent against the imported GGML CPU |
 
 ## normalization-graphs
 

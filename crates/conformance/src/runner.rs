@@ -635,12 +635,17 @@ fn graph_tensor_region(tensor: &Tensor, span: usize) -> Result<*mut u8, BackendE
     }
 }
 
-fn workspace<T: Clone>(size: u64, initial: T) -> Result<Vec<T>, BackendError> {
-    let count = usize::try_from(size).map_err(|_| BackendError::Overflow)?;
+fn reserved<T>(count: usize) -> Result<Vec<T>, BackendError> {
     let mut result = Vec::new();
     result
         .try_reserve_exact(count)
         .map_err(|_| BackendError::Allocation)?;
+    Ok(result)
+}
+
+fn workspace<T: Clone>(size: u64, initial: T) -> Result<Vec<T>, BackendError> {
+    let count = usize::try_from(size).map_err(|_| BackendError::Overflow)?;
+    let mut result = reserved(count)?;
     result.resize(count, initial);
     Ok(result)
 }
@@ -793,10 +798,7 @@ fn execute_block_rows<const LANES: usize, Block>(
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = workspace(visits, 0u64)?;
-    let mut prepared = Vec::new();
-    prepared
-        .try_reserve_exact(blocks as usize)
-        .map_err(|_| BackendError::Allocation)?;
+    let mut prepared = reserved(usize::try_from(blocks).map_err(|_| BackendError::Overflow)?)?;
     for (column, (values, offset)) in results
         .chunks_exact_mut(rows as usize)
         .zip(&mut offsets)
@@ -960,6 +962,7 @@ fn execute_word(
                 16 => exponential_f32(input),
                 17 => sigmoid_f32(input),
                 18 => silu_f32(input),
+                19 => verdant_tensor::linear::tanh_f32(input),
                 _ => return Err(BackendError::InvalidTensor),
             }
             .map_err(|_| BackendError::Overflow)?;
@@ -1522,14 +1525,15 @@ mod attention {
         let packed_key = matches!(k.tensor.ty, 2 | 8);
         let mut key = workspace(if packed_key { 0 } else { shape[0] as u64 }, 0.0)?;
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
-        let mut packed = Vec::new();
-        if packed_key {
-            packed
-                .try_reserve_exact(query.len() / 32)
-                .map_err(|_| BackendError::Allocation)?;
-        }
+        let mut packed = super::reserved(if packed_key { query.len() / 32 } else { 0 })?;
         let output = graph_tensor_data(tensor)?;
-        let scale = f32::from_bits(tensor.op_params[0] as u32);
+        let Plan::C0(.., cap) = &plan;
+        let cap = cap.map(|bits| f32::from_bits(bits as u32));
+        let scalar = |op, a, b| evaluate_f32_scalar(op, a, b).map_err(|_| BackendError::Overflow);
+        let mut scale = f32::from_bits(tensor.op_params[0] as u32);
+        if let Some(cap) = cap {
+            scale = scalar(3, scale, cap)?;
+        }
         for batch in 0..shape[3] as u64 {
             for head in 0..shape[2] as u64 {
                 for token in 0..shape[1] as u64 {
@@ -1578,10 +1582,11 @@ mod attention {
                             dot[0]
                         };
                         v.decode(voff + row * vs, &mut value)?;
-                        let scaled = evaluate_f32_scalar(2, dot, scale)
-                            .map_err(|_| BackendError::Overflow)?;
-                        let score = evaluate_f32_scalar(0, scaled, bias)
-                            .map_err(|_| BackendError::Overflow)?;
+                        let mut scaled = scalar(2, dot, scale)?;
+                        if let Some(cap) = cap {
+                            scaled = scalar(2, cap, linear::tanh_f32(scaled)?)?;
+                        }
+                        let score = scalar(0, scaled, bias)?;
                         mean.push(score, Some(&value))
                             .map_err(|_| BackendError::Overflow)?;
                     }
