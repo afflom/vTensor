@@ -579,3 +579,9 @@ name = "vtensor_norm_dispatch"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x4a9980c6 }]
+
+[[licenses.clarify]]
+name = "verdant_grouped_q8"
+version = "=2.25.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xa91da5e7 }]

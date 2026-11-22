@@ -11,7 +11,7 @@ full GGML backend support. The imported source and oracle are pinned in
 [`vendor/llama.cpp-oracle`](vendor/llama.cpp-oracle/README.md).
 
 Cargo fetches the certified Verdant tensor primitives by the immutable commit in
-[Verdant Engine PR #22](https://github.com/afflom/verdant-engine/pull/22), which builds on PRs #12 through #21.
+[Verdant Engine PR #23](https://github.com/afflom/verdant-engine/pull/23), which builds on PRs #12 through #22.
 The [patch record](model/verdant-development.json) identifies the dependency
 until a published Verdant release includes these APIs.
 
