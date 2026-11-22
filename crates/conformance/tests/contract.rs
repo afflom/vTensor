@@ -180,6 +180,10 @@ ggml_batches! {
     #[test]
     fn float_matrix_graphs_vt_64() { "upstream-MUL_MAT_FLOAT_STORAGE", 11, ["pointwise", "matrix"] }
 
+    /// The CPU compares both packed row formats in all four mask/sink combinations.
+    #[test]
+    fn packed_attention_vt_66() { "upstream-FLASH_ATTN_EXT_PACKED", 8, ["attention"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1610,7 +1614,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "95bdba561442f9e9a15a7913e0f1d0501c6cf8089e7fa91ffa12a0730cc7af85",
+            "202b15726f94ecac1304bc332eb81f38f8ec2320a4bfa93cc6b6ce91291ac557",
         )
     });
 
@@ -1921,7 +1925,10 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let input: &[u8] = match mode {
             "matrix" | "elementwise" => fixture_input(u64::from(mode == "elementwise")),
             "update" => &[],
-            mode if mode.starts_with("upstream-") => &[],
+            mode if mode.starts_with("upstream-") => ORACLE_BINDINGS["factory_inputs"][mode]
+                .as_str()
+                .unwrap_or("")
+                .as_bytes(),
             _ => &STORAGE_TYPES,
         };
         let mut expected = Vec::new();
@@ -2016,9 +2023,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 #include "tests/test-backend-ops.cpp"
 #undef main
 struct vtensor_observation : printer {
-  size_t records=0; bool bad=false;
+  size_t records=0; bool bad=false; std::string label;
   void print_test_result(const test_result &result) override {
-    ++records;
+    ++records; label=result.op_name;
     if(!result.supported || !result.passed || result.test_mode!="test") {
       bad=true;fprintf(stderr,"imported case rejected: %s(%s): %s [backend: %s]\n",result.op_name.c_str(),result.op_params.c_str(),result.error_message.c_str(),result.backend_name.c_str());
     }
@@ -2034,40 +2041,21 @@ static bool vtensor_use_reference(ggml_backend_t reference) {
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
-    size_t ordinal = 0;
-    const ggml_type weight_type = !std::strcmp(op, "MUL_MAT_Q8_0_F32") ? GGML_TYPE_Q8_0 :
-                                  !std::strcmp(op, "MUL_MAT_Q4_0_F32") ? GGML_TYPE_Q4_0 :
-                                  !std::strcmp(op, "MUL_MAT_Q2_K_F32") ? GGML_TYPE_Q2_K : GGML_TYPE_COUNT;
-    const bool matrix_group = weight_type != GGML_TYPE_COUNT;
-    const bool set_rows = !std::strcmp(op, "SET_ROWS_SCALAR");
-    // Keep the ordinal selections tied to the imported make_test_cases_eval order.
-    const bool float_matrix = !std::strcmp(op, "MUL_MAT_FLOAT_STORAGE");
-    const std::vector<size_t> selected = float_matrix ? std::vector<size_t>{10551,12452,12471,12520,12539,12588,12607,13423,13432,13495,13650} : !std::strcmp(op, "FLASH_ATTN_EXT_FIRST") ? std::vector<size_t>{19242} :
-        !std::strcmp(op, "FLASH_ATTN_EXT_SMALL") ? std::vector<size_t>{19314, 19394} :
-        !std::strcmp(op, "FLASH_ATTN_EXT_BF16") ? std::vector<size_t>{19540, 20260, 20980, 21268} : std::vector<size_t>{};
-    const char *label = float_matrix ? "MUL_MAT,MUL_MAT_PREC_SRC1_F32" : !selected.empty() ? "FLASH_ATTN_EXT" : set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
+    std::vector<size_t> selected;
+    size_t id;
+    while (std::scanf("%zu", &id)==1) selected.push_back(id);
+    if (!std::feof(stdin)) return SIZE_MAX;
+    size_t ordinal=0;
     for(auto &test:make_test_cases_eval()) {
-      const auto id = ordinal++;
-      if (!selected.empty() && std::find(selected.begin(),selected.end(),id)==selected.end()) continue;
-      const bool gathered_product = weight_type == GGML_TYPE_Q2_K && id == 809;
-      if (matrix_group && !gathered_product) {
-        const auto *matrix = dynamic_cast<const test_mul_mat *>(test.get());
-        if (!matrix || matrix->type_a != weight_type || matrix->type_b != GGML_TYPE_F32) continue;
-      }
-      if (set_rows) {
-        const auto *row = dynamic_cast<const test_set_rows *>(test.get());
-        if (!row || (row->type_src != GGML_TYPE_F32 && row->type_src != GGML_TYPE_F16) ||
-            (row->type_dst != GGML_TYPE_F32 && row->type_dst != GGML_TYPE_F16 && row->type_dst != GGML_TYPE_BF16) ||
-            (row->type_idx != GGML_TYPE_I32 && row->type_idx != GGML_TYPE_I64)) continue;
-      }
-      const char *case_label = gathered_product ? "ADD" : label;
-      const auto status=test->eval(backend,reference,case_label,&observed);
+      const auto i=ordinal++;
+      if (!selected.empty() && (cases==selected.size() || selected[cases]!=i)) continue;
+      const auto status=test->eval(backend,reference,selected.empty()?op:nullptr,&observed);
       if(status==test_status_t::SKIPPED) continue;
       if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
-      if(matrix_group || set_rows || !std::strcmp(op, "SWIGLU")) std::printf("CASE\t%zu\t%s\t%s\n",id,case_label,test->vars().c_str());
+      if(!selected.empty()) std::printf("CASE\t%zu\t%s\t%s\n",i,observed.label.c_str(),test->vars().c_str());
       ++cases;
     }
-    return observed.records==cases ? cases : SIZE_MAX;
+    return observed.records==cases && (selected.empty() || cases==selected.size()) ? cases : SIZE_MAX;
 }
 using vtensor_graph_factory = ggml_tensor * (*)(ggml_context *, void *, void *);
 using vtensor_initializer = void (*)(ggml_context *, void *);
