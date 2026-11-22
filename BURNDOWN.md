@@ -33,6 +33,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Run the unmodified `llama-eval-callback` at one and two threads through creation, inference and teardown on the VT-59 implementation. [Source](https://github.com/afflom/vTensor/commit/d232e00ae9dcf383c900d8a3792d1201ef19b26e) · [CPU comparison](verification/llama-threadpool-vt59.json)
 - [ ] Integrate VT-59 on main. Recover the 349 additional native lines measured against its main base and pass the complete locked-SDK gate.
 - [x] Pass all 252 GET_ROWS factory cases on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
+- [ ] Execute all 694 F16/BF16 scalar MUL_MAT cases across six operand pairs. vTensor alone refused these cases on the inventory build. [VT-64 regression](https://github.com/afflom/vTensor/commit/5a0c72e7d96ac6db736556dff89a2227e048871f)
 - [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, the 2,681 refused standalone MUL_MAT cases, precision modes, MUL_MAT_ID and OUT_PROD. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. The first 60 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
