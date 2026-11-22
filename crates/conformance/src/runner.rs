@@ -6,8 +6,9 @@ use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
 use vtensor_pointwise::{
-    Adt0 as GraphRequest, Adt1 as Parameters, Adt2 as TensorDescriptor, Adt5 as GraphResponse,
-    Adt6 as GraphPlan, Adt7 as WordOperation, Adt8 as WordOperand, Adt9 as WordTarget,
+    Adt0 as GraphRequest, Adt1 as Parameters, Adt2 as TensorDescriptor, Adt4 as CopyMode,
+    Adt5 as GraphResponse, Adt6 as GraphPlan, Adt7 as WordOperation, Adt8 as WordOperand,
+    Adt9 as WordTarget,
 };
 
 /// Typed refusals at the native tensor boundary.
@@ -635,7 +636,7 @@ fn execute_word(
     response: GraphResponse,
     pointers: &[*mut u8],
     destination: *mut u8,
-    words: &mut [u64; 3],
+    words: &mut [u64],
 ) -> Result<(), BackendError> {
     let GraphResponse::C7(operation, left, right, target, read_bytes, write_bytes) = response
     else {
@@ -747,7 +748,14 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     }
     let destination_data = graph_tensor_data(tensor)?;
     let mut block = workspace(bytes, 0_u8)?;
-    let mut words = [0; 3];
+    let mut fixed = [0; 3];
+    let mut dynamic = match &mode {
+        CopyMode::C26(_, _, _, size) if *size > fixed.len() as u64 => {
+            Some(workspace(*size, 0_u64)?)
+        }
+        _ => None,
+    };
+    let words = dynamic.as_deref_mut().unwrap_or(&mut fixed);
     for index in 0..count {
         let response = vtensor_pointwise::run(GraphRequest::C7(
             index,
@@ -758,7 +766,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         ))
         .map_err(|_| BackendError::Overflow)?;
         if let GraphResponse::C7(..) = response {
-            execute_word(response, &pointers, destination_data, &mut words)?;
+            execute_word(response, &pointers, destination_data, words)?;
             continue;
         }
         if let GraphResponse::C5(kind, from, bytes, to, span, stride) = response {

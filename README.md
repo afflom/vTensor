@@ -166,7 +166,7 @@ host-only fixture orchestration edits reuse the driver. Imported evaluator edits
 invalidate only drivers that link it. Warm executions retain their upstream,
 executable and current-source integrity checks. Mutation evidence is recorded in
 [`verification/native-oracle-cache.json`](verification/native-oracle-cache.json).
-Non-Prism source is 11,380 lines, 831 above the original
+Non-Prism source is 11,402 lines, 853 above the original
 accepted budget, so the source budget remains unsatisfied.
 The complete release checks and remaining imported operation coverage remain
 open. Detailed evidence is recorded in
@@ -221,8 +221,10 @@ in-place constructor, and ADD_REL_POS had no factory cases at all.
 Verdant's certified F64 division and unsigned count conversion now supply the
 RMS_NORM arithmetic prerequisite (VT-45). The imported mean regression preserves
 division before F32 narrowing; narrowing the accumulator first changes rounding.
-Next implement RMS_NORM's F32/BF16 copied and in-place graph paths, with the same
-imported GGML CPU oracle and atomic numeric refusals. Full RMS_NORM remains open.
+RMS_NORM now executes the F32/BF16 copied and in-place paths (VT-46): all 121
+imported cases and 256 Prism-generated supplemental cases pass. Its exact-word
+comparisons and atomic numeric/overlap refusals are recorded in the verification
+evidence. Full acceptance and source-budget recovery remain open.
 
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:

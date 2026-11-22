@@ -5,6 +5,7 @@
 \importmodule{RepeatFixtures}
 \importmodule{ConcatFixtures}
 \importmodule{TypedFixtures}
+\importmodule{RmsFixtures}
 \title{Natural number}
 \begin{semanticmodule}
 definition{
@@ -131,7 +132,7 @@ definition{
   name: evaluate,
   parameters: [query : Nat, ordinal : Nat, source : Nat, item : Nat],
   result: (Option Nat),
-  body: (if (31 <=? query) then (TypedFixtures::evaluate 1 (prim subtract query 31 : Nat) ordinal source item) else (if (24 <=? query) then (TypedFixtures::evaluate 0 (prim subtract query 24 : Nat) ordinal source item) else (if (17 <=? query) then (ConcatFixtures::evaluate (prim subtract query 17 : Nat) ordinal source item) else (if (11 <=? query) then (RepeatFixtures::evaluate (prim subtract query 11 : Nat) ordinal source item) else (if (5 <=? query) then (CopyFixtures::evaluate (prim subtract query 5 : Nat) ordinal source item) else (if (query <? 2) then (if (query =? 0) then (if (item <? 4) then (ctor Option.some [Nat] (if (item <? 2) then (if (item <? 1) then 120 else 24) else (if (item <? 3) then 2 else 165))) else (ctor Option.none [Nat])) else (if ((ordinal <? 120) && (item <? 24)) then (ctor Option.some [Nat] (metadata ordinal item)) else (ctor Option.none [Nat]))) else (if ((query <? 4) && ((ordinal <? 120) && (source <? 2))) then (if (query =? 2) then (if (item <? 2) then (ctor Option.some [Nat] (if (item =? 0) then (count ordinal source) else 4)) else (ctor Option.none [Nat])) else (if (item <? (count ordinal source)) then (ctor Option.some [Nat] (word source item)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])))))))),
+  body: (if (38 <=? query) then (RmsFixtures::evaluate (prim subtract query 38 : Nat) ordinal source item) else (if (31 <=? query) then (TypedFixtures::evaluate 1 (prim subtract query 31 : Nat) ordinal source item) else (if (24 <=? query) then (TypedFixtures::evaluate 0 (prim subtract query 24 : Nat) ordinal source item) else (if (17 <=? query) then (ConcatFixtures::evaluate (prim subtract query 17 : Nat) ordinal source item) else (if (11 <=? query) then (RepeatFixtures::evaluate (prim subtract query 11 : Nat) ordinal source item) else (if (5 <=? query) then (CopyFixtures::evaluate (prim subtract query 5 : Nat) ordinal source item) else (if (query <? 2) then (if (query =? 0) then (if (item <? 4) then (ctor Option.some [Nat] (if (item <? 2) then (if (item <? 1) then 120 else 24) else (if (item <? 3) then 2 else 165))) else (ctor Option.none [Nat])) else (if ((ordinal <? 120) && (item <? 24)) then (ctor Option.some [Nat] (metadata ordinal item)) else (ctor Option.none [Nat]))) else (if ((query <? 4) && ((ordinal <? 120) && (source <? 2))) then (if (query =? 2) then (if (item <? 2) then (ctor Option.some [Nat] (if (item =? 0) then (count ordinal source) else 4)) else (ctor Option.none [Nat])) else (if (item <? (count ordinal source)) then (ctor Option.some [Nat] (word source item)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat]))))))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }

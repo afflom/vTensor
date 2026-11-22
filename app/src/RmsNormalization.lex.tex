@@ -1,0 +1,223 @@
+\begin{lexlean}{RmsNormalization}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: epsilonAdmitted,
+  parameters: [word : Nat],
+  result: Bool,
+  body: ((word <=? 2139095040) || (word =? 2147483648)),
+  executable: true
+}
+
+definition{
+  name: scaleAdmitted,
+  parameters: [word : Nat],
+  result: Bool,
+  body: ((0 <? word) && (word <=? 2139095040)),
+  executable: true
+}
+
+definition{
+  name: wordBytes,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (if (storage =? 30) then 2 else 4),
+  executable: true
+}
+
+definition{
+  name: elementSteps,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (if (storage =? 30) then 4 else 3),
+  executable: true
+}
+
+definition{
+  name: outputSteps,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (if (storage =? 30) then 3 else 1),
+  executable: true
+}
+
+definition{
+  name: rowSteps,
+  parameters: [storage : Nat, width : Nat],
+  result: Nat,
+  body: (8 + (prim multiply (elementSteps storage) width : Nat)),
+  executable: true
+}
+
+definition{
+  name: factorSteps,
+  parameters: [storage : Nat, width : Nat, rows : Nat],
+  result: Nat,
+  body: (prim multiply rows (rowSteps storage width) : Nat),
+  executable: true
+}
+
+definition{
+  name: bitmapSteps,
+  parameters: [width : Nat, rows : Nat, slots : Nat],
+  result: Nat,
+  body: (if (slots =? 0) then 0 else (prim multiply 2 (prim multiply width rows : Nat) : Nat)),
+  executable: true
+}
+
+definition{
+  name: steps,
+  parameters: [storage : Nat, width : Nat, rows : Nat, slots : Nat],
+  result: Nat,
+  body: (if ((width =? 0) || (rows =? 0)) then 0 else (((bitmapSteps width rows slots) + (factorSteps storage width rows)) + (prim multiply (outputSteps storage) (prim multiply width rows : Nat) : Nat))),
+  executable: true
+}
+
+definition{
+  name: scratchWords,
+  parameters: [width : Nat, rows : Nat, slots : Nat],
+  result: Nat,
+  body: (if ((width =? 0) || (rows =? 0)) then 3 else ((3 + rows) + slots)),
+  executable: true
+}
+
+definition{
+  name: axisAligned,
+  parameters: [size : Nat, stride : Nat, bytes : Nat],
+  result: Bool,
+  body: ((size <=? 1) || ((prim remainder stride bytes 1 : Nat) =? 0)),
+  executable: true
+}
+
+definition{
+  name: alignedRows,
+  parameters: [n1 : Nat, n2 : Nat, n3 : Nat, s1 : Nat, s2 : Nat, s3 : Nat, bytes : Nat],
+  result: Bool,
+  body: (((axisAligned n1 s1 bytes) && (axisAligned n2 s2 bytes)) && (axisAligned n3 s3 bytes)),
+  executable: true
+}
+
+definition{
+  name: nestedAxes,
+  parameters: [width : Nat, a : Nat, sa : Nat, b : Nat, sb : Nat, c : Nat, sc : Nat],
+  result: Bool,
+  body: ((((a <=? 1) || (width <=? sa)) && ((b <=? 1) || ((width + (prim multiply (prim subtract a 1 : Nat) sa : Nat)) <=? sb))) && ((c <=? 1) || (((width + (prim multiply (prim subtract a 1 : Nat) sa : Nat)) + (prim multiply (prim subtract b 1 : Nat) sb : Nat)) <=? sc))),
+  executable: true
+}
+
+definition{
+  name: nestedRows,
+  parameters: [width : Nat, n1 : Nat, n2 : Nat, n3 : Nat, s1 : Nat, s2 : Nat, s3 : Nat],
+  result: Bool,
+  body: ((((((nestedAxes width n1 s1 n2 s2 n3 s3) || (nestedAxes width n1 s1 n3 s3 n2 s2)) || (nestedAxes width n2 s2 n1 s1 n3 s3)) || (nestedAxes width n2 s2 n3 s3 n1 s1)) || (nestedAxes width n3 s3 n1 s1 n2 s2)) || (nestedAxes width n3 s3 n2 s2 n1 s1)),
+  executable: true
+}
+
+theorem{
+  name: negativeZeroEpsilon,
+  parameters: [],
+  statement: ((epsilonAdmitted 2147483648) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: positiveInfinityEpsilon,
+  parameters: [],
+  statement: ((epsilonAdmitted 2139095040) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nanScale,
+  parameters: [],
+  statement: ((scaleAdmitted 2143289344) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: zeroScale,
+  parameters: [],
+  statement: ((scaleAdmitted 0) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeScale,
+  parameters: [],
+  statement: ((scaleAdmitted 3212836864) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: infiniteScale,
+  parameters: [],
+  statement: ((scaleAdmitted 2139095040) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unitScale,
+  parameters: [],
+  statement: ((scaleAdmitted 1065353216) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyWidth,
+  parameters: [storage : Nat, rows : Nat, slots : Nat],
+  statement: ((steps storage 0 rows slots) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyScratch,
+  parameters: [rows : Nat, slots : Nat],
+  statement: ((scratchWords 0 rows slots) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: f32FiveWordRow,
+  parameters: [],
+  statement: ((rowSteps 0 5) = 23),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bf16FiveWordRow,
+  parameters: [],
+  statement: ((rowSteps 30 5) = 28),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: contiguousRows,
+  parameters: [],
+  statement: ((nestedRows 16 3 2 1 16 48 96) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: permutedRows,
+  parameters: [],
+  statement: ((nestedRows 16 2 3 1 48 16 96) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nonNestedDisjointNeedsBitmap,
+  parameters: [],
+  statement: ((nestedRows 2 3 2 1 10 13 64) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: overlappingRowsNeedBitmap,
+  parameters: [],
+  statement: ((nestedRows 16 3 2 1 8 24 48) = false),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

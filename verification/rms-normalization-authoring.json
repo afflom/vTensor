@@ -1,7 +1,7 @@
 {
   "spec": "vtensor/rms-normalization-authoring/1",
-  "status": "registered-initial-oracle-test-fails",
-  "operation_implemented": false,
+  "status": "implemented-behavior-verified-acceptance-pending",
+  "operation_implemented": true,
   "capability": "VT-46",
   "prerequisite_commit": "70d1bc5",
   "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
@@ -34,7 +34,7 @@
     "seconds": 2.07,
     "diagnostic": "imported case rejected: RMS_NORM(type=f32,ne=[64,5,4,3],v=0,eps=0.000000,inplace=0): not supported",
     "expected_factory_count_in_test": 121,
-    "full_factory_count_not_yet_confirmed": true,
+    "full_factory_count_not_yet_confirmed": false,
     "sdk_image": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3"
   },
   "implementation_plan": [
@@ -54,8 +54,94 @@
     "Audit empty-tensor graph skipping rather than assuming the scalar row kernel defines every empty case."
   ],
   "claims_not_made": [
-    "Complete RMS_NORM conformance",
+    "Successful full acceptance gate",
     "Production dependency release",
-    "Recovery of the original source budget"
-  ]
+    "Recovery of the original source budget",
+    "Completion of all vTensor imported specifications"
+  ],
+  "full_factory_count_not_yet_confirmed": false,
+  "implementation_plan_status": "The runtime and fixture models are implemented. Full acceptance and source-budget recovery remain open.",
+  "runtime_design": {
+    "mode": "CopyMode.rmsNorm(storage, epsilon, rows, scratchWords)",
+    "legacy_stack_words": 3,
+    "legacy_extra_prism_calls": 0,
+    "legacy_extra_heap_allocations": 0,
+    "factor_cache": "one F32 scale per row; all factors computed and validated before output writes",
+    "alias_check": "Nested/permuted row layouts use a sufficient descriptor check. Other aligned layouts use an exact scratch occupancy preflight before factors.",
+    "arithmetic": "F32 square, F64 accumulation and division, F32 narrowing, epsilon addition, square root and reciprocal, F32 scaling, optional BF16 output conversion."
+  },
+  "production": {
+    "pointwise": {
+      "result_id": "7eefbf1eb77e1cb5c36d8a39de83bcf3bf1c2b751e08ab59efd516c1680c7710",
+      "attestation_id": "6372d917085faa07f6a3233610d78d7a31c8a2ae8535a26f444b1e77cfbadcb0",
+      "declarations": 746,
+      "all_declarations_ok": true,
+      "source_id": "f09f4449235b6d5258c0d7f70b36ada49784f4b030d71cbc1c23e9506128ad3c",
+      "semantic_id": "870fa688d8643dd49cf3966ecde52ca328084e933d583f2444c2d411ffd70784"
+    },
+    "arithmetic": {
+      "result_id": "fe3d84e18d55da146329364e8927253c91583026e78649e39fc48671c2f8cc5b",
+      "attestation_id": "02c63ca3596dab75e2e769fbc51a7938556f59e6e390ee83aad8847d7cb396c9",
+      "declarations": 490,
+      "all_declarations_ok": true,
+      "source_id": "5e303510367d001f09090995bfaaa1cc7e00c9665c01e695bfa13b3f2977d69e",
+      "semantic_id": "a4df6c4178928c4eee9bd9fd110ef0371f268d1998b55d32437367e26d02697d"
+    }
+  },
+  "remote_checks": {
+    "scratch_layout_module_verified_attestation": "94d77e581828ce93f7734b5aac2752f1d87625bfc1bb2d3fe9e0baa8a89b8382",
+    "initial_fixture_module_verified_attestation": "33147521996b70f6cbc996a9e30cb60d805330b89fb3f2076c3ad6d2c681c187",
+    "initial_fixture_attestation_is_not_final_export_evidence": true,
+    "complete_graph_verification": "Failed while staging preservation source: remote service No space left on device. No remote graph attestation claimed.",
+    "final_artifact_authority": "Complete production exports through the exact locally pinned SDK."
+  },
+  "validation": {
+    "imported_factory_cases": 121,
+    "factory_passed": true,
+    "factory_seconds": 5.25,
+    "supplemental_cases": 256,
+    "supplemental_successes": 88,
+    "supplemental_atomic_refusals": 168,
+    "supplemental_first_complete_seconds": 3.78,
+    "output_comparison": "All non-NaN scalar words and output padding match exact bytes. NaNs match by class. The upstream factory also uses its original comparison rules.",
+    "initial_fixture_protocol_failure": "The shared bridge requested chunk-copy query 4, which the initial supplemental fixture model omitted. The corrected model defines and proves chunk queries; no second initialization implementation was added.",
+    "wrong_flag_binding": {
+      "exit_code": 101,
+      "seconds": 3.1,
+      "defect": "Pass a constant positive F32 word instead of runtime scratch flag 2.",
+      "diagnostic": "GGML_STATUS_FAILED expectation rejected because invalid numeric input was accepted."
+    },
+    "early_output_write": {
+      "exit_code": 101,
+      "seconds": 3.13,
+      "defect": "Write one bounded output scalar before preflight.",
+      "diagnostic": "unchanged==output assertion rejected the write."
+    },
+    "faults_restored_exactly": true,
+    "restored_supplement_passed": true,
+    "restored_supplement_seconds": 3.28,
+    "all_target_all_feature_clippy_passed": true,
+    "workspace_contract": {
+      "passed": 46,
+      "failed": 1,
+      "seconds": 24.19,
+      "failure": "VT-02 development dependency override is not production release evidence."
+    },
+    "frame_tests": 5,
+    "xtask_tests": 62,
+    "all_generated_library_targets_ran": true,
+    "all_documentation_targets_ran": true,
+    "dependency_and_license_checks_passed": true,
+    "template_and_sdk_checks_passed": true,
+    "full_just_vv": "running"
+  },
+  "source_budget": {
+    "lines": 11402,
+    "checked_parent_lines": 11380,
+    "growth": 22,
+    "original_ceiling": 10549,
+    "excess_over_original": 853,
+    "ceiling_raised": false,
+    "recovery_required": true
+  }
 }

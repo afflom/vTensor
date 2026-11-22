@@ -493,6 +493,13 @@ fn rms_normalization_vt_46() {
     native_backend_oracle::verify(&root(), "upstream-RMS_NORM", 121);
 }
 
+/// `VT-46`: Supplemental RMS normalization outputs and atomic refusals match Prism fixtures and the imported CPU oracle.
+#[test]
+fn rms_runtime_edges_vt_46() {
+    tensor_layout::verify_pointwise_bundle();
+    native_backend_oracle::verify(&root(), "rms-norm", 256);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -2051,7 +2058,10 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         }
         let mut command = Command::new(&program);
         command.arg(&library).arg(&expected_snapshot).arg(mode);
-        if matches!(mode, "copy" | "repeat" | "concat" | "fill" | "cast") {
+        if matches!(
+            mode,
+            "copy" | "repeat" | "concat" | "fill" | "cast" | "rms-norm"
+        ) {
             command.arg(fixture_library(common));
         }
         let text = super::ggml_oracle::batch(&mut command, &input);
@@ -2633,8 +2643,8 @@ int main(int argc, char **argv) {
     }
     const bool repeating=!strcmp(argv[3], "repeat"), concatenating=!strcmp(argv[3], "concat");
     const bool spatial=!strcmp(argv[3], "spatial"), folding=!strcmp(argv[3], "fold"), diagonal=!strcmp(argv[3], "diagonal"), triangular=!strcmp(argv[3], "triangular"), filling=!strcmp(argv[3], "fill"), casting=!strcmp(argv[3], "cast"), windowing=!strcmp(argv[3], "window"), transforming=!strcmp(argv[3], "transform"), unarying=!strcmp(argv[3], "unary"), scanning=!strcmp(argv[3], "scan"), reducing=!strcmp(argv[3], "reduction"), selecting=!strcmp(argv[3], "rows");
-    const bool relative=!strcmp(argv[3], "relative-position");
-    const bool wordwise=transforming || unarying || scanning || reducing || selecting;
+    const bool relative=!strcmp(argv[3], "relative-position"), rmsing=!strcmp(argv[3],"rms-norm");
+    const bool wordwise=transforming || unarying || scanning || reducing || selecting || rmsing;
     if (!strcmp(argv[3], "copy") || repeating || concatenating || spatial || folding || diagonal || triangular || filling || casting || windowing || wordwise || relative) {
       std::ofstream trace(std::string(argv[2])+"."+argv[3]+"-recipes",std::ios::binary);CHECK(trace);recipe_trace=&trace;
       recipe_word(1);recipe_word(GGML_MAX_SRC);recipe_word(GGML_MAX_OP_PARAMS/sizeof(int32_t));
@@ -2646,8 +2656,8 @@ int main(int argc, char **argv) {
         0x33800000,0x33000000,0x33000001,0x32ffffff,0x3f801000,0x3f803000,0x477fe000,0x477ff000,0x477fefff,0x38800000};
       size_t cases=0, refused=0, source_releases=0; int kind;
       const bool copying=!strcmp(argv[3],"copy");
-      const bool modeled=copying || repeating || concatenating || filling || casting;
-      const uint64_t fixture_base=copying?5:repeating?11:concatenating?17:filling?24:31;
+      const bool modeled=copying || repeating || concatenating || filling || casting || rmsing;
+      const uint64_t fixture_base=copying?5:repeating?11:concatenating?17:filling?24:casting?31:38;
       struct FixtureAnswer {uint64_t status,value;};
       static_assert(sizeof(FixtureAnswer)==16 && offsetof(FixtureAnswer,value)==8);
       using FixtureQuery=FixtureAnswer(*)(uint64_t,uint64_t,uint64_t,uint64_t);
@@ -2657,7 +2667,7 @@ int main(int argc, char **argv) {
       uint64_t config[5]={};
       std::vector<uint64_t> fixture_plan;
       std::vector<std::vector<unsigned char>> patterns;
-      if(modeled) {for(uint64_t i=0;i<5;++i)config[i]=fixture(0,0,0,i);CHECK(query(10,0,0,0).status==0 && query(fixture_base+1,config[0],0,0).status==0);fixture_plan.resize(config[1]);CHECK(fixture_plan.size()==size_t(filling || casting?10:9));patterns.resize(config[2]);}
+      if(modeled) {for(uint64_t i=0;i<5;++i)config[i]=fixture(0,0,0,i);CHECK(query(10,0,0,0).status==0 && query(fixture_base+1,config[0],0,0).status==0);fixture_plan.resize(config[1]);CHECK(fixture_plan.size()==size_t(filling || casting || rmsing?10:9));patterns.resize(config[2]);}
       auto exercise=[&](int kind,int operation,int pattern,int layout,int units,int rows,int batches)->int {
         if(relative && ((kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || (pattern && units!=1))) return 0;
         if(((diagonal || triangular || wordwise) && !selecting && kind!=GGML_TYPE_F32 && kind!=GGML_TYPE_F16 && kind!=GGML_TYPE_BF16) || ((spatial || folding || windowing || scanning) && kind!=GGML_TYPE_F32)) return 0;
@@ -2697,10 +2707,11 @@ int main(int argc, char **argv) {
         if(diagonal) {shape[1]=1;shape[2]=rows;if(pattern)shape[pattern==1?0:pattern]=0;}
         if(folding) for(int axis=0;axis<4;axis++) shape[axis]=(pattern==16 && axis==0) || (pattern>=17 && axis==pattern-17)?0:shape[axis]*((pattern&(1<<axis))?2:1);
         ggml_tensor *input=ggml_new_tensor(ctx,type,4,shape);
-        const uint32_t word=filling?fixture_plan[9]:transforming?fill_words[std::min(pattern,23)]:0; float constant; memcpy(&constant,&word,4);
+        const uint32_t word=filling || rmsing?fixture_plan[9]:transforming?fill_words[std::min(pattern,23)]:0; float constant; memcpy(&constant,&word,4);
         const uint32_t bias_word=fill_words[((transforming?std::min(pattern,23):pattern/5)*7+3)%24];float bias;memcpy(&bias,&bias_word,4);
-        const bool inplace=(filling && operation) || (transforming && operation%2) || (unarying && operation%3==1);
+        const bool inplace=((filling || rmsing) && operation) || (transforming && operation%2) || (unarying && operation%3==1);
         auto word_operation = [&](ggml_tensor *a, bool inplace) {
+          if(rmsing) return inplace?ggml_rms_norm_inplace(ctx,a,constant):ggml_rms_norm(ctx,a,constant);
           if(scanning) return ggml_cumsum(ctx,a);
           if(reducing) return operation==0?ggml_sum(ctx,a):operation==1?ggml_sum_rows(ctx,a):ggml_mean(ctx,a);
           if(unarying) {
@@ -2796,8 +2807,8 @@ int main(int argc, char **argv) {
         for(auto operand:{input,right,result}) {const auto size=operand?ggml_nbytes(operand):0;recipe_word(recipe_id(operand));recipe_word(size);if(size)trace.write((const char *)operand->data,size);}
         ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
         if(triangular && pattern==4) {input->ne[1]++;result->ne[1]++;recipe_state(2);}
-        if((spatial && operation==0 && pattern%2 && ggml_is_empty(input) && !ggml_is_empty(result)) || (triangular && pattern==4) || (windowing && operation==1 && window_case==9)) {
-          CHECK(!ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
+        if((rmsing && fixture_plan[8]) || (spatial && operation==0 && pattern%2 && ggml_is_empty(input) && !ggml_is_empty(result)) || (triangular && pattern==4) || (windowing && operation==1 && window_case==9)) {
+          CHECK(ggml_backend_dev_supports_op(dev,result)==(rmsing && fixture_plan[8]==1)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
           if(triangular) {input->ne[1]--;result->ne[1]--;}
           std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
           recipe_word(5);recipe_word(0);recipe_context=nullptr;ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;refused++;return 0;
@@ -2861,7 +2872,7 @@ int main(int argc, char **argv) {
       }
       }
       }
-      CHECK(refused==(spatial?200:triangular?384:windowing?216:0));
+      CHECK(refused==(rmsing?fixture(0,0,0,5):spatial?200:triangular?384:windowing?216:0));
       recipe_word(4);recipe_word(cases);recipe_word(refusal_probes);recipe_word(refused);
       if(filling) {recipe_trace=&released;recipe_word(UINT64_MAX);recipe_word(source_releases);recipe_trace=&trace;}
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases);return 0;

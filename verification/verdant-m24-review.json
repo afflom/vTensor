@@ -1,0 +1,35 @@
+{
+  "spec": "vtensor/verdant-upstream-review/1",
+  "upstream": "https://github.com/afflom/verdant-engine",
+  "reviewed_revision": "55488e808bf88bd5ab1d62093f9417281d7b1f35",
+  "version": "2.16.0",
+  "milestone": "M24",
+  "previous_base": "34c827db624f951609e49f57bbf324671876eeff",
+  "same_engine_sdk_image": true,
+  "tensor_changes_since_base": [
+    "crates/verdant-tensor/src/memory.rs",
+    "crates/verdant-tensor/src/scalars.rs",
+    "crates/verdant-tensor/src/scalars_ratchet.rs"
+  ],
+  "required_apis_absent": [
+    "evaluate_wide",
+    "evaluate_f32_scalar",
+    "F64Quotient",
+    "StorageBlock"
+  ],
+  "search_scope": [
+    "crates/verdant-tensor",
+    "app/src"
+  ],
+  "upstream_ratchet": {
+    "lifted_floor": 515,
+    "residue_ceiling": 1161,
+    "uncertified_ceiling": 1318,
+    "rust_file_lines_ceiling": 1247,
+    "wasm_uorc_bytes_ceiling": 1789952,
+    "release_capsule_bytes_ceiling": 1024000
+  },
+  "decision": "Keep the verified development extension during the RMS implementation. M24 alone cannot replace the imported certified tensor APIs or satisfy VT-02. Review an isolated migration against the stricter live source ratchets after the current graph change.",
+  "original_upstream_worktree_modified": false,
+  "candidate_pushed_to_engine_upstream": false
+}

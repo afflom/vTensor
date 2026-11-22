@@ -3784,3 +3784,40 @@ meeting a later parent comparison does not raise that accepted ceiling.
 Full RMS_NORM graph support and authoritative production dependency releases
 remain open. Machine-readable evidence is
 `verification/normalization-arithmetic-runtime.json`.
+
+
+RMS_NORM (VT-46) now uses Prism to plan F32/BF16 normalization through Verdant's
+certified scalar and F64 arithmetic. The graph preserves the imported CPU's
+square/accumulate/divide/narrow order, caches every row factor before writing,
+and checks non-nested output layouts with an occupancy preflight. Existing
+operations retain their three stack scratch words without an additional Prism
+request or heap allocation. Copied and exact in-place RMS paths share the model.
+
+The production pointwise export verifies 746 declarations with attestation
+`6372d917085faa07f6a3233610d78d7a31c8a2ae8535a26f444b1e77cfbadcb0`.
+The arithmetic fixture export verifies 490 declarations with attestation
+`02c63ca3596dab75e2e769fbc51a7938556f59e6e390ee83aad8847d7cb396c9`.
+All 121 imported RMS factory cases and 256 Prism supplemental cases pass;
+the latter include 168 atomic refusals and exact output/padding comparisons
+with NaN classification. A wrong runtime flag accepts invalid input and is
+rejected by the failure-status assertion. A planted early output write fails
+the unchanged-output assertion. Both defects were restored, and the targeted
+suite passes. The initial supplemental model omitted the shared chunk-copy
+query; adding that query in Prism fixed the protocol without a native fallback.
+
+The workspace contract suite reports 46 passes and the existing VT-02 failure
+in 24.19 seconds. All-target Clippy, frame tests, 62 xtask tests, generated
+library targets, documentation, dependency/license and template checks pass.
+The current full `just vv` invocation is still running in the exact SDK;
+this checkpoint does not claim that it passed. The source audit reports
+11,402 lines, growth of 22 from the checked parent and 853 above the original
+10,549-line ceiling. Neither limit nor acceptance policy was relaxed.
+Machine-readable details are in `verification/rms-normalization-authoring.json`.
+
+Verdant upstream M24 at `55488e808bf88bd5ab1d62093f9417281d7b1f35` was
+reviewed without changing the user's upstream working tree. It does not yet
+provide the imported certified scalar/wide/storage interfaces required here;
+its newer source ratchets need an isolated migration. The audit is recorded in
+`verification/verdant-m24-review.json`. Full RMS acceptance, original source
+budget recovery, production dependency releases and the remaining imported
+operations are still open.
