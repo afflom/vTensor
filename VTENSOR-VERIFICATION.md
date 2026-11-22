@@ -4667,3 +4667,10 @@ All 63 backend contract tests passed, including the upstream rotary suite.
 The run covered the application proof, format, model, template, lint, workspace
 tests and dependency checks. The later dense attention implementation has its
 own scoped oracle and consumer results above.
+
+VT-02 also passed on the refreshed PR #21 pin
+`ed88897c22e962f1ddcf97ea5e2596200d9e9fb5`. The independent rotary and
+weighted-mean engine oracles passed on that patch stack. The vTensor SDK
+confirmed all fifteen imported descriptors and cargo-deny accepted the resolved
+sources and licenses. [Verdant rotary PR](https://github.com/afflom/verdant-engine/pull/20)
+· [Current numerical dependency](model/verdant-development.json)
