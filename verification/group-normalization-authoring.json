@@ -1,0 +1,36 @@
+{
+  "spec": "vtensor/group-normalization-authoring/1",
+  "capability": "VT-49",
+  "status": "registered-failing-before-implementation",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "initial_failure": {
+    "test": "group_normalization_vt_49",
+    "exit_code": 101,
+    "seconds": 3.59,
+    "diagnostic": "GROUP_NORM(type=f32,ne=[64,64,320,1],num_groups=32,eps=0.000001): not supported",
+    "expected_factory_count": 5,
+    "count_basis": "Three ordinary cases, including the 65537-plane regression, and two GROUP_NORM_MUL_ADD whole-graph factory cases."
+  },
+  "source_audit": {
+    "constructors": [
+      "ggml_group_norm",
+      "ggml_group_norm_inplace"
+    ],
+    "parameters": "op_params[0] is signed int group count; op_params[1] carries F32 epsilon bits. Constructors assert neither domain.",
+    "cpu_domain": "F32 with source inner stride 4. Width is passed to an int scale helper. Channel and group arithmetic uses signed int. Group element denominator uses signed int64 multiplication. Refuse undefined count/overflow domains before writes.",
+    "partition": "ceil(channels/groups), clamp group end to channels; final groups can be short or empty, including when groups <= channels. Empty groups perform no stores.",
+    "ordering": "group outer, batch inner, then channel, row and column. Each row is summed separately in F64 before adding its subtotal to the F64 group sum. Divide in F64 before F32 narrowing.",
+    "variance": "F32 center and square, then F64 row subtotal and F64 group subtotal accumulation; divide in F64, then narrow to F32. This is distinct from both NORM SIMD grouping and RMS.",
+    "epsilon": "No CPU epsilon assertion or scale positivity assertion; negative, NaN and infinite epsilon must preserve actual CPU arithmetic rather than inherit NORM/RMS refusals.",
+    "output_spacing": "CPU indexes destination row columns as float pointers and uses ggml_vec_scale_f32: physical column spacing is 4 regardless of destination nb[0]. Preserve this in the model and CPU oracle layout; refuse layouts whose descriptor span cannot hold the physical write footprint.",
+    "alias_and_injectivity": "Preflight all physical output words before writes; preserve copied and exact effective in-place layouts, detect output overlap and refuse unsafe cross-operand aliasing."
+  },
+  "planned_architecture": {
+    "planner": "Extend the independent normalization planner with the operation and both imported parameters; reuse the existing copy-plan transport.",
+    "execution": "Extend the certified normalization instruction root with a flavor selector; keep one Prism instruction query per step and Verdant as the sole numerical implementation.",
+    "scratch": "Six reusable words plus occupancy only for non-nested physical output. Separate row/group F64 accumulators preserve subtotal rounding without recomputation.",
+    "existing_operations": "Preserve NORM and L2 roots and RMS bindings; only change and certify affected models.",
+    "validation": "Run all five unchanged factory cases. Author Prism supplemental fixtures for partition tails, empty groups, nested rounding, output physical stride, parameter domains, in-place execution, nonfinite arithmetic, padding and atomic refusals; compare against imported CPU."
+  },
+  "acceptance_not_claimed": true
+}

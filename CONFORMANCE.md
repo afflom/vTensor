@@ -151,6 +151,7 @@ model does not sanction.
 | `VT-45` | `build` | Verdant supplies certified F64 division and unsigned count to F64 conversion for normalization and preserves the imported GGML accumulator division before narrowing regression |
 | `VT-46` | `build` | Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals |
 | `VT-48` | `build` | Prism models copied and in-place F32 NORM with stride-selected accumulation and grouped contiguous variance while Verdant matches the pinned imported GGML CPU oracle |
+| `VT-49` | `build` | Prism models copied and in-place F32 GROUP_NORM with nested F64 row subtotals and Verdant matches the imported ordinary and fused GGML CPU cases |
 
 ## oracle-import
 

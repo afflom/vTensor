@@ -533,6 +533,14 @@ fn norm_runtime_edges_vt_48() {
     native_backend_oracle::verify(&root(), "norm", 184);
 }
 
+/// `VT-49`: GROUP_NORM preserves nested row subtotals and matches ordinary and fused imported graphs.
+#[test]
+fn group_normalization_vt_49() {
+    tensor_layout::certified_current_model(&root(), "pointwise");
+    tensor_layout::certified_current_model(&root(), "norm");
+    native_backend_oracle::verify(&root(), "upstream-GROUP_NORM,GROUP_NORM_MUL_ADD", 5);
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};

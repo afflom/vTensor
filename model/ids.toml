@@ -358,3 +358,9 @@ id = "VT-48"
 level = "build"
 suite = "normalization-graphs"
 statement = "Prism models copied and in-place F32 NORM with stride-selected accumulation and grouped contiguous variance while Verdant matches the pinned imported GGML CPU oracle"
+
+[[id]]
+id = "VT-49"
+level = "build"
+suite = "normalization-graphs"
+statement = "Prism models copied and in-place F32 GROUP_NORM with nested F64 row subtotals and Verdant matches the imported ordinary and fused GGML CPU cases"

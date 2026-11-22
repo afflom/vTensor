@@ -33,3 +33,11 @@ Feature: normalization-graphs
     Then Verdant results match every imported NORM case
     And copied and in-place edge cases preserve padding and atomic metadata refusals
     And cancellation and grouped-rounding defects are rejected
+
+  @VT-49 @build
+  Scenario: Prism models copied and in-place F32 GROUP_NORM with nested F64 row subtotals and Verdant matches the imported ordinary and fused GGML CPU cases
+    Given the pinned GROUP_NORM constructors CPU implementation and ordinary and fused test factory
+    When Prism plans channel groups row subtotals and centered variance phases
+    Then every imported GROUP_NORM and GROUP_NORM_MUL_ADD case matches the authoritative CPU
+    And copied and in-place edge cases preserve physical output spacing padding and atomic refusals
+    And altered row-subtotal grouping and parameter bindings are rejected
