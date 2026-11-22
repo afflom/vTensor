@@ -159,6 +159,13 @@ fn native_backend_vt_11() {
     native_backend_oracle::verify(&root(), "buffers", 108);
 }
 
+/// `VT-52`: Scheduled node selection and reuse match the imported CPU.
+#[test]
+fn scheduled_compute_flags_vt_52() {
+    tensor_layout::certified_current_model(&root(), "native");
+    native_backend_oracle::verify(&root(), "scheduled-flags", 3);
+}
+
 /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
 #[test]
 fn matrix_graphs_vt_12() {
@@ -2265,6 +2272,7 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
 #include "ggml-cpu.h"
 #include <cmath>
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -2402,6 +2410,39 @@ int main(int argc, char **argv) {
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
     ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
     ggml_backend_cpu_set_n_threads(reference,1);
+    if (!strcmp(argv[3],"scheduled-flags")) {
+        std::array<std::array<float,2>,3> expected{};
+        for (auto selected : {reference, backend}) {
+            auto ctx = ggml_init({1u << 20, nullptr, true}); CHECK(ctx);
+            auto input = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 1);
+            auto intermediate = ggml_scale(ctx, input, 2.0f);
+            auto result = ggml_add(ctx, intermediate, input);
+            ggml_set_input(input); ggml_set_output(intermediate); ggml_set_output(result);
+            auto graph = ggml_new_graph(ctx); ggml_build_forward_expand(graph, result);
+            CHECK(!input->data && ggml_backend_supports_op(selected,intermediate) && ggml_backend_supports_op(selected,result));
+            auto sched = ggml_backend_sched_new(&selected, nullptr, 1, GGML_DEFAULT_GRAPH_SIZE, false, true); CHECK(sched);
+            CHECK(ggml_backend_sched_alloc_graph(sched, graph));
+            for (auto node : {intermediate,result}) CHECK(ggml_backend_sched_get_tensor_backend(sched,node)==selected);
+            for (size_t pass=0; pass<expected.size(); ++pass) {
+                const float value = float(pass+3), canary = -17.0f;
+                if (pass==1) intermediate->flags &= ~GGML_TENSOR_FLAG_COMPUTE;
+                else intermediate->flags |= GGML_TENSOR_FLAG_COMPUTE;
+                ggml_backend_tensor_set(input,&value,0,sizeof(value));
+                ggml_backend_tensor_set(intermediate,&canary,0,sizeof(canary));
+                CHECK(ggml_backend_sched_graph_compute(sched,graph)==GGML_STATUS_SUCCESS);
+                ggml_backend_sched_synchronize(sched);
+                std::array<float,2> observed;
+                ggml_backend_tensor_get(intermediate,&observed[0],0,sizeof(float));
+                ggml_backend_tensor_get(result,&observed[1],0,sizeof(float));
+                if (selected==reference) {
+                    CHECK((observed[0]==canary)==(pass==1)); expected[pass]=observed;
+                } else CHECK(observed==expected[pass]);
+            }
+            ggml_backend_sched_free(sched); ggml_free(ctx);
+        }
+        ggml_backend_free(reference); ggml_backend_free(backend);
+        printf("RESULT cases %zu\n",expected.size()); return 0;
+    }
 #ifdef VTENSOR_IMPORTED_SUITE
     if (!strncmp(argv[3], "upstream-", 9)) {
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);

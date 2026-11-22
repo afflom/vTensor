@@ -376,3 +376,9 @@ id = "VT-51"
 level = "build"
 suite = "normalization-graphs"
 statement = "Prism models composed normalization graphs with mixed scalar storage broadcast and aliases while Verdant matches every imported non-RoPE composed normalization factory case"
+
+[[id]]
+id = "VT-52"
+level = "build"
+suite = "native-backend"
+statement = "Prism selects graph nodes by the imported GGML compute flag and vTensor preserves inactive results across scheduled graph reuse"
