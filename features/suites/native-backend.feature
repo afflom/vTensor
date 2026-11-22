@@ -20,3 +20,9 @@ Feature: native-backend
     Given the pinned upstream GGML evaluation factory and CPU reference
     When LOG, SIN, COS and EXP run on the vTensor backend
     Then all 39 factory outputs match the reference within the imported tolerances
+
+  @VT-61 @build
+  Scenario: GGML sigmoid and SiLU execute through Verdant in unary, multiplied and added graph compositions across all 122 imported factory cases
+    Given the pinned GGML CPU reference and graph factory
+    When vTensor evaluates sigmoid, SiLU and their add and multiply compositions
+    Then the 122 results match the upstream evaluator

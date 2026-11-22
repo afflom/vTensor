@@ -424,3 +424,9 @@ id = "VT-60"
 level = "build"
 suite = "native-backend"
 statement = "GGML logarithm sine cosine and exponential graphs execute through the Verdant scalar primitives across the imported factory storage and view cases"
+
+[[id]]
+id = "VT-61"
+level = "build"
+suite = "native-backend"
+statement = "GGML sigmoid and SiLU execute through Verdant in unary, multiplied and added graph compositions across all 122 imported factory cases"
