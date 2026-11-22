@@ -170,38 +170,30 @@ impl BufferContext {
         })
     }
 
-    fn region(&self, tensor: &Tensor, offset: usize, size: usize) -> Result<*mut u8, BackendError> {
-        let span = tensor_span(tensor)?;
-        match vtensor_transfer::run(
-            true,
-            !tensor.data.is_null(),
+    fn region(
+        &self,
+        tensor: &Tensor,
+        span: usize,
+        offset: usize,
+        size: usize,
+    ) -> Result<*mut u8, BackendError> {
+        use vtensor_buffer_region::Adt0 as Region;
+        let decision = vtensor_buffer_region::run(
+            self.base as usize as u64,
+            self.size as u64,
+            tensor.data as usize as u64,
             span as u64,
             offset as u64,
             size as u64,
-        ) {
-            vtensor_transfer::Adt0::C1 => return Ok(null_mut()),
-            vtensor_transfer::Adt0::C4 => {}
-            vtensor_transfer::Adt0::C3 => return Err(BackendError::OutOfBounds),
-            _ => return Err(BackendError::InvalidTensor),
+        )
+        .map_err(|_| BackendError::Overflow)?;
+        match decision {
+            Region::C0 => Ok(null_mut()),
+            Region::C1 => Err(BackendError::InvalidTensor),
+            Region::C2 => Err(BackendError::OutOfBounds),
+            // SAFETY: Prism bounded the whole tensor and requested range inside this backing allocation.
+            Region::C3(at) => Ok(unsafe { self.base.add(at as usize) }),
         }
-        let displacement = (tensor.data as usize)
-            .checked_sub(self.base as usize)
-            .ok_or(BackendError::OutOfBounds)?;
-        if !matches!(
-            vtensor_transfer::run(
-                true,
-                !self.base.is_null(),
-                self.size as u64,
-                displacement as u64,
-                span as u64
-            ),
-            vtensor_transfer::Adt0::C4
-        ) {
-            return Err(BackendError::OutOfBounds);
-        }
-        // SAFETY: both certified admissions bound the whole tensor and the
-        // requested subrange. Derive provenance from the actual backing base.
-        Ok(unsafe { self.base.add(displacement).add(offset) })
     }
 }
 
@@ -372,7 +364,7 @@ unsafe extern "C" fn tensor_init(buffer: Buf, tensor: TensorPtr) -> c_int {
     let result = unsafe {
         let tensor = &*tensor;
         let context = &*(*buffer).context.cast::<BufferContext>();
-        tensor_span(tensor).and_then(|size| context.region(tensor, 0, size))
+        tensor_span(tensor).and_then(|size| context.region(tensor, size, 0, size))
     };
     if result.is_ok() {
         GGML_STATUS_SUCCESS
@@ -408,7 +400,8 @@ macro_rules! transfer_callbacks {
             // certified admissions bound the tensor region. Copy permits aliases.
             unsafe {
                 let context = &*(*buffer).context.cast::<BufferContext>();
-                let region = require(context.region(&*tensor, offset, size));
+                let tensor = &*tensor;
+                let region = require(context.region(tensor, require(tensor_span(tensor)), offset, size));
                 ($effect)(region, external, size);
             }
         }
@@ -444,7 +437,7 @@ unsafe extern "C" fn tensor_copy(
             return false;
         }
         let context = &*(*buffer).context.cast::<BufferContext>();
-        let Ok(target) = context.region(&*destination, 0, size) else {
+        let Ok(target) = context.region(&*destination, size, 0, size) else {
             return false;
         };
         if size != 0 {
@@ -511,6 +504,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     if matches!(operation, 45 | 46) {
         return rotary::plan(
             tensor,
+            vtensor_rotary::Adt1::C0(p1, p2, p15, p11, p12, p13, p14),
             primary.ok_or(BackendError::InvalidTensor)?,
             secondary.ok_or(BackendError::InvalidTensor)?,
             base,
@@ -612,7 +606,10 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
 }
 
 fn graph_tensor_data(tensor: &Tensor) -> Result<*mut u8, BackendError> {
-    let span = tensor_span(tensor)?;
+    graph_tensor_region(tensor, tensor_span(tensor)?)
+}
+
+fn graph_tensor_region(tensor: &Tensor, span: usize) -> Result<*mut u8, BackendError> {
     if span == 0 {
         return Ok(null_mut());
     }
@@ -623,7 +620,7 @@ fn graph_tensor_data(tensor: &Tensor) -> Result<*mut u8, BackendError> {
             return Err(BackendError::InvalidTensor);
         }
         let context = &*(*tensor.buffer).context.cast::<BufferContext>();
-        context.region(tensor, 0, span)
+        context.region(tensor, span, 0, span)
     }
 }
 
@@ -1276,21 +1273,12 @@ mod rotary {
 
     pub(super) fn plan(
         tensor: &Tensor,
+        layout: Layout,
         source: TensorDescriptor,
         positions: TensorDescriptor,
         factors: Option<TensorDescriptor>,
         output: TensorDescriptor,
     ) -> Result<Option<Plan>, BackendError> {
-        let param = |i: usize| u64::from(tensor.op_params[i] as u32);
-        let layout = Layout::C0(
-            param(1),
-            param(2),
-            param(15),
-            param(11),
-            param(12),
-            param(13),
-            param(14),
-        );
         match request(Request::C0(
             tensor.op as u64,
             tensor.src[3..].iter().any(|v| !v.is_null()),
@@ -1480,7 +1468,7 @@ mod attention {
     impl<'a> Input<'a> {
         fn new(t: &'a Tensor) -> Result<Self, BackendError> {
             let span = super::tensor_span(t)?;
-            let data = graph_tensor_data(t)?;
+            let data = super::graph_tensor_region(t, span)?;
             let bytes = if span == 0 {
                 &[]
             } else {

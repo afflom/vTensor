@@ -111,7 +111,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xea3dd42f }]
+license-files = [{ path = "src/lib.rs", hash = 0xe9d8b742 }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -567,3 +567,9 @@ name = "vtensor_attention_mask"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0xa003d020 }]
+
+[[licenses.clarify]]
+name = "vtensor_buffer_region"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x5fda0429 }]

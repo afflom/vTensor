@@ -430,3 +430,9 @@ id = "VT-61"
 level = "build"
 suite = "native-backend"
 statement = "GGML sigmoid and SiLU execute through Verdant in unary, multiplied and added graph compositions across all 122 imported factory cases"
+
+[[id]]
+id = "VT-62"
+level = "build"
+suite = "native-backend"
+statement = "GGML BF16 row gradients accumulate into F32 with repeated and strided indices and match the pinned CPU widening and row-gradient operators"

@@ -693,6 +693,7 @@ dependencies = [
  "vtensor_arithmetic",
  "vtensor_attention",
  "vtensor_attention_mask",
+ "vtensor_buffer_region",
  "vtensor_fixtures",
  "vtensor_index",
  "vtensor_l2",
@@ -734,6 +735,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_attention_mask"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_buffer_region"
 version = "0.1.0"
 
 [[package]]
