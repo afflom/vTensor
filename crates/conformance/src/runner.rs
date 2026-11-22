@@ -819,6 +819,10 @@ fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
         .ok_or(BackendError::InvalidTensor)
 }
 
+fn decode_float(storage: u64, word: u64) -> Result<f32, BackendError> {
+    convert(storage, 0, word).map(|bits| f32::from_bits(bits as u32))
+}
+
 fn execute_word(
     response: GraphResponse,
     pointers: &[*mut u8],
@@ -886,13 +890,17 @@ fn execute_word(
             .map_err(|_| BackendError::InvalidTensor)?,
         WordOperation::C6 => return Err(BackendError::InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
-            use verdant_tensor::linear::{exponential_f32, natural_log_f32, sin_cos_f32};
-            let input = f32::from_bits(convert(source, 0, a)? as u32);
+            use verdant_tensor::linear::{
+                exponential_f32, natural_log_f32, sigmoid_f32, silu_f32, sin_cos_f32,
+            };
+            let input = decode_float(source, a)?;
             let result = match kind {
                 13 => natural_log_f32(input),
                 14 => sin_cos_f32(input).map(|pair| pair.0),
                 15 => sin_cos_f32(input).map(|pair| pair.1),
                 16 => exponential_f32(input),
+                17 => sigmoid_f32(input),
+                18 => silu_f32(input),
                 _ => return Err(BackendError::InvalidTensor),
             }
             .map_err(|_| BackendError::Overflow)?;
@@ -1246,7 +1254,8 @@ mod rotary {
     //! GGML rotary graph transport. Prism supplies addresses and Verdant computes coefficients and values.
 
     use super::{
-        convert, graph_tensor_data, scalar_word, workspace, BackendError, Tensor, TensorDescriptor,
+        convert, decode_float, graph_tensor_data, scalar_word, workspace, BackendError, Tensor,
+        TensorDescriptor,
     };
     use verdant_tensor::linear::{
         rotate_pair_f32, signed_word_f32, RotaryParameters, RotarySpectrum,
@@ -1399,13 +1408,9 @@ mod rotary {
                             let (x, y) = (read(a)?, read(b)?);
                             let (x, y) = match slot {
                                 Some(slot) => {
-                                    let f = |word| {
-                                        convert(format, 0, word)
-                                            .map(|bits| f32::from_bits(bits as u32))
-                                    };
-                                    let (x, y) =
-                                        rotate_pair_f32((f(x)?, f(y)?), coefficients[slot])
-                                            .map_err(|_| BackendError::InvalidTensor)?;
+                                    let pair = (decode_float(format, x)?, decode_float(format, y)?);
+                                    let (x, y) = rotate_pair_f32(pair, coefficients[slot])
+                                        .map_err(|_| BackendError::InvalidTensor)?;
                                     (
                                         convert(0, format, u64::from(x.to_bits()))?,
                                         convert(0, format, u64::from(y.to_bits()))?,
@@ -1509,22 +1514,14 @@ mod attention {
                 .checked_mul(self.width)
                 .ok_or(BackendError::Overflow)?;
             for (bytes, value) in self.region(offset, size)?.chunks_exact(self.width).zip(out) {
-                *value = match self.kind {
-                    0 => f32::from_ne_bytes(
-                        bytes.try_into().map_err(|_| BackendError::InvalidTensor)?,
-                    ),
-                    1 => half_value(u16::from_ne_bytes(
-                        bytes.try_into().map_err(|_| BackendError::InvalidTensor)?,
-                    ))?,
+                *value = match (self.kind, bytes) {
+                    (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
+                    (1, &[a, b]) => super::decode_float(1, u16::from_ne_bytes([a, b]).into())?,
                     _ => return Err(BackendError::InvalidTensor),
                 };
             }
             Ok(())
         }
-    }
-
-    fn half_value(half: u16) -> Result<f32, BackendError> {
-        Ok(f32::from_bits(super::convert(1, 0, u64::from(half))? as u32))
     }
 
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
@@ -1563,7 +1560,7 @@ mod attention {
                                 if vtensor_attention_mask::run(u64::from(half)) {
                                     continue;
                                 }
-                                half_value(half)?
+                                super::decode_float(1, half.into())?
                             }
                             None => 0.0,
                         };

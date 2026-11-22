@@ -111,7 +111,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xd45e6db5 }]
+license-files = [{ path = "src/lib.rs", hash = 0xea3dd42f }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -419,10 +419,10 @@ expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x2ca5ea94 }]
 
 [[licenses.clarify]]
-name = "verdant_swiglu"
-version = "=2.20.0"
+name = "verdant_logistic"
+version = "=2.24.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xd3157ae3 }]
+license-files = [{ path = "src/lib.rs", hash = 0xb8fd44df }]
 
 [[licenses.clarify]]
 name = "verdant_circular_magnitudes"

@@ -300,9 +300,17 @@
         "SIN",
         "COS",
         "EXP"
+      ],
+      "VT-61": [
+        "SIGMOID",
+        "SILU",
+        "SIGMOID_MUL",
+        "SILU_MUL",
+        "ADD_SIGMOID_MUL",
+        "ADD_SILU_MUL"
       ]
     },
-    "passed": 5755,
+    "passed": 5877,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -393,11 +401,12 @@
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
     "rotary_composition_evidence": "verification/factory-rotary-compositions.json",
-    "refused": 20366,
+    "refused": 20244,
     "failed": 0,
     "standalone_evidence": "verification/factory-standalone-vt59.json",
     "superseded_standalone_verdicts": {
-      "VT-60": "verification/factory-elementary-vt60.json"
+      "VT-60": "verification/factory-elementary-vt60.json",
+      "VT-61": "verification/factory-logistic-vt61.json"
     }
   }
 }

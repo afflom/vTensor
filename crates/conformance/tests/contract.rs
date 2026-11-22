@@ -175,6 +175,9 @@ ggml_batches! {
     fn rotary_backward_graphs_vt_57() { "upstream-ROPE_BACK", 424, ["rotary"] }
     /// The first dense attention graph from the imported GGML factory.
     #[test]
+    fn logistic_graphs_vt_61() { "upstream-SIGMOID,SILU,SIGMOID_MUL,SILU_MUL,ADD_SIGMOID_MUL,ADD_SILU_MUL", 122, ["pointwise"] }
+
+    #[test]
     fn elementary_graphs_vt_60() { "upstream-LOG,SIN,COS,EXP", 39, ["pointwise"] }
 
     #[test]

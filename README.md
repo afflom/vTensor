@@ -3,8 +3,7 @@
 vTensor is a Prism-modeled GGML device backend whose only tensor-compute
 substrate is Verdant Tensor. Its target is the complete public GGML backend
 contract, so arbitrary GGML applications can select it as a device without an
-operation-support gap. The eventual llama.cpp integration uses GGML's backend
-API; model loading, graph construction, and serving remain llama.cpp concerns.
+operation-support gap. The pinned llama.cpp host loads the plugin through GGML and runs the stories15M models. llama.cpp owns model loading and graph construction.
 
 Device and buffer integration has passed its complete repository checkpoint.
 Numerical graph execution is under development and does **not** yet provide
@@ -12,7 +11,7 @@ full GGML backend support. The imported source and oracle are pinned in
 [`vendor/llama.cpp-oracle`](vendor/llama.cpp-oracle/README.md).
 
 Cargo fetches the certified Verdant tensor primitives by the immutable commit in
-[Verdant Engine PR #21](https://github.com/afflom/verdant-engine/pull/21), which builds on PRs #12 through #20.
+[Verdant Engine PR #22](https://github.com/afflom/verdant-engine/pull/22), which builds on PRs #12 through #21.
 The [patch record](model/verdant-development.json) identifies the dependency
 until a published Verdant release includes these APIs.
 
@@ -102,6 +101,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-57` | build | Passes all 510 GGML ROPE and 424 ROPE_BACK factory cases using Verdant rotations. |
 | `VT-58` | build | Executes dense floating-point attention through Verdant. The quantized stories15M prefill and two decode steps match the reference top token and have maximum absolute logit error below 0.000008. [Consumer evidence](verification/llama-stories15m-vt58.json) |
 | `VT-60` | build | Dispatches LOG, SIN, COS and EXP to Verdant. All 39 imported GGML factory cases pass across F32, F16 and BF16. [Oracle results](verification/factory-elementary-vt60.json) |
+| `VT-61` | build | Executes sigmoid, SiLU and their addition/multiplication compositions with Verdant. All 122 imported GGML cases pass. [Oracle results](verification/factory-logistic-vt61.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

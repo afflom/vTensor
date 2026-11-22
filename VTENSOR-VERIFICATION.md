@@ -4721,3 +4721,13 @@ library. Sending SIN to the cosine output failed the first F16 sine case
 with error 2.261962970 against a limit of 0.000000100. Sharing the checked
 native row transfer between matrix and attention execution reduced the
 overall native count from 12,166 to 12,163. [Oracle, source and certificate](verification/factory-elementary-vt60.json)
+
+## Sigmoid and SiLU graphs
+
+VT-61 uses the certified binary32 sigmoid and SiLU entry points on the
+immutable Verdant PR #22 pin. vTensor supplies GGML storage and graph dispatch.
+The upstream factory previously reported a vTensor refusal for each of these
+122 graphs. The paired evaluator now passes both unary functions, their
+multiplied forms and their add/multiply compositions. Routing sigmoid to SiLU
+failed the first F16 sigmoid case. Restoring the correct binding passed all
+122 cases. VT-02 accepted the exact Git dependency. [GGML results](verification/factory-logistic-vt61.json) · [Verdant scalar oracle](https://github.com/afflom/verdant-engine/pull/22)

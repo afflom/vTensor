@@ -147,6 +147,7 @@ model does not sanction.
 | `VT-11` | `build` | GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior |
 | `VT-52` | `build` | Prism selects graph nodes by the imported GGML compute flag and vTensor preserves inactive results across scheduled graph reuse |
 | `VT-60` | `build` | GGML logarithm sine cosine and exponential graphs execute through the Verdant scalar primitives across the imported factory storage and view cases |
+| `VT-61` | `build` | GGML sigmoid and SiLU execute through Verdant in unary, multiplied and added graph compositions across all 122 imported factory cases |
 
 ## normalization-graphs
 
