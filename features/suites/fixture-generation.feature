@@ -14,3 +14,11 @@ Feature: Certified graph fixtures
     Then every generated and observed descriptor and input word matches the prior corpus
     And the GGML CPU independently computes every expected result
     And source word changes and native binding defects are detected
+
+  @VT-40 @build
+  Scenario: Native fixture construction initialized bytes and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
+    Given sixteen native fixture families captured before their recipe migration
+    When their existing CPU oracle tests execute
+    Then graph descriptors aliases initialized bytes and refusal mutations match the frozen transcripts
+    And missing stale truncated or altered transcripts are rejected
+    And each case executes only once in the complete workspace run

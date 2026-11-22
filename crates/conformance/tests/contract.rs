@@ -372,6 +372,33 @@ fn arithmetic_fixture_generation_vt_36() {
     }
 }
 
+/// `VT-40`: Native fixture construction initialized bytes and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
+#[test]
+fn native_fixture_baselines_vt_40() {
+    let baseline = native_backend_oracle::fixture_baselines();
+    let source =
+        std::fs::read_to_string(root().join("crates/conformance/tests/contract.rs")).unwrap();
+    assert_eq!(source, include_str!("contract.rs"), "stale fixture gate");
+    let modes = baseline["mode"].as_array().unwrap();
+    assert_eq!(modes.len(), 16);
+    for row in modes {
+        let (name, cases) = (
+            row["name"].as_str().unwrap(),
+            row["cases"].as_u64().unwrap(),
+        );
+        assert!(source.contains(&format!(
+            "native_backend_oracle::verify(&root(), \"{name}\", {cases});"
+        )));
+        assert!(row["bytes"].as_u64().unwrap() > 0);
+        assert_eq!(row["sha256"].as_str().unwrap().len(), 64);
+        assert_eq!(row["record"].as_array().unwrap().len() as u64, cases);
+        assert_eq!(
+            row["positive_cases"].as_u64().unwrap() + row["constructed_refusals"].as_u64().unwrap(),
+            cases
+        );
+    }
+}
+
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -1519,6 +1546,21 @@ mod native_backend_oracle {
     use std::path::Path;
     use std::process::Command;
 
+    pub(super) fn fixture_baselines() -> &'static serde_json::Value {
+        static BASELINE: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
+        BASELINE.get_or_init(|| {
+            let bytes =
+                std::fs::read(super::root().join("verification/native-fixture-baseline.json"))
+                    .unwrap();
+            assert_eq!(
+                repo_model::artifact::sha256_hex(&bytes),
+                "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+                "frozen native corpus changed"
+            );
+            serde_json::from_slice(&bytes).unwrap()
+        })
+    }
+
     fn verify_fixture_records(family: u64, bytes: &[u8]) {
         let (name, digest) = match family {
             0 => (
@@ -1814,8 +1856,19 @@ mod native_backend_oracle {
             vtensor_backend::source_snapshot() == expected,
             "Rust test library is stale"
         );
-        let expected_snapshot = cache.join("expected-source.snapshot");
+        let expected_snapshot =
+            cache.join(format!("expected-source-{}.snapshot", std::process::id()));
         std::fs::write(&expected_snapshot, &expected).unwrap();
+        let recipe = fixture_baselines()["mode"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["name"] == mode);
+        let recipe_path =
+            std::path::PathBuf::from(format!("{}.{mode}-recipes", expected_snapshot.display()));
+        if recipe.is_some() && recipe_path.exists() {
+            std::fs::remove_file(&recipe_path).unwrap();
+        }
         let text = super::ggml_oracle::batch(
             Command::new(&program)
                 .arg(&library)
@@ -1824,12 +1877,31 @@ mod native_backend_oracle {
             &input,
         );
         assert_eq!(text, format!("RESULT cases {expected_cases}\n"));
+        if let Some(recipe) = recipe {
+            assert_eq!(recipe["cases"].as_u64().unwrap() as usize, expected_cases);
+            let bytes = std::fs::read(&recipe_path)
+                .expect("this execution must emit its fixture transcript");
+            assert_eq!(
+                bytes.len() as u64,
+                recipe["bytes"].as_u64().unwrap(),
+                "{mode} fixture length changed"
+            );
+            assert_eq!(
+                repo_model::artifact::sha256_hex(&bytes),
+                recipe["sha256"].as_str().unwrap(),
+                "{mode} fixture corpus changed"
+            );
+            std::fs::remove_file(&recipe_path).unwrap();
+        }
         if matches!(mode, "matrix" | "elementwise") {
+            let path = format!("{}.{mode}-fixtures", expected_snapshot.display());
             verify_fixture_records(
                 u64::from(mode == "elementwise"),
-                &std::fs::read(format!("{}.{mode}-fixtures", expected_snapshot.display())).unwrap(),
+                &std::fs::read(&path).unwrap(),
             );
+            std::fs::remove_file(path).unwrap();
         }
+        std::fs::remove_file(expected_snapshot).unwrap();
     }
 
     const UPSTREAM_SUITE: &str = r##"#define main vtensor_unused_upstream_main
@@ -1914,13 +1986,34 @@ extern ggml_tensor *vtensor_oracle_tensor(void *,ggml_context *,ggml_type,int64_
 static void refusal(const char *message) { _exit(strstr(message, "out of bounds") ? 12 : 99); }
 static int current_kind = -1, current_layout = -1;
 static size_t refusal_probes = 0;
+static std::ofstream *recipe_trace=nullptr;
+static ggml_context *recipe_context=nullptr;
+static uintptr_t recipe_base=0;
+static std::vector<ggml_tensor *> recipe_tensors;
+static uint64_t recipe_id(const ggml_tensor *t) {
+    if(!t)return 0;auto at=std::find(recipe_tensors.begin(),recipe_tensors.end(),t);GGML_ASSERT(at!=recipe_tensors.end());return at-recipe_tensors.begin()+1;
+}
+static void recipe_word(uint64_t word) {
+    uint8_t bytes[8];for(int i=0;i<8;++i)bytes[i]=uint8_t(word>>(8*i));recipe_trace->write((const char *)bytes,8);
+}
+static void recipe_state(uint64_t phase) {
+    if(!recipe_context)return;
+    recipe_tensors.clear();
+    for(auto t=ggml_get_first_tensor(recipe_context);t;t=ggml_get_next_tensor(recipe_context,t))recipe_tensors.push_back(t);
+    recipe_word(phase);recipe_word(recipe_tensors.size());
+    for(auto t:recipe_tensors) {
+      recipe_word(t->type);recipe_word(t->op);for(auto n:t->ne)recipe_word(n);for(auto n:t->nb)recipe_word(n);
+      for(auto p:t->op_params)recipe_word(uint32_t(p));for(auto src:t->src)recipe_word(recipe_id(src));
+      recipe_word(recipe_id(t->view_src));recipe_word(t->view_offs);recipe_word(t->buffer!=nullptr);recipe_word(t->data?uintptr_t(t->data)-recipe_base+1:0);
+    }
+}
 static void unexpected_abort(const char *message) { fprintf(stderr, "upstream abort at type %d layout %d: %s\n", current_kind, current_layout, message); _exit(99); }
 template<class T, class U>
 static bool refuses_change(ggml_backend_t backend, ggml_backend_dev_t dev, ggml_cgraph *graph, ggml_tensor *result, T &field, U bad, bool capability=true) {
     ++refusal_probes;
     std::vector<unsigned char> before(ggml_nbytes(result)),after(before.size());
     ggml_backend_tensor_get(result,before.data(),0,before.size());
-    const T saved=field;field=bad;
+    const T saved=field;field=bad;recipe_state(1);
     const bool refused=(!capability || !ggml_backend_dev_supports_op(dev,result)) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED;
     field=saved;ggml_backend_tensor_get(result,after.data(),0,after.size());
     return refused && before==after;
@@ -2363,6 +2456,8 @@ int main(int argc, char **argv) {
     const bool relative=!strcmp(argv[3], "relative-position");
     const bool wordwise=transforming || unarying || scanning || reducing || selecting;
     if (!strcmp(argv[3], "copy") || repeating || concatenating || spatial || folding || diagonal || triangular || filling || casting || windowing || wordwise || relative) {
+      std::ofstream trace(std::string(argv[2])+"."+argv[3]+"-recipes",std::ios::binary);CHECK(trace);recipe_trace=&trace;
+      recipe_word(1);recipe_word(GGML_MAX_SRC);recipe_word(GGML_MAX_OP_PARAMS/sizeof(int32_t));
       static const int window_sizes[]={1,2,4};
       static const ggml_type float_types[]={GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16};
       static const uint32_t fill_words[]={0,0x80000000,0x3f800000,0xbf800000,0x7f800000,0xff800000,
@@ -2490,13 +2585,18 @@ int main(int argc, char **argv) {
           if(!initial.empty()) ggml_backend_tensor_set(operand,initial.data(),0,initial.size());
         }
         if(!output.empty()) {if(wordwise && inplace) ggml_backend_tensor_get(result,output.data(),0,output.size());else ggml_backend_tensor_set(result,output.data(),0,output.size());}
+        recipe_context=ctx;recipe_base=uintptr_t(buffer?ggml_backend_buffer_get_base(buffer):nullptr);
+        recipe_word(3);
+        for(uint64_t value:{uint64_t(cases),uint64_t(kind),uint64_t(operation),uint64_t(pattern),uint64_t(layout),uint64_t(units),uint64_t(rows),uint64_t(batches)})recipe_word(value);
+        recipe_state(0);
+        for(auto operand:{input,right,result}) {const auto size=operand?ggml_nbytes(operand):0;recipe_word(recipe_id(operand));recipe_word(size);if(size)trace.write((const char *)operand->data,size);}
         ggml_cgraph *graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,result);
-        if(triangular && pattern==4) {input->ne[1]++;result->ne[1]++;}
+        if(triangular && pattern==4) {input->ne[1]++;result->ne[1]++;recipe_state(2);}
         if((spatial && operation==0 && pattern%2 && ggml_is_empty(input) && !ggml_is_empty(result)) || (triangular && pattern==4) || (windowing && operation==1 && window_case==9)) {
           CHECK(!ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
           if(triangular) {input->ne[1]--;result->ne[1]--;}
           std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
-          ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;refused++;continue;
+          recipe_word(5);recipe_word(0);recipe_context=nullptr;ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;refused++;continue;
         }
         ggml_cgraph *oracle_graph=ggml_new_graph(ctx); ggml_build_forward_expand(oracle_graph,expected_tensor);
         CHECK(ggml_backend_graph_compute(reference,oracle_graph)==GGML_STATUS_SUCCESS);
@@ -2540,10 +2640,11 @@ int main(int argc, char **argv) {
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
         input->data=saved_data; input->buffer=saved_buffer;
         CHECK(compare_result(result,expected_tensor,output,wordwise && !selecting?(scanning?2:1):0));
-        ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
+        recipe_word(5);recipe_word(1);recipe_context=nullptr;ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
       }
       }
       CHECK(refused==(spatial?200:triangular?384:windowing?216:0));
+      recipe_word(4);recipe_word(cases);recipe_word(refusal_probes);recipe_word(refused);
       ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases);return 0;
     }
     if (!strcmp(argv[3], "empty")) {

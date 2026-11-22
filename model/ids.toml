@@ -304,3 +304,9 @@ id = "VT-39"
 level = "build"
 suite = "relative-position-add"
 statement = "Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals"
+
+[[id]]
+id = "VT-40"
+level = "build"
+suite = "fixture-generation"
+statement = "Native fixture construction initialized bytes and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle"
