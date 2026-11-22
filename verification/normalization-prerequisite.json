@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/normalization-prerequisite/1",
-  "status": "missing-certified-verdant-f64-division",
+  "status": "certified-arithmetic-integrated-operation-pending",
   "operation_implemented": false,
   "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "scope": "Extracted authoritative RMS_NORM accumulation and mean expression, not a complete operation conformance test.",
@@ -38,9 +38,10 @@
     "source_path": "/tmp/vtensor-analysis-target/rms-mean-order.cpp",
     "log": "/tmp/vtensor-rms-mean-order.log"
   },
-  "requirement": "Implement and certify F64 division/count conversion in Verdant, preserving intermediate F64 rounding before F32 narrowing. Use the same imported GGML CPU oracle for complete operation validation afterward.",
+  "requirement": "Use the certified Verdant F64 division and count conversion in the Prism normalization graph, preserving intermediate F64 rounding before F32 narrowing. Validate the complete operation with the imported GGML CPU oracle.",
   "authoritative_sources": [
     "https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ops.cpp",
     "https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/vec.h"
-  ]
+  ],
+  "arithmetic_evidence": "verification/normalization-arithmetic-runtime.json"
 }

@@ -218,10 +218,11 @@ corruption probes while removing duplicated host fixture logic.
 Before each operation family, audit its public constructors, parameter flags
 and CPU implementation. Factory coverage alone is insufficient: L2 omitted an
 in-place constructor, and ADD_REL_POS had no factory cases at all.
-The RMS_NORM audit identifies a required Verdant primitive: divide the F64
-accumulator by the row count before narrowing to F32. Narrowing the sum first
-changes rounding. Complete and certify that primitive before implementing
-RMS_NORM's F32/BF16 copied and in-place paths.
+Verdant's certified F64 division and unsigned count conversion now supply the
+RMS_NORM arithmetic prerequisite (VT-45). The imported mean regression preserves
+division before F32 narrowing; narrowing the accumulator first changes rounding.
+Next implement RMS_NORM's F32/BF16 copied and in-place graph paths, with the same
+imported GGML CPU oracle and atomic numeric refusals. Full RMS_NORM remains open.
 
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:

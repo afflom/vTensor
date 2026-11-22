@@ -329,6 +329,10 @@ dependencies = [
  "uor-matmul",
  "verdant_add_f64",
  "verdant_count_f32",
+ "verdant_count_f64",
+ "verdant_division_class",
+ "verdant_division_finish",
+ "verdant_division_norm",
  "verdant_encoded_word",
  "verdant_float_storage",
  "verdant_float_transform",
@@ -340,6 +344,8 @@ dependencies = [
  "verdant_normalize_f64",
  "verdant_pack_plan_f64",
  "verdant_packed_field",
+ "verdant_quotient_f64",
+ "verdant_quotient_route",
  "verdant_round_mantissa_f64",
  "verdant_scalar_f32",
  "verdant_small_float",
@@ -360,6 +366,22 @@ version = "2.9.0"
 [[package]]
 name = "verdant_count_f32"
 version = "2.9.0"
+
+[[package]]
+name = "verdant_count_f64"
+version = "2.12.0"
+
+[[package]]
+name = "verdant_division_class"
+version = "2.12.0"
+
+[[package]]
+name = "verdant_division_finish"
+version = "2.12.0"
+
+[[package]]
+name = "verdant_division_norm"
+version = "2.12.0"
 
 [[package]]
 name = "verdant_encoded_word"
@@ -404,6 +426,14 @@ version = "2.9.0"
 [[package]]
 name = "verdant_packed_field"
 version = "2.9.0"
+
+[[package]]
+name = "verdant_quotient_f64"
+version = "2.12.0"
+
+[[package]]
+name = "verdant_quotient_route"
+version = "2.12.0"
 
 [[package]]
 name = "verdant_round_mantissa_f64"

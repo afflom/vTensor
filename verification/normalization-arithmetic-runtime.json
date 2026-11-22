@@ -1,0 +1,135 @@
+{
+  "spec": "vtensor/normalization-arithmetic/1",
+  "status": "arithmetic-prerequisite-implemented-production-release-open",
+  "operation_implemented": false,
+  "capabilities": [
+    "VT-45",
+    "VTK-15"
+  ],
+  "scope": "F64 division and unsigned count conversion prerequisite; no complete RMS_NORM conformance claim.",
+  "engine_component_commit": "61a7f9e",
+  "sdk_image": "ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c",
+  "result": "e448fc0b0f4909f681fba7f436b41ed5428f397d013c0cbc65a2ad8fa154ebd9",
+  "attestation": "ec57d3e381d25197fa7bc8ca0bdf34b6f9478ec90f8367dfe933df2fff78842a",
+  "declarations": 443,
+  "declarations_all_ok": true,
+  "production_roots": 6,
+  "source_id": "c56cd7a1289eb25ae5954a35085aae5ef91bba1e743c5d35e00678a13dea1501",
+  "semantic_id": "fe1d2ac628c10f26634f0fd4a06d053726717e7b7e28d017103f1b3c1ce31810",
+  "oracle": {
+    "repository": "https://github.com/ucb-bar/berkeley-softfloat-3",
+    "revision": "07ebd29db0cfb55723a79fbbffe99103ef38e305",
+    "archive_sha256": "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34",
+    "specialization": "8086-SSE",
+    "rounding": "near_even",
+    "tininess": "after_rounding",
+    "divisions": 1277924,
+    "count_conversions": 172246,
+    "composed_means": 212992,
+    "total": 1663162,
+    "comparison": "exact bits for all non-NaN results; NaN class otherwise",
+    "first_pass_seconds": 8.66
+  },
+  "planted_fault": {
+    "defect": "Finishing root receives numerator mantissa in denominator mantissa position.",
+    "case": 11,
+    "a_hex": "0000000000000001",
+    "b_hex": "001ffffffffffffe",
+    "actual_hex": "3cb0000000000001",
+    "expected_hex": "3ca0000000000001",
+    "exit_code": 101,
+    "seconds": 3.63,
+    "oracle_artifacts_reused_unchanged": true
+  },
+  "final_refinement": {
+    "generated_rust_files_unchanged": 6,
+    "numerical_revalidation_needed": false,
+    "current_source_check_passed": true,
+    "artifact_replay_passed": true,
+    "remote_verification_attestation_claimed": false
+  },
+  "source_ratchet": {
+    "projection_regenerated": true,
+    "lifted": 390,
+    "residue": 1167,
+    "uncertified": 1324,
+    "ceilings_raised": false,
+    "fidelity_passed": true
+  },
+  "open": [
+    "Implement RMS_NORM graph behavior and validate the full operation with the imported GGML CPU oracle.",
+    "Replace the development override with authoritative production dependency releases; VT-02 remains failing.",
+    "Recover the original vTensor source budget: 831 lines remain above 10549."
+  ],
+  "engine_commit": "158402b84cf273dc303c16c70e3781809a568a37",
+  "development_bundle_sha256": "ee4d9323f38681d701b6306b4ef4b75c1e54c33b61fa7ffbafa9e70beb615a0d",
+  "engine_checks": {
+    "full_vv_exit_code": 101,
+    "full_vv_failure": "Registry-closure test ran out of shared disk after 79 passing Engine tests.",
+    "registry_retry_passed": true,
+    "registry_retry_seconds": 29.54,
+    "all_workspace_tests_covered": 227,
+    "remaining_stages_passed": true,
+    "final_tensor_tests_passed": 46,
+    "final_tensor_seconds": 58.75,
+    "application_first_failure": "SDK validation-oracle compiler ran out of shared disk.",
+    "application_ram_retry_passed": true,
+    "application_attestation": "a83ef1d53cae059f70e59ab7978050c69fef04f1f7436eee24cdccea422843bc",
+    "sdk_policy_limits_or_proof_events_changed": false
+  },
+  "vtensor_checks": {
+    "prepare_passed": true,
+    "lockfile_added_packages": 6,
+    "vt45_passed": true,
+    "vt45_seconds": 2.14,
+    "full_gate_exit_code": 1,
+    "full_gate_failure": "Initial source audit rejected growth from 11380 to 11400 lines.",
+    "app_full_proof_passed": true,
+    "app_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+    "proof_event_reuse": false,
+    "source_refactor": "Share frozen JSON verification and certificate identity/path checks; preserve every frozen digest and fixture record.",
+    "model_after_refactor_passed": true,
+    "model_ids": 51,
+    "source_lines_before": 11380,
+    "source_lines_after": 11380,
+    "checked_parent": "3b270323d2c333113624e3ff3077f5875e20d079",
+    "frame_sync_files": 52,
+    "template_and_sdk_checks_passed": true,
+    "all_target_all_feature_clippy_passed": true,
+    "contract": {
+      "passed": 44,
+      "failed": 1,
+      "seconds": 19.45,
+      "failure": "VT-02 correctly refuses development dependency override as production release evidence."
+    },
+    "remaining_frame_tests_passed": 5,
+    "remaining_xtask_tests_passed": 62,
+    "all_generated_library_targets_ran": true,
+    "all_documentation_targets_ran": true,
+    "dependencies_passed": true,
+    "release_pass": false
+  },
+  "tensor_checks": {
+    "passed": 46,
+    "failed": 0,
+    "seconds": 58.75,
+    "obsolete_refusal_boundary_updated_from": 4,
+    "refusal_boundary": 6
+  },
+  "frozen_metadata_fault": {
+    "defect": "Append one newline to the frozen native baseline JSON without changing its pinned digest.",
+    "diagnostic": "frozen native-fixture-baseline changed",
+    "exit_code": 101,
+    "seconds": 0.03,
+    "original_bytes_restored": true,
+    "restored_test_passed": true,
+    "restored_seconds": 0.05
+  },
+  "source_budget": {
+    "current": 11380,
+    "original": 10549,
+    "excess": 831,
+    "checkpoint_growth": 0,
+    "original_budget_restored": false
+  }
+}

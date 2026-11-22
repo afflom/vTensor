@@ -470,6 +470,7 @@ fn typed_fixture_generation_vt_44() {
 #[test]
 fn normalization_arithmetic_vt_45() {
     use verdant_tensor::linear::evaluate_wide;
+    tensor_layout::certified_current_model(&root().join(".verdant-engine"), "quotient");
     assert_eq!(
         evaluate_wide(4, 0x3ff0000000000000, 0x4000000000000000).unwrap(),
         Some(0x3fe0000000000000)
@@ -479,9 +480,8 @@ fn normalization_arithmetic_vt_45() {
         Some(0x43f0000000000000)
     );
     let count = evaluate_wide(5, 5, 0).unwrap().unwrap();
-    let mean = evaluate_wide(4, 16777217_f64.to_bits(), count)
-        .unwrap()
-        .unwrap();
+    let sum = evaluate_wide(5, 16777217, 0).unwrap().unwrap();
+    let mean = evaluate_wide(4, sum, count).unwrap().unwrap();
     assert_eq!(evaluate_wide(2, mean, 0).unwrap(), Some(0x4a4cccce));
     assert_eq!(evaluate_wide(6, 0, 0).unwrap(), None);
 }
@@ -1246,10 +1246,14 @@ mod tensor_layout {
     }
 
     pub(super) fn certified_current_model(root: &std::path::Path, name: &str) {
-        assert!(matches!(
-            name,
-            "layout" | "native" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic"
-        ));
+        let (primary, directory) = match name {
+            "quotient" => ("verdant_quotient_f64".to_owned(), "tensor-quotient"),
+            "native" => ("vtensor_native_config".to_owned(), "native"),
+            "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" => {
+                (format!("vtensor_{name}"), name)
+            }
+            _ => panic!("unknown certified model: {name}"),
+        };
         let scope = if name == "layout" {
             String::new()
         } else {
@@ -1257,36 +1261,25 @@ mod tensor_layout {
         };
         let project = format!("app/{scope}lexlean.toml");
         let model_lock = format!("app/{scope}lexlean.lock");
-        let suffix = match name {
-            "native" => "native_config",
-            _ => name,
-        };
-        let primary = format!("vtensor_{suffix}");
-        let bundle = format!("generated/{name}");
+        let bundle = format!("generated/{directory}");
         let result = super::ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
         let checked = ggml_oracle::run(
             std::process::Command::new("lexlean")
                 .current_dir(root)
-                .args([
-                    "--project",
-                    &project,
-                    "--diagnostic-format",
-                    "json",
-                    "check",
-                ]),
+                .args(["--project", &project])
+                .args(["--diagnostic-format", "json"])
+                .arg("check"),
         );
         let current: serde_json::Value =
             serde_json::from_slice(&checked).expect("model identities");
-        assert_eq!(
-            current["source_id"], result["source"]["source_id"],
-            "regenerate layout bundle after model changes"
-        );
-        assert_eq!(current["semantic_id"], result["source"]["semantic_id"]);
+        for key in ["source_id", "semantic_id"] {
+            assert_eq!(
+                current[key], result["source"][key],
+                "stale {name} model: {key}"
+            );
+        }
         let lock_digest = ggml_oracle::file_digest(root.join(model_lock));
-        assert_eq!(
-            result["source"]["lock_sha256"].as_str(),
-            Some(lock_digest.as_str())
-        );
+        assert_eq!(result["source"]["lock_sha256"], lock_digest);
         let request =
             super::ggml_oracle::read_json(root.join(format!("app/{name}-production.json")));
         let wanted = request["roots"].as_array().expect("requested roots");
@@ -1298,6 +1291,7 @@ mod tensor_layout {
             let output = &actual["outputs"][0];
             assert_eq!(output["target"], expected["targets"][0]);
             assert_eq!(output["package"]["name"], expected["package"]["name"]);
+            assert_eq!(output["package"]["version"], expected["package"]["version"]);
             assert_eq!(output["certification"]["status"], "kernel-checked");
         }
         let kernel_lock = super::ggml_oracle::read_json(root.join(format!("{name}-kernel.lock")));
@@ -1306,15 +1300,11 @@ mod tensor_layout {
             kernel_lock["source"]["attestation"],
             result["verification"]["attestation_id"]
         );
-        assert_eq!(
-            kernel_lock["output"]["path"],
-            format!("{bundle}/packages/rust-core/{primary}/src/lib.rs")
-        );
+        let output = format!("{bundle}/packages/rust-core/{primary}/src/lib.rs");
+        assert_eq!(kernel_lock["output"]["path"], output);
         assert_eq!(
             kernel_lock["output"]["sha256"],
-            ggml_oracle::file_digest(
-                root.join(kernel_lock["output"]["path"].as_str().expect("output path"))
-            )
+            ggml_oracle::file_digest(root.join(output))
         );
         let certified_files: Vec<_> = result["roots"].as_array().expect("roots").iter()
         .flat_map(|root| root["outputs"].as_array().expect("outputs"))
@@ -1638,28 +1628,27 @@ mod native_backend_oracle {
     use std::path::Path;
     use std::process::Command;
 
+    fn frozen_json(name: &str, expected: &str) -> serde_json::Value {
+        let bytes = std::fs::read(super::root().join(format!("verification/{name}.json"))).unwrap();
+        assert_eq!(
+            repo_model::artifact::sha256_hex(&bytes),
+            expected,
+            "frozen {name} changed"
+        );
+        serde_json::from_slice(&bytes).unwrap()
+    }
+
     pub(super) fn fixture_baselines() -> &'static serde_json::Value {
         static BASELINE: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
         BASELINE.get_or_init(|| {
-            let bytes =
-                std::fs::read(super::root().join("verification/native-fixture-baseline.json"))
-                    .unwrap();
-            assert_eq!(
-                repo_model::artifact::sha256_hex(&bytes),
+            let mut baseline = frozen_json(
+                "native-fixture-baseline",
                 "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
-                "frozen native corpus changed"
             );
-            let mut baseline: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-            let bytes = std::fs::read(
-                super::root().join("verification/native-fixture-source-release.json"),
-            )
-            .unwrap();
-            assert_eq!(
-                repo_model::artifact::sha256_hex(&bytes),
+            baseline["source_release"] = frozen_json(
+                "native-fixture-source-release",
                 "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
-                "frozen source-release corpus changed"
             );
-            baseline["source_release"] = serde_json::from_slice(&bytes).unwrap();
             baseline
         })
     }
@@ -1678,16 +1667,8 @@ mod native_backend_oracle {
         };
         static BASELINES: [std::sync::OnceLock<serde_json::Value>; 2] =
             [const { std::sync::OnceLock::new() }; 2];
-        let baseline = BASELINES[family as usize].get_or_init(|| {
-            let path = super::root().join(format!("verification/{name}-fixture-baseline.json"));
-            let bytes = std::fs::read(path).unwrap();
-            assert_eq!(
-                repo_model::artifact::sha256_hex(&bytes),
-                digest,
-                "the frozen prior corpus changed"
-            );
-            serde_json::from_slice(&bytes).unwrap()
-        });
+        let baseline = BASELINES[family as usize]
+            .get_or_init(|| frozen_json(&format!("{name}-fixture-baseline"), digest));
         let mut cursor = 0;
         for record in baseline["record"].as_array().unwrap() {
             let start = cursor;

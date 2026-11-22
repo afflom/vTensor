@@ -274,3 +274,38 @@ name = "vtensor_matrix_execution"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0xcf7e0505 }]
+[[licenses.clarify]]
+name = "verdant_count_f64"
+version = "=2.12.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x68af070d }]
+
+[[licenses.clarify]]
+name = "verdant_division_class"
+version = "=2.12.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x073dd632 }]
+
+[[licenses.clarify]]
+name = "verdant_division_finish"
+version = "=2.12.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xb7f214df }]
+
+[[licenses.clarify]]
+name = "verdant_division_norm"
+version = "=2.12.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x178f8abf }]
+
+[[licenses.clarify]]
+name = "verdant_quotient_f64"
+version = "=2.12.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xf1e15a93 }]
+
+[[licenses.clarify]]
+name = "verdant_quotient_route"
+version = "=2.12.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x824c1aca }]

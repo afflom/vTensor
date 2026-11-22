@@ -3710,3 +3710,77 @@ source-release, matrix and arithmetic baselines remain byte-identical. Detailed
 evidence is in `verification/typed-fixtures-runtime.json`. Complete imported
 coverage, remaining recipe migrations, original source-budget recovery and
 production dependency closure remain open.
+
+### VT-45: certified normalization arithmetic prerequisite
+
+`fe2fd46` registered the capability, scenario and failing API test before its
+implementation. Its half-division query originally returned `None`. The new
+development bundle pins Verdant commit
+`158402b84cf273dc303c16c70e3781809a568a37` and includes certified F64 division
+and unsigned-count-to-F64 conversion. Existing operations zero through three
+retain their semantics; operations four and five supply the new primitives,
+and unsupported operations remain refused. Arithmetic is entirely in Prism
+roots and the existing certified rounding/packing functions, sequenced through
+Verdant's typed API. The regression uses that API for its count conversions too.
+
+The unchanged ScalarF64 and FloatWord64 models are imported by F64Quotient.
+Its exact locked SDK export contains six roots and 443 successful declarations:
+result `e448fc0b0f4909f681fba7f436b41ed5428f397d013c0cbc65a2ad8fa154ebd9`,
+attestation `ec57d3e381d25197fa7bc8ca0bdf34b6f9478ec90f8367dfe933df2fff78842a`.
+The public operation dispatcher is defined in the model with interface
+refinement equalities. Limits were not increased; the regression combines
+separately checked quotient and narrowing equalities under observed `propext`.
+Remote structural checking supplied no verification attestation; the actual
+proof evidence comes from the complete pinned-SDK production export.
+
+Imported Berkeley SoftFloat at
+`07ebd29db0cfb55723a79fbbffe99103ef38e305` independently computes 1,277,924
+divisions, 172,246 count conversions and 212,992 composed means: 1,663,162
+comparisons. Non-NaN values match exact bits, and NaNs match by class. The
+existing archive/source/compiler/SDK cache checks remain active. A planted
+native binding supplied the numerator mantissa in place of the denominator
+mantissa; division case 11 rejects it, actual `3cb0000000000001` versus expected
+`3ca0000000000001`. Restored code passes all 46 tensor tests. The final interface
+proof refinement leaves all six generated Rust files byte-identical, so it
+requires certificate replay rather than another numerical corpus run.
+
+The actual Verdant source lift and uorust projection were regenerated. Frontier
+counts remain 390 lifted, 1,167 residue and 1,324 uncertified; no ceiling was
+raised. Source-capsule and real Cargo registry-consumer tests include every new
+package. The Engine full gate encountered shared-disk exhaustion in registry
+validation; its isolated retry and every remaining stage pass, covering all
+227 workspace tests and full application attestation
+`a83ef1d53cae059f70e59ab7978050c69fef04f1f7436eee24cdccea422843bc`.
+The interrupted full invocation is preserved as a failure, not relabeled green.
+Task-owned SDK build caches were temporarily moved to RAM to finish compilation;
+vTensor's cache was restored to its normal workspace path afterward. Obsolete
+oracle executables/libraries were removed while retaining current outputs and
+dependency caches. SDKs, policies, proof events and limits were unchanged.
+
+vTensor reuses its existing current-model/artifact validator for the imported
+six-root bundle, including package versions and complete certificate file
+bindings. Native build provenance now captures Verdant's quotient lock and
+binding source. VT-45 passes in 2.14 seconds and preserves the imported GGML mean
+`4a4cccce`; prematurely narrowing the accumulator would produce `4a4ccccd`.
+This is an arithmetic prerequisite, not a complete RMS_NORM operation pass.
+
+The exact vTensor `just vv` passed the full application proof
+`fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942` and formatting,
+then rejected initial source growth from 11,380 to 11,400 lines. Sharing frozen
+JSON loading and certificate identity/path checks recovers all 20 lines while
+retaining every frozen digest, descriptor and input transcript. The restored
+51-ID model, error/ownership checks and 52-file frame sync pass at 11,380 lines.
+Appending a newline to the frozen native baseline still fails its digest gate
+in 0.03 seconds; exact restoration passes in 0.05 seconds. No numerical suite
+was repeated for this metadata fault.
+
+Only the unreached gate stages were then run. Template/SDK checks, all-target
+Clippy, dependency checks, model tests, BDD, frame tests, 62 xtask tests, every
+generated library target and all documentation targets pass. The complete
+contract run has 44 passes and one failure in 19.45 seconds: VT-02 intentionally
+refuses the development override as production release evidence. No release
+pass is claimed. The original 10,549-line budget still needs 831 lines recovered;
+meeting a later parent comparison does not raise that accepted ceiling.
+Full RMS_NORM graph support and authoritative production dependency releases
+remain open. Machine-readable evidence is
+`verification/normalization-arithmetic-runtime.json`.
