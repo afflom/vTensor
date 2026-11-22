@@ -498,6 +498,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         tensor.op_params.map(|word| u64::from(word as u32));
     let primary = source(0)?;
     let secondary = source(1)?;
+    let base = source(2)?;
     let response = vtensor_pointwise::run(GraphRequest::C0(
         operation,
         Parameters::C0(
@@ -505,7 +506,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         ),
         primary.clone(),
         secondary.clone(),
-        source(2)?,
+        base.clone(),
         source(3)?,
         source(4)?,
         source(5)?,
@@ -516,26 +517,24 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         output.clone(),
     ))
     .map_err(|_| BackendError::Overflow)?;
+    let metadata = |TensorDescriptor::C0(a, b, c, d, e, f, g, h, i, j, k)| {
+        vtensor_typed::Adt1::C0(a, b, c, d, e, f, g, h, i, j, k)
+    };
+    let typed_plan =
+        |request| match vtensor_typed::run(request).map_err(|_| BackendError::Overflow)? {
+            vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan))),
+            _ => Err(BackendError::InvalidTensor),
+        };
     match response {
         GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..))) => {
             Ok(Some(ExecutionPlan::Standard(plan)))
         }
-        GraphResponse::C0(GraphPlan::C5(67)) => {
-            let metadata = |TensorDescriptor::C0(a, b, c, d, e, f, g, h, i, j, k)| {
-                vtensor_typed::Adt1::C0(a, b, c, d, e, f, g, h, i, j, k)
-            };
-            let vtensor_typed::Adt3::C2(plan) = vtensor_typed::run(vtensor_typed::Adt0::C0(
-                operation,
-                primary.map(metadata),
-                secondary.map(metadata),
-                metadata(output),
-            ))
-            .map_err(|_| BackendError::Overflow)?
-            else {
-                return Err(BackendError::InvalidTensor);
-            };
-            Ok(Some(ExecutionPlan::Typed(plan)))
-        }
+        GraphResponse::C0(GraphPlan::C5(67)) => typed_plan(vtensor_typed::Adt0::C0(
+            operation,
+            primary.map(metadata),
+            secondary.map(metadata),
+            metadata(output),
+        )),
         GraphResponse::C0(GraphPlan::C5(64)) => normalization_plan(
             primary.as_ref().ok_or(BackendError::InvalidTensor)?,
             secondary.as_ref(),
@@ -552,9 +551,19 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             let (Some(w), Some(a)) = (primary, secondary) else {
                 return Err(BackendError::InvalidTensor);
             };
+            if let Some(base) = base {
+                return typed_plan(vtensor_typed::Adt0::C2(
+                    operation,
+                    tensor.src[3..].iter().any(|ptr| !ptr.is_null()),
+                    metadata(w),
+                    metadata(a),
+                    metadata(base),
+                    metadata(output),
+                ));
+            }
             let request = vtensor_matrix_q8::Adt0::C0(
                 operation,
-                tensor.src[2..].iter().any(|s| !s.is_null()),
+                tensor.src[3..].iter().any(|s| !s.is_null()),
                 descriptor(w),
                 descriptor(a),
                 descriptor(output),

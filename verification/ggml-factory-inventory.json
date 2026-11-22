@@ -221,15 +221,25 @@
         "ADD_RMS_NORM"
       ]
     },
-    "passed": 699,
+    "passed": 825,
     "refused_ordinals": {
-      "1528": {
+      "660": {
         "oracle": "make_test_cases_eval / test_case::eval",
-        "test_build": "VT-54 with Verdant 97528328",
+        "test_build": "VT-55 with Verdant 97528328",
+        "result": "not supported"
+      },
+      "17216": {
+        "oracle": "make_test_cases_eval / test_case::eval",
+        "test_build": "VT-55 with Verdant 97528328",
+        "result": "not supported"
+      },
+      "19242": {
+        "oracle": "make_test_cases_eval / test_case::eval",
+        "test_build": "VT-55 with Verdant 97528328",
         "result": "not supported"
       }
     },
-    "untested": 27055,
+    "untested": 26927,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -245,6 +255,22 @@
         "cases": 122,
         "transcript_sha256": "dfa8e8d874e02e063285441939a67fcbc4a050a100a503706457ecd0390c578a",
         "test": "packed_matrix_graphs_vt_54"
+      },
+      "VT-55": {
+        "label": "SET_ROWS",
+        "parameters_prefixes": [
+          "type_src=f16,type_dst=bf16,type_idx=i64,",
+          "type_src=f16,type_dst=f16,type_idx=i32,",
+          "type_src=f16,type_dst=f16,type_idx=i64,",
+          "type_src=f16,type_dst=f32,type_idx=i64,",
+          "type_src=f32,type_dst=bf16,type_idx=i64,",
+          "type_src=f32,type_dst=f16,type_idx=i64,",
+          "type_src=f32,type_dst=f32,type_idx=i32,",
+          "type_src=f32,type_dst=f32,type_idx=i64,"
+        ],
+        "cases": 126,
+        "transcript_sha256": "cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595",
+        "test": "scalar_set_rows_vt_55"
       }
     }
   }

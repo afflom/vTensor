@@ -4436,3 +4436,50 @@ The retained proof and formatting passed when resumed in a separate Cargo
 target directory. The release gate stopped at the source audit. The finalized
 VT-53 commit measured 11,897 against its parent’s 11,793 lines. VT-54
 measured 11,919 against the VT-53 baseline, 1,370 above the original 10,549.
+
+## Scalar indexed row writes
+
+VT-55 registered the scenario in `6873697`. The imported GGML factory
+first refused ordinal 1,125. The typed Prism root now validates the
+destination view, row layout, both index broadcast axes and every signed
+index before issuing a store. It caches each index once. The backend passes
+each scalar to Verdant's existing `convert_float_storage`. The destination
+is the original GGML buffer, including rows untouched by the scatter.
+
+`scalar_set_rows_vt_55` passed all 126 upstream F32/F16-source cases with
+F32, F16 or BF16 destinations and signed I32/I64 indices. The 20 F32 → F16
+cases with I64 indices include ordinal 1,528. The passing ordinal and full
+parameter transcript hashes to
+`cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595`.
+A late I32 index of −1 and a late I64 index of 2³² each failed compute and
+preserved the entire initialized destination. Forcing stores to offset zero
+failed the imported comparison on ordinal 1,125 (NMSE 0.331520658 with limit
+0.000000100). Restoring the adapter passed VT-55 and the 977 prior VT-51
+typed cases. The typed root attestation is
+`0a151edbfc1b7cdbea0a84b324a1fa33548237566338a8bf7223dfa6ebb35aea`.
+
+The same isolated stories15M invocation from VT-54 now reaches the scheduler
+assignment assertion at `ggml-backend.cpp:1711` during graph reservation.
+A separate read-only observation queried upstream `ggml_backend_supports_op`
+for each compute-flagged node immediately before forwarding that graph to the
+scheduler. Of 195 nodes, 192 carried the flag and vTensor admitted 168,
+including all 12 F16 cache writes. The 24 refusals were 12 ROPE, six
+FLASH_ATTN_EXT and six split SWIGLU. Prompt evaluation stopped before logits.
+The observation records graph index, support bit, operation, tensor name,
+destination type, source types and output shape. [Reservation graph](verification/llama-stories15m-reserve.tsv)
+
+The imported numerical evaluator independently refused representative factory
+ordinals 660 (split F32 SWIGLU), 17,216 (F32 ROPE) and 19,242
+(FLASH_ATTN_EXT with F16 K/V). The inventory counts a single verdict per
+ordinal. [Factory inventory](verification/ggml-factory-inventory.json)
+
+The fixture harness verifies the complete ordered matrix and arithmetic input
+streams against the two frozen transcript digests, then compares the bytes
+observed on the native tensors directly to those inputs. This removes a second
+record parser, 1,400 repeated per-case hashes, and copies of both input streams.
+Clippy, cargo-deny and the model gate passed. The source audit measured 11,918
+lines against 11,919 at VT-54. The original 10,549-line ceiling remains on
+the release checklist.
+Flipping one bit in the generated matrix input failed the frozen transcript
+digest. Flipping one bit in the observed elementwise binding independently
+failed the byte comparison.

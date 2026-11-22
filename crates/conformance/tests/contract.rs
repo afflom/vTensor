@@ -96,7 +96,7 @@ fn contract_tc_01() {
 /// `VT-10`: Prism tensor placement matches the imported GGML linear allocator for aligned buffers and refuses invalid alignment, exhausted capacity, and arithmetic overflow
 #[test]
 fn buffer_allocation_vt_10() {
-    tensor_layout::verify_bundle();
+    tensor_layout::certified_current_model(&root(), "layout");
     let mut input = String::new();
     let mut cases = Vec::new();
     use std::fmt::Write;
@@ -124,7 +124,11 @@ fn buffer_allocation_vt_10() {
     for (index, ((capacity, offset, size, alignment), expected)) in
         cases.into_iter().zip(reference).enumerate()
     {
-        assert_eq!(outcome(vtensor_allocation::run(capacity, offset, size, alignment).unwrap()), expected, "placement {index}: capacity={capacity}, offset={offset}, size={size}, alignment={alignment}");
+        assert_eq!(
+            outcome(vtensor_allocation::run(capacity, offset, size, alignment).unwrap()),
+            expected,
+            "placement {index}: capacity={capacity}, offset={offset}, size={size}, alignment={alignment}"
+        );
     }
     for alignment in [0, 3, 6, 63, u64::MAX] {
         assert!(matches!(
@@ -153,7 +157,7 @@ fn buffer_allocation_vt_10() {
 /// `VT-11`: GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior
 #[test]
 fn native_backend_vt_11() {
-    tensor_layout::verify_bundle();
+    tensor_layout::certified_current_model(&root(), "layout");
     tensor_layout::certified_current_model(&root(), "native");
     // Prism proves metadataClassification for every opcode and span.
     native_backend_oracle::verify(&root(), "buffers", 108);
@@ -1289,9 +1293,9 @@ mod oracle_import {
             "tests/test-backend-ops.cpp",
         ]);
         assert_eq!(
-        paths, required,
-        "the pinned snapshot must include the backend contract, implementation interface, and upstream operation oracle"
-    );
+            paths, required,
+            "the pinned snapshot must include the backend contract, implementation interface, and upstream operation oracle"
+        );
 
         let archives = lock["archive"]
             .as_array()
@@ -1489,10 +1493,6 @@ mod tensor_layout {
         })
     }
 
-    pub(super) fn verify_bundle() {
-        let _ = fixture();
-    }
-
     /// `VT-06`: The Prism-generated four-dimensional byte-span function matches the pinned GGML storage oracle and rejects invalid blocks and arithmetic overflow
     #[test]
     fn tensor_layout_vt_06() {
@@ -1669,7 +1669,7 @@ mod verdant_api {
 /// `VT-09`: Prism transfer admission matches upstream GGML set and get guards and rejects overflowing ranges
 #[test]
 fn buffer_transfer_vt_09() {
-    tensor_layout::verify_bundle();
+    tensor_layout::certified_current_model(&root(), "layout");
     let mut input = String::new();
     let mut cases = Vec::new();
     use std::fmt::Write;
@@ -1777,54 +1777,25 @@ mod native_backend_oracle {
         )
     });
 
-    fn verify_fixture_records(family: u64, bytes: &[u8]) {
-        let (name, digest) = match family {
-            0 => (
-                "matrix",
-                "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
-            ),
-            1 => (
-                "arithmetic",
-                "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4",
-            ),
-            _ => panic!("unknown fixture family"),
-        };
-        static BASELINES: [std::sync::OnceLock<serde_json::Value>; 2] =
-            [const { std::sync::OnceLock::new() }; 2];
-        let baseline = BASELINES[family as usize]
-            .get_or_init(|| frozen_json(&format!("{name}-fixture-baseline"), digest));
-        let mut cursor = 0;
-        for record in baseline["record"].as_array().unwrap() {
-            let start = cursor;
-            cursor += 24 * 8;
-            for _ in 0..2 {
-                let count =
-                    u64::from_le_bytes(bytes[cursor..cursor + 8].try_into().unwrap()) as usize;
-                cursor += 16 + count * 8;
-            }
-            assert_eq!(
-                repo_model::artifact::sha256_hex(&bytes[start..cursor]),
-                record["sha256"].as_str().unwrap(),
-                "{name} fixture case {} differs from the frozen corpus",
-                record["case"]
-            );
-        }
-        assert_eq!(
-            cursor,
-            bytes.len(),
-            "fixture transcript omitted or added records"
-        );
-    }
-
     pub(super) fn fixture_input(family: u64) -> &'static [u8] {
         static INPUT: [std::sync::OnceLock<Vec<u8>>; 2] = [const { std::sync::OnceLock::new() }; 2];
         INPUT[family as usize].get_or_init(|| {
             use vtensor_fixtures::Adt0 as Request;
-            if family == 0 {
-                super::tensor_layout::certified_current_model(&super::root(), "fixtures");
-            } else {
-                super::tensor_layout::certified_current_model(&super::root(), "arithmetic");
-            }
+            let (name, model, digest) = match family {
+                0 => (
+                    "matrix",
+                    "fixtures",
+                    "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
+                ),
+                1 => (
+                    "arithmetic",
+                    "arithmetic",
+                    "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4",
+                ),
+                _ => panic!("unknown fixture family"),
+            };
+            super::tensor_layout::certified_current_model(&super::root(), model);
+            let baseline = frozen_json(&format!("{name}-fixture-baseline"), digest);
             let query = |request| {
                 let result = if family == 0 {
                     vtensor_fixtures::run(0, request).unwrap()
@@ -1861,7 +1832,12 @@ mod native_backend_oracle {
                     }
                 }
             }
-            verify_fixture_records(family, &input[32..]);
+            let records = &input[32..];
+            assert_eq!(baseline["transcript_bytes"], records.len());
+            assert_eq!(
+                baseline["transcript_sha256"],
+                repo_model::artifact::sha256_hex(records)
+            );
             input
         })
     }
@@ -1879,22 +1855,11 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 }
 "#;
 
-    fn fixture_library(common: &Path, model: &str) -> std::path::PathBuf {
-        const MODELS: [&str; 6] = [
-            "arithmetic",
-            "spatial",
-            "normfixtures",
-            "groupfixtures",
-            "rmsbackfixtures",
-            "typedfixtures",
-        ];
-        static LIBRARY: [std::sync::OnceLock<std::path::PathBuf>; 6] =
-            [const { std::sync::OnceLock::new() }; 6];
-        let slot = MODELS
-            .iter()
-            .position(|candidate| *candidate == model)
-            .expect("known fixture model");
-        let library = LIBRARY[slot].get_or_init(|| {
+    fn fixture_library(common: &Path, model: &'static str) -> std::path::PathBuf {
+        use std::{collections::BTreeMap, path::PathBuf, sync::Mutex};
+        static LIBRARIES: Mutex<BTreeMap<&str, PathBuf>> = Mutex::new(BTreeMap::new());
+        let mut libraries = LIBRARIES.lock().expect("fixture library cache");
+        let library = libraries.entry(model).or_insert_with(|| {
             super::tensor_layout::certified_current_model(&super::root(), model);
             let source = super::root().join(format!(
                 "generated/{model}/packages/rust-core/vtensor_{model}/src/lib.rs"
@@ -1950,7 +1915,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             }
             library
         });
-        verify_file(library, library.parent().unwrap().join("library.sha256"));
+        verify_file(&*library, library.parent().unwrap().join("library.sha256"));
         library.clone()
     }
 
@@ -2124,12 +2089,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             std::fs::rename(cache.join("native-oracle.new"), &program).unwrap();
         }
         verify_file(&program, cache.join("program.sha256"));
-        let input = if matches!(mode, "matrix" | "elementwise") {
-            fixture_input(u64::from(mode == "elementwise")).to_owned()
-        } else if mode == "update" {
-            Vec::new()
-        } else {
-            super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"))["tensor_type"]
+        static STORAGE_TYPES: LazyLock<Vec<u8>> = LazyLock::new(|| {
+            super::ggml_oracle::read_toml(super::root().join("model/ggml-declarations.toml"))
+                ["tensor_type"]
                 .as_array()
                 .unwrap()
                 .iter()
@@ -2137,6 +2099,12 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .map(|row| format!("{}\n", row["value"].as_integer().unwrap()))
                 .collect::<String>()
                 .into_bytes()
+        });
+        let input: &[u8] = match mode {
+            "matrix" | "elementwise" => fixture_input(u64::from(mode == "elementwise")),
+            "update" => &[],
+            mode if mode.starts_with("upstream-") => &[],
+            _ => &STORAGE_TYPES,
         };
         let mut expected = Vec::new();
         for file in vtensor_backend::SOURCE_FILES {
@@ -2152,7 +2120,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let expected_snapshot =
             cache.join(format!("expected-source-{}.snapshot", std::process::id()));
         std::fs::write(&expected_snapshot, &expected).unwrap();
-        let recipe = if mode == "typed-binary" {
+        let recipe = if mode.starts_with("upstream-") {
+            None
+        } else if mode == "typed-binary" {
             Some(&*TYPED_BINARY)
         } else {
             NATIVE_FIXTURES["mode"]
@@ -2161,22 +2131,16 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .iter()
                 .find(|row| row["name"] == mode)
         };
+        let trace = |suffix: &str| {
+            std::path::PathBuf::from(format!("{}.{suffix}", expected_snapshot.display()))
+        };
         let mut recipes = Vec::new();
         if let Some(recipe) = recipe {
             assert_eq!(recipe["cases"].as_u64().unwrap() as usize, expected_cases);
-            recipes.push((
-                std::path::PathBuf::from(format!("{}.{mode}-recipes", expected_snapshot.display())),
-                recipe,
-            ));
+            recipes.push((trace(&format!("{mode}-recipes")), recipe));
         }
         if mode == "fill" {
-            recipes.push((
-                std::path::PathBuf::from(format!(
-                    "{}.fill-source-release",
-                    expected_snapshot.display()
-                )),
-                &*FILL_RELEASE,
-            ));
+            recipes.push((trace("fill-source-release"), &*FILL_RELEASE));
         }
         for (path, _) in &recipes {
             if path.exists() {
@@ -2185,33 +2149,19 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         }
         let mut command = Command::new(&program);
         command.arg(&library).arg(&expected_snapshot).arg(mode);
-        if matches!(
-            mode,
-            "copy"
-                | "repeat"
-                | "concat"
-                | "fill"
-                | "cast"
-                | "rms-norm"
-                | "spatial"
-                | "norm"
-                | "group-norm"
-                | "rms-backward"
-                | "typed-binary"
-        ) {
-            command.arg(fixture_library(
-                common,
-                match mode {
-                    "spatial" => "spatial",
-                    "norm" => "normfixtures",
-                    "group-norm" => "groupfixtures",
-                    "rms-backward" => "rmsbackfixtures",
-                    "typed-binary" => "typedfixtures",
-                    _ => "arithmetic",
-                },
-            ));
+        let fixture = match mode {
+            "spatial" => Some("spatial"),
+            "norm" => Some("normfixtures"),
+            "group-norm" => Some("groupfixtures"),
+            "rms-backward" => Some("rmsbackfixtures"),
+            "typed-binary" => Some("typedfixtures"),
+            "copy" | "repeat" | "concat" | "fill" | "cast" | "rms-norm" => Some("arithmetic"),
+            _ => None,
+        };
+        if let Some(model) = fixture {
+            command.arg(fixture_library(common, model));
         }
-        let text = super::ggml_oracle::batch(&mut command, &input);
+        let text = super::ggml_oracle::batch(&mut command, input);
         let footer = format!("RESULT cases {expected_cases}\n");
         let transcript = match mode {
             "upstream-SET_ROWS_SCALAR" => {
@@ -2253,10 +2203,11 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             std::fs::remove_file(path).unwrap();
         }
         if matches!(mode, "matrix" | "elementwise") {
-            let path = format!("{}.{mode}-fixtures", expected_snapshot.display());
-            verify_fixture_records(
-                u64::from(mode == "elementwise"),
-                &std::fs::read(&path).unwrap(),
+            let path = trace(&format!("{mode}-fixtures"));
+            let bound = std::fs::read(&path).expect("native execution emitted its bound fixtures");
+            assert!(
+                bound == input[32..],
+                "{mode} tensor bindings differ from the frozen fixture input"
             );
             std::fs::remove_file(path).unwrap();
         }
@@ -2513,6 +2464,29 @@ int main(int argc, char **argv) {
     if (!strncmp(argv[3], "upstream-", 9)) {
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
+      if (!strcmp(argv[3]+9,"SET_ROWS_SCALAR")) {
+        for (const auto type : {GGML_TYPE_I32, GGML_TYPE_I64}) {
+          auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true});CHECK(ctx);
+          auto dst=ggml_new_tensor_2d(ctx,GGML_TYPE_F16,2,3);
+          auto src=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,2,2);
+          auto idx=ggml_new_tensor_1d(ctx,type,2);
+          auto out=ggml_set_rows(ctx,dst,src,idx);
+          auto graph=ggml_new_graph(ctx);ggml_build_forward_expand(graph,out);
+          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer);
+          CHECK(ggml_backend_dev_supports_op(dev,out));
+          const uint16_t original[]={1,2,3,4,5,6};
+          const float values[]={1,2,3,4};
+          ggml_backend_tensor_set(src,values,0,sizeof(values));
+          ggml_backend_tensor_set(dst,original,0,sizeof(original));
+          const int32_t narrow[]={0,-1}; const int64_t wide[]={0,INT64_C(4294967296)};
+          if(type==GGML_TYPE_I32) ggml_backend_tensor_set(idx,narrow,0,sizeof(narrow));
+          else ggml_backend_tensor_set(idx,wide,0,sizeof(wide));
+          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
+          uint16_t after[6];ggml_backend_tensor_get(dst,after,0,sizeof(after));
+          CHECK(!std::memcmp(original,after,sizeof(after)));
+          ggml_backend_buffer_free(buffer);ggml_free(ctx);
+        }
+      }
       if (!strcmp(argv[3]+9,"ORACLE_CALIBRATION")) {
         CHECK(cases==0);
         auto duplicate=[](ggml_context *ctx,void *,void *owner) {return ggml_dup(ctx,vtensor_oracle_tensor(owner,ctx,GGML_TYPE_F32,4,1,1,1));};

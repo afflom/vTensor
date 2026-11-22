@@ -46,7 +46,18 @@ inductive{
         NormPlan::TensorDescriptor
       ]
     },
-    {name: step, fields: [Nat, Plan, Nat]}
+    {name: step, fields: [Nat, Plan, Nat]},
+    {
+      name: indexed,
+      fields: [
+        Nat,
+        Bool,
+        NormPlan::TensorDescriptor,
+        NormPlan::TensorDescriptor,
+        NormPlan::TensorDescriptor,
+        NormPlan::TensorDescriptor
+      ]
+    }
   ]
 }
 
@@ -184,6 +195,65 @@ definition{
 }
 
 definition{
+  name: destinationView,
+  parameters: [base : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: (((((((NormPlan::sameShape base output) && ((project base ty) =? (project output ty))) && ((project base s0) =? (project output s0))) && ((project base s1) =? (project output s1))) && ((project base s2) =? (project output s2))) && ((project base s3) =? (project output s3))) && ((((project base address) =? 0) || ((project output address) =? 0)) || ((project base address) =? (project output address)))),
+  executable: true
+}
+
+definition{
+  name: indexWidth,
+  parameters: [kind : Nat],
+  result: Nat,
+  body: (if (kind =? 26) then 4 else (if (kind =? 27) then 8 else 0)),
+  executable: true
+}
+
+definition{
+  name: rowPlan,
+  parameters: [
+    left : NormPlan::TensorDescriptor,
+    ids : NormPlan::TensorDescriptor,
+    base : NormPlan::TensorDescriptor,
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (if (((((((((((((((destinationView base output) && (((project left ty) =? 0) || ((project left ty) =? 1))) && (0 <? (bytes (project output ty)))) && (0 <? (indexWidth (project ids ty)))) && ((project left n0) =? (project output n0))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project left n1) =? (project ids n0))) && ((project ids n3) =? 1)) && (0 <? (project ids n1))) && (0 <? (project ids n2))) && ((prim remainder (project left n2) (project ids n1) 0 : Nat) =? 0)) && ((prim remainder (project left n3) (project ids n2) 0 : Nat) =? 0)) && (contiguousRightRows left)) && (contiguousRightRows output)) then (let indices : Nat := (elements ids); (let rows : Nat := (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat); (let count : Nat := (if (empty left) then 0 else ((prim multiply 2 indices : Nat) + (prim multiply rows (1 + (project left n0)) : Nat))); (ctor Response.planned (record Plan {steps := count, capacity := (if (empty left) then 3 else (3 + indices)), operation := 41, left := left, rhs := ids, output := output}))))) else (ctor Response.invalid)),
+  executable: true
+}
+
+definition{
+  name: rowIndexStep,
+  parameters: [index : Nat, ids : NormPlan::TensorDescriptor, limit : Nat, flag : Nat],
+  result: Response,
+  body: (let item : Nat := (prim quotient index 2 0 : Nat); (let width : Nat := (indexWidth (project ids ty)); (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor Response.instruction 2 3 0 0 4 (offset item ids) 2 0 0 2 width 8) else (if ((flag <? limit) && (flag <? (if (width =? 4) then 2147483648 else 9223372036854775808))) then (ctor Response.instruction 2 3 0 0 1 2 2 0 0 (3 + item) 8 8) else (ctor Response.invalid))))),
+  executable: true
+}
+
+definition{
+  name: writeRow,
+  parameters: [
+    index : Nat,
+    left : NormPlan::TensorDescriptor,
+    ids : NormPlan::TensorDescriptor,
+    output : NormPlan::TensorDescriptor,
+    flag : Nat
+  ],
+  result: Response,
+  body: (let stride : Nat := (1 + (project left n0)); (let phase : Nat := (prim remainder index stride 0 : Nat); (let ordinal : Nat := (prim quotient index stride 0 : Nat); (let row : Nat := (prim remainder ordinal (project left n1) 0 : Nat); (let batch : Nat := (prim quotient ordinal (project left n1) 0 : Nat); (let b2 : Nat := (prim remainder batch (project left n2) 0 : Nat); (let b3 : Nat := (prim quotient batch (project left n2) 0 : Nat); (if (phase =? 0) then (let entry : Nat := (row + (prim multiply (project ids n0) ((prim remainder b2 (project ids n1) 0 : Nat) + (prim multiply (project ids n1) (prim remainder b3 (project ids n2) 0 : Nat) : Nat)) : Nat)); (ctor Response.instruction 2 3 0 0 1 (3 + entry) 2 0 0 2 8 8)) else (if (flag <? (project output n1)) then (let col : Nat := (prim subtract phase 1 : Nat); (let src : Nat := (TensorIndex::elementOffset col row b2 b3 (project left s0) (project left s1) (project left s2) (project left s3)); (let dst : Nat := (TensorIndex::elementOffset col flag b2 b3 (project output s0) (project output s1) (project output s2) (project output s3)); (ctor Response.instruction 0 0 (project left ty) (project output ty) 0 src 2 0 3 dst (bytes (project left ty)) (bytes (project output ty)))))) else (ctor Response.invalid)))))))))),
+  executable: true
+}
+
+definition{
+  name: rowStep,
+  parameters: [index : Nat, execution : Plan, flag : Nat],
+  result: Response,
+  body: (if (index <? (project execution steps)) then (let marks : Nat := (prim multiply 2 (elements (project execution rhs)) : Nat); (if (index <? marks) then (rowIndexStep index (project execution rhs) (project (project execution output) n1) flag) else (writeRow (prim subtract index marks : Nat) (project execution left) (project execution rhs) (project execution output) flag))) else (ctor Response.invalid)),
+  executable: true
+}
+
+definition{
   name: step,
   parameters: [index : Nat, execution : Plan, flag : Nat],
   result: Response,
@@ -203,7 +273,8 @@ definition{
         | Option.some left => (match secondary
           | Option.none => (ctor Response.invalid)
           | Option.some rhs => (plan kind left rhs output))))
-    | Request.step index execution flag => (step index execution flag)),
+    | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
+    | Request.step index execution flag => (if ((project execution operation) =? 41) then (rowStep index execution flag) else (step index execution flag))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
