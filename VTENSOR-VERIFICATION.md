@@ -3333,3 +3333,70 @@ waiver is used. The original accepted 10,549-line budget is still exceeded by
 and API variants remain open. Current source-bound evidence and historical
 iteration measurements are in verification/l2-runtime.json and the imported
 build manifests beside it.
+
+### VT-39: relative-position addition and a shared constructor oracle
+
+The pinned header exposes copied and in-place ADD_REL_POS constructors, but the
+unchanged upstream factory contains no cases for either. The registered ID,
+scenario and actual first-case failure precede implementation. The initial
+unsupported result takes 49.11 seconds including bridge compilation; the final
+calibrated pre-implementation run fails as unsupported in 6.26 seconds.
+
+A shared bridge delegates constructed graphs to the unchanged test_case::eval
+and actual CPU backend, with reference mode mandatory. It uses the upstream
+tensor-creation methods, including their per-tensor sentinels, and retains
+inherited initialization and determinism checks. Its successful-case counter
+requires exactly one non-skipped record. Finite error tolerance is tightened
+to zero. Two calibration cases run existing DUP and in-place ADD; an incorrect
+operator callback must be refused. Additional constructor fixtures change the
+small driver while the imported evaluator translation unit remains cached.
+These are local fixtures using an imported oracle, not factory cases claimed
+to exist upstream.
+
+Prism models the initial raw copy, the CPU's signed 32-bit head-count conversion,
+then both bias-cache reads before each group of alternating height/width writes.
+This preserves F32 update order and data dependence when bias views alias the
+in-place main tensor. Extra outer batches are copied or preserved without bias
+updates, matching the CPU implementation. All arithmetic uses existing Verdant
+primitives; the native production adapter is unchanged.
+
+The exact SDK verifies all 697 declarations and exports result
+`eed248d0abcb004062e5bab44495a4ffc56dc754df711efe9adb2b924493874f`
+with attestation
+`86046ea875f85de0c3e7d9b5be321bc0d5a7910ecfbf2b65eb20b34d0c539f1f`.
+Its imported build manifest matches all ten current model files. The changed
+Nat module also passes remote kernel verification with attestation
+`68c79f60389f9cb1ba53117be1e48ff0a03fac18887294bf0e3247fbde4989a6`.
+That remote proof covers RelativePositionAdd only; its signed inputs include
+the same ten draft-file hashes. The full model and generated Rust preservation
+proof is the separate pinned-SDK export. Repeat-offset Rust and all 24 imported
+Verdant generated libraries remain byte-identical. No generated Rust is edited
+or formatted manually.
+
+The finite corpus has 1,280 constructed cases covering width 1/2/3/8, both
+query axes, multiple heads and outer batches, both constructors, five bias-alias
+arrangements and legal noncanonical unit strides. Another 25 actual CPU
+comparisons cover cancellation order, negative zero, infinities, NaNs and signed
+in-place flags. Modified-prefix NaNs compare by class; untouched outer batches
+remain exact bytes, including NaN payloads. Ten empty cases cover each constructor
+shape parameter without operand buffers. Exact totals require 1,315 positives,
+42 atomic descriptor refusals and two rejected NaN-tail payload corruptions.
+The final scoped run passes in 6.25 seconds.
+
+Binding required DUP calibration to NEG fails the callback gate in 5.14 seconds.
+Binding both cached biases to register zero fails the first ADD_REL_POS case
+with ERR 0.802741709 above zero in 2.87 seconds. Both source changes are restored
+byte for byte before final verification. The native runner matches its Git
+baseline. The complete workspace contract run passes 38 tests and fails only
+the existing VT-02 development-source refusal in 16.66 seconds, with zero ignored
+or filtered tests. Five model unit tests and all four BDD meta-tests pass.
+All-target/all-feature Clippy, formatting and dependencies pass. Timings are
+observations, not controlled benchmarks.
+
+The complete pinned-SDK just vv remains pending at this checkpoint. Current
+source is 11,084 lines: 112 above the previous component checkpoint and 535 above
+the original accepted 10,549. The observed audit rejects growth; no ceiling is
+raised. Production dependency closure and all remaining imported operation/API
+coverage remain open. Detailed source-bound evidence is recorded in
+verification/relative-position-add-runtime.json and the signed authoring and
+imported build manifests beside it.

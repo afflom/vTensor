@@ -298,3 +298,9 @@ id = "VT-38"
 level = "build"
 suite = "normalization-graphs"
 statement = "Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals"
+
+[[id]]
+id = "VT-39"
+level = "build"
+suite = "relative-position-add"
+statement = "Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals"

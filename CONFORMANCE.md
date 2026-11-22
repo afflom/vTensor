@@ -155,6 +155,12 @@ model does not sanction.
 | --- | --- | --- |
 | `VT-29` | `build` | Prism models SUM SUM_ROWS and MEAN accumulation precision rounding and empty reductions and Verdant matches every supported float type against the imported GGML CPU oracle |
 
+## relative-position-add
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `VT-39` | `build` | Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals |
+
 ## relative-position-graphs
 
 | ID | Level | Statement |

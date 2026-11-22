@@ -6,6 +6,7 @@
 \importmodule{TensorTypes}
 \importmodule{RowGather}
 \importmodule{RelativePosition}
+\importmodule{RelativePositionAdd}
 \importmodule{IndexedAddition}
 \importmodule{Arange}
 \importmodule{L2Normalization}
@@ -99,7 +100,8 @@ inductive{
     {name: relativePosition, fields: []},
     {name: indexedAdd, fields: [IndexContext, IndexContext]},
     {name: arange, fields: [Nat, Nat, Nat, Nat]},
-    {name: l2Norm, fields: [Nat]}
+    {name: l2Norm, fields: [Nat]},
+    {name: relativeAdd, fields: [Nat, Nat, Nat]}
   ]
 }
 
@@ -1174,6 +1176,32 @@ definition{
 }
 
 definition{
+  name: planRelativeAdd,
+  parameters: [
+    options : OperationParameters,
+    left : TensorDescriptor,
+    widthInput : (Option TensorDescriptor),
+    heightInput : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (match widthInput
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some pw => (match heightInput
+      | Option.none => (ctor PointwiseDecision.invalidShape)
+      | Option.some ph => (if ((((((((((((((((project left ty) =? 0) && ((project pw ty) =? 0)) && ((project ph ty) =? 0)) && ((project output ty) =? 0)) && (sameShape pw ph)) && (sameShape left output)) && (contiguousWords left)) && (contiguousWords pw)) && (contiguousWords ph)) && (contiguousWords output)) && ((project left n0) =? (prim multiply (project pw n0) (project pw n0) : Nat))) && ((project left n1) =? (prim multiply (project pw n1) (project pw n2) : Nat))) && ((project left n2) =? (project pw n3))) && ((project options p0) <? 4294967296)) && (if ((project options p0) =? 0) then ((separateTensors left output) || ((project left address) =? (project output address))) else ((project left address) =? (project output address)))) then (let emptyOutput : Bool := (((((project output n0) =? 0) || ((project output n1) =? 0)) || ((project output n2) =? 0)) || ((project output n3) =? 0)); (let width : Nat := (project pw n0); (let initial : Nat := (if emptyOutput then 0 else (if ((project options p0) =? 0) then (blockCount left 1) else 0)); (let biases : Nat := (if emptyOutput then 0 else (RelativePositionAdd::biasWords width (project pw n1) (project pw n2) (project pw n3))); (ctor PointwiseDecision.copyBlocks (RelativePositionAdd::steps initial width biases) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.relativeAdd initial width biases)))))) else (ctor PointwiseDecision.invalidShape)))),
+  executable: true
+}
+
+definition{
+  name: relativeAddOffsets,
+  parameters: [index : Nat, initial : Nat, width : Nat, biases : Nat],
+  result: GraphResponse,
+  body: (if (index <? (RelativePositionAdd::steps initial width biases)) then (if (index <? initial) then (ctor GraphResponse.offsets false (prim multiply 4 index : Nat) (prim multiply 4 index : Nat)) else (let ordinal : Nat := (prim subtract index initial : Nat); (let phase : Nat := (RelativePositionAdd::phase ordinal width); (if (phase <? 2) then (ctor GraphResponse.word 6 (if (phase =? 0) then 4 else 5) (RelativePositionAdd::biasByte ordinal width) 2 0 1 phase) else (let target : Nat := (RelativePositionAdd::targetByte ordinal width); (ctor GraphResponse.word 8 3 target 1 (if (RelativePositionAdd::heightWrite ordinal width) then 1 else 0) 3 target)))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -1201,6 +1229,7 @@ definition{
     | CopyMode.counted elements right => (countEqualOffsets index source right elements)
     | CopyMode.scattered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.relativeAdd initial width biases => (relativeAddOffsets index initial width biases)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.arange start stop step count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
   executable: true
@@ -1268,6 +1297,7 @@ definition{
     | CopyMode.gathered storage indices => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.relativePosition => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false)
+    | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.arange start stop step count => (ctor GraphResponse.bindings 0 0 0 false)),
   executable: true
@@ -1311,6 +1341,7 @@ definition{
     | CopyMode.gathered storage indices => 0
     | CopyMode.relativePosition => 0
     | CopyMode.indexedAdd table indices => 0
+    | CopyMode.relativeAdd initial width biases => 0
     | CopyMode.l2Norm epsilon => 0
     | CopyMode.arange start stop step count => 0),
   executable: true
@@ -1368,6 +1399,7 @@ definition{
     | CopyMode.gathered storage indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.relativePosition => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.indexedAdd table indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.relativeAdd initial width biases => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.l2Norm epsilon => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.arange start stop step count => (ctor WordOperation.storage sourceStorage destinationStorage true)),
   executable: true
@@ -1401,6 +1433,7 @@ definition{
     | CopyMode.gathered storage indices => 0
     | CopyMode.relativePosition => 0
     | CopyMode.indexedAdd table indices => 0
+    | CopyMode.relativeAdd initial width biases => 0
     | CopyMode.l2Norm epsilon => 0
     | CopyMode.arange start stop step count => 0),
   executable: true
@@ -1474,6 +1507,7 @@ definition{
     | CopyMode.gathered storage indices => (gatherOffsets storage index source destination indices flag)
     | CopyMode.relativePosition => (copyOffsets index source destination mode)
     | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
+    | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
     | CopyMode.l2Norm epsilon => (l2Offsets index source destination epsilon flag)
     | CopyMode.arange start stop step count => (arangeOffsets index count start stop step flag))),
   executable: true
@@ -1486,7 +1520,7 @@ definition{
   body: (match request
     | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 input7 input8 input9 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output)))))
+      | Option.some left => (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))))
     | GraphRequest.offsets index source destination mode => (copyOffsets index source destination mode)
     | GraphRequest.selection index source destination flag => (argmaxOffsets index source destination flag)
     | GraphRequest.scatter index source destination indices flag => (rowGradientOffsets index source destination indices flag)
@@ -2445,6 +2479,21 @@ theorem{
   name: changedStrideL2ViewRefused,
   parameters: [],
   statement: ((sameWordView (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 2, n3 := 2, s0 := 8, s1 := 32, s2 := 80, s3 := 192, span := 324, address := 4096}) (record TensorDescriptor {ty := 0, n0 := 3, n1 := 2, n2 := 2, n3 := 2, s0 := 4, s1 := 32, s2 := 80, s3 := 192, span := 324, address := 4096})) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unifiedRelativeAdd,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    initial : Nat,
+    width : Nat,
+    biases : Nat,
+    flag : Nat
+  ],
+  statement: ((statefulOffsets index source destination (ctor CopyMode.relativeAdd initial width biases) flag) = (bindStep (ctor CopyMode.relativeAdd initial width biases) (relativeAddOffsets index initial width biases))),
   proof: reflexivity{}
 }
 \end{semanticmodule}

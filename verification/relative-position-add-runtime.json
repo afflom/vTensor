@@ -1,0 +1,189 @@
+{
+  "spec": "vtensor/relative-position-add-runtime/1",
+  "id": "VT-39",
+  "status": "implemented-and-scoped-and-workspace-verified-full-gate-not-yet-run",
+  "authority": {
+    "repository": "https://github.com/ggml-org/llama.cpp",
+    "commit": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "files": [
+      "ggml/include/ggml.h",
+      "ggml/src/ggml.c",
+      "ggml/src/ggml-cpu/ops.cpp",
+      "tests/test-backend-ops.cpp"
+    ],
+    "factory_cases": 0,
+    "oracle": "Actual copied/in-place GGML constructors and unchanged CPU implementation. Locally constructed finite fixtures use unchanged test_case::eval through a shared proxy; these are not claimed to be unchanged upstream factory cases."
+  },
+  "oracle_bridge": {
+    "generated_owned_tensors": "Uses the upstream test_case tensor constructors with their per-tensor sentinels. Inherited initialization and determinism checks remain enabled.",
+    "caching": "The large upstream evaluator translation unit is shared; subsequent constructor callbacks change only the small driver, not the imported evaluator source. Source, compiler, SDK, ABI, loaded library and required record counts remain checked.",
+    "acceptance": "Exactly one successful non-skipped record per callback; CPU reference mode mandatory; finite NMSE tolerance tightened to zero. Missing, unsupported, skipped and failed required callbacks refuse the run.",
+    "calibration": "Two real existing backend operations (DUP and in-place ADD), plus rejection of a wrong-operator callback, precede the required ADD_REL_POS run."
+  },
+  "coverage": {
+    "constructed_finite_cases": 1280,
+    "dimensions": "k 1/2/3/8; qh 1/2; qw 1/3; heads 1/2; outer batches 1/2; both constructors; five source-alias arrangements; canonical and noncanonical legal unit strides.",
+    "source_aliases": [
+      "independent biases",
+      "shared width/height bias",
+      "width bias views the main input",
+      "height bias views the main input",
+      "both biases share a view of the main input"
+    ],
+    "raw_ieee_cases": 25,
+    "raw_ieee": "F32 cancellation-order witness, negative zero, infinities and NaNs; all constructor parameters use actual CPU results. Nonzero signed in-place flags and zero flag with exact output aliasing are exercised. Modified-prefix NaNs compare by class; every untouched outer-batch byte remains exact, including NaN payloads.",
+    "empty_cases": 10,
+    "empty": "Every zero dimension in the five constructor shape parameters, for both constructors, without operand buffers.",
+    "positive_total": 1315,
+    "descriptor_refusals": 42,
+    "refusal_scope": "Missing inputs; all source/output types; output and bias shapes; noncontiguity; partial and mismatched placement; negative extents; overflowing strides; isolated width/query/head relation violations. Original output bytes are compared before and after every refusal.",
+    "nan_tail_corruption_probes": 2,
+    "tail_probe": "Changing one untouched-tail NaN payload bit is rejected for each constructor; exact bytes are restored and rechecked."
+  },
+  "model": {
+    "sources": [
+      "app/src/RelativePositionAdd.lex.tex",
+      "app/src/PointwiseGraph.lex.tex"
+    ],
+    "canonical_draft": "prism-app/d521504499d442e4f1b4f0788cea1b25e42ab44b03ba4b07d0ef5b3a5cf5a1b4",
+    "scope": "Models initial raw copy, signed 32-bit CPU head-count conversion, ordered bias-cache reads and alternating height/width additions. All numeric additions use existing Verdant primitives. Extra outer slices are preserved. Both biases are cached before each write group, including when biases alias the in-place main input.",
+    "remote_nat_proof": {
+      "id": "68c79f60389f9cb1ba53117be1e48ff0a03fac18887294bf0e3247fbde4989a6",
+      "scope": [
+        "RelativePositionAdd"
+      ],
+      "envelope": "verification/relative-position-add-authoring.json",
+      "all_ten_draft_input_hashes_in_signature": true
+    },
+    "production": {
+      "result_id": "eed248d0abcb004062e5bab44495a4ffc56dc754df711efe9adb2b924493874f",
+      "attestation_id": "86046ea875f85de0c3e7d9b5be321bc0d5a7910ecfbf2b65eb20b34d0c539f1f",
+      "declarations": 697,
+      "all_declarations_verified": true,
+      "manifest": "verification/relative-position-add-build-manifest.json",
+      "manifest_sha256": "69d6b5e46944dfa3c4490c045e77a08141af2f8e89e4201c427f951677bc3f14",
+      "all_ten_current_source_hashes_match": true
+    }
+  },
+  "initial_failure": {
+    "command": "cargo test --locked -p vtensor-backend --test contract relative_position_add_vt_39 -- --nocapture",
+    "reason": "First actual ADD_REL_POS case is not supported.",
+    "first_seconds": 49.11,
+    "first_timing": "Includes initial compilation of the upstream evaluator bridge.",
+    "calibrated_seconds": 6.26,
+    "passed": 0,
+    "failed": 1,
+    "ignored": 0,
+    "filtered": 38
+  },
+  "scoped_result": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 38,
+    "seconds": 6.25
+  },
+  "defects": {
+    "wrong_operator_callback": {
+      "change": "Bind required DUP calibration to NEG.",
+      "failure": "No eligible DUP result; imported callback gate rejects the wrong operator before feature execution.",
+      "seconds": 5.14,
+      "exit_code": 101,
+      "restored": "Exact saved contract bytes restored."
+    },
+    "wrong_bias_binding": {
+      "change": "Read both cached bias operands from scratch register zero.",
+      "failure": "First actual ADD_REL_POS case fails: ERR 0.802741709 above the allowed zero.",
+      "seconds": 2.87,
+      "exit_code": 101,
+      "restored": "Native runner restored byte for byte and matches the Git baseline."
+    }
+  },
+  "workspace": {
+    "command": "cargo test --workspace --locked",
+    "exit_code": 101,
+    "contract": {
+      "passed": 38,
+      "failed": 1,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 16.66,
+      "failure": "VT-02 refuses the local Verdant development override."
+    },
+    "bdd": {
+      "passed": 4,
+      "failed": 0
+    },
+    "model_unit_tests": {
+      "passed": 5,
+      "failed": 0
+    }
+  },
+  "checks": {
+    "clippy": "Workspace, all targets and features, warnings denied: passed.",
+    "format": "passed, generated Rust excluded",
+    "dependencies": "all-feature check passed after updating only the exact generated-source license clarification hash reported by cargo-deny",
+    "model_consistency_errors_deferral_bootstrap": "passed",
+    "full_just_vv": "pending",
+    "unchanged": "Native production adapter, repeat-offset Rust and all 24 imported Verdant generated libraries unchanged. No generated Rust manually edited or formatted."
+  },
+  "source_budget": {
+    "current": 11084,
+    "previous_component": 10972,
+    "component_growth": 112,
+    "last_accepted": 10549,
+    "excess": 535,
+    "status": "unsatisfied; no ceiling raised",
+    "observed_registration_audit": "Rejected 128 lines growth against parent 9609af9 (10956 to 11084)."
+  },
+  "remaining": [
+    "Complete pinned-SDK just vv still required for this checkpoint.",
+    "Production dependency closure, original source budget and remaining imported operation/API coverage remain open."
+  ],
+  "logs": {
+    "registration": {
+      "path": "/tmp/vtensor-relative-add-registration.log",
+      "sha256": "a16fd0f6914edfbefa8f7c38b5d1671e0409d82084e96334bb4668d5ef2d177b"
+    },
+    "before": {
+      "path": "/tmp/vtensor-relative-add-before.log",
+      "sha256": "d77898b44f75059143bd52903d30926f92e6ec97ae23b69739305e4e8cd0b657"
+    },
+    "proxy-before": {
+      "path": "/tmp/vtensor-relative-add-proxy-before.log",
+      "sha256": "4965874523dd71eb55df5be21f8709db849c71b1ce410f4b79359f4286557d29"
+    },
+    "expanded": {
+      "path": "/tmp/vtensor-relative-add-expanded.log",
+      "sha256": "b58f319b96e22ce215a2002d5b09220d8cf1f66e5be7c7dc6a73e682f9aaf9e5"
+    },
+    "wrong-op-fault": {
+      "path": "/tmp/vtensor-relative-add-wrong-op-fault.log",
+      "sha256": "36d5772be193d5961b2a7f5f37f1e2194393546c53f6021f33c2b65cbeeb32a6"
+    },
+    "bias-fault": {
+      "path": "/tmp/vtensor-relative-add-bias-fault.log",
+      "sha256": "269d28c3f63996de0f178d8729926fbc038034f84b75dd76b493d6d84fde6a22"
+    },
+    "workspace": {
+      "path": "/tmp/vtensor-relative-add-workspace.log",
+      "sha256": "22c5c0c514444bdd2a261370cc3b8050e2b2e66d902ebb1c98e773f0b9cad129"
+    },
+    "checks": {
+      "path": "/tmp/vtensor-relative-add-checks.log",
+      "sha256": "40194a93865cc3ce96f4df5cb99d838076b3ff2e0f058b30c4d2072ae07fad9c"
+    },
+    "deny": {
+      "path": "/tmp/vtensor-relative-add-deny.log",
+      "sha256": "f78188651f20132b2395fba8b562037f6999addfd364d6b3fe6d784575a90d6b"
+    },
+    "model-checks": {
+      "path": "/tmp/vtensor-relative-add-model-checks.log",
+      "sha256": "bcba16848179054bfacaa865d41e2ce46cec88bcb3c0db30ef2e3e7f72077a26"
+    },
+    "export": {
+      "path": "/tmp/vtensor-relative-add-export.log",
+      "sha256": "08676c504967adaedab5c67228e2688f418c6dc6b48afef39c5947dec1375309"
+    }
+  }
+}

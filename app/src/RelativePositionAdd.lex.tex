@@ -1,0 +1,165 @@
+\begin{lexlean}{RelativePositionAdd}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: effectiveHeads,
+  parameters: [heads : Nat],
+  result: Nat,
+  body: (let low : Nat := (prim remainder heads 4294967296 0 : Nat); (if (low <? 2147483648) then low else 0)),
+  executable: true
+}
+
+definition{
+  name: biasWords,
+  parameters: [width : Nat, qh : Nat, qw : Nat, heads : Nat],
+  result: Nat,
+  body: (prim multiply (prim multiply width qh : Nat) (prim multiply qw (effectiveHeads heads) : Nat) : Nat),
+  executable: true
+}
+
+definition{
+  name: rowSteps,
+  parameters: [width : Nat],
+  result: Nat,
+  body: (2 + (prim multiply 2 width : Nat)),
+  executable: true
+}
+
+definition{
+  name: steps,
+  parameters: [initial : Nat, width : Nat, biases : Nat],
+  result: Nat,
+  body: (initial + (prim multiply (rowSteps width) biases : Nat)),
+  executable: true
+}
+
+definition{
+  name: phase,
+  parameters: [index : Nat, width : Nat],
+  result: Nat,
+  body: (prim remainder index (rowSteps width) 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: biasOrdinal,
+  parameters: [index : Nat, width : Nat],
+  result: Nat,
+  body: (prim quotient index (rowSteps width) 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: heightWrite,
+  parameters: [index : Nat, width : Nat],
+  result: Bool,
+  body: ((prim remainder (prim subtract (phase index width) 2 : Nat) 2 0 : Nat) =? 0),
+  executable: true
+}
+
+definition{
+  name: targetWord,
+  parameters: [index : Nat, width : Nat],
+  result: Nat,
+  body: (let ordinal : Nat := (biasOrdinal index width); (let j : Nat := (prim quotient (prim subtract (phase index width) 2 : Nat) 2 0 : Nat); (let row : Nat := (prim multiply ordinal width : Nat); (if (heightWrite index width) then (row + j) else ((prim subtract row (prim multiply (prim subtract width 1 : Nat) (prim remainder ordinal width 0 : Nat) : Nat) : Nat) + (prim multiply j width : Nat)))))),
+  executable: true
+}
+
+definition{
+  name: targetByte,
+  parameters: [index : Nat, width : Nat],
+  result: Nat,
+  body: (prim multiply 4 (targetWord index width) : Nat),
+  executable: true
+}
+
+definition{
+  name: biasByte,
+  parameters: [index : Nat, width : Nat],
+  result: Nat,
+  body: (prim multiply 4 (biasOrdinal index width) : Nat),
+  executable: true
+}
+
+theorem{
+  name: headBoundary,
+  parameters: [],
+  statement: ((effectiveHeads 2147483647) = 2147483647),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: negativeHeadWordHasNoIterations,
+  parameters: [],
+  statement: ((effectiveHeads 2147483648) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: wrappedHeadWord,
+  parameters: [],
+  statement: ((effectiveHeads 4294967298) = 2),
+  proof: reflexivity{}
+}
+
+theorem{name: threeWordStride, parameters: [], statement: ((rowSteps 3) = 8), proof: reflexivity{}}
+
+theorem{
+  name: heightStartsAtDiagonal,
+  parameters: [],
+  statement: ((targetByte 2 3) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: widthFollowsHeightAtDiagonal,
+  parameters: [],
+  statement: ((targetByte 3 3) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: heightBeforeLaterWidth,
+  parameters: [],
+  statement: ((targetByte 4 3) = 4),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: widthBeforeLaterHeight,
+  parameters: [],
+  statement: ((targetByte 5 3) = 12),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: laterHeightRevisitsWidth,
+  parameters: [],
+  statement: ((targetByte 10 3) = 12),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: laterWidthRevisitsHeight,
+  parameters: [],
+  statement: ((targetByte 11 3) = 4),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: copyAndUpdateCount,
+  parameters: [],
+  statement: ((steps 18 3 (biasWords 3 1 1 1)) = 42),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: noBiasMeansOnlyCopy,
+  parameters: [initial : Nat, width : Nat],
+  statement: ((steps initial width 0) = initial),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

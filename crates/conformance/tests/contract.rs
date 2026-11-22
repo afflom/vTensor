@@ -1504,6 +1504,14 @@ fn normalization_graphs_vt_38() {
     native_backend_oracle::verify(&root(), "upstream-L2_NORM,L2_NORM_BATCH", 129);
 }
 
+/// `VT-39`: Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals
+#[test]
+fn relative_position_add_vt_39() {
+    tensor_layout::verify_pointwise_bundle();
+    native_backend_oracle::verify(&root(), "upstream-ORACLE_CALIBRATION", 2);
+    native_backend_oracle::verify(&root(), "upstream-ADD_REL_POS", 1315);
+}
+
 mod native_backend_oracle {
     use super::ggml_oracle::{compile, digest, file_digest, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
@@ -1826,22 +1834,25 @@ mod native_backend_oracle {
     const UPSTREAM_SUITE: &str = r##"#define main vtensor_unused_upstream_main
 #include "tests/test-backend-ops.cpp"
 #undef main
-size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
-    struct observation : printer {
-      size_t records=0; bool bad=false;
-      void print_test_result(const test_result &result) override {
-        ++records;
-        if(!result.supported || !result.passed || result.test_mode!="test") {
-          bad=true;fprintf(stderr,"imported case rejected: %s(%s): %s\n",result.op_name.c_str(),result.op_params.c_str(),result.error_message.c_str());
-        }
-      }
-    } observed;
+struct vtensor_observation : printer {
+  size_t records=0; bool bad=false;
+  void print_test_result(const test_result &result) override {
+    ++records;
+    if(!result.supported || !result.passed || result.test_mode!="test") {
+      bad=true;fprintf(stderr,"imported case rejected: %s(%s): %s\n",result.op_name.c_str(),result.op_params.c_str(),result.error_message.c_str());
+    }
+  }
+};
+static bool vtensor_use_reference(ggml_backend_t reference) {
     using set_reference = void (*)(ggml_backend_t,bool);
     auto reg=ggml_backend_dev_backend_reg(ggml_backend_get_device(reference));
     auto use_reference=(set_reference)ggml_backend_reg_get_proc_address(reg,"ggml_backend_cpu_set_use_ref");
-    if(!use_reference) return SIZE_MAX;
-    use_reference(reference,true);
-    size_t cases=0;
+    if(!use_reference) return false;
+    use_reference(reference,true);return true;
+}
+size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
+    if(!vtensor_use_reference(reference)) return SIZE_MAX;
+    vtensor_observation observed;size_t cases=0;
     for(auto &test:make_test_cases_eval()) {
       const auto status=test->eval(backend,reference,op,&observed);
       if(status==test_status_t::SKIPPED) continue;
@@ -1849,6 +1860,24 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
       ++cases;
     }
     return observed.records==cases ? cases : SIZE_MAX;
+}
+using vtensor_graph_factory = ggml_tensor * (*)(ggml_context *, void *, void *);
+using vtensor_initializer = void (*)(ggml_context *, void *);
+ggml_tensor *vtensor_oracle_tensor(void *owner, ggml_context *ctx, ggml_type type, int64_t n0, int64_t n1, int64_t n2, int64_t n3) {
+    return static_cast<test_case *>(owner)->ggml_new_tensor_4d(ctx,type,n0,n1,n2,n3);
+}
+bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, const char *op, const char *label, void *payload, vtensor_graph_factory factory, vtensor_initializer initialize) {
+    struct constructed_case : test_case {
+      void *payload;vtensor_graph_factory factory;vtensor_initializer initialize;std::string label;
+      constructed_case(void *p, vtensor_graph_factory f, vtensor_initializer init, const char *name):payload(p),factory(f),initialize(init),label(name) {}
+      ggml_tensor *build_graph(ggml_context *ctx) override {return factory(ctx,payload,static_cast<test_case *>(this));}
+      void initialize_tensors(ggml_context *ctx) override {test_case::initialize_tensors(ctx);if(initialize) initialize(ctx,payload);}
+      std::string vars() override {return label;}
+      double max_nmse_err() override {return 0.0;}
+    } test(payload,factory,initialize,label);
+    if(!vtensor_use_reference(reference)) return false;
+    vtensor_observation observed;
+    return test.eval(backend,reference,op,&observed)==test_status_t::OK && !observed.bad && observed.records==1;
 }
 "##;
 
@@ -1877,6 +1906,8 @@ extern "C" const unsigned char * vtensor_build_sources();
 extern "C" size_t vtensor_build_sources_size();
 #ifdef VTENSOR_IMPORTED_SUITE
 extern size_t vtensor_imported_suite(ggml_backend_t, ggml_backend_t, const char *);
+extern bool vtensor_imported_case(ggml_backend_t, ggml_backend_t, const char *, const char *, void *, ggml_tensor * (*)(ggml_context *, void *, void *), void (*)(ggml_context *, void *)=nullptr);
+extern ggml_tensor *vtensor_oracle_tensor(void *,ggml_context *,ggml_type,int64_t,int64_t,int64_t,int64_t);
 #endif
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "native check line %d: %s\n", __LINE__, #x); return 2; } } while (0)
 static void refusal(const char *message) { _exit(strstr(message, "out of bounds") ? 12 : 99); }
@@ -1931,7 +1962,7 @@ static bool compare_result(ggml_tensor *result, ggml_tensor *reference, std::vec
     auto nan=[&](const unsigned char *p) {float value;if(result->type==GGML_TYPE_F32)memcpy(&value,p,4);else {uint16_t word;memcpy(&word,p,2);value=result->type==GGML_TYPE_F16?ggml_fp16_to_fp32(word):ggml_bf16_to_fp32(ggml_bf16_t{word});}return std::isnan(value);};
     for(size_t i=0;i<(reference?size_t(ggml_nelements(reference))/block:0);i++) {
       const size_t at=block_address(result,i), reference_at=block_address(reference,i);
-      if(nan_mode && (nan_mode!=2 || i%(result->ne[0]/block)) && nan(actual.data()+at) && nan(raw.data()+reference_at)) memcpy(actual.data()+at,raw.data()+reference_at,bytes);
+      if(nan_mode && (nan_mode!=2 || i%(result->ne[0]/block)) && (nan_mode!=3 || i<size_t(ggml_nelements(result)/result->ne[3])) && nan(actual.data()+at) && nan(raw.data()+reference_at)) memcpy(actual.data()+at,raw.data()+reference_at,bytes);
       memcpy(expected.data()+at,raw.data()+reference_at,bytes);
     }
     if(actual==expected) return true;
@@ -1975,6 +2006,89 @@ int main(int argc, char **argv) {
     if (!strncmp(argv[3], "upstream-", 9)) {
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
+      if (!strcmp(argv[3]+9,"ORACLE_CALIBRATION")) {
+        CHECK(cases==0);
+        auto duplicate=[](ggml_context *ctx,void *,void *owner) {return ggml_dup(ctx,vtensor_oracle_tensor(owner,ctx,GGML_TYPE_F32,4,1,1,1));};
+        CHECK(vtensor_imported_case(backend,reference,"DUP","oracle calibration",nullptr,duplicate));
+        auto alias_add=[](ggml_context *ctx,void *,void *owner) {auto a=vtensor_oracle_tensor(owner,ctx,GGML_TYPE_F32,4,1,1,1);return ggml_add_inplace(ctx,a,a);};
+        CHECK(vtensor_imported_case(backend,reference,"ADD","in-place oracle calibration",nullptr,alias_add));
+        CHECK(!vtensor_imported_case(backend,reference,"ADD_REL_POS","wrong operator",nullptr,duplicate));
+        cases=2;
+      }
+      if (!strcmp(argv[3]+9,"ADD_REL_POS")) {
+        CHECK(cases==0);
+        auto build=[](ggml_context *ctx,void *payload,void *owner) {
+          auto d=static_cast<int64_t *>(payload);
+          auto a=vtensor_oracle_tensor(owner,ctx,GGML_TYPE_F32,d[0]*d[0],d[1]*d[2],d[3],d[4]);
+          auto pw=vtensor_oracle_tensor(owner,ctx,GGML_TYPE_F32,d[0],d[1],d[2],d[3]);
+          auto ph=vtensor_oracle_tensor(owner,ctx,GGML_TYPE_F32,d[0],d[1],d[2],d[3]);
+          auto view=[&]() {return ggml_view_4d(ctx,a,d[0],d[1],d[2],d[3],4*d[0],4*d[0]*d[1],4*d[0]*d[1]*d[2],0);};
+          if(d[6]==1)ph=pw;
+          if(d[6]==2)pw=view();
+          if(d[6]==3)ph=view();
+          if(d[6]==4)pw=ph=view();
+          if(d[7]) for(auto input:{a,pw,ph}) for(int axis=0;axis<4;++axis) if(input->ne[axis]==1)input->nb[axis]+=8;
+          ggml_set_name(a,"base");ggml_set_name(pw,"width");ggml_set_name(ph,"height");
+          auto result=d[5]?ggml_add_rel_pos_inplace(ctx,a,pw,ph):ggml_add_rel_pos(ctx,a,pw,ph);
+          ggml_set_name(result,"result");return result;
+        };
+        for(int64_t k:{1,2,3,8}) for(int64_t qh:{1,2}) for(int64_t qw:{1,3})
+        for(int64_t heads:{1,2}) for(int64_t batches:{1,2}) for(int64_t inplace:{0,1})
+        for(int64_t alias:{0,1,2,3,4}) for(int64_t unit_strides:{0,1}) {
+          int64_t dimensions[]={k,qh,qw,heads,batches,inplace,alias,unit_strides};auto label=std::to_string(cases);
+          CHECK(vtensor_imported_case(backend,reference,"ADD_REL_POS",label.c_str(),dimensions,build));++cases;
+        }
+        size_t tail_probes=0;
+        for(bool inplace:{false,true}) {
+          ggml_init_params params={2*1024*1024,nullptr,true};auto ctx=ggml_init(params);CHECK(ctx);
+          auto a=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,9,1,1,2);auto pw=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,3);auto ph=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,3);
+          auto ar=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,9,1,1,2);auto pwr=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,3);auto phr=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,3);
+          auto result=inplace?ggml_add_rel_pos_inplace(ctx,a,pw,ph):ggml_add_rel_pos(ctx,a,pw,ph);
+          auto control=inplace?ggml_add_rel_pos_inplace(ctx,ar,pwr,phr):ggml_add_rel_pos(ctx,ar,pwr,phr);
+          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer);
+          auto graph=ggml_new_graph(ctx);ggml_build_forward_expand(graph,result);auto expected=ggml_new_graph(ctx);ggml_build_forward_expand(expected,control);
+          const uint32_t flags[]={inplace?1u:0u,0u,0x80000000u,0xffffffffu};
+          const uint32_t words[][3]={{0x4b800000u,0xcb800000u,0x3f800000u},{0x80000000u,0x80000000u,0x80000000u},{0x7f800000u,0xff800000u,0x3f800000u},{0x7fc00123u,0xffc00101u,0x80000000u},{0x3f800000u,0x7f800000u,0xff800000u}};
+          for(const auto &values:words) for(int variant=0;variant<(inplace?4:1);++variant) {
+            const std::pair<ggml_tensor *,uint32_t> inputs[]={{a,values[0]},{ar,values[0]},{pw,values[1]},{pwr,values[1]},{ph,values[2]},{phr,values[2]}};
+            for(auto input:inputs) {std::vector<uint32_t> data(ggml_nelements(input.first),input.second);ggml_backend_tensor_set(input.first,data.data(),0,data.size()*4);}
+            result->op_params[0]=control->op_params[0]=int32_t(flags[variant]);
+            if(!inplace)ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
+            CHECK(ggml_backend_graph_compute(reference,expected)==GGML_STATUS_SUCCESS);
+            CHECK(ggml_backend_dev_supports_op(dev,result) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+            CHECK(compare_result(result,control,std::vector<unsigned char>(ggml_nbytes(result),0xA5),3));++cases;
+            if(values[0]==0x7fc00123u && variant==0) {
+              uint32_t saved;ggml_backend_tensor_get(result,&saved,36,4);const uint32_t corrupt=saved^1u;ggml_backend_tensor_set(result,&corrupt,36,4);
+              CHECK(!compare_result(result,control,std::vector<unsigned char>(ggml_nbytes(result),0xA5),3));
+              ggml_backend_tensor_set(result,&saved,36,4);CHECK(compare_result(result,control,std::vector<unsigned char>(ggml_nbytes(result),0xA5),3));++tail_probes;
+            }
+          }
+          for(int slot:{0,1,2})CHECK(refuses_change(backend,dev,graph,result,result->src[slot],nullptr));
+          for(auto t:{result,a,pw,ph})CHECK(refuses_change(backend,dev,graph,result,t->type,GGML_TYPE_I32));
+          CHECK(refuses_change(backend,dev,graph,result,result->ne[3],int64_t(1)));
+          CHECK(refuses_change(backend,dev,graph,result,ph->ne[0],int64_t(2)));
+          for(auto t:{a,pw,ph,result})CHECK(refuses_change(backend,dev,graph,result,t->nb[0],size_t(8)));
+          CHECK(refuses_change(backend,dev,graph,result,result->data,static_cast<char *>(a->data)+4));
+          if(inplace)CHECK(refuses_change(backend,dev,graph,result,result->data,ar->data));
+          else CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(1)));
+          CHECK(refuses_change(backend,dev,graph,result,a->ne[0],int64_t(-1)));
+          for(auto t:{pw,result})CHECK(refuses_change(backend,dev,graph,result,t->nb[0],SIZE_MAX));
+          auto saved_height=result->src[2];result->src[2]=pw;
+          for(int axis:{0,1,3})CHECK(refuses_change(backend,dev,graph,result,pw->ne[axis],int64_t(2)));
+          result->src[2]=saved_height;ggml_backend_buffer_free(buffer);ggml_free(ctx);
+        }
+        CHECK(refusal_probes==42 && tail_probes==2);
+        for(int axis=0;axis<5;++axis) for(bool inplace:{false,true}) {
+          ggml_init_params params={2*1024*1024,nullptr,true};auto ctx=ggml_init(params);CHECK(ctx);
+          int64_t d[]={3,2,3,2,2};d[axis]=0;
+          auto a=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,d[0]*d[0],d[1]*d[2],d[3],d[4]);
+          auto pw=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,d[0],d[1],d[2],d[3]);auto ph=ggml_dup_tensor(ctx,pw);
+          auto result=inplace?ggml_add_rel_pos_inplace(ctx,a,pw,ph):ggml_add_rel_pos(ctx,a,pw,ph);
+          auto graph=ggml_new_graph(ctx);ggml_build_forward_expand(graph,result);
+          CHECK(ggml_backend_dev_supports_op(dev,result));CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);++cases;ggml_free(ctx);
+        }
+      }
       if (!strcmp(argv[3]+9,"ARANGE")) {
         CHECK(cases==10);
         ggml_init_params params={1024*1024,nullptr,true};auto ctx=ggml_init(params);CHECK(ctx);
