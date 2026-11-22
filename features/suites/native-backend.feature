@@ -26,3 +26,9 @@ Feature: native-backend
     Given the pinned GGML CPU reference and graph factory
     When vTensor evaluates sigmoid, SiLU and their add and multiply compositions
     Then the 122 results match the upstream evaluator
+
+  @VT-63 @build
+  Scenario: GGML attention with BF16 key and value rows uses Verdant conversion and contraction and matches the imported CPU with optional masks and sinks
+    Given the pinned GGML BF16 attention factory with 64 channels and 113 keys
+    When vTensor evaluates all four combinations of mask and sink presence
+    Then each output matches the imported GGML CPU evaluator
