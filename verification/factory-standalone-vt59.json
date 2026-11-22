@@ -3,13 +3,13 @@
   "provider_sha256": "58b0658b26de3a47c90f777ea62e265ace11a297a3f50f022baed76071a72614",
   "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
-  "oracle": "Unmodified llama.cpp test-backend-ops test -b vTensor --output csv -o LABELS -j 1. Load the original CPU first, then the vTensor plugin via GGML_BACKEND_PATH. test_backend selects the CPU reference evaluator.",
+  "oracle": "Unmodified llama.cpp test-backend-ops test -b vTensor --output csv -o LABELS and optional -p parameters_regex with one evaluator worker. Load the original CPU first, then the vTensor plugin via GGML_BACKEND_PATH. test_backend selects the CPU reference evaluator.",
   "test_backend_ops_sha256": "b32cc65fd893f3f9aa9bc062ea6051a61ea8a7a62b21cea0b690007f730a11bf",
   "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "case_transcript_sha256": "b8db09b2a7176384d84ed4b56e0a3eeed86437405bd2c45211c35df4cbd064a9",
   "verdict_table": "factory-standalone-vt59.tsv.gz",
-  "uncompressed_verdicts_sha256": "505a2279be0a9c8202ad65771f4e9767a43e44e891786ac59f2170baf1269c98",
-  "mapping": "Match each label\u2019s complete ordered parameter sequence to the imported factory inventory. The table preserves the evaluator\u2019s backend names and error field. Multiple occurrences of a backend indicate separate refusals inside one graph.",
+  "uncompressed_verdicts_sha256": "141c66d6f3f57524e125178642cd637e4242a99a42cb89e7061fd172b7ffd043",
+  "mapping": "Match the complete ordered parameter sequence of each label and optional parameters_regex to the imported factory inventory. The table preserves the evaluator\u2019s backend names and error field. Multiple occurrences of a backend indicate separate refusals inside one graph.",
   "runs": {
     "activations": {
       "labels": [
@@ -128,17 +128,97 @@
       ],
       "rows": 912,
       "csv_sha256": "5e18129a1862117cd7654af4afe2ac73537edffa29b945aa00d97e55000d4940"
+    },
+    "products": {
+      "labels": [
+        "MUL_MAT_HADAMARD",
+        "MUL_MAT_PREC_SRC1_BF16",
+        "MUL_MAT_PREC_SRC1_F32",
+        "MUL_MAT_PREC_SRC1_BF16_SRC0",
+        "MUL_MAT_W4A8",
+        "MUL_MAT_W4A4",
+        "MUL_MAT_ADD",
+        "OUT_PROD",
+        "MUL_MAT_FUSION",
+        "MUL_MAT_FUSION_W4A8"
+      ],
+      "rows": 3563,
+      "csv_sha256": "67ec45b42683ba4a09b04df345c4ee7bb1457d5abf88c5e4bf7af93be42a0685"
+    },
+    "setrows": {
+      "labels": [
+        "SET_ROWS"
+      ],
+      "rows": 641,
+      "csv_sha256": "272f68f279cdc5287190eae7d236666a9dc99692073bb0f5d849e1ecb4441fbd",
+      "parameters_regex": "^(?!(?:type_src=f16,type_dst=bf16,type_idx=i64,|type_src=f16,type_dst=f16,type_idx=i32,|type_src=f16,type_dst=f16,type_idx=i64,|type_src=f16,type_dst=f32,type_idx=i64,|type_src=f32,type_dst=bf16,type_idx=i64,|type_src=f32,type_dst=f16,type_idx=i64,|type_src=f32,type_dst=f32,type_idx=i32,|type_src=f32,type_dst=f32,type_idx=i64,))"
+    },
+    "add": {
+      "labels": [
+        "ADD"
+      ],
+      "rows": 172,
+      "csv_sha256": "37dbd0ee632feffef2760fd1a7ef8bdc8039c1a37b5d0658f176fe1f6819e15c",
+      "parameters_regex": "^(?!type=q2_K,n=256,m=16,r=4$)"
+    },
+    "get_rows_back": {
+      "labels": [
+        "GET_ROWS_BACK"
+      ],
+      "rows": 61,
+      "csv_sha256": "ad437b10a74be101272e41d60bdfb3c2fd06718e1746eae2a35c714a30831e48",
+      "parameters_regex": "^(?!type=bf16,n=256,m=5,r=4,b=1,v=0$)"
+    },
+    "cpy": {
+      "labels": [
+        "CPY"
+      ],
+      "rows": 641,
+      "csv_sha256": "4306c608e1259ca902b8d73d3141284bf030dd8f21b2768f3a160ffe2c03a3f2",
+      "parameters_regex": "^(?!type_src=iq2_xxs,type_dst=iq2_xxs,ne_src=\\[256,2,3,4\\],permute_src=\\[0,0,0,0\\],permute_dst=\\[0,0,0,0\\],_src_transpose=0$)"
+    },
+    "attention-packed": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 2470,
+      "csv_sha256": "2dbf060f3b7a217a3f957bec6448ac2dda4fb0f0791b743be6101240e02e1c72",
+      "parameters_regex": "type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)"
+    },
+    "attention-bias": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 1144,
+      "csv_sha256": "69bd2a14c52339d819c3de66c3acac08ce6a499ad2c9f2ffb97f4082ea289912",
+      "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?=.*(?:max_bias|logit_softcap)=(?!0\\.000000,))"
+    },
+    "matrix": {
+      "labels": [
+        "MUL_MAT"
+      ],
+      "rows": 2969,
+      "csv_sha256": "27e030682f5fc6ac9a30fcc190dc5e7b64df6201929275c04ccae3bfcaee35cc",
+      "parameters_regex": "^(?!type_a=(q8_0|q4_0),type_b=f32,)"
+    },
+    "attention-small": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 524,
+      "csv_sha256": "8de1efe70fb402722fdfd6487ce7be07543ec029a8e0d7e7fd05e25f9e492067",
+      "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?=.*\\bnb=1,)"
     }
   },
   "new_verdicts": {
-    "passed": 598,
-    "refused": 9704,
+    "passed": 2085,
+    "refused": 20402,
     "failed": 0
   },
   "cumulative_verdicts": {
-    "passed": 4229,
-    "refused": 9707,
+    "passed": 5716,
+    "refused": 20405,
     "failed": 0,
-    "untested": 13819
+    "untested": 1634
   }
 }
