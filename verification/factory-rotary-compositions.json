@@ -1,0 +1,21 @@
+{
+  "provider_revision": "e1d9c8537f3babe023961227f446ab5ed7a0b7fd",
+  "profile": "release",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "ec6e9115fd2ca7529cedae0e52b3a5f0a984f0a483a88888dc2da34db84a544c",
+  "oracle_sha256": "77fa6974c9718a334418c87b3fa3ccc83546521c22780c0736965a5040806dce",
+  "source_snapshot_sha256": "2a836c88edd42625138828270879440ffecab5069af34f9aeae535abc847f910",
+  "method": "For each full factory label the pinned evaluator runs all matching graphs on separate device and CPU backends. The executable checks the complete provider source snapshot before running. Each result count must equal the imported inventory count.",
+  "passed_batches": [
+    {
+      "label": "ROPE_SET_ROWS",
+      "passed": 77,
+      "transcript_sha256": "e5902d10efc2654148463dfb25991411b5968cbec5068783dbcf1aee97f58505"
+    },
+    {
+      "label": "RMS_NORM_MUL_ROPE",
+      "passed": 281,
+      "transcript_sha256": "c573b88f867d26adfb9f9daec912dd9d9302d23ad5f181842d9ec52250bf4548"
+    }
+  ]
+}

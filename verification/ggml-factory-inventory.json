@@ -228,7 +228,9 @@
       ],
       "VT-57": [
         "ROPE",
-        "ROPE_BACK"
+        "ROPE_BACK",
+        "ROPE_SET_ROWS",
+        "RMS_NORM_MUL_ROPE"
       ],
       "VT-18": [
         "ROLL",
@@ -294,7 +296,7 @@
         "ADD_ID"
       ]
     },
-    "passed": 3273,
+    "passed": 3631,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -312,7 +314,7 @@
         "result": "not supported"
       }
     },
-    "untested": 24479,
+    "untested": 24121,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -367,6 +369,7 @@
         }
       }
     },
-    "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json"
+    "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
+    "rotary_composition_evidence": "verification/factory-rotary-compositions.json"
   }
 }
