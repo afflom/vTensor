@@ -1279,40 +1279,35 @@ mod tensor_layout {
         let (primary, directory) = match name {
             "quotient" => ("verdant_quotient_f64".to_owned(), "tensor-quotient"),
             "native" => ("vtensor_native_config".to_owned(), "native"),
-            "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" | "spatial"
-            | "norm" | "normfixtures" | "groupfixtures" | "rmsbackfixtures" | "typed"
-            | "attention" | "probes" | "rotary" | "typedfixtures" => {
-                (format!("vtensor_{name}"), name)
-            }
-            _ => panic!("unknown certified model: {name}"),
+            _ => (format!("vtensor_{name}"), name),
         };
-        let scope = if name == "layout" {
-            String::new()
+        let project = if name == "layout" {
+            "app/lexlean.toml".to_owned()
         } else {
-            format!("{name}.")
+            format!("app/{name}.lexlean.toml")
         };
-        let project = format!("app/{scope}lexlean.toml");
-        let model_lock = format!("app/{scope}lexlean.lock");
         let bundle = format!("generated/{directory}");
-        let result = super::ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
-        let check = [
-            "--project",
-            &project,
-            "--diagnostic-format",
-            "json",
-            "check",
-        ];
-        let current = ggml_oracle::tool_json(root, "lexlean", &check);
+        let result = ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
+        let current = ggml_oracle::tool_json(
+            root,
+            "lexlean",
+            &[
+                "--project",
+                &project,
+                "--diagnostic-format",
+                "json",
+                "check",
+            ],
+        );
         for key in ["source_id", "semantic_id"] {
             assert_eq!(
                 current[key], result["source"][key],
                 "stale {name} model: {key}"
             );
         }
-        let lock_digest = ggml_oracle::file_digest(root.join(model_lock));
+        let lock_digest = ggml_oracle::file_digest(root.join(project).with_extension("lock"));
         assert_eq!(result["source"]["lock_sha256"], lock_digest);
-        let request =
-            super::ggml_oracle::read_json(root.join(format!("app/{name}-production.json")));
+        let request = ggml_oracle::read_json(root.join(format!("app/{name}-production.json")));
         let wanted = request["roots"].as_array().expect("requested roots");
         let exported = result["roots"].as_array().expect("exported roots");
         assert_eq!(exported.len(), wanted.len());
@@ -1325,23 +1320,20 @@ mod tensor_layout {
             assert_eq!(output["package"]["version"], expected["package"]["version"]);
             assert_eq!(output["certification"]["status"], "kernel-checked");
         }
-        let kernel_lock = super::ggml_oracle::read_json(root.join(format!("{name}-kernel.lock")));
+        let kernel_lock = ggml_oracle::read_json(root.join(format!("{name}-kernel.lock")));
         assert_eq!(kernel_lock["source"]["result"], result["result_id"]);
         assert_eq!(
             kernel_lock["source"]["attestation"],
             result["verification"]["attestation_id"]
         );
         let output = format!("{bundle}/packages/rust-core/{primary}/src/lib.rs");
-        assert_eq!(kernel_lock["output"]["path"], output);
-        assert_eq!(
-            kernel_lock["output"]["sha256"],
-            ggml_oracle::file_digest(root.join(output))
-        );
-        let certified_files: Vec<_> = result["roots"].as_array().expect("roots").iter()
+        let certified_files: Vec<_> = exported.iter()
         .flat_map(|root| root["outputs"].as_array().expect("outputs"))
         .flat_map(|output| output["package"]["files"].as_array().expect("files").iter().filter(|file| file["path"].as_str().expect("path").ends_with(".rs")).chain(std::iter::once(&output["crate"])))
         .map(|file| serde_json::json!({"path": format!("{bundle}/{}", file["path"].as_str().expect("path")), "sha256": file["sha256"]}))
         .collect();
+        assert_eq!(kernel_lock["output"]["path"], output);
+        assert!(certified_files.contains(&kernel_lock["output"]));
         assert_eq!(
             kernel_lock["files"],
             serde_json::Value::Array(certified_files),
