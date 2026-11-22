@@ -1,0 +1,84 @@
+{
+  "authority": "https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "b7f665db061eb6e38f572cf3571455a330c3c233",
+  "provider_sha256": "82ed9ae68bd69e91dad0c69ec2b264b9a46621312b31aa7e99bd52889d9bfb1e",
+  "sdk_digest": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "53dfc67d4382c6d9b01eb04ae053ba6a9cd1c862",
+  "model": "stories15M-q4_0.gguf",
+  "model_sha256": "66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739",
+  "settings": {
+    "prompt": "hello",
+    "add_special": true,
+    "parse_special": true,
+    "continuation_token_ids": [
+      29892,
+      278
+    ],
+    "ctx": 256,
+    "batch": 32,
+    "ubatch": 32,
+    "threads": 1,
+    "gpu_layers": 0,
+    "flash_attention": "enabled"
+  },
+  "host": "Unmodified llama library, public llama_decode API. Two processes with independently loaded device plugins.",
+  "oracle": "Use llama_get_logits_ith(ctx,-1) after prefill and each fixed continuation. After each cache_k_l* or cache_v_l* GGML_OP_SET_ROWS read every row named by src[1] using ggml_backend_tensor_get. Compare the complete last-token vocabulary and all 288 FP16 words of every updated row.",
+  "loaded_backends": [
+    "load_backend: loaded CPU backend from /work/llama-build/bin/libggml-cpu.so",
+    "load_backend: loaded vTensor backend from /work/attention-target/release/deps/libvtensor_backend.so"
+  ],
+  "vtensor_placement": {
+    "assigned_layers": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "scheduled_nodes": 195,
+    "scheduler_splits": 1
+  },
+  "outputs_sha256": {
+    "cpu-cache-logits.f32": "f4caddfe5318ef079d9fe5c3a0acf83ddd7e9ebbfcd9b9ad9072b1c869773e7e",
+    "vtensor-cache-logits.f32": "a20ac2a44c9b85207c15a17d1e2260b6505e63e46d8c6a81be4f0a82024762d1",
+    "cpu-kv.tsv": "c2cc6ba7ee40a90cd6b15692e425205d58273d66afc54c8d966c54beb6c1c15e",
+    "vtensor-kv.tsv": "1528d483c191f549039c927bc803c0a59617c8c0202f197ddb7a4806d0f4491e"
+  },
+  "steps": [
+    {
+      "step": 0,
+      "logits": 32000,
+      "top_token_cpu": 29892,
+      "top_token_vtensor": 29892,
+      "max_abs_logit_difference": 5.7220458984375e-06,
+      "normalized_squared_logit_error": 9.134712271446678e-14,
+      "cache_fp16_values": 6912,
+      "cache_bit_mismatches": 4,
+      "max_abs_cache_difference": 0.00048828125
+    },
+    {
+      "step": 1,
+      "logits": 32000,
+      "top_token_cpu": 263,
+      "top_token_vtensor": 263,
+      "max_abs_logit_difference": 7.152557373046875e-06,
+      "normalized_squared_logit_error": 2.458490491663433e-14,
+      "cache_fp16_values": 3456,
+      "cache_bit_mismatches": 0,
+      "max_abs_cache_difference": 0.0
+    },
+    {
+      "step": 2,
+      "logits": 32000,
+      "top_token_cpu": 2217,
+      "top_token_vtensor": 2217,
+      "max_abs_logit_difference": 3.814697265625e-06,
+      "normalized_squared_logit_error": 6.821597704994912e-15,
+      "cache_fp16_values": 3456,
+      "cache_bit_mismatches": 0,
+      "max_abs_cache_difference": 0.0
+    }
+  ]
+}

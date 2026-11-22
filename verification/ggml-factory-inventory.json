@@ -294,13 +294,8 @@
         "ADD_ID"
       ]
     },
-    "passed": 3270,
+    "passed": 3273,
     "refused_ordinals": {
-      "19242": {
-        "oracle": "make_test_cases_eval / test_case::eval",
-        "test_build": "VT-55 with Verdant 97528328",
-        "result": "not supported"
-      },
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
         "test_build": "24af3523a59853c20de26c673cf3ef259ae89389",
@@ -317,7 +312,7 @@
         "result": "not supported"
       }
     },
-    "untested": 24481,
+    "untested": 24479,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -349,6 +344,27 @@
         "cases": 126,
         "transcript_sha256": "cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595",
         "test": "scalar_set_rows_vt_55"
+      },
+      "VT-58": {
+        "label": "FLASH_ATTN_EXT",
+        "ordinals": [
+          19242,
+          19314,
+          19394
+        ],
+        "cases": 3,
+        "tests": [
+          "extended_attention_vt_58",
+          "small_attention_vt_58"
+        ],
+        "provider_revision": "b7f665db061eb6e38f572cf3571455a330c3c233",
+        "previous_refusals": {
+          "19242": {
+            "oracle": "make_test_cases_eval / test_case::eval",
+            "test_build": "VT-55 with Verdant 97528328",
+            "result": "not supported"
+          }
+        }
       }
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json"

@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **3,270 passed**, **4 refused** and **24,481 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **3,273 passed**, **3 refused** and **24,479 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -28,12 +28,13 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Certify the GGML rotary address plan for normal, NEOX, multimodal, vision and interleaved layouts. Connect it to Verdant execution under VT-57 below. [Prism export](https://github.com/afflom/vTensor/blob/7774ee045cf44352cdb85531ef752af1fde6394e/rotary-kernel.lock)
 - [x] Run all 510 ROPE and 424 ROPE_BACK cases on the plugin. Confirm llama.cpp admits all 12 stories15M rotary nodes. [VT-57 evidence](VTENSOR-VERIFICATION.md#rotary-graph-execution)
 - [x] Verify the Verdant streaming weighted mean against 5,940 coordinates from the imported CPU attention evaluator. [Upstream patch](https://github.com/afflom/verdant-engine/pull/21)
-- [ ] Admit the six remaining FLASH_ATTN_EXT nodes with F32 queries and F16 keys, values and mask. Execute prefill and compare the first cache update. [Registered upstream evaluator and first refusal](https://github.com/afflom/vTensor/commit/24af352) [Observed operands](verification/llama-stories15m-reserve-vt56-operands.tsv)
+- [x] Execute all six stories15M FLASH_ATTN_EXT nodes on vTensor. Compare the prefill and both decode cache updates across six layers. [Host, logits and cache evidence](verification/llama-stories15m-vt58.json)
+- [ ] Implement the CPU registry threadpool lifecycle in vTensor. Run the unmodified llama-eval-callback executable through threadpool creation, inference and teardown. [Imported host call](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/common/common.cpp#L1813)
 - [x] Pass all 252 GET_ROWS factory cases on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [ ] Complete embedding, projection and KV-cache operations. Close the remaining 641 SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, MUL_MAT precision modes, MUL_MAT_ID and OUT_PROD across their legal formats. Reuse the verified decoders and F32 matrix path.
-- [ ] Complete rotary cache updates, fused normalization/rotation, masked softmax and attention. Run the 77 ROPE_SET_ROWS, 281 RMS_NORM_MUL_ROPE and 5,775 FLASH_ATTN_EXT factory cases in their assigned batches.
+- [ ] Complete rotary cache updates, fused normalization/rotation, masked softmax and attention. Run the 77 ROPE_SET_ROWS, 281 RMS_NORM_MUL_ROPE and remaining 5,772 FLASH_ATTN_EXT factory cases in their assigned batches.
 - [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, all GLU variants, and their composed graphs. Close the remaining 173 standalone ADD cases. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
-- [ ] Run a checksum-pinned small GGUF in floating-point and quantized form. Compare prompt prefill, successive decode logits and KV-cache reuse to the separate upstream CPU run. Record device assignment for every compute node and require zero numerical fallback.
+- [ ] Run a checksum-pinned floating-point GGUF. Repeat the quantized prefill, successive decode and KV-cache comparison against the separate upstream CPU run. Record device assignment for every compute node and require zero numerical fallback.
 
 ## Finish the arbitrary-provider contract
 

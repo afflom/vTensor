@@ -4622,3 +4622,28 @@ the imported reference within 0.000001. Reversing the rescaling branch
 produced 0 for GGML's −0.75. The Verdant release gate still reports fidelity
 failures in the earlier logarithm and rotary stack.
 [Upstream evidence](https://github.com/afflom/verdant-engine/pull/21)
+
+## Dense attention and stories15M inference
+
+VT-58 admits dense F32 queries with F16 or F32 key/value storage. Prism checks
+descriptors and selects row offsets, including the optional mask and sink.
+Verdant converts storage, computes each matrix product, scales and biases the
+score, and accumulates the weighted value row. The two Prism roots share one
+export. [Prism lock](attention-kernel.lock) · [Verdant numerical oracle](https://github.com/afflom/verdant-engine/pull/21)
+
+The release plugin passed the imported GGML factory at ordinals 19242, 19314 and
+19394. Replacing the sink score with negative infinity in the provider made the
+two-case test fail on its F16 sink graph. GGML measured 0.256118654 against
+its 0.0005 limit. Restoring the real score passed the same test. Run
+`cargo test --release --locked -p vtensor-backend --test contract attention_vt_58`
+inside the locked SDK. [Factory inventory](verification/ggml-factory-inventory.json)
+
+The pinned llama library decoded the quantized stories15M prompt and two fixed
+continuation tokens in separate CPU-only and vTensor-only processes. The graph
+reserved 195 nodes in one split. All 96,000 compared logits were finite and all
+three top-token IDs matched. The scheduler callback read every written K and V
+row across six layers. Four of the 6,912 prefill FP16 words differed by at most
+0.00048828125. All 6,912 decode words matched bit for bit. The separate unmodified
+`llama-eval-callback` executable reached its CPU registry threadpool lookup and
+exited with SIGSEGV. Both threadpool entry points must be supplied for that
+consumer. [Inputs, placement, hashes and per-step results](verification/llama-stories15m-vt58.json)

@@ -12,7 +12,7 @@ full GGML backend support. The imported source and oracle are pinned in
 [`vendor/llama.cpp-oracle`](vendor/llama.cpp-oracle/README.md).
 
 Cargo fetches the certified Verdant tensor primitives by the immutable commit in
-[Verdant Engine PR #20](https://github.com/afflom/verdant-engine/pull/20), which builds on PRs #12 through #19.
+[Verdant Engine PR #21](https://github.com/afflom/verdant-engine/pull/21), which builds on PRs #12 through #20.
 The [patch record](model/verdant-development.json) identifies the dependency
 until a published Verdant release includes these APIs.
 
@@ -100,6 +100,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-55` | build | Prism validates scatter indices and plans destination writes. Verdant converts each scalar. All 126 selected SET_ROWS cases pass the imported CPU evaluator. |
 | `VT-56` | build | Prism selects the two SwiGLU operands and their row addresses. Verdant evaluates the gated product. All 36 imported factory cases pass. |
 | `VT-57` | build | Passes all 510 GGML ROPE and 424 ROPE_BACK factory cases using Verdant rotations. |
+| `VT-58` | build | Executes dense floating-point attention through Verdant. The quantized stories15M prefill and two decode steps match the reference top token and have maximum absolute logit error below 0.000008. [Consumer evidence](verification/llama-stories15m-vt58.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
