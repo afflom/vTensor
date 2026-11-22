@@ -166,6 +166,12 @@ fn scheduled_compute_flags_vt_52() {
     native_backend_oracle::verify(&root(), "scheduled-flags", 3);
 }
 
+/// `VT-53`: The upstream factory evaluates all Q8_0 by F32 matrix cases.
+#[test]
+fn symmetric_matrix_graphs_vt_53() {
+    native_backend_oracle::verify(&root(), "upstream-MUL_MAT_Q8_0_F32", 122);
+}
+
 /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
 #[test]
 fn matrix_graphs_vt_12() {
@@ -2242,8 +2248,13 @@ static bool vtensor_use_reference(ggml_backend_t reference) {
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
+    const bool q8_matrix = !std::strcmp(op, "MUL_MAT_Q8_0_F32");
     for(auto &test:make_test_cases_eval()) {
-      const auto status=test->eval(backend,reference,op,&observed);
+      if (q8_matrix) {
+        const auto *matrix = dynamic_cast<const test_mul_mat *>(test.get());
+        if (!matrix || matrix->type_a != GGML_TYPE_Q8_0 || matrix->type_b != GGML_TYPE_F32) continue;
+      }
+      const auto status=test->eval(backend,reference,q8_matrix ? "MUL_MAT" : op,&observed);
       if(status==test_status_t::SKIPPED) continue;
       if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
       ++cases;

@@ -382,3 +382,9 @@ id = "VT-52"
 level = "build"
 suite = "native-backend"
 statement = "Prism selects graph nodes by the imported GGML compute flag and vTensor preserves inactive results across scheduled graph reuse"
+
+[[id]]
+id = "VT-53"
+level = "build"
+suite = "matrix-graphs"
+statement = "Prism admits Q8_0 by F32 GGML matrix graphs and Verdant executes their block products against the imported GGML CPU"

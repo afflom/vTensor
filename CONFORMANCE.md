@@ -136,6 +136,7 @@ model does not sanction.
 | ID | Level | Statement |
 | --- | --- | --- |
 | `VT-12` | `build` | GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference |
+| `VT-53` | `build` | Prism admits Q8_0 by F32 GGML matrix graphs and Verdant executes their block products against the imported GGML CPU |
 
 ## native-backend
 
