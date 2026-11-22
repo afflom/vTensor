@@ -220,6 +220,13 @@ fn elementwise_graphs_vt_13() {
     native_backend_oracle::verify(&root(), "elementwise", 120);
 }
 
+/// `VT-56`: The imported CPU checks all split, combined and swapped SWIGLU rows.
+#[test]
+fn swiglu_rows_vt_56() {
+    tensor_layout::certified_current_model(&root(), "typed");
+    native_backend_oracle::verify(&root(), "upstream-SWIGLU", 36);
+}
+
 /// `VT-14`: Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers
 #[test]
 fn empty_graphs_vt_14() {

@@ -400,3 +400,9 @@ id = "VT-55"
 level = "build"
 suite = "row-graphs"
 statement = "Prism plans SET_ROWS for F32 and F16 sources with F32 F16 or BF16 destinations and Verdant executes indexed writes against the imported GGML CPU"
+
+[[id]]
+id = "VT-56"
+level = "build"
+suite = "elementwise-graphs"
+statement = "Prism plans combined swapped and split GGML SWIGLU rows and Verdant evaluates the gated values across F32 F16 and BF16 against the imported GGML CPU"

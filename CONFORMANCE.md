@@ -65,6 +65,7 @@ model does not sanction.
 | ID | Level | Statement |
 | --- | --- | --- |
 | `VT-13` | `build` | F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference |
+| `VT-56` | `build` | Prism plans combined swapped and split GGML SWIGLU rows and Verdant evaluates the gated values across F32 F16 and BF16 against the imported GGML CPU |
 
 ## empty-graphs
 
