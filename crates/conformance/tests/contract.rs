@@ -2056,7 +2056,7 @@ struct vtensor_observation : printer {
   void print_test_result(const test_result &result) override {
     ++records;
     if(!result.supported || !result.passed || result.test_mode!="test") {
-      bad=true;fprintf(stderr,"imported case rejected: %s(%s): %s\n",result.op_name.c_str(),result.op_params.c_str(),result.error_message.c_str());
+      bad=true;fprintf(stderr,"imported case rejected: %s(%s): %s [backend: %s]\n",result.op_name.c_str(),result.op_params.c_str(),result.error_message.c_str(),result.backend_name.c_str());
     }
   }
 };
