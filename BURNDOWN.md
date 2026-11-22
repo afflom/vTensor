@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **8,294 passed**, **18,948 refused** and **513 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **8,507 passed**, **18,781 refused** and **467 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -37,11 +37,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, the 1,932 refused standalone MUL_MAT cases, precision modes, MUL_MAT_ID and OUT_PROD. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
-- [ ] Finish the 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 255 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
-- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 2,137 pass, 3,125 are refused and 513 still need an evaluator verdict.
+- [ ] Finish the 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 422 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
+- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 2,350 pass, 2,958 are refused and 467 still need an evaluator verdict.
 - [x] Execute all 39 LOG, SIN, COS and EXP cases through Verdant, including the upstream storage and view variants. [Factory verdicts](verification/factory-elementary-vt60.json)
 - [x] Execute the 122 sigmoid and SiLU standalone, multiplied and added graphs on the pinned Verdant primitives. [Factory verdicts](verification/factory-logistic-vt61.json)
-- [ ] Verify binary32 hyperbolic tangent in Verdant, pin the patch, and execute the 12 TANH graphs, the composed SOFTCAP graph and 241 zero-bias F16 attention graphs with soft cap 10. [Verdant regression](https://github.com/afflom/verdant-engine/commit/1e23361) · [GGML regression](https://github.com/afflom/vTensor/commit/2fe2793)
+- [x] Supply binary32 hyperbolic tangent in Verdant. All 128,870 GGML scalar comparisons pass. [Verdant PR #25](https://github.com/afflom/verdant-engine/pull/25)
+- [ ] Execute the 12 TANH graphs, the composed SOFTCAP graph and 241 zero-bias F16 attention graphs with soft cap 10 on the immutable patch. [Unary regression](https://github.com/afflom/vTensor/commit/2fe2793) · [Attention regression](https://github.com/afflom/vTensor/commit/7f9391feb3e986b0d61e1ed2fc69b70cb1eeceb1)
 - [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, all GLU variants, and their composed graphs. Close the 14 refused standalone ADD cases. The other 159 pass. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
