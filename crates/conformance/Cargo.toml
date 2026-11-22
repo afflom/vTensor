@@ -29,6 +29,7 @@ vtensor_native_predicates = { version = "0.1.0", path = "../../generated/native/
 vtensor_native_memory = { version = "0.1.0", path = "../../generated/native/packages/rust-core/vtensor_native_memory" }
 
 [dev-dependencies]
+vtensor_probes = { version = "=0.1.0", path = "../../generated/probes/packages/rust-core/vtensor_probes" }
 vtensor_spatial = { version = "0.1.0", path = "../../generated/spatial/packages/rust-core/vtensor_spatial" }
 vtensor_arithmetic = { version = "0.1.0", path = "../../generated/arithmetic/packages/rust-core/vtensor_arithmetic" }
 vtensor_fixtures = { version = "0.1.0", path = "../../generated/fixtures/packages/rust-core/vtensor_fixtures" }

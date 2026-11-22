@@ -226,17 +226,95 @@
       "VT-57": [
         "ROPE",
         "ROPE_BACK"
+      ],
+      "VT-18": [
+        "ROLL",
+        "PAD",
+        "PAD_REFLECT_1D"
+      ],
+      "VT-20": [
+        "REPEAT_BACK"
+      ],
+      "VT-19": [
+        "ACC",
+        "SET"
+      ],
+      "VT-27": [
+        "ABS",
+        "SGN",
+        "NEG",
+        "STEP",
+        "RELU",
+        "HARDSIGMOID",
+        "HARDSWISH",
+        "SQR",
+        "SQRT",
+        "CEIL",
+        "FLOOR",
+        "ROUND",
+        "TRUNC"
+      ],
+      "VT-29": [
+        "SUM",
+        "SUM_ROWS",
+        "MEAN"
+      ],
+      "VT-30": [
+        "ARGMAX",
+        "COUNT_EQUAL"
+      ],
+      "VT-26": [
+        "CLAMP",
+        "SCALE",
+        "LEAKY_RELU"
+      ],
+      "VT-15": [
+        "CONT",
+        "DUP"
+      ],
+      "VT-16": [
+        "REPEAT"
+      ],
+      "VT-17": [
+        "CONCAT"
+      ],
+      "VT-23": [
+        "FILL"
+      ],
+      "VT-32": [
+        "GET_ROWS"
+      ],
+      "VT-28": [
+        "CUMSUM"
+      ],
+      "VT-34": [
+        "ADD_ID"
       ]
     },
-    "passed": 1795,
+    "passed": 2843,
     "refused_ordinals": {
       "19242": {
         "oracle": "make_test_cases_eval / test_case::eval",
         "test_build": "VT-55 with Verdant 97528328",
         "result": "not supported"
+      },
+      "1069": {
+        "oracle": "make_test_cases_eval / test_case::eval",
+        "test_build": "24af3523a59853c20de26c673cf3ef259ae89389",
+        "result": "not supported"
+      },
+      "809": {
+        "oracle": "make_test_cases_eval / test_case::eval",
+        "test_build": "24af3523a59853c20de26c673cf3ef259ae89389",
+        "result": "not supported"
+      },
+      "8368": {
+        "oracle": "make_test_cases_eval / test_case::eval",
+        "test_build": "24af3523a59853c20de26c673cf3ef259ae89389",
+        "result": "not supported"
       }
     },
-    "untested": 25959,
+    "untested": 24908,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -269,6 +347,7 @@
         "transcript_sha256": "cd0fe815fc5476210b0b483f1b6c6ea0f2fe1b0be16fe8eb16125b76f3af5595",
         "test": "scalar_set_rows_vt_55"
       }
-    }
+    },
+    "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json"
   }
 }

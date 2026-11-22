@@ -207,24 +207,6 @@ fn contract_tc_01() {
 /// `VT-10`: Prism tensor placement matches the imported GGML linear allocator for aligned buffers and refuses invalid alignment, exhausted capacity, and arithmetic overflow
 #[test]
 fn buffer_allocation_vt_10() {
-    tensor_layout::certified_current_model(&root(), "layout");
-    let mut input = String::new();
-    let mut cases = Vec::new();
-    use std::fmt::Write;
-    for alignment in [1_u64, 2, 4, 8, 16, 64, 256, 1024] {
-        let capacities = [0, 1, alignment - 1, alignment, alignment + 1, alignment * 4];
-        let mut sizes = capacities;
-        *sizes.last_mut().unwrap() = alignment * 2 + 1;
-        for [offset, capacity, size] in
-            ggml_oracle::product([&[0, alignment, alignment * 3], &capacities, &sizes])
-        {
-            writeln!(input, "{capacity} {offset} {size} {alignment}").unwrap();
-            cases.push((capacity, offset, size, alignment));
-        }
-    }
-    assert_eq!(cases.len(), 864);
-    let reference = ggml_oracle::boundary("allocation", &input);
-    assert_eq!(reference.len(), cases.len());
     fn outcome(decision: vtensor_allocation::Adt0) -> [u64; 4] {
         match decision {
             vtensor_allocation::Adt0::C2 => [1, 0, 0, 0],
@@ -232,13 +214,14 @@ fn buffer_allocation_vt_10() {
             _ => panic!("valid alignment and offset refused"),
         }
     }
-    for (index, ((capacity, offset, size, alignment), expected)) in
-        cases.into_iter().zip(reference).enumerate()
-    {
+    let rows = boundary_rows("allocation", 10, 864, |probe| match probe {
+        vtensor_probes::Adt0::C2(c, o, s, a) => [c, o, s, a],
+        _ => panic!("missing allocation case"),
+    });
+    for ([capacity, offset, size, alignment], expected) in rows {
         assert_eq!(
             outcome(vtensor_allocation::run(capacity, offset, size, alignment).unwrap()),
-            expected,
-            "placement {index}: capacity={capacity}, offset={offset}, size={size}, alignment={alignment}"
+            expected
         );
     }
     for alignment in [0, 3, 6, 63, u64::MAX] {
@@ -329,13 +312,7 @@ fn fixture_generation_vt_35() {
 #[test]
 fn arithmetic_fixture_generation_vt_36() {
     native_backend_oracle::fixture_input(1);
-    fixture_queries(&[
-        (1, 120, 0, 0, None),
-        (1, 0, 0, 24, None),
-        (2, 0, 2, 0, None),
-        (3, 96, 1, 0, None),
-        (4, 0, 0, 0, None),
-    ]);
+    fixture_queries(36, 5);
 }
 
 /// `VT-40`: Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
@@ -377,73 +354,71 @@ fn native_fixture_baselines_vt_40() {
     }
 }
 
-fn fixture_queries(cases: &[(u64, u64, u64, u64, Option<u64>)]) {
-    for &(query, case, source, item, expected) in cases {
-        assert_eq!(
-            vtensor_arithmetic::run(query, case, source, item).unwrap(),
-            expected
-        );
+fn probes(suite: u64, count: u64) -> impl Iterator<Item = vtensor_probes::Adt0> {
+    tensor_layout::certified_current_model(&root(), "probes");
+    assert!(matches!(
+        vtensor_probes::run(suite, count).unwrap(),
+        vtensor_probes::Adt0::C0
+    ));
+    (0..count).map(move |index| vtensor_probes::run(suite, index).unwrap())
+}
+
+fn fixture_queries(suite: u64, count: u64) {
+    let spatial = suite == 47;
+    tensor_layout::certified_current_model(&root(), if spatial { "spatial" } else { "arithmetic" });
+    for probe in probes(suite, count) {
+        let vtensor_probes::Adt0::C1(query, case, source, item, expected) = probe else {
+            panic!("missing fixture probe");
+        };
+        let actual = if spatial {
+            vtensor_spatial::run(query, case, source, item).unwrap()
+        } else {
+            vtensor_arithmetic::run(query, case, source, item).unwrap()
+        };
+        assert_eq!(actual, expected);
     }
-    tensor_layout::certified_current_model(&root(), "arithmetic");
+}
+
+fn boundary_rows<const N: usize, const M: usize>(
+    name: &str,
+    suite: u64,
+    count: u64,
+    unpack: impl Fn(vtensor_probes::Adt0) -> [u64; N],
+) -> impl Iterator<Item = ([u64; N], [u64; M])> {
+    use std::fmt::Write;
+    tensor_layout::certified_current_model(&root(), "layout");
+    let rows: Vec<_> = probes(suite, count).map(unpack).collect();
+    let mut input = String::new();
+    for row in &rows {
+        writeln!(input, "{}", row.map(|word| word.to_string()).join(" ")).unwrap();
+    }
+    let reference = ggml_oracle::boundary(name, &input);
+    assert_eq!(rows.len(), reference.len());
+    rows.into_iter().zip(reference)
 }
 
 /// `VT-41`: Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results
 #[test]
 fn copy_fixture_generation_vt_41() {
-    fixture_queries(&[
-        (5, 0, 0, 0, Some(3456)),
-        (5, 0, 0, 5, None),
-        (5, 1, 0, 0, None),
-        (6, 3456, 0, 0, None),
-        (6, 0, 0, 9, None),
-        (7, 0, 2, 0, None),
-        (7, 0, 0, 10, None),
-        (8, 0, 0, 256, None),
-        (9, 215, 8, 0, None),
-        (10, 0, 0, 0, None),
-        (u64::MAX, u64::MAX, u64::MAX, u64::MAX, None),
-    ]);
+    fixture_queries(41, 11);
 }
 
 /// `VT-42`: Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results
 #[test]
 fn repeat_fixture_generation_vt_42() {
-    fixture_queries(&[
-        (11, 0, 0, 0, Some(160)),
-        (12, 160, 0, 0, None),
-        (13, 0, 4, 0, None),
-        (14, 0, 0, 256, None),
-        (16, 0, 0, 0, None),
-    ]);
+    fixture_queries(42, 5);
 }
 
 /// `VT-43`: Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results
 #[test]
 fn concat_fixture_generation_vt_43() {
-    fixture_queries(&[
-        (17, 0, 0, 0, Some(10368)),
-        (18, 10368, 0, 0, None),
-        (19, 0, 4, 0, None),
-        (20, 0, 2, 0, None),
-        (23, 0, 0, 0, None),
-    ]);
+    fixture_queries(43, 5);
 }
 
 /// `VT-44`: Prism generates FILL and CAST fixture enumeration typed layouts constants and initial bytes while preserving all 17280 frozen cases source release states and independent GGML CPU expected results
 #[test]
 fn typed_fixture_generation_vt_44() {
-    fixture_queries(&[
-        (24, 0, 0, 0, Some(15360)),
-        (31, 0, 0, 0, Some(1920)),
-        (25, 15360, 0, 0, None),
-        (32, 1920, 0, 0, None),
-        (26, 0, 2, 0, None),
-        (33, 0, 2, 0, None),
-        (27, 0, 1, 0, None),
-        (34, 0, 0, 192, None),
-        (30, 0, 0, 0, None),
-        (37, 0, 0, 0, None),
-    ]);
+    fixture_queries(44, 10);
 }
 
 /// `VT-45`: Verdant supplies certified F64 division and unsigned count to F64 conversion for normalization and preserves the imported GGML accumulator division before narrowing regression
@@ -469,18 +444,7 @@ fn normalization_arithmetic_vt_45() {
 /// `VT-47`: Prism supplies spatial fixture parameters and rejects undefined recipe queries.
 #[test]
 fn fixture_generation_vt_47() {
-    for (mode, pattern, extent, item, expected) in [
-        (3, 21, 3, 0, Some(4294967294)),
-        (0, 22, 3, 0, None),
-        (0, 0, 2147483648, 0, None),
-        (4, 0, 0, 0, None),
-    ] {
-        assert_eq!(
-            vtensor_spatial::run(mode, pattern, extent, item).unwrap(),
-            expected
-        );
-    }
-    tensor_layout::certified_current_model(&root(), "spatial");
+    fixture_queries(47, 4);
 }
 
 mod ggml_oracle {
@@ -1245,7 +1209,7 @@ mod tensor_layout {
             "native" => ("vtensor_native_config".to_owned(), "native"),
             "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" | "spatial"
             | "norm" | "normfixtures" | "groupfixtures" | "rmsbackfixtures" | "typed"
-            | "rotary" | "typedfixtures" => (format!("vtensor_{name}"), name),
+            | "probes" | "rotary" | "typedfixtures" => (format!("vtensor_{name}"), name),
             _ => panic!("unknown certified model: {name}"),
         };
         let scope = if name == "layout" {
@@ -1535,22 +1499,6 @@ mod verdant_api {
 /// `VT-09`: Prism transfer admission matches upstream GGML set and get guards and rejects overflowing ranges
 #[test]
 fn buffer_transfer_vt_09() {
-    tensor_layout::certified_current_model(&root(), "layout");
-    let mut input = String::new();
-    let mut cases = Vec::new();
-    use std::fmt::Write;
-    for [mode, buffer, data, capacity] in
-        ggml_oracle::product([&[0, 1, 2, 3], &[0, 1], &[0, 1], &[0, 1, 8, 64]])
-    {
-        let bounds = [0, 1, capacity, capacity + 1];
-        for [offset, size] in ggml_oracle::product([&bounds, &bounds]) {
-            writeln!(input, "{mode} {buffer} {data} {capacity} {offset} {size}").unwrap();
-            cases.push((buffer != 0, data != 0, capacity, offset, size));
-        }
-    }
-    assert_eq!(cases.len(), 1024);
-    let reference = ggml_oracle::boundary::<1>("transfer", &input);
-    assert_eq!(reference.len(), cases.len());
     fn outcome(decision: vtensor_transfer::Adt0) -> u64 {
         match decision {
             vtensor_transfer::Adt0::C0 => 10,
@@ -1560,13 +1508,22 @@ fn buffer_transfer_vt_09() {
             vtensor_transfer::Adt0::C4 => 1,
         }
     }
-    for (index, ((buffer, data, capacity, offset, size), [expected])) in
-        cases.into_iter().zip(reference).enumerate()
-    {
+    let rows = boundary_rows("transfer", 9, 1024, |probe| match probe {
+        vtensor_probes::Adt0::C3(mode, buffer, data, capacity, offset, size) => {
+            [mode, buffer, data, capacity, offset, size]
+        }
+        _ => panic!("missing transfer case"),
+    });
+    for ([_, buffer, data, capacity, offset, size], [expected]) in rows {
         assert_eq!(
-            outcome(vtensor_transfer::run(buffer, data, capacity, offset, size)),
-            expected,
-            "transfer {index}"
+            outcome(vtensor_transfer::run(
+                buffer != 0,
+                data != 0,
+                capacity,
+                offset,
+                size
+            )),
+            expected
         );
     }
     // The native unsigned-add assertion can wrap for invalid requests. The

@@ -1,0 +1,105 @@
+\begin{lexlean}{FixtureProbes}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number}
+\begin{semanticmodule}
+inductive{
+  name: Probe,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: end, fields: []},
+    {name: query, fields: [Nat, Nat, Nat, Nat, (Option Nat)]},
+    {name: place, fields: [Nat, Nat, Nat, Nat]},
+    {name: transfer, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
+  ]
+}
+
+definition{
+  name: arithmeticProbes,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index =? 0) then (ctor Probe.query 1 120 0 0 (ctor Option.none [Nat])) else (if (index =? 1) then (ctor Probe.query 1 0 0 24 (ctor Option.none [Nat])) else (if (index =? 2) then (ctor Probe.query 2 0 2 0 (ctor Option.none [Nat])) else (if (index =? 3) then (ctor Probe.query 3 96 1 0 (ctor Option.none [Nat])) else (if (index =? 4) then (ctor Probe.query 4 0 0 0 (ctor Option.none [Nat])) else (ctor Probe.end)))))),
+  executable: true
+}
+
+definition{
+  name: copyProbes,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index =? 0) then (ctor Probe.query 5 0 0 0 (ctor Option.some [Nat] 3456)) else (if (index =? 1) then (ctor Probe.query 5 0 0 5 (ctor Option.none [Nat])) else (if (index =? 2) then (ctor Probe.query 5 1 0 0 (ctor Option.none [Nat])) else (if (index =? 3) then (ctor Probe.query 6 3456 0 0 (ctor Option.none [Nat])) else (if (index =? 4) then (ctor Probe.query 6 0 0 9 (ctor Option.none [Nat])) else (if (index =? 5) then (ctor Probe.query 7 0 2 0 (ctor Option.none [Nat])) else (if (index =? 6) then (ctor Probe.query 7 0 0 10 (ctor Option.none [Nat])) else (if (index =? 7) then (ctor Probe.query 8 0 0 256 (ctor Option.none [Nat])) else (if (index =? 8) then (ctor Probe.query 9 215 8 0 (ctor Option.none [Nat])) else (if (index =? 9) then (ctor Probe.query 10 0 0 0 (ctor Option.none [Nat])) else (if (index =? 10) then (ctor Probe.query 18446744073709551615 18446744073709551615 18446744073709551615 18446744073709551615 (ctor Option.none [Nat])) else (ctor Probe.end)))))))))))),
+  executable: true
+}
+
+definition{
+  name: repeatProbes,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index =? 0) then (ctor Probe.query 11 0 0 0 (ctor Option.some [Nat] 160)) else (if (index =? 1) then (ctor Probe.query 12 160 0 0 (ctor Option.none [Nat])) else (if (index =? 2) then (ctor Probe.query 13 0 4 0 (ctor Option.none [Nat])) else (if (index =? 3) then (ctor Probe.query 14 0 0 256 (ctor Option.none [Nat])) else (if (index =? 4) then (ctor Probe.query 16 0 0 0 (ctor Option.none [Nat])) else (ctor Probe.end)))))),
+  executable: true
+}
+
+definition{
+  name: concatProbes,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index =? 0) then (ctor Probe.query 17 0 0 0 (ctor Option.some [Nat] 10368)) else (if (index =? 1) then (ctor Probe.query 18 10368 0 0 (ctor Option.none [Nat])) else (if (index =? 2) then (ctor Probe.query 19 0 4 0 (ctor Option.none [Nat])) else (if (index =? 3) then (ctor Probe.query 20 0 2 0 (ctor Option.none [Nat])) else (if (index =? 4) then (ctor Probe.query 23 0 0 0 (ctor Option.none [Nat])) else (ctor Probe.end)))))),
+  executable: true
+}
+
+definition{
+  name: typedProbes,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index =? 0) then (ctor Probe.query 24 0 0 0 (ctor Option.some [Nat] 15360)) else (if (index =? 1) then (ctor Probe.query 31 0 0 0 (ctor Option.some [Nat] 1920)) else (if (index =? 2) then (ctor Probe.query 25 15360 0 0 (ctor Option.none [Nat])) else (if (index =? 3) then (ctor Probe.query 32 1920 0 0 (ctor Option.none [Nat])) else (if (index =? 4) then (ctor Probe.query 26 0 2 0 (ctor Option.none [Nat])) else (if (index =? 5) then (ctor Probe.query 33 0 2 0 (ctor Option.none [Nat])) else (if (index =? 6) then (ctor Probe.query 27 0 1 0 (ctor Option.none [Nat])) else (if (index =? 7) then (ctor Probe.query 34 0 0 192 (ctor Option.none [Nat])) else (if (index =? 8) then (ctor Probe.query 30 0 0 0 (ctor Option.none [Nat])) else (if (index =? 9) then (ctor Probe.query 37 0 0 0 (ctor Option.none [Nat])) else (ctor Probe.end))))))))))),
+  executable: true
+}
+
+definition{
+  name: spatialProbes,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index =? 0) then (ctor Probe.query 3 21 3 0 (ctor Option.some [Nat] 4294967294)) else (if (index =? 1) then (ctor Probe.query 0 22 3 0 (ctor Option.none [Nat])) else (if (index =? 2) then (ctor Probe.query 0 0 2147483648 0 (ctor Option.none [Nat])) else (if (index =? 3) then (ctor Probe.query 4 0 0 0 (ctor Option.none [Nat])) else (ctor Probe.end))))),
+  executable: true
+}
+
+definition{
+  name: allocation,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index <? 864) then (let align : Nat := (if ((prim quotient index 108 0 : Nat) =? 0) then 1 else (if ((prim quotient index 108 0 : Nat) =? 1) then 2 else (if ((prim quotient index 108 0 : Nat) =? 2) then 4 else (if ((prim quotient index 108 0 : Nat) =? 3) then 8 else (if ((prim quotient index 108 0 : Nat) =? 4) then 16 else (if ((prim quotient index 108 0 : Nat) =? 5) then 64 else (if ((prim quotient index 108 0 : Nat) =? 6) then 256 else (if ((prim quotient index 108 0 : Nat) =? 7) then 1024 else 1)))))))); (let at : Nat := (if ((prim remainder (prim quotient index 36 0 : Nat) 3 0 : Nat) =? 0) then 0 else (if ((prim remainder (prim quotient index 36 0 : Nat) 3 0 : Nat) =? 1) then align else (if ((prim remainder (prim quotient index 36 0 : Nat) 3 0 : Nat) =? 2) then (prim multiply align 3 : Nat) else 0))); (let capacity : Nat := (if ((prim remainder (prim quotient index 6 0 : Nat) 6 0 : Nat) =? 0) then 0 else (if ((prim remainder (prim quotient index 6 0 : Nat) 6 0 : Nat) =? 1) then 1 else (if ((prim remainder (prim quotient index 6 0 : Nat) 6 0 : Nat) =? 2) then (prim subtract align 1 : Nat) else (if ((prim remainder (prim quotient index 6 0 : Nat) 6 0 : Nat) =? 3) then align else (if ((prim remainder (prim quotient index 6 0 : Nat) 6 0 : Nat) =? 4) then (align + 1) else (if ((prim remainder (prim quotient index 6 0 : Nat) 6 0 : Nat) =? 5) then (prim multiply align 4 : Nat) else 0)))))); (let size : Nat := (if ((prim remainder index 6 0 : Nat) =? 0) then 0 else (if ((prim remainder index 6 0 : Nat) =? 1) then 1 else (if ((prim remainder index 6 0 : Nat) =? 2) then (prim subtract align 1 : Nat) else (if ((prim remainder index 6 0 : Nat) =? 3) then align else (if ((prim remainder index 6 0 : Nat) =? 4) then (align + 1) else (if ((prim remainder index 6 0 : Nat) =? 5) then ((prim multiply align 2 : Nat) + 1) else 0)))))); (ctor Probe.place capacity at size align))))) else (ctor Probe.end)),
+  executable: true
+}
+
+definition{
+  name: transfers,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index <? 1024) then (let capacity : Nat := (if ((prim remainder (prim quotient index 16 0 : Nat) 4 0 : Nat) =? 0) then 0 else (if ((prim remainder (prim quotient index 16 0 : Nat) 4 0 : Nat) =? 1) then 1 else (if ((prim remainder (prim quotient index 16 0 : Nat) 4 0 : Nat) =? 2) then 8 else (if ((prim remainder (prim quotient index 16 0 : Nat) 4 0 : Nat) =? 3) then 64 else 0)))); (let at : Nat := (if ((prim remainder (prim quotient index 4 0 : Nat) 4 0 : Nat) =? 0) then 0 else (if ((prim remainder (prim quotient index 4 0 : Nat) 4 0 : Nat) =? 1) then 1 else (if ((prim remainder (prim quotient index 4 0 : Nat) 4 0 : Nat) =? 2) then capacity else (if ((prim remainder (prim quotient index 4 0 : Nat) 4 0 : Nat) =? 3) then (capacity + 1) else 0)))); (let size : Nat := (if ((prim remainder index 4 0 : Nat) =? 0) then 0 else (if ((prim remainder index 4 0 : Nat) =? 1) then 1 else (if ((prim remainder index 4 0 : Nat) =? 2) then capacity else (if ((prim remainder index 4 0 : Nat) =? 3) then (capacity + 1) else 0)))); (ctor Probe.transfer (prim quotient index 256 0 : Nat) (prim remainder (prim quotient index 128 0 : Nat) 2 0 : Nat) (prim remainder (prim quotient index 64 0 : Nat) 2 0 : Nat) capacity at size)))) else (ctor Probe.end)),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [suite : Nat, index : Nat],
+  result: Probe,
+  body: (if (suite =? 10) then (allocation index) else (if (suite =? 9) then (transfers index) else (if (suite =? 47) then (spatialProbes index) else (if (suite =? 44) then (typedProbes index) else (if (suite =? 43) then (concatProbes index) else (if (suite =? 42) then (repeatProbes index) else (if (suite =? 41) then (copyProbes index) else (if (suite =? 36) then (arithmeticProbes index) else (ctor Probe.end))))))))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: emptyAllocation,
+  parameters: [],
+  statement: ((evaluate 10 0) = (ctor Probe.place 0 0 0 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: transferEnd,
+  parameters: [],
+  statement: ((evaluate 9 1024) = (ctor Probe.end)),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

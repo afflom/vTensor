@@ -1,0 +1,137 @@
+{
+  "provider_revision": "fb2bada",
+  "test_revision": "24af3523a59853c20de26c673cf3ef259ae89389",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "profile": "dev",
+  "provider_sha256": "f7adbe1b065dd0dc04dfc046e7e536f15ffbeef0332679be7a412a1ca7333e59",
+  "oracle_executable_sha256": "ed27a4689f6d7bfccbcdac96563498dd03a31057f2474b0434683400bf994cf9",
+  "source_snapshot_sha256": "91d4a1e80c8d70963b7c715fa2cd32e245fcf354cf53b08c82b3f50b0647cca1",
+  "method": "The source-bound native oracle invokes unchanged test_case::eval with separate plugin and reference CPU backends. Each passed batch returned the exact positive count of matching pinned factory ordinals. Failed batches contribute only the explicitly reported refusal.",
+  "passed_batches": [
+    {
+      "labels": [
+        "ROLL",
+        "REPEAT_BACK",
+        "ACC"
+      ],
+      "passed": 18
+    },
+    {
+      "labels": [
+        "ABS",
+        "SGN",
+        "NEG",
+        "STEP",
+        "RELU",
+        "HARDSIGMOID",
+        "HARDSWISH"
+      ],
+      "passed": 84
+    },
+    {
+      "labels": [
+        "SUM",
+        "SUM_ROWS",
+        "MEAN"
+      ],
+      "passed": 40
+    },
+    {
+      "labels": [
+        "ARGMAX",
+        "COUNT_EQUAL"
+      ],
+      "passed": 11
+    },
+    {
+      "labels": [
+        "SQR",
+        "SQRT",
+        "CEIL",
+        "FLOOR",
+        "ROUND",
+        "TRUNC"
+      ],
+      "passed": 102
+    },
+    {
+      "labels": [
+        "CLAMP",
+        "SCALE",
+        "LEAKY_RELU"
+      ],
+      "passed": 36
+    },
+    {
+      "labels": [
+        "CONT",
+        "DUP",
+        "REPEAT"
+      ],
+      "passed": 119
+    },
+    {
+      "labels": [
+        "CONCAT"
+      ],
+      "passed": 236
+    },
+    {
+      "labels": [
+        "PAD",
+        "PAD_REFLECT_1D"
+      ],
+      "passed": 44
+    },
+    {
+      "labels": [
+        "FILL"
+      ],
+      "passed": 7
+    },
+    {
+      "labels": [
+        "SET"
+      ],
+      "passed": 12
+    },
+    {
+      "labels": [
+        "GET_ROWS"
+      ],
+      "passed": 252
+    },
+    {
+      "labels": [
+        "CUMSUM"
+      ],
+      "passed": 15
+    },
+    {
+      "labels": [
+        "ADD_ID"
+      ],
+      "passed": 72
+    }
+  ],
+  "refused_ordinals": {
+    "1069": {
+      "label": "GET_ROWS_BACK",
+      "parameters": "type=bf16,n=256,m=5,r=4,b=1,v=0",
+      "result": "not supported"
+    },
+    "809": {
+      "label": "ADD",
+      "parameters": "type=q2_K,n=256,m=16,r=4",
+      "result": "not supported"
+    },
+    "8368": {
+      "label": "CPY",
+      "parameters": "type_src=iq2_xxs,type_dst=iq2_xxs,ne_src=[256,2,3,4],permute_src=[0,0,0,0],permute_dst=[0,0,0,0],_src_transpose=0",
+      "result": "not supported"
+    }
+  },
+  "new_passes": 1048,
+  "new_refusals": 3
+}
