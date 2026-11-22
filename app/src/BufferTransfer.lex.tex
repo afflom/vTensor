@@ -38,5 +38,57 @@ theorem{
   statement: ((admitTransfer true hasData capacity offset 0) = (ctor TransferAdmission.emptyTransfer)),
   proof: reflexivity{}
 }
+
+inductive{
+  name: Region,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: emptyRegion, fields: []},
+    {name: invalidTensor, fields: []},
+    {name: outsideBuffer, fields: []},
+    {name: located, fields: [Nat]}
+  ]
+}
+
+definition{
+  name: locateTransfer,
+  parameters: [base : Nat, capacity : Nat, data : Nat, span : Nat, offset : Nat, size : Nat],
+  result: Region,
+  body: (match (admitTransfer true (0 <? data) span offset size)
+    | TransferAdmission.emptyTransfer => (ctor Region.emptyRegion)
+    | TransferAdmission.missingBuffer => (ctor Region.invalidTensor)
+    | TransferAdmission.missingData => (ctor Region.invalidTensor)
+    | TransferAdmission.outOfBounds => (ctor Region.outsideBuffer)
+    | TransferAdmission.admitted => (if (data <? base) then (ctor Region.outsideBuffer) else (let displacement : Nat := (prim subtract data base : Nat); (match (admitTransfer true (0 <? base) capacity displacement span)
+      | TransferAdmission.admitted => (ctor Region.located (displacement + offset))
+      | TransferAdmission.emptyTransfer => (ctor Region.outsideBuffer)
+      | TransferAdmission.missingBuffer => (ctor Region.outsideBuffer)
+      | TransferAdmission.missingData => (ctor Region.outsideBuffer)
+      | TransferAdmission.outOfBounds => (ctor Region.outsideBuffer))))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: viewTransferFromBackingBase,
+  parameters: [],
+  statement: ((locateTransfer 100 40 110 20 5 15) = (ctor Region.located 15)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: tensorMustFitBackingBuffer,
+  parameters: [],
+  statement: ((locateTransfer 100 15 110 20 0 1) = (ctor Region.outsideBuffer)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyTransferRequiresNoAddress,
+  parameters: [],
+  statement: ((locateTransfer 0 0 0 0 100 0) = (ctor Region.emptyRegion)),
+  proof: reflexivity{}
+}
 \end{semanticmodule}
 \end{lexlean}

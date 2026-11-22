@@ -27,6 +27,12 @@ Feature: native-backend
     When vTensor evaluates sigmoid, SiLU and their add and multiply compositions
     Then the 122 results match the upstream evaluator
 
+  @VT-62 @build
+  Scenario: GGML BF16 row gradients accumulate into F32 with repeated and strided indices and match the pinned CPU widening and row-gradient operators
+    Given the pinned GGML CPU cast and F32 GET_ROWS_BACK operators
+    When vTensor accumulates encoded BF16 gradients into the requested F32 rows
+    Then the output and unchanged padding match GGML and invalid indices are refused atomically
+
   @VT-63 @build
   Scenario: GGML attention with BF16 key and value rows uses Verdant conversion and contraction and matches the imported CPU with optional masks and sinks
     Given the pinned GGML BF16 attention factory with 64 channels and 113 keys

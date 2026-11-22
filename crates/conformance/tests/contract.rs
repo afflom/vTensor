@@ -179,6 +179,9 @@ ggml_batches! {
 
     /// The first dense attention graph from the imported GGML factory.
     #[test]
+    fn bf16_row_gradient_vt_62() { "row-gradient-bf16", 1680, ["pointwise"] }
+
+    #[test]
     fn logistic_graphs_vt_61() { "upstream-SIGMOID,SILU,SIGMOID_MUL,SILU_MUL,ADD_SIGMOID_MUL,ADD_SILU_MUL", 122, ["pointwise"] }
 
     #[test]
@@ -2642,16 +2645,22 @@ int main(int argc, char **argv) {
       ggml_backend_free(reference); ggml_backend_free(backend);
       printf("RESULT cases %zu\n",cases); return 0;
     }
-    if (!strcmp(argv[3], "row-gradient")) {
+    const bool bf16_gradient = !strcmp(argv[3], "row-gradient-bf16");
+    if (bf16_gradient || !strcmp(argv[3], "row-gradient")) {
       const uint32_t edges[]={0,0x80000000,0x3f800000,0xbf800000,0x4b800000,0xcb800000,0x7f800000,0xff800000,0x7fc00001,0x7f800001,1,0x80000001,0x7f7fffff,0x00800000,0x3f000000,0xbf000000};
       size_t cases=0;
-      for(auto type : {GGML_TYPE_F32,GGML_TYPE_F16}) for(int width : {0,1,3,17,65}) for(int rows : {0,1,3,9}) for(int output_rows : {0,1,4,7}) for(int layout=0;layout<3;layout++) for(int pattern=0;pattern<7;pattern++) {
+      for(auto type : {GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16}) if ((type==GGML_TYPE_BF16)==bf16_gradient) for(int width : {0,1,3,17,65}) for(int rows : {0,1,3,9}) for(int output_rows : {0,1,4,7}) for(int layout=0;layout<3;layout++) for(int pattern=0;pattern<7;pattern++) {
         ggml_init_params params={8*1024*1024,nullptr,true};ggml_context *ctx=ggml_init(params);CHECK(ctx);
         ggml_tensor *input=ggml_new_tensor_2d(ctx,type,width,rows+(pattern==1?2:pattern==2?1:0)), *indices=ggml_new_tensor_1d(ctx,GGML_TYPE_I32,rows), *shape=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,width,output_rows);
         const size_t bytes=ggml_type_size(type);
         input->nb[0]=bytes*(layout==2?2:1);input->nb[1]=input->nb[0]*width+bytes*layout;input->nb[2]=input->nb[3]=input->nb[1]*input->ne[1];
         indices->nb[0]=4*(layout+1);indices->nb[1]=indices->nb[2]=indices->nb[3]=indices->nb[0]*rows;
-        ggml_tensor *result=ggml_get_rows_back(ctx,input,indices,shape), *oracle=ggml_get_rows_back(ctx,input->nb[0]==bytes?input:canonical_copy(ctx,input),indices->nb[0]==4?indices:canonical_copy(ctx,indices),shape);
+        ggml_tensor *result=ggml_get_rows_back(ctx,input,indices,shape);
+        auto gradient_input=[&]() {
+          auto source=input->nb[0]==bytes?input:canonical_copy(ctx,input);
+          return bf16_gradient?ggml_cast(ctx,source,GGML_TYPE_F32):source;
+        };
+        auto oracle=ggml_get_rows_back(ctx,gradient_input(),indices->nb[0]==4?indices:canonical_copy(ctx,indices),shape);
         result->nb[0]=4*(layout+1);result->nb[1]=result->nb[0]*width+4*layout;result->nb[2]=result->nb[3]=result->nb[1]*output_rows;
         ggml_backend_buffer_t buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer || (!ggml_nbytes(input)&&!ggml_nbytes(indices)&&!ggml_nbytes(result)));
         std::vector<unsigned char> data(ggml_nbytes(input),0xA5), index_data(ggml_nbytes(indices),0xA5), initial(ggml_nbytes(result),0xA5);
@@ -2660,7 +2669,7 @@ int main(int argc, char **argv) {
           if(row==rows-1 && pattern>=5) index=pattern==5?-1:output_rows;
           memcpy(index_data.data()+row*indices->nb[0],&index,4);
           for(int column=0;column<width;column++) {
-            const uint32_t bits=edges[(row*width+column+pattern*7)%16];float value;memcpy(&value,&bits,4);const uint16_t half=ggml_fp32_to_fp16(value);
+            const uint32_t bits=edges[(row*width+column+pattern*7)%16];float value;memcpy(&value,&bits,4);const uint16_t half=bf16_gradient?ggml_fp32_to_bf16(value).bits:ggml_fp32_to_fp16(value);
             memcpy(data.data()+row*input->nb[1]+column*input->nb[0],type==GGML_TYPE_F32?(const void *)&bits:(const void *)&half,bytes);
           }
         }
