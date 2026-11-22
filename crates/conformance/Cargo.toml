@@ -10,6 +10,8 @@ license.workspace = true
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
+vtensor_attention = { version = "=0.1.0", path = "../../generated/attention/packages/rust-core/vtensor_attention" }
+vtensor_attention_mask = { version = "=0.1.0", path = "../../generated/attention/packages/rust-core/vtensor_attention_mask" }
 vtensor_matrix_q8 = { version = "=0.1.0", path = "../../generated/matrix/packages/rust-core/vtensor_matrix_q8" }
 vtensor_rotary = { path = "../../generated/rotary/packages/rust-core/vtensor_rotary", version = "=0.1.0" }
 vtensor_typed = { path = "../../generated/typed/packages/rust-core/vtensor_typed", version = "=0.1.0" }

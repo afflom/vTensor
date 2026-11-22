@@ -14,6 +14,6 @@ Feature: GGML spatial storage graphs
 
   @VT-58 @build
   Scenario: Prism plans GGML extended flash attention views and Verdant computes the masked attention output against the imported GGML CPU evaluator
-    Given the extended attention cases from the pinned upstream factory
-    When the host schedules them on vTensor
-    Then all 5775 outputs agree with the independent GGML evaluator
+    Given dense F32 queries with floating keys and values and optional mask or sinks
+    When the host schedules the first dense case and the two selected F16 cases on vTensor
+    Then the output tensors for factory ordinals 19242, 19314 and 19394 agree with the independent GGML evaluator

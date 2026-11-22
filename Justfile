@@ -97,7 +97,7 @@ bdd:
 # Certified SDK output retains the renderer's exact bytes; VT-06 replays its
 # certificate. Format every other workspace member without traversing dependencies.
 fmt *options:
-    cargo metadata --locked --no-deps --format-version 1 | node -e 'const fs = require("node:fs"), cp = require("node:child_process"); const m = JSON.parse(fs.readFileSync(0, "utf8")); const p = m.packages.filter(p => m.workspace_members.includes(p.id) && !["vtensor_layout", "vtensor_types", "vtensor_transfer", "vtensor_allocation", "vtensor_native_config", "vtensor_native_predicates", "vtensor_native_memory", "vtensor_matrix", "vtensor_matrix_execution", "vtensor_matrix_q8", "vtensor_fixtures", "vtensor_arithmetic", "vtensor_spatial", "vtensor_norm", "vtensor_norm_plan", "vtensor_rms_backward", "vtensor_l2", "vtensor_normfixtures", "vtensor_groupfixtures", "vtensor_rmsbackfixtures", "vtensor_probes", "vtensor_rotary", "vtensor_typed", "vtensor_typedfixtures", "vtensor_index", "vtensor_pointwise", "vtensor_repeat_offset"].includes(p.name)); const a = ["fmt", ...p.flatMap(p => ["--package", p.name]), "--", ...process.argv.slice(1)]; const r = cp.spawnSync("cargo", a, {stdio: "inherit"}); if (r.error) throw r.error; process.exit(r.status ?? 1);' -- {{options}}
+    cargo metadata --locked --no-deps --format-version 1 | node -e 'const fs = require("node:fs"), cp = require("node:child_process"); const m = JSON.parse(fs.readFileSync(0, "utf8")); const p = m.packages.filter(p => m.workspace_members.includes(p.id) && !["vtensor_layout", "vtensor_types", "vtensor_transfer", "vtensor_allocation", "vtensor_native_config", "vtensor_native_predicates", "vtensor_native_memory", "vtensor_matrix", "vtensor_matrix_execution", "vtensor_matrix_q8", "vtensor_fixtures", "vtensor_arithmetic", "vtensor_spatial", "vtensor_norm", "vtensor_norm_plan", "vtensor_rms_backward", "vtensor_l2", "vtensor_normfixtures", "vtensor_groupfixtures", "vtensor_rmsbackfixtures", "vtensor_probes", "vtensor_attention", "vtensor_attention_mask", "vtensor_rotary", "vtensor_typed", "vtensor_typedfixtures", "vtensor_index", "vtensor_pointwise", "vtensor_repeat_offset"].includes(p.name)); const a = ["fmt", ...p.flatMap(p => ["--package", p.name]), "--", ...process.argv.slice(1)]; const r = cp.spawnSync("cargo", a, {stdio: "inherit"}); if (r.error) throw r.error; process.exit(r.status ?? 1);' -- {{options}}
 
 # Regenerate everything the model owns: CONFORMANCE.md.
 model-write:
@@ -145,6 +145,7 @@ certified-export name:
       rmsbackfixtures) project=app/rmsbackfixtures.lexlean.toml ;;
       pointwise) project=app/pointwise.lexlean.toml ;;
       probes) project=app/probes.lexlean.toml ;;
+      attention) project=app/attention.lexlean.toml ;;
       rotary) project=app/rotary.lexlean.toml ;;
       typed) project=app/typed.lexlean.toml ;;
       typedfixtures) project=app/typedfixtures.lexlean.toml ;;
@@ -184,6 +185,7 @@ certified-install name artifact:
       groupfixtures: ['PrismTemplateContract.GroupFixtures.evaluate', 'vtensor_groupfixtures'],
       rmsbackfixtures: ['PrismTemplateContract.RmsBackwardFixtures.evaluate', 'vtensor_rmsbackfixtures'],
       probes: ['PrismTemplateContract.FixtureProbes.evaluate', 'vtensor_probes'],
+      attention: ['PrismTemplateContract.AttentionGraph.evaluate', 'vtensor_attention'],
       rotary: ['PrismTemplateContract.RotaryGraph.evaluate', 'vtensor_rotary'],
       typed: ['PrismTemplateContract.TypedArithmetic.evaluate', 'vtensor_typed'],
       typedfixtures: ['PrismTemplateContract.TypedBinaryFixtures.evaluate', 'vtensor_typedfixtures'],

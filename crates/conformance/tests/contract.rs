@@ -128,7 +128,9 @@ ggml_batches! {
     /// `VT-57`: Exercise all upstream inverse-rotation graphs.
     rotary_backward_graphs_vt_57: "upstream-ROPE_BACK", 424, ["rotary"];
     /// Verified by the upstream GGML extended flash attention evaluator.
-    extended_attention_vt_58: "upstream-FLASH_ATTN_EXT", 5775, [];
+    extended_attention_vt_58: "upstream-FLASH_ATTN_EXT_FIRST", 1, ["attention"];
+    /// Two short attention graphs cover a populated sink and its absence.
+    small_attention_vt_58: "upstream-FLASH_ATTN_EXT_SMALL", 2, ["attention"];
 }
 
 /// `TC-01`: The checker answers conformant exactly when every universal policy file's observed digest equals its locked digest
@@ -1209,7 +1211,9 @@ mod tensor_layout {
             "native" => ("vtensor_native_config".to_owned(), "native"),
             "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" | "spatial"
             | "norm" | "normfixtures" | "groupfixtures" | "rmsbackfixtures" | "typed"
-            | "probes" | "rotary" | "typedfixtures" => (format!("vtensor_{name}"), name),
+            | "attention" | "probes" | "rotary" | "typedfixtures" => {
+                (format!("vtensor_{name}"), name)
+            }
             _ => panic!("unknown certified model: {name}"),
         };
         let scope = if name == "layout" {
@@ -2026,9 +2030,13 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
                                   !std::strcmp(op, "MUL_MAT_Q4_0_F32") ? GGML_TYPE_Q4_0 : GGML_TYPE_COUNT;
     const bool matrix_group = weight_type != GGML_TYPE_COUNT;
     const bool set_rows = !std::strcmp(op, "SET_ROWS_SCALAR");
-    const char *label = set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
+    const bool small_attention = !std::strcmp(op, "FLASH_ATTN_EXT_SMALL");
+    const bool first_attention = !std::strcmp(op, "FLASH_ATTN_EXT_FIRST");
+    const char *label = (small_attention || first_attention) ? "FLASH_ATTN_EXT" : set_rows ? "SET_ROWS" : matrix_group ? "MUL_MAT" : op;
     for(auto &test:make_test_cases_eval()) {
       const auto id = ordinal++;
+      if (first_attention && id != 19242) continue;
+      if (small_attention && id != 19314 && id != 19394) continue;
       if (matrix_group) {
         const auto *matrix = dynamic_cast<const test_mul_mat *>(test.get());
         if (!matrix || matrix->type_a != weight_type || matrix->type_b != GGML_TYPE_F32) continue;

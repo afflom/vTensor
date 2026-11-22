@@ -480,6 +480,7 @@ enum ExecutionPlan {
     Typed(vtensor_typed::Adt2),
     Quantized(vtensor_matrix_q8::Adt2),
     Rotary(vtensor_rotary::Adt3),
+    Attention(vtensor_attention::Adt2),
 }
 
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
@@ -500,6 +501,13 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     let primary = source(0)?;
     let secondary = source(1)?;
     let base = source(2)?;
+    if operation == 71 {
+        return attention::plan(
+            tensor,
+            [primary, secondary, base, source(3)?, source(4)?],
+            output,
+        );
+    }
     if matches!(operation, 45 | 46) {
         return rotary::plan(
             tensor,
@@ -1201,6 +1209,7 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
             let result = match plan {
                 ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
+                ExecutionPlan::Attention(plan) => attention::execute(&*tensor, plan),
                 ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
                 ExecutionPlan::Quantized(plan) => execute_quantized_matrix(&*tensor, plan),
@@ -1312,8 +1321,8 @@ mod rotary {
                 return Err(BackendError::InvalidTensor);
             };
             let factor = match factors {
-                // SAFETY: Prism admitted this contiguous F32 factor word.
                 Some(pointer) => {
+                    // SAFETY: Prism admitted this contiguous F32 factor word.
                     f32::from_bits(unsafe { scalar_word(pointer.add(lane * 4), 4, None)? } as u32)
                 }
                 None => 1.0,
@@ -1393,6 +1402,192 @@ mod rotary {
                             };
                             scalar_word(output.add(dst as usize + a), *width, Some(x))?;
                             scalar_word(output.add(dst as usize + b), *width, Some(y))?;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+mod attention {
+    use super::{
+        graph_tensor_data, scalar_word, workspace, BackendError, Tensor, TensorDescriptor,
+    };
+    use verdant_tensor::linear::{
+        convert_float_storage, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
+    };
+    use vtensor_attention::{Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as Response};
+
+    fn request(query: Request) -> Result<Response, BackendError> {
+        vtensor_attention::run(query).map_err(|_| BackendError::Overflow)
+    }
+
+    fn descriptor(
+        TensorDescriptor::C0(a, b, c, d, e, f, g, h, i, j, k): TensorDescriptor,
+    ) -> Descriptor {
+        Descriptor::C0(a, b, c, d, e, f, g, h, i, j, k)
+    }
+
+    pub(super) fn plan(
+        tensor: &Tensor,
+        sources: [Option<TensorDescriptor>; 5],
+        output: TensorDescriptor,
+    ) -> Result<Option<super::ExecutionPlan>, BackendError> {
+        let [Some(query), Some(key), Some(value), mask, sink] = sources else {
+            return Err(BackendError::InvalidTensor);
+        };
+        let word = |index: usize| u64::from(tensor.op_params[index] as u32);
+        match request(Request::C0(
+            tensor.op as u64,
+            tensor.src[5..].iter().any(|p| !p.is_null()),
+            word(1),
+            word(2),
+            word(3),
+            descriptor(query),
+            descriptor(key),
+            descriptor(value),
+            mask.map(descriptor),
+            sink.map(descriptor),
+            descriptor(output),
+        ))? {
+            Response::C1(p) => Ok(Some(super::ExecutionPlan::Attention(p))),
+            _ => Err(BackendError::InvalidTensor),
+        }
+    }
+
+    struct Input<'a> {
+        bytes: &'a [u8],
+        kind: u64,
+        width: usize,
+    }
+
+    impl<'a> Input<'a> {
+        fn new(t: &'a Tensor) -> Result<Self, BackendError> {
+            let span = super::tensor_span(t)?;
+            let data = graph_tensor_data(t)?;
+            let bytes = if span == 0 {
+                &[]
+            } else {
+                // SAFETY: GGML retains this checked native region throughout graph execution.
+                unsafe { std::slice::from_raw_parts(data, span) }
+            };
+            Ok(Self {
+                bytes,
+                kind: t.ty as u64,
+                width: t.nb[0],
+            })
+        }
+
+        fn region(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
+            let offset = usize::try_from(offset).map_err(|_| BackendError::Overflow)?;
+            self.bytes
+                .get(offset..)
+                .and_then(|b| b.get(..count))
+                .ok_or(BackendError::OutOfBounds)
+        }
+
+        fn half(&self, offset: u64) -> Result<u16, BackendError> {
+            Ok(u16::from_ne_bytes(
+                self.region(offset, 2)?.try_into().unwrap(),
+            ))
+        }
+
+        fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
+            let size = out
+                .len()
+                .checked_mul(self.width)
+                .ok_or(BackendError::Overflow)?;
+            for (bytes, value) in self.region(offset, size)?.chunks_exact(self.width).zip(out) {
+                *value = match self.kind {
+                    0 => f32::from_ne_bytes(
+                        bytes.try_into().map_err(|_| BackendError::InvalidTensor)?,
+                    ),
+                    1 => half_value(u16::from_ne_bytes(
+                        bytes.try_into().map_err(|_| BackendError::InvalidTensor)?,
+                    ))?,
+                    _ => return Err(BackendError::InvalidTensor),
+                };
+            }
+            Ok(())
+        }
+    }
+
+    fn half_value(half: u16) -> Result<f32, BackendError> {
+        let word = convert_float_storage(1, 0, u64::from(half))
+            .map_err(|_| BackendError::Overflow)?
+            .ok_or(BackendError::InvalidTensor)?;
+        Ok(f32::from_bits(word as u32))
+    }
+
+    pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
+        let input = |i: usize| {
+            // SAFETY: GGML retains all present sources during the synchronous graph execution.
+            unsafe { tensor.src[i].as_ref() }
+                .map(Input::new)
+                .transpose()
+        };
+        let (Some(q), Some(k), Some(v), mask, sink) =
+            (input(0)?, input(1)?, input(2)?, input(3)?, input(4)?)
+        else {
+            return Err(BackendError::InvalidTensor);
+        };
+        // SAFETY: admission required live query, key and value descriptors and their layouts.
+        let (shape, key_rows) = unsafe { ((*tensor.src[0]).ne, (*tensor.src[1]).ne[1] as u64) };
+        let mut query = workspace(shape[0] as u64, 0.0)?;
+        let mut key = workspace(shape[0] as u64, 0.0)?;
+        let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
+        let output = graph_tensor_data(tensor)?;
+        let scale = f32::from_bits(tensor.op_params[0] as u32);
+        for batch in 0..shape[3] as u64 {
+            for head in 0..shape[2] as u64 {
+                for token in 0..shape[1] as u64 {
+                    let Response::C2(qoff, koff, voff, moff, soff, dst, ks, vs) =
+                        request(Request::C1(plan.clone(), token, head, batch))?
+                    else {
+                        return Err(BackendError::InvalidTensor);
+                    };
+                    q.decode(qoff, &mut query)?;
+                    let mut mean = WeightedMeanF32::new(value.len());
+                    for row in 0..key_rows {
+                        let bias = match &mask {
+                            Some(m) => {
+                                let half = m.half(moff + row * m.width as u64)?;
+                                if vtensor_attention_mask::run(u64::from(half)) {
+                                    continue;
+                                }
+                                half_value(half)?
+                            }
+                            None => 0.0,
+                        };
+                        k.decode(koff + row * ks, &mut key)?;
+                        v.decode(voff + row * vs, &mut value)?;
+                        let mut dot = [0.0];
+                        multiply_matrix_rows_f32(1, key.len(), 1, &key, &query, &mut dot)
+                            .map_err(|_| BackendError::InvalidTensor)?;
+                        let scaled = evaluate_f32_scalar(2, dot[0], scale)
+                            .map_err(|_| BackendError::Overflow)?;
+                        let score = evaluate_f32_scalar(0, scaled, bias)
+                            .map_err(|_| BackendError::Overflow)?;
+                        mean.push(score, Some(&value))
+                            .map_err(|_| BackendError::Overflow)?;
+                    }
+                    if let Some(sink) = &sink {
+                        let mut score = [0.0];
+                        sink.decode(soff, &mut score)?;
+                        mean.push(score[0], None)
+                            .map_err(|_| BackendError::Overflow)?;
+                    }
+                    let row = mean.finish().map_err(|_| BackendError::Overflow)?;
+                    for (lane, word) in row.iter().enumerate() {
+                        // SAFETY: the certified address selects a full contiguous output row inside its native region.
+                        unsafe {
+                            scalar_word(
+                                output.add(dst as usize + 4 * lane),
+                                4,
+                                Some(u64::from(word.to_bits())),
+                            )?;
                         }
                     }
                 }

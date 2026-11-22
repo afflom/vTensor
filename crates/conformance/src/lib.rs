@@ -41,6 +41,7 @@ sources! {
     "matrix-kernel.lock" => "../../../matrix-kernel.lock",
     "index-kernel.lock" => "../../../index-kernel.lock",
     "norm-kernel.lock" => "../../../norm-kernel.lock",
+    "attention-kernel.lock" => "../../../attention-kernel.lock",
     "rotary-kernel.lock" => "../../../rotary-kernel.lock",
     "typed-kernel.lock" => "../../../typed-kernel.lock",
     "pointwise-kernel.lock" => "../../../pointwise-kernel.lock",
