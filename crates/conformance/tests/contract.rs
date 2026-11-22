@@ -230,12 +230,14 @@ fn swiglu_rows_vt_56() {
 /// `VT-57`: Exercise the upstream rotary-position graph factory on the provider.
 #[test]
 fn rotary_graphs_vt_57() {
+    tensor_layout::certified_current_model(&root(), "rotary");
     native_backend_oracle::verify(&root(), "upstream-ROPE", 510);
 }
 
 /// `VT-57`: Exercise all upstream inverse-rotation graphs.
 #[test]
 fn rotary_backward_graphs_vt_57() {
+    tensor_layout::certified_current_model(&root(), "rotary");
     native_backend_oracle::verify(&root(), "upstream-ROPE_BACK", 424);
 }
 
@@ -1392,7 +1394,7 @@ mod tensor_layout {
             "native" => ("vtensor_native_config".to_owned(), "native"),
             "layout" | "matrix" | "index" | "pointwise" | "fixtures" | "arithmetic" | "spatial"
             | "norm" | "normfixtures" | "groupfixtures" | "rmsbackfixtures" | "typed"
-            | "typedfixtures" => (format!("vtensor_{name}"), name),
+            | "rotary" | "typedfixtures" => (format!("vtensor_{name}"), name),
             _ => panic!("unknown certified model: {name}"),
         };
         let scope = if name == "layout" {

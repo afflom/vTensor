@@ -453,3 +453,9 @@ name = "verdant_circular_square"
 version = "=2.21.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x460ae74a }]
+
+[[licenses.clarify]]
+name = "vtensor_rotary"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x3d287b3a }]

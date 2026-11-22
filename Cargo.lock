@@ -616,6 +616,7 @@ dependencies = [
  "vtensor_pointwise",
  "vtensor_repeat_offset",
  "vtensor_rms_backward",
+ "vtensor_rotary",
  "vtensor_spatial",
  "vtensor_transfer",
  "vtensor_typed",
@@ -704,6 +705,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_rmsbackfixtures"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_rotary"
 version = "0.1.0"
 
 [[package]]
