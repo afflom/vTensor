@@ -4227,12 +4227,61 @@ The rejected project was removed from the repository after the check.
 
 The initial composed run was deliberately stopped when its mixed-only
 dispatch was superseded by the unified planner and minimal instruction
-schedule. It establishes no pass. The corrected 187-case comparison is
-running; exact-word supplemental coverage for every tuple and typed refusal
-case remains required. Full acceptance is unproven. Formatting, workspace
+schedule. It establishes no pass. At the initial implementation checkpoint,
+the corrected comparison and exact-word supplemental coverage were pending.
+Full acceptance remained unproven. Formatting, workspace
 Clippy and all-feature cargo-deny pass; source-bound license clarifications
 were refreshed without editing generated code. Source accounting measures
 11,708 non-Prism lines, 1,159 above the original ceiling and 81 above the
 prior implementation checkpoint. The source ratchet still fails. Production
 dependency packaging, original source-budget recovery, typed supplemental
-coverage and the remaining imported requirements remain open.
+coverage and the remaining imported requirements remained open.
+
+The completed 187-case composed normalization comparison passes in 744.81
+seconds. It executes the unchanged authoritative factory and its independent
+CPU backend, including all 69 BF16 cases. The fixture transport work below
+does not change the verified production planner or instruction packages, and
+the factory run was not repeated for changes confined to supplemental test
+transport and evidence.
+
+The separate `TypedBinaryFixtures.evaluate` export verifies 340 declarations
+and its preservation proof in the exact SDK, with attestation
+`2f3d3e14ea7c307caa4180d44f0ee84ea8cd5e69aadf66cff00b65b3d6eecbb3`.
+Its largest certificate is 732,417 bytes. All 977 generated cases pass:
+864 ordinary layout/alias cases, 112 empty cases and one nonempty BF16/F32
+case with shape [3,1,1,65537]. There are 737 positive cases and 240 atomic
+refusals, with 12 additional malformed metadata probes. Every scalar storage
+tuple and ADD/SUB/MUL/DIV are covered. The CPU executes actual source and
+output layouts; non-NaN output words and padding bytes match exactly, while
+both-NaN outputs are checked by classification. The raw patterns include
+signed zero, subnormal/normal boundaries, maximum finite values, infinities,
+quiet/signaling NaNs and rounding ties. Copied, left/right output views and
+shared-input/output cases exercise padding, broadcast, readonly rows, outer
+permutations and nonnested output occupancy.
+
+The actual 2,491,136-byte constructor/input/refusal transcript hashes to
+`77e15e44eee53cddf59c33756cd290a6c5c5801312e7fff9935efdc604648e7d`.
+The source-bound baseline records construction and input bytes; every
+numerical expected result still comes from the imported CPU. Bypassing typed
+occupancy feedback fails the expected runtime refusal in 3.99 seconds.
+Rebinding the right operand to source 0 fails an exact F32 comparison at byte
+0 (actual 0, expected 1) in 4.28 seconds. A zeroed fixture attestation fails
+before numerical execution in 3.39 seconds. Replacing every delivered input
+byte with zero lets the numerical comparisons complete, then fails the
+frozen transcript gate in 7.21 seconds. Its changed digest is
+`a1ae4712da04c7c4a18e6e5dd159620955074e72042b00ea80a5a3409a41b4c1`.
+Each mutation was restored byte for byte. The restored full corpus, including
+the transcript comparison, passes in 4.70 seconds. The shared constructor
+storage adapter also preserves all 4,992 frozen unary cases and their CPU
+results (0.57 seconds).
+
+Workspace Clippy, cargo-deny, five frame tests, template/SDK-lock checks and
+52-file frame synchronization pass. The complete exact-SDK `just vv` attempt
+passes its actual application proof and formatting, then fails the unchanged
+source ratchet after all 57 IDs, error, deferral and bootstrap checks pass.
+It keeps application attestation
+`fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942`.
+Non-Prism implementation measures 11,738 lines, 1,189
+above the original 10,549 ceiling; the source ratchet remains a genuine
+failure. Production dependency packaging and the remaining imported
+requirements, including RMS/RoPE compositions, remain open.

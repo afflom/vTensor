@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/typed-arithmetic-authoring/1",
-  "status": "core-implementation-verifying-not-full-acceptance",
+  "status": "component-oracles-passed-full-project-acceptance-open",
   "requirement": "VT-51",
   "r3_checkpoint": "6d1e2a26d4d5",
   "prior_implementation_checkpoint": "04c6e0e59eaef68b1943b115e3b45b7e40ecbe7e",
@@ -40,6 +40,14 @@
       "verified_declarations": 753,
       "largest_certificate_bytes": 4140076,
       "source_sha256": "def04b73a498030d556e29362ca12f788dc9d707afc7c7cc44dd68d02c7aa2d5"
+    },
+    "typedfixtures": {
+      "draft": "prism-app/8a1870c7a334e97bcd01f795caeb219bb3bf7b146d9bdd8f8bef5a773acf9732",
+      "result": "405eec03e7ca42b619ecf54ea9c7f9cb94fc00a75aeb591722b0650ad8f624d1",
+      "attestation": "2f3d3e14ea7c307caa4180d44f0ee84ea8cd5e69aadf66cff00b65b3d6eecbb3",
+      "verified_declarations": 340,
+      "largest_certificate_bytes": 732417,
+      "source_sha256": "f853c3e72a38d07a750337b55e114805a83365418e8a07a22b103584fdbd2862"
     }
   },
   "implementation": [
@@ -65,12 +73,52 @@
     "composed_normalization": {
       "test": "composed_normalization_vt_51",
       "cases": 187,
-      "result": "running"
+      "result": "pass",
+      "seconds": 744.81
     },
     "clippy": "workspace/all targets/all features passed",
     "dependencies": "all-feature cargo-deny passed after refreshing exact generated-source license clarifications; one existing unused-source warning",
     "format": "passed",
-    "model": "57 IDs, errors/deferral/bootstrap pass; source ratchet refuses growth"
+    "model": "57 IDs, errors/deferral/bootstrap pass; source ratchet refuses growth",
+    "typed_supplemental": {
+      "test": "typed_runtime_edges_vt_51",
+      "cases": 977,
+      "positive_cases": 737,
+      "atomic_refusals": 240,
+      "metadata_mutation_probes": 12,
+      "initial_pass_seconds": 7.29,
+      "restored_frozen_pass_seconds": 4.7,
+      "comparison": "Every non-NaN output word and padding byte matches the imported CPU exactly; both-NaN outputs are checked by classification."
+    },
+    "unchanged_unary_fixture_corpus": {
+      "test": "unary_graphs_vt_27",
+      "cases": 4992,
+      "result": "pass",
+      "seconds": 0.57,
+      "scope": "The shared output-storage constructor adapter preserves its frozen input/construction transcript and CPU results."
+    },
+    "frame": "5 passed",
+    "template_and_sdk_lock": "passed; frame-sync 52 files",
+    "full_vv": {
+      "command": "just vv",
+      "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+      "result": "failed at source ratchet after actual application proof and formatting",
+      "application_attestation": "fc3c75dc3a277b068db8182333edaf698a47a1e9f1f6e15dc359e0ddd4eca942",
+      "model_checks": "57 IDs, error, deferral and bootstrap checks pass",
+      "ratchet_parent": "04c6e0e59eae",
+      "parent_lines": 11627,
+      "current_lines": 11738,
+      "growth": 111,
+      "original_ceiling": 10549,
+      "original_excess": 1189,
+      "full_acceptance": false
+    },
+    "production_dependency": {
+      "test": "verdant_api::verdant_api_vt_02",
+      "result": "failed",
+      "diagnostic": "Verdant Tensor must resolve to the pinned upstream source; local development overrides are not release evidence",
+      "seconds": 0.0
+    }
   },
   "planted_defects": [
     {
@@ -96,6 +144,38 @@
       "command": "lexlean --project typedfault.lexlean.toml --diagnostic-format json verify",
       "result": "LLV7002 at phases 2 and 5; expected BF16 output type 30 differs from modeled type 0.",
       "restoration": "Correct TypedArithmetic model never replaced; temporary rejected project removed from the repository and preserved in task RAM."
+    },
+    {
+      "kind": "output occupancy",
+      "change": "Force the typed instruction feedback flag to zero.",
+      "test": "typed_runtime_edges_vt_51",
+      "result": "rejected at expected GGML_STATUS_FAILED for overlapping output",
+      "seconds": 3.99,
+      "restoration": "Native runner restored byte-for-byte."
+    },
+    {
+      "kind": "source binding",
+      "change": "Bind source-1 operand instructions to source 0.",
+      "test": "typed_runtime_edges_vt_51",
+      "result": "exact CPU mismatch at F32 byte 0, actual 0 expected 1",
+      "seconds": 4.28,
+      "restoration": "Native runner restored byte-for-byte."
+    },
+    {
+      "kind": "fixture attestation",
+      "change": "Zero the typed fixture kernel lock attestation.",
+      "test": "typed_runtime_edges_vt_51",
+      "result": "rejected before numerical execution",
+      "seconds": 3.39,
+      "restoration": "Fixture lock restored byte-for-byte."
+    },
+    {
+      "kind": "weakened fixture inputs",
+      "change": "Replace every delivered typed fixture pattern byte with zero while retaining the certified fixture queries.",
+      "test": "typed_runtime_edges_vt_51",
+      "result": "All numerical comparisons complete but the actual constructor/input transcript is rejected: a1ae4712da04c7c4a18e6e5dd159620955074e72042b00ea80a5a3409a41b4c1 differs from the bound 77e15e44eee53cddf59c33756cd290a6c5c5801312e7fff9935efdc604648e7d.",
+      "seconds": 7.21,
+      "restoration": "Test transport restored byte-for-byte and the complete frozen 977-case run passes."
     }
   ],
   "superseded_validation": {
@@ -104,22 +184,72 @@
     "reason": "The source audit showed legacy F32 must use the new safety planner too. The initial fixed four-phase mixed schedule was superseded by type-specific minimal phases before final numerical acceptance."
   },
   "source_budget": {
-    "current": 11708,
+    "current": 11738,
     "original_ceiling": 10549,
-    "original_excess": 1159,
-    "prior_implementation": 11627,
-    "growth_since_prior_implementation": 81,
-    "gate_parent": "6d1e2a26d4d5",
-    "gate_parent_lines": 11662,
-    "gate_reported_growth": 46,
-    "status": "failing; original debt is not reset by checkpoint parents"
+    "original_excess": 1189,
+    "prior_component_checkpoint": 11708,
+    "new_test_transport_growth": 30,
+    "pre_commit_audit_parent": "04c6e0e59eae",
+    "pre_commit_audit_parent_lines": 11627,
+    "pre_commit_reported_growth": 111,
+    "status": "source ratchet failing; original ceiling debt persists across checkpoint parents"
   },
   "remaining_required_work": [
-    "Finish the 187-case independent composed comparison.",
-    "Add Prism-generated exact-word supplemental CPU fixtures for all seven tuples, source/output padding and permutations, nonnested occupancy, broadcasts, alias modes, NaNs, signed zero, empty axes and wide counters.",
-    "Prove the new typed metadata and overlap refusal gates with targeted negative cases; factory success alone is insufficient.",
-    "Recover the original source ceiling and replace the forbidden development dependency with an authoritative locked production release.",
-    "Run complete exact-SDK just vv at coherent acceptance; no full success is claimed here.",
-    "Implement and validate remaining imported requirements, including RoPE compositions and non-scalar binary formats."
-  ]
+    "Recover source debt and production dependency compliance, then pass the complete exact-SDK just vv boundary; the recorded complete attempt currently fails its unchanged source ratchet.",
+    "Recover the original 10,549-line non-Prism ceiling without weakening source/accounting gates.",
+    "Replace the forbidden development dependency with an authoritative locked production release or a compliant certified import architecture.",
+    "Implement and validate every remaining imported requirement, including the 281 RMS/RoPE compositions and non-scalar binary formats."
+  ],
+  "fixture_scope": {
+    "normal": 864,
+    "empty": 112,
+    "large_batch": 1,
+    "storage_tuples": 7,
+    "operations": [
+      "ADD",
+      "SUB",
+      "MUL",
+      "DIV"
+    ],
+    "alias_modes": [
+      "copied",
+      "left view",
+      "right view",
+      "both inputs and output shared"
+    ],
+    "geometry": [
+      "padded independent rows",
+      "strided periodic right columns",
+      "singleton right columns with ignored nonstandard inner stride",
+      "scalar broadcast",
+      "source/output outer-axis permutations",
+      "nonnested disjoint output",
+      "overlapping output",
+      "readonly right rows",
+      "bad source/output inner strides"
+    ],
+    "large_case": "BF16/F32 ADD into BF16, shape [3,1,1,65537] and scalar right input",
+    "numeric_profiles": "Raw F32/F16/BF16 signed zeros, subnormals, normal boundaries, infinities, quiet/signaling NaNs, maximum finite values and rounding ties; every expected result is computed by the imported CPU, not by the fixture model.",
+    "transcript": {
+      "baseline": "verification/typed-binary-fixture-baseline.json",
+      "bytes": 2491136,
+      "sha256": "77e15e44eee53cddf59c33756cd290a6c5c5801312e7fff9935efdc604648e7d",
+      "scope": "Constructors descriptors aliases initialized input bytes and refusal records; no numerical expected-output artifact."
+    }
+  },
+  "upstream_recheck": {
+    "command": "git ls-remote https://github.com/afflom/verdant-engine.git refs/heads/main",
+    "main": "0d8ed4ed314cd09ff925deda6dd69d15082f263d",
+    "checked_utc": "2026-11-22T13:21:43.426787+00:00",
+    "result": "unchanged from the reviewed M25 source; no dependency API progress was inferred"
+  },
+  "cache_state": {
+    "sdk_cache": "Warm exact-SDK cache remains in task RAM and mounted at its original workspace path for SDK commands; disk headroom is insufficient for safe restoration.",
+    "mount": "/dev/shm/vtensor-root-hologram-oracle:/home/alex/Desktop/vTensor/app/target/hologram-oracle",
+    "superseded_exports_archive": "/tmp/vtensor-superseded-typed-exports-ae9cb31.tar.gz",
+    "archived_directories": 10,
+    "archive_verification": "Every archived regular file compared by SHA-256 before removing the superseded cache directory. Current result/attestation caches and committed artifacts preserved.",
+    "old_sdk_executable_hold": "/dev/shm/vtensor-superseded-sdk-oracle-executables-ae9cb31",
+    "rust_debug_cache": "/dev/shm/vtensor-root-debug"
+  }
 }

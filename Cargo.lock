@@ -605,6 +605,10 @@ name = "vtensor_typed"
 version = "0.1.0"
 
 [[package]]
+name = "vtensor_typedfixtures"
+version = "0.1.0"
+
+[[package]]
 name = "vtensor_types"
 version = "0.1.0"
 

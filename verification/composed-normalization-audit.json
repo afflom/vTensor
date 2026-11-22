@@ -1,6 +1,6 @@
 {
   "spec": "vtensor/composed-normalization-audit/1",
-  "status": "source-audit-only-not-conformance",
+  "status": "all-187-factory-cases-and-977-supplemental-cases-passed-full-project-acceptance-open",
   "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "source_sha256": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52",
   "observations": [
@@ -10,11 +10,9 @@
     "RMS normalization is also composed with RoPE and SET_ROWS in test_rms_norm_mul_rope; supporting ordinary RMS normalization does not establish those graphs."
   ],
   "required_followup": [
-    "Enumerate every factory label and constructor variant from the pinned factory, not only the GGML operation enum. Bind observed case counts to its authoritative source.",
-    "Register a genuine failing test for composed/mixed-storage normalization before extending the required shared typed arithmetic or graph families.",
-    "Reuse existing Prism/Verdant stages where their semantics match; audit rounding and aliases across full graph boundaries.",
-    "Retain unsupported/missing/wrong-file rejection and exact independent CPU supplemental checks.",
-    "Recover the original non-Prism source ceiling and complete production dependency packaging; do not treat component coverage as full acceptance."
+    "Implement and verify the separately identified RMS/RoPE compositions.",
+    "Recover the original non-Prism ceiling and complete authoritative production dependency packaging.",
+    "Complete every remaining imported requirement without inferring its conformance from these component passes."
   ],
   "claims_not_made": [
     "Any composed label passes solely because its component operations pass",
@@ -38,12 +36,13 @@
     }
   },
   "source_budget": {
-    "current": 11627,
+    "current": 11738,
     "original_ceiling": 10549,
-    "original_excess": 1078,
+    "original_excess": 1189,
     "prior_implementation_checkpoint": 11628,
     "parent_ratchet": "pass; does not establish recovery of original ceiling"
   },
   "typed_arithmetic_plan": "verification/typed-binary-source-audit.json",
-  "factory_case_parameters": "verification/composed-normalization-cases.json"
+  "factory_case_parameters": "verification/composed-normalization-cases.json",
+  "component_evidence": "verification/typed-arithmetic-authoring.json"
 }

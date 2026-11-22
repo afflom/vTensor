@@ -91,6 +91,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-48` | build | NORM passes 61 factory and 184 supplemental cases, including 55 atomic refusals and stride-selected rounding. |
 | `VT-49` | build | GROUP_NORM passes five ordinary/fused factory cases and 224 supplemental cases, including 112 atomic refusals, nested F64 row subtotals and physical output spacing. |
 | `VT-50` | build | RMS_NORM_BACK passes ten factory and 353 supplemental cases, including 115 atomic refusals, 12 mutation probes, independent source strides, narrowing counterexamples and a 65,537-batch regression. |
+| `VT-51` | build | All 187 non-RoPE composed normalization factory cases and 977 typed binary supplemental cases pass, including 240 atomic refusals, 12 metadata probes, every scalar storage tuple and a 65,537-batch case. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
@@ -254,15 +255,19 @@ The pinned factory inventory contains 27,755 cases. VT-51 now registers all
 graphs, including 69 BF16 cases. Its registered failure exposed mixed BF16/F32
 arithmetic. A new certified Prism typed-arithmetic root now plans all four
 binary operations and all seven scalar storage tuples, including F32 safety
-guards. The complete composed comparison is in progress, so this capability
-is not yet accepted. The imported constructors
+guards. All 187 composed cases pass the actual imported factory comparison.
+The imported constructors
 and parameters are recorded in `verification/composed-normalization-cases.json`.
 The implementation uses Verdant conversions and F32 operations, with rounding
 at each graph node and identity conversions omitted by the Prism schedule.
 The existing 120 F32 arithmetic/unary cases and 353 backward-normalization
 edge cases pass; planted native encoding, model encoding and certificate
-binding defects are rejected. Exact-word typed supplemental CPU coverage
-remains required. Evidence is in `verification/typed-arithmetic-authoring.json`.
+binding defects are rejected. A separate certified Prism fixture root supplies
+977 additional cases across all seven tuples: 737 positive cases and 240
+atomic refusals, plus 12 metadata probes. Non-NaN words and padding match the
+CPU exactly; NaN outputs are compared by classification. A frozen transcript
+binds actual constructors and initialized bytes, and rejects all-zero fixture
+substitution. Evidence is in `verification/typed-arithmetic-authoring.json`.
 Its authoritative type, stride and counter audit is in
 `verification/typed-binary-source-audit.json`. Another 281 factory graphs combine
 RMS normalization with RoPE and require separate coverage.

@@ -1,0 +1,374 @@
+\begin{lexlean}{TypedBinaryFixtures}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TensorLayout}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: emptyCase,
+  parameters: [ordinal : Nat],
+  result: Bool,
+  body: ((864 <=? ordinal) && (ordinal <? 976)),
+  executable: true
+}
+
+definition{
+  name: largeCase,
+  parameters: [ordinal : Nat],
+  result: Bool,
+  body: (ordinal =? 976),
+  executable: true
+}
+
+definition{
+  name: group,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (prim quotient ordinal 48 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: scene,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (ordinal <? 864) then (prim remainder ordinal 12 0 : Nat) else 12),
+  executable: true
+}
+
+definition{
+  name: tuple,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (largeCase ordinal) then 3 else (if (emptyCase ordinal) then (prim quotient (prim subtract ordinal 864 : Nat) 16 0 : Nat) else (if ((group ordinal) <? 4) then 0 else (if ((group ordinal) <? 8) then 1 else (if ((group ordinal) <? 12) then 2 else (if ((group ordinal) <? 14) then 3 else (if ((group ordinal) =? 14) then 4 else (if ((group ordinal) <? 17) then 5 else 6)))))))),
+  executable: true
+}
+
+definition{
+  name: rawMode,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (864 <=? ordinal) then 0 else (if ((group ordinal) <? 12) then (prim remainder (group ordinal) 4 0 : Nat) else (if (((group ordinal) =? 13) || ((group ordinal) =? 16)) then 1 else 0))),
+  executable: true
+}
+
+definition{
+  name: operation,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if ((((rawMode ordinal) =? 2) && (2 <=? (scene ordinal))) && ((scene ordinal) <=? 4)) then 0 else (rawMode ordinal)),
+  executable: true
+}
+
+definition{
+  name: binaryKind,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (ordinal <? 864) then (prim remainder (prim quotient ordinal 12 0 : Nat) 4 0 : Nat) else (if (emptyCase ordinal) then (prim remainder (prim quotient (prim subtract ordinal 864 : Nat) 4 0 : Nat) 4 0 : Nat) else 0)),
+  executable: true
+}
+
+definition{
+  name: opcode,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if ((binaryKind ordinal) =? 0) then 2 else (if ((binaryKind ordinal) =? 1) then 5 else (if ((binaryKind ordinal) =? 2) then 6 else 7))),
+  executable: true
+}
+
+definition{
+  name: kind,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (let t : Nat := (tuple ordinal); (if (role =? 1) then (if (t =? 0) then 0 else (if (t =? 1) then 1 else (if (t =? 2) then 30 else (if (t =? 3) then 0 else (if (t =? 4) then 0 else (if (t =? 5) then 0 else 0)))))) else (if ((role =? 3) && ((t =? 4) || (t =? 6))) then 0 else (if (t =? 0) then 0 else (if (t =? 1) then 1 else (if (t =? 2) then 30 else (if (t =? 3) then 30 else (if (t =? 4) then 30 else (if (t =? 5) then 1 else 1))))))))),
+  executable: true
+}
+
+definition{
+  name: bytes,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (if ((kind ordinal role) =? 0) then 4 else 2),
+  executable: true
+}
+
+definition{
+  name: effectiveRole,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (if (role =? 3) then (if (((operation ordinal) =? 1) || ((operation ordinal) =? 3)) then 0 else (if ((operation ordinal) =? 2) then 1 else 3)) else (if ((role =? 1) && ((operation ordinal) =? 3)) then 0 else role)),
+  executable: true
+}
+
+definition{
+  name: dimension,
+  parameters: [ordinal : Nat, role : Nat, axis : Nat],
+  result: Nat,
+  body: (let source : Nat := (effectiveRole ordinal role); (if ((emptyCase ordinal) && (axis =? (prim remainder (prim subtract ordinal 864 : Nat) 4 0 : Nat))) then 0 else (if (largeCase ordinal) then (if (source =? 1) then 1 else (if (axis =? 0) then 3 else (if (axis =? 1) then 1 else (if (axis =? 2) then 1 else 65537)))) else (if ((source =? 1) && ((scene ordinal) =? 2)) then (if (axis =? 0) then 2 else 1) else (if ((source =? 1) && ((scene ordinal) =? 4)) then 1 else (if (((source =? 1) && ((scene ordinal) =? 3)) && (axis =? 0)) then 1 else (if (axis =? 0) then (if ((scene ordinal) =? 2) then 6 else 3) else (if (axis =? 0) then 3 else (if (axis =? 1) then 3 else (if (axis =? 2) then 2 else 2)))))))))),
+  executable: true
+}
+
+definition{
+  name: innerStride,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (let source : Nat := (effectiveRole ordinal role); (let size : Nat := (bytes ordinal role); (if (((scene ordinal) =? 3) && (source =? 1)) then ((prim multiply size 7 : Nat) + 1) else (if (((scene ordinal) =? 4) && (source =? 1)) then 1 else (if (((((scene ordinal) =? 2) && (source =? 1)) || (((scene ordinal) =? 9) && (source =? 0))) || (((scene ordinal) =? 11) && (source =? (effectiveRole ordinal 3)))) then (prim multiply size 2 : Nat) else size))))),
+  executable: true
+}
+
+definition{
+  name: rowStride,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (let source : Nat := (effectiveRole ordinal role); (let size : Nat := (bytes ordinal role); (if ((((scene ordinal) =? 8) && (source =? (effectiveRole ordinal 3))) || (((scene ordinal) =? 10) && ((source =? 1) || ((operation ordinal) =? 3)))) then 0 else (if (((scene ordinal) =? 7) && (source =? (effectiveRole ordinal 3))) then (prim multiply 18 size : Nat) else (if ((((scene ordinal) =? 5) && (source =? 0)) || (((scene ordinal) =? 6) && (source =? (effectiveRole ordinal 3)))) then (prim multiply 6 size : Nat) else (prim multiply ((dimension ordinal role 0) + (if ((scene ordinal) =? 1) then 2 else 0)) size : Nat)))))),
+  executable: true
+}
+
+definition{
+  name: planeStride,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (let source : Nat := (effectiveRole ordinal role); (let size : Nat := (bytes ordinal role); (if (((scene ordinal) =? 7) && (source =? (effectiveRole ordinal 3))) then (prim multiply 26 size : Nat) else (if ((((scene ordinal) =? 5) && (source =? 0)) || (((scene ordinal) =? 6) && (source =? (effectiveRole ordinal 3)))) then (prim multiply 3 size : Nat) else ((prim multiply (rowStride ordinal role) (dimension ordinal role 1) : Nat) + (if ((scene ordinal) =? 1) then (prim multiply 3 size : Nat) else 0)))))),
+  executable: true
+}
+
+definition{
+  name: batchStride,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (let source : Nat := (effectiveRole ordinal role); (let size : Nat := (bytes ordinal role); (if (((scene ordinal) =? 7) && (source =? (effectiveRole ordinal 3))) then (prim multiply 80 size : Nat) else (if ((((scene ordinal) =? 5) && (source =? 0)) || (((scene ordinal) =? 6) && (source =? (effectiveRole ordinal 3)))) then (prim multiply 18 size : Nat) else ((prim multiply (planeStride ordinal role) (dimension ordinal role 2) : Nat) + (if ((scene ordinal) =? 1) then (prim multiply 5 size : Nat) else 0)))))),
+  executable: true
+}
+
+definition{
+  name: stride,
+  parameters: [ordinal : Nat, role : Nat, axis : Nat],
+  result: Nat,
+  body: (if (axis =? 0) then (innerStride ordinal role) else (if (axis =? 1) then (rowStride ordinal role) else (if (axis =? 2) then (planeStride ordinal role) else (batchStride ordinal role)))),
+  executable: true
+}
+
+definition{
+  name: span,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (match (TensorLayout::tensorByteSpan (record TensorLayout::TensorLayout {ne0 := (dimension ordinal role 0), ne1 := (dimension ordinal role 1), ne2 := (dimension ordinal role 2), ne3 := (dimension ordinal role 3), nb0 := (stride ordinal role 0), nb1 := (stride ordinal role 1), nb2 := (stride ordinal role 2), nb3 := (stride ordinal role 3), blockSize := 1, typeSize := (bytes ordinal role)}))
+    | TensorLayout::ByteSpanDecision.invalidBlockSize => 0
+    | TensorLayout::ByteSpanDecision.span count => count),
+  executable: true
+}
+
+definition{
+  name: elements,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (prim multiply (prim multiply (dimension ordinal role 0) (dimension ordinal role 1) : Nat) (prim multiply (dimension ordinal role 2) (dimension ordinal role 3) : Nat) : Nat),
+  executable: true
+}
+
+definition{
+  name: outcome,
+  parameters: [ordinal : Nat],
+  result: Nat,
+  body: (if (864 <=? ordinal) then 0 else (if (((scene ordinal) =? 9) || ((scene ordinal) =? 11)) then 2 else (if (((scene ordinal) =? 8) || (((scene ordinal) =? 10) && (((operation ordinal) =? 2) || ((operation ordinal) =? 3)))) then 1 else 0))),
+  executable: true
+}
+
+definition{
+  name: metadata,
+  parameters: [ordinal : Nat, item : Nat],
+  result: Nat,
+  body: (if (item =? 0) then (kind ordinal 0) else (if (item =? 1) then (operation ordinal) else (if (item =? 2) then (scene ordinal) else (if (item =? 3) then (scene ordinal) else (if (item =? 4) then (dimension ordinal 0 0) else (if (item =? 5) then (dimension ordinal 0 1) else (if (item =? 6) then (dimension ordinal 0 3) else (if (item =? 7) then ordinal else (if (item =? 8) then (outcome ordinal) else (if (item =? 9) then (opcode ordinal) else (if (item =? 10) then (977 + ordinal) else (if (item =? 11) then (kind ordinal 1) else (kind ordinal 3))))))))))))),
+  executable: true
+}
+
+definition{
+  name: dataWord,
+  parameters: [ordinal : Nat, role : Nat, index : Nat],
+  result: Nat,
+  body: (let k : Nat := (kind ordinal role); (let i : Nat := (prim remainder (index + (prim multiply (effectiveRole ordinal role) 5 : Nat)) 32 0 : Nat); (if (k =? 0) then (if (i =? 0) then 0 else (if (i =? 1) then 2147483648 else (if (i =? 2) then 1065353216 else (if (i =? 3) then 3212836864 else (if (i =? 4) then 1 else (if (i =? 5) then 2147483649 else (if (i =? 6) then 8388607 else (if (i =? 7) then 8388608 else (if (i =? 8) then 2139095039 else (if (i =? 9) then 4286578687 else (if (i =? 10) then 2139095040 else (if (i =? 11) then 4286578688 else (if (i =? 12) then 2143289345 else (if (i =? 13) then 2139095041 else (if (i =? 14) then 4286578689 else (if (i =? 15) then 1065357312 else (if (i =? 16) then 1065365504 else (if (i =? 17) then 1065385984 else (if (i =? 18) then 1065451520 else (if (i =? 19) then 864026624 else (if (i =? 20) then 855638017 else (if (i =? 21) then 947912704 else (if (i =? 22) then 1199566848 else (if (i =? 23) then 1056964608 else (if (i =? 24) then 1069547520 else (if (i =? 25) then 1266679808 else (if (i =? 26) then 3414163456 else (if (i =? 27) then 1065353217 else (if (i =? 28) then 8388609 else (if (i =? 29) then 1065353215 else (if (i =? 30) then 3225419776 else 1077936128))))))))))))))))))))))))))))))) else (if (k =? 1) then (if (i =? 0) then 0 else (if (i =? 1) then 32768 else (if (i =? 2) then 15360 else (if (i =? 3) then 48128 else (if (i =? 4) then 1 else (if (i =? 5) then 32769 else (if (i =? 6) then 1023 else (if (i =? 7) then 1024 else (if (i =? 8) then 31743 else (if (i =? 9) then 64511 else (if (i =? 10) then 31744 else (if (i =? 11) then 64512 else (if (i =? 12) then 32257 else (if (i =? 13) then 31745 else (if (i =? 14) then 64513 else (if (i =? 15) then 15361 else (if (i =? 16) then 16383 else (if (i =? 17) then 15362 else (if (i =? 18) then 14336 else (if (i =? 19) then 4096 else (if (i =? 20) then 5120 else (if (i =? 21) then 1025 else (if (i =? 22) then 31742 else (if (i =? 23) then 14336 else (if (i =? 24) then 15872 else (if (i =? 25) then 25600 else (if (i =? 26) then 58368 else (if (i =? 27) then 15361 else (if (i =? 28) then 1025 else (if (i =? 29) then 15359 else (if (i =? 30) then 49664 else 16896))))))))))))))))))))))))))))))) else (if (i =? 0) then 0 else (if (i =? 1) then 32768 else (if (i =? 2) then 16256 else (if (i =? 3) then 49024 else (if (i =? 4) then 1 else (if (i =? 5) then 32769 else (if (i =? 6) then 127 else (if (i =? 7) then 128 else (if (i =? 8) then 32639 else (if (i =? 9) then 65407 else (if (i =? 10) then 32640 else (if (i =? 11) then 65408 else (if (i =? 12) then 32705 else (if (i =? 13) then 32641 else (if (i =? 14) then 65409 else (if (i =? 15) then 16257 else (if (i =? 16) then 16383 else (if (i =? 17) then 16258 else (if (i =? 18) then 16128 else (if (i =? 19) then 13056 else (if (i =? 20) then 13312 else (if (i =? 21) then 129 else (if (i =? 22) then 32638 else (if (i =? 23) then 16128 else (if (i =? 24) then 16320 else (if (i =? 25) then 19328 else (if (i =? 26) then 52096 else (if (i =? 27) then 16257 else (if (i =? 28) then 129 else (if (i =? 29) then 16255 else (if (i =? 30) then 49216 else 16448))))))))))))))))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: byte,
+  parameters: [ordinal : Nat, role : Nat, index : Nat],
+  result: Nat,
+  body: (let size : Nat := (bytes ordinal role); (let word : Nat := (dataWord ordinal role (prim quotient index size 0 : Nat)); (let scale : Nat := (if ((prim remainder index size 0 : Nat) =? 0) then 1 else (if ((prim remainder index size 0 : Nat) =? 1) then 256 else (if ((prim remainder index size 0 : Nat) =? 2) then 65536 else 16777216))); (prim remainder (prim quotient word scale 0 : Nat) 256 0 : Nat)))),
+  executable: true
+}
+
+definition{
+  name: chunkCount,
+  parameters: [ordinal : Nat, role : Nat],
+  result: Nat,
+  body: (prim quotient ((span ordinal role) + 511) 512 0 : Nat),
+  executable: true
+}
+
+definition{
+  name: header,
+  parameters: [item : Nat],
+  result: Nat,
+  body: (if (item =? 0) then 977 else (if (item =? 1) then 13 else (if (item =? 2) then 1954 else (if (item =? 3) then 512 else (if (item =? 4) then 165 else 240))))),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [query : Nat, ordinal : Nat, source : Nat, item : Nat],
+  result: (Option Nat),
+  body: (if (query =? 0) then (if (item <? 6) then (ctor Option.some [Nat] (header item)) else (ctor Option.none [Nat])) else (if (ordinal <? 977) then (if (query =? 1) then (if ((source =? 0) && (item <? 13)) then (ctor Option.some [Nat] (metadata ordinal item)) else (ctor Option.none [Nat])) else (if (query =? 2) then (if ((((source =? 0) || (source =? 1)) || (source =? 3)) && (item <? 10)) then (ctor Option.some [Nat] (if (item =? 0) then (dimension ordinal source 0) else (if (item =? 1) then (dimension ordinal source 1) else (if (item =? 2) then (dimension ordinal source 2) else (if (item =? 3) then (dimension ordinal source 3) else (if (item =? 4) then (stride ordinal source 0) else (if (item =? 5) then (stride ordinal source 1) else (if (item =? 6) then (stride ordinal source 2) else (if (item =? 7) then (stride ordinal source 3) else (if (item =? 8) then (span ordinal source) else (if (item =? 9) then (elements ordinal source) else (elements ordinal source)))))))))))) else (ctor Option.none [Nat])) else (if (query =? 3) then (if ((source <? 2) && (item <? 512)) then (ctor Option.some [Nat] (byte ordinal source item)) else (ctor Option.none [Nat])) else (if (query =? 4) then (if (item <? 2) then (if (source =? 0) then (if (item =? 0) then (ctor Option.some [Nat] (chunkCount ordinal 0)) else (ctor Option.none [Nat])) else (if (source <=? (chunkCount ordinal 0)) then (ctor Option.some [Nat] (if (item =? 0) then (prim multiply (prim subtract source 1 : Nat) 512 : Nat) else (let remaining : Nat := (prim subtract (span ordinal 0) (prim multiply (prim subtract source 1 : Nat) 512 : Nat) : Nat); (if (remaining <? 512) then remaining else 512)))) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])) else (if (query =? 5) then (if (item <? 2) then (if (source =? 0) then (if (item =? 0) then (ctor Option.some [Nat] (chunkCount ordinal 1)) else (ctor Option.none [Nat])) else (if (source <=? (chunkCount ordinal 1)) then (ctor Option.some [Nat] (if (item =? 0) then (prim multiply (prim subtract source 1 : Nat) 512 : Nat) else (let remaining : Nat := (prim subtract (span ordinal 1) (prim multiply (prim subtract source 1 : Nat) 512 : Nat) : Nat); (if (remaining <? 512) then remaining else 512)))) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])) else (ctor Option.none [Nat])))))) else (ctor Option.none [Nat]))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: completeCorpus,
+  parameters: [],
+  statement: ((header 0) = (((prim multiply 18 (prim multiply 4 12 : Nat) : Nat) + (prim multiply 7 (prim multiply 4 4 : Nat) : Nat)) + 1)),
+  proof: reflexivity{}
+}
+
+theorem{name: completeRefusals, parameters: [], statement: ((header 5) = 240), proof: reflexivity{}}
+
+theorem{name: tuple0Role0, parameters: [], statement: ((kind 0 0) = 0), proof: reflexivity{}}
+
+theorem{name: tuple0Role1, parameters: [], statement: ((kind 0 1) = 0), proof: reflexivity{}}
+
+theorem{name: tuple0Role3, parameters: [], statement: ((kind 0 3) = 0), proof: reflexivity{}}
+
+theorem{name: tuple192Role0, parameters: [], statement: ((kind 192 0) = 1), proof: reflexivity{}}
+
+theorem{name: tuple192Role1, parameters: [], statement: ((kind 192 1) = 1), proof: reflexivity{}}
+
+theorem{name: tuple192Role3, parameters: [], statement: ((kind 192 3) = 1), proof: reflexivity{}}
+
+theorem{name: tuple384Role0, parameters: [], statement: ((kind 384 0) = 30), proof: reflexivity{}}
+
+theorem{name: tuple384Role1, parameters: [], statement: ((kind 384 1) = 30), proof: reflexivity{}}
+
+theorem{name: tuple384Role3, parameters: [], statement: ((kind 384 3) = 30), proof: reflexivity{}}
+
+theorem{name: tuple576Role0, parameters: [], statement: ((kind 576 0) = 30), proof: reflexivity{}}
+
+theorem{name: tuple576Role1, parameters: [], statement: ((kind 576 1) = 0), proof: reflexivity{}}
+
+theorem{name: tuple576Role3, parameters: [], statement: ((kind 576 3) = 30), proof: reflexivity{}}
+
+theorem{name: tuple672Role0, parameters: [], statement: ((kind 672 0) = 30), proof: reflexivity{}}
+
+theorem{name: tuple672Role1, parameters: [], statement: ((kind 672 1) = 0), proof: reflexivity{}}
+
+theorem{name: tuple672Role3, parameters: [], statement: ((kind 672 3) = 0), proof: reflexivity{}}
+
+theorem{name: tuple720Role0, parameters: [], statement: ((kind 720 0) = 1), proof: reflexivity{}}
+
+theorem{name: tuple720Role1, parameters: [], statement: ((kind 720 1) = 0), proof: reflexivity{}}
+
+theorem{name: tuple720Role3, parameters: [], statement: ((kind 720 3) = 1), proof: reflexivity{}}
+
+theorem{name: tuple816Role0, parameters: [], statement: ((kind 816 0) = 1), proof: reflexivity{}}
+
+theorem{name: tuple816Role1, parameters: [], statement: ((kind 816 1) = 0), proof: reflexivity{}}
+
+theorem{name: tuple816Role3, parameters: [], statement: ((kind 816 3) = 0), proof: reflexivity{}}
+
+theorem{name: outcome8, parameters: [], statement: ((outcome 8) = 1), proof: reflexivity{}}
+
+theorem{name: outcome9, parameters: [], statement: ((outcome 9) = 2), proof: reflexivity{}}
+
+theorem{name: outcome11, parameters: [], statement: ((outcome 11) = 2), proof: reflexivity{}}
+
+theorem{name: outcome106, parameters: [], statement: ((outcome 106) = 1), proof: reflexivity{}}
+
+theorem{name: outcome58, parameters: [], statement: ((outcome 58) = 0), proof: reflexivity{}}
+
+theorem{name: outcome864, parameters: [], statement: ((outcome 864) = 0), proof: reflexivity{}}
+
+theorem{name: outcome976, parameters: [], statement: ((outcome 976) = 0), proof: reflexivity{}}
+
+theorem{name: rightAlias, parameters: [], statement: ((operation 96) = 2), proof: reflexivity{}}
+
+theorem{name: allShared, parameters: [], statement: ((operation 144) = 3), proof: reflexivity{}}
+
+theorem{
+  name: broadcastRightAliasUsesOwnedOutput,
+  parameters: [],
+  statement: ((operation 98) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nonnestedRowStride,
+  parameters: [],
+  statement: ((stride 7 3 1) = 72),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nonnestedPlaneStride,
+  parameters: [],
+  statement: ((stride 7 3 2) = 104),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: singletonInnerIgnored,
+  parameters: [],
+  statement: ((stride 3 1 0) = 29),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: largeBatch,
+  parameters: [],
+  statement: ((dimension 976 0 3) = 65537),
+  proof: reflexivity{}
+}
+
+theorem{name: largeMixed, parameters: [], statement: ((kind 976 0) = 30), proof: reflexivity{}}
+
+theorem{
+  name: largeRightScalar,
+  parameters: [],
+  statement: ((dimension 976 1 3) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyFirstAxis,
+  parameters: [],
+  statement: ((dimension 864 0 0) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyLastAxis,
+  parameters: [],
+  statement: ((dimension 867 0 3) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unknownOrdinal,
+  parameters: [],
+  statement: ((evaluate 1 977 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: metadataBoundary,
+  parameters: [],
+  statement: ((evaluate 1 0 0 13) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unknownQuery,
+  parameters: [],
+  statement: ((evaluate 10 0 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

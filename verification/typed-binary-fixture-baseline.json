@@ -1,0 +1,15 @@
+{
+  "spec": "vtensor/typed-fixture-baseline/1",
+  "name": "typed-binary",
+  "origin": "Measured constructor descriptors aliases and initialized bytes from the first successful Prism-generated 977-case corpus. Numerical expected results remain actual imported GGML CPU computations.",
+  "model": "PrismTemplateContract.TypedBinaryFixtures.evaluate",
+  "model_result": "405eec03e7ca42b619ecf54ea9c7f9cb94fc00a75aeb591722b0650ad8f624d1",
+  "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "architecture": "x86_64",
+  "cases": 977,
+  "positive_cases": 737,
+  "constructed_refusals": 240,
+  "descriptor_refusal_probes": 12,
+  "bytes": 2491136,
+  "sha256": "77e15e44eee53cddf59c33756cd290a6c5c5801312e7fff9935efdc604648e7d"
+}
