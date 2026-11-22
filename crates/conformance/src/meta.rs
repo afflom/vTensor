@@ -31,6 +31,15 @@ macro_rules! interface {
     };
 }
 
+record! { #[derive(Clone)] ThreadpoolParams {
+    cpumask: [bool; 512],
+    n_threads: c_int,
+    prio: c_int,
+    poll: u32,
+    strict_cpu: bool,
+    paused: bool,
+} }
+
 record! { Tensor {
     ty: c_int,
     buffer: Buf,

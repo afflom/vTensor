@@ -68,7 +68,7 @@ fn state() -> &'static State {
                     get_name: Some(reg_name),
                     get_device_count: Some(device_count),
                     get_device: Some(device_at),
-                    ..Default::default()
+                    get_proc_address: Some(threadpool::lookup),
                 },
                 context: null_mut(),
             }),
@@ -464,13 +464,14 @@ unsafe extern "C" fn backend_new(device: Dev, _: *const c_char) -> BackendPtr {
             ..Default::default()
         },
         device,
-        context: null_mut(),
+        context: threadpool::new_context(),
     }))
 }
 
 unsafe extern "C" fn backend_free(backend: BackendPtr) {
     // SAFETY: GGML delegates backend destruction to this callback exactly once.
     unsafe {
+        threadpool::free_context(backend);
         drop(Box::from_raw(backend));
     }
 }
@@ -702,6 +703,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
 }
 
 fn execute_quantized_matrix(
+    execution: &threadpool::Execution,
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
 ) -> Result<(), BackendError> {
@@ -717,7 +719,15 @@ fn execute_quantized_matrix(
     };
     // SAFETY: graph admission retained both typed GGML source descriptors.
     let (w, a) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
-    let weights = graph_tensor_data(w)?;
+    let pointer = graph_tensor_data(w)?;
+    let span = tensor_span(w)?;
+    let weights = if span == 0 {
+        &[]
+    } else {
+        // SAFETY: GGML retains the admitted region through graph execution. All
+        // matrix outputs are staged until every weight read has finished.
+        unsafe { std::slice::from_raw_parts(pointer.cast_const(), span) }
+    };
     let activations = graph_tensor_data(a)?;
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
@@ -751,23 +761,25 @@ fn execute_quantized_matrix(
             prepared
                 .push(encode_symmetric_q8_block(&lanes).map_err(|_| BackendError::InvalidTensor)?);
         }
-        for (row, value) in values.iter_mut().enumerate() {
-            let Response::C3(start) = run(Request::C2(plan.clone(), weight_base, row as u64))
+        execution.fill(values, |first, chunk| {
+            for (index, value) in chunk.iter_mut().enumerate() {
+                let Response::C3(start) = run(Request::C2(
+                    plan.clone(),
+                    weight_base,
+                    (first + index) as u64,
+                ))
                 .map_err(|_| BackendError::Overflow)?
-            else {
-                return Err(BackendError::InvalidTensor);
-            };
-            let bytes = if weight_bytes == 0 {
-                &[]
-            } else {
-                // SAFETY: Prism bounds the complete contiguous encoded row in the
-                // live weight buffer. Writes are staged until all reads finish.
-                unsafe {
-                    std::slice::from_raw_parts(weights.add(start as usize), weight_bytes as usize)
-                }
-            };
-            *value = dot(bytes, &prepared).map_err(|_| BackendError::InvalidTensor)?;
-        }
+                else {
+                    return Err(BackendError::InvalidTensor);
+                };
+                let bytes = weights
+                    .get(start as usize..)
+                    .and_then(|tail| tail.get(..weight_bytes as usize))
+                    .ok_or(BackendError::OutOfBounds)?;
+                *value = dot(bytes, &prepared).map_err(|_| BackendError::InvalidTensor)?;
+            }
+            Ok(())
+        })?;
     }
     for (column, offset) in results.chunks_exact(rows as usize).zip(offsets) {
         // SAFETY: each certified column fits the checked buffer and the private
@@ -1183,7 +1195,11 @@ unsafe extern "C" fn supports_operation(_: Dev, tensor: *const Tensor) -> bool {
     plan_operation(unsafe { &*tensor }).is_ok()
 }
 
-unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
+unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
+    // SAFETY: the backend and its dispatch settings remain live for this graph call.
+    let Ok(execution) = (unsafe { threadpool::execution(backend) }) else {
+        return GGML_STATUS_FAILED;
+    };
     let mut plans = Vec::new();
     // SAFETY: GGML retains this graph and all descriptors for the synchronous
     // call. Preflight plans every numerical node once before any computation.
@@ -1212,7 +1228,9 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
                 ExecutionPlan::Attention(plan) => attention::execute(&*tensor, *plan),
                 ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
-                ExecutionPlan::Quantized(plan) => execute_quantized_matrix(&*tensor, plan),
+                ExecutionPlan::Quantized(plan) => {
+                    execute_quantized_matrix(&execution, &*tensor, plan)
+                }
                 _ => Err(BackendError::InvalidTensor),
             };
             if result.is_err() {
@@ -1594,5 +1612,304 @@ mod attention {
             }
         }
         Ok(())
+    }
+}
+
+mod threadpool {
+    use super::{BackendError, BackendPtr, Reg, ThreadpoolParams};
+    use std::ffi::{c_char, c_int, c_void, CStr};
+    use std::ptr::null_mut;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::{mpsc, Arc, Mutex};
+    use std::thread::{self, JoinHandle};
+
+    type Job = Box<dyn FnOnce() + Send>;
+    type Status = Result<(), BackendError>;
+
+    struct Worker {
+        send: Option<mpsc::Sender<Job>>,
+        thread: Option<JoinHandle<()>>,
+    }
+
+    impl Drop for Worker {
+        fn drop(&mut self) {
+            self.send.take();
+            if let Some(thread) = self.thread.take() {
+                let _ = thread.join();
+            }
+        }
+    }
+
+    struct Pool {
+        workers: Vec<Worker>,
+        paused: Arc<AtomicBool>,
+        params: ThreadpoolParams,
+    }
+
+    #[cfg(target_os = "linux")]
+    fn configure(params: &ThreadpoolParams, placement: usize) {
+        unsafe extern "C" {
+            fn sched_setaffinity(pid: c_int, bytes: usize, mask: *const usize) -> c_int;
+            fn sched_setscheduler(pid: c_int, policy: c_int, priority: *const c_int) -> c_int;
+        }
+        if params.prio != 0 {
+            let level = (i64::from(params.prio) + 1) as u64;
+            if let Ok(priority) = vtensor_native_memory::run(vtensor_native_memory::Adt0::C3(level))
+            {
+                let priority = priority as c_int;
+                let policy = if params.prio < 0 { 3 } else { 1 };
+                // SAFETY: pid zero selects this thread and Linux sched_param contains one int.
+                unsafe { sched_setscheduler(0, policy, &priority) };
+            }
+        }
+        let enabled = || {
+            params
+                .cpumask
+                .iter()
+                .enumerate()
+                .filter_map(|(i, &on)| on.then_some(i))
+        };
+        let count = enabled().count();
+        if count == 0 {
+            return;
+        }
+        let mut mask = [0usize; 512 / usize::BITS as usize];
+        let mut select = |cpu: usize| {
+            mask[cpu / usize::BITS as usize] |= 1 << (cpu % usize::BITS as usize);
+        };
+        if params.strict_cpu {
+            if let Some(cpu) = enabled().nth(placement % count) {
+                select(cpu);
+            }
+        } else {
+            enabled().for_each(select);
+        }
+        // SAFETY: the kernel reads exactly the supplied number of mask bytes.
+        unsafe { sched_setaffinity(0, std::mem::size_of_val(&mask), mask.as_ptr()) };
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    fn configure(_: &ThreadpoolParams, _: usize) {}
+
+    impl Pool {
+        fn create(params: ThreadpoolParams) -> Result<Arc<Self>, BackendError> {
+            let valid = vtensor_native_predicates::Adt0::C3(
+                params.n_threads as u64,
+                (i64::from(params.prio) + 1) as u64,
+                u64::from(params.poll),
+            );
+            if !vtensor_native_predicates::run(valid) {
+                return Err(BackendError::InvalidTensor);
+            }
+            let mut workers = Vec::new();
+            let paused = Arc::new(AtomicBool::new(params.paused));
+            for index in 0..params.n_threads as usize - 1 {
+                let (send, receive) = mpsc::channel::<Job>();
+                let idle = Arc::clone(&paused);
+                let settings = params.clone();
+                let thread = thread::Builder::new()
+                    .name(format!("vTensor-{index}"))
+                    .spawn(move || {
+                        configure(&settings, index);
+                        while let Ok(job) = receive.recv() {
+                            job();
+                            for _ in 0..settings.poll {
+                                if idle.load(Ordering::Relaxed) {
+                                    break;
+                                }
+                                if let Ok(next) = receive.try_recv() {
+                                    next();
+                                } else {
+                                    std::hint::spin_loop();
+                                }
+                            }
+                        }
+                    })
+                    .map_err(|_| BackendError::Allocation)?;
+                workers.push(Worker {
+                    send: Some(send),
+                    thread: Some(thread),
+                });
+            }
+            if !params.paused {
+                configure(&params, workers.len());
+            }
+            Ok(Arc::new(Self {
+                workers,
+                paused,
+                params,
+            }))
+        }
+    }
+
+    // A returning graph must have exclusive ownership of its outputs again, even
+    // when a worker refuses a job or the submitting thread unwinds.
+    struct Batch(mpsc::Receiver<Status>);
+    impl Drop for Batch {
+        fn drop(&mut self) {
+            for _ in &self.0 {}
+        }
+    }
+
+    pub(super) struct Execution {
+        pool: Option<Arc<Pool>>,
+        threads: usize,
+    }
+
+    impl Execution {
+        pub(super) fn fill<T: Send, F: Fn(usize, &mut [T]) -> Status + Sync>(
+            &self,
+            values: &mut [T],
+            fill: F,
+        ) -> Status {
+            let Some(pool) = &self.pool else {
+                return fill(0, values);
+            };
+            if self.threads == 1 || values.len() < 2 {
+                return fill(0, values);
+            }
+            let width = vtensor_native_memory::run(vtensor_native_memory::Adt0::C2(
+                self.threads as u64,
+                values.len() as u64,
+            ))
+            .map_err(|_| BackendError::Overflow)? as usize;
+            let mut chunks = values.chunks_mut(width);
+            let first = chunks.next().ok_or(BackendError::InvalidTensor)?;
+            let (send, receive) = mpsc::channel();
+            let batch = Batch(receive);
+            let function = &fill;
+            let submit = move || {
+                for (i, (worker, chunk)) in pool.workers.iter().zip(chunks).enumerate() {
+                    let done = send.clone();
+                    let task: Box<dyn FnOnce() + Send + '_> = Box::new(move || {
+                        let status = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            function((i + 1) * width, chunk)
+                        }))
+                        .unwrap_or(Err(BackendError::InvalidTensor));
+                        let _ = done.send(status);
+                    });
+                    // SAFETY: each chunk is exclusive. Batch drains until all job senders
+                    // are destroyed, including on early return or unwind. Both the slice
+                    // and the borrowed function outlive Batch and every invocation.
+                    let job =
+                        unsafe { std::mem::transmute::<Box<dyn FnOnce() + Send + '_>, Job>(task) };
+                    worker
+                        .send
+                        .as_ref()
+                        .ok_or(BackendError::Allocation)?
+                        .send(job)
+                        .map_err(|_| BackendError::Allocation)?;
+                }
+                drop(send);
+                function(0, first)
+            };
+            let mut result = submit();
+            for status in &batch.0 {
+                result = result.and(status);
+            }
+            result
+        }
+    }
+
+    #[derive(Default)]
+    pub(super) struct Settings {
+        attached: Option<Arc<Pool>>,
+        private: Option<Arc<Pool>>,
+        limit: Option<usize>,
+    }
+    type Context = Mutex<Settings>;
+
+    pub(super) fn new_context() -> *mut c_void {
+        Box::into_raw(Box::<Context>::default()).cast()
+    }
+    pub(super) unsafe fn free_context(backend: BackendPtr) {
+        // SAFETY: backend_new initialized this context, and GGML destroys it once.
+        unsafe { drop(Box::from_raw((*backend).context.cast::<Context>())) }
+    }
+    pub(super) unsafe fn execution(backend: BackendPtr) -> Result<Execution, BackendError> {
+        // SAFETY: graph_compute retains its live backend for the entire submission.
+        let mut settings = unsafe { &*(*backend).context.cast::<Context>() }
+            .lock()
+            .map_err(|_| BackendError::InvalidTensor)?;
+        let limit = settings.limit;
+        if settings.attached.is_none() && limit.unwrap_or(1) > 1 && settings.private.is_none() {
+            settings.private = Some(Pool::create(ThreadpoolParams {
+                n_threads: limit.unwrap_or(1) as c_int,
+                cpumask: [false; 512],
+                prio: 0,
+                poll: 0,
+                strict_cpu: false,
+                paused: false,
+            })?);
+        }
+        let pool = settings
+            .attached
+            .as_ref()
+            .or(settings.private.as_ref())
+            .cloned();
+        let mut threads = 1;
+        if let Some(active) = &pool {
+            threads = limit.unwrap_or(usize::MAX).min(active.workers.len() + 1);
+            if active.paused.swap(false, Ordering::Relaxed) {
+                configure(&active.params, active.workers.len());
+            }
+        }
+        Ok(Execution { pool, threads })
+    }
+
+    unsafe extern "C" fn create(params: *const ThreadpoolParams) -> *mut c_void {
+        // SAFETY: GGML supplies a readable params object for threadpool_new.
+        let Some(params) = (unsafe { params.as_ref() }) else {
+            return null_mut();
+        };
+        Pool::create(params.clone()).map_or(null_mut(), |pool| Box::into_raw(Box::new(pool)).cast())
+    }
+    unsafe extern "C" fn release(handle: *mut c_void) {
+        if !handle.is_null() {
+            // SAFETY: the caller releases the handle returned by create exactly once.
+            unsafe { drop(Box::from_raw(handle.cast::<Arc<Pool>>())) }
+        }
+    }
+    unsafe extern "C" fn attach(backend: BackendPtr, handle: *mut c_void) {
+        // SAFETY: the registry supplies its own backend and either a live pool or null.
+        let (settings, next) = unsafe {
+            (
+                &*(*backend).context.cast::<Context>(),
+                handle.cast::<Arc<Pool>>().as_ref().cloned(),
+            )
+        };
+        let mut state = settings.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(old) = &state.attached {
+            if next.as_ref().is_none_or(|p| !Arc::ptr_eq(p, old)) {
+                old.paused.store(true, Ordering::Relaxed);
+            }
+        }
+        state.attached = next;
+    }
+    unsafe extern "C" fn set_threads(backend: BackendPtr, count: c_int) {
+        let request = vtensor_native_predicates::Adt0::C3(count as u64, 1, 0);
+        if vtensor_native_predicates::run(request) {
+            // SAFETY: GGML passes a live backend created by this registry.
+            let mut state = unsafe { &*(*backend).context.cast::<Context>() }
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            if state.limit != Some(count as usize) {
+                state.limit = Some(count as usize);
+                state.private.take();
+            }
+        }
+    }
+    pub(super) unsafe extern "C" fn lookup(_: Reg, name: *const c_char) -> *mut c_void {
+        if name.is_null() {
+            return null_mut();
+        }
+        // SAFETY: the imported GGML registry lookup takes a NUL-terminated name.
+        match unsafe { CStr::from_ptr(name) }.to_bytes() {
+            b"ggml_threadpool_new" => create as *mut c_void,
+            b"ggml_threadpool_free" => release as *mut c_void,
+            b"ggml_backend_cpu_set_threadpool" => attach as *mut c_void,
+            b"ggml_backend_set_n_threads" => set_threads as *mut c_void,
+            _ => null_mut(),
+        }
     }
 }

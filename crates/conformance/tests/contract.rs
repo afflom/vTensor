@@ -2243,29 +2243,46 @@ int main(int argc, char **argv) {
     ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
     ggml_backend_cpu_set_n_threads(reference,1);
     if (!strcmp(argv[3],"cpu-threadpool")) {
-        std::array<float,4> expected{};
+        std::array<std::array<float,17>,4> expected{};
         for(auto selected : {reference,backend}) {
             auto registry=ggml_backend_dev_backend_reg(ggml_backend_get_device(selected));
             auto lookup=[&](const char *name){return ggml_backend_reg_get_proc_address(registry,name);};
             auto create=reinterpret_cast<decltype(&ggml_threadpool_new)>(lookup("ggml_threadpool_new"));
             auto release=reinterpret_cast<decltype(&ggml_threadpool_free)>(lookup("ggml_threadpool_free"));
             auto attach=reinterpret_cast<decltype(&ggml_backend_cpu_set_threadpool)>(lookup("ggml_backend_cpu_set_threadpool"));
-            CHECK(create && release && attach);
+            auto set_threads=reinterpret_cast<ggml_backend_set_n_threads_t>(lookup("ggml_backend_set_n_threads"));
+            CHECK(create && release && attach && set_threads);
+            CHECK(!lookup("vtensor_unknown_threadpool_proc"));
             auto one=ggml_threadpool_params_default(1), two=ggml_threadpool_params_default(2);
             two.paused=true;
+            if(selected==backend) {
+                CHECK(!create(nullptr));
+                for(int n : {-1,0,GGML_MAX_N_THREADS+1}) {
+                    auto invalid=one;invalid.n_threads=n;CHECK(!create(&invalid));
+                }
+                auto invalid=one;invalid.poll=101;CHECK(!create(&invalid));
+            }
             auto first=create(&one), second=create(&two); CHECK(first && second && first!=second);
             auto ctx=ggml_init({ggml_graph_overhead()+8*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
-            auto input=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,1);
-            auto output=ggml_scale(ctx,input,2.0f); auto graph=ggml_new_graph(ctx);
+            auto input=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,32);
+            auto weights=ggml_new_tensor_2d(ctx,GGML_TYPE_Q8_0,32,17);
+            auto output=ggml_mul_mat(ctx,weights,input); auto graph=ggml_new_graph(ctx);
             ggml_build_forward_expand(graph,output);
             auto storage=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(storage);
+            std::array<float,32*17> original{};
+            for(size_t i=0;i<original.size();i++) original[i]=float(int(i/32)+1)*float(int(i%7)-3);
+            std::vector<uint8_t> encoded(ggml_nbytes(weights));
+            CHECK(ggml_quantize_chunk(GGML_TYPE_Q8_0,original.data(),encoded.data(),0,17,32,nullptr)==encoded.size());
+            ggml_backend_tensor_set(weights,encoded.data(),0,encoded.size());
             const std::array<ggml_threadpool_t,4> bindings={first,second,first,nullptr};
             for(size_t step=0;step<bindings.size();step++) {
                 attach(selected,bindings[step]);
-                const float value=float(step+1);float result=0;
-                ggml_backend_tensor_set(input,&value,0,sizeof(value));
+                set_threads(selected,step==0 || step==2 ? 1 : 2);
+                std::array<float,32> values{};std::array<float,17> result{};
+                for(size_t i=0;i<values.size();i++) values[i]=float(int(i%5)-2)*float(step+1);
+                ggml_backend_tensor_set(input,values.data(),0,sizeof(values));
                 CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-                ggml_backend_tensor_get(output,&result,0,sizeof(result));
+                ggml_backend_tensor_get(output,result.data(),0,sizeof(result));
                 if(selected==reference) expected[step]=result;
                 else CHECK(result==expected[step]);
             }
