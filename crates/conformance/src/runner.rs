@@ -480,7 +480,7 @@ enum ExecutionPlan {
     Typed(vtensor_typed::Adt2),
     Quantized(vtensor_matrix_q8::Adt2),
     Rotary(vtensor_rotary::Adt3),
-    Attention(vtensor_attention::Adt2),
+    Attention(Box<vtensor_attention::Adt2>),
 }
 
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
@@ -1209,7 +1209,7 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
             let result = match plan {
                 ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
-                ExecutionPlan::Attention(plan) => attention::execute(&*tensor, plan),
+                ExecutionPlan::Attention(plan) => attention::execute(&*tensor, *plan),
                 ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
                 ExecutionPlan::Quantized(plan) => execute_quantized_matrix(&*tensor, plan),
@@ -1452,7 +1452,7 @@ mod attention {
             sink.map(descriptor),
             descriptor(output),
         ))? {
-            Response::C1(p) => Ok(Some(super::ExecutionPlan::Attention(p))),
+            Response::C1(p) => Ok(Some(super::ExecutionPlan::Attention(Box::new(p)))),
             _ => Err(BackendError::InvalidTensor),
         }
     }
