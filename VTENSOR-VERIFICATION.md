@@ -4581,3 +4581,16 @@ The exact locked SDK passed `just vv` at `748b5066afe57ca86bfd8526a252fe144fe492
 The locked SDK ran the release plugin against all 510 forward and 424 backward rotary graphs from the pinned GGML factory. Both suites passed. Reversing the direction in the adapter failed the first forward F32 graph. Prism supplies the byte addresses and selects the position axis. Verdant computes the frequencies, coefficients, coordinate rotation and storage conversions. Each token shares its coefficients across heads and batches.
 
 The independent stories15M scheduler observation recorded 195 graph nodes and 192 compute nodes. The plugin admitted 186, including all 12 rotary nodes. Six FLASH_ATTN_EXT nodes still prevented graph reservation and prefill. [GGML oracle](vendor/llama.cpp-oracle/upstream.toml) · [Verdant plane rotations](https://github.com/afflom/verdant-engine/pull/20)
+
+## Fixture probes
+
+The certified `FixtureProbes.evaluate` root enumerates the 864 VT-10 allocation
+inputs, 1,024 VT-09 transfer inputs and 40 boundary queries for the fixture
+models. The test harness submits each allocation and transfer to the pinned
+GGML oracle and compares its verdict with the layout model. The fixture
+package is a development dependency of the backend. The ten affected fixture,
+frozen-baseline and buffer tests passed in the locked SDK's release profile.
+VT-02 and all four Cargo deny checks passed. [Prism lock](probes-kernel.lock)
+
+Both VT-57 batches also passed on the release plugin built from
+`fb2bada`, covering all 510 forward and 424 backward upstream rotary cases.

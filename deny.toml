@@ -531,3 +531,9 @@ name = "vtensor_rotary"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x3d287b3a }]
+
+[[licenses.clarify]]
+name = "vtensor_probes"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x5bad0db6 }]

@@ -686,6 +686,7 @@ dependencies = [
  "vtensor_norm",
  "vtensor_norm_plan",
  "vtensor_pointwise",
+ "vtensor_probes",
  "vtensor_repeat_offset",
  "vtensor_rms_backward",
  "vtensor_rotary",
@@ -765,6 +766,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_pointwise"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_probes"
 version = "0.1.0"
 
 [[package]]
