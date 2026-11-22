@@ -62,3 +62,9 @@ Feature: native-backend
     Given the pinned GGML factory for TANH and SOFTCAP
     When the backend executes scalar storage variants, views and composed scale operations
     Then every result matches the upstream CPU evaluator
+
+  @VT-68 @build
+  Scenario: Prism places attention logit soft caps before the mask and Verdant evaluates the scaled hyperbolic tangent against the imported GGML CPU
+    Given the original F16 attention cases with a soft cap of ten
+    When vTensor runs all four combinations of mask and sink presence
+    Then every output passes the upstream CPU comparison

@@ -466,3 +466,9 @@ id = "VT-67"
 level = "build"
 suite = "native-backend"
 statement = "GGML hyperbolic tangent and composed soft-cap graphs execute through the pinned Verdant binary32 activation and match the imported CPU evaluator"
+
+[[id]]
+id = "VT-68"
+level = "build"
+suite = "native-backend"
+statement = "Prism places attention logit soft caps before the mask and Verdant evaluates the scaled hyperbolic tangent against the imported GGML CPU"

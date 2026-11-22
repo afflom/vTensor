@@ -187,6 +187,9 @@ ggml_batches! {
     #[test]
     fn hyperbolic_graphs_vt_67() { "upstream-TANH,SOFTCAP", 13, ["pointwise"] }
 
+    #[test]
+    fn capped_attention_vt_68() { "upstream-FLASH_ATTN_EXT_SOFTCAP", 4, ["attention"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1617,7 +1620,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "202b15726f94ecac1304bc332eb81f38f8ec2320a4bfa93cc6b6ce91291ac557",
+            "09ff05bc25496e68ad6b1a32b8f9408281095bc399868f009b50a92201797df7",
         )
     });
 
