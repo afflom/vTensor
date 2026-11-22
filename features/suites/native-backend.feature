@@ -6,3 +6,5 @@ Feature: native-backend
     When an application discovers vTensor and allocates and transfers tensor bytes
     Then ABI layouts, tensor placement, and observed bytes agree with upstream
     And invalid allocation and byte ranges have modeled refusals
+    And native oracle executables are reused after host-only orchestration changes
+    And changes to the compiler recipe or imported evaluator invalidate that reuse

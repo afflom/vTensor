@@ -1592,12 +1592,8 @@ mod native_backend_oracle {
                 };
                 result.expect("admitted fixture query")
             };
-            let (cases, fields, sources, padding) = (
-                query(Request::C0(0)),
-                query(Request::C0(1)),
-                query(Request::C0(2)),
-                query(Request::C0(3)),
-            );
+            let [cases, fields, sources, padding] =
+                [0, 1, 2, 3].map(|item| query(Request::C0(item)));
             assert_eq!(
                 (cases, fields, sources, padding),
                 (if family == 0 { 1280 } else { 120 }, 24, 2, 165)
@@ -1608,20 +1604,13 @@ mod native_backend_oracle {
                 .collect();
             for case in 0..cases {
                 for field in 0..fields {
-                    let value = query(Request::C1(case, field));
-                    input.extend_from_slice(&value.to_le_bytes());
+                    input.extend(query(Request::C1(case, field)).to_le_bytes());
                 }
                 for source in 0..sources {
-                    let (count, width) = (
-                        query(Request::C2(case, source, 0)),
-                        query(Request::C2(case, source, 1)),
-                    );
-                    for value in [count, width] {
-                        input.extend_from_slice(&value.to_le_bytes());
-                    }
+                    let [count, width] = [0, 1].map(|item| query(Request::C2(case, source, item)));
+                    input.extend([count, width].into_iter().flat_map(u64::to_le_bytes));
                     for index in 0..count {
-                        let value = query(Request::C3(case, source, index));
-                        input.extend_from_slice(&value.to_le_bytes());
+                        input.extend(query(Request::C3(case, source, index)).to_le_bytes());
                     }
                 }
             }
@@ -1695,12 +1684,24 @@ mod native_backend_oracle {
         // The host dynamically loads this path; live provenance checks bind its contents.
         identity.update(driver.as_bytes());
         identity.update(common.as_os_str().as_encoded_bytes());
-        identity.update(super::ggml_oracle::source_tokens(
-            include_str!("contract.rs")
-                .split_once("\nmod native_backend_oracle {")
+        // Bind the compiler/linker recipe, not fixture generation or runtime orchestration.
+        // The synthetic closing brace completes `verify` for lossless Rust tokenization.
+        let recipe = include_str!("contract.rs")
+            .split_once("\n    fn compiled_object(")
+            .unwrap()
+            .1
+            .split_once("\n        verify_file(&program,")
+            .unwrap()
+            .0;
+        identity.update(
+            format!("fn compiled_object({recipe}\n}}")
+                .parse::<proc_macro2::TokenStream>()
                 .unwrap()
-                .1,
-        ));
+                .to_string(),
+        );
+        if mode.starts_with("upstream-") {
+            identity.update(UPSTREAM_SUITE.as_bytes());
+        }
         let cache = common.join("native").join(digest(&identity.finalize()));
         std::fs::create_dir_all(&cache).unwrap();
         let program = cache.join("native-oracle");
