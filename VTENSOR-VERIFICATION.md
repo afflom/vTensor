@@ -4744,3 +4744,11 @@ On the VT-61 Verdant pin, the 122 logistic cases, the 39 elementary cases,
 the complete 510-case forward rotary group, the two small attention cases
 and VT-02 passed together. Scoped Clippy and the dependency check passed.
 VT-58 remains the most recent full `just vv` checkpoint.
+
+## BF16 indexed row gradients
+
+VT-62 extends the existing Prism scatter plan to accept BF16. Verdant widens the encoded words and accumulates them into F32. The reference graph uses the pinned GGML CPU cast followed by its F32 GET_ROWS_BACK operator. The unmodified standalone evaluator attributes ordinals 1069 and 1070 to CPU refusal alone. Both direct vTensor graphs matched the composed reference byte for byte, including the repeated row index. [Factory parameters and binary hashes](verification/factory-bf16-row-gradient-vt62.json)
+
+In the locked SDK, `bf16_row_gradient_vt_62` passed 1,680 cases and `row_gradient_graphs_vt_31` passed all 3,360 existing F16/F32 cases. The comparator requires exact finite words, signed zeros, infinities and padding, and checks NaNs by class. Invalid indices must leave the whole output unchanged. Before the implementation, the native admission assertion failed. Routing a BF16 word to Verdant's F16 decoder produced byte 192 where the CPU returned 128. Restoring the source format passed the batch.
+
+Prism now locates a transfer within both the tensor span and its backing allocation. The host reuses a computed span for tensor initialization, copying and attention inputs. The exported locator covers an offset view, a tensor extending beyond its backing store and an empty transfer. The native-line count fell from 12,162 to 12,158 across the same 51 files. [Certified layout roots](layout-kernel.lock)

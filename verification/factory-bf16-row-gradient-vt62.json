@@ -1,0 +1,56 @@
+{
+  "requirement": "VT-62",
+  "implementation": "477f4e154bc71f52123986b7300b661c0db67a1d",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_revision": "878fbc38f29959a527b721d01543f131f6d154e8",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "provider_sha256": "307e25b0e71a623aabec28b40b7cb47c5fb9b798f13ce3063ea0136756e5bf2e",
+  "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "factory_cli_sha256": "b32cc65fd893f3f9aa9bc062ea6051a61ea8a7a62b21cea0b690007f730a11bf",
+  "command": "test-backend-ops test -b vTensor --output csv -o GET_ROWS_BACK -p '^type=bf16,' -j 1",
+  "standalone_csv_sha256": "12e62de898661a561e0c979058c14b327f8da93d17d7b1538bc982b41539a28f",
+  "direct_factory_verdict": "refused by CPU alone",
+  "supplemental_oracle": "Build each original graph using make_test_cases_eval(). Execute its direct BF16 GET_ROWS_BACK on vTensor. On CPU, widen the same BF16 input with ggml_cast to F32 and execute ggml_get_rows_back. Use rows [2,2,1,4]. Fill BF16 inputs from the high 16 bits of the unsigned 32-bit recurrence state = 1664525 * state + 1013904223, seeded with ordinal + 1. Subtract 32768, divide by 19 in F32, and convert with ggml_fp32_to_bf16.",
+  "supplemental_comparisons": [
+    {
+      "ordinal": 1069,
+      "parameters": "type=bf16,n=256,m=5,r=4,b=1,v=0",
+      "destination_bytes": 5120,
+      "byte_mismatches": 0
+    },
+    {
+      "ordinal": 1070,
+      "parameters": "type=bf16,n=256,m=5,r=4,b=1,v=1",
+      "destination_bytes": 5120,
+      "byte_mismatches": 0
+    }
+  ],
+  "contract_batch": {
+    "test": "bf16_row_gradient_vt_62",
+    "cases": 1680,
+    "widths": [
+      0,
+      1,
+      3,
+      17,
+      65
+    ],
+    "input_rows": [
+      0,
+      1,
+      3,
+      9
+    ],
+    "output_rows": [
+      0,
+      1,
+      4,
+      7
+    ],
+    "layouts": 3,
+    "index_patterns": 7,
+    "comparison": "Finite words, infinities, signed zeros and padding match byte for byte. Paired NaNs compare by class. Invalid indices return failure and preserve destination bytes. Empty and padded layouts are included."
+  },
+  "pointwise_lock_sha256": "7665ecb61e290dde4d22d2cfc26cca9f53532e58aaaeecb1664139edb67a900d",
+  "layout_lock_sha256": "1fa7fadc667b9e2a2e65c1a2c76e5dd9427ad7488a0a6e188cffe90ff8f8d8fd"
+}

@@ -407,6 +407,20 @@
     "superseded_standalone_verdicts": {
       "VT-60": "verification/factory-elementary-vt60.json",
       "VT-61": "verification/factory-logistic-vt61.json"
+    },
+    "supplemental_refusal_evidence": {
+      "1069": {
+        "refused_by": [
+          "CPU"
+        ],
+        "evidence": "verification/factory-bf16-row-gradient-vt62.json"
+      },
+      "1070": {
+        "refused_by": [
+          "CPU"
+        ],
+        "evidence": "verification/factory-bf16-row-gradient-vt62.json"
+      }
     }
   }
 }

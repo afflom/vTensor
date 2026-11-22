@@ -102,6 +102,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-58` | build | Executes dense floating-point attention through Verdant. The quantized stories15M prefill and two decode steps match the reference top token and have maximum absolute logit error below 0.000008. [Consumer evidence](verification/llama-stories15m-vt58.json) |
 | `VT-60` | build | Dispatches LOG, SIN, COS and EXP to Verdant. All 39 imported GGML factory cases pass across F32, F16 and BF16. [Oracle results](verification/factory-elementary-vt60.json) |
 | `VT-61` | build | Executes sigmoid, SiLU and their addition/multiplication compositions with Verdant. All 122 imported GGML cases pass. [Oracle results](verification/factory-logistic-vt61.json) |
+| `VT-62` | build | Executes BF16 GET_ROWS_BACK through Verdant. Both factory graphs and 1,680 boundary cases match the imported GGML cast and F32 accumulation reference. [Oracle results](verification/factory-bf16-row-gradient-vt62.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
