@@ -223,6 +223,11 @@
     },
     "passed": 825,
     "refused_ordinals": {
+      "596": {
+        "oracle": "make_test_cases_eval / test_case::eval",
+        "test_build": "VT-55 with Verdant 5b2f0c66",
+        "result": "not supported"
+      },
       "660": {
         "oracle": "make_test_cases_eval / test_case::eval",
         "test_build": "VT-55 with Verdant 97528328",
@@ -239,7 +244,7 @@
         "result": "not supported"
       }
     },
-    "untested": 26927,
+    "untested": 26926,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
