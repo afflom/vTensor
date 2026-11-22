@@ -821,15 +821,15 @@ unsafe fn scalar_word(
     width: u64,
     value: Option<u64>,
 ) -> Result<u64, BackendError> {
-    // SAFETY: each caller supplies the admitted span. Unaligned integer access
-    // preserves the native word encoding for both packed and padded GGML views.
     macro_rules! access {
         ($ty:ty) => {
             match value {
                 Some(word) => {
+                    // SAFETY: the admitted write span contains this entire native word.
                     unsafe { pointer.cast::<$ty>().write_unaligned(word as $ty) };
                     word
                 }
+                // SAFETY: the admitted read span covers this width, including unaligned views.
                 None => u64::from(unsafe { pointer.cast::<$ty>().read_unaligned() }),
             }
         };
