@@ -1028,6 +1028,10 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
     unsafe {
         for index in 0..ggml_graph_n_nodes(graph) {
             let tensor = ggml_graph_node(graph, index);
+            let flags = u64::from((*tensor).flags as u32);
+            if !vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C2(flags)) {
+                continue;
+            }
             match plan_operation(&*tensor) {
                 Ok(Some(plan)) => {
                     if plans.try_reserve(1).is_err() {

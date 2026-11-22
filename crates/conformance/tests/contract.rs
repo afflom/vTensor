@@ -378,8 +378,8 @@ fn arithmetic_fixture_generation_vt_36() {
 /// `VT-40`: Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
 #[test]
 fn native_fixture_baselines_vt_40() {
-    let baseline = native_backend_oracle::fixture_baselines();
-    let released = &baseline["source_release"];
+    let baseline = &*native_backend_oracle::NATIVE_FIXTURES;
+    let released = &*native_backend_oracle::FILL_RELEASE;
     assert_eq!(released["cases"].as_u64(), Some(1920));
     assert_eq!(released["record"].as_array().unwrap().len(), 1920);
     let source =
@@ -1735,24 +1735,26 @@ mod native_backend_oracle {
         serde_json::from_slice(&bytes).unwrap()
     }
 
-    pub(super) fn fixture_baselines() -> &'static serde_json::Value {
-        static BASELINE: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
-        BASELINE.get_or_init(|| {
-            let mut baseline = frozen_json(
-                "native-fixture-baseline",
-                "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
-            );
-            baseline["source_release"] = frozen_json(
-                "native-fixture-source-release",
-                "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
-            );
-            baseline["mode"].as_array_mut().unwrap().push(frozen_json(
-                "typed-binary-fixture-baseline",
-                "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959",
-            ));
-            baseline
-        })
-    }
+    use std::sync::LazyLock;
+
+    pub(super) static NATIVE_FIXTURES: LazyLock<serde_json::Value> = LazyLock::new(|| {
+        frozen_json(
+            "native-fixture-baseline",
+            "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+        )
+    });
+    pub(super) static FILL_RELEASE: LazyLock<serde_json::Value> = LazyLock::new(|| {
+        frozen_json(
+            "native-fixture-source-release",
+            "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
+        )
+    });
+    static TYPED_BINARY: LazyLock<serde_json::Value> = LazyLock::new(|| {
+        frozen_json(
+            "typed-binary-fixture-baseline",
+            "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959",
+        )
+    });
 
     fn verify_fixture_records(family: u64, bytes: &[u8]) {
         let (name, digest) = match family {
@@ -2129,14 +2131,17 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let expected_snapshot =
             cache.join(format!("expected-source-{}.snapshot", std::process::id()));
         std::fs::write(&expected_snapshot, &expected).unwrap();
-        let baselines = fixture_baselines();
+        let recipe = if mode == "typed-binary" {
+            Some(&*TYPED_BINARY)
+        } else {
+            NATIVE_FIXTURES["mode"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|row| row["name"] == mode)
+        };
         let mut recipes = Vec::new();
-        if let Some(recipe) = baselines["mode"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|row| row["name"] == mode)
-        {
+        if let Some(recipe) = recipe {
             assert_eq!(recipe["cases"].as_u64().unwrap() as usize, expected_cases);
             recipes.push((
                 std::path::PathBuf::from(format!("{}.{mode}-recipes", expected_snapshot.display())),
@@ -2149,7 +2154,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                     "{}.fill-source-release",
                     expected_snapshot.display()
                 )),
-                &baselines["source_release"],
+                &*FILL_RELEASE,
             ));
         }
         for (path, _) in &recipes {

@@ -631,6 +631,7 @@ pub fn checked_neg_i64(p0: i64) -> Option<i64> {
 pub enum Adt0 {
     C0(u64),
     C1(u64, u64),
+    C2(u64),
 }
 
 #[derive(Clone)]
@@ -687,6 +688,16 @@ pub fn f0(v0: Adt0) -> bool {
                     nat_eq(a16, a17)
                 }
             }
+        }
+        Adt0::C2(v4) => {
+            let a21 = 16u64;
+            let a22 = {
+                let a18 = v4;
+                let a19 = 32u64;
+                let a20 = 0u64;
+                nat_rem(a18, a19, a20)
+            };
+            nat_le(a21, a22)
         }
     }
 }

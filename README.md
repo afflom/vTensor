@@ -35,8 +35,9 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
   address plans and dispatch. It passes words, blocks or matrix slices to
   Verdant. GGML graph objects and callbacks stay on the vTensor side of that
   interface. The imported GGML CPU and SoftFloat implementations supply test
-  results. Only their required format data, such as quantization codebooks,
-  enters the numerical runtime.
+  results. Verdant owns runtime format data, including quantization codebooks.
+  Submit missing reusable numerical primitives to Verdant and pin the submitted
+  patch revision in vTensor until a published release contains the primitive.
 
 ## Current evidence
 
@@ -93,6 +94,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-49` | build | GROUP_NORM passes five ordinary/fused factory cases and 224 supplemental cases, including 112 atomic refusals, nested F64 row subtotals and physical output spacing. |
 | `VT-50` | build | RMS_NORM_BACK passes ten factory and 353 supplemental cases, including 115 atomic refusals, 12 mutation probes, independent source strides, narrowing counterexamples and a 65,537-batch regression. |
 | `VT-51` | build | All 187 non-RoPE composed normalization factory cases and 977 typed binary supplemental cases pass, including 240 atomic refusals, 12 metadata probes, every scalar storage tuple and a 65,537-batch case. |
+| `VT-52` | build | The upstream scheduler reuses an allocated graph across active, inactive and reactivated nodes. Both output buffers match the independent CPU on all three runs. |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

@@ -87,7 +87,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xa05aee87 }]
 name = "vtensor_native_predicates"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xbdd1fb2e }]
+license-files = [{ path = "src/lib.rs", hash = 0xcd8f546c }]
 
 [[licenses.clarify]]
 name = "vtensor_matrix"

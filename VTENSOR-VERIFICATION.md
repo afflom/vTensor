@@ -4296,3 +4296,42 @@ quotient artifact in Cargo's resolved checkout. VT-51 passed all 977 typed
 runtime cases against the imported GGML oracle. The dependency audit passed.
 The source audit measured 11,737 non-Prism lines. Full provider acceptance and
 Verdant release publication remain open. [Engine PR #12](https://github.com/afflom/verdant-engine/pull/12)
+
+## Scheduled graph selection
+
+VT-52 drives the pinned GGML scheduler and an independent CPU backend through
+the same three executions of a SCALE → ADD graph. Clearing the intermediate
+node's compute flag at `b5fb916` failed `observed==expected[pass]`. With the
+certified vTensor predicate the output pairs match the CPU on all three runs:
+(6, 9), (−17, −13), (10, 15). The middle pass preserves the caller's −17.
+Both nodes were assigned to the requested backend; each scheduler reused its
+original allocation. The native bundle attestation is
+`5eab556cdc2a68ef18f34af949854a9eceb75a747803f03eef5260f324def0f1`.
+VT-11, VT-40, VT-51 and VT-52 passed in one executable. VT-40 previously
+failed its frozen 16-mode count because the VT-51 aggregate had been appended
+as a seventeenth per-case mode. Each baseline now keeps its original schema
+and is parsed once on demand. The frozen inputs and checksums are unchanged.
+
+## llama.cpp consumer
+
+Built the unmodified upstream `llama-eval-callback` at `9a080f44` with
+`GGML_BACKEND_DL=ON` and `GGML_NATIVE=OFF`. The upstream example pins
+`stories15M-q4_0.gguf` to SHA-256
+`66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739`.
+Use the same executable, model and arguments for both runs. For the reference
+run use the build's bin directory. For vTensor, copy the executable into an
+empty directory, run it there, set `LD_LIBRARY_PATH` to the build's bin
+directory and `GGML_BACKEND_PATH` to the absolute vTensor shared library path.
+
+```sh
+./llama-eval-callback -m "$model" --prompt hello --seed 42 -ngl 0 -t 1 --verbose
+```
+
+The reference CPU decoded the prompt and produced 32,000 logits. The vTensor
+run recorded `layer 0` through `layer 6 assigned to device vTensor` and stopped
+during model loading with `failed to find a compatible buffer type for tensor
+output.weight`. This GGUF stores the output weight as Q8_0 with dimensions
+288 × 32,000. llama.cpp probes MUL_MAT with a 288 × 512 F32 right operand.
+Per-node placement, prefill logits, and KV-cache reuse on vTensor remain open.
+[Upstream weight probe](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/src/llama-model-loader.cpp#L1048)
+· [Upstream example and model hash](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/examples/eval-callback/CMakeLists.txt)
