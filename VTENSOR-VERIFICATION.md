@@ -4552,3 +4552,12 @@ stories15M reservation. [Parameter words, shapes and byte strides](verification/
 The unchanged upstream evaluator also refused ROPE_BACK ordinal 17604 on
 this provider. VT-57 registers the 510 forward and 424 backward factory
 cases separately. [Failing scenarios](https://github.com/afflom/vTensor/commit/d1f5741)
+
+### Verdant circular-function pin
+
+Cargo resolves `verdant-tensor` to `db211ab9efc25855162be786bc2db6034a0c483a`
+from submitted Verdant PR #18. The new `linear::sin_cos_f32` shares one
+phase reduction for two results. The pinned Engine passed all 520,568
+independent GGML scalar comparisons. A fresh vTensor build passed VT-02,
+the 36-case SwiGLU regression and cargo-deny. The rotary GGML graph work
+remains open in VT-57. [Upstream numerical evidence](https://github.com/afflom/verdant-engine/blob/db211ab9efc25855162be786bc2db6034a0c483a/ENGINE-VERIFICATION.md#vtk-21-binary32-sine-and-cosine)
