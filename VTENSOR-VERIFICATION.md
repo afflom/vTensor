@@ -4538,3 +4538,26 @@ Changing one byte in the cached upstream factory preserved the file length
 and failed archive verification. The restored nine-test batch passed the
 SWIGLU and scalar SET_ROWS groups, typed arithmetic, matrix and elementwise
 regressions, their frozen fixtures, dependency provenance and the storage oracle.
+
+### Rotary and attention reservation inputs
+
+At `748b506`, all 12 RoPE nodes requested normal mode, 48 rotated F32
+channels, frequency base 10,000, frequency scale 1, and extension factor 0.
+All six attention nodes supplied F32 queries and F16 keys, values and mask.
+The keys and values used non-contiguous head strides. The host requested
+F32 precision with zero bias and softcap. A read-only scheduler observation
+recorded each distinct descriptor set and its node indices during the same
+stories15M reservation. [Parameter words, shapes and byte strides](verification/llama-stories15m-reserve-vt56-operands.tsv)
+
+The unchanged upstream evaluator also refused ROPE_BACK ordinal 17604 on
+this provider. VT-57 registers the 510 forward and 424 backward factory
+cases separately. [Failing scenarios](https://github.com/afflom/vTensor/commit/d1f5741)
+
+### Verdant circular-function pin
+
+Cargo resolves `verdant-tensor` to `db211ab9efc25855162be786bc2db6034a0c483a`
+from submitted Verdant PR #18. The new `linear::sin_cos_f32` shares one
+phase reduction for two results. The pinned Engine passed all 520,568
+independent GGML scalar comparisons. A fresh vTensor build passed VT-02,
+the 36-case SwiGLU regression and cargo-deny. The rotary GGML graph work
+remains open in VT-57. [Upstream numerical evidence](https://github.com/afflom/verdant-engine/blob/db211ab9efc25855162be786bc2db6034a0c483a/ENGINE-VERIFICATION.md#vtk-21-binary32-sine-and-cosine)
