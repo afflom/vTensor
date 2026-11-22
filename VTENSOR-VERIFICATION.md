@@ -4157,3 +4157,36 @@ Three non-current cached SDK oracle executables are preserved separately in
 task RAM; the active executable and common library cache are retained. Private
 compiled and historical oracle caches remain accessible through their existing
 task paths. This changes no committed proof, generated artifact or oracle source.
+
+The one-time metadata inventory of the unchanged pinned `make_test_cases_eval`
+constructs 27,755 graphs without allocating tensor data or evaluating arithmetic.
+The inventory records every virtual operation label and count, plus the full
+constructor parameters and factory ordinals for the 187 non-RoPE composed
+normalization cases. There are 114 RMS_NORM_MUL_ADD, 28 NORM_MUL_ADD,
+25 ADD_RMS_NORM and ten each NORM_SCALE and RMS_NORM_SCALE cases. Of these,
+118 use F32 and 69 use BF16. Another 281 graphs combine RMS normalization and
+RoPE. These counts establish construction coverage, not numerical conformance.
+
+VT-51 registers its scenario and genuine failing test before implementation.
+The exact-SDK command `cargo test --locked -p vtensor-backend --test contract
+composed_normalization_vt_51 -- --exact --nocapture` fails in 7.53 seconds at
+the BF16/F32-weight RMS_NORM_MUL_ADD case with shape [127,3,2,1], reporting
+`not supported`. The current scalar arithmetic planner admits F32 only.
+The source audit identifies the seven authoritative scalar storage tuples,
+per-node F32 conversion/computation/encoding, broadcast geometry and distinct
+contiguous/noncontiguous counter bounds. The next implementation remains
+entirely Prism instruction generation and imported Verdant arithmetic.
+
+The source audit rejected committing the diagnostic inventory driver as a new
+non-Prism file. That one-time driver remains in task RAM; its digest and the
+observed transcript digest remain recorded as diagnostic evidence. It is
+removed from shipped source. The normalization tests now share certificate
+setup, preserving all eight existing/new invocations and their case counts.
+The exact-SDK `normalization_vt_` batch passes RMS_NORM, GROUP_NORM and
+RMS_NORM_BACK; VT-51 alone retains the intended mixed-storage failure
+(three pass, one fails, 41.05 seconds). Model validation passes all 57 IDs,
+error/deferral/bootstrap checks and the parent source ratchet: 11,627 lines,
+one below the prior implementation checkpoint. The original ceiling remains
+10,549, leaving 1,078 lines to recover. No parent movement erases that debt.
+Formatting passes. The unchanged full application proof was not repeated for
+this red-test checkpoint; this is not a successful full acceptance run.

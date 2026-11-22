@@ -1,0 +1,943 @@
+{
+  "spec": "vtensor/imported-factory-cases/1",
+  "status": "imported-construction-inventory-not-conformance",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "source_sha256": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52",
+  "cases": [
+    {
+      "factory_ordinal": 9533,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000000,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9534,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000000,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9549,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000000,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9550,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000000,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9583,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000001,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9584,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000001,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9599,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000001,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9600,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000001,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9633,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000100,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9634,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000100,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9649,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000100,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9650,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000100,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9683,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.100000,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9684,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.100000,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9699,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.100000,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9700,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.100000,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9733,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=10.000000,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9734,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=10.000000,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9749,
+      "label": "NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=10.000000,rms=0,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9750,
+      "label": "RMS_NORM_SCALE",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=10.000000,rms=1,scale=1.500000"
+    },
+    {
+      "factory_ordinal": 9782,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[4,1,65536,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9785,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 9788,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[127,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 9791,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[129,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 9794,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[511,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 9797,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[513,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 9800,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[2816,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 9803,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[4096,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 9806,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[16385,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 9809,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[127,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9810,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[127,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9811,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[127,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9812,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[127,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9815,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[128,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9816,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[128,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9817,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[128,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9818,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[128,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9821,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[512,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9822,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[512,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9823,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[512,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9824,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[512,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9827,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1024,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9828,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1024,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9829,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1024,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9830,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1024,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9833,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[2048,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9834,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[2048,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9835,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[2048,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9836,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[2048,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9839,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[2816,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9840,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[2816,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9841,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[2816,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9842,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[2816,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9845,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[4096,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9846,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[4096,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9847,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[4096,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9848,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[4096,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9851,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[8192,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9852,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[8192,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9853,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[8192,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9854,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[8192,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9857,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[16385,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9858,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[16385,3,2,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=1,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9859,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[16385,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9860,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[16385,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9881,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9882,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9883,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9884,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9885,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9886,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000000,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9887,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000000,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9888,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000000,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9889,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000000,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9890,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9891,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9892,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9893,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9894,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9895,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000000,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9896,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000000,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9897,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000000,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9898,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000000,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9899,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9900,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000001,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9901,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9902,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000001,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9903,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000001,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9904,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000001,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9905,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000001,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9906,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000001,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9907,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000001,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9908,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9909,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000001,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9910,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9911,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000001,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9912,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000001,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9913,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000001,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9914,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000001,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9915,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000001,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9916,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000001,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9917,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000100,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9918,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000100,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9919,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000100,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9920,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000100,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9921,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.000100,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9922,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000100,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9923,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000100,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9924,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000100,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9925,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.000100,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9926,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000100,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9927,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000100,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9928,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000100,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9929,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000100,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9930,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.000100,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9931,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000100,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9932,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000100,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9933,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000100,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9934,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.000100,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9935,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.100000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9936,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.100000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9937,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.100000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9938,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.100000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9939,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=0.100000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9940,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.100000,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9941,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.100000,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9942,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.100000,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9943,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=0.100000,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9944,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.100000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9945,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.100000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9946,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.100000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9947,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.100000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9948,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=0.100000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9949,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.100000,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9950,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.100000,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9951,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.100000,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9952,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=0.100000,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9953,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=1.000000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9954,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=1.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9955,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=1.000000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9956,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=1.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9957,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[64,5,4,3],eps=1.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9958,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=1.000000,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9959,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=1.000000,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9960,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=1.000000,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9961,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[64,5,4,3],eps=1.000000,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9962,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=1.000000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9963,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=1.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9964,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=1.000000,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9965,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=1.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 9966,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1025,5,4,3],eps=1.000000,broadcast=1,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 9967,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=1.000000,broadcast=0,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9968,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=1.000000,broadcast=1,affine=0,bias=1"
+    },
+    {
+      "factory_ordinal": 9969,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=1.000000,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9970,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,5,4,3],eps=1.000000,broadcast=1"
+    },
+    {
+      "factory_ordinal": 9971,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9972,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9973,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1,1,1,1],eps=0.000001,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9974,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[511,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9975,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[511,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9976,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[511,1,1,1],eps=0.000001,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9977,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9978,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9979,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[1025,1,1,1],eps=0.000001,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9980,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[8192,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9981,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[8192,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9982,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[8192,1,1,1],eps=0.000001,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9983,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[16896,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9984,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[16896,1,1,1],eps=0.000001,broadcast=0,multi_add=1,post_mul=0,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 9985,
+      "label": "ADD_RMS_NORM",
+      "parameters": "type=f32,ne=[16896,1,1,1],eps=0.000001,broadcast=0"
+    },
+    {
+      "factory_ordinal": 9986,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1025,2,3,2],eps=0.000010,broadcast=0,affine=1,bias=1"
+    },
+    {
+      "factory_ordinal": 9987,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[8192,1,1,1],eps=0.000010,broadcast=0,affine=1,bias=1"
+    },
+    {
+      "factory_ordinal": 9988,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[768,257,1,1],eps=0.000010,broadcast=0,affine=1,bias=0"
+    },
+    {
+      "factory_ordinal": 9989,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[768,257,1,1],eps=0.000010,broadcast=0,affine=1,bias=1"
+    },
+    {
+      "factory_ordinal": 9990,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1024,257,1,1],eps=0.000010,broadcast=0,affine=1,bias=0"
+    },
+    {
+      "factory_ordinal": 9991,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1024,257,1,1],eps=0.000010,broadcast=0,affine=1,bias=1"
+    },
+    {
+      "factory_ordinal": 9992,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1280,257,1,1],eps=0.000010,broadcast=0,affine=1,bias=0"
+    },
+    {
+      "factory_ordinal": 9993,
+      "label": "NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1280,257,1,1],eps=0.000010,broadcast=0,affine=1,bias=1"
+    },
+    {
+      "factory_ordinal": 10006,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1536,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=1,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 10007,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[256,4,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=1,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 10008,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[256,4,3,2],eps=0.000001,broadcast=0,multi_add=0,post_mul=1,alias_rms_input=0,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 10009,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[256,4,3,2],eps=0.000001,broadcast=0,multi_add=0,post_mul=1,alias_rms_input=0,weight_broadcast=1"
+    },
+    {
+      "factory_ordinal": 10010,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[1536,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=1,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 10011,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=f32,ne=[256,4,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=1,weight_broadcast=0"
+    },
+    {
+      "factory_ordinal": 10012,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1536,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=1,alias_rms_input=0,weight_broadcast=0,type_w=f32"
+    },
+    {
+      "factory_ordinal": 10013,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1536,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=1,alias_rms_input=0,weight_broadcast=0,type_w=f32,type_add=bf16"
+    },
+    {
+      "factory_ordinal": 10014,
+      "label": "RMS_NORM_MUL_ADD",
+      "parameters": "type=bf16,ne=[1536,1,1,1],eps=0.000001,broadcast=0,multi_add=0,post_mul=0,alias_rms_input=1,weight_broadcast=0,type_w=f32"
+    }
+  ]
+}

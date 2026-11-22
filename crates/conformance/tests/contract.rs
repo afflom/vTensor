@@ -517,61 +517,53 @@ fn fixture_generation_vt_47() {
     tensor_layout::certified_current_model(&root(), "spatial");
 }
 
+fn verify_normalization(mode: &str, cases: usize) {
+    let root = root();
+    tensor_layout::certified_current_model(&root, "pointwise");
+    tensor_layout::certified_current_model(&root, "norm");
+    native_backend_oracle::verify(&root, mode, cases);
+}
+
 /// `VT-48`: NORM preserves stride-selected mean and variance rounding through Prism and Verdant.
 #[test]
 fn normalization_graphs_vt_48() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "norm");
-    native_backend_oracle::verify(&root(), "upstream-NORM", 61);
+    verify_normalization("upstream-NORM", 61);
 }
 
 /// `VT-48`: Prism NORM fixtures match exact CPU words and preserve atomic refusals and padding.
 #[test]
 fn norm_runtime_edges_vt_48() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "norm");
-    native_backend_oracle::verify(&root(), "norm", 184);
+    verify_normalization("norm", 184);
 }
 
 /// `VT-49`: GROUP_NORM preserves nested row subtotals and matches ordinary and fused imported graphs.
 #[test]
 fn group_normalization_vt_49() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "norm");
-    native_backend_oracle::verify(&root(), "upstream-GROUP_NORM,GROUP_NORM_MUL_ADD", 5);
+    verify_normalization("upstream-GROUP_NORM,GROUP_NORM_MUL_ADD", 5);
 }
 
 /// `VT-49`: GROUP_NORM fixtures preserve nested rounding, physical spacing and atomic refusals.
 #[test]
 fn group_runtime_edges_vt_49() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "norm");
-    native_backend_oracle::verify(&root(), "group-norm", 224);
+    verify_normalization("group-norm", 224);
 }
 
 /// `VT-50`: RMS_NORM_BACK preserves its two-source reductions and narrowing order.
 #[test]
 fn backward_normalization_vt_50() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "norm");
-    native_backend_oracle::verify(&root(), "upstream-RMS_NORM_BACK", 10);
+    verify_normalization("upstream-RMS_NORM_BACK", 10);
 }
 
 /// `VT-50`: Backward normalization fixtures preserve both sources, narrowing and atomic refusals.
 #[test]
 fn backward_runtime_edges_vt_50() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "norm");
-    native_backend_oracle::verify(&root(), "rms-backward", 353);
+    verify_normalization("rms-backward", 353);
 }
 
 /// `VT-51`: Full composed graphs preserve mixed storage, broadcasting and aliases.
 #[test]
 fn composed_normalization_vt_51() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "norm");
-    native_backend_oracle::verify(
-        &root(),
+    verify_normalization(
         "upstream-NORM_SCALE,RMS_NORM_SCALE,NORM_MUL_ADD,RMS_NORM_MUL_ADD,ADD_RMS_NORM",
         187,
     );
@@ -1698,9 +1690,7 @@ fn generator_graphs_vt_37() {
 /// `VT-38`: Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals
 #[test]
 fn normalization_graphs_vt_38() {
-    tensor_layout::certified_current_model(&root(), "pointwise");
-    tensor_layout::certified_current_model(&root(), "norm");
-    native_backend_oracle::verify(&root(), "upstream-L2_NORM,L2_NORM_BATCH", 129);
+    verify_normalization("upstream-L2_NORM,L2_NORM_BATCH", 129);
 }
 
 /// `VT-39`: Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals

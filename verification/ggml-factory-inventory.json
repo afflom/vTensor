@@ -4,7 +4,6 @@
   "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "authority_source_sha256": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52",
   "method": "Call unchanged make_test_cases_eval; build metadata-only graphs exactly as eval does; query virtual op_desc and vars; never initialize tensor data or evaluate numerical operations.",
-  "driver": "verification/ggml-factory-inventory.cpp",
   "driver_sha256": "7458ecbdcdd741fb4d73027731130d4061f4db1e33a7601ca16907948bf5ddf0",
   "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
   "compiler_flags": [
@@ -181,5 +180,7 @@
     "ADD_RMS_NORM"
   ],
   "vt_51_cases": 187,
-  "separate_rope_compositions": 281
+  "separate_rope_compositions": 281,
+  "driver_temporary_path": "/dev/shm/vtensor-factory-inventory/inventory.cpp",
+  "scope": "One-time diagnostic inventory, not a shipped implementation or a numerical acceptance gate. The unchanged authoritative factory remains the source of every constructor and variant."
 }
