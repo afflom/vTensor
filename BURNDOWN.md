@@ -44,7 +44,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Execute Q2_K ADD (809). vTensor alone refuses it. Use the pinned CPU evaluator for the output comparison.
 - [ ] Complete BF16 GET_ROWS_BACK (1069). Both devices refuse it. Import a GGML reference that executes this format.
-- [x] Compare the IQ2_XXS copy at ordinal 8368 byte for byte with the executable upstream CPU copy kernel. Its factory admission refusal remains recorded. [Direct kernel evidence](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
+- [x] Compare all 63 CPU-refused identity copies across seven IQ formats with the pinned CPU copy kernel. All destination bytes match, including permuted layouts. [63 direct comparisons](verification/factory-iq-copy.json) · [IQ2_XXS regression](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
 - [ ] Complete sorting, TOP_K and masks, expert routing, indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
 - [ ] Complete convolution, im2col/col2im, transpose/depthwise forms, pooling, upscaling, timestep embeddings and their defined backward paths.
 - [ ] Complete SSM convolution/scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
