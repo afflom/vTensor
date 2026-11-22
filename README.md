@@ -32,7 +32,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 - **Prism** holds the normative model, imported authority records, executable
   acceptance vectors, and kernel-checked invariants.
 - **vTensor** owns the GGML ABI, device and buffer lifetimes, graph admission,
-  address plans and dispatch. It passes words, blocks or matrix slices to
+  address plans, host threadpools and dispatch. It passes words, blocks or matrix slices to
   Verdant. GGML graph objects and callbacks stay on the vTensor side of that
   interface. The imported GGML CPU and SoftFloat implementations supply test
   results. Verdant owns runtime format data, including quantization codebooks.
@@ -101,6 +101,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-56` | build | Prism selects the two SwiGLU operands and their row addresses. Verdant evaluates the gated product. All 36 imported factory cases pass. |
 | `VT-57` | build | Passes all 510 GGML ROPE and 424 ROPE_BACK factory cases using Verdant rotations. |
 | `VT-58` | build | Executes dense floating-point attention through Verdant. The quantized stories15M prefill and two decode steps match the reference top token and have maximum absolute logit error below 0.000008. [Consumer evidence](verification/llama-stories15m-vt58.json) |
+| `VT-59` | build | Supplies the GGML CPU registry threadpool callbacks. The unmodified llama.cpp example completes inference and teardown at one and two threads. [Threadpool evidence](verification/llama-threadpool-vt59.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

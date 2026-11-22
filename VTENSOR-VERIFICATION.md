@@ -4699,3 +4699,27 @@ Swapping the first two extents changed that digest to
 `a9ccdebad3b7084af999748d61b4632cd8857e5911ca52d977b861015e9992a5`
 and the layout test failed. The imported executable still supplies every
 expected byte span. [Prism result](generated/probes/result.json)
+
+## GGML CPU threadpool lifecycle
+
+VT-59 reproduces the four entry-point lookups through the imported GGML
+registry interface. The unmodified llama.cpp example completed with the Q4_0
+stories15M model at one and two threads. The upstream CPU and isolated vTensor
+CLI produced different aggregate logit sums. In the separate paired decode
+with fixed inputs and two threads, all 96,000 logits were finite, all three
+top tokens matched, and the largest absolute logit difference was 0.00000716.
+[Executable, inputs and results](verification/llama-threadpool-vt59.json)
+
+The regression attaches one worker, two workers, the original pool and the
+backend's internal pool in succession. It checks each of 17 quantized matrix
+rows against the imported CPU. Giving the second worker the first chunk's
+offset made `cpu_threadpool_vt_59` fail at `result==expected[step]`.
+Restoring the Prism-defined offset passed every binding. Both 122-case
+quantized matrix groups also passed. Prism defines counts, chunks and policy.
+vTensor owns threads, queue lifetimes, buffer slices and host effects. Verdant
+encodes the activation blocks and computes each numerical matrix product.
+
+The native implementation audit at d232e00 measured 12,515 lines, up 349
+from the pre-registration main revision and 1,966 above the original ceiling.
+The implementation checkpoint still needs source-budget recovery and full
+locked-SDK acceptance.
