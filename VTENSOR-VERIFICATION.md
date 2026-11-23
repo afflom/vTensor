@@ -4970,3 +4970,7 @@ Prism maps GGML unary variant 15 and validates storage and views. The provider c
 ### Packed weights with F16 activations
 
 The direct GGML CPU backend refused these 108 factory inputs. VT-90 keeps the original constructor, buffers and F16 activation on vTensor. On the imported CPU it copies the same leaf bytes, widens the activation with `ggml_cast`, and calls `ggml_mul_mat` with the original weight and precision parameters. All 36 Q4_K, 36 Q4_0 and 36 Q8_0 outputs passed. Replacing the widened column with zeros produced error 1.0 on ordinal 12660, above the factory limit of 0.0005. Restoring the Verdant conversion passed. The integrated provider also passed VT-02 and VT-89. [Case ordinals and CPU reference](verification/factory-packed-half-vt90.json)
+
+### Verdant generated package licenses
+
+The exact SDK gate at `d2da99c758e2c6b0761c6f9df1f36e63f2b38f4c` passed all 95 backend contracts in 629.58 seconds. Cargo-deny then rejected the generated row-ranking and normalized-exponential crates as unlicensed. The dependency check now uses Verdant's exact-version, source-hash-bound MIT OR Apache-2.0 records for ranking, normalized exponential, grouped affine products and softplus. All four generated sources matched the upstream hashes. The locked SDK passed advisory, ban, license and source checks on the PR #31 pin. [Upstream records](https://github.com/afflom/verdant-engine/blob/50e511da18a009256af76d20e9b15c943ab0b54c/deny.toml) · [Consumer records](deny.toml)
