@@ -639,14 +639,12 @@ mod ggml_oracle {
             "-ffp-contract=off",
             "-DGGML_CPU_GENERIC",
             "-U__ARM_FP16_FORMAT_IEEE",
+            "-U__ARM_NEON",
+            "-D_GNU_SOURCE",
             "-ffunction-sections",
             "-fdata-sections",
         ]);
-        command.args(if c {
-            &["-std=c11", "-D_GNU_SOURCE"][..]
-        } else {
-            &["-std=c++17"][..]
-        });
+        command.arg(if c { "-std=c11" } else { "-std=c++17" });
         for directory in ["ggml/include", "ggml/src", "ggml/src/ggml-cpu", ""] {
             command.arg("-I").arg(root.join(directory));
         }
