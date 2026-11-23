@@ -109,6 +109,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-66` | build | Executes packed Q4_0 and Q8_0 attention through Verdant. [Oracle results](verification/factory-packed-attention-vt66.json) |
 | `VT-67` | build | Executes all TANH and composed SOFTCAP graphs through the pinned Verdant tangent. [Oracle results](verification/factory-hyperbolic-vt68.json) |
 | `VT-68` | build | Places attention soft caps before masks and compares F16 outputs with GGML CPU. [Oracle results](verification/factory-hyperbolic-vt68.json) |
+| `VT-69` | build | Executes all 87 directly CPU-supported F32/F16 outer-product graphs. [Oracle results](verification/factory-scalar-outer-products-vt69.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

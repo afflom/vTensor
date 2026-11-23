@@ -21,6 +21,7 @@
   ],
   "completed_standalone_runs": {
     "single": {
+      "upstream_parameters_regex": "^(?!(?:hsk=128,hsv=128,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=10\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=128,hsv=128,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=10\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=128,hsv=128,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=0,sinks=1,max_bias=0\\.000000,logit_softcap=10\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=128,hsv=128,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=0,sinks=0,max_bias=0\\.000000,logit_softcap=10\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$).*,nb=1,.*max_bias=0[.]000000,logit_softcap=10[.]000000,prec=(?:f32|bf16|def),type_K=f16,type_V=f16,",
       "factory_ordinals": [
         22995,
         22996,
@@ -83,6 +84,7 @@
       "complete": true
     },
     "short": {
+      "upstream_parameters_regex": "^.*,nb=3,.*max_bias=0[.]000000,logit_softcap=10[.]000000,prec=(?:f32|bf16|def),type_K=f16,type_V=f16,",
       "factory_ordinals": [
         22997,
         22998,
@@ -149,6 +151,7 @@
       "complete": true
     },
     "multi": {
+      "upstream_parameters_regex": "^.*,nb=(?:32|75),.*max_bias=0[.]000000,logit_softcap=10[.]000000,prec=(?:f32|bf16|def),type_K=f16,type_V=f16,",
       "factory_ordinals": [
         23000,
         23001,
@@ -164,9 +167,24 @@
         23017,
         23024,
         23025,
-        23026
+        23026,
+        23027,
+        23028,
+        23029,
+        23036,
+        23037,
+        23038,
+        23039,
+        23040,
+        23041,
+        23048,
+        23049,
+        23050,
+        23051,
+        23052,
+        23053
       ],
-      "csv_sha256": "0ab0e4b750235e76919cf014d04f48c74b9ed6b574caa80b16551d57ee4e2f0f",
+      "csv_sha256": "d0dc742d885f39d5bea2eaf023445b76d629f44ac0cd5960986b2657630c65ef",
       "complete": false
     }
   },
@@ -222,18 +240,33 @@
       23024,
       23025,
       23026,
+      23027,
+      23028,
+      23029,
       23030,
       23031,
       23032,
       23033,
       23034,
       23035,
+      23036,
+      23037,
+      23038,
+      23039,
+      23040,
+      23041,
       23042,
       23043,
       23044,
       23045,
       23046,
       23047,
+      23048,
+      23049,
+      23050,
+      23051,
+      23052,
+      23053,
       23270,
       23271,
       23272,
@@ -334,5 +367,12 @@
     "error": 0.544802536,
     "maximum": 0.0005,
     "command": "cargo test --locked -p vtensor-backend --test contract -- capped_attention_vt_68"
-  }
+  },
+  "imported_ggml_symbols": [
+    "ggml_abort",
+    "ggml_backend_buffer_init",
+    "ggml_backend_buffer_is_host",
+    "ggml_graph_n_nodes",
+    "ggml_graph_node"
+  ]
 }

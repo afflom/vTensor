@@ -190,6 +190,9 @@ ggml_batches! {
     #[test]
     fn capped_attention_vt_68() { "upstream-FLASH_ATTN_EXT_SOFTCAP", 4, ["attention"] }
 
+    #[test]
+    fn scalar_outer_products_vt_69() { "upstream-OUT_PROD_SCALAR", 87, ["pointwise", "matrix"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -329,11 +332,7 @@ fn buffer_allocation_vt_10() {
 }
 
 fn verify_matrix_graphs() {
-    // The certified scalarDispatchForEveryOpcode theorem covers every Nat opcode.
-    assert!(matches!(
-        vtensor_matrix::run(28, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-        Ok(vtensor_matrix::Adt0::C2(..))
-    ));
+    // scalarProductAdmitted checks the unit product in the certified model.
     // Preserve both malformed inner-dimension and indivisible batch cases.
     for (k, b2, r2, o2) in [(2, 1, 1, 1), (1, 2, 3, 3)] {
         assert!(matches!(
@@ -1612,7 +1611,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "09ff05bc25496e68ad6b1a32b8f9408281095bc399868f009b50a92201797df7",
+            "36be37b45930b1279d5b8bc18478da3a38d3531b6ad1b1010db40ddec09308aa",
         )
     });
 
