@@ -3,7 +3,7 @@
 These files are copied verbatim from
 [`ggml-org/llama.cpp`](https://github.com/ggml-org/llama.cpp) at the commit in
 [`upstream.toml`](./upstream.toml). The snapshot contains the public GGML backend API, the pinned backend
-implementation interface, and upstream backend-operation consistency tests.
+implementation interface, the upstream backend-operation consistency tests, and the scheduler delay timing and alias tests.
 It is an acceptance oracle and specification source, not a vTensor
 implementation or runtime dependency.
 

@@ -1502,7 +1502,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "e214c20489fad4d81bc311fb029db7dd20bcb9d6b1d5af9c1e7cc7372e82a789",
+            "d42956db261c2f90875c19056200cf2ab87b012b657b324da7ab52d240c89e7c",
         )
     });
 

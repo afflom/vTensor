@@ -156,6 +156,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 48 SOFT_MAX_BACK graphs at both scales. The GGML CPU verified 24 zero-bias cases and GGML Vulkan verified 24 positive-bias cases. [Oracle comparisons](verification/factory-softmax-gradients-vt121.json)
 - [ ] Pass SILU_BACK (1).
 - [ ] Pass cross-entropy forward (2) and backward (2), SGD (1) and AdamW (1). Verify gradients and parameter updates.
+- [x] Import the pinned llama.cpp scheduler-delay oracle. Its four CPU controls passed timing, buffer aliasing and byte identity, including a chain of four delays. [Upstream timing test](vendor/llama.cpp-oracle/tests/test-sleep.cpp)
 - [ ] Implement MAP_CUSTOM1/2/3, CUSTOM and SLEEP effects. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.
 - [ ] Close every residual legal variant in the ledger, including partial families from VT-01–51. Cover strides, empty axes, broadcasting, overlapping views, precision and typed failures where applicable.
 
@@ -181,6 +182,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Restore explicit test registration after the full VT-93 gate caught missing CM-02 source bindings. All four BDD checks pass. [VT-93 gate result](VTENSOR-VERIFICATION.md#clamped-swiglu)
 - [x] Restore the dependency license check on the PR #31 pin. VT-87 passed all 95 contracts, then caught two missing clarifications. The upstream records for all four new primitives now pass `just deny`. [Verification](VTENSOR-VERIFICATION.md#verdant-generated-package-licenses)
 - [x] Pass the complete locked-SDK gate at VT-120 on Ubuntu x86-64 and Arm64. [GitHub acceptance run](https://github.com/afflom/vTensor/actions/runs/45276620915)
+- [x] Pass the complete locked-SDK gate at VT-121 on both Linux architectures. [GitHub acceptance run](https://github.com/afflom/vTensor/actions/runs/45282182230)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 
 For each implementation batch, register the scenario and failing case first. Export only changed Prism roots, reuse hash-checked oracle objects, and run the affected cases together. Check a representative planted defect before closing the batch. [Repository workflow](AGENTS.md) · [Oracle cache](verification/native-oracle-cache.json)

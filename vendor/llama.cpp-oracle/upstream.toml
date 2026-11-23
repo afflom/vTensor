@@ -26,6 +26,10 @@ sha256 = "7693def12dcc79a10dd2152e7cb659278756dba7622ebe41937f951dc94944e3"
 path = "tests/test-backend-ops.cpp"
 sha256 = "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52"
 
+[[file]]
+path = "tests/test-sleep.cpp"
+sha256 = "a4714eb42318e6571b8bb7fb28918c11be9a0a3111f1a09d967e011f208f1b99"
+
 [[archive]]
 path = "source.tar.gz"
 format = "git-archive-tar-gzip"
