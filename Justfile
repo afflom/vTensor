@@ -202,6 +202,34 @@ certified-install name artifact:
     const lock = {spec: 'prism/kernel-lock/1', source: {repository: 'afflom/vTensor', attestation: result.verification.attestation_id, result: result.result_id}, output: {path: `generated/${name}/${output.path}`, sha256: output.sha256}, files};
     fs.writeFileSync(`${name}-kernel.lock`, JSON.stringify(lock) + '\n');
     JS
+    # cargo-deny uses XXH32 for license evidence. Refresh existing decisions only for this export.
+    python3 - {{quote(name)}} <<'PYTHON'
+    import ctypes, re, sys, tomllib
+    from pathlib import Path
+    packages = Path('generated', sys.argv[1], 'packages', 'rust-core')
+    xxh32 = ctypes.CDLL('libxxhash.so.0').XXH32
+    xxh32.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_uint32]
+    xxh32.restype = ctypes.c_uint32
+    policy = Path('deny.toml')
+    original = policy.read_text()
+    sections = re.split(r'(?=^\[\[licenses\.clarify\]\])', original, flags=re.M)
+    for index, section in enumerate(sections[1:], 1):
+        rule = tomllib.loads(section)['licenses']['clarify'][0]
+        package = packages / rule['name']
+        if not package.is_dir():
+            continue
+        manifest = tomllib.loads((package / 'Cargo.toml').read_text())['package']
+        if rule.get('version') != '=' + manifest['version'] or [f['path'] for f in rule['license-files']] != ['src/lib.rs']:
+            continue
+        data = (package / 'src/lib.rs').read_bytes()
+        value = xxh32(data, len(data), 0)
+        sections[index], count = re.subn(r'(path\s*=\s*"src/lib\.rs"\s*,\s*hash\s*=\s*)0x[\da-fA-F]+', lambda m: f'{m[1]}0x{value:08x}', section, count=1)
+        if count != 1:
+            raise ValueError(f'Unrecognized cargo-deny license hash for {package.name}')
+    updated = ''.join(sections)
+    if updated != original:
+        policy.write_text(updated)
+    PYTHON
 
 # Prefetch the same immutable dependencies used by normal Cargo builds.
 verdant-prepare:
