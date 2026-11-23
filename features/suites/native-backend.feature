@@ -122,3 +122,9 @@ Feature: native-backend
     Given the upstream REGLU GEGLU and GEGLU_QUICK factory cases
     When the vTensor plugin and the pinned CPU process their original rows
     Then every output satisfies the original case tolerance
+
+  @VT-79 @build
+  Scenario: Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant
+    Given original GGML pooling graphs with strided windows and padding
+    When vTensor executes the windows and their dimension-specific padding rules
+    Then every result matches the original GGML CPU evaluator

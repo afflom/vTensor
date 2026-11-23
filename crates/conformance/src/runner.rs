@@ -6,9 +6,9 @@ use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
 use vtensor_pointwise::{
-    Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as WordOperation, Adt11 as WordOperand,
-    Adt12 as WordTarget, Adt2 as TensorDescriptor, Adt3 as IndexContext, Adt4 as CopyMode,
-    Adt8 as GraphResponse, Adt9 as GraphPlan,
+    Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as GraphPlan, Adt11 as WordOperation,
+    Adt12 as WordOperand, Adt13 as WordTarget, Adt2 as TensorDescriptor, Adt3 as IndexContext,
+    Adt4 as CopyMode, Adt9 as GraphResponse,
 };
 
 /// Typed refusals at the native tensor boundary.
@@ -729,9 +729,9 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
 
 fn execute_convolution(
     tensor: &Tensor,
-    geometry: vtensor_pointwise::Adt7,
+    geometry: vtensor_pointwise::Adt8,
 ) -> Result<(), BackendError> {
-    let vtensor_pointwise::Adt7::C0(
+    let vtensor_pointwise::Adt8::C0(
         patches,
         inner,
         channels,
