@@ -96,17 +96,7 @@ fn id_is_well_formed(id: &str) -> bool {
 
 /// A TOML basic string.
 fn toml_string(value: &str) -> String {
-    let mut out = String::from("\"");
-    for c in value.chars() {
-        match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\t' => out.push_str("\\t"),
-            c => out.push(c),
-        }
-    }
-    out.push('"');
-    out
+    toml::Value::String(value.to_owned()).to_string()
 }
 
 /// `model/ids.toml` with the row appended. The empty register is written as
@@ -220,8 +210,8 @@ pub fn new_capability(root: &Path, args: &[String]) -> Result<(), Fail> {
 #[cfg(test)]
 mod tests {
     use super::{new_capability, register_with, Capability};
+    use repo_model::conformance::workspace_test_names;
     use repo_model::Model;
-    use std::collections::BTreeSet;
     use std::path::{Path, PathBuf};
 
     fn args(values: [&str; 4]) -> Vec<String> {
@@ -254,23 +244,6 @@ mod tests {
         root
     }
 
-    fn test_names(root: &Path) -> BTreeSet<String> {
-        let mut names = BTreeSet::new();
-        for entry in std::fs::read_dir(root.join("crates/conformance/tests")).unwrap() {
-            let text = std::fs::read_to_string(entry.unwrap().path()).unwrap();
-            let mut armed = false;
-            for line in text.lines() {
-                if line.trim() == "#[test]" {
-                    armed = true;
-                } else if let Some(rest) = line.strip_prefix("fn ").filter(|_| armed) {
-                    names.insert(rest.split('(').next().unwrap().to_string());
-                    armed = false;
-                }
-            }
-        }
-        names
-    }
-
     #[test]
     fn scaffolded_capabilities_satisfy_the_meta_gate() {
         let root = scratch("ok");
@@ -298,7 +271,8 @@ mod tests {
             "A \"parsed\" document round-trips"
         );
 
-        let report = repo_model::conformance::check_honesty(&root, &test_names(&root)).unwrap();
+        let report =
+            repo_model::conformance::check_honesty(&root, &workspace_test_names(&root)).unwrap();
         assert!(report.is_clean(), "{:?}", report.violations);
         assert_eq!(report.scenarios_checked, 2);
 
