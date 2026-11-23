@@ -182,3 +182,9 @@ Feature: native-backend
     Given the CPU registry function names used by the pinned llama.cpp host
     When an application creates two pools and attaches, switches and detaches them
     Then the submitted graph outputs match the imported CPU through pool reuse and teardown
+
+  @VT-88 @build
+  Scenario: Prism plans ordinary and indexed Q4_K and Q5_K weight products and Verdant contracts the packed weights against grouped signed activations
+    Given original GGML four- and five-bit grouped weight graphs
+    When the provider computes matrix rows or selects experts
+    Then the independent CPU backend accepts the computed outputs

@@ -238,6 +238,9 @@ ggml_batches! {
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
     #[test]
+    fn grouped_affine_products_vt_88() { "upstream-GROUPED_AFFINE_PRODUCTS", 6, ["matrix"] }
+
+    #[test]
     fn row_ranking_vt_86() { "upstream-ROW_RANKING", 6, ["typed"] }
 
     #[test]
@@ -1444,7 +1447,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "018ba7eb6669bd65e0db824893248e3e1aaa2671c28ca2e40db05dc2a7c5fb18",
+            "0019be5dde1f7f1b22b446163bc58aee8cedaf67619870b4ae49c0888b5bbca7",
         )
     });
 
