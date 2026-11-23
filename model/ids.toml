@@ -594,3 +594,9 @@ id = "VT-87"
 level = "build"
 suite = "native-backend"
 statement = "Prism binds GGML masks, sinks and row layouts and Verdant normalizes the score rows against the imported CPU softmax"
+
+[[id]]
+id = "VT-89"
+level = "build"
+suite = "native-backend"
+statement = "Prism binds GGML softplus storage and views and Verdant computes the binary32 activation against the pinned CPU"
