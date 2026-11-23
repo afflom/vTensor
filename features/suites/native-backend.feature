@@ -302,3 +302,9 @@ Feature: native-backend
     Given a binary32 signal, kernel and stride
     When vTensor contracts the input channels and accumulates overlapping kernel taps
     Then the transposed convolution matches the pinned GGML CPU evaluator
+
+  @VT-107 @build
+  Scenario: Prism addresses two-dimensional transposed convolution taps and overlaps and Verdant contracts and sums the input channels
+    Given a batched binary32 image, a floating-point kernel and a stride
+    When vTensor contracts the input channels and accumulates overlapping kernel taps
+    Then the transposed convolution matches the pinned GGML CPU evaluator

@@ -312,6 +312,9 @@ ggml_batches! {
     /// Contract and overlap all original one-dimensional transposed convolutions.
     #[test]
     fn transpose_convolution_vt_106() { "upstream-TRANSPOSE_CONV_1D", 116, ["pointwise"] }
+    /// Contract and overlap all original two-dimensional transposed convolutions.
+    #[test]
+    fn transpose_plane_vt_107() { "upstream-TRANSPOSE_CONV_2D", 8, ["pointwise"] }
     /// Compare all remaining source formats against authoritative GGML decoding and CPU scatter.
     #[test]
     fn decoded_row_gradients_vt_102() { "upstream-GET_ROWS_BACK_DECODED", 54, ["pointwise"] }
@@ -594,18 +597,20 @@ mod ggml_oracle {
     use std::path::{Path, PathBuf};
     use std::process::{Command, Output, Stdio};
 
+    fn read_bytes(path: &Path) -> Vec<u8> {
+        std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+    }
+
     pub(super) fn read_json(path: impl AsRef<Path>) -> serde_json::Value {
         let path = path.as_ref();
-        let bytes =
-            std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
-        serde_json::from_slice(&bytes).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+        serde_json::from_slice(&read_bytes(path))
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()))
     }
 
     pub(super) fn read_toml(path: impl AsRef<Path>) -> toml::Value {
         let path = path.as_ref();
-        let text = std::fs::read_to_string(path)
-            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
-        toml::from_str(&text).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+        toml::from_slice(&read_bytes(path))
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()))
     }
 
     pub(super) fn publish_file(candidate: &Path, destination: &Path, stamp: impl AsRef<Path>) {
@@ -618,10 +623,7 @@ mod ggml_oracle {
     }
 
     pub(super) fn file_digest(path: impl AsRef<Path>) -> String {
-        let path = path.as_ref();
-        repo_model::artifact::sha256_hex(
-            &std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display())),
-        )
+        repo_model::artifact::sha256_hex(&read_bytes(path.as_ref()))
     }
 
     pub(super) use repo_model::artifact::digest_hex as digest;
@@ -1463,7 +1465,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "e98bacce124b5321c5249dfd9be6c24bd361459f9a14a0c0e687d4c30f499739",
+            "807189fd18472e4de273521bae77d1dc603616221bdb8c108d56607fb7104621",
         )
     });
 
@@ -2995,7 +2997,7 @@ int main(int argc, char **argv) {
         if(filling && !operation && layout==3) {input->data=nullptr;input->buffer=nullptr;recipe_trace=&released;recipe_word(cases);recipe_state(6);recipe_trace=&trace;++source_releases;}
         CHECK(ggml_backend_dev_supports_op(dev,result)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
         input->data=saved_data; input->buffer=saved_buffer;
-        CHECK(compare_result(result,expected_tensor,output,(grouping || backward || typing)?4:wordwise && !selecting?(scanning?2:1):0));
+        CHECK(compare_result(result,expected_tensor,std::move(output),(grouping || backward || typing)?4:wordwise && !selecting?(scanning?2:1):0));
         recipe_word(5);recipe_word(1);recipe_context=nullptr;ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
         return 0;
       };
