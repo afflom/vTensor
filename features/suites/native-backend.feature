@@ -320,3 +320,9 @@ Feature: native-backend
     Given Q3_K or Q6_K weights and grouped activations
     When the provider evaluates ordinary and indexed matrix products
     Then each graph matches the pinned GGML CPU evaluator
+
+  @VT-111 @build
+  Scenario: Prism schedules parameterized SwiGLU clipping, exponential and arithmetic through Verdant for fused and separate inputs
+    Given clipped activation and gate values in a GGML SwiGLU graph
+    When the provider applies the supplied alpha and limit
+    Then its output matches the imported GGML CPU graph

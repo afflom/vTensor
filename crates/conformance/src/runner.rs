@@ -584,22 +584,19 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             };
             let extra = tensor.src[3..].iter().any(|ptr| !ptr.is_null());
             let w = primary.ok_or(InvalidTensor)?;
-            if base.is_none() {
-                let query = vtensor_typed::Adt0::C3(
+            // MUL_MAT owns the ordinary row-product route. Other two-input fallbacks use the typed planner.
+            if base.is_none() && operation != 28 {
+                return typed_plan(vtensor_typed::Adt0::C3(
                     operation,
                     p0,
                     p1,
+                    p2,
                     p3,
                     extra,
-                    metadata(w.clone()),
-                    secondary.clone().map(metadata),
-                    metadata(output.clone()),
-                );
-                match vtensor_typed::run(query).map_err(|_| BackendError::Overflow)? {
-                    vtensor_typed::Adt3::C2(plan) => return Ok(Some(ExecutionPlan::Typed(plan))),
-                    vtensor_typed::Adt3::C0 => {}
-                    _ => return Err(InvalidTensor),
-                }
+                    metadata(w),
+                    secondary.map(metadata),
+                    metadata(output),
+                ));
             }
             let a = secondary.ok_or(InvalidTensor)?;
             use vtensor_matrix_q8::Adt0 as Product;

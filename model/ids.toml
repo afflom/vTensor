@@ -726,3 +726,9 @@ id = "VT-110"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans signed three-bit and six-bit grouped matrix and expert graphs and Verdant contracts their quantized weight rows"
+
+[[id]]
+id = "VT-111"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules parameterized SwiGLU clipping, exponential and arithmetic through Verdant for fused and separate inputs"

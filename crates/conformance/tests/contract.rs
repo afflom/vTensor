@@ -300,6 +300,9 @@ ggml_batches! {
     #[test]
     fn state_convolution_vt_81() { "upstream-SSM_WINDOWS", 6, ["pointwise"] }
 
+    /// Exercise all upstream alpha, clipping, view and storage variants.
+    #[test]
+    fn parameterized_swiglu_vt_111() { "upstream-SWIGLU_OAI_VARIANTS", 24, ["typed", "pointwise"] }
     /// Compare each signed codebook layout through both ordinary and expert matrix paths.
     #[test]
     fn codebook_products_vt_103() { "upstream-CODEBOOK_PRODUCTS", 6, ["matrix"] }
@@ -1480,7 +1483,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "67e931fe0ed6beace0b7a7e5971ee1dd886ba1ec34bc2de979451ebed73143b5",
+            "cad2a5a119fe24332a1192ac8f80e34cf5b42a170dc131131d688e7ed2a0be0e",
         )
     });
 
@@ -2277,14 +2280,15 @@ int main(int argc, char **argv) {
 
         }
       }
-      if (!strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
+      const bool parameterized = !strcmp(argv[3]+9,"SWIGLU_OAI_VARIANTS");
+      if (parameterized || !strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
         const std::array<float,12> inputs={8,-8,0,-0.f,2,-2,-8,8,-3,3,0,-0.f};
         for (int swapped : {0,1}) {
           std::array<float,6> expected;
           for (auto selected : {reference,backend}) {
             graph_fixture ctx(4); CHECK(ctx);
             auto x=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,inputs.size());
-            auto out=ggml_swiglu_clamp(ctx,x,nullptr,2.f);
+            auto out=parameterized ? ggml_swiglu_oai(ctx,x,nullptr,-0.5f,2.f) : ggml_swiglu_clamp(ctx,x,nullptr,2.f);
             out->op_params[1]=swapped;
             auto graph=ctx.allocate(out,selected); CHECK(graph);
             ggml_backend_tensor_set(x,inputs.data(),0,sizeof(inputs));
