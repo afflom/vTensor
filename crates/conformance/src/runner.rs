@@ -1048,20 +1048,15 @@ unsafe fn scalar_word(
 }
 
 fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
-    linear::convert_float_storage(from, to, word)
-        .map_err(|_| BackendError::Overflow)?
-        .ok_or(BackendError::InvalidTensor)
+    match (from, to) {
+        (43, 0) => linear::evaluate_small_float(3, word).map_err(|_| BackendError::Overflow)?,
+        _ => linear::convert_float_storage(from, to, word).map_err(|_| BackendError::Overflow)?,
+    }
+    .ok_or(BackendError::InvalidTensor)
 }
 
 fn decode_float(storage: u64, word: u64) -> Result<f32, BackendError> {
-    let bits = if storage == 43 {
-        linear::evaluate_small_float(3, word)
-            .map_err(|_| BackendError::Overflow)?
-            .ok_or(BackendError::InvalidTensor)?
-    } else {
-        convert(storage, 0, word)?
-    };
-    Ok(f32::from_bits(bits as u32))
+    convert(storage, 0, word).map(|bits| f32::from_bits(bits as u32))
 }
 
 fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendError> {
@@ -1167,6 +1162,9 @@ fn execute_word(
         }
         WordOperation::C5(kind) => {
             linear::evaluate_encoded_word(kind, a, b).map_err(|_| InvalidTensor)?
+        }
+        WordOperation::C8(kind) => {
+            linear::evaluate_small_float(kind, a).map_err(|_| InvalidTensor)?
         }
         WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {

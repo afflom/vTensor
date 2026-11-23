@@ -654,3 +654,9 @@ id = "VT-97"
 level = "build"
 suite = "native-backend"
 statement = "Prism validates indexed key and value cache rows and maps each unmasked column to the selected cache cell for Verdant attention"
+
+[[id]]
+id = "VT-98"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps strided scalar copies between E4M3 and GGML float storage to the existing Verdant word conversions"

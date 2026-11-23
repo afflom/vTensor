@@ -147,7 +147,8 @@ inductive{
     {name: imageColumns, fields: [ColumnGeometry]},
     {name: pooled, fields: [PoolGeometry]},
     {name: stateConvolution, fields: [IndexContext]},
-    {name: columnOverlap, fields: [ColumnAxis, Nat]}
+    {name: columnOverlap, fields: [ColumnAxis, Nat]},
+    {name: smallFloatCast, fields: [Nat, Nat]}
   ]
 }
 
@@ -328,7 +329,8 @@ inductive{
     {name: transformed, fields: [Nat, Nat, Nat, Nat]},
     {name: encoded, fields: [Nat]},
     {name: invalid, fields: []},
-    {name: elementary, fields: [Nat, Nat, Nat]}
+    {name: elementary, fields: [Nat, Nat, Nat]},
+    {name: smallFloat, fields: [Nat]}
   ]
 }
 
@@ -422,6 +424,22 @@ definition{
 }
 
 definition{
+  name: copyFloatType,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((floatStorageType kind) || (kind =? 43)),
+  executable: true
+}
+
+definition{
+  name: castSteps,
+  parameters: [source : Nat, target : Nat],
+  result: Nat,
+  body: (if ((source =? 0) || (target =? 0)) then 1 else 2),
+  executable: true
+}
+
+definition{
   name: planStorage,
   parameters: [
     operation : Nat,
@@ -430,9 +448,9 @@ definition{
     output : TensorDescriptor
   ],
   result: PointwiseDecision,
-  body: (if ((project left ty) =? (project output ty)) then (planSameStorage operation left rightPresent output) else (if ((((floatStorageType (project left ty)) && (floatStorageType (project output ty))) && (if (operation =? 33) then rightPresent else true)) && ((blockCount left 1) =? (blockCount output 1))) then (match (TensorTypes::tensorTypeStorage (project output ty))
+  body: (if ((project left ty) =? (project output ty)) then (planSameStorage operation left rightPresent output) else (if ((((copyFloatType (project left ty)) && (copyFloatType (project output ty))) && (if (operation =? 33) then rightPresent else true)) && ((blockCount left 1) =? (blockCount output 1))) then (match (TensorTypes::tensorTypeStorage (project output ty))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
-    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.converted (project left ty) (project output ty)))) else (ctor PointwiseDecision.invalidShape))),
+    | TensorTypes::TypeStorageDecision.knownType spec => (let source : Nat := (project left ty); (let target : Nat := (project output ty); (let small : Bool := ((source =? 43) || (target =? 43)); (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (if small then (castSteps source target) else 1) : Nat) (project spec typeSize) (indexContext left 1) (indexContext output 1) (if small then (ctor CopyMode.smallFloatCast source target) else (ctor CopyMode.converted source target))))))) else (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
 
@@ -1631,6 +1649,7 @@ definition{
     | CopyMode.selected kind => (selectionOffsets kind index source destination)
     | CopyMode.constant kind bits => (ctor GraphResponse.offsets true 0 (blockOffset index destination))
     | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)
+    | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
@@ -1704,6 +1723,7 @@ definition{
     | CopyMode.selected kind => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.constant kind bits => (ctor GraphResponse.bindings 0 kind bits true)
     | CopyMode.arithmetic kind unary right => (ctor GraphResponse.bindings (if unary then 1 else 3) 0 0 false)
+    | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.windowed reverse size nx => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false)
@@ -1753,6 +1773,7 @@ definition{
     | CopyMode.selected kind => 0
     | CopyMode.constant kind bits => 0
     | CopyMode.arithmetic kind unary right => 0
+    | CopyMode.smallFloatCast sourceType destinationType => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
     | CopyMode.transformed kind storage a b => 0
@@ -1816,6 +1837,7 @@ definition{
     | CopyMode.selected kind => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.constant kind bits => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.arithmetic kind unary right => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.smallFloatCast sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.windowed reverse size nx => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.transformed kind storage a b => (ctor WordOperation.transformed kind storage a b)
@@ -1855,6 +1877,7 @@ definition{
     | CopyMode.selected kind => 0
     | CopyMode.constant kind bits => 0
     | CopyMode.arithmetic kind unary right => 0
+    | CopyMode.smallFloatCast sourceType destinationType => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
     | CopyMode.transformed kind storage a b => 0
@@ -1980,6 +2003,28 @@ definition{
 }
 
 definition{
+  name: castWord,
+  parameters: [source : Nat, target : Nat],
+  result: WordOperation,
+  body: (if (source =? 43) then (ctor WordOperation.smallFloat 3) else (if (target =? 43) then (ctor WordOperation.smallFloat 4) else (ctor WordOperation.storage source target true))),
+  executable: true
+}
+
+definition{
+  name: smallFloatCastStep,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    inputType : Nat,
+    outputType : Nat
+  ],
+  result: GraphResponse,
+  body: (let steps : Nat := (castSteps inputType outputType); (let element : Nat := (prim quotient index steps 0 : Nat); (if (steps =? 1) then (typedWord (castWord inputType outputType) inputType outputType 0 (blockOffset element source) 2 0 3 (blockOffset element destination)) else (if ((prim remainder index 2 0 : Nat) =? 0) then (typedWord (castWord inputType 0) inputType 0 0 (blockOffset element source) 2 0 1 0) else (typedWord (castWord 0 outputType) 0 outputType 1 0 2 0 3 (blockOffset element destination)))))),
+  executable: true
+}
+
+definition{
   name: executionStep,
   parameters: [
     index : Nat,
@@ -2007,6 +2052,7 @@ definition{
     | CopyMode.selected kind => (copyOffsets index source destination mode)
     | CopyMode.constant kind bits => (copyOffsets index source destination mode)
     | CopyMode.arithmetic kind unary right => (copyOffsets index source destination mode)
+    | CopyMode.smallFloatCast sourceType destinationType => (smallFloatCastStep index source destination sourceType destinationType)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
     | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)
     | CopyMode.transformed kind storage a b => (copyOffsets index source destination mode)

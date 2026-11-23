@@ -248,3 +248,9 @@ Feature: native-backend
     Given original GGML indexed key and value cache constructors across slice counts and storage types
     When vTensor executes the original per-slice cache indices and negative padding
     Then the imported CPU accepts each numerical result
+
+  @VT-98 @build
+  Scenario: Prism maps strided scalar copies between E4M3 and GGML float storage to the existing Verdant word conversions
+    Given the original E4M3 copy graphs and their CPU conversion tables
+    When vTensor executes the typed copies through the original views and strides
+    Then the imported CPU accepts each numerical result
