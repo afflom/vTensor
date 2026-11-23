@@ -45,7 +45,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-01` | build | Pins and checks the imported GGML contract and oracle source. |
 | `VT-02` | build | Checks the exact Verdant patch, fifteen ordered kernel descriptors and the compiled provider’s GGML host imports. [Linkage check](VTENSOR-VERIFICATION.md#provider-linkage) |
 | `VT-03` | build | Delegates one fixed 4×4 F64 matrix primitive to Verdant. |
-| `VT-04` | build | Inventories GGML operations, nested unary variants and storage-type declarations without claiming their implementation. |
+| `VT-04` | build | Checks GGML operations, unary and GLU variants, and storage-type declarations against the pinned header. |
 | `VT-05` | build | Executes upstream storage-size functions from the pinned source. |
 | `VT-06` | build | Compares certified Prism byte spans against upstream. |
 | `VT-07` | build | Compares the certified storage catalog against every declared live type. |
@@ -117,6 +117,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-74` | build | Prism gathers strided image tiles and filters for direct GGML convolution. Verdant evaluates the matrix product. [Factory results](verification/factory-direct-convolution-vt74.json) |
 | `VT-75` | build | Executes the 64 Gaussian unary and composed factory graphs using the Verdant primitives and the GGML binary32 lookup-table precision profile. [Results](verification/factory-gaussian-activations-vt75.json) |
 | `VT-76` | build | Runs original channel-major convolution graphs against independently materialized CPU operands. [Case-level comparisons](verification/factory-contiguous-convolution-vt76.json) |
+| `VT-77` | build | Executes split, combined and swapped REGLU, GEGLU and GEGLU_QUICK rows using Verdant. [All 108 original cases](verification/factory-gated-activations-vt77.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

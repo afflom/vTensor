@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **15,480 passed**, **12,011 refused** and **264 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **15,589 passed**, **11,902 refused** and **264 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -26,6 +26,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pin Verdant’s GELU and GELU_QUICK after 257,548 scalar oracle comparisons. [Verdant PR #26](https://github.com/afflom/verdant-engine/pull/26)
 - [x] Pass all 64 GELU, GELU_QUICK and composed factory graphs against GGML CPU. [VT-75 results](verification/factory-gaussian-activations-vt75.json)
 - [x] Supply the shared binary32 exponential for SwiGLU and attention in Verdant. All 166,856 imported scalar comparisons pass. [Engine oracle and certificate](https://github.com/afflom/verdant-engine/blob/5b2f0c66e4e51a6e34d5deaf9212738924747912/ENGINE-VERIFICATION.md#vtk-19-binary32-exponential)
+- [x] Pass all 108 REGLU, GEGLU and GEGLU_QUICK factory cases. [VT-77 results](verification/factory-gated-activations-vt77.json)
 - [x] Pass all 36 split, combined and swapped SWIGLU factory cases. Confirm llama.cpp admits all six feed-forward gates (VT-56). [Factory and scheduler evidence](VTENSOR-VERIFICATION.md#swiglu-rows)
 - [x] Supply shared binary32 sine and cosine for rotary position encoding in Verdant. All 520,568 imported scalar comparisons pass. [Engine oracle and certificate](https://github.com/afflom/verdant-engine/blob/db211ab9efc25855162be786bc2db6034a0c483a/ENGINE-VERIFICATION.md#vtk-21-binary32-sine-and-cosine)
 - [x] Verify rotary frequency scaling and plane rotation in Verdant. Pass 24,578 logarithms, 260 frequency ratios and 7,680 rotated coefficient/coordinate pairs against upstream GGML. [Frequency oracle](https://github.com/afflom/verdant-engine/pull/19) · [Rotation oracle](https://github.com/afflom/verdant-engine/pull/20)
@@ -50,7 +51,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Supply binary32 hyperbolic tangent in Verdant. All 128,870 GGML scalar comparisons pass. [Verdant PR #25](https://github.com/afflom/verdant-engine/pull/25)
 - [x] Pass all 12 TANH graphs and the composed SOFTCAP graph on Verdant PR #25. [VT-67 results](verification/factory-hyperbolic-vt68.json)
 - [x] Pass all 241 zero-bias F16 attention graphs with soft cap 10. 241 pass. [VT-68 results](verification/factory-hyperbolic-vt68.json)
-- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, all GLU variants, and their composed graphs. Close the 14 refused standalone ADD cases. The other 159 pass. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
+- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, SWIGLU_OAI, GEGLU_ERF and SWIGLU_CLAMP, and their composed graphs. Close the 14 refused standalone ADD cases. The other 159 pass. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract
@@ -62,7 +63,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Complete sorting, TOP_K and masks, expert routing, indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
 - [x] Pass all 2,051 IM2COL_3D factory cases. The 1,539 previous refusals now match the CPU for F32/F16 output, padded and dilated inputs and views. [VT-70 results](verification/factory-image-columns-vt70.json)
 - [x] Pass all 113 IM2COL factory cases, both supplemental F16-input graphs and all nine CONV_1D_DW compositions. [VT-72 evidence](verification/factory-planar-columns-vt72.json)
-- [ ] Pass all 2,030 directly CPU-supported CONV_2D cases through the Verdant matrix product. 2,028 pass. [VT-74 results](verification/factory-direct-convolution-vt74.json)
+- [ ] Pass all 2,030 directly CPU-supported CONV_2D cases through the Verdant matrix product. 2,029 pass. [VT-74 results](verification/factory-direct-convolution-vt74.json)
 - [ ] Compare the 1,114 CPU-refused CONV_2D layouts with a contiguous GGML CPU reference. 1,112 pass. [VT-76 results](verification/factory-contiguous-convolution-vt76.json)
 - [ ] Complete convolution, im2col/col2im, transpose/depthwise forms, pooling, upscaling, timestep embeddings and their defined backward paths.
 - [ ] Complete SSM convolution/scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.

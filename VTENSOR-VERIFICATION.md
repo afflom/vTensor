@@ -4858,3 +4858,7 @@ The pinned CPU refuses these original kernel views. VT-76 gives the CPU a separa
 VT-75 executes the pinned factory’s 12 GELU, 12 GELU_QUICK, 39 GELU_MUL and one ADD_GELU_MUL on the plugin. Prism selects the GGML binary32 GELU profile and resolves its two cutoffs. Verdant performs the half conversions and evaluates both activations. Replacing the F32 GELU input with zero failed factory ordinal 100 with error 0.000255365 against 0.000000100. Restoring the original input passed every case. [Factory and mutation record](verification/factory-gaussian-activations-vt75.json)
 
 The storage, allocation and transfer tests now share one oracle executable and one link step. Each mode still calls the pinned GGML implementation. All three modes and the certified layout comparisons passed in the integrated check.
+
+### Rectified and Gaussian gated rows
+
+VT-77 compares all 36 original factory cases for each of REGLU, GEGLU and GEGLU_QUICK against GGML CPU. Prism resolves gate selection, operand order and addresses. Verdant performs the comparisons, storage conversions, activations and products. Swapping the activation and gate inputs failed REGLU ordinal 584 with error 0.967962058 against the upstream limit of 0.0000001. Restoring the operands passed all 108 cases. VT-04 also verifies the values and order of every GLU enumerator against the imported header. [Factory and mutation evidence](verification/factory-gated-activations-vt77.json)
