@@ -1035,6 +1035,7 @@ fn execute_word(
     destination: *mut u8,
     words: &mut [u64],
 ) -> Result<(), BackendError> {
+    use verdant_tensor::linear;
     let GraphResponse::C7(operation, left, right, target, read_bytes, write_bytes) = response
     else {
         return Err(BackendError::InvalidTensor);
@@ -1068,47 +1069,39 @@ fn execute_word(
             BackendError::InvalidTensor
         }
     };
+    let float = |word: u64| f32::from_bits(word as u32);
     let value = match operation {
-        WordOperation::C0(kind) => verdant_tensor::linear::evaluate_wide(kind, a, b)?,
+        WordOperation::C0(kind) => linear::evaluate_wide(kind, a, b)?,
         WordOperation::C1(kind) => Some(u64::from(
-            verdant_tensor::linear::evaluate_f32_scalar(
-                kind,
-                f32::from_bits(a as u32),
-                f32::from_bits(b as u32),
-            )?
-            .to_bits(),
+            linear::evaluate_f32_scalar(kind, float(a), float(b))?.to_bits(),
         )),
         WordOperation::C2(source, destination, overflow) => {
-            verdant_tensor::linear::convert_float_storage(source, destination, a)
-                .map_err(|_| failure(overflow))?
+            linear::convert_float_storage(source, destination, a).map_err(|_| failure(overflow))?
         }
         WordOperation::C3(source, destination, overflow) => {
-            verdant_tensor::linear::evaluate_float_unary(b, source, destination, a)
+            linear::evaluate_float_unary(b, source, destination, a)
                 .map_err(|_| failure(overflow))?
         }
         WordOperation::C4(kind, storage, first, second) => {
-            verdant_tensor::linear::transform_float_storage(kind, storage, a, first, second)
+            linear::transform_float_storage(kind, storage, a, first, second)
                 .map_err(|_| BackendError::Overflow)?
         }
-        WordOperation::C5(kind) => verdant_tensor::linear::evaluate_encoded_word(kind, a, b)
+        WordOperation::C5(kind) => linear::evaluate_encoded_word(kind, a, b)
             .map_err(|_| BackendError::InvalidTensor)?,
         WordOperation::C6 => return Err(BackendError::InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
-            use verdant_tensor::linear::{
-                exponential_f32, natural_log_f32, sigmoid_f32, silu_f32, sin_cos_f32,
-            };
             let input = decode_float(source, a)?;
             let result = match kind {
-                13 => natural_log_f32(input),
-                14 => sin_cos_f32(input).map(|pair| pair.0),
-                15 => sin_cos_f32(input).map(|pair| pair.1),
-                16 => exponential_f32(input),
-                17 => sigmoid_f32(input),
-                18 => silu_f32(input),
-                19 => verdant_tensor::linear::tanh_f32(input),
+                13 => linear::natural_log_f32(input),
+                14 => linear::sin_cos_f32(input).map(|pair| pair.0),
+                15 => linear::sin_cos_f32(input).map(|pair| pair.1),
+                16 => linear::exponential_f32(input),
+                17 => linear::sigmoid_f32(input),
+                18 => linear::silu_f32(input),
+                19 => linear::tanh_f32(input),
                 20 if source == 0 => Ok(gaussian_table(a)?.unwrap_or_default()),
-                20 => verdant_tensor::linear::gelu_f32(input),
-                21 => verdant_tensor::linear::gelu_quick_f32(input),
+                20 => linear::gelu_f32(input),
+                21 => linear::gelu_quick_f32(input),
                 _ => return Err(BackendError::InvalidTensor),
             }
             .map_err(|_| BackendError::Overflow)?;
