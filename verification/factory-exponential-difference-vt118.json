@@ -1,0 +1,34 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-118",
+  "implementation": "c146bbb85396f3ee8d3f9539b58be18111faadfd",
+  "verdant_revision": "5e825eb99be98ab160a9fec9dc8febedb84501b0",
+  "provider_sha256": "4c1aeecd570ad5154293fdf00a37555dbf1b9b81e1fe20e23322d0c88dbf9c26",
+  "provider_inputs_sha256": "b1ace46ba574f871a0eda60f15079670f5d07c2dff1e6fde1f86f599d3481ca8",
+  "oracle_executable_sha256": "2e00e6899127c85e0402219ebd4cc55ffe12b31fc77a07f0d42e2ce3462a6ee3",
+  "pointwise_lock_sha256": "6fd77b70436f8835b25ba563affa647d4697c9660bbb679b1198f9ed53c93ecc",
+  "oracle": "The pinned GGML CPU evaluates all twelve original EXPM1 graphs. The kernel computes the rounded binary32 exponential before subtracting one.",
+  "mutation": {
+    "change": "Return the input from the exponential instruction.",
+    "diagnostic": "[EXPM1] ERR = 332448.591530920 > 0.000000100",
+    "ordinal": 28
+  },
+  "contract_transcript_sha256": "728fecfc1170aa70b283bd3b0c37989e218bf5a9f83640b849c44b16ea687e4b",
+  "case_ordinals": {
+    "EXPM1": [
+      28,
+      29,
+      70,
+      71,
+      112,
+      113,
+      154,
+      155,
+      196,
+      197,
+      238,
+      239
+    ]
+  }
+}
