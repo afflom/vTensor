@@ -1002,7 +1002,9 @@ fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
 fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32, BackendError> {
     let word = u64::from(input.to_bits());
     let activation = match variant {
-        0 => match linear::evaluate_encoded_word(0, word, 0)? {
+        0 => match linear::evaluate_encoded_word(0, word, 0)
+            .map_err(|_| BackendError::InvalidTensor)?
+        {
             Some(2) => input,
             Some(_) => return Ok(0.0),
             None => return Err(BackendError::InvalidTensor),
@@ -1655,7 +1657,7 @@ mod attention {
         let mut query = workspace(shape[0] as u64, 0.0)?;
         let packed_product = match k.tensor.ty {
             2 => Some(linear::dot_symmetric_q4_row::<32> as fn(&[u8], &[_]) -> _),
-            8 => Some(linear::dot_symmetric_q8_row::<32>),
+            8 => Some(linear::dot_symmetric_q8_row::<32> as _),
             _ => None,
         };
         let (mut key, mut packed) = if packed_product.is_some() {
