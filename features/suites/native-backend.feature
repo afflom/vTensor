@@ -122,3 +122,9 @@ Feature: native-backend
     Given the upstream REGLU GEGLU and GEGLU_QUICK factory cases
     When the vTensor plugin and the pinned CPU process their original rows
     Then every output satisfies the original case tolerance
+
+  @VT-78 @build
+  Scenario: Prism binds head-specific masked attention and Verdant evaluates linear bias slopes before the weighted mean
+    Given original attention graphs with head-specific mask scaling
+    When the GGML CPU and vTensor process the same query keys values and masks
+    Then each output matches the upstream comparator and tolerance
