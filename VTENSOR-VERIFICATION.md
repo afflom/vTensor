@@ -4816,3 +4816,7 @@ Replacing every interior sample address with zero made ordinal 2466 fail with er
 ### Packed outer products
 
 VT-71 passed all 144 directly CPU-supported packed OUT_PROD factory graphs, covering nine weight formats. Prism schedules each source block from its physical stride. Verdant decodes the block and performs the contraction. Redirecting all block reads to offset zero failed ordinal 15493 with error 1.739076707 against 0.0005. Restoring the implementation passed all nine affected contracts. The locked Clippy and dependency checks passed.
+
+## VT-68 complete checkpoint
+
+The complete locked-SDK `just vv` passed at `3f1cabd0b5de78bb31b8485bf1f1a1223a9f5377` on the Verdant PR #25 pin. All 75 backend contracts passed, including VT-02, followed by the remaining workspace tests and dependency checks. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/3f1cabd0b5de78bb31b8485bf1f1a1223a9f5377)
