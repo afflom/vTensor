@@ -212,3 +212,9 @@ Feature: native-backend
     Given original GGML one- and two-bit packed weight graphs
     When the provider computes matrix rows or selects experts
     Then the independent CPU backend accepts the computed outputs
+
+  @VT-92 @build
+  Scenario: Prism plans sparse GGML top-k mask cells and Verdant compares scores and transfers selected mask words
+    Given the original GGML sparse mask graphs with optional scores blocks and extra cells
+    When the loaded provider computes each output row
+    Then the selected original mask words and excluded cells match the independent CPU

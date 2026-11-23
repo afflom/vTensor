@@ -1,0 +1,81 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-92",
+  "verdant_revision": "50e511da18a009256af76d20e9b15c943ab0b54c",
+  "implementation": "5e51eaec1a96f1560c5a79a052a38e8e94ff6ee8",
+  "provider_sha256": "88d09f2159fc794370f337d8a83e4010a1ec6d1ded9f8ab7c183200d421c2346",
+  "oracle_executable_sha256": "af0850507553418487de265217fd90a59f3b9643f62458088c830f863c2382a8",
+  "oracle": "Original pinned GGML graph evaluator on the loaded vTensor provider and the reference CPU backend.",
+  "contract_ordinals": [
+    547,
+    552,
+    559,
+    575,
+    580,
+    583
+  ],
+  "contract_transcript_sha256": "a59c44e68d9706eddb1220a46a259724a6a94ef7ef14cbeb23ff36a1367b94e7",
+  "standalone_runs": {
+    "worker-0": {
+      "passed": 16,
+      "transcript_sha256": "b3fb4fc7c91fe05802ca4e8677689363c3a7c00adb638bca73e992a469c7f33a"
+    },
+    "worker-1": {
+      "passed": 16,
+      "transcript_sha256": "ad351a21fd9346b204d800d5e17f15d43a7dcbd85dbd56e7aef5a2a268c8746b"
+    }
+  },
+  "imported_ggml_symbols": [
+    "ggml_abort",
+    "ggml_backend_buffer_init",
+    "ggml_backend_buffer_is_host",
+    "ggml_graph_n_nodes",
+    "ggml_graph_node"
+  ],
+  "mutation": "Inverting score liveness produced -inf instead of the upstream CPU value 0.164429 on ordinal 547. Restoration passed.",
+  "case_ordinals": {
+    "TOP_K_MASK": [
+      546,
+      547,
+      548,
+      549,
+      550,
+      551,
+      552,
+      553,
+      554,
+      555,
+      556,
+      557,
+      558,
+      559,
+      560,
+      561,
+      562,
+      563,
+      564,
+      565,
+      566,
+      567,
+      568,
+      569,
+      570,
+      571,
+      572,
+      573,
+      574,
+      575,
+      576,
+      577,
+      578,
+      579,
+      580,
+      581,
+      582,
+      583
+    ]
+  },
+  "attention_lock_sha256": "a088a58c13ead878e5db62dc0abfd2e2af395fcb9c8bafed29caa7191df80e77",
+  "supplemental": "The supplemental original CPU graph covers NaN and infinity scores, invalid and repeated indices, signed zero, a subnormal and a NaN payload in the mask, and three atomic descriptor refusals."
+}

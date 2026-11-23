@@ -179,6 +179,7 @@ model does not sanction.
 | `VT-89` | `build` | Prism binds GGML softplus storage and views and Verdant computes the binary32 activation against the pinned CPU |
 | `VT-90` | `build` | Prism binds F16 activation rows for packed matrix products and Verdant widens each activation before the certified dot product |
 | `VT-91` | `build` | Prism plans ordinary and indexed Q1_0 and Q2_0 weight products and Verdant contracts the packed weights against symmetric eight-bit activation blocks |
+| `VT-92` | `build` | Prism plans sparse GGML top-k mask cells and Verdant compares scores and transfers selected mask words |
 
 ## normalization-graphs
 

@@ -618,3 +618,9 @@ id = "VT-91"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans ordinary and indexed Q1_0 and Q2_0 weight products and Verdant contracts the packed weights against symmetric eight-bit activation blocks"
+
+[[id]]
+id = "VT-92"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans sparse GGML top-k mask cells and Verdant compares scores and transfers selected mask words"

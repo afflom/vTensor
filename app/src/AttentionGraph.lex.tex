@@ -35,6 +35,23 @@ structure{
   ]
 }
 
+structure{
+  name: SparsePlan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: mask, type: NormPlan::TensorDescriptor},
+    {name: top, type: NormPlan::TensorDescriptor},
+    {name: score, type: (Option NormPlan::TensorDescriptor)},
+    {name: blocks, type: (Option NormPlan::TensorDescriptor)},
+    {name: extra, type: (Option NormPlan::TensorDescriptor)},
+    {name: out, type: NormPlan::TensorDescriptor},
+    {name: width, type: Nat},
+    {name: excludedWord, type: Nat},
+    {name: countPicks, type: Nat}
+  ]
+}
+
 inductive{
   name: Request,
   type_parameters: [],
@@ -70,7 +87,22 @@ inductive{
         NormPlan::TensorDescriptor
       ]
     },
-    {name: normalizedRow, fields: [NormalizedPlan, Nat, Nat, Nat]}
+    {name: normalizedRow, fields: [NormalizedPlan, Nat, Nat, Nat]},
+    {
+      name: sparse,
+      fields: [
+        Nat,
+        Bool,
+        NormPlan::TensorDescriptor,
+        NormPlan::TensorDescriptor,
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        NormPlan::TensorDescriptor
+      ]
+    },
+    {name: sparseRow, fields: [SparsePlan, Nat, Nat, Nat]},
+    {name: sparseIndex, fields: [SparsePlan, Nat, Nat, Nat]}
   ]
 }
 
@@ -83,7 +115,11 @@ inductive{
     {name: admitted, fields: [Plan]},
     {name: offsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: normalized, fields: [NormalizedPlan]},
-    {name: normalizedOffsets, fields: [Nat, Nat, Nat, Nat]}
+    {name: normalizedOffsets, fields: [Nat, Nat, Nat, Nat]},
+    {name: sparsePlan, fields: [SparsePlan]},
+    {name: sparseRows, fields: [Nat, Nat, Nat, Nat, Nat]},
+    {name: sparseWord, fields: [Nat]},
+    {name: skip, fields: []}
   ]
 }
 
@@ -333,11 +369,77 @@ definition{
 }
 
 definition{
+  name: sameRows,
+  parameters: [a : NormPlan::TensorDescriptor, b : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: ((((project a n1) =? (project b n1)) && ((project a n2) =? (project b n2))) && ((project a n3) =? (project b n3))),
+  executable: true
+}
+
+definition{
+  name: sparseGraph,
+  parameters: [
+    op : Nat,
+    trailing : Bool,
+    mask : NormPlan::TensorDescriptor,
+    top : NormPlan::TensorDescriptor,
+    score : (Option NormPlan::TensorDescriptor),
+    blocks : (Option NormPlan::TensorDescriptor),
+    extra : (Option NormPlan::TensorDescriptor),
+    out : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (let width : Nat := (if ((project mask ty) =? 1) then 2 else 4); (if ((((((((((((((((((op =? 88) && (if trailing then false else true)) && (((project mask ty) =? 0) || ((project mask ty) =? 1))) && ((project top ty) =? 26)) && ((project out ty) =? (project mask ty))) && ((project mask s0) =? width)) && ((project out s0) =? width)) && ((project mask n0) =? (project out n0))) && (sameRows top out)) && (contiguousScalar out width)) && (NormPlan::separateTensors mask out)) && (NormPlan::separateTensors top out)) && (multiple (project top n1) (project mask n1))) && (multiple (project top n2) (project mask n2))) && (multiple (project top n3) (project mask n3))) && (match score
+    | Option.none => true
+    | Option.some t => ((((project t ty) =? 0) && (sameRows top t)) && (NormPlan::separateTensors t out)))) && (match blocks
+    | Option.none => true
+    | Option.some t => ((((((project t ty) =? 26) && ((project t n2) =? 1)) && ((project t n3) =? 1)) && (NormPlan::separateTensors t out)) && (match score
+      | Option.none => true
+      | Option.some sc => ((project sc n0) =? (project t n1)))))) && (match extra
+    | Option.none => true
+    | Option.some t => ((((project t ty) =? 26) && (sameRows top t)) && (NormPlan::separateTensors t out)))) then (ctor Response.sparsePlan (record SparsePlan {mask := mask, top := top, score := score, blocks := blocks, extra := extra, out := out, width := width, excludedWord := (if (width =? 2) then 64512 else 4286578688), countPicks := (match blocks
+    | Option.none => (match score
+      | Option.none => (project mask n0)
+      | Option.some t => (project t n0))
+    | Option.some t => (project t n1))})) else (ctor Response.invalid))),
+  executable: true
+}
+
+definition{
+  name: sparseRows,
+  parameters: [plan : SparsePlan, token : Nat, head : Nat, batch : Nat],
+  result: Response,
+  body: (let m : NormPlan::TensorDescriptor := (project plan mask); (let picks : NormPlan::TensorDescriptor := (project plan top); (if (((token <? (project picks n1)) && (head <? (project picks n2))) && (batch <? (project picks n3))) then (ctor Response.sparseRows (rowOffset m (prim remainder token (project m n1) 0 : Nat) (prim remainder head (project m n2) 0 : Nat) (prim remainder batch (project m n3) 0 : Nat)) (rowOffset picks token head batch) (match (project plan score)
+    | Option.none => 0
+    | Option.some t => (rowOffset t token head batch)) (match (project plan extra)
+    | Option.none => 0
+    | Option.some t => (rowOffset t token head batch)) (rowOffset (project plan out) token head batch)) else (ctor Response.invalid)))),
+  executable: true
+}
+
+definition{
+  name: sparseIndex,
+  parameters: [plan : SparsePlan, role : Nat, index : Nat, lane : Nat],
+  result: Response,
+  body: (if (role =? 0) then (if (index <? (project (project plan top) n0)) then (ctor Response.sparseWord (prim multiply index (project (project plan top) s0) : Nat)) else (ctor Response.skip)) else (if (role =? 1) then (match (project plan extra)
+    | Option.none => (ctor Response.skip)
+    | Option.some t => (if (index <? (project t n0)) then (ctor Response.sparseWord (prim multiply index (project t s0) : Nat)) else (ctor Response.skip))) else (if (role =? 2) then (if ((index <? 2147483648) && (index <? (project plan countPicks))) then (match (project plan score)
+    | Option.none => (ctor Response.sparseWord 0)
+    | Option.some t => (ctor Response.sparseWord (prim multiply index (project t s0) : Nat))) else (ctor Response.skip)) else (if (role =? 3) then (match (project plan blocks)
+    | Option.none => (ctor Response.skip)
+    | Option.some t => (if ((index <? (project t n1)) && (lane <? (project t n0))) then (ctor Response.sparseWord ((prim multiply index (project t s1) : Nat) + (prim multiply lane (project t s0) : Nat))) else (ctor Response.skip))) else (if (role =? 4) then (if ((index <? 2147483648) && (index <? (project (project plan mask) n0))) then (ctor Response.sparseWord (prim multiply index (project plan width) : Nat)) else (ctor Response.skip)) else (ctor Response.invalid)))))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
   body: (match request
     | Request.graph opcode extra bias softcap precision query key value mask sink output => (graphPlan opcode extra bias softcap precision query key value mask sink output)
+    | Request.sparse op trailing mask top score blocks extra out => (sparseGraph op trailing mask top score blocks extra out)
+    | Request.sparseRow plan token head batch => (sparseRows plan token head batch)
+    | Request.sparseIndex plan role index lane => (sparseIndex plan role index lane)
     | Request.normalized opcode extra scale bias q mask sink o => (normalizedPlan opcode extra scale bias q mask sink o)
     | Request.normalizedRow plan token head batch => (normalizedOffsets plan token head batch)
     | Request.row plan token head batch => (row plan token head batch)),
