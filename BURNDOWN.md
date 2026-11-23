@@ -110,6 +110,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass the full locked-SDK gate at VT-76. All 83 backend contracts passed on Verdant PR #26. [Checkpoint](VTENSOR-VERIFICATION.md#vt-76-complete-checkpoint)
 - [x] Pass the full locked-SDK gate at VT-80. All 86 backend contracts passed. [Checkpoint](VTENSOR-VERIFICATION.md#vt-80-complete-checkpoint)
 - [x] Pass the full locked-SDK gate at VT-82 on Verdant PR #27. All 89 backend contracts passed. [Checkpoint](VTENSOR-VERIFICATION.md#vt-82-complete-checkpoint)
+- [x] Pass the complete VT-85 gate on the upstream Verdant PR #27 pin. All 92 backend contracts passed. [Checkpoint](VTENSOR-VERIFICATION.md#vt-85-complete-checkpoint)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 
 For each implementation batch, register the scenario and failing case first. Export only changed Prism roots, reuse hash-checked oracle objects, and run the affected cases together. Check a representative planted defect before closing the batch. [Repository workflow](AGENTS.md) · [Oracle cache](verification/native-oracle-cache.json)

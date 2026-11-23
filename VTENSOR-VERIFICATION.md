@@ -4937,3 +4937,7 @@ Prism now selects the instructions for L2_NORM, NORM, GROUP_NORM and RMS_NORM_BA
 ### VT-87 row softmax
 
 Prism binds GGML score rows, mask broadcasting, per-head sinks, head slopes and in-place output. Verdant PR #29 supplies the normalized exponential over binary32 values. All 214 upstream SOFT_MAX factory cases and 344 full TOPK_MOE graphs passed the original numerical evaluators. A supplemental in-place graph matched the CPU with an oversized mask row dimension and arbitrary singleton strides. Missing mask, bad mask type, wrong sink width and an unexpected source were refused with the result preserved. Replacing the input scale with zero failed SOFT_MAX ordinal 16954 at 0.309546217 against a limit of 0.000001000. Restoring it passed. The integrated provider passed VT-02, VT-38, VT-86 and VT-87 together and passed workspace lint. The native source audit measured 12,586 lines. [Standalone results](verification/factory-row-softmax-vt87.json) · [Composed graphs](verification/factory-row-softmax-compositions.json) · [Verdant primitive](https://github.com/afflom/verdant-engine/pull/29)
+
+### VT-85 complete checkpoint
+
+The complete locked-SDK `just vv` exited zero at 89a650cc82d0eaabc5d16c211548e6b7af845dd7 on the Verdant PR #27 pin. The SDK rebuilt the application proof for the changed inputs. All 92 backend contracts passed in 556.40 seconds. The model, template, formatting, lint and dependency checks passed. [Checked revision](https://github.com/afflom/vTensor/commit/89a650cc82d0eaabc5d16c211548e6b7af845dd7)
