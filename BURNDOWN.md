@@ -68,8 +68,10 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Compare the 1,114 CPU-refused CONV_2D layouts with a contiguous GGML CPU reference. 1,113 pass. [VT-76 results](verification/factory-contiguous-convolution-vt76.json)
 - [x] Pass all 240 POOL_1D and 144 POOL_2D forward graphs and four supplemental F16 graphs. [VT-79 comparisons](verification/factory-pooling-vt79.json)
 - [x] Pass all 292 direct CONV_3D graphs, including packed batches, offset kernels and empty kernels. 292 pass. [VT-80 results](verification/factory-volume-convolution-vt80.json)
-- [ ] Complete col2im, transpose/depthwise convolution, pooling backward, upscaling, timestep embeddings and their defined backward paths.
-- [ ] Complete SSM convolution/scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
+- [ ] Pass the remaining spatial factory graphs (116 CONV_TRANSPOSE_1D, 8 CONV_TRANSPOSE_2D, 8 CONV_2D_DW, 33 COL2IM_1D, 24 UPSCALE, 6 TIMESTEP_EMBEDDING). [Case inventory](verification/ggml-factory-inventory.json)
+- [ ] Compare IM2COL_BACK and POOL_2D_BACK gradients with the pinned GGML CPU using original forward inputs, padding and overlapping windows. [Imported declarations](model/ggml-declarations.toml)
+- [ ] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. [Factory ordinals](verification/ggml-factory-cases.tsv.gz)
+- [ ] Complete SSM scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
 - [ ] Complete remaining gradients, cross-entropy, SGD and AdamW. Exercise applicable upstream gradient checks and parameter updates.
 - [ ] Implement MAP_CUSTOM1/2/3, CUSTOM and SLEEP effects. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.
 - [ ] Close every residual legal variant in the ledger, including partial families from VT-01–51. Cover strides, empty axes, broadcasting, overlapping views, precision and typed failures where applicable.
