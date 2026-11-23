@@ -351,6 +351,9 @@ ggml_batches! {
     fn logistic_graphs_vt_61() { "upstream-SIGMOID,SILU,SIGMOID_MUL,SILU_MUL,ADD_SIGMOID_MUL,ADD_SILU_MUL", 122, ["pointwise"] }
 
     #[test]
+    fn exponential_difference_vt_118() { "upstream-EXPM1", 12, ["pointwise"] }
+
+    #[test]
     fn elementary_graphs_vt_60() { "upstream-LOG,SIN,COS,EXP", 39, ["pointwise"] }
 
     #[test]
@@ -1495,7 +1498,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "9806b7b0594072257b21f124454e80623b32f816f9a8aa381a20418a6fb6b49c",
+            "cf27708f126dc8f1a4afc2e2c130bb8c2e8c396084507be74d95912b665c34a3",
         )
     });
 
@@ -1758,9 +1761,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .iter()
                 .find(|row| row["name"] == mode)
         };
-        let trace = |suffix: &str| {
-            std::path::PathBuf::from(format!("{}.{suffix}", expected_snapshot.display()))
-        };
+        let trace = |suffix: &str| expected_snapshot.with_extension(format!("snapshot.{suffix}"));
         let mut recipes = Vec::new();
         if let Some(recipe) = recipe {
             assert_eq!(recipe["cases"].as_u64().unwrap() as usize, expected_cases);
@@ -1783,8 +1784,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         drop(build_guard);
         let text = super::ggml_oracle::batch(&mut command, input);
         let footer = format!("RESULT cases {expected_cases}\n");
-        let transcript = ORACLE_BINDINGS["factory_transcripts"][mode].as_str();
-        if let Some(digest) = transcript {
+        if let Some(digest) = ORACLE_BINDINGS["factory_transcripts"][mode].as_str() {
             let rows = text.strip_suffix(&footer).expect("complete factory count");
             assert_eq!(
                 repo_model::artifact::sha256_hex(rows.as_bytes()),

@@ -958,7 +958,15 @@ definition{
   name: unaryKind,
   parameters: [operation : Nat, variant : Nat],
   result: (Option Nat),
-  body: (if ((operation =? 89) && (variant =? 15)) then (ctor Option.some [Nat] 22) else (if ((operation =? 89) && ((8 <=? variant) && (variant <=? 9))) then (ctor Option.some [Nat] (variant + 12)) else (if ((operation =? 89) && (variant =? 4)) then (ctor Option.some [Nat] 19) else (if ((10 <=? operation) && (operation <=? 12)) then (ctor Option.some [Nat] (operation + 3)) else (if ((operation =? 89) && (variant =? 7)) then (ctor Option.some [Nat] 17) else (if ((operation =? 89) && (variant =? 10)) then (ctor Option.some [Nat] 18) else (if ((operation =? 89) && (variant =? 13)) then (ctor Option.some [Nat] 16) else (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat]))))))))))),
+  body: (if ((operation =? 89) && (variant =? 14)) then (ctor Option.some [Nat] 23) else (if ((operation =? 89) && (variant =? 15)) then (ctor Option.some [Nat] 22) else (if ((operation =? 89) && ((8 <=? variant) && (variant <=? 9))) then (ctor Option.some [Nat] (variant + 12)) else (if ((operation =? 89) && (variant =? 4)) then (ctor Option.some [Nat] 19) else (if ((10 <=? operation) && (operation <=? 12)) then (ctor Option.some [Nat] (operation + 3)) else (if ((operation =? 89) && (variant =? 7)) then (ctor Option.some [Nat] 17) else (if ((operation =? 89) && (variant =? 10)) then (ctor Option.some [Nat] 18) else (if ((operation =? 89) && (variant =? 13)) then (ctor Option.some [Nat] 16) else (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat])))))))))))),
+  executable: true
+}
+
+definition{
+  name: differencePhases,
+  parameters: [kind : Nat, target : Nat],
+  result: Nat,
+  body: (if (kind =? 23) then (if (target =? 0) then 2 else 3) else 1),
   executable: true
 }
 
@@ -966,7 +974,7 @@ definition{
   name: planUnary,
   parameters: [kind : Nat, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (if ((((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) && (((project left ty) =? (project output ty)) || ((project output ty) =? 0))) && (sameShape left output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if ((project output ty) =? 0) then 4 else 2) (indexContext left 1) (indexContext output 1) (ctor CopyMode.unaryWord kind (project left ty) (project output ty))) else (ctor PointwiseDecision.invalidShape)),
+  body: (if ((((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) && (((project left ty) =? (project output ty)) || ((project output ty) =? 0))) && (sameShape left output)) then (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (differencePhases kind (project output ty)) : Nat) (if ((project output ty) =? 0) then 4 else 2) (indexContext left 1) (indexContext output 1) (ctor CopyMode.unaryWord kind (project left ty) (project output ty))) else (ctor PointwiseDecision.invalidShape)),
   executable: true
 }
 
@@ -1741,6 +1749,30 @@ definition{
 }
 
 definition{
+  name: wordBytes,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (match (TensorTypes::tensorTypeStorage storage)
+    | TensorTypes::TypeStorageDecision.unknownType => 0
+    | TensorTypes::TypeStorageDecision.knownType spec => (if (((project spec blockSize) =? 1) && (((((project spec typeSize) =? 1) || ((project spec typeSize) =? 2)) || ((project spec typeSize) =? 4)) || ((project spec typeSize) =? 8))) then (project spec typeSize) else 0)),
+  executable: true
+}
+
+definition{
+  name: exponentialDifferenceStep,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    sourceType : Nat,
+    target : Nat
+  ],
+  result: GraphResponse,
+  body: (let phases : Nat := (differencePhases 23 target); (let phase : Nat := (prim remainder index phases 0 : Nat); (let element : Nat := (prim quotient index phases 0 : Nat); (let out : WordTarget := (ctor WordTarget.output (blockOffset element destination)); (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.elementary 16 sourceType 0) (ctor WordOperand.source 0 (blockOffset element source)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) (wordBytes sourceType) 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 1065353216) (if (target =? 0) then out else (ctor WordTarget.scratch 0)) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.storage 0 target true) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) out 4 (wordBytes target)))))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -1762,7 +1794,7 @@ definition{
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
-    | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
+    | CopyMode.unaryWord kind sourceType destinationType => (if (kind =? 23) then (exponentialDifferenceStep index source destination sourceType destinationType) else (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination)))
     | CopyMode.scanned => (scannedOffsets index source destination)
     | CopyMode.reduced operation storage => (reducedOffsets index source destination operation storage)
     | CopyMode.argmaxRow => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
@@ -1853,16 +1885,6 @@ definition{
     | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings (if (kind =? 66) then 3 else 1) 0 0 false)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.arange start stop step count => (ctor GraphResponse.bindings 0 0 0 false)),
-  executable: true
-}
-
-definition{
-  name: wordBytes,
-  parameters: [storage : Nat],
-  result: Nat,
-  body: (match (TensorTypes::tensorTypeStorage storage)
-    | TensorTypes::TypeStorageDecision.unknownType => 0
-    | TensorTypes::TypeStorageDecision.knownType spec => (if (((project spec blockSize) =? 1) && (((((project spec typeSize) =? 1) || ((project spec typeSize) =? 2)) || ((project spec typeSize) =? 4)) || ((project spec typeSize) =? 8))) then (project spec typeSize) else 0)),
   executable: true
 }
 
@@ -2447,7 +2469,7 @@ theorem{
     sourceType : Nat,
     destinationType : Nat
   ],
-  statement: ((copyOffsets index source destination (ctor CopyMode.unaryWord kind sourceType destinationType)) = (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))),
+  statement: ((copyOffsets index source destination (ctor CopyMode.unaryWord kind sourceType destinationType)) = (if (kind =? 23) then (exponentialDifferenceStep index source destination sourceType destinationType) else (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination)))),
   proof: reflexivity{}
 }
 
@@ -3393,6 +3415,20 @@ theorem{
   name: logarithmUsesVerdantWord,
   parameters: [],
   statement: ((unaryKind 10 0) = (ctor Option.some [Nat] 13)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: exponentialDifferenceUsesReferenceSubtraction,
+  parameters: [],
+  statement: ((unaryKind 89 14) = (ctor Option.some [Nat] 23)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: binary32DifferenceStoresWithoutNarrowing,
+  parameters: [],
+  statement: ((differencePhases 23 0) = 2),
   proof: reflexivity{}
 }
 

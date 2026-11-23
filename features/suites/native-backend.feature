@@ -362,3 +362,9 @@ Feature: native-backend
     Given MXFP4 or NVFP4 destinations with scalar source views
     When vTensor copies or updates indexed rows
     Then stored bytes match GGML CPU and a failed update preserves the destination
+
+  @VT-118 @build
+  Scenario: Prism composes Verdant exponential and binary32 subtraction for strided GGML EXPM1 graphs
+    Given the imported exponential-minus-one graphs
+    When the provider widens each input and subtracts one from its binary32 exponential
+    Then each result agrees with the pinned CPU unary operation

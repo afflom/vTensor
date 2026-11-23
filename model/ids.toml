@@ -768,3 +768,9 @@ id = "VT-117"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules exponent-only and grouped four-bit floating encoders for copied and indexed GGML writes through Verdant"
+
+[[id]]
+id = "VT-118"
+level = "build"
+suite = "native-backend"
+statement = "Prism composes Verdant exponential and binary32 subtraction for strided GGML EXPM1 graphs"
