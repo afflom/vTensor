@@ -72,6 +72,32 @@ structure{
   ]
 }
 
+structure{
+  name: ColumnAxis,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kernel, type: Nat},
+    {name: stride, type: Nat},
+    {name: pad, type: Nat},
+    {name: dilation, type: Nat}
+  ]
+}
+
+structure{
+  name: ColumnGeometry,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: x, type: ColumnAxis},
+    {name: y, type: ColumnAxis},
+    {name: z, type: ColumnAxis},
+    {name: channels, type: Nat},
+    {name: depth, type: Nat},
+    {name: storage, type: Nat}
+  ]
+}
+
 inductive{
   name: CopyMode,
   type_parameters: [],
@@ -103,7 +129,8 @@ inductive{
     {name: arange, fields: [Nat, Nat, Nat, Nat]},
     {name: l2Norm, fields: [Nat]},
     {name: relativeAdd, fields: [Nat, Nat, Nat]},
-    {name: normalized, fields: [Nat, Nat, Nat, Nat]}
+    {name: normalized, fields: [Nat, Nat, Nat, Nat]},
+    {name: imageColumns, fields: [ColumnGeometry]}
   ]
 }
 
@@ -1253,6 +1280,68 @@ definition{
 }
 
 definition{
+  name: columnExtent,
+  parameters: [axis : ColumnAxis, size : Nat],
+  result: Nat,
+  body: (if (((((0 <? (project axis kernel)) && (0 <? (project axis stride))) && (0 <? (project axis dilation))) && ((project axis stride) <? 2147483648)) && ((project axis dilation) <? 2147483648)) then (let available : Nat := (size + (prim multiply 2 (positiveWord (project axis pad)) : Nat));
+    (let required : Nat := ((1 + (prim multiply (project axis dilation) (prim subtract (project axis kernel) 1 : Nat) : Nat)) + (prim multiply 2 (negativeWord (project axis pad)) : Nat));
+    (if (required <=? available) then (1 + (prim quotient (prim subtract available required : Nat) (project axis stride) 0 : Nat)) else (if ((prim subtract required available : Nat) <? (project axis stride)) then 1 else 0)))) else 0),
+  executable: true
+}
+
+definition{
+  name: columnCoordinate,
+  parameters: [axis : ColumnAxis, size : Nat, output : Nat, lane : Nat],
+  result: (Option Nat),
+  body: (let position : Nat := (((prim multiply output (project axis stride) : Nat) + (prim multiply lane (project axis dilation) : Nat)) + (negativeWord (project axis pad)));
+    (let padding : Nat := (positiveWord (project axis pad));
+    (if ((padding <=? position) && ((prim subtract position padding : Nat) <? size)) then (ctor Option.some [Nat] (prim subtract position padding : Nat)) else (ctor Option.none [Nat])))),
+  executable: true
+}
+
+definition{
+  name: planImageColumns,
+  parameters: [options : OperationParameters, kernel : TensorDescriptor, image : (Option TensorDescriptor), output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (match image
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some source => (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p3), dilation := (project options p6)});
+    (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p4), dilation := (project options p7)});
+    (let z : ColumnAxis := (record ColumnAxis {kernel := (project kernel n2), stride := (project options p2), pad := (project options p5), dilation := (project options p8)});
+    (let channels : Nat := (project options p9);
+    (let depth : Nat := (columnExtent z (project source n2));
+    (let storage : Nat := (project output ty);
+    (let lanes : Nat := (prim multiply channels (prim multiply (project x kernel) (prim multiply (project y kernel) (project z kernel) : Nat) : Nat) : Nat);
+    (if ((((((((((((((project source ty) =? 0) && ((storage =? 0) || (storage =? 1))) && (0 <? channels)) && (channels <? 2147483648)) && ((project source s0) =? 4)) && (0 <? depth)) && (0 <? (project output n1))) && (0 <? (project output n2))) && ((project output n0) =? lanes)) && ((project output n1) =? (columnExtent x (project source n0)))) && ((project output n2) =? (columnExtent y (project source n1)))) && ((project output n3) =? (prim multiply depth (prim quotient (project source n3) channels 0 : Nat) : Nat))) && (separateTensors source output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if (storage =? 0) then 4 else 2) (indexContext source 1) (indexContext output 1) (ctor CopyMode.imageColumns (record ColumnGeometry {x := x, y := y, z := z, channels := channels, depth := depth, storage := storage}))) else (ctor PointwiseDecision.invalidShape)))))))))),
+  executable: true
+}
+
+definition{
+  name: imageColumnStep,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, geometry : ColumnGeometry],
+  result: GraphResponse,
+  body: (let lane : Nat := (decodedCoordinate index destination 0);
+    (let batchDepth : Nat := (decodedCoordinate index destination 3);
+    (let zPlane : Nat := (prim remainder batchDepth (project geometry depth) 0 : Nat);
+    (let batch : Nat := (prim quotient batchDepth (project geometry depth) 0 : Nat);
+    (let xPosition : (Option Nat) := (columnCoordinate (project geometry x) (project source u0) (decodedCoordinate index destination 1) (prim remainder lane (project (project geometry x) kernel) 0 : Nat));
+    (let xRemaining : Nat := (prim quotient lane (project (project geometry x) kernel) 0 : Nat);
+    (let yPosition : (Option Nat) := (columnCoordinate (project geometry y) (project source n1) (decodedCoordinate index destination 2) (prim remainder xRemaining (project (project geometry y) kernel) 0 : Nat));
+    (let yRemaining : Nat := (prim quotient xRemaining (project (project geometry y) kernel) 0 : Nat);
+    (let zPosition : (Option Nat) := (columnCoordinate (project geometry z) (project source n2) zPlane (prim remainder yRemaining (project (project geometry z) kernel) 0 : Nat));
+    (let zRemaining : Nat := (prim quotient yRemaining (project (project geometry z) kernel) 0 : Nat);
+    (let operand : WordOperand := (match xPosition
+      | Option.none => (ctor WordOperand.immediate 0)
+      | Option.some x => (match yPosition
+      | Option.none => (ctor WordOperand.immediate 0)
+      | Option.some y => (match zPosition
+      | Option.none => (ctor WordOperand.immediate 0)
+      | Option.some z => (ctor WordOperand.source 1 (offsetCoordinates source x y z ((prim multiply batch (project geometry channels) : Nat) + zRemaining))))));
+    (ctor GraphResponse.instruction (ctor WordOperation.storage 0 (project geometry storage) true) operand (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset index destination)) 4 (if ((project geometry storage) =? 0) then 4 else 2))))))))))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -1281,6 +1370,7 @@ definition{
     | CopyMode.scattered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.relativeAdd initial width biases => (relativeAddOffsets index initial width biases)
+    | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
     | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
     | CopyMode.arange start stop step count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
@@ -1297,11 +1387,11 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
     | Option.none => false
     | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output)))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output))))))))))))))))))))))),
   executable: true
 }
 
@@ -1350,6 +1440,7 @@ definition{
     | CopyMode.relativePosition => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false)
     | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false)
+    | CopyMode.imageColumns geometry => (ctor GraphResponse.bindings 2 0 0 false)
     | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings (if (kind =? 66) then 3 else 1) 0 0 false)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.arange start stop step count => (ctor GraphResponse.bindings 0 0 0 false)),
@@ -1395,6 +1486,7 @@ definition{
     | CopyMode.relativePosition => 0
     | CopyMode.indexedAdd table indices => 0
     | CopyMode.relativeAdd initial width biases => 0
+    | CopyMode.imageColumns geometry => (project geometry storage)
     | CopyMode.normalized kind epsilon rows capacity => (if (((opcode =? 6) || (opcode =? 7)) && (kind =? 30)) then 30 else 0)
     | CopyMode.l2Norm epsilon => 0
     | CopyMode.arange start stop step count => 0),
@@ -1454,6 +1546,7 @@ definition{
     | CopyMode.relativePosition => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.indexedAdd table indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.relativeAdd initial width biases => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.imageColumns geometry => (ctor WordOperation.storage 0 (project geometry storage) true)
     | CopyMode.normalized kind epsilon rows capacity => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.l2Norm epsilon => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.arange start stop step count => (ctor WordOperation.storage sourceStorage destinationStorage true)),
@@ -1489,6 +1582,7 @@ definition{
     | CopyMode.relativePosition => 0
     | CopyMode.indexedAdd table indices => 0
     | CopyMode.relativeAdd initial width biases => 0
+    | CopyMode.imageColumns geometry => 0
     | CopyMode.normalized kind epsilon rows capacity => 0
     | CopyMode.l2Norm epsilon => 0
     | CopyMode.arange start stop step count => 0),
@@ -1564,6 +1658,7 @@ definition{
     | CopyMode.relativePosition => (copyOffsets index source destination mode)
     | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
     | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
+    | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
     | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
     | CopyMode.arange start stop step count => (arangeOffsets index count start stop step flag))),
@@ -1627,6 +1722,27 @@ definition{
     | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: dilatedColumnExtent,
+  parameters: [],
+  statement: ((columnExtent (record ColumnAxis {kernel := 3, stride := 2, pad := 1, dilation := 2}) 7) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: leftColumnPadding,
+  parameters: [],
+  statement: ((columnCoordinate (record ColumnAxis {kernel := 3, stride := 2, pad := 1, dilation := 2}) 7 0 0) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: interiorColumnSample,
+  parameters: [],
+  statement: ((columnCoordinate (record ColumnAxis {kernel := 3, stride := 2, pad := 1, dilation := 2}) 7 1 2) = (ctor Option.some [Nat] 5)),
+  proof: reflexivity{}
 }
 
 theorem{

@@ -6,9 +6,9 @@ use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
 use vtensor_pointwise::{
-    Adt0 as GraphRequest, Adt1 as Parameters, Adt2 as TensorDescriptor, Adt3 as IndexContext,
-    Adt4 as CopyMode, Adt5 as GraphResponse, Adt6 as GraphPlan, Adt7 as WordOperation,
-    Adt8 as WordOperand, Adt9 as WordTarget,
+    Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as WordOperand, Adt11 as WordTarget,
+    Adt2 as TensorDescriptor, Adt3 as IndexContext, Adt4 as CopyMode, Adt7 as GraphResponse,
+    Adt8 as GraphPlan, Adt9 as WordOperation,
 };
 
 /// Typed refusals at the native tensor boundary.

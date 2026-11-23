@@ -23,14 +23,14 @@ fn declaration<'a>(model: &'a str, name: &str) -> &'a str {
 // Keep each imported batch individually selectable with Cargo. The same entries
 // bind the frozen input counts to the test that calls the native evaluator.
 macro_rules! ggml_batches {
-    ($( $(#[$doc:meta])* fn $name:ident() { $mode:literal, $cases:literal, [$($model:literal),*] $(=> $probe:ident)? } )+) => {
+    ($( $(#[$doc:meta])* fn $name:ident() { $mode:literal, $cases:literal, [$($model:literal),*] $(=> $probe:expr)? } )+) => {
         const GGML_BATCHES: &[(&str, usize)] = &[$(($mode, $cases)),+];
         $(
             $(#[$doc])*
             fn $name() {
                 let root = root();
                 $(tensor_layout::certified_current_model(&root, $model);)*
-                $($probe();)?
+                $($probe;)?
                 native_backend_oracle::verify(&root, $mode, $cases);
             }
         )+
@@ -43,7 +43,7 @@ ggml_batches! {
     fn native_backend_vt_11() { "buffers", 108, ["layout", "native"] }
     /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
     #[test]
-    fn matrix_graphs_vt_12() { "matrix", 1280, ["matrix", "index"] => verify_matrix_graphs }
+    fn matrix_graphs_vt_12() { "matrix", 1280, ["matrix", "index"] => verify_matrix_graphs() }
     /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
     #[test]
     fn elementwise_graphs_vt_13() { "elementwise", 120, ["typed", "pointwise"] }
@@ -100,7 +100,7 @@ ggml_batches! {
     fn reduction_graphs_vt_29() { "reduction", 4080, [] }
     /// `VT-30`: Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs
     #[test]
-    fn row_graphs_vt_30() { "rows", 2264, [] => verify_row_graphs }
+    fn row_graphs_vt_30() { "rows", 2264, [] => verify_row_graphs() }
     /// `VT-31`: Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals
     #[test]
     fn row_gradient_graphs_vt_31() { "row-gradient", 3360, [] }
@@ -121,7 +121,7 @@ ggml_batches! {
     fn normalization_graphs_vt_38() { "upstream-L2_NORM,L2_NORM_BATCH", 129, ["pointwise", "norm"] }
     /// `VT-39`: Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals
     #[test]
-    fn relative_position_add_vt_39() { "upstream-ADD_REL_POS", 1315, ["pointwise"] => verify_relative_position_add }
+    fn relative_position_add_vt_39() { "upstream-ADD_REL_POS", 1315, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-ORACLE_CALIBRATION", 2) }
     /// `VT-46`: Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals
     #[test]
     fn rms_normalization_vt_46() { "upstream-RMS_NORM", 121, ["pointwise"] }
@@ -192,6 +192,9 @@ ggml_batches! {
 
     #[test]
     fn scalar_outer_products_vt_69() { "upstream-OUT_PROD_SCALAR", 87, ["pointwise", "matrix"] }
+
+    #[test]
+    fn image_columns_vt_70() { "upstream-IM2COL_3D_VIEW", 6, ["pointwise"] }
 
     #[test]
     fn packed_outer_products_vt_71() { "upstream-OUT_PROD_PACKED", 144, ["matrix", "pointwise"] }
@@ -347,7 +350,7 @@ fn verify_matrix_graphs() {
 }
 
 fn verify_row_graphs() {
-    use vtensor_pointwise::{Adt0, Adt1, Adt2, Adt5, Adt6};
+    use vtensor_pointwise::{Adt0, Adt1, Adt2, Adt7 as Response, Adt8 as Plan};
     for (operation, ty, output_type) in [(13, 0, 0), (18, 26, 27)] {
         let empty = Adt2::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
         let output = Adt2::C0(output_type, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
@@ -368,7 +371,7 @@ fn verify_row_graphs() {
                 None,
                 output
             )),
-            Ok(Adt5::C0(Adt6::C4(2, ..)))
+            Ok(Response::C0(Plan::C4(2, ..)))
         ));
     }
 }
@@ -1588,10 +1591,6 @@ fn buffer_transfer_vt_09() {
     }
 }
 
-fn verify_relative_position_add() {
-    native_backend_oracle::verify(&root(), "upstream-ORACLE_CALIBRATION", 2);
-}
-
 mod native_backend_oracle {
     use super::ggml_oracle::{compile, digest, file_digest, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
@@ -1614,7 +1613,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "468531b6e8ff117522236aa10564184d40a45a7c03ac09ccf4532a7d1caabac6",
+            "f0de5aba8b4719285151443bb54e273c276758a0b10ea89624a614531f612a3f",
         )
     });
 

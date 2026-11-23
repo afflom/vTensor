@@ -480,6 +480,12 @@ suite = "native-backend"
 statement = "Prism maps GGML scalar outer-product axes and batch replication to the Verdant matrix primitive and matches the imported CPU evaluator"
 
 [[id]]
+id = "VT-70"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps GGML three-dimensional image columns through padded and dilated input views, with Verdant storing each typed output"
+
+[[id]]
 id = "VT-71"
 level = "build"
 suite = "native-backend"
