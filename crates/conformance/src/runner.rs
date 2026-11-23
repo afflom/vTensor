@@ -868,15 +868,13 @@ impl<'a> TensorInput<'a> {
     }
 }
 
-type SymmetricRowProduct =
-    fn(&[u8], &[linear::SymmetricQ8Block<32>]) -> Result<f32, TensorComputeError>;
-
-fn symmetric_row_product(kind: u64) -> Option<SymmetricRowProduct> {
+fn symmetric_weight_encoding(kind: u64) -> Option<linear::SymmetricWeightEncoding> {
+    use linear::SymmetricWeightEncoding::*;
     match kind {
-        2 => Some(linear::dot_symmetric_q4_row),
-        6 => Some(linear::dot_symmetric_q5_row),
-        8 => Some(linear::dot_symmetric_q8_row),
-        20 => Some(linear::dot_nonlinear_q4_row),
+        2 => Some(SignedFour),
+        6 => Some(SignedFive),
+        8 => Some(SignedByte),
+        20 => Some(NonlinearFour),
         _ => None,
     }
 }
@@ -891,14 +889,14 @@ fn execute_row_products(
     let C0(_, weight_bytes, ..) = plan;
     let symmetric = linear::encode_symmetric_q8_block::<32>;
     macro_rules! packed {
-        ($encode:expr, $dot:path) => {
+        ($encode:expr, $dot:expr) => {
             execute_block_rows(
                 execution,
                 0,
                 tensor,
                 plan,
                 |x| Ok($encode(x)?),
-                |source, at, a, _| Ok($dot(source.region(at, weight_bytes as usize)?, a)?),
+                |source, at, a, _| Ok(($dot)(source.region(at, weight_bytes as usize)?, a)?),
             )
         };
     }
@@ -935,8 +933,10 @@ fn execute_row_products(
         C0(.., None, 41) => packed!(symmetric, linear::dot_binary_sign_row),
         C0(.., None, 42) => packed!(symmetric, linear::dot_two_bit_row),
         C0(.., None, kind) => {
-            let product = symmetric_row_product(kind).ok_or(BackendError::InvalidTensor)?;
-            packed!(symmetric, product)
+            let encoding = symmetric_weight_encoding(kind).ok_or(BackendError::InvalidTensor)?;
+            packed!(symmetric, |w, a| linear::dot_encoded_symmetric_row(
+                w, a, encoding
+            ))
         }
     }
 }
@@ -1761,39 +1761,28 @@ mod attention {
         }
     }
 
+    fn head_slope(
+        bias: Option<f32>,
+        heads: i64,
+        head: u64,
+    ) -> Result<Option<f32>, super::TensorComputeError> {
+        bias.map(|value| linear::attention_head_slope_f32(value, heads as u32, head as u32))
+            .transpose()
+    }
+
     pub(super) fn softmax(tensor: &Tensor, plan: SoftmaxPlan) -> Result<(), BackendError> {
         let source = graph_tensor_data(tensor.source(0).ok_or(InvalidTensor)?)?;
         let output = graph_tensor_data(tensor)?;
-        // GGML ignores the inner stride of a singleton axis. The Prism plan guarantees
-        // contiguous scalar rows, so decode using their physical storage widths.
-        let scalar_input = |slot| -> Result<Option<TensorInput<'_>>, BackendError> {
-            Ok(tensor.input(slot)?.map(|mut input| {
-                input.nb[0] = if input.ty == 0 {
-                    size_of::<f32>()
-                } else {
-                    size_of::<u16>()
-                };
-                input
-            }))
-        };
-        let mask = scalar_input(1)?;
-        let sink = scalar_input(2)?;
+        let mask = tensor.input(1)?;
+        let sink = tensor.input(2)?;
         let SoftmaxPlan::C0(_, _, _, scale, bias) = &plan;
         let scale = f32::from_bits(*scale as u32);
+        let bias = bias.map(|bits| f32::from_bits(bits as u32));
         let mut row = workspace(tensor.ne[0] as u64, 0.0_f32)?;
         let mut mask_row = workspace(if mask.is_some() { row.len() as u64 } else { 0 }, 0.0_f32)?;
         let scalar = |operation, a, b| evaluate_f32_scalar(operation, a, b).map_err(|_| Overflow);
         for head in 0..tensor.ne[2] as u64 {
-            let slope = bias
-                .map(|bits| {
-                    linear::attention_head_slope_f32(
-                        f32::from_bits(bits as u32),
-                        tensor.ne[2] as u32,
-                        head as u32,
-                    )
-                })
-                .transpose()?
-                .unwrap_or(1.0);
+            let slope = head_slope(bias, tensor.ne[2], head)?.unwrap_or(1.0);
             for batch in 0..tensor.ne[3] as u64 {
                 for token in 0..tensor.ne[1] as u64 {
                     let Response::C4(from, moff, soff, to) =
@@ -1875,19 +1864,26 @@ mod attention {
         }
 
         pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
-            let width = self.nb[0];
-            if super::symmetric_row_product(self.ty as u64).is_some() {
+            if super::symmetric_weight_encoding(self.ty as u64).is_some() {
                 let (blocks, tail) = out.as_chunks_mut::<32>();
                 if !tail.is_empty() {
                     return Err(InvalidTensor);
                 }
                 let source = self.blocks(offset, blocks.len())?;
-                for (input, block) in source.chunks_exact(width).zip(blocks) {
+                for (input, block) in source.chunks_exact(self.nb[0]).zip(blocks) {
                     super::decode_words(self.ty as u64, input, block, 4)?;
                 }
                 return Ok(());
             }
-            for (bytes, value) in self.blocks(offset, out.len())?.chunks_exact(width).zip(out) {
+            // A scalar read has no inter-element stride. The Prism offset already selects its lane.
+            let width = match (out.len(), self.ty) {
+                (1, 0) => size_of::<f32>(),
+                (1, 1 | 30) => size_of::<u16>(),
+                (1, 43) => 1,
+                _ => self.nb[0],
+            };
+            let bytes = out.len().checked_mul(width).ok_or(Overflow)?;
+            for (bytes, value) in self.region(offset, bytes)?.chunks_exact(width).zip(out) {
                 *value = match (self.ty as u64, bytes) {
                     (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
                     (43, &[byte]) => super::decode_float(43, byte.into())?,
@@ -1914,8 +1910,8 @@ mod attention {
         let shape = q.ne;
         let key_rows = k.ne[1] as u64;
         let mut query = workspace(shape[0] as u64, 0.0)?;
-        let packed_product = super::symmetric_row_product(k.ty as u64);
-        let (mut key, mut packed) = if packed_product.is_some() {
+        let packed_encoding = super::symmetric_weight_encoding(k.ty as u64);
+        let (mut key, mut packed) = if packed_encoding.is_some() {
             (Vec::new(), super::reserved(query.len() / 32)?)
         } else {
             (workspace(shape[0] as u64, 0.0)?, Vec::new())
@@ -1932,9 +1928,7 @@ mod attention {
             scale = scalar(3, scale, cap)?;
         }
         for head in 0..shape[2] as u64 {
-            let slope = head_bias
-                .map(|bias| linear::attention_head_slope_f32(bias, shape[2] as u32, head as u32))
-                .transpose()?;
+            let slope = head_slope(head_bias, shape[2], head)?;
             let slope_word = u64::from(slope.unwrap_or(1.0).to_bits());
             for batch in 0..shape[3] as u64 {
                 for token in 0..shape[1] as u64 {
@@ -1972,8 +1966,12 @@ mod attention {
                             None => 0.0,
                         };
                         let key_offset = koff + row * ks;
-                        let dot = if let Some(product) = packed_product {
-                            product(k.blocks(key_offset, packed.len())?, &packed)?
+                        let dot = if let Some(encoding) = packed_encoding {
+                            linear::dot_encoded_symmetric_row(
+                                k.blocks(key_offset, packed.len())?,
+                                &packed,
+                                encoding,
+                            )?
                         } else {
                             k.decode(key_offset, &mut key)?;
                             let mut dot = [0.0];

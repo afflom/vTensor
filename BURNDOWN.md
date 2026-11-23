@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **22,930 passed**, **4,725 refused** and **100 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **23,115 passed**, **4,540 refused** and **100 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -9,14 +9,14 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Index all 27,755 factory ordinals and constructor parameters. Match completed runs by label and parameter group. Count each ordinal once. [Case transcript](verification/ggml-factory-cases.tsv.gz) · [Verdict mapping](verification/ggml-factory-inventory.json)
 - [x] Link four opcodes absent from the factory to their supplemental CPU cases. VT-25 covers WIN_PART and WIN_UNPART (2,808 comparisons), VT-33 covers GET_REL_POS (192), and VT-39 covers ADD_REL_POS (1,315). [Contracts](crates/conformance/tests/contract.rs) · [Comparison evidence](README.md#current-evidence)
 - [ ] Cover legal variants outside the factory with the imported CPU or another pinned authoritative oracle. Track the aborting `ggml_flash_attn_back` constructor until an authoritative verdict exists. [Pinned constructor](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L5529)
-- [x] Pin Verdant PR #33 at `201d1f3d`. VT-02 checks Cargo’s resolved upstream source and the 15 descriptors. [Patch record](model/verdant-development.json) · [Verdant PR #33](https://github.com/afflom/verdant-engine/pull/33)
+- [x] Pin Verdant PR #33 at `709ca3b0`. VT-02 checks Cargo’s resolved upstream source and the 15 descriptors. [Patch record](model/verdant-development.json) · [Verdant PR #33](https://github.com/afflom/verdant-engine/pull/33)
 - [x] Check the compiled provider’s GGML imports in VT-02. A planted dependency on the GGML matrix kernel is rejected. [Boundary evidence](VTENSOR-VERIFICATION.md#provider-linkage)
 - [x] Confirm Verdant main includes the PR #32 pin and its prerequisites. [Upstream integration](https://github.com/afflom/verdant-engine/commit/0001659b991a054cd6c48fdf2cd5b18d1cb1398f)
 - [ ] Switch to published Verdant packages when a release contains the pinned primitives. Verify provenance, checksums and a clean consumer build. [Current patch](model/verdant-development.json) · [Verdant releases](https://github.com/afflom/verdant-engine/releases)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,323 non-Prism lines** (12,872 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,322 non-Prism lines** (12,871 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -66,12 +66,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 533 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
 - [x] Pin the Verdant head slope and validate the provider boundary with VT-02. All 40,452 upstream scalar comparisons passed, within one binary32 step. [Engine PR #27](https://github.com/afflom/verdant-engine/pull/27)
 - [x] Pass all 125 Q5_0 and IQ4_NL ordinary matrix graphs and all 17 indexed graphs. [VT-94 results](verification/factory-compact-rows-vt94.json)
-- [ ] Pass all 674 Q5_0 and IQ4_NL FLASH_ATTN_EXT graphs. 489 passed the imported CPU comparison. [VT-94 results](verification/factory-compact-rows-vt94.json)
-- [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. 1,330 pass. Complete Q4_1 and Q5_1 support. [VT-78 comparisons](verification/factory-biased-attention-vt78.json) · [VT-94 comparisons](verification/factory-compact-rows-vt94.json)
+- [x] Pass all 674 Q5_0 and IQ4_NL FLASH_ATTN_EXT graphs. 674 passed the imported CPU comparison. [VT-94 results](verification/factory-compact-rows-vt94.json)
+- [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. 1,382 pass. Complete Q4_1 and Q5_1 support. [VT-78 comparisons](verification/factory-biased-attention-vt78.json) · [VT-94 comparisons](verification/factory-compact-rows-vt94.json)
 - [x] Submit the reusable normalized exponential to Verdant. All 4,164 CPU probability comparisons passed. [Engine PR #29](https://github.com/afflom/verdant-engine/pull/29)
 - [x] Pass all 214 SOFT_MAX cases, including masks, sinks and in-place output. [VT-87 results](verification/factory-row-softmax-vt87.json)
 - [x] Pass the 344 TOPK_MOE graphs unlocked by SOFT_MAX. [Original graph comparisons](verification/factory-row-softmax-compositions.json)
-- [ ] Complete FLASH_ATTN_EXT. Of 5,775 attention cases, 4,781 pass, 894 are refused and 100 still need an evaluator verdict.
+- [ ] Complete FLASH_ATTN_EXT. Of 5,775 attention cases, 4,966 pass, 709 are refused and 100 still need an evaluator verdict.
 - [x] Execute all 39 LOG, SIN, COS and EXP cases through Verdant, including the upstream storage and view variants. [Factory verdicts](verification/factory-elementary-vt60.json)
 - [x] Execute the 122 sigmoid and SiLU standalone, multiplied and added graphs on the pinned Verdant primitives. [Factory verdicts](verification/factory-logistic-vt61.json)
 - [x] Supply binary32 hyperbolic tangent in Verdant. All 128,870 GGML scalar comparisons pass. [Verdant PR #25](https://github.com/afflom/verdant-engine/pull/25)
