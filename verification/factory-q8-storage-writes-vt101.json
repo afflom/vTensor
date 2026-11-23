@@ -1,0 +1,57 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "8b6bbc2c89d3391a5244114cc48dda64d7b27017",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/35",
+  "requirement": "VT-101",
+  "implementation": "5d716f607c84e6301de24b011c0454533b434fac",
+  "provider_sha256": "6e1c653993671899b2937c118e6dcbe1204c9579d076c17989499b430c4e1437",
+  "provider_inputs_sha256": "dc2674e3d739ae3834d38186e5cfdade03fbc20116b670129f69d329cbc8cc77",
+  "oracle_executable_sha256": "4b74e4c6c328b3457222cac9fa846a02145501d6356a5beb45293aaf82b4cd75",
+  "typed_lock_sha256": "99370ff9841a5103e14be4abffb4362b834211aafec42bb3f622658fd25da61f",
+  "oracle": "Original GGML SET_ROWS and CPY constructors evaluated by the plugin and the pinned GGML CPU. The copy cases include F32, F16 and BF16 sources. Both index widths are checked for late invalid indices and nonfinite input with the destination preserved byte for byte.",
+  "contract_transcript_sha256": "81f57c00e6961c0fbabc179a947d7329773b456ebd00de899d7ae6d945652033",
+  "case_ordinals": {
+    "SET_ROWS": [
+      1127,
+      1236,
+      1237,
+      1238,
+      1239,
+      1240,
+      1241,
+      1242,
+      1243,
+      1244,
+      1245,
+      1246,
+      1247,
+      1616,
+      1617,
+      1618,
+      1619,
+      1620,
+      1621,
+      1622,
+      1623,
+      1624,
+      1625,
+      1626,
+      1627
+    ],
+    "CPY": [
+      8463,
+      8464,
+      8521,
+      8522,
+      8579,
+      8580
+    ]
+  },
+  "mutation": {
+    "ordinal": 1127,
+    "change": "Send every encoded block to byte offset zero.",
+    "error": 0.431313023,
+    "tolerance": 1.272e-06
+  }
+}

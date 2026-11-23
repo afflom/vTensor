@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **25,173 passed**, **2,552 refused** and **30 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **25,209 passed**, **2,521 refused** and **25 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -27,6 +27,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Place `output.weight` in llama.cpp. Run all 122 Q8_0 × F32 MUL_MAT cases through the Verdant row product (VT-53). [Factory and consumer evidence](VTENSOR-VERIFICATION.md#quantized-matrix-execution)
 - [x] Load the quantized GGUF into 17.50 MiB of vTensor model storage. Run all 122 Q4_0 × F32 MUL_MAT factory cases through Verdant (VT-54). [Factory and consumer evidence](VTENSOR-VERIFICATION.md#packed-matrix-execution-and-kv-cache-placement)
 - [x] Pass all 40 F16 and F32 indexed writes to E4M3 storage using Verdant’s signed conversion. [VT-100 comparisons](verification/factory-e4m3-row-stores-vt100.json)
+- [x] Pass 25 indexed writes and six copies to Q8_0 through the shared Verdant encoder. [VT-101 comparisons](verification/factory-q8-storage-writes-vt101.json)
 - [x] Pass all 126 scalar SET_ROWS factory cases, including all 20 F32 → F16 / I64 cases. Confirm llama.cpp admits all 12 KV-cache writes (VT-55). [Factory and scheduler evidence](VTENSOR-VERIFICATION.md#scalar-indexed-row-writes)
 - [x] Pin Verdant’s GELU and GELU_QUICK after 257,548 scalar oracle comparisons. [Verdant PR #26](https://github.com/afflom/verdant-engine/pull/26)
 - [x] Compare the 24 SNAKE_FUSE, 42 MUL_MAT_ADD and 36 FLASH_ATTN_EXT graphs admitted on replay with the original GGML CPU evaluator. [Original comparisons](verification/factory-admitted-compositions.json)
@@ -48,7 +49,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 144 directly CPU-supported packed OUT_PROD cases through Verdant. [VT-71 results](verification/factory-packed-outer-products-vt71.json)
 - [x] Pass the 1,312 CPU-refused OUT_PROD graphs against the upstream decoder and F32 CPU contraction. All 1,543 factory outer products now have passing comparisons. [VT-73 evidence](verification/factory-decoded-outer-products-vt73.json)
 - [x] Pass 68 additional dense matrix and activation compositions across F32, F16, Q4_0, Q8_0 and Q2_K. [Full-graph comparisons](verification/factory-dense-matrix-fusions.json)
-- [ ] Complete embedding, projection and KV-cache operations. Implement the 601 refused SET_ROWS factory cases, the 206 unresolved CPY cases, block encoding and quantized dot products, the 667 refused standalone MUL_MAT cases, precision modes and 155 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
+- [ ] Complete embedding, projection and KV-cache operations. Implement the 576 refused SET_ROWS factory cases, the 200 unresolved CPY cases, block encoding and quantized dot products, the 667 refused standalone MUL_MAT cases, precision modes and 155 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 230 Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs, including skipped experts and offset index views. [VT-83 results](verification/factory-indexed-products-vt83.json)
 - [x] Pass the 130 newly admitted packed expert compositions, including six shared-expert graphs and 124 matrix fusions. [Original full-graph comparisons](verification/factory-indexed-expert-compositions.json)
 - [x] Execute all 251 F32, F16 and BF16 MUL_MAT_ID cases, including invalid expert IDs and strided index views. [VT-84 results](verification/factory-scalar-experts-vt84.json)
@@ -76,7 +77,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Submit the reusable normalized exponential to Verdant. All 4,164 CPU probability comparisons passed. [Engine PR #29](https://github.com/afflom/verdant-engine/pull/29)
 - [x] Pass all 214 SOFT_MAX cases, including masks, sinks and in-place output. [VT-87 results](verification/factory-row-softmax-vt87.json)
 - [x] Pass the 344 TOPK_MOE graphs unlocked by SOFT_MAX. [Original graph comparisons](verification/factory-row-softmax-compositions.json)
-- [ ] Complete FLASH_ATTN_EXT. Of 5,775 attention cases, 5,745 pass, 0 are refused and 30 still need an evaluator verdict.
+- [ ] Complete FLASH_ATTN_EXT. Of 5,775 attention cases, 5,750 pass, 0 are refused and 25 still need an evaluator verdict.
 - [x] Pass all 19 Q1_0, Q2_0 and F8_E4M3 attention graphs using existing Verdant primitives. [VT-96 CPU comparisons](verification/factory-small-format-attention-vt96.json)
 - [x] Implement the optional I32 key/value row map in Prism. [Provider implementation](https://github.com/afflom/vTensor/commit/15af61f0ccc174aa62cbc553af09b23406d21d9f)
 - [x] Pass all 60 indexed-cache attention graphs against the pinned CPU. [VT-97 ordinals and transcripts](verification/factory-indexed-cache-attention-vt97.json)
