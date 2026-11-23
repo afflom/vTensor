@@ -5060,3 +5060,9 @@ VT-102 passes 54 upstream GET_ROWS_BACK graphs across 27 source formats. Prism b
 ### Two-bit codebook matrix products
 
 VT-103 passes 222 ordinary matrix products, 94 expert products and 121 fused graphs using IQ2_XXS, IQ2_XS and IQ2_S weights. Each original factory graph ran on the provider. For 36 F16 activation inputs the independent reference widened the activations with GGML before executing its CPU matrix product. Negating the IQ2_XXS result failed ordinal 10824 with error 4.0 against the 0.0005 limit. Restoring it passed all three formats through ordinary and expert dispatch. The pinned Verdant patch separately matched 294 CPU vector products bit-for-bit. [Factory transcripts](verification/factory-codebook-products-vt103.json) · [Verdant PR #36](https://github.com/afflom/verdant-engine/pull/36)
+
+### Decoded copies to binary32
+
+VT-104 passes all 53 previously refused factory copies into F32. The original GGML CPU and the provider execute the same contiguous and permuted inputs from 25 packed formats and I32. Prism selects the source block and destination offset. Verdant supplies block decoding and signed integer conversion. Reusing offset zero for every block failed the first Q4_0 case at ordinal 8629, with error 2.355522583 against the 0.000001 limit. Restoring source offsets passed all 53 cases and the copy, gather and gradient regressions. [Factory evidence](verification/factory-decoded-copies-vt104.json)
+
+Verdant PR #36 also passed its complete locked-SDK gate on the pinned revision, including all 70 tensor tests. [Upstream acceptance](https://github.com/afflom/verdant-engine/actions/runs/45202524656/job/137789461958)
