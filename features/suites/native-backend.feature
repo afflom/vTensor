@@ -200,3 +200,9 @@ Feature: native-backend
     Given original GGML binary32, binary16 and bfloat16 activation views
     When vTensor applies softplus to each input
     Then the imported CPU evaluator accepts the computed activation
+
+  @VT-91 @build
+  Scenario: Prism plans ordinary and indexed Q1_0 and Q2_0 weight products and Verdant contracts the packed weights against symmetric eight-bit activation blocks
+    Given original GGML one- and two-bit packed weight graphs
+    When the provider computes matrix rows or selects experts
+    Then the independent CPU backend accepts the computed outputs
