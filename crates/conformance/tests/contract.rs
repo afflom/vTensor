@@ -330,6 +330,9 @@ ggml_batches! {
     #[test]
     fn transpose_plane_vt_107() { "upstream-TRANSPOSE_CONV_2D", 8, ["pointwise"] }
     #[test]
+    fn grouped_six_writes_vt_119() { "upstream-GROUPED_SIX_WRITES", 2, ["typed"] }
+
+    #[test]
     fn compact_float_writes_vt_117() { "upstream-COMPACT_FLOAT_WRITES", 4, ["typed"] }
     #[test]
     fn ternary_weight_writes_vt_113() { "upstream-TERNARY_WEIGHT_WRITES", 60, ["typed"] }
@@ -1500,7 +1503,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "4bb75487c897aa1b37b9ba198f14f207a3e9ff5e7c9703e1a67b85672cbda90d",
+            "6a1dc2f1efba6cd2e6a5fe92b20ebd79c838c2c8a3cd8a8477774988492802ab",
         )
     });
 
@@ -1645,11 +1648,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 "$align" => format!("alignof({ty})"),
                 _ => format!("offsetof({ty}, {field})"),
             };
-            writeln!(
-                driver,
-                "static_assert((size_t)({expression}) == {value}, \"ABI {key}\");"
-            )
-            .unwrap();
+            writeln!(driver, "static_assert({expression} == {value});").unwrap();
         }
         driver.push_str(BODY);
         let mut identity = Sha256::new();
@@ -2395,6 +2394,7 @@ int main(int argc, char **argv) {
         {"SET_ROWS_SCALAR", {GGML_TYPE_F16}}, {"Q8_STORAGE_WRITES", {GGML_TYPE_Q8_0}},
         {"SIGN_WEIGHT_WRITES", {GGML_TYPE_Q1_0,GGML_TYPE_Q2_0}},
         {"LOW_BIT_WRITES", {GGML_TYPE_Q4_0,GGML_TYPE_Q4_1,GGML_TYPE_Q5_0,GGML_TYPE_Q5_1}},
+        {"GROUPED_SIX_WRITES", {GGML_TYPE_Q6_K}},
         {"COMPACT_FLOAT_WRITES", {GGML_TYPE_MXFP4,GGML_TYPE_NVFP4}},
         {"TERNARY_WEIGHT_WRITES", {GGML_TYPE_TQ1_0,GGML_TYPE_TQ2_0}},
       };

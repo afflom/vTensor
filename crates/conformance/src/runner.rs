@@ -1225,6 +1225,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         6 => Some(CenteredFive),
         7 => Some(AffineFive),
         8 => Some(SymmetricEight),
+        14 => Some(GroupedSignedSix),
         34 => Some(PackedTrits),
         35 => Some(TwoBitTernary),
         39 => Some(ExponentOnlyFour),

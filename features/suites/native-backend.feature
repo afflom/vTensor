@@ -369,6 +369,12 @@ Feature: native-backend
     When the provider widens each input and subtracts one from its binary32 exponential
     Then each result agrees with the pinned CPU unary operation
 
+  @VT-119 @build
+  Scenario: Prism places grouped signed six-bit Verdant encodings through GGML indexed writes and copies
+    Given Q6_K destinations with scalar source views
+    When vTensor copies or updates indexed rows
+    Then the stored groups agree with the CPU and a failed write preserves the destination
+
   @VT-120 @build
   Scenario: Prism admits ordinary and in-place E4M3 additions and Verdant reproduces the GGML CPU results
     Given all six imported E4M3 addition graphs with F32 right operands

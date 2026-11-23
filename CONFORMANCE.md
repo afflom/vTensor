@@ -205,6 +205,7 @@ model does not sanction.
 | `VT-116` | `build` | Prism plans ordinary and expert matrices with shifted one-bit codebooks and Verdant contracts their quantized rows |
 | `VT-117` | `build` | Prism schedules exponent-only and grouped four-bit floating encoders for copied and indexed GGML writes through Verdant |
 | `VT-118` | `build` | Prism composes Verdant exponential and binary32 subtraction for strided GGML EXPM1 graphs |
+| `VT-119` | `build` | Prism places grouped signed six-bit Verdant encodings through GGML indexed writes and copies |
 | `VT-120` | `build` | Prism admits ordinary and in-place E4M3 additions and Verdant reproduces the GGML CPU results |
 
 ## normalization-graphs

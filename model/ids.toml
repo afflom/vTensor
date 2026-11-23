@@ -776,6 +776,12 @@ suite = "native-backend"
 statement = "Prism composes Verdant exponential and binary32 subtraction for strided GGML EXPM1 graphs"
 
 [[id]]
+id = "VT-119"
+level = "build"
+suite = "native-backend"
+statement = "Prism places grouped signed six-bit Verdant encodings through GGML indexed writes and copies"
+
+[[id]]
 id = "VT-120"
 level = "build"
 suite = "native-backend"
