@@ -164,6 +164,7 @@ model does not sanction.
 | `VT-75` | `build` | Prism admits GELU and GELU_QUICK GGML graphs and vTensor delegates the Gaussian activations to Verdant |
 | `VT-76` | `build` | Original channel-major GGML convolution graphs agree with upstream CPU convolution on equivalent contiguous tensors |
 | `VT-77` | `build` | Prism plans combined split and swapped gated rows and Verdant evaluates their rectified and Gaussian activations |
+| `VT-79` | `build` | Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant |
 
 ## normalization-graphs
 

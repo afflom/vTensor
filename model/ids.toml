@@ -526,3 +526,9 @@ id = "VT-77"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans combined split and swapped gated rows and Verdant evaluates their rectified and Gaussian activations"
+
+[[id]]
+id = "VT-79"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant"
