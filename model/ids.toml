@@ -496,3 +496,9 @@ id = "VT-72"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps one- and two-dimensional GGML image columns across channel and batch strides and Verdant converts the result storage"
+
+[[id]]
+id = "VT-74"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps direct two-dimensional GGML convolution to padded image patches and kernel strides and Verdant contracts each patch matrix"

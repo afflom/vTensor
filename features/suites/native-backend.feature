@@ -92,3 +92,9 @@ Feature: native-backend
     Given imported IM2COL graphs with horizontal or planar kernels and F16 or F32 output
     When vTensor places each image sample or padding value in its result column
     Then every result matches the original GGML CPU evaluator
+
+  @VT-74 @build
+  Scenario: Prism maps direct two-dimensional GGML convolution to padded image patches and kernel strides and Verdant contracts each patch matrix
+    Given original GGML convolution graphs with F32 images and F16 or F32 kernels
+    When vTensor gathers a tile of patches and Verdant multiplies it by the filter matrix
+    Then every result matches the original GGML CPU evaluator

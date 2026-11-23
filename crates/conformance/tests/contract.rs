@@ -202,6 +202,9 @@ ggml_batches! {
     #[test]
     fn planar_columns_vt_72() { "upstream-IM2COL_PLANAR", 4, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-IM2COL_HALF_INPUT", 2) }
 
+    #[test]
+    fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1582,7 +1585,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "1085ee7e12b9c55183a87e43357f77dd4ac00587af8da38061b3b2d26c2ddb94",
+            "df9277445fe251dd8bed346138acd6d7db4522f7ff2c78c0448757a35d31e7bd",
         )
     });
 
