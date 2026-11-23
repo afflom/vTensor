@@ -95,13 +95,26 @@ definition{
   name: rowProductType,
   parameters: [kind : Nat],
   result: Bool,
-  body: (((kind =? 2) || (kind =? 8)) || (kind =? 10)),
+  body: (((((kind =? 2) || (kind =? 8)) || (kind =? 10)) || (kind =? 12)) || (kind =? 13)),
   executable: true
 }
 
 definition{
   name: makePlan,
-  parameters: [w : Tensor, a : Tensor, o : Tensor, lanes : Nat, width : Nat, rows : Nat, columns : Nat, b2 : Nat, b3 : Nat, ratio2 : Nat, ratio3 : Nat, expert : (Option ExpertLayout)],
+  parameters: [
+    w : Tensor,
+    a : Tensor,
+    o : Tensor,
+    lanes : Nat,
+    width : Nat,
+    rows : Nat,
+    columns : Nat,
+    b2 : Nat,
+    b3 : Nat,
+    ratio2 : Nat,
+    ratio3 : Nat,
+    expert : (Option ExpertLayout)
+  ],
   result: Plan,
   body: (record Plan {blocks := (prim quotient (project w n0) lanes 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply rows (prim multiply columns (prim multiply b2 b3 : Nat) : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), expert := expert, scalarPrecision := (if ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)) then (ctor Option.some [Nat] (ScalarDotStorage::activationType (project w kind))) else (ctor Option.none [Nat])), weightType := (project w kind)}),
   executable: true
@@ -160,10 +173,7 @@ definition{
   result: Response,
   body: (match (project plan expert)
     | Option.none => (ctor Response.refused)
-    | Option.some layout => (if (ordinal <? (project plan visits)) then (let lane : Nat := (prim remainder ordinal (project plan columns) 0 : Nat);
-    (let token : Nat := (prim quotient ordinal (project plan columns) 0 : Nat);
-    (let dest : Nat := ((prim multiply lane (project plan o1) : Nat) + (prim multiply token (project plan o2) : Nat));
-    (if (expert =? 4294967295) then (ctor Response.skippedColumn dest) else (if (expert <? (project layout experts)) then (ctor Response.columnOffsets (prim multiply expert (project plan w2) : Nat) ((prim multiply (prim remainder lane (project layout activationRows) 0 : Nat) (project plan a1) : Nat) + (prim multiply token (project plan a2) : Nat)) dest) else (ctor Response.refused)))))) else (ctor Response.refused))),
+    | Option.some layout => (if (ordinal <? (project plan visits)) then (let lane : Nat := (prim remainder ordinal (project plan columns) 0 : Nat); (let token : Nat := (prim quotient ordinal (project plan columns) 0 : Nat); (let dest : Nat := ((prim multiply lane (project plan o1) : Nat) + (prim multiply token (project plan o2) : Nat)); (if (expert =? 4294967295) then (ctor Response.skippedColumn dest) else (if (expert <? (project layout experts)) then (ctor Response.columnOffsets (prim multiply expert (project plan w2) : Nat) ((prim multiply (prim remainder lane (project layout activationRows) 0 : Nat) (project plan a1) : Nat) + (prim multiply token (project plan a2) : Nat)) dest) else (ctor Response.refused)))))) else (ctor Response.refused))),
   executable: true
 }
 

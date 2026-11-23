@@ -91,9 +91,7 @@ definition{
   result: Instruction,
   body: (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.unknownType => (ctor Instruction.refused)
-    | TensorTypes::TypeStorageDecision.knownType spec => (let row : Nat := (prim quotient at k 0 : Nat); (let block : Nat := (prim quotient row lanes 0 : Nat);
-      (let skip : Nat := (if (((prim remainder at k 0 : Nat) + 1) =? k) then (prim multiply (prim subtract lanes 1 : Nat) k : Nat) else 0);
-      (ctor Instruction.decodeBlock at (base + (prim multiply block blockStride : Nat)) kind (project spec typeSize) (prim multiply k 4 : Nat) skip))))),
+    | TensorTypes::TypeStorageDecision.knownType spec => (let row : Nat := (prim quotient at k 0 : Nat); (let block : Nat := (prim quotient row lanes 0 : Nat); (let skip : Nat := (if (((prim remainder at k 0 : Nat) + 1) =? k) then (prim multiply (prim subtract lanes 1 : Nat) k : Nat) else 0); (ctor Instruction.decodeBlock at (base + (prim multiply block blockStride : Nat)) kind (project spec typeSize) (prim multiply k 4 : Nat) skip))))),
   executable: true
 }
 
@@ -116,9 +114,7 @@ definition{
     operation : Nat
   ],
   result: Instruction,
-  body: (let lanes : Nat := (if (operation =? 30) then (MatrixGraph::packedOuterLanes leftType) else 0);
-    (let weightStrides : Strides := (if (0 <? lanes) then (record Strides {s0 := (project left s1), s1 := 0, s2 := (project left s2), s3 := (project left s3)}) else (operandStrides operation left));
-    (match (evaluate index m k n b2 b3 r2 r3 weightStrides (operandStrides operation right) output)
+  body: (let lanes : Nat := (if (operation =? 30) then (MatrixGraph::packedOuterLanes leftType) else 0); (let weightStrides : Strides := (if (0 <? lanes) then (record Strides {s0 := (project left s1), s1 := 0, s2 := (project left s2), s3 := (project left s3)}) else (operandStrides operation left)); (match (evaluate index m k n b2 b3 r2 r3 weightStrides (operandStrides operation right) output)
     | Instruction.transfer writing slot at offset => (if writing then (ctor Instruction.transfer true slot at offset) else (if ((slot =? 0) && (0 <? lanes)) then (outerBlockLoad at offset k leftType lanes (project left s0)) else (scalarLoad slot at offset (if (slot =? 0) then leftType else rightType) (ScalarDotStorage::activationType leftType))))
     | Instruction.schedule steps total => (ctor Instruction.schedule steps total)
     | Instruction.multiply => (ctor Instruction.multiply)

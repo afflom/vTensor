@@ -4958,3 +4958,7 @@ LD_LIBRARY_PATH="$LLAMA_LIB" /tmp/ggml-factory-signatures > /tmp/ggml-factory-si
 awk -F '\t' 'BEGIN {OFS="\t"} $1=="C" {print $1,$2,$NF; next} {print}' \
     /tmp/ggml-factory-signatures.tsv | gzip -n > verification/ggml-factory-signatures.tsv.gz
 ```
+
+### Grouped affine matrix execution
+
+VT-88 ran all 227 ordinary and 119 indexed Q4_K/Q5_K products with F32 activations against the original GGML factory evaluator. The Prism model admits the packed type and selects matrix dimensions, index addressing and row offsets. The provider calls Verdant to encode the activation blocks and evaluate the dot product. Binding five-bit weights to the four-bit dot failed the Q5_K oracle. Restoration passed. VT-02 confirmed the immutable source and compiled GGML host imports. [Ordinals and mutation](verification/factory-affine-vt88.json) · [Verdant implementation](https://github.com/afflom/verdant-engine/pull/30)

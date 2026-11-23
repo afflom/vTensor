@@ -241,6 +241,9 @@ ggml_batches! {
     fn row_softmax_vt_87() { "upstream-ROW_SOFTMAX", 6, ["attention"] }
 
     #[test]
+    fn grouped_affine_products_vt_88() { "upstream-GROUPED_AFFINE_PRODUCTS", 6, ["matrix"] }
+
+    #[test]
     fn row_ranking_vt_86() { "upstream-ROW_RANKING", 6, ["typed"] }
 
     #[test]
@@ -1447,7 +1450,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "c87e1bf6fbd3cffdc30073a0596112f55186c92e9eeba0e87f40b79564ffabc5",
+            "8d924c5be8c0bf68bb7da8c888458e89644ebaf991f6a133b62a3bedcdb267a5",
         )
     });
 
