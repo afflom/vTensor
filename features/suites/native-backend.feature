@@ -116,3 +116,9 @@ Feature: native-backend
     Given an original channel-major factory graph declined by the CPU kernel
     When GGML CPU independently materializes both operands from the same initialized leaves
     Then the original vTensor output agrees with the CPU convolution
+
+  @VT-77 @build
+  Scenario: Prism plans combined split and swapped gated rows and Verdant evaluates their rectified and Gaussian activations
+    Given the upstream REGLU GEGLU and GEGLU_QUICK factory cases
+    When the vTensor plugin and the pinned CPU process their original rows
+    Then every output satisfies the original case tolerance

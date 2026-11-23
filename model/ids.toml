@@ -520,3 +520,9 @@ id = "VT-76"
 level = "build"
 suite = "native-backend"
 statement = "Original channel-major GGML convolution graphs agree with upstream CPU convolution on equivalent contiguous tensors"
+
+[[id]]
+id = "VT-77"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans combined split and swapped gated rows and Verdant evaluates their rectified and Gaussian activations"

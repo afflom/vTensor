@@ -222,6 +222,9 @@ ggml_batches! {
     #[test]
     fn contiguous_convolution_vt_76() { "upstream-CONV_2D_CONTIGUOUS", 3, ["pointwise"] }
 
+    #[test]
+    fn gated_activations_vt_77() { "upstream-GATED_ACTIVATIONS", 108, ["typed", "pointwise"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1472,7 +1475,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "6c0c3d51a68bd5211881f8eb0b906aba6b0c193b5497fa3261eec8c8ed23c643",
+            "21771f618a8cef32ffcf9e2c6231f1d285fbd2ec869fa65055fd4897f6a8da8c",
         )
     });
 
