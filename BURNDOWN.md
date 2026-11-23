@@ -32,6 +32,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Place `output.weight` in llama.cpp. Run all 122 Q8_0 × F32 MUL_MAT cases through the Verdant row product (VT-53). [Factory and consumer evidence](VTENSOR-VERIFICATION.md#quantized-matrix-execution)
 - [x] Load the quantized GGUF into 17.50 MiB of vTensor model storage. Run all 122 Q4_0 × F32 MUL_MAT factory cases through Verdant (VT-54). [Factory and consumer evidence](VTENSOR-VERIFICATION.md#packed-matrix-execution-and-kv-cache-placement)
 - [x] Pass all 40 F16 and F32 indexed writes to E4M3 storage using Verdant’s signed conversion. [VT-100 comparisons](verification/factory-e4m3-row-stores-vt100.json)
+- [x] Verify the Verdant Q1_0 and Q2_0 encoders against 9,810 upstream GGML bytes. [Verdant PR #39](https://github.com/afflom/verdant-engine/pull/39)
+- [ ] Pass all 48 Q1_0/Q2_0 indexed writes and 12 copies on the provider with the verified encoder patch.
 - [x] Pass 25 indexed writes and six copies to Q8_0 through the shared Verdant encoder. [VT-101 comparisons](verification/factory-q8-storage-writes-vt101.json)
 - [x] Pass all 126 scalar SET_ROWS factory cases, including all 20 F32 → F16 / I64 cases. Confirm llama.cpp admits all 12 KV-cache writes (VT-55). [Factory and scheduler evidence](VTENSOR-VERIFICATION.md#scalar-indexed-row-writes)
 - [x] Pin Verdant’s GELU and GELU_QUICK after 257,548 scalar oracle comparisons. [Verdant PR #26](https://github.com/afflom/verdant-engine/pull/26)
