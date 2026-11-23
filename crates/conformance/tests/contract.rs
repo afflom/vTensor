@@ -982,16 +982,14 @@ mod ggml_inventory {
         let lock =
             super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
         let inventory = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
-        assert_eq!(
-            inventory["spec"].as_str(),
-            Some("vtensor/ggml-declarations/1")
-        );
-        assert_eq!(
-            inventory["authority"].as_str(),
-            Some("LLAMA-CPP-GGML-BACKEND")
-        );
+        for (key, expected) in [
+            ("spec", "vtensor/ggml-declarations/1"),
+            ("authority", "LLAMA-CPP-GGML-BACKEND"),
+            ("source", "ggml/include/ggml.h"),
+        ] {
+            assert_eq!(inventory[key].as_str(), Some(expected), "{key}");
+        }
         assert_eq!(inventory["revision"], lock["commit"]);
-        assert_eq!(inventory["source"].as_str(), Some("ggml/include/ggml.h"));
         for (key, name, prefix) in [
             ("operation", "ggml_op", "GGML_OP_"),
             ("tensor_type", "ggml_type", "GGML_TYPE_"),

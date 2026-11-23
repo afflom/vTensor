@@ -6,6 +6,7 @@ use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
 use verdant_tensor::{linear, TensorComputeError};
+use vtensor_matrix_q8::Adt2 as PackedMatrixPlan;
 use vtensor_pointwise::{
     Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as GraphPlan, Adt11 as WordOperation,
     Adt12 as WordOperand, Adt13 as WordTarget, Adt2 as TensorDescriptor, Adt3 as IndexContext,
@@ -476,7 +477,7 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
 enum ExecutionPlan {
     Standard(GraphPlan),
     Typed(vtensor_typed::Adt2),
-    Quantized(vtensor_matrix_q8::Adt2),
+    Quantized(PackedMatrixPlan),
     Rotary(vtensor_rotary::Adt3),
     Attention(Box<vtensor_attention::Adt2>),
 }
@@ -855,28 +856,21 @@ impl<'a> TensorInput<'a> {
     }
 }
 
-fn execute_quantized_matrix(
-    tensor: &Tensor,
-    plan: vtensor_matrix_q8::Adt2,
-) -> Result<(), BackendError> {
-    use vtensor_matrix_q8::Adt2::C0;
+fn execute_quantized_matrix(tensor: &Tensor, plan: PackedMatrixPlan) -> Result<(), BackendError> {
+    use linear::{dot_grouped_q2_row, encode_grouped_q8_block};
+    use PackedMatrixPlan::C0;
     let symmetric = linear::encode_symmetric_q8_block::<32>;
     match plan {
         C0(.., 2) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q4_row),
         C0(.., 8) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q8_row),
-        C0(.., 10) => execute_block_rows(
-            tensor,
-            plan,
-            linear::encode_grouped_q8_block,
-            linear::dot_grouped_q2_row,
-        ),
+        C0(.., 10) => execute_block_rows(tensor, plan, encode_grouped_q8_block, dot_grouped_q2_row),
         _ => Err(BackendError::InvalidTensor),
     }
 }
 
 fn execute_block_rows<const LANES: usize, Block>(
     tensor: &Tensor,
-    plan: vtensor_matrix_q8::Adt2,
+    plan: PackedMatrixPlan,
     encode: impl Fn(&[f32; LANES]) -> Result<Block, TensorComputeError>,
     dot: impl Fn(&[u8], &[Block]) -> Result<f32, TensorComputeError>,
 ) -> Result<(), BackendError> {

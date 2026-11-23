@@ -84,6 +84,8 @@ id = "VT-03"
 level = "build"
 suite = "verdant-api"
 statement = "vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results"
+failure = "TensorComputeError"
+negative = "VT-03"
 
 [[id]]
 id = "VT-04"
