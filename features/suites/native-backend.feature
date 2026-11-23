@@ -147,6 +147,12 @@ Feature: native-backend
     When vTensor maps each sequence and channel to a sliding window
     Then every result matches the original GGML CPU evaluator
 
+  @VT-82 @build
+  Scenario: Prism gathers contributing columns in input order and Verdant sums their stored values in binary32
+    Given original GGML column-to-signal graphs with F32, F16 and BF16 storage
+    When vTensor reconstructs strided overlapping or cropped windows
+    Then the result for every output channel matches the imported GGML CPU evaluator
+
   @VT-83 @build
   Scenario: Prism selects expert rows and Verdant evaluates packed indexed matrix products
     Given original GGML expert matrices, F32 activations and strided I32 indices

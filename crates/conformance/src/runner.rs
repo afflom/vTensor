@@ -5,11 +5,11 @@ use std::cell::UnsafeCell;
 use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
-use verdant_tensor::linear;
+use verdant_tensor::{linear, TensorComputeError};
 use vtensor_pointwise::{
     Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as GraphPlan, Adt11 as WordOperation,
     Adt12 as WordOperand, Adt13 as WordTarget, Adt2 as TensorDescriptor, Adt3 as IndexContext,
-    Adt4 as CopyMode, Adt9 as GraphResponse,
+    Adt4 as CopyMode, Adt8 as ConvolutionGeometry, Adt9 as GraphResponse,
 };
 
 /// Typed refusals at the native tensor boundary.
@@ -25,8 +25,8 @@ pub enum BackendError {
     OutOfBounds,
 }
 
-impl From<verdant_tensor::TensorComputeError> for BackendError {
-    fn from(_: verdant_tensor::TensorComputeError) -> Self {
+impl From<TensorComputeError> for BackendError {
+    fn from(_: TensorComputeError) -> Self {
         Self::InvalidTensor
     }
 }
@@ -490,10 +490,15 @@ macro_rules! descriptor_for {
     };
 }
 
+fn pointwise(request: GraphRequest) -> Result<GraphResponse, BackendError> {
+    vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)
+}
+
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
+    use BackendError::InvalidTensor;
     let output = tensor_metadata(tensor)?;
     let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span, _) = &output;
-    let operation = u64::try_from(tensor.op).map_err(|_| BackendError::InvalidTensor)?;
+    let operation = u64::try_from(tensor.op).map_err(|_| InvalidTensor)?;
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
         return Ok(None);
     }
@@ -519,8 +524,8 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         return rotary::plan(
             tensor,
             vtensor_rotary::Adt1::C0(p1, p2, p15, p11, p12, p13, p14),
-            primary.ok_or(BackendError::InvalidTensor)?,
-            secondary.ok_or(BackendError::InvalidTensor)?,
+            primary.ok_or(InvalidTensor)?,
+            secondary.ok_or(InvalidTensor)?,
             base,
             output,
         )
@@ -530,20 +535,19 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     for slot in 3..tensor.src.len() {
         source(slot)?;
     }
-    let response = vtensor_pointwise::run(GraphRequest::C0(
+    let response = pointwise(GraphRequest::C0(
         operation,
         Parameters::C0(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11),
         primary.clone(),
         secondary.clone(),
         base.clone(),
         output.clone(),
-    ))
-    .map_err(|_| BackendError::Overflow)?;
+    ))?;
     let metadata = descriptor_for!(vtensor_typed::Adt1::C0);
     let typed_plan =
         |request| match vtensor_typed::run(request).map_err(|_| BackendError::Overflow)? {
             vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan))),
-            _ => Err(BackendError::InvalidTensor),
+            _ => Err(InvalidTensor),
         };
     match response {
         GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..) | GraphPlan::C6(..))) => {
@@ -556,7 +560,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             metadata(output),
         )),
         GraphResponse::C0(GraphPlan::C5(64)) => normalization_plan(
-            primary.as_ref().ok_or(BackendError::InvalidTensor)?,
+            primary.as_ref().ok_or(InvalidTensor)?,
             secondary.as_ref(),
             &output,
             operation,
@@ -569,7 +573,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 vtensor_matrix_q8::Adt1::C0(ty, a, b, c, d, e, f, g, h)
             };
             let extra = tensor.src[3..].iter().any(|ptr| !ptr.is_null());
-            let w = primary.ok_or(BackendError::InvalidTensor)?;
+            let w = primary.ok_or(InvalidTensor)?;
             if base.is_none() {
                 let query = vtensor_typed::Adt0::C3(
                     operation,
@@ -583,41 +587,27 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 match vtensor_typed::run(query).map_err(|_| BackendError::Overflow)? {
                     vtensor_typed::Adt3::C2(plan) => return Ok(Some(ExecutionPlan::Typed(plan))),
                     vtensor_typed::Adt3::C0 => {}
-                    _ => return Err(BackendError::InvalidTensor),
+                    _ => return Err(InvalidTensor),
                 }
             }
-            let a = secondary.ok_or(BackendError::InvalidTensor)?;
+            let a = secondary.ok_or(InvalidTensor)?;
             use vtensor_matrix_q8::Adt0 as Product;
-            let request = match base {
-                Some(ids) if operation == 29 => Product::C3(
-                    operation,
-                    extra,
-                    descriptor(w),
-                    descriptor(a),
-                    descriptor(ids),
-                    descriptor(output),
-                ),
-                Some(base) => {
+            let request = if let Some(third) = base {
+                if operation != 29 {
+                    let [left, right, base, out] = [w, a, third, output].map(metadata);
                     return typed_plan(vtensor_typed::Adt0::C2(
-                        operation,
-                        extra,
-                        metadata(w),
-                        metadata(a),
-                        metadata(base),
-                        metadata(output),
-                    ))
+                        operation, extra, left, right, base, out,
+                    ));
                 }
-                None => Product::C0(
-                    operation,
-                    extra,
-                    descriptor(w),
-                    descriptor(a),
-                    descriptor(output),
-                ),
+                let [w, a, ids, out] = [w, a, third, output].map(descriptor);
+                Product::C3(operation, extra, w, a, ids, out)
+            } else {
+                let [w, a, out] = [w, a, output].map(descriptor);
+                Product::C0(operation, extra, w, a, out)
             };
             match vtensor_matrix_q8::run(request).map_err(|_| BackendError::Overflow)? {
                 vtensor_matrix_q8::Adt4::C1(plan) => Ok(Some(ExecutionPlan::Quantized(plan))),
-                _ => Err(BackendError::InvalidTensor),
+                _ => Err(InvalidTensor),
             }
         }
     }
@@ -739,11 +729,8 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
     Ok(())
 }
 
-fn execute_convolution(
-    tensor: &Tensor,
-    geometry: vtensor_pointwise::Adt8,
-) -> Result<(), BackendError> {
-    let vtensor_pointwise::Adt8::C0(
+fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result<(), BackendError> {
+    let ConvolutionGeometry::C0(
         patches,
         inner,
         channels,
@@ -760,7 +747,7 @@ fn execute_convolution(
     let destination = graph_tensor_data(tensor)?;
     let sample = |phase, start, index| {
         let query = GraphRequest::C4(geometry.clone(), phase, start, index as u64);
-        match vtensor_pointwise::run(query).map_err(|_| BackendError::Overflow)? {
+        match pointwise(query)? {
             GraphResponse::C8(offset) => Ok(offset),
             _ => Err(BackendError::InvalidTensor),
         }
@@ -873,21 +860,16 @@ fn execute_quantized_matrix(
     plan: vtensor_matrix_q8::Adt2,
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::Adt2::C0;
-    macro_rules! block_rows {
-        ($encode:expr, $dot:path) => {
-            execute_block_rows(
-                tensor,
-                plan,
-                |block| $encode(block).map_err(BackendError::from),
-                |w, a| $dot(w, a).map_err(BackendError::from),
-            )
-        };
-    }
     let symmetric = linear::encode_symmetric_q8_block::<32>;
     match plan {
-        C0(.., 2) => block_rows!(symmetric, linear::dot_symmetric_q4_row),
-        C0(.., 8) => block_rows!(symmetric, linear::dot_symmetric_q8_row),
-        C0(.., 10) => block_rows!(linear::encode_grouped_q8_block, linear::dot_grouped_q2_row),
+        C0(.., 2) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q4_row),
+        C0(.., 8) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q8_row),
+        C0(.., 10) => execute_block_rows(
+            tensor,
+            plan,
+            linear::encode_grouped_q8_block,
+            linear::dot_grouped_q2_row,
+        ),
         _ => Err(BackendError::InvalidTensor),
     }
 }
@@ -895,8 +877,8 @@ fn execute_quantized_matrix(
 fn execute_block_rows<const LANES: usize, Block>(
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
-    encode: impl Fn(&[f32; LANES]) -> Result<Block, BackendError>,
-    dot: impl Fn(&[u8], &[Block]) -> Result<f32, BackendError>,
+    encode: impl Fn(&[f32; LANES]) -> Result<Block, TensorComputeError>,
+    dot: impl Fn(&[u8], &[Block]) -> Result<f32, TensorComputeError>,
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
     let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
@@ -1012,7 +994,7 @@ fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendEr
 // The F32 GGML profile returns an unconditional positive zero below its lower
 // cutoff. The gated operation must preserve that result even for a negative gate.
 fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
-    match vtensor_pointwise::run(GraphRequest::C5(word)).map_err(|_| BackendError::Overflow)? {
+    match pointwise(GraphRequest::C5(word))? {
         GraphResponse::C9(Some(0)) => Ok(None),
         GraphResponse::C9(Some(bits)) => Ok(Some(f32::from_bits(bits as u32))),
         GraphResponse::C9(None) => {
@@ -1197,10 +1179,9 @@ fn normalization_word(
     else {
         return Err(BackendError::InvalidTensor);
     };
-    vtensor_pointwise::run(GraphRequest::C3(
+    pointwise(GraphRequest::C3(
         false, family, operation, 0, 0, a, from, b, right, target, to, bytes, bytes,
     ))
-    .map_err(|_| BackendError::Overflow)
 }
 
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
@@ -1246,7 +1227,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
             return Err(BackendError::InvalidTensor);
         };
         execute_word(
-            vtensor_pointwise::run(GraphRequest::C3(
+            pointwise(GraphRequest::C3(
                 true,
                 family,
                 operation,
@@ -1260,8 +1241,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 to,
                 read_bytes,
                 write_bytes,
-            ))
-            .map_err(|_| BackendError::Overflow)?,
+            ))?,
             &pointers,
             output,
             &mut words,
@@ -1275,8 +1255,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         return Err(BackendError::InvalidTensor);
     };
     let GraphResponse::C6(mask, literal_type, bits, constant) =
-        vtensor_pointwise::run(GraphRequest::C2(mode.clone()))
-            .map_err(|_| BackendError::Overflow)?
+        pointwise(GraphRequest::C2(mode.clone()))?
     else {
         return Err(BackendError::InvalidTensor);
     };
@@ -1324,14 +1303,13 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                 words[2],
                 bytes,
             )?,
-            _ => vtensor_pointwise::run(GraphRequest::C1(
+            _ => pointwise(GraphRequest::C1(
                 index,
                 source.clone(),
                 destination.clone(),
                 mode.clone(),
                 words[2],
-            ))
-            .map_err(|_| BackendError::Overflow)?,
+            ))?,
         };
         if let GraphResponse::C7(..) = response {
             execute_word(response, &pointers, destination_data, words)?;

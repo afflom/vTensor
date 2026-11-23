@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **17,027 passed**, **10,573 refused** and **155 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **17,619 passed**, **9,996 refused** and **140 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -12,7 +12,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] When Verdant releases these primitives, switch to the published production packages, verify provenance and checksums, and build a clean consumer. Keep the PR pin until then. Verdant v2.18.0 lacks the two Gaussian activation exports used by VT-75 and VT-77. [Release source](https://github.com/afflom/verdant-engine/tree/ba1425942f2cdc0f1d647df2fb71ab1e57bca507/crates/verdant-tensor/src)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
-- [ ] Recover **1,539 non-Prism lines** (12,088 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,536 non-Prism lines** (12,085 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -42,13 +42,14 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 144 directly CPU-supported packed OUT_PROD cases through Verdant. [VT-71 results](verification/factory-packed-outer-products-vt71.json)
 - [x] Pass the 1,312 CPU-refused OUT_PROD graphs against the upstream decoder and F32 CPU contraction. All 1,543 factory outer products now have passing comparisons. [VT-73 evidence](verification/factory-decoded-outer-products-vt73.json)
 - [x] Pass 68 additional dense matrix and activation compositions across F32, F16, Q4_0, Q8_0 and Q2_K. [Full-graph comparisons](verification/factory-dense-matrix-fusions.json)
-- [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, the 1,932 refused standalone MUL_MAT cases, precision modes, 1,630 refused MUL_MAT_FUSION cases and 1,253 MUL_MAT_ID cases. Reuse the verified decoders and F32 matrix path.
+- [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, the 1,932 refused standalone MUL_MAT cases, precision modes and 1,630 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
+- [ ] Pass all 1,253 MUL_MAT_ID cases. Route the 230 Q8_0, Q4_0 and Q2_K graphs to existing Verdant row products. Cover 251 scalar graphs and the other 772 packed graphs. Include broadcast, repeated and skipped expert indices. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
 - [x] Pass all 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 533 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
 - [x] Pin the Verdant head slope and validate the provider boundary with VT-02. All 40,452 upstream scalar comparisons passed, within one binary32 step. [Engine PR #27](https://github.com/afflom/verdant-engine/pull/27)
-- [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. 387 of 1,190 cases in the five implemented storage formats pass. Add Q4_1, Q5_0, Q5_1 and IQ4_NL for the other 384. [VT-78 comparisons](verification/factory-biased-attention-vt78.json)
-- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 3,398 pass, 2,222 are refused and 155 still need an evaluator verdict.
+- [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. 931 of 1,190 cases in the five implemented storage formats pass. Add Q4_1, Q5_0, Q5_1 and IQ4_NL for the other 384. [VT-78 comparisons](verification/factory-biased-attention-vt78.json)
+- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 3,957 pass, 1,678 are refused and 140 still need an evaluator verdict.
 - [x] Execute all 39 LOG, SIN, COS and EXP cases through Verdant, including the upstream storage and view variants. [Factory verdicts](verification/factory-elementary-vt60.json)
 - [x] Execute the 122 sigmoid and SiLU standalone, multiplied and added graphs on the pinned Verdant primitives. [Factory verdicts](verification/factory-logistic-vt61.json)
 - [x] Supply binary32 hyperbolic tangent in Verdant. All 128,870 GGML scalar comparisons pass. [Verdant PR #25](https://github.com/afflom/verdant-engine/pull/25)
@@ -70,7 +71,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Compare the 1,114 CPU-refused CONV_2D layouts with a contiguous GGML CPU reference. 1,114 pass. [VT-76 results](verification/factory-contiguous-convolution-vt76.json)
 - [x] Pass all 240 POOL_1D and 144 POOL_2D forward graphs and four supplemental F16 graphs. [VT-79 comparisons](verification/factory-pooling-vt79.json)
 - [x] Pass all 292 direct CONV_3D graphs, including packed batches, offset kernels and empty kernels. 292 pass. [VT-80 results](verification/factory-volume-convolution-vt80.json)
-- [ ] Pass the remaining spatial factory graphs (116 CONV_TRANSPOSE_1D, 8 CONV_TRANSPOSE_2D, 8 CONV_2D_DW, 33 COL2IM_1D, 24 UPSCALE, 6 TIMESTEP_EMBEDDING). [Case inventory](verification/ggml-factory-inventory.json)
+- [x] Pass all 33 COL2IM_1D overlap-add graphs in F32, F16 and BF16. [VT-82 results](verification/factory-column-overlap-vt82.json)
+- [ ] Pass the remaining spatial factory graphs (116 CONV_TRANSPOSE_1D, 8 CONV_TRANSPOSE_2D, 8 CONV_2D_DW, 24 UPSCALE, 6 TIMESTEP_EMBEDDING). [Case inventory](verification/ggml-factory-inventory.json)
 - [ ] Compare IM2COL_BACK and POOL_2D_BACK gradients with the pinned GGML CPU using original forward inputs, padding and overlapping windows. [Imported declarations](model/ggml-declarations.toml)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
 - [ ] Complete SSM scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.

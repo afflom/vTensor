@@ -552,6 +552,12 @@ suite = "native-backend"
 statement = "Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products"
 
 [[id]]
+id = "VT-82"
+level = "build"
+suite = "native-backend"
+statement = "Prism gathers contributing columns in input order and Verdant sums their stored values in binary32"
+
+[[id]]
 id = "VT-83"
 level = "build"
 suite = "native-backend"
