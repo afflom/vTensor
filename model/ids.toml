@@ -582,3 +582,9 @@ id = "VT-86"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules binary32 row ranking and Verdant selects deterministic indices for GGML ARGSORT and TOP_K"
+
+[[id]]
+id = "VT-59"
+level = "build"
+suite = "native-backend"
+statement = "The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions"

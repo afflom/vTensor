@@ -176,3 +176,9 @@ Feature: native-backend
     Given original GGML rows with distinct or tied values
     When vTensor orders the rows or selects their largest entries
     Then the imported CPU evaluator accepts the returned indices
+
+  @VT-59 @build
+  Scenario: The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions
+    Given the CPU registry function names used by the pinned llama.cpp host
+    When an application creates two pools and attaches, switches and detaches them
+    Then the submitted graph outputs match the imported CPU through pool reuse and teardown

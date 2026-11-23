@@ -70,5 +70,26 @@
     "cpu-pool-kv.tsv": "c2cc6ba7ee40a90cd6b15692e425205d58273d66afc54c8d966c54beb6c1c15e",
     "vtensor-pool-kv.tsv": "1528d483c191f549039c927bc803c0a59617c8c0202f197ddb7a4806d0f4491e"
   },
-  "mutant": "Giving the second worker the first chunk offset made the imported matrix comparison fail at result==expected[step]. The restored test passed all four bindings."
+  "mutant": "Giving the second worker the first chunk offset made the imported matrix comparison fail at result==expected[step]. The restored test passed all four bindings.",
+  "integrated_replay": {
+    "implementation": "c4faaba50e5fdc9d5e75e5eb34c547d9cc090d05",
+    "verdant_revision": "112bda99c2ebe1c98f3ba5b1612c171d0db58607",
+    "provider_sha256": "bf675a1ea23b8c67424c5fa6d2ac0c5665981c72e61456729d654517bde2a6c3",
+    "threads": [
+      1,
+      2
+    ],
+    "exit_codes": [
+      0,
+      0
+    ],
+    "printed_logit_sums": [
+      -298643.6875,
+      -298643.6875
+    ],
+    "decode_steps": 3,
+    "logits_sha256": "a20ac2a44c9b85207c15a17d1e2260b6505e63e46d8c6a81be4f0a82024762d1",
+    "kv_sha256": "1528d483c191f549039c927bc803c0a59617c8c0202f197ddb7a4806d0f4491e",
+    "comparison": "Byte-identical to the recorded provider logits and KV snapshot from the paired CPU comparison."
+  }
 }
