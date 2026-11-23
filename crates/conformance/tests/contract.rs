@@ -232,6 +232,9 @@ ggml_batches! {
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
     #[test]
+    fn column_overlap_vt_82() { "upstream-COL2IM_1D", 33, ["pointwise"] }
+
+    #[test]
     fn state_convolution_vt_81() { "upstream-SSM_WINDOWS", 6, ["pointwise"] }
 
     /// Four imported BF16 attention cases vary mask and sink presence independently.
@@ -1433,7 +1436,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "844484e51a27e2e260dec1450fbfe5c998f154f5a46d5367379975ee91a536eb",
+            "4eee67e13bc5127eae540bd778dba0cb03cd99f77cb0cfbaee754026729ce1e5",
         )
     });
 

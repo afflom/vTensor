@@ -140,3 +140,9 @@ Feature: native-backend
     Given original state convolution graphs with batched F32 inputs and optional channel bias and SiLU
     When vTensor maps each sequence and channel to a sliding window
     Then every result matches the original GGML CPU evaluator
+
+  @VT-82 @build
+  Scenario: Prism gathers contributing columns in input order and Verdant sums their stored values in binary32
+    Given original GGML column-to-signal graphs with F32, F16 and BF16 storage
+    When vTensor reconstructs strided overlapping or cropped windows
+    Then the result for every output channel matches the imported GGML CPU evaluator
