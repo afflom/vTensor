@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,884 passed**, **871 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,887 passed**, **868 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -157,7 +157,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Pass SILU_BACK (1).
 - [ ] Pass cross-entropy forward (2) and backward (2), SGD (1) and AdamW (1). Verify gradients and parameter updates.
 - [x] Import the pinned llama.cpp scheduler-delay oracle. Its four CPU controls passed timing, buffer aliasing and byte identity, including a chain of four delays. [Upstream timing test](vendor/llama.cpp-oracle/tests/test-sleep.cpp)
-- [ ] Implement MAP_CUSTOM1/2/3, CUSTOM and SLEEP effects. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.
+- [x] Verify all three SLEEP factory cases and chained scheduler timing, aliasing and byte preservation. [VT-123](verification/factory-scheduler-delay-vt123.json)
+- [ ] Implement MAP_CUSTOM1/2/3 and CUSTOM. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.
 - [ ] Close every residual legal variant in the ledger, including partial families from VT-01–51. Cover strides, empty axes, broadcasting, overlapping views, precision and typed failures where applicable.
 
 ## Accept and ship

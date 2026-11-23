@@ -1,0 +1,105 @@
+{
+  "requirement": "VT-123",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "implementation": "49e43ac972e15a71638d6397e1fb1c0d52c5a726",
+  "verdant_revision": "204b1de06f0057deaa4bbb0227c504e4bea91ceb",
+  "prism_attestation": "11c26139806e868301cee4fbfdec1d0d631d76d9b003da0e2da6e85dd760996c",
+  "provider_sha256": "fbb2fb7d29f95c12320cf8765fbb5e7734f60ed5ec70434286ced37e47acf479",
+  "provider_inputs_sha256": "2c0f9fbeaacc17912cc76227ebb2c8dc3412510d1241db483484d0bafca0c199",
+  "contract_transcript_sha256": "c27fd355883f2a4c6f845c09b3ae826b8469836a2739aeaa66b6315da64f5680",
+  "case_ordinals": {
+    "SLEEP": [
+      19186,
+      19187,
+      19188
+    ]
+  },
+  "standalone_oracle": {
+    "source": "tests/test-sleep.cpp",
+    "source_sha256": "a4714eb42318e6571b8bb7fb28918c11be9a0a3111f1a09d967e011f208f1b99",
+    "executable_sha256": "2c8c6f7b695b5f1ad8d24480d87d638a8a2a44243111a6e7574fdf33826dcb61",
+    "assertions": [
+      "identical source and output data addresses",
+      "original random input bytes preserved",
+      "elapsed time at least the sum of requested delays"
+    ],
+    "runs": [
+      {
+        "backend": "CPU",
+        "dtype": "f32",
+        "elements": 1,
+        "microseconds_per_node": 0,
+        "nodes": 1,
+        "elapsed_us": 0
+      },
+      {
+        "backend": "CPU",
+        "dtype": "f32",
+        "elements": 4096,
+        "microseconds_per_node": 10000,
+        "nodes": 1,
+        "elapsed_us": 10004
+      },
+      {
+        "backend": "CPU",
+        "dtype": "f16",
+        "elements": 1024,
+        "microseconds_per_node": 10000,
+        "nodes": 1,
+        "elapsed_us": 10006
+      },
+      {
+        "backend": "CPU",
+        "dtype": "f32",
+        "elements": 1048576,
+        "microseconds_per_node": 5000,
+        "nodes": 4,
+        "elapsed_us": 20010
+      },
+      {
+        "backend": "vTensor",
+        "dtype": "f32",
+        "elements": 1,
+        "microseconds_per_node": 0,
+        "nodes": 1,
+        "elapsed_us": 0
+      },
+      {
+        "backend": "vTensor",
+        "dtype": "f32",
+        "elements": 4096,
+        "microseconds_per_node": 10000,
+        "nodes": 1,
+        "elapsed_us": 10198
+      },
+      {
+        "backend": "vTensor",
+        "dtype": "f16",
+        "elements": 1024,
+        "microseconds_per_node": 10000,
+        "nodes": 1,
+        "elapsed_us": 10081
+      },
+      {
+        "backend": "vTensor",
+        "dtype": "f32",
+        "elements": 1048576,
+        "microseconds_per_node": 5000,
+        "nodes": 4,
+        "elapsed_us": 20294
+      }
+    ]
+  },
+  "negative_controls": [
+    "negative signed duration",
+    "incorrect physical offset for an I32 subview"
+  ],
+  "mutation": {
+    "change": "Return immediately for each admitted delay node.",
+    "nodes": 4,
+    "requested_us": 20000,
+    "observed_us": 1,
+    "oracle_verdict": "time: FAIL"
+  }
+}
