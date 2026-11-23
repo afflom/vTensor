@@ -457,9 +457,9 @@ definition{
     output : TensorDescriptor
   ],
   result: PointwiseDecision,
-  body: (match right
+  body: (if ((operation =? 30) && ((project left s1) <? (project left s0))) then (ctor PointwiseDecision.invalidShape) else (match right
     | Option.none => (planPointwise operation variant (project left ty) 0 (project output ty) false (project left n0) (project left n1) (project left n2) (project left n3) 1 1 1 1 (project output n0) (project output n1) (project output n2) (project output n3))
-    | Option.some value => (planPointwise operation variant (project left ty) (project value ty) (project output ty) true (project left n0) (project left n1) (project left n2) (project left n3) (project value n0) (project value n1) (project value n2) (project value n3) (project output n0) (project output n1) (project output n2) (project output n3))),
+    | Option.some value => (planPointwise operation variant (project left ty) (project value ty) (project output ty) true (project left n0) (project left n1) (project left n2) (project left n3) (project value n0) (project value n1) (project value n2) (project value n3) (project output n0) (project output n1) (project output n2) (project output n3)))),
   executable: true
 }
 

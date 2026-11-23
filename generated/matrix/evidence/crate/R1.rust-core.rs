@@ -641,25 +641,25 @@ pub enum Adt1 {
     C4(u64, u64, u64, u64, u64, u64),
 }
 
-pub fn f0(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64, v8: Adt0, v9: Adt0, v10: Adt0, v11: u64, v12: u64) -> R<Adt1> {
-    let m1 = f1(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10)?;
+pub fn f0(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64, v8: Adt0, v9: Adt0, v10: Adt0, v11: u64, v12: u64, v13: u64) -> R<Adt1> {
+    let m1 = f1(v0, v1, v2, v3, v4, v5, v6, v7, f2(v13, v8), f2(v13, v9), v10)?;
     match m1 {
-        Adt1::C0(v17, v18) => {
-            Ok(Adt1::C0(v17, v18))
+        Adt1::C0(v18, v19) => {
+            Ok(Adt1::C0(v18, v19))
         }
-        Adt1::C1(v13, v14, v15, v16) => {
-            if v13 {
-                Ok(Adt1::C1(true, v14, v15, v16))
+        Adt1::C1(v14, v15, v16, v17) => {
+            if v14 {
+                Ok(Adt1::C1(true, v15, v16, v17))
             } else {
-                Ok(f2(v14, v15, v16, {
-                    let a2 = v14;
+                Ok(f3(v15, v16, v17, {
+                    let a2 = v15;
                     let a3 = 0u64;
                     if nat_eq(a2, a3) {
                         v11
                     } else {
                         v12
                     }
-                }, f3(v11)))
+                }, f4(v11)))
             }
         }
         Adt1::C2 => {
@@ -668,14 +668,14 @@ pub fn f0(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64
         Adt1::C3 => {
             Ok(Adt1::C3)
         }
-        Adt1::C4(v19, v20, v21, v22, v23, v24) => {
-            Ok(Adt1::C4(v19, v20, v21, v22, v23, v24))
+        Adt1::C4(v20, v21, v22, v23, v24, v25) => {
+            Ok(Adt1::C4(v20, v21, v22, v23, v24, v25))
         }
     }
 }
 
 pub fn f1(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64, v8: Adt0, v9: Adt0, v10: Adt0) -> R<Adt1> {
-    if f4(v1, v3, v4, v5) {
+    if f5(v1, v3, v4, v5) {
         let a4 = v0;
         let a5 = 0u64;
         if nat_eq(a4, a5) {
@@ -782,7 +782,7 @@ pub fn f1(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64
                     let a50 = v18;
                     let a51 = v11;
                     if nat_lt(a50, a51) {
-                        Ok(Adt1::C1(false, 0u64, v18, f5({
+                        Ok(Adt1::C1(false, 0u64, v18, f6({
                             let a52 = v18;
                             let a53 = v2;
                             let a54 = 0u64;
@@ -816,7 +816,7 @@ pub fn f1(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64
                                 let a69 = v11;
                                 nat_sub(a68, a69)
                             };
-                            Ok(Adt1::C1(false, 1u64, v18, f5({
+                            Ok(Adt1::C1(false, 1u64, v18, f6({
                                 let a70 = v21;
                                 let a71 = v3;
                                 let a72 = 0u64;
@@ -858,7 +858,7 @@ pub fn f1(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64
                                     };
                                     let a89 = v22;
                                     nat_add(a88, a89)?
-                                }, f5({
+                                }, f6({
                                     let a90 = v22;
                                     let a91 = v3;
                                     let a92 = 0u64;
@@ -882,22 +882,48 @@ pub fn f1(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64
     }
 }
 
-pub fn f2(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64) -> Adt1 {
-    let a96 = v3;
-    let a97 = 0u64;
-    if if nat_eq(a96, a97) {
-        let a98 = v4;
-        let a99 = 0u64;
-        nat_eq(a98, a99)
+pub fn f2(v0: u64, v1: Adt0) -> Adt0 {
+    let a96 = v0;
+    let a97 = 30u64;
+    if nat_eq(a96, a97) {
+        Adt0::C0(match v1.clone() {
+            Adt0::C0(_, h98, _, _) => {
+                h98
+            }
+        }, match v1.clone() {
+            Adt0::C0(h99, _, _, _) => {
+                h99
+            }
+        }, match v1.clone() {
+            Adt0::C0(_, _, h100, _) => {
+                h100
+            }
+        }, match v1 {
+            Adt0::C0(_, _, _, h101) => {
+                h101
+            }
+        })
+    } else {
+        v1
+    }
+}
+
+pub fn f3(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64) -> Adt1 {
+    let a102 = v3;
+    let a103 = 0u64;
+    if if nat_eq(a102, a103) {
+        let a104 = v4;
+        let a105 = 0u64;
+        nat_eq(a104, a105)
     } else {
         false
     } {
         Adt1::C1(false, v0, v1, v2)
     } else {
         Adt1::C4(v0, v1, v2, v3, v4, {
-            let a100 = v3;
-            let a101 = 0u64;
-            if nat_eq(a100, a101) {
+            let a106 = v3;
+            let a107 = 0u64;
+            if nat_eq(a106, a107) {
                 4u64
             } else {
                 2u64
@@ -906,82 +932,82 @@ pub fn f2(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64) -> Adt1 {
     }
 }
 
-pub fn f3(v0: u64) -> u64 {
-    let a102 = v0;
-    let a103 = 30u64;
-    if nat_eq(a102, a103) {
+pub fn f4(v0: u64) -> u64 {
+    let a108 = v0;
+    let a109 = 30u64;
+    if nat_eq(a108, a109) {
         30u64
     } else {
         0u64
     }
 }
 
-pub fn f4(v0: u64, v1: u64, v2: u64, v3: u64) -> bool {
-    let a104 = v0;
-    let a105 = 0u64;
-    if if if nat_eq(a104, a105) {
+pub fn f5(v0: u64, v1: u64, v2: u64, v3: u64) -> bool {
+    let a110 = v0;
+    let a111 = 0u64;
+    if if if nat_eq(a110, a111) {
         true
     } else {
-        let a106 = v1;
-        let a107 = 0u64;
-        nat_eq(a106, a107)
+        let a112 = v1;
+        let a113 = 0u64;
+        nat_eq(a112, a113)
     } {
         true
     } else {
-        let a108 = v2;
-        let a109 = 0u64;
-        nat_eq(a108, a109)
+        let a114 = v2;
+        let a115 = 0u64;
+        nat_eq(a114, a115)
     } {
         true
     } else {
-        let a110 = v3;
-        let a111 = 0u64;
-        nat_eq(a110, a111)
+        let a116 = v3;
+        let a117 = 0u64;
+        nat_eq(a116, a117)
     }
 }
 
-pub fn f5(v0: u64, v1: u64, v2: u64, v3: u64, v4: Adt0) -> R<u64> {
-    let a128 = {
-        let a123 = {
-            let a118 = {
-                let a113 = v0;
-                let a114 = match v4.clone() {
-                    Adt0::C0(h112, _, _, _) => {
-                        h112
+pub fn f6(v0: u64, v1: u64, v2: u64, v3: u64, v4: Adt0) -> R<u64> {
+    let a134 = {
+        let a129 = {
+            let a124 = {
+                let a119 = v0;
+                let a120 = match v4.clone() {
+                    Adt0::C0(h118, _, _, _) => {
+                        h118
                     }
                 };
-                nat_mul(a113, a114)?
+                nat_mul(a119, a120)?
             };
-            let a119 = {
-                let a116 = v1;
-                let a117 = match v4.clone() {
-                    Adt0::C0(_, h115, _, _) => {
-                        h115
+            let a125 = {
+                let a122 = v1;
+                let a123 = match v4.clone() {
+                    Adt0::C0(_, h121, _, _) => {
+                        h121
                     }
                 };
-                nat_mul(a116, a117)?
+                nat_mul(a122, a123)?
             };
-            nat_add(a118, a119)?
+            nat_add(a124, a125)?
         };
-        let a124 = {
-            let a121 = v2;
-            let a122 = match v4.clone() {
-                Adt0::C0(_, _, h120, _) => {
-                    h120
+        let a130 = {
+            let a127 = v2;
+            let a128 = match v4.clone() {
+                Adt0::C0(_, _, h126, _) => {
+                    h126
                 }
             };
-            nat_mul(a121, a122)?
+            nat_mul(a127, a128)?
         };
-        nat_add(a123, a124)?
+        nat_add(a129, a130)?
     };
-    let a129 = {
-        let a126 = v3;
-        let a127 = match v4 {
-            Adt0::C0(_, _, _, h125) => {
-                h125
+    let a135 = {
+        let a132 = v3;
+        let a133 = match v4 {
+            Adt0::C0(_, _, _, h131) => {
+                h131
             }
         };
-        nat_mul(a126, a127)?
+        nat_mul(a132, a133)?
     };
-    nat_add(a128, a129)
+    nat_add(a134, a135)
 }

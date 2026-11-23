@@ -75,6 +75,14 @@ definition{
 }
 
 definition{
+  name: operandStrides,
+  parameters: [operation : Nat, strides : Strides],
+  result: Strides,
+  body: (if (operation =? 30) then (record Strides {s0 := (project strides s1), s1 := (project strides s0), s2 := (project strides s2), s3 := (project strides s3)}) else strides),
+  executable: true
+}
+
+definition{
   name: evaluateStorage,
   parameters: [
     index : Nat,
@@ -89,10 +97,11 @@ definition{
     right : Strides,
     output : Strides,
     leftType : Nat,
-    rightType : Nat
+    rightType : Nat,
+    operation : Nat
   ],
   result: Instruction,
-  body: (match (evaluate index m k n b2 b3 r2 r3 left right output)
+  body: (match (evaluate index m k n b2 b3 r2 r3 (operandStrides operation left) (operandStrides operation right) output)
     | Instruction.transfer writing slot at offset => (if writing then (ctor Instruction.transfer true slot at offset) else (scalarLoad slot at offset (if (slot =? 0) then leftType else rightType) (ScalarDotStorage::activationType leftType)))
     | Instruction.schedule steps total => (ctor Instruction.schedule steps total)
     | Instruction.multiply => (ctor Instruction.multiply)

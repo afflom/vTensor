@@ -332,11 +332,7 @@ fn buffer_allocation_vt_10() {
 }
 
 fn verify_matrix_graphs() {
-    // The certified scalarDispatchForEveryOpcode theorem covers every Nat opcode.
-    assert!(matches!(
-        vtensor_matrix::run(28, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-        Ok(vtensor_matrix::Adt0::C2(..))
-    ));
+    // scalarProductAdmitted checks the unit product in the certified model.
     // Preserve both malformed inner-dimension and indivisible batch cases.
     for (k, b2, r2, o2) in [(2, 1, 1, 1), (1, 2, 3, 3)] {
         assert!(matches!(
