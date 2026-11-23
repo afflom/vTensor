@@ -523,28 +523,16 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     let primary = source(0)?;
     let secondary = source(1)?;
     let base = source(2)?;
-    if operation == 88 {
-        return attention::sparse_plan(
-            tensor,
-            [primary, secondary, base, source(3)?, source(4)?],
-            output,
-        );
+    if matches!(operation, 71 | 88) {
+        let inputs = [primary, secondary, base, source(3)?, source(4)?];
+        return if operation == 71 {
+            attention::plan(tensor, inputs, output)
+        } else {
+            attention::sparse_plan(tensor, inputs, output)
+        };
     }
     if operation == 43 {
-        return attention::softmax_plan(
-            tensor,
-            primary.ok_or(InvalidTensor)?,
-            secondary,
-            base,
-            output,
-        );
-    }
-    if operation == 71 {
-        return attention::plan(
-            tensor,
-            [primary, secondary, base, source(3)?, source(4)?],
-            output,
-        );
+        return attention::softmax_plan(tensor, [primary, secondary, base], output);
     }
     if matches!(operation, 45 | 46) {
         return rotary::plan(
@@ -1754,9 +1742,7 @@ mod attention {
 
     pub(super) fn softmax_plan(
         tensor: &Tensor,
-        source: TensorDescriptor,
-        mask: Option<TensorDescriptor>,
-        sink: Option<TensorDescriptor>,
+        [source, mask, sink]: [Option<TensorDescriptor>; 3],
         output: TensorDescriptor,
     ) -> Result<Option<super::ExecutionPlan>, BackendError> {
         let descriptor = descriptor_for!(Descriptor::C0);
@@ -1765,7 +1751,7 @@ mod attention {
             tensor.src[3..].iter().any(|p| !p.is_null()),
             u64::from(tensor.op_params[0] as u32),
             u64::from(tensor.op_params[1] as u32),
-            descriptor(source),
+            descriptor(source.ok_or(InvalidTensor)?),
             mask.map(descriptor),
             sink.map(descriptor),
             descriptor(output),

@@ -17,7 +17,7 @@ The completion checklist tracks remaining GGML operations, scheduler callbacks
 and consumer checks. [Provider burndown](BURNDOWN.md)
 
 Cargo fetches the certified Verdant tensor primitives by the immutable commit in
-[Verdant Engine PR #32](https://github.com/afflom/verdant-engine/pull/32), which builds on PRs #12 through #31.
+[Verdant Engine PR #33](https://github.com/afflom/verdant-engine/pull/33), based on upstream main after integration of PRs #12 through #32.
 The [patch record](model/verdant-development.json) identifies the dependency
 until a published Verdant release includes these APIs.
 
