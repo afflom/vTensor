@@ -4878,3 +4878,7 @@ VT-79 covers all 240 POOL_1D and 144 POOL_2D factory graphs and four additional 
 ### Direct volumetric convolution
 
 VT-80 runs the original GGML CONV_3D graphs through the existing Verdant matrix product. Prism maps each kernel, input and output address across the three spatial axes and the packed batch and channel dimension. The six permanent cases cover dilation, separate batches, offset F16 and F32 filters, and two empty-kernel axes. Sampling every tile from the first tile’s origin failed ordinal 7723 with NMSE 3.720924840 against the upstream limit of 0.0005. Restoring the coordinates passed the volumetric, planar convolution, channel-major convolution and pooling contracts. [Case ordinals and binary hashes](verification/factory-volume-convolution-vt80.json)
+
+### State convolution
+
+Prism maps each sequence, channel and filter tap to GGML byte offsets. Verdant supplies binary32 multiplication, ordered addition, bias addition and SiLU. Six permanent graphs and 189 additional original factory graphs passed the imported CPU evaluator. Replacing multiplication with addition failed ordinal 10260 at NMSE 1.201701697 against the upstream limit of 0.0000001. The restored state convolution, 3D convolution, pooling and logistic contracts passed. The tested binary and source revision are recorded with the per-case evidence. [VT-81 comparisons](verification/factory-state-convolution-vt81.json)
