@@ -74,3 +74,9 @@ Feature: native-backend
     Given the upstream outer-product factory with F32 activations and F32 or F16 weights
     When vTensor executes the CPU-supported scalar cases across row and batch shapes
     Then all 87 outputs match the reference evaluator
+
+  @VT-71 @build
+  Scenario: Prism maps packed GGML outer-product rows into strided Verdant block decoding and matrix contraction and matches the imported CPU evaluator
+    Given all 144 CPU-supported outer-product cases with packed left operands
+    When vTensor contracts each loaded row through the pinned Verdant kernels
+    Then every output matches the upstream CPU reference

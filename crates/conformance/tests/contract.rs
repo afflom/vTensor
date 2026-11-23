@@ -193,6 +193,9 @@ ggml_batches! {
     #[test]
     fn scalar_outer_products_vt_69() { "upstream-OUT_PROD_SCALAR", 87, ["pointwise", "matrix"] }
 
+    #[test]
+    fn packed_outer_products_vt_71() { "upstream-OUT_PROD_PACKED", 144, ["matrix", "pointwise"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1611,7 +1614,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "36be37b45930b1279d5b8bc18478da3a38d3531b6ad1b1010db40ddec09308aa",
+            "468531b6e8ff117522236aa10564184d40a45a7c03ac09ccf4532a7d1caabac6",
         )
     });
 
