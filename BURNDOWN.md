@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,411 passed**, **1,344 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,480 passed**, **1,275 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -60,7 +60,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pin the four block encoders from Verdant PR #37 and pass VT-02. All 96 Q4/Q5 SET_ROWS and 25 CPY cases pass the original GGML factory comparisons. [VT-105 results](verification/factory-low-bit-writes-vt105.json) · [Verdant byte comparisons](https://github.com/afflom/verdant-engine/pull/37)
 - [x] Supply TQ1_0 and TQ2_0 encoders in Verdant. All 34,560 bytes matched the two upstream encoders. [Verdant PR #42](https://github.com/afflom/verdant-engine/pull/42)
 - [x] Pass all 48 TQ1_0/TQ2_0 SET_ROWS cases and 12 CPY cases. Invalid indices and nonfinite inputs preserve the destination. [Factory comparisons](verification/factory-ternary-writes-vt113.json)
-- [ ] Complete embedding, projection and KV-cache operations. Implement the 384 refused SET_ROWS factory cases, the 98 unresolved CPY cases, block encoding and quantized dot products, the 264 refused standalone MUL_MAT cases and precision modes. Reuse the verified decoders and F32 matrix path.
+- [ ] Complete embedding, projection and KV-cache operations. Implement the 384 refused SET_ROWS factory cases, the 98 unresolved CPY cases, block encoding and quantized dot products, the 203 refused standalone MUL_MAT cases and precision modes. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 230 Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs, including skipped experts and offset index views. [VT-83 results](verification/factory-indexed-products-vt83.json)
 - [x] Pass the 130 newly admitted packed expert compositions, including six shared-expert graphs and 124 matrix fusions. [Original full-graph comparisons](verification/factory-indexed-expert-compositions.json)
 - [x] Execute all 251 F32, F16 and BF16 MUL_MAT_ID cases, including invalid expert IDs and strided index views. [VT-84 results](verification/factory-scalar-experts-vt84.json)
@@ -83,7 +83,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Implement MXFP4/NVFP4 row products in Verdant and dispatch them from vTensor matrix plans. All 1,024 CPU row comparisons and four bound provider graphs passed. [Verdant verification](https://github.com/afflom/verdant-engine/blob/8b6bbc2c/ENGINE-VERIFICATION.md#vtk-38-block-float-row-products)
 - [x] Pass all 215 block-float MUL_MAT, 171 MUL_MAT_ID and 371 composition graphs. [757 GGML CPU comparisons](verification/factory-block-float-products-vt99.json)
 - [x] Pin the two Verdant ternary row products. All 196 output words matched the original CPU across zero to five blocks. [Verdant PR #43](https://github.com/afflom/verdant-engine/pull/43)
-- [ ] Reuse the TQ1_0/TQ2_0 layouts for row products. Pass 61 ordinary matrix cases and eight expert cases. [Factory ordinals](verification/ggml-factory-cases.tsv.gz)
+- [x] Pass all 61 TQ1_0/TQ2_0 ordinary matrix cases and eight expert cases using the certified ternary layouts. [GGML comparisons](verification/factory-ternary-products-vt114.json)
 - [ ] Implement IQ3_XXS and IQ3_S row products in Verdant. Pass 105 ordinary and 27 expert matrices in vTensor. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
 - [ ] Implement IQ1_S and IQ1_M row products in Verdant. Pass 98 ordinary and eight expert matrices in vTensor. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)

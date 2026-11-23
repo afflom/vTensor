@@ -1,0 +1,118 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-114",
+  "implementation": "183016691a937267527d77192ee90ba85c1e99e0",
+  "verdant_revision": "2eed139e8d56986192dd1babc828ed5a19e19c6b",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/43",
+  "provider_sha256": "3a133fa92231c74c209f80b9def47a3163eaab5a48054534b5c2136a9a4308f5",
+  "provider_inputs_sha256": "0e1bffaf1eda8d9d66b3ae803832f70d19c4ffa7fb88ffa6eba63bc1fad98cb6",
+  "oracle_executable_sha256": "cf9c31c1148b7f601a6a3bcdf44d3262781c42ca59a8be37b726cc848f46ff59",
+  "matrix_lock_sha256": "8dc5147c0c5a6c6156a958e93150b45398139a8c0adb4d1d66af9a4ae8984703",
+  "oracle": "The pinned GGML CPU compares the complete original ordinary and expert ternary matrix graphs with the provider.",
+  "contract_ordinals": [
+    10802,
+    10813,
+    14129,
+    15034
+  ],
+  "contract_transcript_sha256": "eba51bb2ff62863a172fc4530bcdfa2d81009129cd18ebdb637172aac3dd1ccc",
+  "runs": {
+    "rows-0": {
+      "passed": 17,
+      "transcript_sha256": "f2dd569634e5574081a7c4ea3d7de399fdbfcdcbfe9dc91e79e58b9046b2dc3d"
+    },
+    "rows-1": {
+      "passed": 16,
+      "transcript_sha256": "7adc5fff86e753d34fb288afc0492d723b05a97c8b3afccc31c61aa142fbc2bc"
+    },
+    "rows-2": {
+      "passed": 16,
+      "transcript_sha256": "d9458c2ecd203106958de0f0c87be7c15caac41e04fbaea703023b3976cf314d"
+    },
+    "rows-3": {
+      "passed": 16,
+      "transcript_sha256": "458dc0d685f647927cd5fe97380acc5c72e18fb1f82eef1359b44712088ec1c7"
+    }
+  },
+  "mutation": {
+    "change": "Negate the grouped row product before returning it to the matrix executor.",
+    "ordinal": 10802,
+    "diagnostic": "[MUL_MAT] ERR = 4.000000000 > 0.000500000"
+  },
+  "case_ordinals": {
+    "MUL_MAT": [
+      10802,
+      10803,
+      10804,
+      10805,
+      10806,
+      10807,
+      10808,
+      10809,
+      10810,
+      10811,
+      10812,
+      10813,
+      10814,
+      10815,
+      10816,
+      10817,
+      10818,
+      10819,
+      10820,
+      10821,
+      10822,
+      10823,
+      11077,
+      11078,
+      11079,
+      11080,
+      11081,
+      11261,
+      11262,
+      11263,
+      11264,
+      11265,
+      11445,
+      11446,
+      11447,
+      11448,
+      11449,
+      11629,
+      11630,
+      11631,
+      11632,
+      11633,
+      11813,
+      11814,
+      11815,
+      11816,
+      11817,
+      11997,
+      11998,
+      11999,
+      12000,
+      12001,
+      12181,
+      12182,
+      12183,
+      12184,
+      12185,
+      13484,
+      13485,
+      13605,
+      13606
+    ],
+    "MUL_MAT_ID": [
+      14109,
+      14110,
+      14129,
+      14130,
+      15032,
+      15033,
+      15034,
+      15035
+    ]
+  }
+}
