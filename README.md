@@ -43,7 +43,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | ID | Level | Status |
 | --- | --- | --- |
 | `VT-01` | build | Pins and checks the imported GGML contract and oracle source. |
-| `VT-02` | build | Verifies Cargo resolves the exact upstream patch and Verdant exposes its fifteen ordered kernel descriptors. |
+| `VT-02` | build | Checks the exact Verdant patch, fifteen ordered kernel descriptors and the compiled provider’s GGML host imports. [Linkage check](VTENSOR-VERIFICATION.md#provider-linkage) |
 | `VT-03` | build | Delegates one fixed 4×4 F64 matrix primitive to Verdant. |
 | `VT-04` | build | Inventories GGML operations, nested unary variants and storage-type declarations without claiming their implementation. |
 | `VT-05` | build | Executes upstream storage-size functions from the pinned source. |
@@ -112,6 +112,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-69` | build | Executes all 87 directly CPU-supported F32/F16 outer-product graphs. [Oracle results](verification/factory-scalar-outer-products-vt69.json) |
 | `VT-70` | build | Executes all 2,051 three-dimensional image-column factory cases. [Oracle results](verification/factory-image-columns-vt70.json) |
 | `VT-71` | build | Executes all 144 directly CPU-supported packed outer products. [Oracle results](verification/factory-packed-outer-products-vt71.json) |
+| `VT-72` | build | Executes all planar and linear IM2COL factory cases, F16 inputs and all nine depthwise 1D convolution graphs. [Oracle results](verification/factory-planar-columns-vt72.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

@@ -77,7 +77,7 @@ statement = "The imported GGML backend contract, implementation interface, and o
 id = "VT-02"
 level = "build"
 suite = "verdant-api"
-statement = "The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API"
+statement = "The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services"
 
 [[id]]
 id = "VT-03"
@@ -490,6 +490,12 @@ id = "VT-71"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps packed GGML outer-product rows into strided Verdant block decoding and matrix contraction and matches the imported CPU evaluator"
+
+[[id]]
+id = "VT-72"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps one- and two-dimensional GGML image columns across channel and batch strides and Verdant converts the result storage"
 
 [[id]]
 id = "VT-73"

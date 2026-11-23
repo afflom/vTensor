@@ -4816,3 +4816,21 @@ Replacing every interior sample address with zero made ordinal 2466 fail with er
 ### Packed outer products
 
 VT-71 passed all 144 directly CPU-supported packed OUT_PROD factory graphs, covering nine weight formats. Prism schedules each source block from its physical stride. Verdant decodes the block and performs the contraction. Redirecting all block reads to offset zero failed ordinal 15493 with error 1.739076707 against 0.0005. Restoring the implementation passed all nine affected contracts. The locked Clippy and dependency checks passed.
+
+## VT-68 complete checkpoint
+
+The complete locked-SDK `just vv` passed at `3f1cabd0b5de78bb31b8485bf1f1a1223a9f5377` on the Verdant PR #25 pin. All 75 backend contracts passed, including VT-02, followed by the remaining workspace tests and dependency checks. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/3f1cabd0b5de78bb31b8485bf1f1a1223a9f5377)
+
+## Planar image columns and depthwise 1D convolution
+
+VT-72 passed all 113 original IM2COL cases and both supplemental GGML graphs with F16 inputs. The nine original CONV_1D_DW graphs also passed, including BF16 kernels. They compose the existing image-column and matrix primitives. Prism selects each image sample, and Verdant converts the encoded word. Reading every interior sample at offset zero failed ordinal 2361 with error 1.992249257 against 0.0000001. The restored implementation passed the planar, 3D, row, packed outer-product and buffer-transfer contracts. [Oracle records](verification/factory-planar-columns-vt72.json)
+
+## Provider linkage
+
+VT-02 reads the undefined dynamic symbols of the backend that Cargo built. Its GGML imports are the host abort hook, buffer initialization and host query, graph size and node lookup. The GGML CPU oracle lives in the separate test executable. The check runs once alongside the existing Verdant source and descriptor checks.
+
+Changing the compiled graph-size binding to resolve `ggml_mul_mat` made VT-02 fail with `unexpected provider import ggml_mul_mat`. Restoring the binding passed VT-02 and the declaration-inventory regression in the locked SDK. [Approved GGML host imports](verification/native-oracle-bindings.json)
+
+## Decoded outer-product reference
+
+The pinned CPU refuses 1,312 OUT_PROD graphs covering 23 operand-type pairs and batch replication. VT-73 executes each original graph on vTensor, including transposed right operands. The external evaluator reads both initialized operands using GGML’s own storage decoder, runs the F32 CPU outer product on their logical values, and applies the original test’s normalized mean-square error threshold. All 1,312 passed. The original direct CPU refusal remains in the factory ledger. Reading each packed block at offset zero failed ordinal 15542 at 2.133897848 against 0.0005. [Recorded comparisons](verification/factory-decoded-outer-products-vt73.json)

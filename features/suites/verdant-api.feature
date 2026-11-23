@@ -1,10 +1,10 @@
 Feature: verdant-api
 
   @VT-02 @build
-  Scenario: The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API
-    Given the fixture VT-02 needs
-    When the suite exercises VT-02
-    Then The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API
+  Scenario: The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services
+    Given the compiled provider and the locked Verdant dependency
+    When the oracle reads the kernel catalog and the shared library imports
+    Then The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services
 
   @VT-03 @build
   Scenario: vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results

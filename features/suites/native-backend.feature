@@ -87,6 +87,12 @@ Feature: native-backend
     When vTensor contracts each loaded row through the pinned Verdant kernels
     Then every output matches the upstream CPU reference
 
+  @VT-72 @build
+  Scenario: Prism maps one- and two-dimensional GGML image columns across channel and batch strides and Verdant converts the result storage
+    Given imported IM2COL graphs with horizontal or planar kernels and F16 or F32 output
+    When vTensor places each image sample or padding value in its result column
+    Then every result matches the original GGML CPU evaluator
+
   @VT-73 @build
   Scenario: Original GGML outer-product graphs with CPU-refused type and batch combinations match the authoritative decoder followed by the F32 CPU outer product
     Given the original factory operands for the CPU-refused outer-product cases
