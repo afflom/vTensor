@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **19,081 passed**, **8,574 refused** and **100 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **19,889 passed**, **7,766 refused** and **100 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -12,7 +12,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] When Verdant releases these primitives, switch to the published production packages, verify provenance and checksums, and build a clean consumer. Keep the PR pin until then. Verdant v2.18.0 lacks the two Gaussian activation exports used by VT-75 and VT-77. [Release source](https://github.com/afflom/verdant-engine/tree/ba1425942f2cdc0f1d647df2fb71ab1e57bca507/crates/verdant-tensor/src)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
-- [ ] Recover **1,542 non-Prism lines** (12,091 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,588 non-Prism lines** (12,137 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -71,8 +71,9 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Execute all 55 Q2_K × F32 MUL_MAT cases and the graph combining MUL_MAT, GET_ROWS, REPEAT and ADD (809) with the pinned Verdant row product. [VT-65 results](verification/factory-grouped-matrix-vt65.json)
 - [x] Execute BF16 GET_ROWS_BACK on vTensor. The two factory graphs match 10,240 CPU-reference bytes, and 1,680 strided, empty and invalid-index cases pass. The direct factory reports CPU-only refusal on both ordinals. [VT-62 evidence](verification/factory-bf16-row-gradient-vt62.json)
 - [x] Compare all 63 CPU-refused identity copies across seven IQ formats with the pinned CPU copy kernel. All destination bytes match, including permuted layouts. [63 direct comparisons](verification/factory-iq-copy.json) · [IQ2_XXS regression](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
-- [ ] Pass 534 TOP_K and 98 ARGSORT cases. Implement row ranking in Verdant and map GGML row views and output indices in vTensor. [VT-86 registered oracle cases](https://github.com/afflom/vTensor/commit/9ac65aa42fd3e844a207c013355979d966a03c35)
-- [ ] Pass the 38 TOP_K_MASK and 692 TOPK_MOE cases. Complete the remaining indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
+- [x] Pass all 534 TOP_K and 98 ARGSORT factory cases, including ties and infinities. [VT-86 results](verification/factory-row-ranking-vt86.json) · [Verdant row ranking](https://github.com/afflom/verdant-engine/pull/28)
+- [x] Pass 172 TOPK_MOE and all four TOPK_QSA graphs unlocked by row ranking. [Full-graph comparisons](verification/factory-row-ranking-compositions.json)
+- [ ] Pass 38 TOP_K_MASK and the remaining 520 TOPK_MOE cases. Implement SOFT_MAX for 344 graphs and SOFTPLUS for 176. Complete the indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
 - [x] Pass all 2,051 IM2COL_3D factory cases. The 1,539 previous refusals now match the CPU for F32/F16 output, padded and dilated inputs and views. [VT-70 results](verification/factory-image-columns-vt70.json)
 - [x] Pass all 113 IM2COL factory cases, both supplemental F16-input graphs and all nine CONV_1D_DW compositions. [VT-72 evidence](verification/factory-planar-columns-vt72.json)
 - [x] Pass all 2,030 directly CPU-supported CONV_2D cases through the Verdant matrix product. 2,030 pass. [VT-74 results](verification/factory-direct-convolution-vt74.json)

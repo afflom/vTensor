@@ -4921,3 +4921,7 @@ VT-85 compares all 230 original E4M3 matrix and indexed matrix graphs and 164 ad
 ### Normalization admission
 
 Prism now supplies the execution plan for NORM, GROUP_NORM and RMS_NORM_BACK directly from the GGML descriptors. Verdant still computes the numerical results. Eight locked-SDK contract tests passed, including the original GGML normalization and composition cases, the strided and invalid-descriptor fixtures and the E4M3 regression. Refusing every NORM graph failed the original CPU comparison. Restoring admission passed. The source audit measured 12,091 non-Prism lines across 51 files.
+
+### VT-86 row ranking
+
+Prism binds GGML sort direction, row pitch, selection width and output placement. Verdant PR #28 supplies stable binary32 row ranking. The original pinned GGML evaluators passed all 632 standalone cases and 176 newly supported compositions. Both padded, offset row-view comparisons passed. Invalid strides, result types and sort directions were refused with destination bytes preserved. Inverting the requested direction failed ARGSORT ordinal 18388 with error 0.307692308 against a limit of 0.000000100. Restoring it passed. The merged provider passed VT-86 and VT-02. The native source audit measured 12,137 lines, 46 above the preceding normalization checkpoint. [Standalone transcripts](verification/factory-row-ranking-vt86.json) · [Composition transcripts](verification/factory-row-ranking-compositions.json)
