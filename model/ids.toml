@@ -508,3 +508,9 @@ id = "VT-74"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps direct two-dimensional GGML convolution to padded image patches and kernel strides and Verdant contracts each patch matrix"
+
+[[id]]
+id = "VT-76"
+level = "build"
+suite = "native-backend"
+statement = "Original channel-major GGML convolution graphs agree with upstream CPU convolution on equivalent contiguous tensors"
