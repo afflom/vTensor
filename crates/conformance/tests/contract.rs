@@ -32,9 +32,10 @@ fn declaration<'a>(model: &'a str, name: &str) -> &'a str {
 // bind the frozen input counts to the test that calls the native evaluator.
 macro_rules! ggml_batches {
     ($( $(#[$doc:meta])* fn $name:ident() { $mode:literal, $cases:literal, [$($model:literal),*] $(=> $probe:expr)? } )+) => {
-        const GGML_BATCHES: &[(&str, usize)] = &[$(($mode, $cases)),+];
+        const GGML_BATCHES: &[(&str, usize)] = &[BUFFER_ORACLE, $(($mode, $cases)),+];
         $(
             $(#[$doc])*
+            #[test]
             fn $name() {
                 let root = root();
                 $(tensor_layout::certified_current_model(&root, $model);)*
@@ -45,252 +46,183 @@ macro_rules! ggml_batches {
     };
 }
 
+const BUFFER_ORACLE: (&str, usize) = ("buffers", 108);
+
+/// Verify GGML device discovery, transfers and typed buffer refusals.
+#[test]
+fn native_backend_vt_11() {
+    let root = root();
+    for model in ["layout", "native"] {
+        tensor_layout::certified_current_model(&root, model);
+    }
+    native_backend_oracle::verify(&root, BUFFER_ORACLE.0, BUFFER_ORACLE.1);
+}
+
 ggml_batches! {
-    /// `VT-11`: GGML discovers the Prism-defined vTensor device and its owned buffers preserve upstream allocation and byte-transfer behavior
-    #[test]
-    fn native_backend_vt_11() { "buffers", 108, ["layout", "native"] }
     /// Exercise the CPU threadpool registry functions consumed by the upstream llama host.
-    #[test]
     fn cpu_threadpool_vt_59() { "cpu-threadpool", 4, ["native"] }
     /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
-    #[test]
     fn matrix_graphs_vt_12() { "matrix", 1280, ["matrix", "index"] => assert!(vtensor_index::run(u64::MAX, 0, 0, 0, 2, 0, 0, 0).is_err()) }
     /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
-    #[test]
     fn elementwise_graphs_vt_13() { "elementwise", 120, ["typed", "pointwise"] }
     /// `VT-14`: Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers
-    #[test]
     fn empty_graphs_vt_14() { "empty", 864, [] }
     /// `VT-15`: Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding
-    #[test]
     fn copy_graphs_vt_15() { "copy", 3456, [] }
     /// Compare the IQ2_XXS identity copy with the actual GGML CPU copy kernel.
-    #[test]
     fn iq2_identity_copy_vt_15() { "iq2-identity-copy", 1, [] }
     /// `VT-16`: Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle
-    #[test]
     fn repeat_graphs_vt_16() { "repeat", 160, [] }
     /// `VT-17`: Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types
-    #[test]
     fn concat_graphs_vt_17() { "concat", 10368, [] }
     /// `VT-18`: Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle
-    #[test]
     fn spatial_graphs_vt_18() { "spatial", 2256, [] }
     /// `VT-19`: Prism plans SET and ACC initialization, bounded update views and aliases and Verdant execution matches the imported GGML CPU oracle for supported float and integer storage
-    #[test]
     fn update_graphs_vt_19() { "update", 4608, [] }
     /// `VT-20`: Prism models four-axis REPEAT_BACK initialization and accumulation order and Verdant execution matches the imported GGML F32 CPU oracle across strided and empty tensors
-    #[test]
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
-    #[test]
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
     /// `VT-22`: Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle
-    #[test]
     fn triangular_graphs_vt_22() { "triangular", 1920, [] }
     /// `VT-23`: Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding
-    #[test]
     fn fill_graphs_vt_23() { "fill", 15360, [] }
     /// `VT-24`: Prism plans mixed F32 F16 and BF16 casts and copies by logical element order and Verdant conversion matches the imported GGML CPU oracle across reshaped strided and empty layouts
-    #[test]
     fn cast_graphs_vt_24() { "cast", 1920, [] }
     /// `VT-25`: Prism models window partition padding and window join logical indexing and Verdant transfers match the imported GGML CPU oracle for independent strided empty and bounded window inputs
-    #[test]
     fn window_graphs_vt_25() { "window", 3024, [] }
     /// `VT-26`: Prism plans scale bias clamp and leaky ReLU graphs and Verdant matches the imported GGML CPU kernels for every supported float storage type across copied in-place strided and empty tensors
-    #[test]
     fn transform_graphs_vt_26() { "transform", 18816, [] }
     /// `VT-27`: Prism plans thirteen unary operations for all five supported GGML float source destination pairs and Verdant matches copied in-place strided and empty CPU graphs with exact finite outputs and preserved padding
-    #[test]
     fn unary_graphs_vt_27() { "unary", 4992, [] }
     /// `VT-28`: Prism models row-local F32 cumulative sums with exact first-word preservation and Verdant matches the imported GGML CPU scan across strided and empty graphs
-    #[test]
     fn scan_graphs_vt_28() { "scan", 528, [] }
     /// `VT-29`: Prism models SUM SUM_ROWS and MEAN accumulation precision rounding and empty reductions and Verdant matches every supported float type against the imported GGML CPU oracle
-    #[test]
     fn reduction_graphs_vt_29() { "reduction", 4080, [] }
     /// `VT-30`: Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs
-    #[test]
     fn row_graphs_vt_30() { "rows", 2264, [] => verify_row_graphs() }
     /// `VT-31`: Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals
-    #[test]
     fn row_gradient_graphs_vt_31() { "row-gradient", 3360, [] }
     /// `VT-32`: Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals
-    #[test]
     fn row_gather_graphs_vt_32() { "row-gather", 384, [] }
     /// `VT-33`: Prism models GGML relative-position word selection and Verdant preserves F16 and BF16 source encodings in F16 outputs across strided empty and higher-dimensional source layouts
-    #[test]
     fn relative_position_graphs_vt_33() { "relative-position", 192, [] }
     /// `VT-34`: Prism models three-source indexed row addition and Verdant matches GGML ADD_ID arithmetic and exact minus-one row copies across strides empty tensors and atomic invalid-index refusals
-    #[test]
     fn indexed_add_graphs_vt_34() { "indexed-add", 164, [] }
     /// `VT-37`: Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals
-    #[test]
     fn generator_graphs_vt_37() { "upstream-ARANGE", 13, ["pointwise"] }
     /// `VT-38`: Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals
-    #[test]
     fn normalization_graphs_vt_38() { "upstream-L2_NORM,L2_NORM_BATCH", 129, ["pointwise", "norm"] }
     /// `VT-39`: Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals
-    #[test]
     fn relative_position_add_vt_39() { "upstream-ADD_REL_POS", 1315, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-ORACLE_CALIBRATION", 2) }
     /// `VT-46`: Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals
-    #[test]
     fn rms_normalization_vt_46() { "upstream-RMS_NORM", 121, ["pointwise"] }
     /// `VT-46`: Supplemental RMS normalization outputs and atomic refusals match Prism fixtures and the imported CPU oracle.
-    #[test]
     fn rms_runtime_edges_vt_46() { "rms-norm", 256, ["pointwise"] }
     /// `VT-48`: NORM preserves stride-selected mean and variance rounding through Prism and Verdant.
-    #[test]
     fn normalization_graphs_vt_48() { "upstream-NORM", 61, ["pointwise", "norm"] }
     /// `VT-48`: Prism NORM fixtures match exact CPU words and preserve atomic refusals and padding.
-    #[test]
     fn norm_runtime_edges_vt_48() { "norm", 184, ["pointwise", "norm"] }
     /// `VT-49`: GROUP_NORM preserves nested row subtotals and matches ordinary and fused imported graphs.
-    #[test]
     fn group_normalization_vt_49() { "upstream-GROUP_NORM,GROUP_NORM_MUL_ADD", 5, ["pointwise", "norm"] }
     /// `VT-49`: GROUP_NORM fixtures preserve nested rounding, physical spacing and atomic refusals.
-    #[test]
     fn group_runtime_edges_vt_49() { "group-norm", 224, ["pointwise", "norm"] }
     /// `VT-50`: RMS_NORM_BACK preserves its two-source reductions and narrowing order.
-    #[test]
     fn backward_normalization_vt_50() { "upstream-RMS_NORM_BACK", 10, ["pointwise", "norm"] }
     /// `VT-50`: Backward normalization fixtures preserve both sources, narrowing and atomic refusals.
-    #[test]
     fn backward_runtime_edges_vt_50() { "rms-backward", 353, ["pointwise", "norm"] }
     /// `VT-51`: Full composed graphs preserve mixed storage, broadcasting and aliases.
-    #[test]
     fn composed_normalization_vt_51() { "upstream-NORM_SCALE,RMS_NORM_SCALE,NORM_MUL_ADD,RMS_NORM_MUL_ADD,ADD_RMS_NORM", 187, ["typed", "pointwise", "norm"] }
     /// `VT-51`: Exact CPU words and atomic refusals cover every scalar storage tuple.
-    #[test]
     fn typed_runtime_edges_vt_51() { "typed-binary", 977, ["pointwise", "typed"] }
     /// `VT-52`: Scheduled node selection and reuse match the imported CPU.
-    #[test]
     fn scheduled_compute_flags_vt_52() { "scheduled-flags", 3, ["native"] }
     /// `VT-53`: The upstream factory evaluates all Q8_0 by F32 matrix cases.
-    #[test]
     fn symmetric_matrix_graphs_vt_53() { "upstream-MUL_MAT_Q8_0_F32", 122, ["matrix"] }
     /// `VT-54`: The upstream factory evaluates all Q4_0 by F32 matrix cases.
-    #[test]
     fn packed_matrix_graphs_vt_54() { "upstream-MUL_MAT_Q4_0_F32", 122, ["matrix"] }
     /// The original GGML graphs exercise grouped Q2_K products with contiguous and viewed weights.
-    #[test]
     fn grouped_matrix_graphs_vt_65() { "upstream-MUL_MAT_Q2_K_F32", 56, ["matrix"] }
     /// `VT-55`: Indexed scalar row writes match the independent CPU.
-    #[test]
     fn scalar_set_rows_vt_55() { "upstream-SET_ROWS_SCALAR", 126, ["typed"] }
     /// `VT-56`: The imported CPU checks all split, combined and swapped SWIGLU rows.
-    #[test]
     fn swiglu_rows_vt_56() { "upstream-SWIGLU", 36, ["typed"] }
     /// `VT-57`: Exercise the upstream rotary-position graph factory on the provider.
-    #[test]
     fn rotary_graphs_vt_57() { "upstream-ROPE", 510, ["rotary"] }
     /// `VT-57`: Exercise all upstream inverse-rotation graphs.
-    #[test]
     fn rotary_backward_graphs_vt_57() { "upstream-ROPE_BACK", 424, ["rotary"] }
     /// Six scalar input pairs in upstream dense and permuted matrix products.
-    #[test]
     fn float_matrix_graphs_vt_64() { "upstream-MUL_MAT_FLOAT_STORAGE", 11, ["pointwise", "matrix"] }
 
     /// The CPU compares both packed row formats in all four mask/sink combinations.
-    #[test]
     fn packed_attention_vt_66() { "upstream-FLASH_ATTN_EXT_PACKED", 8, ["attention"] }
 
-    #[test]
     fn hyperbolic_graphs_vt_67() { "upstream-TANH,SOFTCAP", 13, ["pointwise"] }
 
-    #[test]
     fn capped_attention_vt_68() { "upstream-FLASH_ATTN_EXT_SOFTCAP", 4, ["attention"] }
 
-    #[test]
     fn scalar_outer_products_vt_69() { "upstream-OUT_PROD_SCALAR", 87, ["pointwise", "matrix"] }
 
-    #[test]
     fn image_columns_vt_70() { "upstream-IM2COL_3D_VIEW", 6, ["pointwise"] }
 
-    #[test]
     fn packed_outer_products_vt_71() { "upstream-OUT_PROD_PACKED", 144, ["matrix", "pointwise"] }
 
-    #[test]
     fn planar_columns_vt_72() { "upstream-IM2COL_PLANAR", 4, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-IM2COL_HALF_INPUT", 2) }
 
-    #[test]
     fn outer_reference_vt_73() { "upstream-OUT_PROD_DECODED", 23, ["matrix", "pointwise"] }
 
-    #[test]
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
-    #[test]
     fn gaussian_graphs_vt_75() { "upstream-GELU_FAMILIES", 64, ["pointwise"] }
 
-    #[test]
     fn contiguous_convolution_vt_76() { "upstream-CONV_2D_CONTIGUOUS", 3, ["pointwise"] }
 
-    #[test]
     fn gated_activations_vt_77() { "upstream-GATED_ACTIVATIONS", 108, ["typed", "pointwise"] }
 
-    #[test]
     fn biased_attention_vt_78() { "upstream-BIASED_ATTENTION", 7, ["attention"] }
 
-    #[test]
     fn pooling_vt_79() { "upstream-POOLING", 8, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-POOL_HALF_INPUT", 4) }
 
-    #[test]
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
-    #[test]
     fn top_k_mask_vt_92() { "upstream-TOP_K_MASK_VARIANTS", 6, ["attention"] }
 
-    #[test]
+    fn clamped_swiglu_vt_93() { "upstream-SWIGLU_CLAMP_VARIANTS", 12, ["typed"] }
+
     fn row_softmax_vt_87() { "upstream-ROW_SOFTMAX", 6, ["attention"] }
 
-    #[test]
     fn packed_half_activations_vt_90() { "upstream-MUL_MAT_HALF_ACTIVATIONS", 3, ["matrix"] }
 
-    #[test]
     fn grouped_affine_products_vt_88() { "upstream-GROUPED_AFFINE_PRODUCTS", 6, ["matrix"] }
 
-    #[test]
     fn softplus_activation_vt_89() { "upstream-SOFTPLUS_ACTIVATION", 3, ["pointwise"] }
 
-    #[test]
     fn bitpacked_products_vt_91() { "upstream-BITPACKED_PRODUCTS", 5, ["matrix"] }
 
-    #[test]
     fn row_ranking_vt_86() { "upstream-ROW_RANKING", 6, ["typed"] }
 
-    #[test]
     fn e4m3_products_vt_85() { "upstream-E4M3_PRODUCTS", 5, ["matrix", "pointwise"] }
 
-    #[test]
     fn scalar_expert_matrix_vt_84() { "upstream-SCALAR_MUL_MAT_ID", 6, ["matrix"] }
 
-    #[test]
     fn packed_expert_matrix_vt_83() { "upstream-PACKED_MUL_MAT_ID", 9, ["matrix"] }
 
-    #[test]
     fn column_overlap_vt_82() { "upstream-COL2IM_1D", 33, ["pointwise"] }
 
-    #[test]
     fn state_convolution_vt_81() { "upstream-SSM_WINDOWS", 6, ["pointwise"] }
 
     /// Four imported BF16 attention cases vary mask and sink presence independently.
-    #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
 
     /// The first dense attention graph from the imported GGML factory.
-    #[test]
     fn bf16_row_gradient_vt_62() { "row-gradient-bf16", 1680, ["pointwise"] }
 
-    #[test]
     fn logistic_graphs_vt_61() { "upstream-SIGMOID,SILU,SIGMOID_MUL,SILU_MUL,ADD_SIGMOID_MUL,ADD_SILU_MUL", 122, ["pointwise"] }
 
-    #[test]
     fn elementary_graphs_vt_60() { "upstream-LOG,SIN,COS,EXP", 39, ["pointwise"] }
 
-    #[test]
     fn extended_attention_vt_58() { "upstream-FLASH_ATTN_EXT_FIRST", 1, ["attention"] }
     /// Two short attention graphs cover a populated sink and its absence.
-    #[test]
     fn small_attention_vt_58() { "upstream-FLASH_ATTN_EXT_SMALL", 2, ["attention"] }
 }
 
@@ -1462,7 +1394,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "1ac45c5816939e5d38b5e590e141a6ff86d45abbbb409598ba5f1ab74768e5f3",
+            "70b0c79e5107a0949bc978267cb7c2d250c37bcf9bb6ab643fcafb1a9ebed03a",
         )
     });
 
@@ -2234,6 +2166,31 @@ int main(int argc, char **argv) {
             CHECK(refuses_change(backend,dev,graph,out,out->src[5],extra));
           }
           ggml_backend_buffer_free(buffer); ggml_free(ctx);
+        }
+      }
+      if (!strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
+        const std::array<float,12> inputs={8,-8,0,-0.f,2,-2,-8,8,-3,3,0,-0.f};
+        for (int swapped : {0,1}) {
+          std::array<float,6> expected;
+          for (auto selected : {reference,backend}) {
+            auto ctx=ggml_init({ggml_graph_overhead()+4*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+            auto x=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,inputs.size());
+            auto out=ggml_swiglu_clamp(ctx,x,nullptr,2.f);
+            out->op_params[1]=swapped;
+            auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
+            auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+            ggml_backend_tensor_set(x,inputs.data(),0,sizeof(inputs));
+            CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+            std::array<float,6> actual; ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
+            if (selected==reference) expected=actual;
+            else {
+              for (size_t i=0;i<actual.size();++i) {
+                CHECK(std::fabs(actual[i]-expected[i])<=1e-6f && std::signbit(actual[i])==std::signbit(expected[i]));
+              }
+              CHECK(refuses_change(backend,dev,graph,out,out->op_params[1],int32_t(2)));
+            }
+            ggml_backend_buffer_free(buffer); ggml_free(ctx);
+          }
         }
       }
       if (!strcmp(argv[3]+9,"ROW_SOFTMAX")) {

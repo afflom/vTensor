@@ -1,8 +1,8 @@
 {
   "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
-  "requirement": "VT-78",
   "verdant_revision": "112bda99c2ebe1c98f3ba5b1612c171d0db58607",
+  "requirement": "VT-78",
   "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/27",
   "implementation": "e3b3124ce9832befe87bcf5ef328131f40394886",
   "provider_sha256": "ed81474c3ec2d501bf6b368b4bdf559ca0965277d3e3b0cef583d57b6da4631b",
@@ -33,8 +33,8 @@
     },
     "f16-large": {
       "assigned": 202,
-      "passed": 198,
-      "transcript_sha256": "355529c88d79d65e54695d09c74d7b088ae1c0f585478b85f21878b95626404a"
+      "passed": 202,
+      "transcript_sha256": "2e2a0a0706ce62ef35c91261f9dbe68e0f1ed0f431a2556cc71c463aa76a4c8f"
     },
     "bf16-small": {
       "assigned": 47,
@@ -1278,11 +1278,15 @@
       24698,
       24699,
       24700,
+      24701,
       24702,
       24703,
       24704,
+      24705,
+      24780,
       24810,
       24832,
+      24948,
       24951,
       25011
     ]

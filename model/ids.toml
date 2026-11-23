@@ -624,3 +624,9 @@ id = "VT-92"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans sparse GGML top-k mask cells and Verdant compares scores and transfers selected mask words"
+
+[[id]]
+id = "VT-93"
+level = "build"
+suite = "native-backend"
+statement = "Prism binds GGML clamp limits and storage for SwiGLU and Verdant evaluates the bounded operands in binary32"

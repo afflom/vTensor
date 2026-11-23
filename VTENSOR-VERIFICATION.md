@@ -4990,3 +4990,9 @@ The locked SDK ran `just vv` on `c9a725d991423928dead64e3f7eabe4f7cde6480` with 
 ### Sparse mask output strides
 
 VT-92 uses the shared Prism row-layout predicate for sparse mask destinations. The imported GGML CPU computes four rows with permuted head and token strides. vTensor matched all 28 words in the output span, including the padding and the selected mask bit patterns. Overlapping destination rows failed admission before the write. The previous dense-only model refused this legal graph. A planted packed-row write passed the dense cases and failed the 28-word comparison. Restoring the certified row offsets passed VT-92. The adjacent row-softmax contract also passed. [Model and CPU comparison](https://github.com/afflom/vTensor/commit/e4cf36d)
+
+### Clamped SwiGLU
+
+VT-93 reads the GGML clamp limit from parameter word 3. The Prism plan selects each gate and up operand using Verdant’s ordered comparison, calls Verdant’s existing binary32 SwiGLU and narrows once on output. All 12 original GGML cases and 303 newly admitted matrix fusions matched the pinned CPU. Two supplemental combined-row graphs checked both swap orders, saturation, zero signs and atomic refusal of an invalid swap flag. A planted parameter-slot substitution failed the original F16 case 788 with infinite error against a 0.000005 limit. Restoring the parameter passed. Of the 471 previously refused matrix fusions containing this gate, the other 168 still require matrix products. [Tested implementation](https://github.com/afflom/vTensor/commit/99414d9516faf3c84b925f3772f9f0f24769f6cb) · [Ordinal evidence](verification/factory-clamped-swiglu-vt93.json)
+
+The batch macro registers each imported contract as a Cargo test. The typed buffer refusal keeps its explicit test declaration. Cargo lists the same 101 backend contracts before and after consolidation. The integrated source audit measured 12,803 native lines, 45 fewer than the preceding sparse-mask checkpoint.

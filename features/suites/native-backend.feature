@@ -218,3 +218,9 @@ Feature: native-backend
     Given the original GGML sparse mask graphs with optional scores blocks and extra cells
     When the loaded provider computes each output row
     Then the selected original mask words and excluded cells match the independent CPU
+
+  @VT-93 @build
+  Scenario: Prism binds GGML clamp limits and storage for SwiGLU and Verdant evaluates the bounded operands in binary32
+    Given the original GGML F32 F16 and BF16 SwiGLU graphs with two clamp limits
+    When the loaded provider computes the bounded gate and projects each row
+    Then the resulting values match the imported CPU precision for each storage type
