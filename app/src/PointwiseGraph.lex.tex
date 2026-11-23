@@ -11,6 +11,7 @@
 \importmodule{Arange}
 \importmodule{L2Normalization}
 \importmodule{RmsNormalization}
+\importmodule{NormPlan}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -1226,6 +1227,32 @@ definition{
 }
 
 definition{
+  name: normDescriptor,
+  parameters: [tensor : TensorDescriptor],
+  result: NormPlan::TensorDescriptor,
+  body: (record NormPlan::TensorDescriptor {ty := (project tensor ty), n0 := (project tensor n0), n1 := (project tensor n1), n2 := (project tensor n2), n3 := (project tensor n3), s0 := (project tensor s0), s1 := (project tensor s1), s2 := (project tensor s2), s3 := (project tensor s3), span := (project tensor span), address := (project tensor address)}),
+  executable: true
+}
+
+definition{
+  name: planNormalization,
+  parameters: [
+    operation : Nat,
+    options : OperationParameters,
+    left : TensorDescriptor,
+    secondary : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (let source : NormPlan::TensorDescriptor := (normDescriptor left); (let destination : NormPlan::TensorDescriptor := (normDescriptor output); (let decision : NormPlan::PlanDecision := (match secondary
+    | Option.none => (NormPlan::dispatch operation (project options p0) (project options p1) false source source destination)
+    | Option.some rhs => (NormPlan::dispatch operation (project options p0) (project options p1) true source (normDescriptor rhs) destination)); (match decision
+    | NormPlan::PlanDecision.invalid => (ctor PointwiseDecision.invalidShape)
+    | NormPlan::PlanDecision.copy count bytes kind rows capacity parameter => (ctor PointwiseDecision.copyBlocks count bytes (indexContext left 1) (indexContext output 1) (ctor CopyMode.normalized kind parameter rows capacity)))))),
+  executable: true
+}
+
+definition{
   name: planRmsNorm,
   parameters: [options : OperationParameters, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
@@ -1319,9 +1346,7 @@ definition{
   name: columnExtent,
   parameters: [axis : ColumnAxis, size : Nat],
   result: Nat,
-  body: (if (((((0 <? (project axis kernel)) && (0 <? (project axis stride))) && (0 <? (project axis dilation))) && ((project axis stride) <? 2147483648)) && ((project axis dilation) <? 2147483648)) then (let available : Nat := (size + (prim multiply 2 (positiveWord (project axis pad)) : Nat));
-    (let required : Nat := ((1 + (prim multiply (project axis dilation) (prim subtract (project axis kernel) 1 : Nat) : Nat)) + (prim multiply 2 (negativeWord (project axis pad)) : Nat));
-    (if (required <=? available) then (1 + (prim quotient (prim subtract available required : Nat) (project axis stride) 0 : Nat)) else (if ((prim subtract required available : Nat) <? (project axis stride)) then 1 else 0)))) else 0),
+  body: (if (((((0 <? (project axis kernel)) && (0 <? (project axis stride))) && (0 <? (project axis dilation))) && ((project axis stride) <? 2147483648)) && ((project axis dilation) <? 2147483648)) then (let available : Nat := (size + (prim multiply 2 (positiveWord (project axis pad)) : Nat)); (let required : Nat := ((1 + (prim multiply (project axis dilation) (prim subtract (project axis kernel) 1 : Nat) : Nat)) + (prim multiply 2 (negativeWord (project axis pad)) : Nat)); (if (required <=? available) then (1 + (prim quotient (prim subtract available required : Nat) (project axis stride) 0 : Nat)) else (if ((prim subtract required available : Nat) <? (project axis stride)) then 1 else 0)))) else 0),
   executable: true
 }
 
@@ -1329,9 +1354,7 @@ definition{
   name: columnCoordinate,
   parameters: [axis : ColumnAxis, size : Nat, output : Nat, lane : Nat],
   result: (Option Nat),
-  body: (let position : Nat := (((prim multiply output (project axis stride) : Nat) + (prim multiply lane (project axis dilation) : Nat)) + (negativeWord (project axis pad)));
-    (let padding : Nat := (positiveWord (project axis pad));
-    (if ((padding <=? position) && ((prim subtract position padding : Nat) <? size)) then (ctor Option.some [Nat] (prim subtract position padding : Nat)) else (ctor Option.none [Nat])))),
+  body: (let position : Nat := (((prim multiply output (project axis stride) : Nat) + (prim multiply lane (project axis dilation) : Nat)) + (negativeWord (project axis pad))); (let padding : Nat := (positiveWord (project axis pad)); (if ((padding <=? position) && ((prim subtract position padding : Nat) <? size)) then (ctor Option.some [Nat] (prim subtract position padding : Nat)) else (ctor Option.none [Nat])))),
   executable: true
 }
 
@@ -1345,23 +1368,17 @@ definition{
 
 definition{
   name: planDirectConvolution,
-  parameters: [volume : Bool, options : OperationParameters, kernel : TensorDescriptor, source : (Option TensorDescriptor), output : TensorDescriptor],
+  parameters: [
+    volume : Bool,
+    options : OperationParameters,
+    kernel : TensorDescriptor,
+    source : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
   body: (match source
     | Option.none => (ctor PointwiseDecision.invalidShape)
-    | Option.some image => (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (if volume then (project options p3) else (project options p2)), dilation := (if volume then (project options p6) else (project options p4))});
-    (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (if volume then (project options p4) else (project options p3)), dilation := (if volume then (project options p7) else (project options p5))});
-    (let z : ColumnAxis := (if volume then (record ColumnAxis {kernel := (project kernel n2), stride := (project options p2), pad := (project options p5), dilation := (project options p8)}) else (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1}));
-    (let width : Nat := (convolutionExtent x (project image n0));
-    (let height : Nat := (convolutionExtent y (project image n1));
-    (let depth : Nat := (if volume then (convolutionExtent z (project image n2)) else 1);
-    (let inputs : Nat := (if volume then (project options p9) else (project image n2));
-    (let batches : Nat := (if volume then (project options p10) else (project image n3));
-    (let channels : Nat := (if volume then (project options p11) else (project kernel n3));
-    (let patches : Nat := (prim multiply (prim multiply width height : Nat) (prim multiply depth batches : Nat) : Nat);
-    (let inner : Nat := (prim multiply (prim multiply (project x kernel) (project y kernel) : Nat) (prim multiply (project z kernel) inputs : Nat) : Nat);
-    (let tile : Nat := (if (patches <? 32) then patches else 32);
-    (if ((((((((((((project kernel ty) =? 0) || ((project kernel ty) =? 1)) && ((project image ty) =? 0)) && ((project output ty) =? 0)) && ((project output n0) =? width)) && ((project output n1) =? height)) && (if volume then ((((((((0 <? inputs) && (inputs <? 2147483648)) && (channels <? 2147483648)) && (batches <? 2147483648)) && ((project kernel n3) =? (prim multiply inputs channels : Nat))) && ((project image n3) =? (prim multiply inputs batches : Nat))) && ((project output n2) =? depth)) && ((project output n3) =? (prim multiply channels batches : Nat))) else (((((project kernel n2) =? inputs) && ((project output n2) =? channels)) && ((project output n3) =? batches)) && (0 <? inner)))) && (0 <? channels)) && (0 <? patches)) && (separateTensors kernel output)) && (separateTensors image output)) then (ctor PointwiseDecision.convolution (record ConvolutionGeometry {patches := patches, inner := inner, channels := channels, weights := (prim multiply inner channels : Nat), tile := tile, inputCapacity := (prim multiply tile inner : Nat), outputCapacity := (prim multiply tile channels : Nat), kernelType := (project kernel ty), kernel := (indexContext kernel 1), image := (indexContext image 1), output := (indexContext output 1), x := x, y := y, z := z, packedChannels := (if volume then inputs else 0)})) else (ctor PointwiseDecision.invalidShape))))))))))))))),
+    | Option.some image => (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (if volume then (project options p3) else (project options p2)), dilation := (if volume then (project options p6) else (project options p4))}); (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (if volume then (project options p4) else (project options p3)), dilation := (if volume then (project options p7) else (project options p5))}); (let z : ColumnAxis := (if volume then (record ColumnAxis {kernel := (project kernel n2), stride := (project options p2), pad := (project options p5), dilation := (project options p8)}) else (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1})); (let width : Nat := (convolutionExtent x (project image n0)); (let height : Nat := (convolutionExtent y (project image n1)); (let depth : Nat := (if volume then (convolutionExtent z (project image n2)) else 1); (let inputs : Nat := (if volume then (project options p9) else (project image n2)); (let batches : Nat := (if volume then (project options p10) else (project image n3)); (let channels : Nat := (if volume then (project options p11) else (project kernel n3)); (let patches : Nat := (prim multiply (prim multiply width height : Nat) (prim multiply depth batches : Nat) : Nat); (let inner : Nat := (prim multiply (prim multiply (project x kernel) (project y kernel) : Nat) (prim multiply (project z kernel) inputs : Nat) : Nat); (let tile : Nat := (if (patches <? 32) then patches else 32); (if ((((((((((((project kernel ty) =? 0) || ((project kernel ty) =? 1)) && ((project image ty) =? 0)) && ((project output ty) =? 0)) && ((project output n0) =? width)) && ((project output n1) =? height)) && (if volume then ((((((((0 <? inputs) && (inputs <? 2147483648)) && (channels <? 2147483648)) && (batches <? 2147483648)) && ((project kernel n3) =? (prim multiply inputs channels : Nat))) && ((project image n3) =? (prim multiply inputs batches : Nat))) && ((project output n2) =? depth)) && ((project output n3) =? (prim multiply channels batches : Nat))) else (((((project kernel n2) =? inputs) && ((project output n2) =? channels)) && ((project output n3) =? batches)) && (0 <? inner)))) && (0 <? channels)) && (0 <? patches)) && (separateTensors kernel output)) && (separateTensors image output)) then (ctor PointwiseDecision.convolution (record ConvolutionGeometry {patches := patches, inner := inner, channels := channels, weights := (prim multiply inner channels : Nat), tile := tile, inputCapacity := (prim multiply tile inner : Nat), outputCapacity := (prim multiply tile channels : Nat), kernelType := (project kernel ty), kernel := (indexContext kernel 1), image := (indexContext image 1), output := (indexContext output 1), x := x, y := y, z := z, packedChannels := (if volume then inputs else 0)})) else (ctor PointwiseDecision.invalidShape))))))))))))))),
   executable: true
 }
 
@@ -1377,15 +1394,9 @@ definition{
   name: convolutionImageSample,
   parameters: [geometry : ConvolutionGeometry, lane : Nat, plane : Nat, sx : Nat, sy : Nat],
   result: GraphResponse,
-  body: (let im : IndexContext := (project geometry image);
-    (let k : IndexContext := (project geometry kernel);
-    (let z : Nat := (decodedCoordinate lane k 2);
-    (if ((project geometry packedChannels) =? 0) then (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates im sx sy z plane))) else
-    (let depth : Nat := (project (project geometry output) n2);
-    (match (columnCoordinate (project geometry z) (project im n2) (prim remainder plane depth 0 : Nat) z)
+  body: (let im : IndexContext := (project geometry image); (let k : IndexContext := (project geometry kernel); (let z : Nat := (decodedCoordinate lane k 2); (if ((project geometry packedChannels) =? 0) then (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates im sx sy z plane))) else (let depth : Nat := (project (project geometry output) n2); (match (columnCoordinate (project geometry z) (project im n2) (prim remainder plane depth 0 : Nat) z)
     | Option.none => (ctor GraphResponse.sample (ctor Option.none [Nat]))
-    | Option.some sz => (let channel : Nat := ((prim multiply (prim quotient plane depth 0 : Nat) (project geometry packedChannels) : Nat) + (decodedCoordinate lane k 3));
-      (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates im sx sy sz channel)))))))))),
+    | Option.some sz => (let channel : Nat := ((prim multiply (prim quotient plane depth 0 : Nat) (project geometry packedChannels) : Nat) + (decodedCoordinate lane k 3)); (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates im sx sy sz channel)))))))))),
   executable: true
 }
 
@@ -1393,88 +1404,60 @@ definition{
   name: convolutionAddress,
   parameters: [geometry : ConvolutionGeometry, phase : Nat, start : Nat, index : Nat],
   result: GraphResponse,
-  body: (if (phase =? 0) then (if (index <? (project geometry weights)) then (let k : IndexContext := (project geometry kernel);
-    (let lane : Nat := (prim quotient index (project geometry channels) 0 : Nat);
-    (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates k (decodedCoordinate lane k 0) (decodedCoordinate lane k 1) (decodedCoordinate lane k 2) (convolutionKernelPlane geometry lane (prim remainder index (project geometry channels) 0 : Nat))))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))) else (let o : IndexContext := (project geometry output);
-    (let laneWidth : Nat := (if (phase =? 1) then (project geometry inner) else (project geometry channels));
-    (let patch : Nat := (start + (prim quotient index laneWidth 0 : Nat));
-    (let lane : Nat := (prim remainder index laneWidth 0 : Nat);
-    (let px : Nat := (prim remainder patch (project o u0) 0 : Nat);
-    (let row : Nat := (prim quotient patch (project o u0) 0 : Nat);
-    (let py : Nat := (prim remainder row (project o n1) 0 : Nat);
-    (let batch : Nat := (prim quotient row (project o n1) 0 : Nat);
-    (if (patch <? (project geometry patches)) then (if (phase =? 1) then (let k : IndexContext := (project geometry kernel);
-    (let im : IndexContext := (project geometry image);
-    (match (columnCoordinate (project geometry x) (project im u0) px (decodedCoordinate lane k 0))
+  body: (if (phase =? 0) then (if (index <? (project geometry weights)) then (let k : IndexContext := (project geometry kernel); (let lane : Nat := (prim quotient index (project geometry channels) 0 : Nat); (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates k (decodedCoordinate lane k 0) (decodedCoordinate lane k 1) (decodedCoordinate lane k 2) (convolutionKernelPlane geometry lane (prim remainder index (project geometry channels) 0 : Nat))))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))) else (let o : IndexContext := (project geometry output); (let laneWidth : Nat := (if (phase =? 1) then (project geometry inner) else (project geometry channels)); (let patch : Nat := (start + (prim quotient index laneWidth 0 : Nat)); (let lane : Nat := (prim remainder index laneWidth 0 : Nat); (let px : Nat := (prim remainder patch (project o u0) 0 : Nat); (let row : Nat := (prim quotient patch (project o u0) 0 : Nat); (let py : Nat := (prim remainder row (project o n1) 0 : Nat); (let batch : Nat := (prim quotient row (project o n1) 0 : Nat); (if (patch <? (project geometry patches)) then (if (phase =? 1) then (let k : IndexContext := (project geometry kernel); (let im : IndexContext := (project geometry image); (match (columnCoordinate (project geometry x) (project im u0) px (decodedCoordinate lane k 0))
+    | Option.none => (ctor GraphResponse.sample (ctor Option.none [Nat]))
+    | Option.some sx => (match (columnCoordinate (project geometry y) (project im n1) py (decodedCoordinate lane k 1))
       | Option.none => (ctor GraphResponse.sample (ctor Option.none [Nat]))
-      | Option.some sx => (match (columnCoordinate (project geometry y) (project im n1) py (decodedCoordinate lane k 1))
-        | Option.none => (ctor GraphResponse.sample (ctor Option.none [Nat]))
-        | Option.some sy => (convolutionImageSample geometry lane batch sx sy))))) else (if (phase =? 2) then (ctor GraphResponse.sample (ctor Option.some [Nat] (if ((project geometry packedChannels) =? 0) then (offsetCoordinates o px py lane batch) else (offsetCoordinates o px py (prim remainder batch (project o n2) 0 : Nat) ((prim multiply (prim quotient batch (project o n2) 0 : Nat) (project geometry channels) : Nat) + lane))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))))))))))),
+      | Option.some sy => (convolutionImageSample geometry lane batch sx sy))))) else (if (phase =? 2) then (ctor GraphResponse.sample (ctor Option.some [Nat] (if ((project geometry packedChannels) =? 0) then (offsetCoordinates o px py lane batch) else (offsetCoordinates o px py (prim remainder batch (project o n2) 0 : Nat) ((prim multiply (prim quotient batch (project o n2) 0 : Nat) (project geometry channels) : Nat) + lane))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))))))))))),
   executable: true
 }
 
 definition{
   name: planImageColumns,
-  parameters: [options : OperationParameters, kernel : TensorDescriptor, image : (Option TensorDescriptor), output : TensorDescriptor],
+  parameters: [
+    options : OperationParameters,
+    kernel : TensorDescriptor,
+    image : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
   body: (match image
     | Option.none => (ctor PointwiseDecision.invalidShape)
-    | Option.some source => (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p3), dilation := (project options p6)});
-    (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p4), dilation := (project options p7)});
-    (let z : ColumnAxis := (record ColumnAxis {kernel := (project kernel n2), stride := (project options p2), pad := (project options p5), dilation := (project options p8)});
-    (let channels : Nat := (project options p9);
-    (let depth : Nat := (columnExtent z (project source n2));
-    (let storage : Nat := (project output ty);
-    (let lanes : Nat := (prim multiply channels (prim multiply (project x kernel) (prim multiply (project y kernel) (project z kernel) : Nat) : Nat) : Nat);
-    (if ((((((((((((((project source ty) =? 0) && ((storage =? 0) || (storage =? 1))) && (0 <? channels)) && (channels <? 2147483648)) && ((project source s0) =? 4)) && (0 <? depth)) && (0 <? (project output n1))) && (0 <? (project output n2))) && ((project output n0) =? lanes)) && ((project output n1) =? (columnExtent x (project source n0)))) && ((project output n2) =? (columnExtent y (project source n1)))) && ((project output n3) =? (prim multiply depth (prim quotient (project source n3) channels 0 : Nat) : Nat))) && (separateTensors source output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if (storage =? 0) then 4 else 2) (indexContext source 1) (indexContext output 1) (ctor CopyMode.imageColumns (record ColumnGeometry {x := x, y := y, z := z, channelStride := (project source s3), batchStride := (prim multiply channels (project source s3) : Nat), inputStorage := 0, depth := depth, storage := storage}))) else (ctor PointwiseDecision.invalidShape)))))))))),
+    | Option.some source => (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p3), dilation := (project options p6)}); (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p4), dilation := (project options p7)}); (let z : ColumnAxis := (record ColumnAxis {kernel := (project kernel n2), stride := (project options p2), pad := (project options p5), dilation := (project options p8)}); (let channels : Nat := (project options p9); (let depth : Nat := (columnExtent z (project source n2)); (let storage : Nat := (project output ty); (let lanes : Nat := (prim multiply channels (prim multiply (project x kernel) (prim multiply (project y kernel) (project z kernel) : Nat) : Nat) : Nat); (if ((((((((((((((project source ty) =? 0) && ((storage =? 0) || (storage =? 1))) && (0 <? channels)) && (channels <? 2147483648)) && ((project source s0) =? 4)) && (0 <? depth)) && (0 <? (project output n1))) && (0 <? (project output n2))) && ((project output n0) =? lanes)) && ((project output n1) =? (columnExtent x (project source n0)))) && ((project output n2) =? (columnExtent y (project source n1)))) && ((project output n3) =? (prim multiply depth (prim quotient (project source n3) channels 0 : Nat) : Nat))) && (separateTensors source output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if (storage =? 0) then 4 else 2) (indexContext source 1) (indexContext output 1) (ctor CopyMode.imageColumns (record ColumnGeometry {x := x, y := y, z := z, channelStride := (project source s3), batchStride := (prim multiply channels (project source s3) : Nat), inputStorage := 0, depth := depth, storage := storage}))) else (ctor PointwiseDecision.invalidShape)))))))))),
   executable: true
 }
 
 definition{
   name: planPlanarColumns,
-  parameters: [options : OperationParameters, kernel : TensorDescriptor, image : (Option TensorDescriptor), output : TensorDescriptor],
+  parameters: [
+    options : OperationParameters,
+    kernel : TensorDescriptor,
+    image : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
   body: (match image
     | Option.none => (ctor PointwiseDecision.invalidShape)
-    | Option.some source => (let planar : Bool := ((project options p6) =? 1);
-    (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p2), dilation := (project options p4)});
-    (let y : ColumnAxis := (if planar then (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p3), dilation := (project options p5)}) else (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1}));
-    (let z : ColumnAxis := (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1});
-    (let channels : Nat := (if planar then (project source n2) else (project source n1));
-    (let batches : Nat := (if planar then (project source n3) else (project source n2));
-    (let height : Nat := (if planar then (project source n1) else 1);
-    (let inputStorage : Nat := (project source ty);
-    (let storage : Nat := (project output ty);
-    (let sampleBytes : Nat := (if (inputStorage =? 0) then 4 else 2);
-    (let rowStride : Nat := (prim multiply (project source n0) sampleBytes : Nat);
-    (let channelStride : Nat := (if planar then (project source s2) else (project source s1));
-    (let batchStride : Nat := (if planar then (project source s3) else (project source s2));
-    (if (((((((((((project options p6) <=? 1) && ((inputStorage =? 0) || ((inputStorage =? 1) && (storage =? 1)))) && ((storage =? 0) || (storage =? 1))) && ((project source s0) =? sampleBytes)) && ((project output n0) =? (prim multiply channels (prim multiply (project x kernel) (project y kernel) : Nat) : Nat))) && ((project output n1) =? (columnExtent x (project source n0)))) && (0 <? (project output n1))) && (if planar then (((((project kernel n2) =? channels) && ((project output n2) =? (columnExtent y height))) && ((project output n3) =? batches)) && (0 <? (project output n2))) else (((((project kernel n1) =? channels) && ((project source n3) =? 1)) && ((project output n2) =? batches)) && ((project output n3) =? 1)))) && ((empty (project source n0) height channels batches) || (((((prim multiply (prim subtract batches 1 : Nat) batchStride : Nat) + (prim multiply (prim subtract channels 1 : Nat) channelStride : Nat)) + (prim multiply (prim subtract height 1 : Nat) rowStride : Nat)) + rowStride) <=? (project source span)))) && (separateTensors source output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if (storage =? 0) then 4 else 2) (record IndexContext {u0 := (project source n0), n1 := height, n2 := 1, n3 := batches, s0 := sampleBytes, s1 := rowStride, s2 := 0, s3 := 0}) (if planar then (indexContext output 1) else (record IndexContext {u0 := (project output n0), n1 := (project output n1), n2 := 1, n3 := (project output n2), s0 := (project output s0), s1 := (project output s1), s2 := 0, s3 := (project output s2)})) (ctor CopyMode.imageColumns (record ColumnGeometry {x := x, y := y, z := z, channelStride := channelStride, batchStride := batchStride, inputStorage := inputStorage, depth := 1, storage := storage}))) else (ctor PointwiseDecision.invalidShape)))))))))))))))),
+    | Option.some source => (let planar : Bool := ((project options p6) =? 1); (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p2), dilation := (project options p4)}); (let y : ColumnAxis := (if planar then (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p3), dilation := (project options p5)}) else (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1})); (let z : ColumnAxis := (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1}); (let channels : Nat := (if planar then (project source n2) else (project source n1)); (let batches : Nat := (if planar then (project source n3) else (project source n2)); (let height : Nat := (if planar then (project source n1) else 1); (let inputStorage : Nat := (project source ty); (let storage : Nat := (project output ty); (let sampleBytes : Nat := (if (inputStorage =? 0) then 4 else 2); (let rowStride : Nat := (prim multiply (project source n0) sampleBytes : Nat); (let channelStride : Nat := (if planar then (project source s2) else (project source s1)); (let batchStride : Nat := (if planar then (project source s3) else (project source s2)); (if (((((((((((project options p6) <=? 1) && ((inputStorage =? 0) || ((inputStorage =? 1) && (storage =? 1)))) && ((storage =? 0) || (storage =? 1))) && ((project source s0) =? sampleBytes)) && ((project output n0) =? (prim multiply channels (prim multiply (project x kernel) (project y kernel) : Nat) : Nat))) && ((project output n1) =? (columnExtent x (project source n0)))) && (0 <? (project output n1))) && (if planar then (((((project kernel n2) =? channels) && ((project output n2) =? (columnExtent y height))) && ((project output n3) =? batches)) && (0 <? (project output n2))) else (((((project kernel n1) =? channels) && ((project source n3) =? 1)) && ((project output n2) =? batches)) && ((project output n3) =? 1)))) && ((empty (project source n0) height channels batches) || (((((prim multiply (prim subtract batches 1 : Nat) batchStride : Nat) + (prim multiply (prim subtract channels 1 : Nat) channelStride : Nat)) + (prim multiply (prim subtract height 1 : Nat) rowStride : Nat)) + rowStride) <=? (project source span)))) && (separateTensors source output)) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if (storage =? 0) then 4 else 2) (record IndexContext {u0 := (project source n0), n1 := height, n2 := 1, n3 := batches, s0 := sampleBytes, s1 := rowStride, s2 := 0, s3 := 0}) (if planar then (indexContext output 1) else (record IndexContext {u0 := (project output n0), n1 := (project output n1), n2 := 1, n3 := (project output n2), s0 := (project output s0), s1 := (project output s1), s2 := 0, s3 := (project output s2)})) (ctor CopyMode.imageColumns (record ColumnGeometry {x := x, y := y, z := z, channelStride := channelStride, batchStride := batchStride, inputStorage := inputStorage, depth := 1, storage := storage}))) else (ctor PointwiseDecision.invalidShape)))))))))))))))),
   executable: true
 }
 
 definition{
   name: imageColumnStep,
-  parameters: [index : Nat, source : IndexContext, destination : IndexContext, geometry : ColumnGeometry],
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    geometry : ColumnGeometry
+  ],
   result: GraphResponse,
-  body: (let lane : Nat := (decodedCoordinate index destination 0);
-    (let batchDepth : Nat := (decodedCoordinate index destination 3);
-    (let zPlane : Nat := (prim remainder batchDepth (project geometry depth) 0 : Nat);
-    (let batch : Nat := (prim quotient batchDepth (project geometry depth) 0 : Nat);
-    (let xPosition : (Option Nat) := (columnCoordinate (project geometry x) (project source u0) (decodedCoordinate index destination 1) (prim remainder lane (project (project geometry x) kernel) 0 : Nat));
-    (let xRemaining : Nat := (prim quotient lane (project (project geometry x) kernel) 0 : Nat);
-    (let yPosition : (Option Nat) := (columnCoordinate (project geometry y) (project source n1) (decodedCoordinate index destination 2) (prim remainder xRemaining (project (project geometry y) kernel) 0 : Nat));
-    (let yRemaining : Nat := (prim quotient xRemaining (project (project geometry y) kernel) 0 : Nat);
-    (let zPosition : (Option Nat) := (columnCoordinate (project geometry z) (project source n2) zPlane (prim remainder yRemaining (project (project geometry z) kernel) 0 : Nat));
-    (let zRemaining : Nat := (prim quotient yRemaining (project (project geometry z) kernel) 0 : Nat);
-    (let operand : WordOperand := (match xPosition
-      | Option.none => (ctor WordOperand.immediate 0)
-      | Option.some x => (match yPosition
+  body: (let lane : Nat := (decodedCoordinate index destination 0); (let batchDepth : Nat := (decodedCoordinate index destination 3); (let zPlane : Nat := (prim remainder batchDepth (project geometry depth) 0 : Nat); (let batch : Nat := (prim quotient batchDepth (project geometry depth) 0 : Nat); (let xPosition : (Option Nat) := (columnCoordinate (project geometry x) (project source u0) (decodedCoordinate index destination 1) (prim remainder lane (project (project geometry x) kernel) 0 : Nat)); (let xRemaining : Nat := (prim quotient lane (project (project geometry x) kernel) 0 : Nat); (let yPosition : (Option Nat) := (columnCoordinate (project geometry y) (project source n1) (decodedCoordinate index destination 2) (prim remainder xRemaining (project (project geometry y) kernel) 0 : Nat)); (let yRemaining : Nat := (prim quotient xRemaining (project (project geometry y) kernel) 0 : Nat); (let zPosition : (Option Nat) := (columnCoordinate (project geometry z) (project source n2) zPlane (prim remainder yRemaining (project (project geometry z) kernel) 0 : Nat)); (let zRemaining : Nat := (prim quotient yRemaining (project (project geometry z) kernel) 0 : Nat); (let operand : WordOperand := (match xPosition
+    | Option.none => (ctor WordOperand.immediate 0)
+    | Option.some x => (match yPosition
       | Option.none => (ctor WordOperand.immediate 0)
       | Option.some y => (match zPosition
-      | Option.none => (ctor WordOperand.immediate 0)
-      | Option.some z => (ctor WordOperand.source 1 (((offsetCoordinates source x y z 0) + (prim multiply batch (project geometry batchStride) : Nat)) + (prim multiply zRemaining (project geometry channelStride) : Nat))))));
-    (ctor GraphResponse.instruction (ctor WordOperation.storage (project geometry inputStorage) (project geometry storage) true) operand (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset index destination)) (if ((project geometry inputStorage) =? 0) then 4 else 2) (if ((project geometry storage) =? 0) then 4 else 2))))))))))))),
+        | Option.none => (ctor WordOperand.immediate 0)
+        | Option.some z => (ctor WordOperand.source 1 (((offsetCoordinates source x y z 0) + (prim multiply batch (project geometry batchStride) : Nat)) + (prim multiply zRemaining (project geometry channelStride) : Nat)))))); (ctor GraphResponse.instruction (ctor WordOperation.storage (project geometry inputStorage) (project geometry storage) true) operand (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset index destination)) (if ((project geometry inputStorage) =? 0) then 4 else 2) (if ((project geometry storage) =? 0) then 4 else 2))))))))))))),
   executable: true
 }
 
@@ -1498,12 +1481,7 @@ definition{
   name: planColumnOverlap,
   parameters: [options : OperationParameters, source : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (let stride : Nat := (project options p0);
-    (let channels : Nat := (project options p1);
-    (let padding : Nat := (project options p2);
-    (let width : Nat := (prim quotient (project source n0) channels 0 : Nat);
-    (let bytes : Nat := (if ((project source ty) =? 0) then 4 else 2);
-    (if (((((((((((((((floatStorageType (project source ty)) && ((project source ty) =? (project output ty))) && (0 <? stride)) && (stride <? 2147483648)) && (0 <? channels)) && (channels <? 2147483648)) && (padding <? 2147483648)) && (0 <? width)) && (0 <? (project output n0))) && ((project source n0) =? (prim multiply width channels : Nat))) && ((project output n1) =? channels)) && ((((project output n0) + (prim multiply padding 2 : Nat)) + stride) =? ((prim multiply (project source n1) stride : Nat) + width))) && (packedSignalMatrix source bytes)) && (packedSignalMatrix output bytes)) && (separateTensors source output)) then (let axis : ColumnAxis := (record ColumnAxis {kernel := width, stride := stride, pad := padding, dilation := 1}); (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (overlapSteps axis) : Nat) bytes (indexContext source 1) (indexContext output 1) (ctor CopyMode.columnOverlap axis (project source ty)))) else (ctor PointwiseDecision.invalidShape))))))),
+  body: (let stride : Nat := (project options p0); (let channels : Nat := (project options p1); (let padding : Nat := (project options p2); (let width : Nat := (prim quotient (project source n0) channels 0 : Nat); (let bytes : Nat := (if ((project source ty) =? 0) then 4 else 2); (if (((((((((((((((floatStorageType (project source ty)) && ((project source ty) =? (project output ty))) && (0 <? stride)) && (stride <? 2147483648)) && (0 <? channels)) && (channels <? 2147483648)) && (padding <? 2147483648)) && (0 <? width)) && (0 <? (project output n0))) && ((project source n0) =? (prim multiply width channels : Nat))) && ((project output n1) =? channels)) && ((((project output n0) + (prim multiply padding 2 : Nat)) + stride) =? ((prim multiply (project source n1) stride : Nat) + width))) && (packedSignalMatrix source bytes)) && (packedSignalMatrix output bytes)) && (separateTensors source output)) then (let axis : ColumnAxis := (record ColumnAxis {kernel := width, stride := stride, pad := padding, dilation := 1}); (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (overlapSteps axis) : Nat) bytes (indexContext source 1) (indexContext output 1) (ctor CopyMode.columnOverlap axis (project source ty)))) else (ctor PointwiseDecision.invalidShape))))))),
   executable: true
 }
 
@@ -1511,15 +1489,7 @@ definition{
   name: columnOverlapStep,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, axis : ColumnAxis],
   result: GraphResponse,
-  body: (let steps : Nat := (overlapSteps axis);
-    (let phase : Nat := (prim remainder index steps 0 : Nat);
-    (let row : Nat := (prim quotient index steps 0 : Nat);
-    (if (phase =? 0) then (ctor GraphResponse.word 19 2 0 2 0 1 0) else (if ((phase + 1) =? steps) then (ctor GraphResponse.word 7 1 0 2 0 3 (blockOffset row destination)) else (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.word 4 1 0 1 1 1 0) else (let position : Nat := ((decodedCoordinate row destination 0) + (project axis pad));
-    (let startColumn : Nat := (prim quotient (prim subtract (position + (project axis stride)) (project axis kernel) : Nat) (project axis stride) 0 : Nat);
-    (let column : Nat := (startColumn + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat));
-    (let origin : Nat := (prim multiply column (project axis stride) : Nat);
-    (let tap : Nat := (prim subtract position origin : Nat);
-    (if (((column <? (project source n1)) && (origin <=? position)) && (tap <? (project axis kernel))) then (ctor GraphResponse.word 6 0 (offsetCoordinates source ((prim multiply (decodedCoordinate row destination 1) (project axis kernel) : Nat) + tap) column 0 0) 2 0 1 1) else (ctor GraphResponse.word 19 2 0 2 0 1 1))))))))))))),
+  body: (let steps : Nat := (overlapSteps axis); (let phase : Nat := (prim remainder index steps 0 : Nat); (let row : Nat := (prim quotient index steps 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.word 19 2 0 2 0 1 0) else (if ((phase + 1) =? steps) then (ctor GraphResponse.word 7 1 0 2 0 3 (blockOffset row destination)) else (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.word 4 1 0 1 1 1 0) else (let position : Nat := ((decodedCoordinate row destination 0) + (project axis pad)); (let startColumn : Nat := (prim quotient (prim subtract (position + (project axis stride)) (project axis kernel) : Nat) (project axis stride) 0 : Nat); (let column : Nat := (startColumn + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat)); (let origin : Nat := (prim multiply column (project axis stride) : Nat); (let tap : Nat := (prim subtract position origin : Nat); (if (((column <? (project source n1)) && (origin <=? position)) && (tap <? (project axis kernel))) then (ctor GraphResponse.word 6 0 (offsetCoordinates source ((prim multiply (decodedCoordinate row destination 1) (project axis kernel) : Nat) + tap) column 0 0) 2 0 1 1) else (ctor GraphResponse.word 19 2 0 2 0 1 1))))))))))))),
   executable: true
 }
 
@@ -1533,28 +1503,28 @@ definition{
 
 definition{
   name: planStateConvolution,
-  parameters: [source : TensorDescriptor, weights : (Option TensorDescriptor), output : TensorDescriptor],
+  parameters: [
+    source : TensorDescriptor,
+    weights : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
   body: (match weights
     | Option.none => (ctor PointwiseDecision.invalidShape)
-    | Option.some kernel => (if ((((((((((((((((((((project source ty) =? 0) && ((project kernel ty) =? 0)) && ((project output ty) =? 0)) && ((project source n3) =? 1)) && ((project kernel n2) =? 1)) && ((project kernel n3) =? 1)) && ((project source n1) =? (project kernel n1))) && ((project kernel n0) <=? ((project source n0) + 1))) && ((project output n0) =? (project source n1))) && ((project output n1) =? (prim subtract ((project source n0) + 1) (project kernel n0) : Nat))) && ((project output n2) =? (project source n2))) && ((project output n3) =? 1)) && (contiguousWords output)) && ((project source s0) =? 4)) && ((project kernel s0) =? 4)) && ((project source s1) =? (prim multiply (project source n0) 4 : Nat))) && ((project kernel s1) =? (prim multiply (project kernel n0) 4 : Nat))) && (separateTensors source output)) && (separateTensors kernel output)) then
-      (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (stateWindowSteps (project kernel n0)) : Nat) 4 (indexContext source 1) (indexContext output 1) (ctor CopyMode.stateConvolution (indexContext kernel 1)))
-      else (ctor PointwiseDecision.invalidShape))),
+    | Option.some kernel => (if ((((((((((((((((((((project source ty) =? 0) && ((project kernel ty) =? 0)) && ((project output ty) =? 0)) && ((project source n3) =? 1)) && ((project kernel n2) =? 1)) && ((project kernel n3) =? 1)) && ((project source n1) =? (project kernel n1))) && ((project kernel n0) <=? ((project source n0) + 1))) && ((project output n0) =? (project source n1))) && ((project output n1) =? (prim subtract ((project source n0) + 1) (project kernel n0) : Nat))) && ((project output n2) =? (project source n2))) && ((project output n3) =? 1)) && (contiguousWords output)) && ((project source s0) =? 4)) && ((project kernel s0) =? 4)) && ((project source s1) =? (prim multiply (project source n0) 4 : Nat))) && ((project kernel s1) =? (prim multiply (project kernel n0) 4 : Nat))) && (separateTensors source output)) && (separateTensors kernel output)) then (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (stateWindowSteps (project kernel n0)) : Nat) 4 (indexContext source 1) (indexContext output 1) (ctor CopyMode.stateConvolution (indexContext kernel 1))) else (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
 
 definition{
   name: stateWindowStep,
-  parameters: [index : Nat, source : IndexContext, destination : IndexContext, kernel : IndexContext],
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    kernel : IndexContext
+  ],
   result: GraphResponse,
-  body: (let steps : Nat := (stateWindowSteps (project kernel u0));
-    (let phase : Nat := (prim remainder index steps 0 : Nat);
-    (let row : Nat := (prim quotient index steps 0 : Nat);
-    (if (phase =? 0) then (ctor GraphResponse.word 19 2 0 2 0 1 0) else (if ((phase + 1) =? steps) then (ctor GraphResponse.word 19 1 0 2 0 3 (blockOffset row destination)) else (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.word 4 1 0 1 1 1 0) else (let tap : Nat := (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat);
-    (let channel : Nat := (decodedCoordinate row destination 0);
-    (let token : Nat := (decodedCoordinate row destination 1);
-    (let sequence : Nat := (decodedCoordinate row destination 2);
-    (ctor GraphResponse.word 10 0 (offsetCoordinates source (token + tap) channel sequence 0) 4 (offsetCoordinates kernel tap channel 0 0) 1 1))))))))))),
+  body: (let steps : Nat := (stateWindowSteps (project kernel u0)); (let phase : Nat := (prim remainder index steps 0 : Nat); (let row : Nat := (prim quotient index steps 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.word 19 2 0 2 0 1 0) else (if ((phase + 1) =? steps) then (ctor GraphResponse.word 19 1 0 2 0 3 (blockOffset row destination)) else (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.word 4 1 0 1 1 1 0) else (let tap : Nat := (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat); (let channel : Nat := (decodedCoordinate row destination 0); (let token : Nat := (decodedCoordinate row destination 1); (let sequence : Nat := (decodedCoordinate row destination 2); (ctor GraphResponse.word 10 0 (offsetCoordinates source (token + tap) channel sequence 0) 4 (offsetCoordinates kernel tap channel 0 0) 1 1))))))))))),
   executable: true
 }
 
@@ -1562,8 +1532,7 @@ definition{
   name: poolAxisAdmitted,
   parameters: [axis : ColumnAxis, size : Nat, out : Nat],
   result: Bool,
-  body: (let last : Nat := (prim multiply (prim subtract out 1 : Nat) (project axis stride) : Nat);
-    (((((((((0 <? (project axis kernel)) && ((project axis kernel) <? 2147483648)) && (0 <? (project axis stride))) && ((project axis stride) <? 2147483648)) && (size <? 2147483648)) && (0 <? out)) && (last <? 2147483648)) && (((last + (prim subtract (project axis kernel) 1 : Nat)) + (negativeWord (project axis pad))) <=? (2147483647 + (positiveWord (project axis pad))))) && (if ((project axis pad) =? 2147483648) then false else true))),
+  body: (let last : Nat := (prim multiply (prim subtract out 1 : Nat) (project axis stride) : Nat); (((((((((0 <? (project axis kernel)) && ((project axis kernel) <? 2147483648)) && (0 <? (project axis stride))) && ((project axis stride) <? 2147483648)) && (size <? 2147483648)) && (0 <? out)) && (last <? 2147483648)) && (((last + (prim subtract (project axis kernel) 1 : Nat)) + (negativeWord (project axis pad))) <=? (2147483647 + (positiveWord (project axis pad))))) && (if ((project axis pad) =? 2147483648) then false else true))),
   executable: true
 }
 
@@ -1571,10 +1540,7 @@ definition{
   name: poolValidWidth,
   parameters: [axis : ColumnAxis, width : Nat, out : Nat],
   result: Nat,
-  body: (let base : Nat := ((prim multiply out (project axis stride) : Nat) + (negativeWord (project axis pad)));
-    (let padding : Nat := (positiveWord (project axis pad));
-    (let end : Nat := (prim subtract (base + (project axis kernel)) padding : Nat);
-    (prim subtract (if (end <? width) then end else width) (prim subtract base padding : Nat) : Nat)))),
+  body: (let base : Nat := ((prim multiply out (project axis stride) : Nat) + (negativeWord (project axis pad))); (let padding : Nat := (positiveWord (project axis pad)); (let end : Nat := (prim subtract (base + (project axis kernel)) padding : Nat); (prim subtract (if (end <? width) then end else width) (prim subtract base padding : Nat) : Nat)))),
   executable: true
 }
 
@@ -1596,18 +1562,26 @@ definition{
 
 definition{
   name: planPool,
-  parameters: [planar : Bool, options : OperationParameters, source : TensorDescriptor, output : TensorDescriptor],
+  parameters: [
+    planar : Bool,
+    options : OperationParameters,
+    source : TensorDescriptor,
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
-  body: (let x : ColumnAxis := (record ColumnAxis {kernel := (project options p1), stride := (if planar then (project options p3) else (project options p2)), pad := (if planar then (project options p5) else (project options p3)), dilation := 1});
-    (let y : ColumnAxis := (if planar then (record ColumnAxis {kernel := (project options p2), stride := (project options p4), pad := (project options p6), dilation := 1}) else (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1}));
-    (if ((((((((((((project options p0) <=? 1) && ((project source ty) <=? 1)) && ((project output ty) =? 0)) && ((project source s0) =? (if ((project source ty) =? 0) then 4 else 2))) && (contiguousWords output)) && (separateTensors source output)) && (poolAxisAdmitted x (project source n0) (project output n0))) && (if planar then (poolAxisAdmitted y (project source n1) (project output n1)) else ((project source n1) =? (project output n1)))) && ((project source n2) =? (project output n2))) && ((project source n3) =? (project output n3))) && ((prim multiply (project x kernel) (project y kernel) : Nat) <? 2147483648)) then (let geometry : PoolGeometry := (record PoolGeometry {x := x, y := y, planar := planar, maximum := ((project options p0) =? 0), storage := (project source ty)});
-    (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (poolSteps geometry) : Nat) 4 (indexContext source 1) (indexContext output 1) (ctor CopyMode.pooled geometry))) else (ctor PointwiseDecision.invalidShape)))),
+  body: (let x : ColumnAxis := (record ColumnAxis {kernel := (project options p1), stride := (if planar then (project options p3) else (project options p2)), pad := (if planar then (project options p5) else (project options p3)), dilation := 1}); (let y : ColumnAxis := (if planar then (record ColumnAxis {kernel := (project options p2), stride := (project options p4), pad := (project options p6), dilation := 1}) else (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1})); (if ((((((((((((project options p0) <=? 1) && ((project source ty) <=? 1)) && ((project output ty) =? 0)) && ((project source s0) =? (if ((project source ty) =? 0) then 4 else 2))) && (contiguousWords output)) && (separateTensors source output)) && (poolAxisAdmitted x (project source n0) (project output n0))) && (if planar then (poolAxisAdmitted y (project source n1) (project output n1)) else ((project source n1) =? (project output n1)))) && ((project source n2) =? (project output n2))) && ((project source n3) =? (project output n3))) && ((prim multiply (project x kernel) (project y kernel) : Nat) <? 2147483648)) then (let geometry : PoolGeometry := (record PoolGeometry {x := x, y := y, planar := planar, maximum := ((project options p0) =? 0), storage := (project source ty)}); (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (poolSteps geometry) : Nat) 4 (indexContext source 1) (indexContext output 1) (ctor CopyMode.pooled geometry))) else (ctor PointwiseDecision.invalidShape)))),
   executable: true
 }
 
 definition{
   name: poolAddress,
-  parameters: [geometry : PoolGeometry, source : IndexContext, destination : IndexContext, row : Nat, lane : Nat],
+  parameters: [
+    geometry : PoolGeometry,
+    source : IndexContext,
+    destination : IndexContext,
+    row : Nat,
+    lane : Nat
+  ],
   result: (Option Nat),
   body: (match (columnCoordinate (project geometry x) (project source u0) (decodedCoordinate row destination 0) (prim remainder lane (project (project geometry x) kernel) 0 : Nat))
     | Option.none => (ctor Option.none [Nat])
@@ -1619,17 +1593,17 @@ definition{
 
 definition{
   name: poolStep,
-  parameters: [index : Nat, source : IndexContext, destination : IndexContext, geometry : PoolGeometry, flag : Nat],
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    geometry : PoolGeometry,
+    flag : Nat
+  ],
   result: GraphResponse,
-  body: (let steps : Nat := (poolSteps geometry);
-    (let row : Nat := (prim quotient index steps 0 : Nat);
-    (let phase : Nat := (prim remainder index steps 0 : Nat);
-    (let tapSteps : Nat := (poolTapSteps geometry);
-    (if (phase =? 0) then (ctor GraphResponse.word 19 2 (if (project geometry maximum) then 4286578687 else 0) 2 0 1 0) else (if (steps <=? (phase + (if (project geometry maximum) then 1 else 2))) then (if (project geometry maximum) then (ctor GraphResponse.word 19 1 0 2 0 3 (blockOffset row destination)) else (if ((phase + 2) =? steps) then (let count : Nat := (if (project geometry planar) then (prim multiply (project (project geometry x) kernel) (project (project geometry y) kernel) : Nat) else (poolValidWidth (project geometry x) (project source u0) (decodedCoordinate row destination 0)));
-    (ctor GraphResponse.word 3 2 (if (count =? 0) then 1 else count) 2 0 1 1)) else (ctor GraphResponse.word 5 1 0 1 1 3 (blockOffset row destination)))) else (let part : Nat := (prim remainder (prim subtract phase 1 : Nat) tapSteps 0 : Nat);
-    (match (poolAddress geometry source destination row (prim quotient (prim subtract phase 1 : Nat) tapSteps 0 : Nat))
-      | Option.none => (ctor GraphResponse.word 19 1 0 2 0 1 0)
-      | Option.some address => (if (((project geometry storage) =? 1) && (part =? 0)) then (ctor GraphResponse.word 6 0 address 2 0 1 1) else (if (project geometry maximum) then (if ((part + 1) =? tapSteps) then (if (flag =? 2) then (ctor GraphResponse.word 19 1 0 2 0 1 0) else (ctor GraphResponse.word 19 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 2 0 1 0)) else (ctor GraphResponse.word 16 1 0 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 1 2)) else (ctor GraphResponse.word 4 1 0 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 1 0))))))))))),
+  body: (let steps : Nat := (poolSteps geometry); (let row : Nat := (prim quotient index steps 0 : Nat); (let phase : Nat := (prim remainder index steps 0 : Nat); (let tapSteps : Nat := (poolTapSteps geometry); (if (phase =? 0) then (ctor GraphResponse.word 19 2 (if (project geometry maximum) then 4286578687 else 0) 2 0 1 0) else (if (steps <=? (phase + (if (project geometry maximum) then 1 else 2))) then (if (project geometry maximum) then (ctor GraphResponse.word 19 1 0 2 0 3 (blockOffset row destination)) else (if ((phase + 2) =? steps) then (let count : Nat := (if (project geometry planar) then (prim multiply (project (project geometry x) kernel) (project (project geometry y) kernel) : Nat) else (poolValidWidth (project geometry x) (project source u0) (decodedCoordinate row destination 0))); (ctor GraphResponse.word 3 2 (if (count =? 0) then 1 else count) 2 0 1 1)) else (ctor GraphResponse.word 5 1 0 1 1 3 (blockOffset row destination)))) else (let part : Nat := (prim remainder (prim subtract phase 1 : Nat) tapSteps 0 : Nat); (match (poolAddress geometry source destination row (prim quotient (prim subtract phase 1 : Nat) tapSteps 0 : Nat))
+    | Option.none => (ctor GraphResponse.word 19 1 0 2 0 1 0)
+    | Option.some address => (if (((project geometry storage) =? 1) && (part =? 0)) then (ctor GraphResponse.word 6 0 address 2 0 1 1) else (if (project geometry maximum) then (if ((part + 1) =? tapSteps) then (if (flag =? 2) then (ctor GraphResponse.word 19 1 0 2 0 1 0) else (ctor GraphResponse.word 19 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 2 0 1 0)) else (ctor GraphResponse.word 16 1 0 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 1 2)) else (ctor GraphResponse.word 4 1 0 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 1 0))))))))))),
   executable: true
 }
 
@@ -1682,7 +1656,9 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right | Option.none => (planPool (operation =? 58) options left output) | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right
+    | Option.none => (planPool (operation =? 58) options left output)
+    | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
     | Option.none => false
     | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
@@ -2028,11 +2004,9 @@ definition{
   body: (match request
     | GraphRequest.plan operation options input0 input1 input2 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output)))))))))
+      | Option.some left => (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output)))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (convolutionAddress geometry phase start index)
-    | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult
-      (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else
-      (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
+    | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
     | GraphRequest.bindings mode => (sourceBindings mode)
     | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),
@@ -3237,6 +3211,7 @@ theorem{
   statement: ((unaryKind 89 4) = (ctor Option.some [Nat] 19)),
   proof: reflexivity{}
 }
+
 theorem{
   name: gaussianSelectsBinary32,
   parameters: [],
@@ -3313,6 +3288,5 @@ theorem{
   statement: ((overlapSteps (record ColumnAxis {kernel := 5, stride := 2, pad := 0, dilation := 1})) = 8),
   proof: reflexivity{}
 }
-
 \end{semanticmodule}
 \end{lexlean}
