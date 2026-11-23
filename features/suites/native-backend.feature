@@ -86,3 +86,9 @@ Feature: native-backend
     Given all 144 CPU-supported outer-product cases with packed left operands
     When vTensor contracts each loaded row through the pinned Verdant kernels
     Then every output matches the upstream CPU reference
+
+  @VT-73 @build
+  Scenario: Original GGML outer-product graphs with CPU-refused type and batch combinations match the authoritative decoder followed by the F32 CPU outer product
+    Given the original factory operands for the CPU-refused outer-product cases
+    When the plugin executes each typed graph and the imported evaluator decodes the same inputs for an F32 CPU contraction
+    Then the plugin output satisfies the upstream comparison tolerance

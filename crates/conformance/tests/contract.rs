@@ -199,6 +199,9 @@ ggml_batches! {
     #[test]
     fn packed_outer_products_vt_71() { "upstream-OUT_PROD_PACKED", 144, ["matrix", "pointwise"] }
 
+    #[test]
+    fn outer_reference_vt_73() { "upstream-OUT_PROD_DECODED", 23, ["matrix", "pointwise"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1597,7 +1600,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "f0de5aba8b4719285151443bb54e273c276758a0b10ea89624a614531f612a3f",
+            "ac2c9e42958d1c8946c66a97659bf1f04e696de5e2f908b09ac1c93f0a370a53",
         )
     });
 
@@ -2020,6 +2023,38 @@ static bool vtensor_use_reference(ggml_backend_t reference) {
     if(!use_reference) return false;
     use_reference(reference,true);return true;
 }
+// Preserve the original provider graph and use the imported decoder and F32 CPU contraction
+// for type pairs that the reference device refuses to execute directly.
+static bool reference_outer(test_case & test, ggml_backend_t backend, ggml_backend_t cpu) {
+    const ggml_init_params init{ggml_tensor_overhead()*128+ggml_graph_overhead(), nullptr, true};
+    ggml_context_ptr target(ggml_init(init)), reference(ggml_init(init));
+    if (!target || !reference) return false;
+    ggml_tensor * out=test.build_graph(target.get());
+    if (out->op!=GGML_OP_OUT_PROD || ggml_backend_dev_supports_op(ggml_backend_get_device(cpu),out)) return false;
+    ggml_tensor * a=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
+    ggml_tensor * b=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[1]->ne);
+    ggml_tensor * expected=ggml_out_prod(reference.get(),a,b);
+    ggml_cgraph * original_graph=ggml_new_graph(target.get()), * reference_graph=ggml_new_graph(reference.get());
+    ggml_build_forward_expand(original_graph,out);
+    ggml_build_forward_expand(reference_graph,expected);
+    ggml_backend_buffer_ptr actual_buffer(ggml_backend_alloc_ctx_tensors(target.get(),backend));
+    ggml_backend_buffer_ptr reference_buffer(ggml_backend_alloc_ctx_tensors(reference.get(),cpu));
+    if (!actual_buffer || !reference_buffer || !ggml_backend_dev_supports_op(ggml_backend_get_device(backend),out)) return false;
+    test.initialize_tensors(target.get());
+    auto left=tensor_to_float(out->src[0]),right=tensor_to_float(out->src[1]);
+    ggml_backend_tensor_set(a,left.data(),0,ggml_nbytes(a));
+    ggml_backend_tensor_set(b,right.data(),0,ggml_nbytes(b));
+    if (ggml_backend_graph_compute(backend,original_graph)!=GGML_STATUS_SUCCESS ||
+        ggml_backend_graph_compute(cpu,reference_graph)!=GGML_STATUS_SUCCESS) return false;
+    auto actual=tensor_to_float(out),wanted=tensor_to_float(expected);
+    if (actual.size()!=wanted.size()) return false;
+    const double error=nmse(wanted.data(),actual.data(),wanted.size());
+    if (!(error<=test.max_nmse_err(backend))) {
+        fprintf(stderr,"[OUT_PROD] ERR = %.9f > %.9f\n",error,test.max_nmse_err(backend));
+        return false;
+    }
+    return true;
+}
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
@@ -2031,12 +2066,22 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for(auto &test:make_test_cases_eval()) {
       const auto i=ordinal++;
       if (!selected.empty() && (cases==selected.size() || selected[cases]!=i)) continue;
+      if (!strcmp(op,"OUT_PROD_DECODED")) {
+        if (selected.empty() || !reference_outer(*test,backend,reference)) {
+          fprintf(stderr,"outer reference rejected ordinal %zu: %s\n",i,test->vars().c_str());
+          return SIZE_MAX;
+        }
+        std::printf("CASE\t%zu\tOUT_PROD\t%s\n",i,test->vars().c_str());
+        ++cases;
+        continue;
+      }
       const auto status=test->eval(backend,reference,selected.empty()?op:nullptr,&observed);
       if(status==test_status_t::SKIPPED) continue;
       if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
       if(!selected.empty()) std::printf("CASE\t%zu\t%s\t%s\n",i,observed.label.c_str(),test->vars().c_str());
       ++cases;
     }
+    if (!strcmp(op,"OUT_PROD_DECODED")) return !selected.empty() && cases==selected.size() ? cases : SIZE_MAX;
     return observed.records==cases && (selected.empty() || cases==selected.size()) ? cases : SIZE_MAX;
 }
 using vtensor_graph_factory = ggml_tensor * (*)(ggml_context *, void *, void *);
