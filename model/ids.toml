@@ -564,3 +564,9 @@ id = "VT-83"
 level = "build"
 suite = "native-backend"
 statement = "Prism selects expert rows and Verdant evaluates packed indexed matrix products"
+
+[[id]]
+id = "VT-84"
+level = "build"
+suite = "native-backend"
+statement = "Prism selects scalar expert rows and activation precision and Verdant multiplies the selected rows"

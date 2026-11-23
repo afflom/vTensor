@@ -790,6 +790,7 @@ dependencies = [
  "vtensor_attention",
  "vtensor_attention_mask",
  "vtensor_buffer_region",
+ "vtensor_fixture_stream",
  "vtensor_fixtures",
  "vtensor_index",
  "vtensor_layout",
@@ -832,6 +833,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_buffer_region"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_fixture_stream"
 version = "0.1.0"
 
 [[package]]

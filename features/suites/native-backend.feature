@@ -158,3 +158,9 @@ Feature: native-backend
     Given original GGML expert matrices, F32 activations and strided I32 indices
     When vTensor executes packed matrix products with repeated, broadcast or skipped experts
     Then its outputs agree with the pinned GGML CPU evaluator
+
+  @VT-84 @build
+  Scenario: Prism selects scalar expert rows and activation precision and Verdant multiplies the selected rows
+    Given original indexed matrix graphs with F32, F16 or BF16 expert weights
+    When vTensor executes the selected experts over broadcast activations and offset index views
+    Then each output matches the original GGML CPU evaluator

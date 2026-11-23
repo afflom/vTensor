@@ -4907,3 +4907,7 @@ A metadata scan selected previously refused factory graphs for numerical replay.
 ### VT-82 complete checkpoint
 
 The complete locked-SDK `just vv` passed at `685b50a364772537ad6ba33054df523bea32220b` on the Verdant PR #27 pin. All 89 backend contracts passed in 738.15 seconds. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. The workspace lint, dependency and provider linkage checks passed. [Verified source](https://github.com/afflom/vTensor/commit/685b50a364772537ad6ba33054df523bea32220b)
+
+### Matrix and arithmetic fixture streams
+
+Prism generates the four header words, each case descriptor and every operand word in the matrix and elementwise fixture streams. VT-35 and VT-36 check the byte counts and SHA-256 digests against the frozen baselines. VT-12 and VT-13 execute the same cached inputs against the imported GGML CPU backend. Flipping one bit in the first matrix record changed its digest from `b9b926d7…` to `54e256fd…` and failed VT-35. Restoring the original word passed.
