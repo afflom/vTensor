@@ -566,15 +566,6 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             secondary.map(metadata),
             metadata(output),
         )),
-        GraphResponse::C0(GraphPlan::C5(64)) => normalization_plan(
-            primary.as_ref().ok_or(InvalidTensor)?,
-            secondary.as_ref(),
-            &output,
-            operation,
-            p0,
-            p1,
-        )
-        .map(|plan| Some(ExecutionPlan::Standard(plan))),
         _ => {
             let descriptor = |TensorDescriptor::C0(ty, a, b, c, d, e, f, g, h, _, _)| {
                 vtensor_matrix_q8::Adt1::C0(ty, a, b, c, d, e, f, g, h)
@@ -1158,37 +1149,6 @@ fn execute_word(
         WordTarget::C2 => return Err(InvalidTensor),
     }
     Ok(())
-}
-
-fn normalization_plan(
-    source: &TensorDescriptor,
-    secondary: Option<&TensorDescriptor>,
-    output: &TensorDescriptor,
-    operation: u64,
-    p0: u64,
-    p1: u64,
-) -> Result<GraphPlan, BackendError> {
-    let TensorDescriptor::C0(l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10) = *source;
-    let TensorDescriptor::C0(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10) = *output;
-    let present = secondary.is_some();
-    let TensorDescriptor::C0(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10) =
-        *secondary.unwrap_or(source);
-    let vtensor_norm_plan::Adt0::C1(count, bytes, kind, rows, capacity, parameter) =
-        vtensor_norm_plan::run(
-            operation, p0, p1, present, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, r0, r1, r2,
-            r3, r4, r5, r6, r7, r8, r9, r10, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10,
-        )
-        .map_err(|_| BackendError::Overflow)?
-    else {
-        return Err(BackendError::InvalidTensor);
-    };
-    Ok(GraphPlan::C4(
-        count,
-        bytes,
-        IndexContext::C0(l1, l2, l3, l4, l5, l6, l7, l8),
-        IndexContext::C0(r1, r2, r3, r4, r5, r6, r7, r8),
-        CopyMode::C26(kind, parameter, rows, capacity),
-    ))
 }
 
 fn normalization_word(
