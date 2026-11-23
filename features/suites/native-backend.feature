@@ -170,3 +170,9 @@ Feature: native-backend
     Given original GGML matrix and expert graphs with E4M3 weights
     When vTensor executes the selected rows with F32, F16 or BF16 activation storage
     Then the original CPU evaluator accepts every output
+
+  @VT-86 @build
+  Scenario: Prism schedules binary32 row ranking and Verdant selects deterministic indices for GGML ARGSORT and TOP_K
+    Given original GGML rows with distinct or tied values
+    When vTensor orders the rows or selects their largest entries
+    Then the imported CPU evaluator accepts the returned indices

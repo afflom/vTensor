@@ -235,6 +235,9 @@ ggml_batches! {
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
     #[test]
+    fn row_ranking_vt_86() { "upstream-ROW_RANKING", 6, ["typed"] }
+
+    #[test]
     fn e4m3_products_vt_85() { "upstream-E4M3_PRODUCTS", 5, ["matrix", "pointwise"] }
 
     #[test]
@@ -1438,7 +1441,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "589ca0a7ace4a007b1040f3bde4bf39e8dc8342961d550dae43bc73054caae0e",
+            "018ba7eb6669bd65e0db824893248e3e1aaa2671c28ca2e40db05dc2a7c5fb18",
         )
     });
 
@@ -2124,6 +2127,33 @@ int main(int argc, char **argv) {
     if (!strncmp(argv[3], "upstream-", 9)) {
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
+      if (!strcmp(argv[3]+9,"ROW_RANKING")) {
+        for (bool partial : {false,true}) {
+          std::vector<int32_t> expected;
+          for (auto selected : {reference,backend}) {
+            auto ctx=ggml_init({ggml_graph_overhead()+12*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+            auto base=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,8,2);
+            auto source=ggml_view_2d(ctx,base,4,2,base->nb[1],sizeof(float));
+            auto out=partial?ggml_top_k(ctx,source,2):ggml_argsort(ctx,source,GGML_SORT_ORDER_DESC);
+            auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
+            auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+            const float values[]={99,1,3,4,2,99,99,99,99,-2,-5,0,1,99,99,99};
+            ggml_backend_tensor_set(base,values,0,sizeof(values));
+            CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+            std::vector<int32_t> actual(ggml_nelements(out));
+            ggml_backend_tensor_get(out,actual.data(),0,ggml_nbytes(out));
+            if(partial) for(size_t start=0;start<actual.size();start+=2) std::sort(actual.begin()+start,actual.begin()+start+2);
+            if(selected==reference) expected=actual;
+            else {
+              CHECK(actual==expected);
+              CHECK(refuses_change(backend,dev,graph,out,source->nb[0],size_t(8)));
+              CHECK(refuses_change(backend,dev,graph,out,out->type,GGML_TYPE_F32));
+              if(!partial) CHECK(refuses_change(backend,dev,graph,out,out->op_params[0],int32_t(2)));
+            }
+            ggml_backend_buffer_free(buffer); ggml_free(ctx);
+          }
+        }
+      }
       if (!strcmp(argv[3]+9,"SCALAR_MUL_MAT_ID")) {
         for (auto kind : {GGML_TYPE_F32, GGML_TYPE_Q4_0}) {
           auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true}); CHECK(ctx);
