@@ -587,25 +587,36 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 }
             }
             let a = secondary.ok_or(BackendError::InvalidTensor)?;
-            if let Some(base) = base {
-                return typed_plan(vtensor_typed::Adt0::C2(
+            use vtensor_matrix_q8::Adt0 as Product;
+            let request = match base {
+                Some(ids) if operation == 29 => Product::C3(
                     operation,
                     extra,
-                    metadata(w),
-                    metadata(a),
-                    metadata(base),
-                    metadata(output),
-                ));
-            }
-            let request = vtensor_matrix_q8::Adt0::C0(
-                operation,
-                extra,
-                descriptor(w),
-                descriptor(a),
-                descriptor(output),
-            );
+                    descriptor(w),
+                    descriptor(a),
+                    descriptor(ids),
+                    descriptor(output),
+                ),
+                Some(base) => {
+                    return typed_plan(vtensor_typed::Adt0::C2(
+                        operation,
+                        extra,
+                        metadata(w),
+                        metadata(a),
+                        metadata(base),
+                        metadata(output),
+                    ))
+                }
+                None => Product::C0(
+                    operation,
+                    extra,
+                    descriptor(w),
+                    descriptor(a),
+                    descriptor(output),
+                ),
+            };
             match vtensor_matrix_q8::run(request).map_err(|_| BackendError::Overflow)? {
-                vtensor_matrix_q8::Adt3::C1(plan) => Ok(Some(ExecutionPlan::Quantized(plan))),
+                vtensor_matrix_q8::Adt4::C1(plan) => Ok(Some(ExecutionPlan::Quantized(plan))),
                 _ => Err(BackendError::InvalidTensor),
             }
         }
@@ -887,11 +898,16 @@ fn execute_block_rows<const LANES: usize, Block>(
     encode: impl Fn(&[f32; LANES]) -> Result<Block, BackendError>,
     dot: impl Fn(&[u8], &[Block]) -> Result<f32, BackendError>,
 ) -> Result<(), BackendError> {
-    use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt3 as Response};
+    use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
     let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
     // SAFETY: graph admission retained both typed GGML source descriptors.
     let (w, a) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
     let weights = TensorInput::new(w)?;
+    // SAFETY: the indexed plan requires its retained I32 index tensor. The ordinary graph has two sources.
+    let indices = unsafe { tensor.src[2].as_ref() }
+        .map(TensorInput::new)
+        .transpose()?;
+    let request = |query| run(query).map_err(|_| BackendError::Overflow);
     let activations = graph_tensor_data(a)?;
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
@@ -902,10 +918,20 @@ fn execute_block_rows<const LANES: usize, Block>(
         .zip(&mut offsets)
         .enumerate()
     {
-        let Response::C2(weight_base, activation, dest) =
-            run(Request::C1(plan.clone(), column as u64)).map_err(|_| BackendError::Overflow)?
-        else {
-            return Err(BackendError::InvalidTensor);
+        let column = column as u64;
+        let mut address = request(Request::C1(plan.clone(), column))?;
+        if let Response::C4(at) = address {
+            let source = indices.as_ref().ok_or(BackendError::InvalidTensor)?;
+            let expert = u32::from_ne_bytes(source.region(at, 4)?.try_into().unwrap());
+            address = request(Request::C4(plan.clone(), column, expert.into()))?;
+        }
+        let (weight_base, activation, dest) = match address {
+            Response::C2(w, a, o) => (w, a, o),
+            Response::C5(dest) => {
+                *offset = dest;
+                continue;
+            }
+            _ => return Err(BackendError::InvalidTensor),
         };
         *offset = dest;
         prepared.clear();
@@ -922,8 +948,7 @@ fn execute_block_rows<const LANES: usize, Block>(
             prepared.push(encode(&lanes)?);
         }
         for (row, value) in values.iter_mut().enumerate() {
-            let Response::C3(start) = run(Request::C2(plan.clone(), weight_base, row as u64))
-                .map_err(|_| BackendError::Overflow)?
+            let Response::C3(start) = request(Request::C2(plan.clone(), weight_base, row as u64))?
             else {
                 return Err(BackendError::InvalidTensor);
             };
