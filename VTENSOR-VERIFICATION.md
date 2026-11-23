@@ -4866,3 +4866,7 @@ VT-77 compares all 36 original factory cases for each of REGLU, GEGLU and GEGLU_
 ### Shared GGML CPU oracle object
 
 The SDK combines the five imported GGML core objects into one relocatable object. Storage and graph oracles link the same bytes. Each cached graph check verifies one shared object and its SHA-256 stamp. The loader still checks the executable independently. The storage oracle, fixed-matrix contract and three contiguous-convolution graphs passed. Changing one byte at offset 504,024 of the 1,008,048-byte object made the graph check reject its digest before execution. Restoring the original object passed the same graph check. The change reduced the measured native source from 12,117 to 12,099 lines.
+
+### VT-76 complete checkpoint
+
+The full locked-SDK `just vv` passed on vTensor `4231e4422b59cb75a5671ad05913c4ee44de076e` using Verdant PR #26. All 83 backend contract tests passed, including the Gaussian operations, direct convolution and the independent contiguous CPU reference. The workspace checks and cargo-deny passed. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/4231e4422b59cb75a5671ad05913c4ee44de076e)
