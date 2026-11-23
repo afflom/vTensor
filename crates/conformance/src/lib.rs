@@ -88,6 +88,7 @@ pub fn abi_layout() -> Vec<(&'static str, usize)> {
     record!(DeviceProperties, "ggml_backend_dev_props", name=>"name", description=>"description", memory_free=>"memory_free", memory_total=>"memory_total", ty=>"type", device_id=>"device_id", caps=>"caps");
     record!(DeviceInterface, "ggml_backend_device_i", get_name=>"get_name", get_description=>"get_description", get_memory=>"get_memory", get_type=>"get_type", get_props=>"get_props", init_backend=>"init_backend", get_buffer_type=>"get_buffer_type", get_host_buffer_type=>"get_host_buffer_type", buffer_from_host_ptr=>"buffer_from_host_ptr", supports_op=>"supports_op", supports_buft=>"supports_buft", offload_op=>"offload_op", event_new=>"event_new", event_free=>"event_free", event_synchronize=>"event_synchronize");
     record!(Device, "ggml_backend_device", iface=>"iface", reg=>"reg", context=>"context");
+    record!(ThreadpoolParams, "ggml_threadpool_params", cpumask=>"cpumask", n_threads=>"n_threads", prio=>"prio", poll=>"poll", strict_cpu=>"strict_cpu", paused=>"paused");
     record!(RegistryInterface, "ggml_backend_reg_i", get_name=>"get_name", get_device_count=>"get_device_count", get_device=>"get_device", get_proc_address=>"get_proc_address");
     record!(Registry, "ggml_backend_reg", api_version=>"api_version", iface=>"iface", context=>"context");
     observations

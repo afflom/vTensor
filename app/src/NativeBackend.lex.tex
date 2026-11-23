@@ -40,7 +40,7 @@ inductive{
   name: MemoryRequest,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: backingBytes, fields: [Nat]}, {name: alignedOffset, fields: [Nat]}]
+  constructors: [{name: backingBytes, fields: [Nat]}, {name: alignedOffset, fields: [Nat]}, {name: workChunk, fields: [Nat, Nat]}, {name: schedulingPriority, fields: [Nat]}]
 }
 
 definition{
@@ -49,7 +49,9 @@ definition{
   result: Nat,
   body: (match request
     | MemoryRequest.backingBytes size => (if (size =? 0) then 0 else (size + (prim subtract (project (configuration) alignment) 1 : Nat)))
-    | MemoryRequest.alignedOffset address => (prim remainder (prim subtract (project (configuration) alignment) (prim remainder address (project (configuration) alignment) 0 : Nat) : Nat) (project (configuration) alignment) 0 : Nat)),
+    | MemoryRequest.alignedOffset address => (prim remainder (prim subtract (project (configuration) alignment) (prim remainder address (project (configuration) alignment) 0 : Nat) : Nat) (project (configuration) alignment) 0 : Nat)
+    | MemoryRequest.workChunk threads items => (if ((threads =? 0) || (items =? 0)) then 0 else ((prim quotient (prim subtract items 1 : Nat) threads 0 : Nat) + 1))
+    | MemoryRequest.schedulingPriority level => (if (level =? 2) then 40 else (if (level =? 3) then 80 else (if (level =? 4) then 90 else 0)))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -61,7 +63,8 @@ inductive{
   constructors: [
     {name: deviceIndex, fields: [Nat]},
     {name: metadataOperation, fields: [Nat, Nat]},
-    {name: computeNode, fields: [Nat]}
+    {name: computeNode, fields: [Nat]},
+    {name: threadpool, fields: [Nat, Nat, Nat]}
   ]
 }
 
@@ -72,7 +75,8 @@ definition{
   body: (match request
     | PredicateRequest.deviceIndex index => (index <? (project (configuration) deviceCount))
     | PredicateRequest.metadataOperation operation span => ((span =? 0) || (((((operation =? 0) || (operation =? 35)) || (operation =? 36)) || (operation =? 37)) || (operation =? 38)))
-    | PredicateRequest.computeNode flags => (16 <=? (prim remainder flags 32 0 : Nat))),
+    | PredicateRequest.computeNode flags => (16 <=? (prim remainder flags 32 0 : Nat))
+    | PredicateRequest.threadpool threads priority poll => ((((0 <? threads) && (threads <=? 512)) && (priority <=? 4)) && (poll <=? 100))),
   executable: true,
   production: {effects: [], targets: [rust-core]}
 }
@@ -109,6 +113,26 @@ theorem{
   name: computeBitClassification,
   parameters: [flags : Nat],
   statement: ((decideNative (ctor PredicateRequest.computeNode flags)) = (16 <=? (prim remainder flags 32 0 : Nat))),
+  proof: reflexivity{}
+}
+theorem{
+  name: singleThreadWorkChunk,
+  parameters: [],
+  statement: ((planMemory (ctor MemoryRequest.workChunk 1 29)) = 29),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unevenWorkChunk,
+  parameters: [],
+  statement: ((planMemory (ctor MemoryRequest.workChunk 3 10)) = 4),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: tooManyWorkers,
+  parameters: [],
+  statement: ((decideNative (ctor PredicateRequest.threadpool 513 1 50)) = false),
   proof: reflexivity{}
 }
 \end{semanticmodule}

@@ -576,3 +576,9 @@ id = "VT-85"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules ordinary and indexed E4M3 weight products and Verdant decodes the weights and contracts binary32 rows"
+
+[[id]]
+id = "VT-59"
+level = "build"
+suite = "native-backend"
+statement = "The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions"

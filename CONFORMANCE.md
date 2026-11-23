@@ -172,6 +172,7 @@ model does not sanction.
 | `VT-83` | `build` | Prism selects expert rows and Verdant evaluates packed indexed matrix products |
 | `VT-84` | `build` | Prism selects scalar expert rows and activation precision and Verdant multiplies the selected rows |
 | `VT-85` | `build` | Prism schedules ordinary and indexed E4M3 weight products and Verdant decodes the weights and contracts binary32 rows |
+| `VT-59` | `build` | The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions |
 
 ## normalization-graphs
 

@@ -170,3 +170,9 @@ Feature: native-backend
     Given original GGML matrix and expert graphs with E4M3 weights
     When vTensor executes the selected rows with F32, F16 or BF16 activation storage
     Then the original CPU evaluator accepts every output
+
+  @VT-59 @build
+  Scenario: The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions
+    Given the CPU registry function names used by the pinned llama.cpp host
+    When an application creates two pools and attaches, switches and detaches them
+    Then the submitted graph outputs match the imported CPU through pool reuse and teardown
