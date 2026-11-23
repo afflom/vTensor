@@ -16,7 +16,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,249 non-Prism lines** (12,798 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,323 non-Prism lines** (12,872 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -126,6 +126,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass the full locked-SDK gate at VT-82 on Verdant PR #27. All 89 backend contracts passed. [Checkpoint](VTENSOR-VERIFICATION.md#vt-82-complete-checkpoint)
 - [x] Pass the complete VT-85 gate on the upstream Verdant PR #27 pin. All 92 backend contracts passed. [Checkpoint](VTENSOR-VERIFICATION.md#vt-85-complete-checkpoint)
 - [x] Pass the complete VT-90 gate. All 98 backend contracts and the dependency checks passed on the Verdant PR #31 pin. [Checkpoint](VTENSOR-VERIFICATION.md#vt-90-complete-checkpoint)
+- [x] Restore explicit test registration after the full VT-93 gate caught missing CM-02 source bindings. All four BDD checks pass. [VT-93 gate result](VTENSOR-VERIFICATION.md#clamped-swiglu)
 - [x] Restore the dependency license check on the PR #31 pin. VT-87 passed all 95 contracts, then caught two missing clarifications. The upstream records for all four new primitives now pass `just deny`. [Verification](VTENSOR-VERIFICATION.md#verdant-generated-package-licenses)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 

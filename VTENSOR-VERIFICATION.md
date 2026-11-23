@@ -4995,7 +4995,7 @@ VT-92 uses the shared Prism row-layout predicate for sparse mask destinations. T
 
 VT-93 reads the GGML clamp limit from parameter word 3. The Prism plan selects each gate and up operand using Verdant’s ordered comparison, calls Verdant’s existing binary32 SwiGLU and narrows once on output. All 12 original GGML cases and 303 newly admitted matrix fusions matched the pinned CPU. Two supplemental combined-row graphs checked both swap orders, saturation, zero signs and atomic refusal of an invalid swap flag. A planted parameter-slot substitution failed the original F16 case 788 with infinite error against a 0.000005 limit. Restoring the parameter passed. Of the 471 previously refused matrix fusions containing this gate, the other 168 still require matrix products. [Tested implementation](https://github.com/afflom/vTensor/commit/99414d9516faf3c84b925f3772f9f0f24769f6cb) · [Ordinal evidence](verification/factory-clamped-swiglu-vt93.json)
 
-The batch macro registers each imported contract as a Cargo test. The typed buffer refusal keeps its explicit test declaration. Cargo lists the same 101 backend contracts before and after consolidation. The integrated source audit measured 12,803 native lines, 45 fewer than the preceding sparse-mask checkpoint.
+At VT-93 Cargo listed all 101 backend contracts after moving the test attribute into the batch macro. Full `just vv` at `4d3d253cc6257bd9b8052532b34498e24d911532` then failed CM-02 because its source scan requires each registered test declaration to carry an explicit attribute. Restoring the declarations passed all four BDD checks, including the missing-test mutation. The native source count after restoration at VT-94 is 12,872.
 
 ### Compact matrix and attention rows
 
