@@ -514,3 +514,9 @@ id = "VT-75"
 level = "build"
 suite = "native-backend"
 statement = "Prism admits GELU and GELU_QUICK GGML graphs and vTensor delegates the Gaussian activations to Verdant"
+
+[[id]]
+id = "VT-76"
+level = "build"
+suite = "native-backend"
+statement = "Original channel-major GGML convolution graphs agree with upstream CPU convolution on equivalent contiguous tensors"

@@ -149,6 +149,7 @@
     "ggml_graph_node"
   ],
   "factory_inputs": {
+    "upstream-CONV_2D_CONTIGUOUS": "4730 4742 4744",
     "upstream-CONV_2D_DIRECT": "4517 4518 4519 7658 7660",
     "upstream-FLASH_ATTN_EXT_BF16": "19540 20260 20980 21268",
     "upstream-FLASH_ATTN_EXT_FIRST": "19242",
@@ -169,6 +170,7 @@
     "upstream-SWIGLU": "596 597 598 599 600 601 626 627 628 629 630 631 656 657 658 659 660 661 686 687 688 689 690 691 716 717 718 719 720 721 746 747 748 749 750 751"
   },
   "factory_transcripts": {
+    "upstream-CONV_2D_CONTIGUOUS": "9c65c07d53b1303a7418ecb1339fb29011528dda46e8104fd73d5efd3acd03d4",
     "upstream-CONV_2D_DIRECT": "5d3da6516fc15275741da45d500aaaca79992f645d67e2e5940ead93ec4afa51",
     "upstream-FLASH_ATTN_EXT_BF16": "eccd65f79c27b6efe7e599fab0d5d22cb83e66afeee809e1ce381556afd17d7b",
     "upstream-FLASH_ATTN_EXT_FIRST": "3f90d96ad4ee40173a64ad194a94c01ddd2c94e9b4f06074402c7d7058071577",

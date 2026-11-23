@@ -4844,3 +4844,11 @@ VT-03 uses a frozen column-major result from the pinned GGML CPU matrix multipli
 ### Verdant Gaussian activation pin
 
 VT-02 resolved the fifteen ordered kernel descriptors from Verdant commit `24d9acbd0520d56f6fc9b27e5e67f70d0de17774`, inspected the compiled provider imports and passed. Cargo-deny passed. The two Gaussian scalar operations passed 257,548 comparisons against the imported GGML functions in the engine. The complete engine gate still reports the numerical frontier counts and stale digest recorded on the parent patch. [Verdant PR #26](https://github.com/afflom/verdant-engine/pull/26)
+
+### VT-72 complete checkpoint
+
+The complete locked-SDK `just vv` passed on source `4bef86af3e78ccd0f4c02cfba4f5b009abba1bf0` using Verdant PR #25. All 79 backend contracts passed, followed by the workspace checks and cargo-deny. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/4bef86af3e78ccd0f4c02cfba4f5b009abba1bf0)
+
+### Channel-major convolution
+
+The pinned CPU refuses these original kernel views. VT-76 gives the CPU a separate copy of the original leaf values, uses upstream tensor operations to materialize both operands in logical order, and runs the same convolution parameters. The provider executes the original graph. Setting the copied reference leaves to zero failed ordinal 4742 with infinite NMSE. Restoring the leaves passed all three permanent checks. Outputs consisting entirely of padding must match exactly because their reference energy is zero. [Factory comparisons](verification/factory-contiguous-convolution-vt76.json)

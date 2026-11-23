@@ -879,6 +879,7 @@ dependencies = [
  "repo-model",
  "serde_json",
  "sha2",
+ "toml",
 ]
 
 [[package]]

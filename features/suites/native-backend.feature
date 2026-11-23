@@ -110,3 +110,9 @@ Feature: native-backend
     Given the pinned GGML unary and composed Gaussian activation graphs
     When both the vTensor plugin and reference CPU evaluate the same inputs
     Then all 64 original outputs satisfy the upstream case tolerances
+
+  @VT-76 @build
+  Scenario: Original channel-major GGML convolution graphs agree with upstream CPU convolution on equivalent contiguous tensors
+    Given an original channel-major factory graph declined by the CPU kernel
+    When GGML CPU independently materializes both operands from the same initialized leaves
+    Then the original vTensor output agrees with the CPU convolution
