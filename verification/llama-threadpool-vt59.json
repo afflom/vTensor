@@ -72,9 +72,9 @@
   },
   "mutant": "Giving the second worker the first chunk offset made the imported matrix comparison fail at result==expected[step]. The restored test passed all four bindings.",
   "integrated_replay": {
-    "implementation": "c4faaba50e5fdc9d5e75e5eb34c547d9cc090d05",
-    "verdant_revision": "112bda99c2ebe1c98f3ba5b1612c171d0db58607",
-    "provider_sha256": "bf675a1ea23b8c67424c5fa6d2ac0c5665981c72e61456729d654517bde2a6c3",
+    "implementation": "97027cd14c7078a64afc567160c11f5783fb6357",
+    "verdant_revision": "24c639c9c08427ca1a55b5a8a212f07cb799f90a",
+    "provider_sha256": "78e7af8322704ddaacb497e6819cb30e50010a173cfab63532c205e2902f9f37",
     "threads": [
       1,
       2

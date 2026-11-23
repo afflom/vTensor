@@ -12,7 +12,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] When Verdant releases these primitives, switch to the published production packages, verify provenance and checksums, and build a clean consumer. Keep the PR pin until then. Verdant v2.18.0 lacks the two Gaussian activation exports used by VT-75 and VT-77. [Release source](https://github.com/afflom/verdant-engine/tree/ba1425942f2cdc0f1d647df2fb71ab1e57bca507/crates/verdant-tensor/src)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
-- [ ] Recover **1,588 non-Prism lines** (12,137 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,944 non-Prism lines** (12,493 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -36,7 +36,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Verify the Verdant streaming weighted mean against 5,940 coordinates from the imported CPU attention evaluator. [Upstream patch](https://github.com/afflom/verdant-engine/pull/21)
 - [x] Execute all six stories15M FLASH_ATTN_EXT nodes on vTensor. Compare the prefill and both decode cache updates across six layers. [Host, logits and cache evidence](verification/llama-stories15m-vt58.json)
 - [x] Run the unmodified `llama-eval-callback` at one and two threads through creation, inference and teardown on the VT-59 implementation. [Source](https://github.com/afflom/vTensor/commit/d232e00ae9dcf383c900d8a3792d1201ef19b26e) · [CPU comparison](verification/llama-threadpool-vt59.json)
-- [ ] Integrate VT-59 on main. Recover the 349 additional native lines measured against its main base and pass the complete locked-SDK gate.
+- [x] Run both unmodified llama.cpp thread counts and the three-step paired decode on the integrated VT-59 and VT-86 provider. [Integration evidence](verification/llama-threadpool-vt59.json)
+- [ ] Recover the 356 additional native lines measured at VT-59 integration and pass the combined locked-SDK gate.
 - [x] Pass all 252 GET_ROWS factory cases on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [x] Pass all 694 F16/BF16 scalar MUL_MAT cases across six operand pairs and the high-range F32 precision regression. [VT-64 factory results](verification/factory-scalar-matrix-vt64.json)
 - [x] Pass all 87 CPU-supported scalar OUT_PROD cases with the Verdant matrix primitive. [VT-69 results](verification/factory-scalar-outer-products-vt69.json)

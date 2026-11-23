@@ -4925,3 +4925,7 @@ Prism now supplies the execution plan for NORM, GROUP_NORM and RMS_NORM_BACK dir
 ### VT-86 row ranking
 
 Prism binds GGML sort direction, row pitch, selection width and output placement. Verdant PR #28 supplies stable binary32 row ranking. The original pinned GGML evaluators passed all 632 standalone cases and 176 newly supported compositions. Both padded, offset row-view comparisons passed. Invalid strides, result types and sort directions were refused with destination bytes preserved. Inverting the requested direction failed ARGSORT ordinal 18388 with error 0.307692308 against a limit of 0.000000100. Restoring it passed. The merged provider passed VT-86 and VT-02. The native source audit measured 12,137 lines, 46 above the preceding normalization checkpoint. [Standalone transcripts](verification/factory-row-ranking-vt86.json) · [Composition transcripts](verification/factory-row-ranking-compositions.json)
+
+### Integrated llama.cpp CPU threadpool
+
+The unmodified llama.cpp callback loaded the combined provider at 97027cd, ran inference at one and two threads and completed teardown. Both runs reported a logit sum of −298643.6875 for 32,000 vocabulary entries. All three paired-decode steps reproduced the previously CPU-compared provider logits and KV snapshots byte for byte. VT-02, VT-59, VT-85 and VT-86 passed together. The native source audit measured a further 356 lines for the callbacks, worker transport and tests. The combined release gate remains open. [Binary and output digests](verification/llama-threadpool-vt59.json)
