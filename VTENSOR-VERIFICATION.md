@@ -4903,3 +4903,7 @@ VT-83 compares all 230 original Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs with the p
 Prism validates shapes and strides, maps each index through its GGML view and resolves the weight, activation and destination offsets. A skipped expert yields a zero result. An invalid expert stops the operation before destination writes. The provider calls the existing Verdant row encoders and dot products. VT-02 checks the compiled plugin's GGML imports. The source audit measures 12,084 native lines across 51 files.
 
 A metadata scan selected previously refused factory graphs for numerical replay. The original evaluator passed all 24 selected Snake activation graphs and all 42 selected matrix-plus-add graphs. The evidence records each completed ordinal and transcript. [Original comparisons](verification/factory-admitted-compositions.json)
+
+### Matrix and arithmetic fixture streams
+
+Prism generates the four header words, each case descriptor and every operand word in the matrix and elementwise fixture streams. VT-35 and VT-36 check the byte counts and SHA-256 digests against the frozen baselines. VT-12 and VT-13 execute the same cached inputs against the imported GGML CPU backend. Flipping one bit in the first matrix record changed its digest from `b9b926d7…` to `54e256fd…` and failed VT-35. Restoring the original word passed.

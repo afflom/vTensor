@@ -495,6 +495,17 @@ fn pointwise(request: GraphRequest) -> Result<GraphResponse, BackendError> {
     vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)
 }
 
+impl Tensor {
+    fn source(&self, slot: usize) -> Option<&Tensor> {
+        // SAFETY: GGML retains every present source descriptor for the graph call.
+        unsafe { self.src[slot].as_ref() }
+    }
+
+    fn input(&self, slot: usize) -> Result<Option<TensorInput<'_>>, BackendError> {
+        self.source(slot).map(TensorInput::new).transpose()
+    }
+}
+
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
     use BackendError::InvalidTensor;
     let output = tensor_metadata(tensor)?;
@@ -503,12 +514,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
         return Ok(None);
     }
-    let source = |slot: usize| {
-        // SAFETY: GGML retains each non-null source descriptor during this call.
-        unsafe { tensor.src[slot].as_ref() }
-            .map(tensor_metadata)
-            .transpose()
-    };
+    let source = |slot| tensor.source(slot).map(tensor_metadata).transpose();
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
     let primary = source(0)?;
@@ -827,25 +833,6 @@ fn decode_words(
     Ok(linear::decode_storage_block(kind, source, bytes, stride)?)
 }
 
-fn decode_scalar_row(kind: u64, bytes: &[u8], out: &mut [f32]) -> Result<(), BackendError> {
-    let width = match kind {
-        0 => 4,
-        1 | 30 => 2,
-        _ => return Err(BackendError::InvalidTensor),
-    };
-    if out.len().checked_mul(width) != Some(bytes.len()) {
-        return Err(BackendError::InvalidTensor);
-    }
-    for (word, value) in bytes.chunks_exact(width).zip(out) {
-        *value = if kind == 0 {
-            f32::from_ne_bytes(word.try_into().unwrap())
-        } else {
-            decode_float(kind, u16::from_ne_bytes(word.try_into().unwrap()).into())?
-        };
-    }
-    Ok(())
-}
-
 struct TensorInput<'a> {
     bytes: &'a [u8],
     tensor: &'a Tensor,
@@ -878,14 +865,20 @@ impl<'a> TensorInput<'a> {
 fn execute_row_products(tensor: &Tensor, plan: RowProductPlan) -> Result<(), BackendError> {
     use linear::{dot_grouped_q2_row, encode_grouped_q8_block};
     use RowProductPlan::C0;
+    let C0(_, weight_bytes, ..) = plan;
     let symmetric = linear::encode_symmetric_q8_block::<32>;
     macro_rules! packed {
         ($encode:expr, $dot:path) => {
-            execute_block_rows(tensor, plan, |x| Ok($encode(x)?), |w, a| Ok($dot(w, a)?))
+            execute_block_rows(
+                tensor,
+                plan,
+                |x| Ok($encode(x)?),
+                |source, at, a| Ok($dot(source.region(at, weight_bytes as usize)?, a)?),
+            )
         };
     }
     match plan {
-        C0(inner, _, _, _, _, _, _, .., Some(precision), kind) => {
+        C0(inner, .., Some(precision), _) => {
             let mut weights = workspace(inner, 0.0_f32)?;
             execute_block_rows(
                 tensor,
@@ -897,8 +890,8 @@ fn execute_row_products(tensor: &Tensor, plan: RowProductPlan) -> Result<(), Bac
                         prepare_float(0, precision, x.to_bits().into())
                     }
                 },
-                |bytes, activations| {
-                    decode_scalar_row(kind, bytes, &mut weights)?;
+                |source, at, activations| {
+                    source.decode(at, &mut weights)?;
                     let mut value = [0.0];
                     linear::multiply_matrix_rows_f32(
                         1,
@@ -923,17 +916,14 @@ fn execute_block_rows<const LANES: usize, Block>(
     tensor: &Tensor,
     plan: RowProductPlan,
     encode: impl Fn(&[f32; LANES]) -> Result<Block, BackendError>,
-    mut dot: impl FnMut(&[u8], &[Block]) -> Result<f32, BackendError>,
+    mut dot: impl FnMut(&TensorInput, u64, &[Block]) -> Result<f32, BackendError>,
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
-    let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
+    let Plan::C0(blocks, _, rows, _, _, visits, outputs, ..) = plan;
     // SAFETY: graph admission retained both typed GGML source descriptors.
     let (w, a) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
     let weights = TensorInput::new(w)?;
-    // SAFETY: the indexed plan requires its retained I32 index tensor. The ordinary graph has two sources.
-    let indices = unsafe { tensor.src[2].as_ref() }
-        .map(TensorInput::new)
-        .transpose()?;
+    let indices = tensor.input(2)?;
     let request = |query| run(query).map_err(|_| BackendError::Overflow);
     let activations = graph_tensor_data(a)?;
     let destination = graph_tensor_data(tensor)?;
@@ -979,8 +969,7 @@ fn execute_block_rows<const LANES: usize, Block>(
             else {
                 return Err(BackendError::InvalidTensor);
             };
-            let bytes = weights.region(start, weight_bytes as usize)?;
-            *value = dot(bytes, &prepared)?;
+            *value = dot(&weights, start, &prepared)?;
         }
     }
     for (column, offset) in results.chunks_exact(rows as usize).zip(offsets) {
@@ -1319,8 +1308,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let mut secondary_strides = [0; 4];
     for (slot, pointer) in pointers.iter_mut().enumerate() {
         if mask & (1 << slot) != 0 {
-            // SAFETY: GGML retains each descriptor; absent required sources are typed refusals.
-            let source = unsafe { tensor.src[slot].as_ref() }.ok_or(BackendError::InvalidTensor)?;
+            let source = tensor.source(slot).ok_or(BackendError::InvalidTensor)?;
             *pointer = graph_tensor_data(source)?;
             if slot == 1 && matches!(mode, CopyMode::C26(66, ..)) {
                 secondary_strides = source.nb.map(|stride| stride as u64);
@@ -1651,7 +1639,7 @@ mod attention {
             self.region(offset, bytes)
         }
 
-        fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
+        pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
             let width = self.tensor.nb[0];
             if matches!(self.tensor.ty, 2 | 8) {
                 let (blocks, tail) = out.as_chunks_mut::<32>();
@@ -1664,20 +1652,27 @@ mod attention {
                 }
                 return Ok(());
             }
-            super::decode_scalar_row(self.tensor.ty as u64, self.blocks(offset, out.len())?, out)
+            for (bytes, value) in self.blocks(offset, out.len())?.chunks_exact(width).zip(out) {
+                *value = match (self.tensor.ty as u64, bytes) {
+                    (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
+                    (kind @ (1 | 30), &[a, b]) => {
+                        super::decode_float(kind, u16::from_ne_bytes([a, b]).into())?
+                    }
+                    _ => return Err(InvalidTensor),
+                };
+            }
+            Ok(())
         }
     }
 
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
-        let input = |i: usize| {
-            // SAFETY: GGML retains all present sources during the synchronous graph execution.
-            unsafe { tensor.src[i].as_ref() }
-                .map(TensorInput::new)
-                .transpose()
-        };
-        let (Some(q), Some(k), Some(v), mask, sink) =
-            (input(0)?, input(1)?, input(2)?, input(3)?, input(4)?)
-        else {
+        let [Some(q), Some(k), Some(v), mask, sink] = [
+            tensor.input(0)?,
+            tensor.input(1)?,
+            tensor.input(2)?,
+            tensor.input(3)?,
+            tensor.input(4)?,
+        ] else {
             return Err(InvalidTensor);
         };
         let shape = q.tensor.ne;

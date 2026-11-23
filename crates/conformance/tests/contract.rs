@@ -1209,30 +1209,23 @@ mod tensor_layout {
         );
     }
 
-    fn layout(ne: [u64; 4], nb: [u64; 4], block: u64, bytes: u64) -> Adt0 {
-        Adt0::C0(
-            ne[0], ne[1], ne[2], ne[3], nb[0], nb[1], nb[2], nb[3], block, bytes,
-        )
-    }
-
-    fn request(output: &mut String, kind: u64, ne: [u64; 4], nb: [u64; 4]) {
-        use std::fmt::Write;
-        writeln!(
-            output,
-            "{kind} {} {} {} {} {} {} {} {}",
-            ne[0], ne[1], ne[2], ne[3], nb[0], nb[1], nb[2], nb[3]
-        )
-        .expect("string write");
+    fn layout(
+        [n0, n1, n2, n3]: [u64; 4],
+        [s0, s1, s2, s3]: [u64; 4],
+        block: u64,
+        bytes: u64,
+    ) -> Adt0 {
+        Adt0::C0(n0, n1, n2, n3, s0, s1, s2, s3, block, bytes)
     }
 
     fn storage_metadata() -> &'static [[u64; 3]] {
         static METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
             certified_current_model(&super::root(), "layout");
             let kinds = &*super::ggml_inventory::STORAGE_TYPES;
-            let mut input = String::new();
-            for &kind in kinds {
-                request(&mut input, kind, [0; 4], [0; 4]);
-            }
+            let input: String = kinds
+                .iter()
+                .map(|kind| format!("{kind} 0 0 0 0 0 0 0 0\n"))
+                .collect();
             let metadata = ggml_oracle::rows("storage", &input);
             assert_eq!(metadata.len(), kinds.len(), "oracle omitted a type");
             metadata
@@ -1255,10 +1248,9 @@ mod tensor_layout {
                 let vtensor_probes::Adt0::C4(n0, n1, n2, n3, b0, b1, b2, b3) = probe else {
                     panic!("missing layout probe for type {kind}");
                 };
-                let ne = [n0, n1, n2, n3];
-                let nb = [b0, b1, b2, b3];
-                request(&mut inputs, kind, ne, nb);
-                layouts.push(layout(ne, nb, block, bytes));
+                use std::fmt::Write;
+                writeln!(inputs, "{kind} {n0} {n1} {n2} {n3} {b0} {b1} {b2} {b3}").unwrap();
+                layouts.push(Adt0::C0(n0, n1, n2, n3, b0, b1, b2, b3, block, bytes));
             }
         }
         assert_eq!(
@@ -1465,48 +1457,26 @@ mod native_backend_oracle {
     pub(super) fn fixture_input(family: u64) -> &'static [u8] {
         static INPUT: [std::sync::OnceLock<Vec<u8>>; 2] = [const { std::sync::OnceLock::new() }; 2];
         INPUT[family as usize].get_or_init(|| {
-            use vtensor_fixtures::Adt0 as Request;
-            let (model, record) = [
-                ("fixtures", "matrix-fixture-baseline"),
-                ("arithmetic", "arithmetic-fixture-baseline"),
-            ][family as usize];
-            super::tensor_layout::certified_current_model(&super::root(), model);
+            use vtensor_fixture_stream::{Adt0 as Cursor, Adt1 as Step};
+            let record =
+                ["matrix-fixture-baseline", "arithmetic-fixture-baseline"][family as usize];
+            super::tensor_layout::certified_current_model(&super::root(), "fixtures");
             let baseline = fixture_record(record);
-            let query = |request| {
-                let result = if family == 0 {
-                    vtensor_fixtures::run(0, request).unwrap()
-                } else {
-                    let (kind, case, source, item) = match request {
-                        Request::C0(item) => (0, 0, 0, item),
-                        Request::C1(case, item) => (1, case, 0, item),
-                        Request::C2(case, source, item) => (2, case, source, item),
-                        Request::C3(case, source, item) => (3, case, source, item),
-                    };
-                    vtensor_arithmetic::run(kind, case, source, item).unwrap()
-                };
-                result.expect("admitted fixture query")
-            };
-            let [cases, fields, sources, padding] =
-                [0, 1, 2, 3].map(|item| query(Request::C0(item)));
-            let header = ["cases", "metadata_fields", "sources", "padding_byte"]
-                .map(|key| baseline[key].as_u64().expect("fixture header"));
-            assert_eq!([cases, fields, sources, padding], header);
-            let mut input: Vec<u8> = [cases, fields, sources, padding]
-                .into_iter()
-                .flat_map(u64::to_le_bytes)
-                .collect();
-            for case in 0..cases {
-                for field in 0..fields {
-                    input.extend(query(Request::C1(case, field)).to_le_bytes());
-                }
-                for source in 0..sources {
-                    let [count, width] = [0, 1].map(|item| query(Request::C2(case, source, item)));
-                    input.extend([count, width].into_iter().flat_map(u64::to_le_bytes));
-                    for index in 0..count {
-                        input.extend(query(Request::C3(case, source, index)).to_le_bytes());
+            let mut input = Vec::new();
+            let mut cursor = Cursor::C0;
+            loop {
+                match vtensor_fixture_stream::run(family, cursor).expect("bounded fixture stream") {
+                    Step::C0 => break,
+                    Step::C1 => panic!("certified fixture stream refused a registered case"),
+                    Step::C2(word, next) => {
+                        input.extend(word.to_le_bytes());
+                        cursor = next;
                     }
                 }
             }
+            let header = ["cases", "metadata_fields", "sources", "padding_byte"]
+                .map(|key| baseline[key].as_u64().unwrap().to_le_bytes());
+            assert_eq!(input.get(..32), Some(header.as_flattened()));
             let records = &input[32..];
             assert_eq!(baseline["transcript_bytes"], records.len());
             assert_eq!(

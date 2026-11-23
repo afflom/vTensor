@@ -264,6 +264,12 @@ expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x62f9d55c }]
 
 [[licenses.clarify]]
+name = "vtensor_fixture_stream"
+version = "=0.1.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xe240e853 }]
+
+[[licenses.clarify]]
 name = "vtensor_fixtures"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
