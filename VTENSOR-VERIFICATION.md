@@ -4812,3 +4812,15 @@ Reading every right-hand word at offset zero corrupted the second batch of ordin
 VT-70 models the IM2COL_3D stride, dilation, signed padding, batch and channel coordinates in Prism. It uses the input view's actual byte strides. Verdant converts each selected F32 word or padding zero to the requested output storage. The pinned CPU passed all six contract graphs and 1,533 disjoint standalone graphs. These 1,539 passes close the previous refusals. Another 512 factory ordinals already had passing verdicts. [Imported constructor](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L4706)
 
 Replacing every interior sample address with zero made ordinal 2466 fail with error 1.334158325 against its 0.0000001 limit. Restoring the Prism offset passed the contract and the spatial, capped-attention and hyperbolic regressions.
+
+### Packed outer products
+
+VT-71 passed all 144 directly CPU-supported packed OUT_PROD factory graphs, covering nine weight formats. Prism schedules each source block from its physical stride. Verdant decodes the block and performs the contraction. Redirecting all block reads to offset zero failed ordinal 15493 with error 1.739076707 against 0.0005. Restoring the implementation passed all nine affected contracts. The locked Clippy and dependency checks passed.
+
+## VT-68 complete checkpoint
+
+The complete locked-SDK `just vv` passed at `3f1cabd0b5de78bb31b8485bf1f1a1223a9f5377` on the Verdant PR #25 pin. All 75 backend contracts passed, including VT-02, followed by the remaining workspace tests and dependency checks. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/3f1cabd0b5de78bb31b8485bf1f1a1223a9f5377)
+
+## Planar image columns and depthwise 1D convolution
+
+VT-72 passed all 113 original IM2COL cases and both supplemental GGML graphs with F16 inputs. The nine original CONV_1D_DW graphs also passed, including BF16 kernels. They compose the existing image-column and matrix primitives. Prism selects each image sample, and Verdant converts the encoded word. Reading every interior sample at offset zero failed ordinal 2361 with error 1.992249257 against 0.0000001. The restored implementation passed the planar, 3D, row, packed outer-product and buffer-transfer contracts. [Oracle records](verification/factory-planar-columns-vt72.json)

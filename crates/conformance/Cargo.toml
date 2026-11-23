@@ -35,7 +35,6 @@ vtensor_spatial = { version = "0.1.0", path = "../../generated/spatial/packages/
 vtensor_arithmetic = { version = "0.1.0", path = "../../generated/arithmetic/packages/rust-core/vtensor_arithmetic" }
 vtensor_fixtures = { version = "0.1.0", path = "../../generated/fixtures/packages/rust-core/vtensor_fixtures" }
 vtensor_index = { version = "0.1.0", path = "../../generated/index/packages/rust-core/vtensor_index" }
-vtensor_matrix = { version = "0.1.0", path = "../../generated/matrix/packages/rust-core/vtensor_matrix" }
 proc-macro2 = "1.0.107"
 repo-model = { workspace = true }
 prism-kernel = { workspace = true }

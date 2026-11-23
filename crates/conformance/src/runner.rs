@@ -652,8 +652,9 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
     };
     // SAFETY: plan_operation admitted both retained source descriptors.
     let (left, right) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
+    let weights = TensorInput::new(left)?;
     let pointers = [
-        graph_tensor_data(left)?,
+        weights.bytes.as_ptr().cast_mut(),
         graph_tensor_data(right)?,
         graph_tensor_data(tensor)?,
     ];
@@ -685,8 +686,11 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
     };
     let mut values = workspace(total, 0.0_f32)?;
     let [m, k, n] = [m, k, n].map(|n| n as usize);
-    for index in 1..steps {
-        match step(index)? {
+    let mut index = 1;
+    while index < steps {
+        let instruction = step(index)?;
+        index += 1;
+        match instruction {
             // SAFETY: Prism bounds the private workspace slot, foreign pointer
             // slot and byte offset. Native F32 words may be unaligned; byte
             // transfers preserve all encodings without creating foreign borrows.
@@ -706,6 +710,12 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
                 };
                 values[at as usize] = prepare_float(source, dot_type, word)?;
             }
+            Instruction::C5(at, from, kind, bytes, stride, skip) => {
+                let block = weights.region(from, bytes as usize)?;
+                let dst = &mut values[at as usize..left_count as usize];
+                decode_words(kind, block, dst, stride as usize)?;
+                index = index.checked_add(skip).ok_or(BackendError::Overflow)?;
+            }
             Instruction::C2 => {
                 let (left, rest) = values.split_at_mut(left_count as usize);
                 let (right, output) = rest.split_at_mut(right_count as usize);
@@ -723,6 +733,24 @@ unsafe fn write_float_row(destination: *mut u8, row: &[f32]) {
     unsafe {
         ptr::copy_nonoverlapping(row.as_ptr().cast(), destination, std::mem::size_of_val(row))
     }
+}
+
+fn decode_words(
+    kind: u64,
+    source: &[u8],
+    destination: &mut [f32],
+    stride: usize,
+) -> Result<(), BackendError> {
+    // SAFETY: all f32 bit patterns are valid and the mutable slice owns these bytes.
+    let bytes = unsafe {
+        std::slice::from_raw_parts_mut(
+            destination.as_mut_ptr().cast(),
+            std::mem::size_of_val(destination),
+        )
+    };
+    Ok(verdant_tensor::linear::decode_storage_block(
+        kind, source, bytes, stride,
+    )?)
 }
 
 struct TensorInput<'a> {
@@ -1479,14 +1507,7 @@ mod attention {
                 }
                 let source = self.blocks(offset, blocks.len())?;
                 for (input, block) in source.chunks_exact(width).zip(blocks) {
-                    // SAFETY: this byte view exclusively borrows an initialized F32 array.
-                    let dst = unsafe {
-                        std::slice::from_raw_parts_mut(
-                            block.as_mut_ptr().cast(),
-                            std::mem::size_of_val(block),
-                        )
-                    };
-                    linear::decode_storage_block(self.tensor.ty as u64, input, dst, 4)?;
+                    super::decode_words(self.tensor.ty as u64, input, block, 4)?;
                 }
                 return Ok(());
             }
