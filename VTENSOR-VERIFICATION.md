@@ -4890,3 +4890,7 @@ Prism plans the query head, mask coordinates and skip condition for the imported
 ### VT-80 complete checkpoint
 
 The complete locked-SDK `just vv` passed on `024b20c94de1069d68f0a57ec0624ea45bbc11ef` with Verdant PR #26. All 86 backend contracts passed in 479.51 seconds, including pooling, 2D and 3D convolution. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. The workspace checks and dependency audit passed. [Checked source](https://github.com/afflom/vTensor/commit/024b20c94de1069d68f0a57ec0624ea45bbc11ef)
+
+### Column-to-signal overlap
+
+Prism finds the contributing columns in the upstream summation order. Verdant converts each F16, BF16 or F32 input, sums it in binary32 and converts the final value to the destination type. All 33 original COL2IM_1D cases passed. Replacing addition with subtraction failed ordinal 8093 at NMSE 4.0 against the CPU limit of 0.0000001. The factory driver ran the single-column cases first, preserved the requested transcript order and rejected repeated and out-of-range ordinals before comparing any graph. The native source check now reads each compiler input once per test process. Changing the live ABI source made a prebuilt test fail with the stale filename. After restoring it, the same prebuilt test passed. The F16 pooling and image-column supplemental graphs also passed through the shared evaluator. [Case-level evidence](verification/factory-column-overlap-vt82.json)
