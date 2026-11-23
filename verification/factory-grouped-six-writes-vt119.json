@@ -1,0 +1,77 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-119",
+  "implementation": "82beacd07c623ce55058c5272e8df13e8036d0b4",
+  "verdant_revision": "204b1de06f0057deaa4bbb0227c504e4bea91ceb",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/47",
+  "provider_sha256": "b2af943823cbd343ab7a21f11ee14f8acd7650253a09f90773ad44009da07b40",
+  "provider_inputs_sha256": "0ca2e6c55946124d7d0f95ab36730c3c7f4d34ed542b2c456565b5b979d6e1a1",
+  "oracle_executable_sha256": "57523d7090f86b913133eb15db5570bccedb2a505b08be2032f6fcf5dfd66549",
+  "typed_lock_sha256": "8a59c5eb742cb428a4b9784bcd4756f77de05f6f95863b0a068442275021c180",
+  "oracle": "The pinned GGML CPU compares the original indexed-write and copy graphs for Q6_K with the provider.",
+  "contract_ordinals": [
+    1364,
+    8600
+  ],
+  "contract_transcript_sha256": "54aef2baa2f01f73e21c3c2f189ee947b7a29a8bcf5f3d7e807af615ae226c86",
+  "runs": {
+    "rows-0": {
+      "passed": 7,
+      "transcript_sha256": "a166df705dff61335b0c63e132ce853439e98b85ec98f074c426fc0ea9dd9f2a"
+    },
+    "rows-1": {
+      "passed": 7,
+      "transcript_sha256": "e793a4b0253ada62e6123ea9379f12f607511287d8568948d0dd30e268cf4ee2"
+    },
+    "rows-2": {
+      "passed": 7,
+      "transcript_sha256": "e3b9fb5df591a51dc52af2a7d9bfc8149e21639e9926eeb26c3d634c311e199d"
+    },
+    "rows-3": {
+      "passed": 7,
+      "transcript_sha256": "7073eaf739bfa6fa71c92e5f7846e9e2aad79718546792765ed97d31ed0e4169"
+    }
+  },
+  "case_ordinals": {
+    "CPY": [
+      8483,
+      8484,
+      8541,
+      8542,
+      8599,
+      8600
+    ],
+    "SET_ROWS": [
+      1364,
+      1365,
+      1366,
+      1367,
+      1368,
+      1369,
+      1370,
+      1371,
+      1372,
+      1373,
+      1374,
+      1375,
+      1744,
+      1745,
+      1746,
+      1747,
+      1748,
+      1749,
+      1750,
+      1751,
+      1752,
+      1753,
+      1754,
+      1755
+    ]
+  },
+  "mutation": {
+    "change": "Zero each encoded block before placing its bytes.",
+    "ordinal": 1364,
+    "diagnostic": "[SET_ROWS] ERR = 0.256280283 > 0.000000100"
+  }
+}
