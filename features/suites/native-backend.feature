@@ -182,3 +182,9 @@ Feature: native-backend
     Given the CPU registry function names used by the pinned llama.cpp host
     When an application creates two pools and attaches, switches and detaches them
     Then the submitted graph outputs match the imported CPU through pool reuse and teardown
+
+  @VT-87 @build
+  Scenario: Prism binds GGML masks, sinks and row layouts and Verdant normalizes the score rows against the imported CPU softmax
+    Given original GGML score rows with optional masks and attention sinks
+    When vTensor normalizes the rows including in-place destinations
+    Then the imported CPU evaluator accepts the output probabilities

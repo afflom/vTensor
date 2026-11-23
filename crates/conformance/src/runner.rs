@@ -481,6 +481,7 @@ enum ExecutionPlan {
     RowProduct(RowProductPlan),
     Rotary(vtensor_rotary::Adt3),
     Attention(Box<vtensor_attention::Adt2>),
+    Softmax(Box<vtensor_attention::Adt3>),
 }
 
 // Each certified graph bundle renders its own type for the same GGML metadata.
@@ -521,6 +522,15 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     let primary = source(0)?;
     let secondary = source(1)?;
     let base = source(2)?;
+    if operation == 43 {
+        return attention::softmax_plan(
+            tensor,
+            primary.ok_or(InvalidTensor)?,
+            secondary,
+            base,
+            output,
+        );
+    }
     if operation == 71 {
         return attention::plan(
             tensor,
@@ -1383,6 +1393,7 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                 ExecutionPlan::Standard(GraphPlan::C6(geometry)) => {
                     execute_convolution(&*tensor, geometry)
                 }
+                ExecutionPlan::Softmax(plan) => attention::softmax(&*tensor, *plan),
                 ExecutionPlan::Attention(plan) => attention::execute(&*tensor, *plan),
                 ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
@@ -1564,11 +1575,109 @@ mod attention {
     use verdant_tensor::linear::{
         self, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
     };
-    use vtensor_attention::{Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as Response};
+    use vtensor_attention::{
+        Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as SoftmaxPlan, Adt4 as Response,
+    };
     use BackendError::{InvalidTensor, Overflow};
 
     fn request(query: Request) -> Result<Response, BackendError> {
         vtensor_attention::run(query).map_err(|_| Overflow)
+    }
+
+    pub(super) fn softmax_plan(
+        tensor: &Tensor,
+        source: TensorDescriptor,
+        mask: Option<TensorDescriptor>,
+        sink: Option<TensorDescriptor>,
+        output: TensorDescriptor,
+    ) -> Result<Option<super::ExecutionPlan>, BackendError> {
+        let descriptor = descriptor_for!(Descriptor::C0);
+        match request(Request::C2(
+            tensor.op as u64,
+            tensor.src[3..].iter().any(|p| !p.is_null()),
+            u64::from(tensor.op_params[0] as u32),
+            u64::from(tensor.op_params[1] as u32),
+            descriptor(source),
+            mask.map(descriptor),
+            sink.map(descriptor),
+            descriptor(output),
+        ))? {
+            Response::C3(plan) => Ok(Some(super::ExecutionPlan::Softmax(Box::new(plan)))),
+            _ => Err(InvalidTensor),
+        }
+    }
+
+    pub(super) fn softmax(tensor: &Tensor, plan: SoftmaxPlan) -> Result<(), BackendError> {
+        let source = graph_tensor_data(tensor.source(0).ok_or(InvalidTensor)?)?;
+        let output = graph_tensor_data(tensor)?;
+        // GGML ignores the inner stride of a singleton axis. The Prism plan guarantees
+        // contiguous scalar rows, so decode using their physical storage widths.
+        let scalar_input = |slot| -> Result<Option<TensorInput<'_>>, BackendError> {
+            Ok(tensor.input(slot)?.map(|mut input| {
+                input.nb[0] = if input.ty == 0 {
+                    size_of::<f32>()
+                } else {
+                    size_of::<u16>()
+                };
+                input
+            }))
+        };
+        let mask = scalar_input(1)?;
+        let sink = scalar_input(2)?;
+        let SoftmaxPlan::C0(_, _, _, scale, bias) = &plan;
+        let scale = f32::from_bits(*scale as u32);
+        let mut row = workspace(tensor.ne[0] as u64, 0.0_f32)?;
+        let mut mask_row = workspace(if mask.is_some() { row.len() as u64 } else { 0 }, 0.0_f32)?;
+        let scalar = |operation, a, b| evaluate_f32_scalar(operation, a, b).map_err(|_| Overflow);
+        for head in 0..tensor.ne[2] as u64 {
+            let slope = bias
+                .map(|bits| {
+                    linear::attention_head_slope_f32(
+                        f32::from_bits(bits as u32),
+                        tensor.ne[2] as u32,
+                        head as u32,
+                    )
+                })
+                .transpose()?
+                .unwrap_or(1.0);
+            for batch in 0..tensor.ne[3] as u64 {
+                for token in 0..tensor.ne[1] as u64 {
+                    let Response::C4(from, moff, soff, to) =
+                        request(Request::C3(plan.clone(), token, head, batch))?
+                    else {
+                        return Err(InvalidTensor);
+                    };
+                    // SAFETY: the admitted dense row fits the live input. Stage it before the in-place write.
+                    unsafe {
+                        std::ptr::copy_nonoverlapping(
+                            source.add(from as usize),
+                            row.as_mut_ptr().cast(),
+                            std::mem::size_of_val(row.as_slice()),
+                        )
+                    };
+                    for value in &mut row {
+                        *value = scalar(2, *value, scale)?;
+                    }
+                    if let Some(mask) = &mask {
+                        mask.decode(moff, &mut mask_row)?;
+                        for (value, &weight) in row.iter_mut().zip(&mask_row) {
+                            *value = scalar(0, *value, scalar(2, slope, weight)?)?;
+                        }
+                    }
+                    let extra = if let Some(sink) = &sink {
+                        let mut score = [0.0];
+                        sink.decode(soff, &mut score)?;
+                        Some(score[0])
+                    } else {
+                        None
+                    };
+                    linear::normalize_exponential_f32(&mut row, extra)?;
+                    // SAFETY: Prism bound this row to the dense destination, disjoint from mask and sink.
+                    unsafe { super::write_row(output.add(to as usize), &row) }
+                }
+            }
+        }
+        Ok(())
     }
 
     pub(super) fn plan(
