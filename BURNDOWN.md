@@ -11,7 +11,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Cover legal variants outside the factory with the imported CPU or another pinned authoritative oracle. Track the aborting `ggml_flash_attn_back` constructor until an authoritative verdict exists. [Pinned constructor](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L5529)
 - [x] Submit Verdant's IQ2_XXS, IQ2_XS and IQ2_S row products. All 294 rows matched the imported GGML CPU vector products bit-for-bit. [Verdant PR #36](https://github.com/afflom/verdant-engine/pull/36)
 - [x] Pin Verdant PR #36 at `f9ff0862` and pass VT-02. All 437 IQ2_XXS, IQ2_XS and IQ2_S matrix cases pass across ordinary, expert and fused graphs. [Factory comparisons](verification/factory-codebook-products-vt103.json) · [Patch record](model/verdant-development.json)
-- [ ] Confirm CAST, CONCAT, ROWS, TRANSFORM, backward edges and normalization edges on ARM. All six pass on x86. The corrected portable flags cross-compile all 22 pinned GGML translation units for AArch64. [ARM evidence](VTENSOR-VERIFICATION.md#portable-ggml-reference-build)
+- [x] Pass all six previously failing suites on AArch64. The cross-built provider passed 33,905 comparisons under QEMU, including the original four frozen graph traces. [ARM replay](VTENSOR-VERIFICATION.md#portable-ggml-reference-build)
+- [ ] Confirm complete acceptance on the hosted ARM runner. [vTensor checks](https://github.com/afflom/vTensor/commit/7074dd7/checks)
 - [x] Check the compiled provider’s GGML imports in VT-02. A planted dependency on the GGML matrix kernel is rejected. [Boundary evidence](VTENSOR-VERIFICATION.md#provider-linkage)
 - [x] Confirm Verdant main includes the PR #32 pin and its prerequisites. [Upstream integration](https://github.com/afflom/verdant-engine/commit/0001659b991a054cd6c48fdf2cd5b18d1cb1398f)
 - [x] Confirm Verdant main includes VTK-36 through VTK-40 and the provider’s pinned block encoders. [Upstream integration](https://github.com/afflom/verdant-engine/commit/a51262d2008b030b290f70cd0b39a080f72cb4e9)
@@ -20,7 +21,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,304 non-Prism lines** (12,853 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,302 non-Prism lines** (12,851 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
