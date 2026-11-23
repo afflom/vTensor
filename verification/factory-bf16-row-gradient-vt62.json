@@ -52,5 +52,11 @@
     "comparison": "Finite words, infinities, signed zeros and padding match byte for byte. Paired NaNs compare by class. Invalid indices return failure and preserve destination bytes. Empty and padded layouts are included."
   },
   "pointwise_lock_sha256": "7665ecb61e290dde4d22d2cfc26cca9f53532e58aaaeecb1664139edb67a900d",
-  "layout_lock_sha256": "1fa7fadc667b9e2a2e65c1a2c76e5dd9427ad7488a0a6e188cffe90ff8f8d8fd"
+  "layout_lock_sha256": "1fa7fadc667b9e2a2e65c1a2c76e5dd9427ad7488a0a6e188cffe90ff8f8d8fd",
+  "case_ordinals": {
+    "GET_ROWS_BACK": [
+      1069,
+      1070
+    ]
+  }
 }

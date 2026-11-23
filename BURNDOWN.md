@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **24,246 passed**, **3,443 refused** and **66 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **24,311 passed**, **3,378 refused** and **66 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -47,7 +47,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 144 directly CPU-supported packed OUT_PROD cases through Verdant. [VT-71 results](verification/factory-packed-outer-products-vt71.json)
 - [x] Pass the 1,312 CPU-refused OUT_PROD graphs against the upstream decoder and F32 CPU contraction. All 1,543 factory outer products now have passing comparisons. [VT-73 evidence](verification/factory-decoded-outer-products-vt73.json)
 - [x] Pass 68 additional dense matrix and activation compositions across F32, F16, Q4_0, Q8_0 and Q2_K. [Full-graph comparisons](verification/factory-dense-matrix-fusions.json)
-- [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, the 882 refused standalone MUL_MAT cases, precision modes and 506 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
+- [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, the 235 unresolved CPY cases, block encoding and quantized dot products, the 882 refused standalone MUL_MAT cases, precision modes and 506 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 230 Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs, including skipped experts and offset index views. [VT-83 results](verification/factory-indexed-products-vt83.json)
 - [x] Pass the 130 newly admitted packed expert compositions, including six shared-expert graphs and 124 matrix fusions. [Original full-graph comparisons](verification/factory-indexed-expert-compositions.json)
 - [x] Execute all 251 F32, F16 and BF16 MUL_MAT_ID cases, including invalid expert IDs and strided index views. [VT-84 results](verification/factory-scalar-experts-vt84.json)
