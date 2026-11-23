@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **25,998 passed**, **1,732 refused** and **25 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,023 passed**, **1,732 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -83,7 +83,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Submit the reusable normalized exponential to Verdant. All 4,164 CPU probability comparisons passed. [Engine PR #29](https://github.com/afflom/verdant-engine/pull/29)
 - [x] Pass all 214 SOFT_MAX cases, including masks, sinks and in-place output. [VT-87 results](verification/factory-row-softmax-vt87.json)
 - [x] Pass the 344 TOPK_MOE graphs unlocked by SOFT_MAX. [Original graph comparisons](verification/factory-row-softmax-compositions.json)
-- [ ] Complete FLASH_ATTN_EXT. Of 5,775 attention cases, 5,750 pass, 0 are refused and 25 still need an evaluator verdict.
+- [x] Pass all 5,775 FLASH_ATTN_EXT factory cases. The final 25 dense attention graphs passed the imported CPU comparison. [Completed evaluator run](verification/factory-standalone-vt59.json)
 - [x] Pass all 19 Q1_0, Q2_0 and F8_E4M3 attention graphs using existing Verdant primitives. [VT-96 CPU comparisons](verification/factory-small-format-attention-vt96.json)
 - [x] Implement the optional I32 key/value row map in Prism. [Provider implementation](https://github.com/afflom/vTensor/commit/15af61f0ccc174aa62cbc553af09b23406d21d9f)
 - [x] Pass all 60 indexed-cache attention graphs against the pinned CPU. [VT-97 ordinals and transcripts](verification/factory-indexed-cache-attention-vt97.json)
