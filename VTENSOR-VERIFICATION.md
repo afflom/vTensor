@@ -4929,3 +4929,7 @@ Prism binds GGML sort direction, row pitch, selection width and output placement
 ### Integrated llama.cpp CPU threadpool
 
 The unmodified llama.cpp callback loaded the combined provider at 97027cd, ran inference at one and two threads and completed teardown. Both runs reported a logit sum of −298643.6875 for 32,000 vocabulary entries. All three paired-decode steps reproduced the previously CPU-compared provider logits and KV snapshots byte for byte. VT-02, VT-59, VT-85 and VT-86 passed together. The native source audit measured a further 356 lines for the callbacks, worker transport and tests. The combined release gate remains open. [Binary and output digests](verification/llama-threadpool-vt59.json)
+
+### Normalization execution
+
+Prism now selects the instructions for L2_NORM, NORM, GROUP_NORM and RMS_NORM_BACK using the source, destination and secondary strides. The native runner submits the same graph request across copy and normalization modes. Verdant performs the arithmetic. Eleven locked-SDK regression tests passed. Forcing L2_NORM execution to refuse failed the imported evaluator and restoring execution passed. Four combined checks covered normalization, row ranking and llama.cpp threadpools. The merged source audit counted 12,455 non-Prism lines across 51 files, down 38, and all model gates passed. [Integrated implementation](https://github.com/afflom/vTensor/commit/b025d52)
