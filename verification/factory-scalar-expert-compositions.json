@@ -16,8 +16,8 @@
   "selection": "Previously refused full graphs for which the only refused operation was an indexed matrix product in a newly admitted weight format. Run the original factory evaluator on the compiled provider and the pinned CPU backend.",
   "standalone_runs": {
     "MUL_MAT_ID_FUSION-0": {
-      "passed": 2,
-      "transcript_sha256": "5062463ea87b4c2437c2bd02998e594408aa971dc578adcdf3cbbbcd19cbb89b"
+      "passed": 3,
+      "transcript_sha256": "22edd85797b4d721ce016b315abee574eec865df39751b941c8f27cb5189e1a7"
     },
     "MUL_MAT_ID_FUSION-1": {
       "passed": 3,
@@ -48,6 +48,7 @@
       15226,
       15229,
       15230,
+      15233,
       15234
     ],
     "MUL_MAT_FUSION": [
