@@ -1227,6 +1227,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         8 => Some(SymmetricEight),
         34 => Some(PackedTrits),
         35 => Some(TwoBitTernary),
+        39 => Some(ExponentOnlyFour),
+        40 => Some(UnsignedScaleFour),
         41 => Some(BinarySign),
         42 => Some(CenteredTwo),
         _ => None,
@@ -1422,14 +1424,9 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                 continue;
             }
             match plan_operation(&*tensor) {
-                Ok(Some(plan)) => {
-                    if plans.try_reserve(1).is_err() {
-                        return GGML_STATUS_FAILED;
-                    }
-                    plans.push((tensor, plan));
-                }
+                Ok(Some(plan)) if plans.try_reserve(1).is_ok() => plans.push((tensor, plan)),
                 Ok(None) => {}
-                Err(_) => return GGML_STATUS_FAILED,
+                Ok(Some(_)) | Err(_) => return GGML_STATUS_FAILED,
             }
         }
         for (tensor, plan) in plans {

@@ -762,3 +762,9 @@ id = "VT-116"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans ordinary and expert matrices with shifted one-bit codebooks and Verdant contracts their quantized rows"
+
+[[id]]
+id = "VT-117"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules exponent-only and grouped four-bit floating encoders for copied and indexed GGML writes through Verdant"

@@ -330,6 +330,8 @@ ggml_batches! {
     #[test]
     fn transpose_plane_vt_107() { "upstream-TRANSPOSE_CONV_2D", 8, ["pointwise"] }
     #[test]
+    fn compact_float_writes_vt_117() { "upstream-COMPACT_FLOAT_WRITES", 4, ["typed"] }
+    #[test]
     fn ternary_weight_writes_vt_113() { "upstream-TERNARY_WEIGHT_WRITES", 60, ["typed"] }
     /// Replay all original copied and indexed sign and two-bit destinations.
     #[test]
@@ -1493,7 +1495,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "1999c46d279d0054e953c2c4a292a6a141dfd321181cd365c6012cb42d71be5d",
+            "9806b7b0594072257b21f124454e80623b32f816f9a8aa381a20418a6fb6b49c",
         )
     });
 
@@ -2393,6 +2395,7 @@ int main(int argc, char **argv) {
         {"SET_ROWS_SCALAR", {GGML_TYPE_F16}}, {"Q8_STORAGE_WRITES", {GGML_TYPE_Q8_0}},
         {"SIGN_WEIGHT_WRITES", {GGML_TYPE_Q1_0,GGML_TYPE_Q2_0}},
         {"LOW_BIT_WRITES", {GGML_TYPE_Q4_0,GGML_TYPE_Q4_1,GGML_TYPE_Q5_0,GGML_TYPE_Q5_1}},
+        {"COMPACT_FLOAT_WRITES", {GGML_TYPE_MXFP4,GGML_TYPE_NVFP4}},
         {"TERNARY_WEIGHT_WRITES", {GGML_TYPE_TQ1_0,GGML_TYPE_TQ2_0}},
       };
       for (const auto &probe : stores) if (!strcmp(argv[3]+9,probe.batch)) {
@@ -2406,14 +2409,13 @@ int main(int argc, char **argv) {
           auto out=ggml_set_rows(ctx,dst,src,idx);
           auto graph=ctx.allocate(out,backend); CHECK(graph);
           CHECK(ggml_backend_dev_supports_op(dev,out));
-          std::vector<uint16_t> original(ggml_nbytes(dst)/sizeof(uint16_t));
-          std::iota(original.begin(),original.end(),uint16_t(1));
+          auto *original=static_cast<uint8_t*>(dst->data);
+          std::iota(original,original+ggml_nbytes(dst),uint8_t(1));
           auto *values=static_cast<float*>(src->data);
           std::iota(values,values+ggml_nelements(src),1.0f);
-          ggml_backend_tensor_set(dst,original.data(),0,ggml_nbytes(dst));
           const int64_t wide[]={0,1}; const int32_t narrow[]={0,1};
           ggml_backend_tensor_set(idx,type==GGML_TYPE_I32?(const void*)narrow:(const void*)wide,0,ggml_nbytes(idx));
-          if (packed) CHECK(refuses_change(backend,dev,graph,out,static_cast<float*>(src->data)[width],NAN,false));
+          if (packed) CHECK(refuses_change(backend,dev,graph,out,values[width],NAN,false));
           if (type==GGML_TYPE_I32) CHECK(refuses_change(backend,dev,graph,out,static_cast<int32_t*>(idx->data)[1],-1,false));
           else CHECK(refuses_change(backend,dev,graph,out,static_cast<int64_t*>(idx->data)[1],INT64_C(4294967296),false));
         }

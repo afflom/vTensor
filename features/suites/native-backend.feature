@@ -356,3 +356,9 @@ Feature: native-backend
     Given IQ1_S or IQ1_M weight rows and F32 activations
     When the provider evaluates an ordinary or indexed matrix
     Then each result matches the imported GGML CPU
+
+  @VT-117 @build
+  Scenario: Prism schedules exponent-only and grouped four-bit floating encoders for copied and indexed GGML writes through Verdant
+    Given MXFP4 or NVFP4 destinations with scalar source views
+    When vTensor copies or updates indexed rows
+    Then stored bytes match GGML CPU and a failed update preserves the destination

@@ -3272,14 +3272,14 @@ pub fn f33(v0: u64) -> bool {
         } {
             true
         } else {
-            let a750 = v0;
-            let a751 = 41u64;
-            if nat_eq(a750, a751) {
-                true
-            } else {
+            let a750 = 39u64;
+            let a751 = v0;
+            if nat_le(a750, a751) {
                 let a752 = v0;
                 let a753 = 42u64;
-                nat_eq(a752, a753)
+                nat_le(a752, a753)
+            } else {
+                false
             }
         }
     }
