@@ -1,0 +1,161 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-121",
+  "implementation": "b5775e9aff96415aa48482dcccc26fc547f99486",
+  "verdant_revision": "204b1de06f0057deaa4bbb0227c504e4bea91ceb",
+  "provider_sha256": "ad09651cb15a9f613e7f39c2e54cbcbcb5aa7bfa125200179d0ec385939738b9",
+  "provider_inputs_sha256": "6258ba90e3988fffb57c39a18ee94284d8a79b6385bed46ea835a9a559f4a272",
+  "pointwise_lock_sha256": "57d4c5e4eec647804fa619691d20a7d7506c1569c94b0818c3e9811f5b0dd841",
+  "oracle": "Original GGML CPU for 24 zero-bias graphs. The same upstream factory constructs and compares the other 24 graphs against the pinned GGML Vulkan implementation, which supports positive bias.",
+  "cpu": {
+    "oracle_executable_sha256": "57523d7090f86b913133eb15db5570bccedb2a505b08be2032f6fcf5dfd66549",
+    "contract_ordinals": [
+      17168,
+      17181
+    ],
+    "contract_transcript_sha256": "b2a337bd2a569c641ea79f1726bbff73efc602893549aebe92e76ada96e3fe7f",
+    "runs": {
+      "rows-0": {
+        "passed": 6,
+        "transcript_sha256": "600236387bc1fe72b73d43c1a86a378e92ba066b3d4f32a2196de2de055d8b55"
+      },
+      "rows-1": {
+        "passed": 6,
+        "transcript_sha256": "24374baa01e429baf6e82c922923544ac7d6957ae25bba3c69eeeef8453229f7"
+      },
+      "rows-2": {
+        "passed": 5,
+        "transcript_sha256": "50ef56ff0494f31c7dc0d8760b626797b1ac09043de656fb87df8b7bda5cc9c1"
+      },
+      "rows-3": {
+        "passed": 5,
+        "transcript_sha256": "6d570bb248e746377e01974430735d05e07c7d08e47585c285db219d4e726fd7"
+      }
+    }
+  },
+  "vulkan": {
+    "release": "https://github.com/ggml-org/llama.cpp/releases/download/b12552/llama-b12552-bin-ubuntu-vulkan-x64.tar.gz",
+    "release_tag": "b12552",
+    "release_sha256": "b80e7ecfe1a1de2909c3c7fa449d206ea89d7aa8b076ea064c9d4dcd54dd4b60",
+    "reference_library_sha256": "752148f7d90dc859c2edf82b564d1c73256f322e084858f91d2d2e8f5371f065",
+    "device": "Mesa llvmpipe (LLVM 20.1.2, 256 bits)",
+    "reference_selector": {
+      "original": "ggml_backend_ptr backend_cpu(ggml_backend_init_by_type(GGML_BACKEND_DEVICE_TYPE_CPU, NULL));",
+      "replacement": "ggml_backend_ptr backend_cpu(ggml_backend_init_by_name(\"Vulkan0\", NULL));"
+    },
+    "original_test_backend_ops_cpp_sha256": "f634a61fa3ff71eb7675410999b0ea4ada2161c01934680e5ded3cef95441e52",
+    "test_backend_ops_cpp_sha256": "3cc432510e0accf6bcc717658932b777a31758fe05d114f76a8248e1c356e626",
+    "test_backend_ops_binary_sha256": "1b66ea7dbce2a67c5e37ed9c356ce8857961dece287a37f1ee1a65ab7dd36f80",
+    "ggml_host_sha256": "38afd9f20c33879492df893e74d4269e80c96259addc7b3ef9960f40943ccddc",
+    "ggml_base_sha256": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+    "build": "c++ -std=c++17 -O1 -DNDEBUG -DGGML_SHARED -DGGML_BACKEND_DL -Illama.cpp/tests -Illama.cpp/ggml/include test-backend-ops.cpp -Lllama-build/bin -lggml -lggml-base -pthread -o test-backend-ops",
+    "environment": {
+      "GGML_BACKEND_PATH": "<tested vTensor library>",
+      "LD_LIBRARY_PATH": "<pinned GGML host libraries>",
+      "GGML_VK_VISIBLE_DEVICES": "0",
+      "VK_DRIVER_FILES": "<Mesa lvp_icd.json>",
+      "LP_NUM_THREADS": "2"
+    },
+    "arguments": [
+      "test",
+      "-b",
+      "vTensor",
+      "-o",
+      "SOFT_MAX_BACK",
+      "-p",
+      "max_bias=8[.]000000",
+      "-j",
+      "1",
+      "--output",
+      "csv"
+    ],
+    "cpu_vulkan_control_ordinals": [
+      17168,
+      17180
+    ],
+    "passed_ordinals": [
+      17192,
+      17193,
+      17194,
+      17195,
+      17196,
+      17197,
+      17198,
+      17199,
+      17200,
+      17201,
+      17202,
+      17203,
+      17204,
+      17205,
+      17206,
+      17207,
+      17208,
+      17209,
+      17210,
+      17211,
+      17212,
+      17213,
+      17214,
+      17215
+    ],
+    "csv_sha256": "83971dd303e48bcc0522f6fed0bb5255befd5a180e697217522868d9b2d06bc5"
+  },
+  "mutation": {
+    "change": "Zero the binary64 row dot product before narrowing it to binary32.",
+    "diagnostic": "[SOFT_MAX_BACK] ERR = 2.965124907 > 0.000000100"
+  },
+  "case_ordinals": {
+    "SOFT_MAX_BACK": [
+      17168,
+      17169,
+      17170,
+      17171,
+      17172,
+      17173,
+      17174,
+      17175,
+      17176,
+      17177,
+      17178,
+      17179,
+      17180,
+      17181,
+      17182,
+      17183,
+      17184,
+      17185,
+      17186,
+      17187,
+      17188,
+      17189,
+      17190,
+      17191,
+      17192,
+      17193,
+      17194,
+      17195,
+      17196,
+      17197,
+      17198,
+      17199,
+      17200,
+      17201,
+      17202,
+      17203,
+      17204,
+      17205,
+      17206,
+      17207,
+      17208,
+      17209,
+      17210,
+      17211,
+      17212,
+      17213,
+      17214,
+      17215
+    ]
+  }
+}
