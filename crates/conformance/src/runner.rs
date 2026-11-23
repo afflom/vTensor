@@ -1032,27 +1032,21 @@ fn execute_word(
     destination: *mut u8,
     words: &mut [u64],
 ) -> Result<(), BackendError> {
-    use verdant_tensor::linear;
+    use BackendError::InvalidTensor;
     let GraphResponse::C7(operation, left, right, target, read_bytes, write_bytes) = response
     else {
-        return Err(BackendError::InvalidTensor);
+        return Err(InvalidTensor);
     };
     let read = |operand| match operand {
-        WordOperand::C1(index) => words
-            .get(index as usize)
-            .copied()
-            .ok_or(BackendError::InvalidTensor),
+        WordOperand::C1(index) => words.get(index as usize).copied().ok_or(InvalidTensor),
         WordOperand::C2(value) => Ok(value),
         operand => {
             let (pointer, offset) = match operand {
-                WordOperand::C0(index, offset) => (
-                    *pointers
-                        .get(index as usize)
-                        .ok_or(BackendError::InvalidTensor)?,
-                    offset,
-                ),
+                WordOperand::C0(index, offset) => {
+                    (*pointers.get(index as usize).ok_or(InvalidTensor)?, offset)
+                }
                 WordOperand::C3(offset) => (destination, offset),
-                _ => return Err(BackendError::InvalidTensor),
+                _ => return Err(InvalidTensor),
             };
             // SAFETY: Prism bounds the selected source or output word and its byte width.
             unsafe { scalar_word(pointer.add(offset as usize), read_bytes, None) }
@@ -1063,7 +1057,7 @@ fn execute_word(
         if overflow {
             BackendError::Overflow
         } else {
-            BackendError::InvalidTensor
+            InvalidTensor
         }
     };
     let float = |word: u64| f32::from_bits(word as u32);
@@ -1084,9 +1078,9 @@ fn execute_word(
                 .map_err(|_| BackendError::Overflow)?
         }
         WordOperation::C5(kind) => {
-            linear::evaluate_encoded_word(kind, a, b).map_err(|_| BackendError::InvalidTensor)?
+            linear::evaluate_encoded_word(kind, a, b).map_err(|_| InvalidTensor)?
         }
-        WordOperation::C6 => return Err(BackendError::InvalidTensor),
+        WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
             let input = decode_float(source, a)?;
             let result = match kind {
@@ -1100,24 +1094,20 @@ fn execute_word(
                 20 if source == 0 => Ok(gaussian_table(a)?.unwrap_or_default()),
                 20 => linear::gelu_f32(input),
                 21 => linear::gelu_quick_f32(input),
-                _ => return Err(BackendError::InvalidTensor),
+                _ => return Err(InvalidTensor),
             }
             .map_err(|_| BackendError::Overflow)?;
             Some(convert(0, destination, u64::from(result.to_bits()))?)
         }
     }
-    .ok_or(BackendError::InvalidTensor)?;
+    .ok_or(InvalidTensor)?;
     match target {
-        WordTarget::C0(index) => {
-            *words
-                .get_mut(index as usize)
-                .ok_or(BackendError::InvalidTensor)? = value
-        }
+        WordTarget::C0(index) => *words.get_mut(index as usize).ok_or(InvalidTensor)? = value,
         // SAFETY: Prism bounds each output word, including eight-byte COUNT_EQUAL results.
         WordTarget::C1(offset) => unsafe {
             scalar_word(destination.add(offset as usize), write_bytes, Some(value))?;
         },
-        WordTarget::C2 => return Err(BackendError::InvalidTensor),
+        WordTarget::C2 => return Err(InvalidTensor),
     }
     Ok(())
 }
@@ -1567,9 +1557,10 @@ mod attention {
         self, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
     };
     use vtensor_attention::{Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as Response};
+    use BackendError::{InvalidTensor, Overflow};
 
     fn request(query: Request) -> Result<Response, BackendError> {
-        vtensor_attention::run(query).map_err(|_| BackendError::Overflow)
+        vtensor_attention::run(query).map_err(|_| Overflow)
     }
 
     pub(super) fn plan(
@@ -1578,7 +1569,7 @@ mod attention {
         output: TensorDescriptor,
     ) -> Result<Option<super::ExecutionPlan>, BackendError> {
         let [Some(query), Some(key), Some(value), mask, sink] = sources else {
-            return Err(BackendError::InvalidTensor);
+            return Err(InvalidTensor);
         };
         let word = |index: usize| u64::from(tensor.op_params[index] as u32);
         let descriptor = descriptor_for!(Descriptor::C0);
@@ -1596,7 +1587,7 @@ mod attention {
             descriptor(output),
         ))? {
             Response::C1(p) => Ok(Some(super::ExecutionPlan::Attention(Box::new(p)))),
-            _ => Err(BackendError::InvalidTensor),
+            _ => Err(InvalidTensor),
         }
     }
 
@@ -1608,9 +1599,7 @@ mod attention {
         }
 
         fn blocks(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
-            let bytes = count
-                .checked_mul(self.tensor.nb[0])
-                .ok_or(BackendError::Overflow)?;
+            let bytes = count.checked_mul(self.tensor.nb[0]).ok_or(Overflow)?;
             self.region(offset, bytes)
         }
 
@@ -1619,7 +1608,7 @@ mod attention {
             if matches!(self.tensor.ty, 2 | 8) {
                 let (blocks, tail) = out.as_chunks_mut::<32>();
                 if !tail.is_empty() {
-                    return Err(BackendError::InvalidTensor);
+                    return Err(InvalidTensor);
                 }
                 let source = self.blocks(offset, blocks.len())?;
                 for (input, block) in source.chunks_exact(width).zip(blocks) {
@@ -1633,7 +1622,7 @@ mod attention {
                     (kind @ (1 | 30), &[a, b]) => {
                         super::decode_float(kind, u16::from_ne_bytes([a, b]).into())?
                     }
-                    _ => return Err(BackendError::InvalidTensor),
+                    _ => return Err(InvalidTensor),
                 };
             }
             Ok(())
@@ -1650,7 +1639,7 @@ mod attention {
         let (Some(q), Some(k), Some(v), mask, sink) =
             (input(0)?, input(1)?, input(2)?, input(3)?, input(4)?)
         else {
-            return Err(BackendError::InvalidTensor);
+            return Err(InvalidTensor);
         };
         let shape = q.tensor.ne;
         let key_rows = k.tensor.ne[1] as u64;
@@ -1671,7 +1660,7 @@ mod attention {
         let decode = |bits: u64| f32::from_bits(bits as u32);
         let cap = cap.map(decode);
         let head_bias = head_bias.map(decode);
-        let scalar = |op, a, b| evaluate_f32_scalar(op, a, b).map_err(|_| BackendError::Overflow);
+        let scalar = |op, a, b| evaluate_f32_scalar(op, a, b).map_err(|_| Overflow);
         let mut scale = f32::from_bits(tensor.op_params[0] as u32);
         if let Some(cap) = cap {
             scale = scalar(3, scale, cap)?;
@@ -1686,7 +1675,7 @@ mod attention {
                     let Response::C2(qoff, koff, voff, moff, soff, dst, ks, vs, dot_type) =
                         request(Request::C1(plan.clone(), token, head, batch))?
                     else {
-                        return Err(BackendError::InvalidTensor);
+                        return Err(InvalidTensor);
                     };
                     q.decode(qoff, &mut query)?;
                     // GGML prepares the query in the key's dot-product storage once per head.
@@ -1731,16 +1720,14 @@ mod attention {
                             scaled = scalar(2, cap, linear::tanh_f32(scaled)?)?;
                         }
                         let score = scalar(0, scaled, bias)?;
-                        mean.push(score, Some(&value))
-                            .map_err(|_| BackendError::Overflow)?;
+                        mean.push(score, Some(&value)).map_err(|_| Overflow)?;
                     }
                     if let Some(sink) = &sink {
                         let mut score = [0.0];
                         sink.decode(soff, &mut score)?;
-                        mean.push(score[0], None)
-                            .map_err(|_| BackendError::Overflow)?;
+                        mean.push(score[0], None).map_err(|_| Overflow)?;
                     }
-                    let row = mean.finish().map_err(|_| BackendError::Overflow)?;
+                    let row = mean.finish().map_err(|_| Overflow)?;
                     // SAFETY: the Prism plan bounds this contiguous F32 row. Verdant owns its separate workspace.
                     unsafe { super::write_float_row(output.add(dst as usize), &row) }
                 }
