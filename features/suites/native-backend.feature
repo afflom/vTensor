@@ -368,3 +368,9 @@ Feature: native-backend
     Given the imported exponential-minus-one graphs
     When the provider widens each input and subtracts one from its binary32 exponential
     Then each result agrees with the pinned CPU unary operation
+
+  @VT-120 @build
+  Scenario: Prism admits ordinary and in-place E4M3 additions and Verdant reproduces the GGML CPU results
+    Given all six imported E4M3 addition graphs with F32 right operands
+    When the backend adds the widened operands and stores the result
+    Then the original CPU graph agrees for ordinary and aliased outputs

@@ -2089,7 +2089,7 @@ definition{
   name: machineOperation,
   parameters: [typed : Bool, family : Nat, operation : Nat, source : Nat, destination : Nat],
   result: WordOperation,
-  body: (if (family =? 0) then (if typed then (if ((source =? 0) && (destination =? 43)) then (castWord source destination) else (ctor WordOperation.storage source destination false)) else (ctor WordOperation.wide operation)) else (if (family =? 1) then (ctor WordOperation.scalar operation) else (if (family =? 2) then (ctor WordOperation.encoded operation) else (if (family =? 3) then (ctor WordOperation.unary operation operation false) else (if (family =? 4) then (ctor WordOperation.storage source destination false) else (if (machineExponential typed family operation source destination) then (ctor WordOperation.elementary operation source destination) else (ctor WordOperation.invalid))))))),
+  body: (if (family =? 0) then (if typed then (if (((source =? 0) && (destination =? 43)) || ((source =? 43) && (destination =? 0))) then (castWord source destination) else (ctor WordOperation.storage source destination false)) else (ctor WordOperation.wide operation)) else (if (family =? 1) then (ctor WordOperation.scalar operation) else (if (family =? 2) then (ctor WordOperation.encoded operation) else (if (family =? 3) then (ctor WordOperation.unary operation operation false) else (if (family =? 4) then (ctor WordOperation.storage source destination false) else (if (machineExponential typed family operation source destination) then (ctor WordOperation.elementary operation source destination) else (ctor WordOperation.invalid))))))),
   executable: true
 }
 
@@ -2113,6 +2113,13 @@ definition{
   result: GraphResponse,
   body: (if (((((family <? 5) || (machineExponential typed family operation source destination)) && (left <? 5)) && (right <? 5)) && ((target <? 2) || (target =? 3))) then (ctor GraphResponse.instruction (machineOperation typed family operation source destination) (wordOperand left from) (wordOperand right at) (wordTarget (if (target =? 0) then 1 else target) to) readBytes writeBytes) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
   executable: true
+}
+
+theorem{
+  name: typedSmallFloatWidensBeforeAddition,
+  parameters: [],
+  statement: ((machineOperation true 0 0 43 0) = (ctor WordOperation.smallFloat 3)),
+  proof: reflexivity{}
 }
 
 theorem{

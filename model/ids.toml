@@ -774,3 +774,9 @@ id = "VT-118"
 level = "build"
 suite = "native-backend"
 statement = "Prism composes Verdant exponential and binary32 subtraction for strided GGML EXPM1 graphs"
+
+[[id]]
+id = "VT-120"
+level = "build"
+suite = "native-backend"
+statement = "Prism admits ordinary and in-place E4M3 additions and Verdant reproduces the GGML CPU results"

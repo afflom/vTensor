@@ -351,6 +351,8 @@ ggml_batches! {
     fn logistic_graphs_vt_61() { "upstream-SIGMOID,SILU,SIGMOID_MUL,SILU_MUL,ADD_SIGMOID_MUL,ADD_SILU_MUL", 122, ["pointwise"] }
 
     #[test]
+    fn small_float_add_vt_120() { "upstream-SMALL_FLOAT_ADD", 6, ["typed", "pointwise"] }
+    #[test]
     fn exponential_difference_vt_118() { "upstream-EXPM1", 12, ["pointwise"] }
 
     #[test]
@@ -1498,17 +1500,15 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "cf27708f126dc8f1a4afc2e2c130bb8c2e8c396084507be74d95912b665c34a3",
+            "4bb75487c897aa1b37b9ba198f14f207a3e9ff5e7c9703e1a67b85672cbda90d",
         )
     });
 
     fn fixture_record(name: &str) -> serde_json::Value {
-        frozen_json(
-            name,
-            ORACLE_BINDINGS["fixture_digests"][name]
-                .as_str()
-                .expect("fixture digest"),
-        )
+        let digest = ORACLE_BINDINGS["fixture_digests"][name]
+            .as_str()
+            .expect("fixture digest");
+        frozen_json(name, digest)
     }
     pub(super) static NATIVE_FIXTURES: LazyLock<serde_json::Value> =
         LazyLock::new(|| fixture_record("native-fixture-baseline"));

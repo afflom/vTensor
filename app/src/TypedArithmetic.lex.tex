@@ -99,6 +99,14 @@ definition{
 }
 
 definition{
+  name: binaryWordBytes,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (if (storage =? 43) then 1 else (bytes storage)),
+  executable: true
+}
+
+definition{
   name: storageTuple,
   parameters: [left : Nat, rhs : Nat, output : Nat],
   result: Bool,
@@ -134,7 +142,7 @@ definition{
   name: aligned,
   parameters: [tensor : NormPlan::TensorDescriptor],
   result: Bool,
-  body: (let size : Nat := (bytes (project tensor ty)); ((((prim remainder (project tensor address) size 1 : Nat) =? 0) && (RmsNormalization::axisAligned (project tensor n0) (project tensor s0) size)) && (RmsNormalization::alignedRows (project tensor n1) (project tensor n2) (project tensor n3) (project tensor s1) (project tensor s2) (project tensor s3) size))),
+  body: (let size : Nat := (binaryWordBytes (project tensor ty)); ((((prim remainder (project tensor address) size 1 : Nat) =? 0) && (RmsNormalization::axisAligned (project tensor n0) (project tensor s0) size)) && (RmsNormalization::alignedRows (project tensor n1) (project tensor n2) (project tensor n3) (project tensor s1) (project tensor s2) (project tensor s3) size))),
   executable: true
 }
 
@@ -142,7 +150,7 @@ definition{
   name: nested,
   parameters: [tensor : NormPlan::TensorDescriptor],
   result: Bool,
-  body: (RmsNormalization::nestedRows (prim multiply (project tensor n0) (bytes (project tensor ty)) : Nat) (project tensor n1) (project tensor n2) (project tensor n3) (project tensor s1) (project tensor s2) (project tensor s3)),
+  body: (RmsNormalization::nestedRows (prim multiply (project tensor n0) (binaryWordBytes (project tensor ty)) : Nat) (project tensor n1) (project tensor n2) (project tensor n3) (project tensor s1) (project tensor s2) (project tensor s3)),
   executable: true
 }
 
@@ -150,7 +158,7 @@ definition{
   name: contiguousRightRows,
   parameters: [rhs : NormPlan::TensorDescriptor],
   result: Bool,
-  body: (((project rhs n0) =? 1) || ((project rhs s0) =? (bytes (project rhs ty)))),
+  body: (((project rhs n0) =? 1) || ((project rhs s0) =? (binaryWordBytes (project rhs ty)))),
   executable: true
 }
 
@@ -187,6 +195,19 @@ definition{
 }
 
 definition{
+  name: binaryLayout,
+  parameters: [
+    kind : Nat,
+    left : NormPlan::TensorDescriptor,
+    rhs : NormPlan::TensorDescriptor,
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Bool,
+  body: (if ((project left ty) =? 43) then (((((((kind =? 0) && ((project rhs ty) =? 0)) && (((project output ty) =? 0) || ((project output ty) =? 43))) && (NormPlan::sameShape left rhs)) && ((project rhs s0) =? 4)) && (((project output s0) <=? (project output s1)) && (((project output s1) <=? (project output s2)) && ((project output s2) <=? (project output s3))))) && ((prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat) <=? 2147483647)) else ((repeatValid left rhs) && (storageTuple (project left ty) (project rhs ty) (project output ty)))),
+  executable: true
+}
+
+definition{
   name: plan,
   parameters: [
     kind : Nat,
@@ -195,7 +216,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if ((((NormPlan::sameShape left output) && (repeatValid left rhs)) && (storageTuple (project left ty) (project rhs ty) (project output ty))) && (if (empty left) then true else (((((((((project left s0) =? (bytes (project left ty))) && ((project output s0) =? (bytes (project output ty)))) && (aligned left)) && (aligned rhs)) && (aligned output)) && (countersAdmitted left rhs)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)))) then (let slots : Nat := (if ((empty left) || (nested output)) then 0 else (prim quotient (project output span) (bytes (project output ty)) 0 : Nat)); (ctor Response.planned (record Plan {steps := (steps (elements left) slots (elementSteps (project left ty) (project rhs ty) (project output ty))), capacity := (3 + slots), operation := kind, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := rhs, output := output}))) else (ctor Response.invalid)),
+  body: (if (((NormPlan::sameShape left output) && (binaryLayout kind left rhs output)) && (if (empty left) then true else (((((((((project left s0) =? (binaryWordBytes (project left ty))) && ((project output s0) =? (binaryWordBytes (project output ty)))) && (aligned left)) && (aligned rhs)) && (aligned output)) && (countersAdmitted left rhs)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)))) then (let slots : Nat := (if ((empty left) || (nested output)) then 0 else (prim quotient (project output span) (binaryWordBytes (project output ty)) 0 : Nat)); (ctor Response.planned (record Plan {steps := (steps (elements left) slots (elementSteps (project left ty) (project rhs ty) (project output ty))), capacity := (3 + slots), operation := kind, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := rhs, output := output}))) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -344,7 +365,7 @@ definition{
   result: Nat,
   body: (if (packedTarget kind) then (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.knownType spec => (project spec typeSize)
-    | TensorTypes::TypeStorageDecision.unknownType => 0) else (if (kind =? 43) then 1 else (bytes kind))),
+    | TensorTypes::TypeStorageDecision.unknownType => 0) else (binaryWordBytes kind)),
   executable: true
 }
 
@@ -439,7 +460,7 @@ definition{
   name: step,
   parameters: [index : Nat, execution : Plan, flag : Nat],
   result: Response,
-  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let rhs : NormPlan::TensorDescriptor := (project execution rhs); (let output : NormPlan::TensorDescriptor := (project execution output); (let marks : Nat := (if ((project execution capacity) =? 3) then 0 else (prim multiply (elements left) 2 : Nat)); (if ((project execution steps) <=? index) then (ctor Response.invalid) else (if (index <? marks) then (let ordinal : Nat := (prim quotient index 2 0 : Nat); (let slot : Nat := (3 + (prim quotient (offset ordinal output) (bytes (project output ty)) 0 : Nat)); (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor Response.instruction 2 3 0 0 1 slot 2 0 0 2 8 8) else (if (flag =? 0) then (ctor Response.instruction 2 3 0 0 2 1 2 0 0 slot 8 8) else (ctor Response.invalid))))) else (let relative : Nat := (prim subtract index marks : Nat); (let phases : Nat := (elementSteps (project left ty) (project rhs ty) (project output ty)); (let ordinal : Nat := (prim quotient relative phases 0 : Nat); (let phase : Nat := (prim remainder relative phases 0 : Nat); (let ld : Nat := (if ((project left ty) =? 0) then 0 else 1); (let rd : Nat := (if ((project rhs ty) =? 0) then 0 else 1); (if (phase <? ld) then (ctor Response.instruction 0 0 (project left ty) 0 0 (offset ordinal left) 2 0 0 0 (bytes (project left ty)) 4) else (if (phase <? (ld + rd)) then (ctor Response.instruction 0 0 (project rhs ty) 0 4 (rightOffset ordinal left rhs) 2 0 0 1 (bytes (project rhs ty)) 4) else (if (phase =? (ld + rd)) then (ctor Response.instruction 1 (project execution operation) 0 0 (if (ld =? 0) then 0 else 1) (if (ld =? 0) then (offset ordinal left) else 0) (if (rd =? 0) then 4 else 1) (if (rd =? 0) then (rightOffset ordinal left rhs) else 1) (if ((project output ty) =? 0) then 3 else 0) (if ((project output ty) =? 0) then (offset ordinal output) else 0) 4 4) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 (offset ordinal output) 4 (bytes (project output ty)))))))))))))))))),
+  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let rhs : NormPlan::TensorDescriptor := (project execution rhs); (let output : NormPlan::TensorDescriptor := (project execution output); (let marks : Nat := (if ((project execution capacity) =? 3) then 0 else (prim multiply (elements left) 2 : Nat)); (if ((project execution steps) <=? index) then (ctor Response.invalid) else (if (index <? marks) then (let ordinal : Nat := (prim quotient index 2 0 : Nat); (let slot : Nat := (3 + (prim quotient (offset ordinal output) (binaryWordBytes (project output ty)) 0 : Nat)); (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor Response.instruction 2 3 0 0 1 slot 2 0 0 2 8 8) else (if (flag =? 0) then (ctor Response.instruction 2 3 0 0 2 1 2 0 0 slot 8 8) else (ctor Response.invalid))))) else (let relative : Nat := (prim subtract index marks : Nat); (let phases : Nat := (elementSteps (project left ty) (project rhs ty) (project output ty)); (let ordinal : Nat := (prim quotient relative phases 0 : Nat); (let phase : Nat := (prim remainder relative phases 0 : Nat); (let ld : Nat := (if ((project left ty) =? 0) then 0 else 1); (let rd : Nat := (if ((project rhs ty) =? 0) then 0 else 1); (if (phase <? ld) then (ctor Response.instruction 0 0 (project left ty) 0 0 (offset ordinal left) 2 0 0 0 (binaryWordBytes (project left ty)) 4) else (if (phase <? (ld + rd)) then (ctor Response.instruction 0 0 (project rhs ty) 0 4 (rightOffset ordinal left rhs) 2 0 0 1 (binaryWordBytes (project rhs ty)) 4) else (if (phase =? (ld + rd)) then (ctor Response.instruction 1 (project execution operation) 0 0 (if (ld =? 0) then 0 else 1) (if (ld =? 0) then (offset ordinal left) else 0) (if (rd =? 0) then 4 else 1) (if (rd =? 0) then (rightOffset ordinal left rhs) else 1) (if ((project output ty) =? 0) then 3 else 0) (if ((project output ty) =? 0) then (offset ordinal output) else 0) 4 4) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 (offset ordinal output) 4 (binaryWordBytes (project output ty)))))))))))))))))),
   executable: true
 }
 
@@ -495,6 +516,13 @@ definition{
     | Request.step index execution flag => (if ((project execution operation) =? 33) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if (boundedGate (project execution gateVariant)) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag)))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: smallAdditionLoadsOneByte,
+  parameters: [],
+  statement: ((binaryWordBytes 43) = 1),
+  proof: reflexivity{}
 }
 
 theorem{
