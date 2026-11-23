@@ -684,3 +684,9 @@ id = "VT-102"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans indexed gradient accumulation by source block and Verdant decodes the source and adds each binary32 lane"
+
+[[id]]
+id = "VT-103"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans grouped two-bit codebook matrix and expert graphs and Verdant contracts their signed codeword rows"

@@ -872,19 +872,17 @@ pub mod prism {
             },
         )?;
         let listing = git(root, &["ls-tree", "-r", "-z", commit])?;
-        let mut blobs = Vec::new();
-        for entry in listing.split(|b| *b == 0) {
-            let entry = std::str::from_utf8(entry)?;
-            let Some((meta, path)) = entry.split_once('\t') else {
+        let mut paths = Vec::new();
+        let mut requests = Vec::new();
+        for entry in std::str::from_utf8(&listing)?.split_terminator('\0') {
+            let (metadata, path) = entry.split_once('\t').ok_or("invalid git tree entry")?;
+            let Some((mode, id)) = metadata.split_once(" blob ") else {
                 continue;
             };
-            let fields: Vec<&str> = meta.split(' ').collect();
-            if fields.len() == 3
-                && fields[0] != "120000"
-                && fields[1] == "blob"
-                && language(path).is_some()
-            {
-                blobs.push((fields[2].to_string(), path.to_string()));
+            if mode != "120000" && language(path).is_some() {
+                paths.push(path);
+                requests.extend_from_slice(id.as_bytes());
+                requests.push(b'\n');
             }
         }
 
@@ -895,28 +893,23 @@ pub mod prism {
             .stdout(Stdio::piped())
             .spawn()?;
         let mut stdin = child.stdin.take().ok_or("git cat-file: no stdin")?;
-        let ids: Vec<String> = blobs.iter().map(|(id, _)| id.clone()).collect();
-        // Written from a thread so that a full output pipe cannot stall the request.
-        let writer = std::thread::spawn(move || -> std::io::Result<()> {
-            for id in ids {
-                writeln!(stdin, "{id}")?;
-            }
-            Ok(())
-        });
+        // Write the batch while reading so either pipe can fill without blocking the other.
+        let writer = std::thread::spawn(move || stdin.write_all(&requests));
         let mut reader = BufReader::new(child.stdout.take().ok_or("git cat-file: no stdout")?);
         let mut measure = Measure::default();
-        for (_, path) in &blobs {
-            let mut header = String::new();
+        let mut header = String::new();
+        let mut bytes = Vec::new();
+        for path in paths {
+            header.clear();
             reader.read_line(&mut header)?;
             let size: usize = header
                 .split(' ')
                 .nth(2)
                 .and_then(|s| s.trim().parse().ok())
                 .ok_or_else(|| format!("git cat-file: unexpected header {header:?} for {path}"))?;
-            let mut bytes = vec![0; size + 1];
+            bytes.resize(size + 1, 0);
             reader.read_exact(&mut bytes)?;
-            bytes.truncate(size);
-            measure.add(path, &bytes, &frame);
+            measure.add(path, &bytes[..size], &frame);
         }
         writer
             .join()

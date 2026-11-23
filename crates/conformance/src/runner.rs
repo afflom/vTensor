@@ -875,18 +875,26 @@ type SymmetricDot = fn(&[u8], &[linear::SymmetricQ8Block<32>]) -> Result<f32, Te
 #[derive(Clone, Copy)]
 enum PackedWeight {
     Symmetric(SymmetricDot),
+    Grouped(fn(&[u8], &[linear::GroupedQ8Block]) -> Result<f32, TensorComputeError>),
     Affine(linear::AffineWeightEncoding),
 }
 
 fn packed_weight(kind: u64) -> Option<PackedWeight> {
+    use linear::CodebookEncoding::*;
     use linear::{AffineWeightEncoding::*, BlockFloatEncoding::*, SymmetricWeightEncoding::*};
-    use PackedWeight::{Affine, Symmetric};
+    use PackedWeight::{Affine, Grouped, Symmetric};
     Some(match kind {
         2 => Symmetric(linear::dot_symmetric_q4_row),
         3 => Affine(FourBit),
         6 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, SignedFive)),
         7 => Affine(FiveBit),
         8 => Symmetric(linear::dot_symmetric_q8_row),
+        10 => Grouped(linear::dot_grouped_q2_row),
+        12 => Grouped(linear::dot_grouped_q4_row),
+        13 => Grouped(linear::dot_grouped_q5_row),
+        16 => Grouped(|w, a| linear::dot_codebook_row(w, a, IndexedSigns)),
+        17 => Grouped(|w, a| linear::dot_codebook_row(w, a, ExtendedIndex)),
+        22 => Grouped(|w, a| linear::dot_codebook_row(w, a, ExplicitSigns)),
         20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)),
         39 => Symmetric(|w, a| linear::dot_block_float_row(w, a, ExponentOnly)),
         40 => Symmetric(|w, a| linear::dot_block_float_row(w, a, GroupedE4M3)),
@@ -901,7 +909,6 @@ fn execute_row_products(
     tensor: &Tensor,
     plan: RowProductPlan,
 ) -> Result<(), BackendError> {
-    use linear::{dot_grouped_q2_row, encode_grouped_q8_block};
     use RowProductPlan::C0;
     let C0(_, weight_bytes, ..) = plan;
     macro_rules! packed {
@@ -925,10 +932,8 @@ fn execute_row_products(
             |&[x]| prepare_float(0, precision, x.to_bits().into()),
             |source, at, activations, weights| source.dot(at, activations, weights),
         ),
-        C0(.., None, 10) => packed!(encode_grouped_q8_block, dot_grouped_q2_row),
-        C0(.., None, 12) => packed!(encode_grouped_q8_block, linear::dot_grouped_q4_row),
-        C0(.., None, 13) => packed!(encode_grouped_q8_block, linear::dot_grouped_q5_row),
         C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
+            PackedWeight::Grouped(dot) => packed!(linear::encode_grouped_q8_block, dot),
             PackedWeight::Symmetric(dot) => packed!(linear::encode_symmetric_q8_block, dot),
             PackedWeight::Affine(encoding) => {
                 packed!(linear::encode_affine_q8_block::<32>, |w, a| {
@@ -1948,7 +1953,9 @@ mod attention {
             Some(super::PackedWeight::Affine(kind)) => {
                 KeyRows::Affine(kind, super::reserved(query.len() / 32)?)
             }
-            None => KeyRows::Scalar(workspace(shape[0] as u64, 0.0)?),
+            Some(super::PackedWeight::Grouped(_)) | None => {
+                KeyRows::Scalar(workspace(shape[0] as u64, 0.0)?)
+            }
         };
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
         let output = graph_tensor_data(tensor)?;

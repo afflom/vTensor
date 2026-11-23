@@ -108,10 +108,18 @@ definition{
 }
 
 definition{
+  name: groupedWeights,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((((((kind =? 10) || (kind =? 12)) || (kind =? 13)) || (kind =? 16)) || (kind =? 17)) || (kind =? 22)),
+  executable: true
+}
+
+definition{
   name: rowProductType,
   parameters: [kind : Nat],
   result: Bool,
-  body: (((((ScalarDotStorage::packedActivationWeights kind) || (blockFloatWeights kind)) || (kind =? 10)) || (kind =? 12)) || (kind =? 13)),
+  body: (((ScalarDotStorage::packedActivationWeights kind) || (blockFloatWeights kind)) || (groupedWeights kind)),
   executable: true
 }
 

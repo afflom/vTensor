@@ -278,3 +278,9 @@ Feature: native-backend
     Given GGML gradient rows and a contiguous or viewed index vector
     When vTensor scatters the decoded rows into the binary32 gradient
     Then the output matches authoritative GGML decoding followed by CPU GET_ROWS_BACK
+
+  @VT-103 @build
+  Scenario: Prism plans grouped two-bit codebook matrix and expert graphs and Verdant contracts their signed codeword rows
+    Given IQ2_XXS, IQ2_XS or IQ2_S weights and grouped activations
+    When the provider evaluates ordinary and indexed matrix products
+    Then the output matches the pinned GGML CPU evaluator

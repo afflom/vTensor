@@ -300,6 +300,9 @@ ggml_batches! {
     #[test]
     fn state_convolution_vt_81() { "upstream-SSM_WINDOWS", 6, ["pointwise"] }
 
+    /// Compare each signed codebook layout through both ordinary and expert matrix paths.
+    #[test]
+    fn codebook_products_vt_103() { "upstream-CODEBOOK_PRODUCTS", 6, ["matrix"] }
     /// Compare all remaining source formats against authoritative GGML decoding and CPU scatter.
     #[test]
     fn decoded_row_gradients_vt_102() { "upstream-GET_ROWS_BACK_DECODED", 54, ["pointwise"] }
@@ -1465,7 +1468,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "09176ba6e7543e69a37401475c178bfcb81e971f4893c541639f554ade4ff1af",
+            "d9bcef726a5653cfece7092fb2b8128d2ebd4c8053f9920d06586a9f38edee12",
         )
     });
 
@@ -1589,17 +1592,11 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
     }
 
     // The parent cache already binds the source archive, compiler, flags and SDK.
-    fn reference_objects(common: &Path, sources: &[impl AsRef<str>]) -> Vec<std::path::PathBuf> {
-        sources
-            .iter()
-            .map(|source| {
-                let source = source.as_ref();
-                let object = common.join("reference-object").join(format!("{source}.o"));
-                std::fs::create_dir_all(object.parent().unwrap()).unwrap();
-                compiled_object(common, source, &object);
-                object
-            })
-            .collect()
+    fn reference_object(common: &Path, source: &str) -> std::path::PathBuf {
+        let object = common.join("reference-object").join(format!("{source}.o"));
+        std::fs::create_dir_all(object.parent().unwrap()).unwrap();
+        compiled_object(common, source, &object);
+        object
     }
 
     pub(super) fn verify(root: &Path, mode: &str, expected_cases: usize) {
@@ -1655,7 +1652,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 "ggml-backend-dl.cpp",
                 "ggml-threading.cpp",
             ];
-            linker.args(reference_objects(common, &frontend));
+            linker.args(frontend.map(|source| reference_object(common, source)));
             compile(common, cache.join("driver.cpp"), cache.join("driver.o"));
             let build_list =
                 std::fs::read_to_string(common.join("ggml/src/ggml-cpu/CMakeLists.txt")).unwrap();
@@ -1679,7 +1676,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 format!("ggml-cpu/arch/{architecture}/quants.c"),
                 format!("ggml-cpu/arch/{architecture}/repack.cpp"),
             ]);
-            let cpu_objects = reference_objects(common, &cpu_sources);
             if mode.starts_with("upstream-") {
                 let suite = common
                     .join("imported-suite")
@@ -1694,7 +1690,11 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             linker.arg(cache.join("driver.o"));
             linker.arg(core);
             let pending = program.with_extension("new");
-            linker.args(cpu_objects);
+            linker.args(
+                cpu_sources
+                    .iter()
+                    .map(|source| reference_object(common, source)),
+            );
             linker
                 .arg(&library)
                 .arg(format!(

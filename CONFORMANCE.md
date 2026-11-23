@@ -190,6 +190,7 @@ model does not sanction.
 | `VT-100` | `build` | Prism maps indexed scalar row writes to E4M3 storage and Verdant performs the signed conversion after source widening |
 | `VT-101` | `build` | Prism selects scalar source lanes and destination blocks for copies and indexed row writes while Verdant encodes Q8_0 |
 | `VT-102` | `build` | Prism plans indexed gradient accumulation by source block and Verdant decodes the source and adds each binary32 lane |
+| `VT-103` | `build` | Prism plans grouped two-bit codebook matrix and expert graphs and Verdant contracts their signed codeword rows |
 
 ## normalization-graphs
 
