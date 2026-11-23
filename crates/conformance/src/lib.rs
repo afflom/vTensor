@@ -23,6 +23,8 @@ macro_rules! sources {
     ($($name:literal => $path:literal),* $(,)?) => {
         /// Inputs embedded by the compiler for native artifact freshness checks.
         pub const SOURCE_FILES: &[&str] = &[$($name),*];
+        /// Named compiler inputs used to validate native test artifacts against disk.
+        pub const SOURCE_INPUTS: &[(&str, &[u8])] = &[$(($name, include_bytes!($path))),*];
         /// Exact compilation inputs, separated by their paths and NUL bytes.
         pub fn source_snapshot() -> &'static [u8] {
             concat!($($name, "\0", include_str!($path), "\0",)*).as_bytes()

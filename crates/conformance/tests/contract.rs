@@ -235,6 +235,9 @@ ggml_batches! {
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
     #[test]
+    fn column_overlap_vt_82() { "upstream-COL2IM_1D", 33, ["pointwise"] }
+
+    #[test]
     fn state_convolution_vt_81() { "upstream-SSM_WINDOWS", 6, ["pointwise"] }
 
     /// Four imported BF16 attention cases vary mask and sink presence independently.
@@ -1436,7 +1439,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "ade87af26588cef07dcb60991720015598763e3cfa3c509f757f5eb1b1b3aa56",
+            "220c5f3e04918a93f8ed0efa7b5e3b1dc5a053e7d3a5eea288068a11f50bc129",
         )
     });
 
@@ -1716,23 +1719,19 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .as_bytes(),
             _ => &STORAGE_TYPES,
         };
-        let mut expected = Vec::new();
-        for file in vtensor_backend::SOURCE_FILES {
-            expected.extend_from_slice(file.as_bytes());
-            expected.push(0);
-            expected.extend_from_slice(&std::fs::read(root.join(file)).unwrap());
-            expected.push(0);
-        }
-        assert!(
-            vtensor_backend::source_snapshot() == expected,
-            "Rust test library is stale"
-        );
+        static SOURCES: std::sync::Once = std::sync::Once::new();
+        SOURCES.call_once(|| {
+            for &(name, compiled) in vtensor_backend::SOURCE_INPUTS {
+                let current = std::fs::read(root.join(name)).unwrap();
+                assert!(current == compiled, "Rust test library has stale {name}");
+            }
+        });
         let expected_snapshot = cache.join(format!(
             "expected-source-{}-{:?}.snapshot",
             std::process::id(),
             std::thread::current().id()
         ));
-        std::fs::write(&expected_snapshot, &expected).unwrap();
+        std::fs::write(&expected_snapshot, vtensor_backend::source_snapshot()).unwrap();
         let recipe = if mode.starts_with("upstream-") {
             None
         } else if mode == "typed-binary" {
@@ -1876,32 +1875,34 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
+    decltype(make_test_cases_eval()) tests;
     if (!strcmp(op,"POOL_HALF_INPUT")) {
       for (ggml_op_pool kind : {GGML_OP_POOL_AVG, GGML_OP_POOL_MAX}) {
-        test_pool1d row(kind, GGML_TYPE_F16, {7,3,2,2}, 3,2,3);
-        test_pool2d plane(kind, GGML_TYPE_F16, {5,3,2,2}, 3,2,2,1,2,2);
-        for (test_case *test : std::array<test_case *,2>{&row, &plane}) {
-          if (test->eval(backend,reference,nullptr,&observed)!=test_status_t::OK || observed.bad) return SIZE_MAX;
-        }
+        tests.emplace_back(new test_pool1d(kind, GGML_TYPE_F16, {7,3,2,2}, 3,2,3));
+        tests.emplace_back(new test_pool2d(kind, GGML_TYPE_F16, {5,3,2,2}, 3,2,2,1,2,2));
       }
-      return observed.records;
-    }
-    if (!strcmp(op,"IM2COL_HALF_INPUT")) {
+    } else if (!strcmp(op,"IM2COL_HALF_INPUT")) {
       for (bool planar : {false,true}) {
         const std::array<int64_t,4> input = planar ? std::array<int64_t,4>{7,5,2,3} : std::array<int64_t,4>{7,2,3,1};
-        test_im2col test(GGML_TYPE_F16,GGML_TYPE_F16,GGML_TYPE_F16,input,{3,2,2,1},2,1,1,0,1,1,planar);
-        if (test.eval(backend,reference,nullptr,&observed) != test_status_t::OK || observed.bad) return SIZE_MAX;
+        tests.emplace_back(new test_im2col(GGML_TYPE_F16,GGML_TYPE_F16,GGML_TYPE_F16,input,{3,2,2,1},2,1,1,0,1,1,planar));
       }
-      return observed.records;
     }
+    const bool supplemental=!tests.empty();
     std::vector<size_t> selected;
-    size_t id;
-    while (std::scanf("%zu", &id)==1) selected.push_back(id);
-    if (!std::feof(stdin)) return SIZE_MAX;
-    size_t ordinal=0;
-    for(auto &test:make_test_cases_eval()) {
-      const auto i=ordinal++;
-      if (!selected.empty() && (cases==selected.size() || selected[cases]!=i)) continue;
+    if (!supplemental) {
+      tests=make_test_cases_eval();
+      size_t id;
+      while (std::scanf("%zu", &id)==1) selected.push_back(id);
+      if (!std::feof(stdin)) return SIZE_MAX;
+    }
+    std::vector<bool> seen(selected.empty()?0:tests.size());
+    for (size_t i:selected) {
+      if (i>=tests.size() || seen[i]) return SIZE_MAX;
+      seen[i]=true;
+    }
+    for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
+      const size_t i=selected.empty()?pos:selected[pos];
+      auto &test=tests[i];
       if (!strcmp(op,"OUT_PROD_DECODED") || !strcmp(op,"CONV_2D_CONTIGUOUS")) {
         const ggml_op operation=!strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : GGML_OP_CONV_2D;
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {
@@ -1911,8 +1912,8 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
         observed.label=ggml_op_name(operation);
         ++observed.records;
       } else {
-        const auto status=test->eval(backend,reference,selected.empty()?op:nullptr,&observed);
-        if(status==test_status_t::SKIPPED) continue;
+        const auto status=test->eval(backend,reference,(selected.empty() && !supplemental)?op:nullptr,&observed);
+        if(status==test_status_t::SKIPPED && !supplemental) continue;
         if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
       }
       if(!selected.empty()) std::printf("CASE\t%zu\t%s\t%s\n",i,observed.label.c_str(),test->vars().c_str());
