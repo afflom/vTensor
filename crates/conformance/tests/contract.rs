@@ -307,6 +307,8 @@ ggml_batches! {
     #[test]
     fn codebook_products_vt_103() { "upstream-CODEBOOK_PRODUCTS", 6, ["matrix"] }
     #[test]
+    fn ternary_row_products_vt_114() { "upstream-TERNARY_ROW_PRODUCTS", 4, ["matrix"] }
+    #[test]
     fn grouped_nonlinear_product_vt_112() { "upstream-GROUPED_NONLINEAR_PRODUCT", 2, ["matrix"] }
     /// Compare grouped signed weights through ordinary and expert paths.
     #[test]
@@ -1487,7 +1489,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "796012fa7c4389cfa64108f0c4a70d7d1b4c26709bb78d5b4b3c688d8556e2ef",
+            "ec1f20a93135bc72433d4f7ce3984ab409b6fb41d8e36635ffcd2913f9af9cc9",
         )
     });
 

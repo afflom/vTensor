@@ -885,7 +885,7 @@ type BlockDot<B> = fn(&[u8], &[B]) -> Result<f32, TensorComputeError>;
 #[derive(Clone, Copy)]
 enum PackedWeight {
     Symmetric(BlockDot<linear::SymmetricQ8Block<32>>),
-    Grouped(BlockDot<linear::GroupedQ8Block>),
+    Grouped(linear::GroupedWeightEncoding),
     Affine(BlockDot<linear::AffineQ8Block<32>>),
 }
 
@@ -899,16 +899,18 @@ fn packed_weight(kind: u64) -> Option<PackedWeight> {
         6 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, SignedFive)),
         7 => Affine(|w, a| linear::dot_affine_weight_row(w, a, FiveBit)),
         8 => Symmetric(linear::dot_symmetric_q8_row),
-        10 => Grouped(linear::dot_grouped_q2_row),
-        11 => Grouped(|w, a| linear::dot_grouped_weight_row(w, a, GroupedFormat::SignedThree)),
-        12 => Grouped(linear::dot_grouped_q4_row),
-        13 => Grouped(linear::dot_grouped_q5_row),
-        14 => Grouped(|w, a| linear::dot_grouped_weight_row(w, a, GroupedFormat::SignedSix)),
-        16 => Grouped(|w, a| linear::dot_codebook_row(w, a, IndexedSigns)),
-        17 => Grouped(|w, a| linear::dot_codebook_row(w, a, ExtendedIndex)),
-        22 => Grouped(|w, a| linear::dot_codebook_row(w, a, ExplicitSigns)),
+        10 => Grouped(GroupedFormat::AffineTwo),
+        11 => Grouped(GroupedFormat::SignedThree),
+        12 => Grouped(GroupedFormat::AffineFour),
+        13 => Grouped(GroupedFormat::AffineFive),
+        14 => Grouped(GroupedFormat::SignedSix),
+        16 => Grouped(GroupedFormat::Codebook(IndexedSigns)),
+        17 => Grouped(GroupedFormat::Codebook(ExtendedIndex)),
+        22 => Grouped(GroupedFormat::Codebook(ExplicitSigns)),
         20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)),
-        23 => Grouped(|w, a| linear::dot_grouped_weight_row(w, a, GroupedFormat::NonlinearFour)),
+        23 => Grouped(GroupedFormat::NonlinearFour),
+        34 => Grouped(GroupedFormat::PackedTrits),
+        35 => Grouped(GroupedFormat::TwoBitTernary),
         39 => Symmetric(|w, a| linear::dot_block_float_row(w, a, ExponentOnly)),
         40 => Symmetric(|w, a| linear::dot_block_float_row(w, a, GroupedE4M3)),
         41 => Symmetric(linear::dot_binary_sign_row),
@@ -946,7 +948,9 @@ fn execute_row_products(
             |source, at, activations, weights| source.dot(at, activations, weights),
         ),
         C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
-            PackedWeight::Grouped(dot) => packed!(linear::encode_grouped_q8_block, dot),
+            PackedWeight::Grouped(kind) => packed!(linear::encode_grouped_q8_block, |w, a| {
+                linear::dot_grouped_weight_row(w, a, kind)
+            }),
             PackedWeight::Symmetric(dot) => packed!(linear::encode_symmetric_q8_block, dot),
             PackedWeight::Affine(dot) => packed!(linear::encode_affine_q8_block, dot),
         },
@@ -1945,22 +1949,16 @@ mod attention {
             })
             .transpose()?;
         let mut query = workspace(shape[0] as u64, 0.0)?;
+        use super::PackedWeight::{Affine, Symmetric};
+        let blocks = query.len() / 32;
         let mut keys = match super::packed_weight(k.ty as u64) {
-            Some(super::PackedWeight::Symmetric(kind)) => {
-                KeyRows::Symmetric(kind, super::reserved(query.len() / 32)?)
-            }
-            Some(super::PackedWeight::Affine(kind)) => {
-                KeyRows::Affine(kind, super::reserved(query.len() / 32)?)
-            }
-            Some(super::PackedWeight::Grouped(_)) | None => {
-                KeyRows::Scalar(workspace(shape[0] as u64, 0.0)?)
-            }
+            Some(Symmetric(dot)) => KeyRows::Symmetric(dot, super::reserved(blocks)?),
+            Some(Affine(dot)) => KeyRows::Affine(dot, super::reserved(blocks)?),
+            _ => KeyRows::Scalar(workspace(query.len() as u64, 0.0)?),
         };
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
         let output = graph_tensor_data(tensor)?;
-        let decode = |bits: u64| f32::from_bits(bits as u32);
-        let cap = cap.map(decode);
-        let head_bias = head_bias.map(decode);
+        let [cap, head_bias] = [cap, head_bias].map(|word| word.map(|b| f32::from_bits(b as u32)));
         let scalar = |op, a, b| evaluate_f32_scalar(op, a, b).map_err(|_| Overflow);
         let mut scale = f32::from_bits(tensor.op_params[0] as u32);
         if let Some(cap) = cap {

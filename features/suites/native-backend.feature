@@ -338,3 +338,9 @@ Feature: native-backend
     Given TQ1_0 or TQ2_0 destinations and scalar source views
     When vTensor stages a copied or indexed row write
     Then the stored bytes match GGML CPU and a rejected index preserves the destination
+
+  @VT-114 @build
+  Scenario: Prism plans ordinary and expert matrices with ternary weights and Verdant contracts their rows
+    Given TQ1_0 or TQ2_0 weights in ordinary and indexed matrix graphs
+    When vTensor computes the imported graph
+    Then each result passes the pinned GGML CPU comparison

@@ -744,3 +744,9 @@ id = "VT-113"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules 256-lane ternary row encoders for copied and indexed writes through Verdant"
+
+[[id]]
+id = "VT-114"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans ordinary and expert matrices with ternary weights and Verdant contracts their rows"

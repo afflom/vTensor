@@ -200,6 +200,7 @@ model does not sanction.
 | `VT-111` | `build` | Prism schedules parameterized SwiGLU clipping, exponential and arithmetic through Verdant for fused and separate inputs |
 | `VT-112` | `build` | Prism plans grouped nonlinear four-bit ordinary and expert matrices and Verdant evaluates their row products |
 | `VT-113` | `build` | Prism schedules 256-lane ternary row encoders for copied and indexed writes through Verdant |
+| `VT-114` | `build` | Prism plans ordinary and expert matrices with ternary weights and Verdant contracts their rows |
 
 ## normalization-graphs
 
