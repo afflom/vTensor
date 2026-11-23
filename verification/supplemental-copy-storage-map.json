@@ -1,0 +1,81 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "model_revision": "1077767a37237fdadcddc37dd115bc7ac8746d02",
+  "requirements": [
+    "VT-15",
+    "VT-41"
+  ],
+  "scope": "Same-type nonempty DUP, CONT and CPY for the three storage types absent from the upstream graph factory. The ordinals below belong to the supplemental copy corpus.",
+  "prism_fixture_root": "PrismTemplateContract.ArithmeticFixtures.evaluate",
+  "fixture_queries": "Query 5 with ordinal 0 and item 0 gives the count. Query 6 gives the type at item 0, operation at item 1 and layout at item 3, with source 0.",
+  "prism_execution_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "verdant_entry_point": "verdant_tensor::memory::copy_storage_block",
+  "validation": "The VT-15 native evaluator runs each provider graph and an imported GGML CPU CPY/CONT/reshape reference, then compares the result bytes and padding. VT-41 binds the fixtures to the frozen per-case records.",
+  "numerical_evidence": "verification/copy-fixtures-runtime.json",
+  "frozen_fixture_evidence": "verification/native-fixture-baseline.json",
+  "record_digest_encoding": "SHA-256 of the lowercase frozen record digests in ordinal order, one per line with a final newline.",
+  "fixture_lock_sha256": "9d30e5564f7b18f8fc307ba65ff735ac8e279dfbfc97bd9b8938a1ed902a5f55",
+  "cases": 288,
+  "by_storage": {
+    "GGML_TYPE_Q8_1": {
+      "DUP": {
+        "first_ordinal": 672,
+        "last_ordinal": 703,
+        "cases": 32,
+        "fixture_record_digests_sha256": "6750b5783fc6ef498c5000f47fb1685d4a26a7edf2e83f39a15978a588944396"
+      },
+      "CONT": {
+        "first_ordinal": 704,
+        "last_ordinal": 735,
+        "cases": 32,
+        "fixture_record_digests_sha256": "5908226c7384001436b3bb23e09d1ec47bfd34a2397e1a21fc450f32abb51102"
+      },
+      "CPY": {
+        "first_ordinal": 736,
+        "last_ordinal": 767,
+        "cases": 32,
+        "fixture_record_digests_sha256": "a9c63c22f7d28b3f520a1749b4e6b509fb8d29af4c9d641c2ea89b5caa6d087d"
+      }
+    },
+    "GGML_TYPE_Q8_K": {
+      "DUP": {
+        "first_ordinal": 1248,
+        "last_ordinal": 1279,
+        "cases": 32,
+        "fixture_record_digests_sha256": "7bd968667d5076bf7cb80e0f84ad988a1f569f0711a6a404d4c6d820e5033723"
+      },
+      "CONT": {
+        "first_ordinal": 1280,
+        "last_ordinal": 1311,
+        "cases": 32,
+        "fixture_record_digests_sha256": "6a905b5dfe8ca18179d5054c5c4d14d87eac3d92dae054c29c594d36ddccd2ff"
+      },
+      "CPY": {
+        "first_ordinal": 1312,
+        "last_ordinal": 1343,
+        "cases": 32,
+        "fixture_record_digests_sha256": "45cb4bfd860e08959d79cf9d2b962f3e7802302bc8898f264cbc3f45759496a4"
+      }
+    },
+    "GGML_TYPE_F64": {
+      "DUP": {
+        "first_ordinal": 2496,
+        "last_ordinal": 2527,
+        "cases": 32,
+        "fixture_record_digests_sha256": "1f90689823c41f2b1731bb3d1c64268878c44b2b7644f83cc28d401f00cbeadd"
+      },
+      "CONT": {
+        "first_ordinal": 2528,
+        "last_ordinal": 2559,
+        "cases": 32,
+        "fixture_record_digests_sha256": "69e0ab4a0f9d47f1e9b62949e88f8e83e63b33748d9c624c15d08a6a62d7d6a8"
+      },
+      "CPY": {
+        "first_ordinal": 2560,
+        "last_ordinal": 2591,
+        "cases": 32,
+        "fixture_record_digests_sha256": "7cea6f11718f57fd90bfb9eaf99fd76f766d080bf43f7fefbc1c821b309f93be"
+      }
+    }
+  }
+}
