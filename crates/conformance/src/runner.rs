@@ -809,6 +809,23 @@ unsafe fn write_row<T: Copy>(destination: *mut u8, row: &[T]) {
     }
 }
 
+fn decode_block(
+    kind: u64,
+    source: &[u8],
+    output: &mut [u8],
+    stride: usize,
+) -> Result<(), BackendError> {
+    if kind == 26 {
+        let word = source.try_into().map_err(|_| BackendError::InvalidTensor)?;
+        let lane = output
+            .first_chunk_mut::<4>()
+            .ok_or(BackendError::OutOfBounds)?;
+        *lane = linear::signed_word_f32(i32::from_ne_bytes(word))?.to_ne_bytes();
+        return Ok(());
+    }
+    Ok(linear::decode_storage_block(kind, source, output, stride)?)
+}
+
 fn decode_words(
     kind: u64,
     source: &[u8],
@@ -822,7 +839,7 @@ fn decode_words(
             std::mem::size_of_val(destination),
         )
     };
-    Ok(linear::decode_storage_block(kind, source, bytes, stride)?)
+    decode_block(kind, source, bytes, stride)
 }
 
 struct TensorInput<'a> {
@@ -1359,12 +1376,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                 let row = decoded
                     .get_mut(..lanes as usize)
                     .ok_or(BackendError::InvalidTensor)?;
-                if kind == 26 {
-                    row[0] =
-                        linear::signed_word_f32(input.as_ptr().cast::<i32>().read_unaligned())?;
-                } else {
-                    decode_words(kind, input, row, 4)?;
-                }
+                decode_words(kind, input, row, 4)?;
                 let base = destination_data.add(to as usize);
                 for (i, &value) in row.iter().enumerate() {
                     let lane = base.add(i * stride as usize).cast::<f32>();
@@ -1382,7 +1394,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                     destination_data.add(to as usize),
                     span as usize,
                 );
-                linear::decode_storage_block(kind, encoded(from, bytes), output, stride as usize)?;
+                decode_block(kind, encoded(from, bytes), output, stride as usize)?;
             }
             continue;
         }

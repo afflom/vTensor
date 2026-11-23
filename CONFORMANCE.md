@@ -191,6 +191,7 @@ model does not sanction.
 | `VT-101` | `build` | Prism selects scalar source lanes and destination blocks for copies and indexed row writes while Verdant encodes Q8_0 |
 | `VT-102` | `build` | Prism plans indexed gradient accumulation by source block and Verdant decodes the source and adds each binary32 lane |
 | `VT-103` | `build` | Prism plans grouped two-bit codebook matrix and expert graphs and Verdant contracts their signed codeword rows |
+| `VT-104` | `build` | Prism addresses source blocks and binary32 destination lanes for type-changing copies and Verdant decodes each original GGML input |
 
 ## normalization-graphs
 

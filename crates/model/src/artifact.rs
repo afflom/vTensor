@@ -53,25 +53,20 @@ fn io(path: &Path, e: std::io::Error) -> ModelError {
 /// Every regular file under `dir`, as a path relative to `base`.
 fn files(base: &Path, dir: &Path, id: &str, out: &mut Vec<String>) -> Result<(), ModelError> {
     for entry in std::fs::read_dir(dir).map_err(|e| io(dir, e))? {
-        let path = entry.map_err(|e| io(dir, e))?.path();
-        let kind = std::fs::symlink_metadata(&path)
-            .map_err(|e| io(&path, e))?
-            .file_type();
+        let entry = entry.map_err(|e| io(dir, e))?;
+        let path = entry.path();
+        let kind = entry.file_type().map_err(|e| io(&path, e))?;
         if kind.is_dir() {
             files(base, &path, id, out)?;
         } else if kind.is_file() {
             let rel = path.strip_prefix(base).unwrap_or(&path);
-            let rel = rel
-                .components()
-                .map(|c| c.as_os_str().to_str())
-                .collect::<Option<Vec<_>>>()
-                .ok_or_else(|| {
-                    ModelError::Inconsistent(format!(
-                        "{id}: {} has a name that is not UTF-8, so the manifest cannot name it",
-                        path.display()
-                    ))
-                })?;
-            out.push(rel.join("/"));
+            let name = rel.to_str().ok_or_else(|| {
+                ModelError::Inconsistent(format!(
+                    "{id}: {} has a name that is not UTF-8, so the manifest cannot name it",
+                    path.display()
+                ))
+            })?;
+            out.push(name.replace(std::path::MAIN_SEPARATOR, "/"));
         } else {
             // A link can point outside the repository, and then the checksum
             // would cover bytes the repository does not contain.
@@ -99,7 +94,7 @@ pub fn artifact_checksum(root: &Path, id: &str, artifact: &str) -> Result<String
     };
     if meta.is_file() {
         let bytes = std::fs::read(&path).map_err(|e| io(&path, e))?;
-        return Ok(digest_hex(&Sha256::digest(bytes)));
+        return Ok(sha256_hex(&bytes));
     }
     if !meta.is_dir() {
         return Err(ModelError::Inconsistent(format!(
@@ -114,13 +109,13 @@ pub fn artifact_checksum(root: &Path, id: &str, artifact: &str) -> Result<String
         )));
     }
     names.sort();
-    let mut manifest = String::new();
+    let mut manifest = Sha256::new();
     for name in names {
         let file = path.join(&name);
         let bytes = std::fs::read(&file).map_err(|e| io(&file, e))?;
-        manifest.push_str(&format!("{}  {name}\n", digest_hex(&Sha256::digest(bytes))));
+        manifest.update(format!("{}  {name}\n", sha256_hex(&bytes)));
     }
-    Ok(digest_hex(&Sha256::digest(manifest.as_bytes())))
+    Ok(digest_hex(&manifest.finalize()))
 }
 
 impl Model {

@@ -262,9 +262,7 @@ mod tests {
                     .unwrap_or(line)
                     .trim()
             })
-            .collect::<Vec<_>>()
-            .join(" ")
-            .split_whitespace()
+            .flat_map(str::split_whitespace)
             .collect::<Vec<_>>()
             .join(" ")
     }
@@ -354,40 +352,32 @@ pub mod conformance {
                     .to_string();
                 let text = std::fs::read_to_string(&path)?;
 
-                let mut pending_tags: Vec<String> = Vec::new();
-                let mut current: Option<Scenario> = None;
-                for raw in text.lines() {
-                    let line = raw.trim();
+                let first = report.scenarios.len();
+                let mut pending_tags = None;
+                for line in text.lines().map(str::trim) {
                     if line.starts_with('@') {
-                        pending_tags = line
+                        pending_tags = Some(line);
+                    } else if let Some(statement) = line.strip_prefix("Scenario:") {
+                        let mut tags = pending_tags
+                            .take()
+                            .unwrap_or_default()
                             .split_whitespace()
-                            .map(|t| t.trim_start_matches('@').to_string())
-                            .collect();
-                    } else if let Some(rest) = line.strip_prefix("Scenario:") {
-                        if let Some(done) = current.take() {
-                            report.scenarios.push(done);
-                        }
-                        let id = pending_tags.first().cloned().unwrap_or_default();
-                        let level = pending_tags.get(1).cloned().unwrap_or_default();
-                        current = Some(Scenario {
-                            id,
-                            level,
-                            statement: rest.trim().to_string(),
+                            .map(|tag| tag.trim_start_matches('@').to_owned());
+                        report.scenarios.push(Scenario {
+                            id: tags.next().unwrap_or_default(),
+                            level: tags.next().unwrap_or_default(),
+                            statement: statement.trim().to_owned(),
                             suite: suite.clone(),
                             steps: Vec::new(),
                         });
-                        pending_tags.clear();
-                    } else if let Some(scenario) = current.as_mut() {
-                        for keyword in ["Given ", "When ", "Then ", "And ", "But "] {
-                            if let Some(step) = line.strip_prefix(keyword) {
-                                scenario.steps.push(format!("{keyword}{step}"));
-                                break;
-                            }
+                    } else if let Some(scenario) = report.scenarios[first..].last_mut() {
+                        if ["Given ", "When ", "Then ", "And ", "But "]
+                            .iter()
+                            .any(|tag| line.starts_with(tag))
+                        {
+                            scenario.steps.push(line.to_owned());
                         }
                     }
-                }
-                if let Some(done) = current.take() {
-                    report.scenarios.push(done);
                 }
             }
             Ok(report)

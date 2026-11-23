@@ -303,6 +303,9 @@ ggml_batches! {
     /// Compare each signed codebook layout through both ordinary and expert matrix paths.
     #[test]
     fn codebook_products_vt_103() { "upstream-CODEBOOK_PRODUCTS", 6, ["matrix"] }
+    /// Decode contiguous and permuted source blocks with all original upstream copy inputs.
+    #[test]
+    fn decoded_copies_vt_104() { "upstream-DECODED_COPIES", 53, ["pointwise"] }
     /// Compare all remaining source formats against authoritative GGML decoding and CPU scatter.
     #[test]
     fn decoded_row_gradients_vt_102() { "upstream-GET_ROWS_BACK_DECODED", 54, ["pointwise"] }
@@ -1468,7 +1471,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "d9bcef726a5653cfece7092fb2b8128d2ebd4c8053f9920d06586a9f38edee12",
+            "c683c79bf4803be55fd09574eaf7ee1bfb7efcfd8d6c8e32e5a4db64c1090f27",
         )
     });
 

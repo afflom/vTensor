@@ -284,3 +284,9 @@ Feature: native-backend
     Given IQ2_XXS, IQ2_XS or IQ2_S weights and grouped activations
     When the provider evaluates ordinary and indexed matrix products
     Then the output matches the pinned GGML CPU evaluator
+
+  @VT-104 @build
+  Scenario: Prism addresses source blocks and binary32 destination lanes for type-changing copies and Verdant decodes each original GGML input
+    Given a packed or signed integer GGML source and binary32 destination
+    When vTensor copies contiguous or permuted source views
+    Then the destination values match the imported CPU evaluator

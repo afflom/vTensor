@@ -1669,6 +1669,46 @@ definition{
 }
 
 definition{
+  name: decodedCopyType,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((RowGather::cpuSource kind) && (if (copyFloatType kind) then false else true)),
+  executable: true
+}
+
+definition{
+  name: planDecodedCopy,
+  parameters: [
+    left : TensorDescriptor,
+    right : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (match right
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some base => (match (TensorTypes::tensorTypeStorage (project left ty))
+      | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
+      | TensorTypes::TypeStorageDecision.knownType spec => (let lanes : Nat := (project spec blockSize); (if ((((((sameWordView base output) && (separateTensors left output)) && ((blockCount left 1) =? (blockCount output 1))) && (((prim remainder (project left n0) lanes 1 : Nat) =? 0) && ((project spec typeSize) <=? (project left s0)))) && (if (lanes =? 1) then (4 <=? (project output s0)) else ((project output s0) =? 4))) && (((prim remainder (project output n0) lanes 1 : Nat) =? 0) || (contiguousWords output))) then (ctor PointwiseDecision.copyBlocks (blockCount left lanes) 4 (indexContext left lanes) (indexContext output 1) (ctor CopyMode.converted (project left ty) 0)) else (ctor PointwiseDecision.invalidShape))))),
+  executable: true
+}
+
+definition{
+  name: convertedCopyOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    kind : Nat,
+    target : Nat
+  ],
+  result: GraphResponse,
+  body: (if ((target =? 0) && (decodedCopyType kind)) then (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | TensorTypes::TypeStorageDecision.knownType spec => (let lanes : Nat := (project spec blockSize); (ctor GraphResponse.decoded kind (blockOffset index source) (project spec typeSize) (blockOffset (prim multiply index lanes : Nat) destination) ((prim multiply (prim subtract lanes 1 : Nat) (project destination s0) : Nat) + 4) (project destination s0)))) else (ctor GraphResponse.converted kind target (blockOffset index source) (blockOffset index destination))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -1687,7 +1727,7 @@ definition{
     | CopyMode.constant kind bits => (ctor GraphResponse.offsets true 0 (blockOffset index destination))
     | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-    | CopyMode.converted sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
+    | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
     | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination))
@@ -1720,9 +1760,9 @@ definition{
   result: GraphResponse,
   body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right
     | Option.none => (planPool (operation =? 58) options left output)
-    | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+    | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (if (((operation =? 33) && ((project output ty) =? 0)) && (decodedCopyType (project left ty))) then (planDecodedCopy left right output) else (planStorage operation left (match right
     | Option.none => false
-    | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
+    | Option.some value => true) output)) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
     | Option.some kind => (planUnary kind left output))))))))))))))))))))))))))),
   executable: true
@@ -3432,6 +3472,13 @@ theorem{
   name: packedGradientStepsFollowStorageBlocks,
   parameters: [],
   statement: ((gradientDataSteps 2 256) = 8),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: frozenCopySourcesUseBlockDecoding,
+  parameters: [],
+  statement: (((decodedCopyType 2) && (decodedCopyType 26)) = true),
   proof: reflexivity{}
 }
 \end{semanticmodule}
