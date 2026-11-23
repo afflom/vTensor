@@ -350,3 +350,9 @@ Feature: native-backend
     Given IQ3_XXS or IQ3_S weight rows and F32 activations
     When the provider evaluates an ordinary or indexed matrix
     Then each result matches the imported GGML CPU
+
+  @VT-116 @build
+  Scenario: Prism plans ordinary and expert matrices with shifted one-bit codebooks and Verdant contracts their quantized rows
+    Given IQ1_S or IQ1_M weight rows and F32 activations
+    When the provider evaluates an ordinary or indexed matrix
+    Then each result matches the imported GGML CPU

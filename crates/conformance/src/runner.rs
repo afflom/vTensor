@@ -910,10 +910,12 @@ fn packed_weight(kind: u64) -> Option<PackedWeight> {
         16 => Grouped(GroupedFormat::Codebook(IndexedSigns)),
         17 => Grouped(GroupedFormat::Codebook(ExtendedIndex)),
         18 => Grouped(GroupedFormat::Codebook(FourLaneIndexedSigns)),
+        19 => Grouped(GroupedFormat::Codebook(ShiftedGrid)),
         21 => Grouped(GroupedFormat::Codebook(FourLaneExplicitSigns)),
         22 => Grouped(GroupedFormat::Codebook(ExplicitSigns)),
         20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)),
         23 => Grouped(GroupedFormat::NonlinearFour),
+        29 => Grouped(GroupedFormat::Codebook(DistributedScale)),
         34 => Grouped(GroupedFormat::PackedTrits),
         35 => Grouped(GroupedFormat::TwoBitTernary),
         39 => Symmetric(|w, a| linear::dot_block_float_row(w, a, ExponentOnly)),
@@ -979,16 +981,11 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     let request = |query| run(query).map_err(|_| Overflow);
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
-    let mut offsets = workspace(visits, 0u64)?;
+    let mut offsets = reserved(usize::try_from(visits).map_err(|_| Overflow)?)?;
     let stride = LANES.checked_mul(activations.nb[0]).ok_or(Overflow)? as u64;
     let mut lanes = [0.0; LANES];
     let mut prepared = reserved(usize::try_from(blocks).map_err(|_| Overflow)?)?;
-    for (column, (values, offset)) in results
-        .chunks_exact_mut(rows as usize)
-        .zip(&mut offsets)
-        .enumerate()
-    {
-        let column = column as u64;
+    for (column, values) in (0..visits).zip(results.chunks_exact_mut(rows as usize)) {
         let mut address = request(Request::C1(plan.clone(), column))?;
         if let Response::C4(at) = address {
             let source = indices.as_ref().ok_or(InvalidTensor)?;
@@ -998,12 +995,12 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         let (weight_base, activation, dest) = match address {
             Response::C2(w, a, o) => (w, a, o),
             Response::C5(dest) => {
-                *offset = dest;
+                offsets.push(dest);
                 continue;
             }
             _ => return Err(InvalidTensor),
         };
-        *offset = dest;
+        offsets.push(dest);
         prepared.clear();
         let mut from = activation;
         for _ in 0..blocks {

@@ -202,6 +202,7 @@ model does not sanction.
 | `VT-113` | `build` | Prism schedules 256-lane ternary row encoders for copied and indexed writes through Verdant |
 | `VT-114` | `build` | Prism plans ordinary and expert matrices with ternary weights and Verdant contracts their rows |
 | `VT-115` | `build` | Prism plans ordinary and expert matrices with four-lane codebooks and Verdant contracts their quantized rows |
+| `VT-116` | `build` | Prism plans ordinary and expert matrices with shifted one-bit codebooks and Verdant contracts their quantized rows |
 
 ## normalization-graphs
 
