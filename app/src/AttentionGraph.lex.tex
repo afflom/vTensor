@@ -2,6 +2,7 @@
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{NormPlan}
+\importmodule{RmsNormalization}
 \importmodule{ScalarDotStorage}
 \importmodule{TensorTypes}
 \title{Natural number}
@@ -389,7 +390,7 @@ definition{
     out : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (let width : Nat := (if ((project mask ty) =? 1) then 2 else 4); (if ((((((((((((((((((op =? 88) && (if trailing then false else true)) && (((project mask ty) =? 0) || ((project mask ty) =? 1))) && ((project top ty) =? 26)) && ((project out ty) =? (project mask ty))) && ((project mask s0) =? width)) && ((project out s0) =? width)) && ((project mask n0) =? (project out n0))) && (sameRows top out)) && (contiguousScalar out width)) && (NormPlan::separateTensors mask out)) && (NormPlan::separateTensors top out)) && (multiple (project top n1) (project mask n1))) && (multiple (project top n2) (project mask n2))) && (multiple (project top n3) (project mask n3))) && (match score
+  body: (let width : Nat := (if ((project mask ty) =? 1) then 2 else 4); (if ((((((((((((((((((op =? 88) && (if trailing then false else true)) && (((project mask ty) =? 0) || ((project mask ty) =? 1))) && ((project top ty) =? 26)) && ((project out ty) =? (project mask ty))) && ((project mask s0) =? width)) && ((project out s0) =? width)) && ((project mask n0) =? (project out n0))) && (sameRows top out)) && (RmsNormalization::nestedRows (prim multiply width (project out n0) : Nat) (project out n1) (project out n2) (project out n3) (project out s1) (project out s2) (project out s3))) && (NormPlan::separateTensors mask out)) && (NormPlan::separateTensors top out)) && (multiple (project top n1) (project mask n1))) && (multiple (project top n2) (project mask n2))) && (multiple (project top n3) (project mask n3))) && (match score
     | Option.none => true
     | Option.some t => ((((project t ty) =? 0) && (sameRows top t)) && (NormPlan::separateTensors t out)))) && (match blocks
     | Option.none => true

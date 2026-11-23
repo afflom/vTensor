@@ -4986,3 +4986,7 @@ VT-92 compares all 38 original TOP_K_MASK graphs with the pinned CPU for F16 and
 ### VT-90 complete checkpoint
 
 The locked SDK ran `just vv` on `c9a725d991423928dead64e3f7eabe4f7cde6480` with Verdant PR #31. All 98 backend contracts passed in 305.56 seconds with zero failures, skips or filters. Cargo-deny accepted the advisories, bans, licenses and sources. The complete gate exited successfully. [Tested vTensor revision](https://github.com/afflom/vTensor/commit/c9a725d991423928dead64e3f7eabe4f7cde6480)
+
+### Sparse mask output strides
+
+VT-92 uses the shared Prism row-layout predicate for sparse mask destinations. The imported GGML CPU computes four rows with permuted head and token strides. vTensor matched all 28 words in the output span, including the padding and the selected mask bit patterns. Overlapping destination rows failed admission before the write. The previous dense-only model refused this legal graph. A planted packed-row write passed the dense cases and failed the 28-word comparison. Restoring the certified row offsets passed VT-92. The adjacent row-softmax contract also passed. [Model and CPU comparison](https://github.com/afflom/vTensor/commit/e4cf36d)

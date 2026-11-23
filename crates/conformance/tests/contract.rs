@@ -2206,28 +2206,31 @@ int main(int argc, char **argv) {
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
       if (!strcmp(argv[3]+9,"TOP_K_MASK_VARIANTS")) {
-        std::array<uint32_t,4> expected{};
+        std::array<uint32_t,28> expected{};
         for(auto selected : {reference,backend}) {
           auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true}); CHECK(ctx);
           auto mask=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,4);
-          auto top=ggml_new_tensor_1d(ctx,GGML_TYPE_I32,7);
-          auto scores=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,4);
-          auto extra=ggml_new_tensor_1d(ctx,GGML_TYPE_I32,3);
+          auto top=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,7,2,2);
+          auto scores=ggml_new_tensor_3d(ctx,GGML_TYPE_F32,4,2,2);
+          auto extra=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,3,2,2);
           auto out=ggml_top_k_mask(ctx,mask,top,scores,nullptr,extra);
+          out->nb[2]=8*sizeof(uint32_t); out->nb[1]=2*out->nb[2]; out->nb[3]=2*out->nb[1];
           auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
           auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
           const uint32_t words[]={0x3f800000,0x80000000,0x7fc01234,1};
-          const uint32_t gates[]={0xff800000,0x7f800000,0x7fc01234,0x80000000};
-          const int32_t picks[]={0,1,2,3,-1,99,1}, extras[]={-1,99,2};
-          ggml_backend_tensor_set(mask,words,0,sizeof(words)); ggml_backend_tensor_set(scores,gates,0,sizeof(gates));
-          ggml_backend_tensor_set(top,picks,0,sizeof(picks)); ggml_backend_tensor_set(extra,extras,0,sizeof(extras));
+          const uint32_t gates[]={0xff800000,0x7f800000,0x7fc01234,0x80000000,0,0xff800000,0xff800000,0xff800000};
+          const int32_t picks[]={0,1,2,3,-1,99,1,0,1,2,3,-1,99,1}, extras[]={-1,99,2,-1,99,3};
+          ggml_backend_tensor_set(mask,words,0,sizeof(words)); for(size_t h=0;h<2;++h) ggml_backend_tensor_set(scores,gates,h*scores->nb[2],sizeof(gates));
+          for(size_t h=0;h<2;++h) { ggml_backend_tensor_set(top,picks,h*top->nb[2],sizeof(picks)); ggml_backend_tensor_set(extra,extras,h*extra->nb[2],sizeof(extras)); }
+          std::array<uint32_t,28> initial{};initial.fill(0xdeadbeef);ggml_backend_tensor_set(out,initial.data(),0,sizeof(initial));
           CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-          std::array<uint32_t,4> actual{}; ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
+          std::array<uint32_t,28> actual{}; ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
           if(selected==reference) expected=actual;
           else {
-            CHECK(actual==expected);
+            CHECK(actual==expected && actual[4]==0xdeadbeef && actual[7]==0xdeadbeef && actual[20]==0xdeadbeef);
+            CHECK(refuses_change(backend,dev,graph,out,out->nb[1],size_t(4)));
             CHECK(refuses_change(backend,dev,graph,out,top->type,GGML_TYPE_F32));
-            CHECK(refuses_change(backend,dev,graph,out,scores->ne[1],int64_t(2)));
+            CHECK(refuses_change(backend,dev,graph,out,scores->ne[1],int64_t(3)));
             CHECK(refuses_change(backend,dev,graph,out,out->src[5],extra));
           }
           ggml_backend_buffer_free(buffer); ggml_free(ctx);
