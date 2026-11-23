@@ -1,0 +1,45 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "factory_cases": 27755,
+  "distinct_signatures": 2293,
+  "observed_declarations": {
+    "operation": {
+      "observed": 89,
+      "declared": 100,
+      "absent": [
+        "GGML_OP_IM2COL_BACK",
+        "GGML_OP_POOL_2D_BACK",
+        "GGML_OP_FLASH_ATTN_BACK",
+        "GGML_OP_WIN_PART",
+        "GGML_OP_WIN_UNPART",
+        "GGML_OP_GET_REL_POS",
+        "GGML_OP_ADD_REL_POS",
+        "GGML_OP_MAP_CUSTOM1",
+        "GGML_OP_MAP_CUSTOM2",
+        "GGML_OP_MAP_CUSTOM3",
+        "GGML_OP_CUSTOM"
+      ]
+    },
+    "unary": {
+      "observed": 22,
+      "declared": 22,
+      "absent": []
+    },
+    "glu": {
+      "observed": 7,
+      "declared": 7,
+      "absent": []
+    },
+    "tensor_type": {
+      "observed": 33,
+      "declared": 36,
+      "absent": [
+        "GGML_TYPE_Q8_1",
+        "GGML_TYPE_Q8_K",
+        "GGML_TYPE_F64"
+      ]
+    }
+  },
+  "reader_sha256": "b61174267bb645f7fde84ca057cecd592be143387c5aa467efc351c213a3f354",
+  "uncompressed_map_sha256": "35c1e0798fb13d1873fad85f1312098e3d0e30738f809f3fd762dd0e3a69824d"
+}

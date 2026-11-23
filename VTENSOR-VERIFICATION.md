@@ -4941,3 +4941,20 @@ Prism binds GGML score rows, mask broadcasting, per-head sinks, head slopes and 
 ### VT-85 complete checkpoint
 
 The complete locked-SDK `just vv` exited zero at 89a650cc82d0eaabc5d16c211548e6b7af845dd7 on the Verdant PR #27 pin. The SDK rebuilt the application proof for the changed inputs. All 92 backend contracts passed in 556.40 seconds. The model, template, formatting, lint and dependency checks passed. [Checked revision](https://github.com/afflom/vTensor/commit/89a650cc82d0eaabc5d16c211548e6b7af845dd7)
+
+### Factory graph signatures
+
+The metadata reader calls the pinned evaluator’s `make_test_cases_eval` and `build_graph`, then expands each result with GGML. It visits the returned tensor, graph nodes and their input tensors. The reader does not allocate tensor data or execute the graphs. Each ordinal’s label and parameters matched the existing factory transcript. This index can select original graphs for new work without another numerical run. [Reader](verification/ggml-factory-signatures.cpp) · [Declaration coverage](verification/ggml-factory-signatures.json)
+
+The compressed TSV contains two record types. An `S` row gives the signature ID, upstream opcode, unary or GLU variant, output descriptor and indexed source descriptors. A descriptor gives the numeric GGML storage type, tensor flags and four layout characters. The first character is contiguous (`c`) or strided (`s`). The remaining characters encode permuted (`p`), transposed (`t`) and view at zero (`v`) or nonzero (`o`) offset. A dash means the property is absent. Source suffixes `:same` and `:offset` identify shared output storage at equal or different starts. A `C` row maps an original factory ordinal to its distinct signature IDs. Original constructor parameters and numerical verdicts remain indexed by that ordinal. [Signature map](verification/ggml-factory-signatures.tsv.gz) · [Factory inputs](verification/ggml-factory-cases.tsv.gz) · [Verdict index](verification/ggml-factory-inventory.json)
+
+To regenerate, compile the reader in the pinned vTensor SDK against the imported llama.cpp source and built shared libraries. Run the following from the repository root with `LLAMA_SRC` and `LLAMA_LIB` pointing to those directories. The uncompressed output digest is recorded in the declaration coverage file.
+
+```sh
+c++ -std=c++17 -O1 -ffunction-sections -fdata-sections -Wl,--gc-sections \
+    -I"$LLAMA_SRC" -I"$LLAMA_SRC/ggml/include" verification/ggml-factory-signatures.cpp \
+    -L"$LLAMA_LIB" -lggml -lggml-base -o /tmp/ggml-factory-signatures
+LD_LIBRARY_PATH="$LLAMA_LIB" /tmp/ggml-factory-signatures > /tmp/ggml-factory-signatures.tsv
+awk -F '\t' 'BEGIN {OFS="\t"} $1=="C" {print $1,$2,$NF; next} {print}' \
+    /tmp/ggml-factory-signatures.tsv | gzip -n > verification/ggml-factory-signatures.tsv.gz
+```
