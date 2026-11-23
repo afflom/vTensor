@@ -118,6 +118,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-75` | build | Executes the 64 Gaussian unary and composed factory graphs using the Verdant primitives and the GGML binary32 lookup-table precision profile. [Results](verification/factory-gaussian-activations-vt75.json) |
 | `VT-76` | build | Runs original channel-major convolution graphs against independently materialized CPU operands. [Case-level comparisons](verification/factory-contiguous-convolution-vt76.json) |
 | `VT-77` | build | Executes split, combined and swapped REGLU, GEGLU and GEGLU_QUICK rows using Verdant. [All 108 original cases](verification/factory-gated-activations-vt77.json) |
+| `VT-78` | build | Maps biased attention masks to the Verdant head slope with original GGML softcap and mask order. [Factory comparisons](verification/factory-biased-attention-vt78.json) |
 | `VT-79` | build | Executes forward average and maximum pooling. All 384 factory graphs and four F16 graphs match the imported CPU oracle. [Oracle results](verification/factory-pooling-vt79.json) |
 | `VT-80` | build | Executes tiled CONV_3D through the same Verdant matrix product as CONV_2D. [Completed factory comparisons](verification/factory-volume-convolution-vt80.json) |
 | `VT-81` | build | Executes all 75 state convolutions and 120 compositions with SiLU and optional bias through Verdant. [Factory comparisons](verification/factory-state-convolution-vt81.json) |

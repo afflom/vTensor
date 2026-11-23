@@ -310,7 +310,7 @@
         "ADD_SILU_MUL"
       ]
     },
-    "passed": 16624,
+    "passed": 17027,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -346,7 +346,7 @@
         "attribution_oracle_sha256": "26c67a377e7de1bfe45b9f2ec5388ca326c1143d5d68c6867f5091b232a90e84"
       }
     },
-    "untested": 171,
+    "untested": 155,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -403,7 +403,7 @@
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
     "rotary_composition_evidence": "verification/factory-rotary-compositions.json",
-    "refused": 10960,
+    "refused": 10573,
     "failed": 0,
     "standalone_evidence": "verification/factory-standalone-vt59.json",
     "superseded_standalone_verdicts": {
@@ -425,7 +425,8 @@
       "VT-79": "verification/factory-pooling-vt79.json",
       "VT-80": "verification/factory-volume-convolution-vt80.json",
       "VT-81": "verification/factory-state-convolution-vt81.json",
-      "VT-64/65/77-fusions": "verification/factory-dense-matrix-fusions.json"
+      "VT-64/65/77-fusions": "verification/factory-dense-matrix-fusions.json",
+      "VT-78": "verification/factory-biased-attention-vt78.json"
     },
     "supplemental_refusal_evidence": {
       "1069": {
