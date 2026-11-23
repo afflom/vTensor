@@ -207,6 +207,7 @@ model does not sanction.
 | `VT-118` | `build` | Prism composes Verdant exponential and binary32 subtraction for strided GGML EXPM1 graphs |
 | `VT-119` | `build` | Prism places grouped signed six-bit Verdant encodings through GGML indexed writes and copies |
 | `VT-120` | `build` | Prism admits ordinary and in-place E4M3 additions and Verdant reproduces the GGML CPU results |
+| `VT-121` | `build` | Prism schedules the rowwise softmax derivative and Verdant reproduces the imported GGML gradient |
 
 ## normalization-graphs
 

@@ -22,7 +22,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,295 non-Prism lines** (12,844 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,293 non-Prism lines** (12,842 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -178,6 +178,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass the full VT-94 acceptance gate on `1a62f28`, including 102 backend contract tests and the Verdant dependency check. [Gate result](VTENSOR-VERIFICATION.md#compact-row-acceptance)
 - [x] Restore explicit test registration after the full VT-93 gate caught missing CM-02 source bindings. All four BDD checks pass. [VT-93 gate result](VTENSOR-VERIFICATION.md#clamped-swiglu)
 - [x] Restore the dependency license check on the PR #31 pin. VT-87 passed all 95 contracts, then caught two missing clarifications. The upstream records for all four new primitives now pass `just deny`. [Verification](VTENSOR-VERIFICATION.md#verdant-generated-package-licenses)
+- [x] Pass the complete locked-SDK gate at VT-120 on Ubuntu x86-64 and Arm64. [GitHub acceptance run](https://github.com/afflom/vTensor/actions/runs/45276620915)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 
 For each implementation batch, register the scenario and failing case first. Export only changed Prism roots, reuse hash-checked oracle objects, and run the affected cases together. Check a representative planted defect before closing the batch. [Repository workflow](AGENTS.md) · [Oracle cache](verification/native-oracle-cache.json)

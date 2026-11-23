@@ -148,7 +148,8 @@ inductive{
     {name: pooled, fields: [PoolGeometry]},
     {name: stateConvolution, fields: [IndexContext]},
     {name: columnOverlap, fields: [ColumnAxis, Nat]},
-    {name: smallFloatCast, fields: [Nat, Nat]}
+    {name: smallFloatCast, fields: [Nat, Nat]},
+    {name: softmaxGradient, fields: [Nat]}
   ]
 }
 
@@ -1791,6 +1792,7 @@ definition{
     | CopyMode.constant kind bits => (ctor GraphResponse.offsets true 0 (blockOffset index destination))
     | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.softmaxGradient scale => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
@@ -1813,6 +1815,37 @@ definition{
 }
 
 definition{
+  name: softmaxGradientStride,
+  parameters: [width : Nat],
+  result: Nat,
+  body: (2 + (prim multiply 6 width : Nat)),
+  executable: true
+}
+
+definition{
+  name: softmaxGradientLayout,
+  parameters: [tensor : TensorDescriptor, rows : Nat],
+  result: Bool,
+  body: ((((project tensor ty) =? 0) && (contiguousWords tensor)) && ((rows <=? 1) || ((project tensor s1) =? (prim multiply 4 (project tensor n0) : Nat)))),
+  executable: true
+}
+
+definition{
+  name: planSoftmaxGradient,
+  parameters: [
+    options : OperationParameters,
+    dy : TensorDescriptor,
+    probabilities : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (match probabilities
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some y => (let w : Nat := (project dy n0); (let rows : Nat := (prim multiply (project dy n1) (prim multiply (project dy n2) (project dy n3) : Nat) : Nat); (if ((((((((((sameShape dy y) && (sameShape dy output)) && (softmaxGradientLayout dy rows)) && (softmaxGradientLayout y rows)) && (softmaxGradientLayout output rows)) && ((separateTensors dy output) || (sameWordView dy output))) && ((separateTensors y output) || (sameWordView y output))) && (w <=? 2147483647)) && (rows <=? 2147483647)) && (((project options p0) <=? 4294967295) && ((project options p1) <=? 4294967295))) then (ctor PointwiseDecision.copyBlocks (if (w =? 0) then 0 else (prim multiply rows (softmaxGradientStride w) : Nat)) 4 (indexContext dy 1) (indexContext output 1) (ctor CopyMode.softmaxGradient (project options p0))) else (ctor PointwiseDecision.invalidShape))))),
+  executable: true
+}
+
+definition{
   name: planTwoSources,
   parameters: [
     operation : Nat,
@@ -1822,13 +1855,13 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 44) then (planSoftmaxGradient options left right output) else (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right
     | Option.none => (planPool (operation =? 58) options left output)
     | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (if (((operation =? 33) && ((project output ty) =? 0)) && (decodedCopyType (project left ty))) then (planDecodedCopy left right output) else (planStorage operation left (match right
     | Option.none => false
     | Option.some value => true) output)) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -1865,6 +1898,7 @@ definition{
     | CopyMode.constant kind bits => (ctor GraphResponse.bindings 0 kind bits true)
     | CopyMode.arithmetic kind unary right => (ctor GraphResponse.bindings (if unary then 1 else 3) 0 0 false)
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.softmaxGradient scale => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.windowed reverse size nx => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false)
@@ -1905,6 +1939,7 @@ definition{
     | CopyMode.constant kind bits => 0
     | CopyMode.arithmetic kind unary right => 0
     | CopyMode.smallFloatCast sourceType destinationType => 0
+    | CopyMode.softmaxGradient scale => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
     | CopyMode.transformed kind storage a b => 0
@@ -1969,6 +2004,7 @@ definition{
     | CopyMode.constant kind bits => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.arithmetic kind unary right => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.smallFloatCast sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.softmaxGradient scale => (ctor WordOperation.invalid)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.windowed reverse size nx => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.transformed kind storage a b => (ctor WordOperation.transformed kind storage a b)
@@ -2009,6 +2045,7 @@ definition{
     | CopyMode.constant kind bits => 0
     | CopyMode.arithmetic kind unary right => 0
     | CopyMode.smallFloatCast sourceType destinationType => 0
+    | CopyMode.softmaxGradient scale => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
     | CopyMode.transformed kind storage a b => 0
@@ -2172,6 +2209,14 @@ definition{
 }
 
 definition{
+  name: softmaxGradientStep,
+  parameters: [index : Nat, width : Nat, scale : Nat],
+  result: GraphResponse,
+  body: (let stride : Nat := (softmaxGradientStride width); (let phase : Nat := (prim remainder index stride 0 : Nat); (let boundary : Nat := ((prim multiply width 3 : Nat) + 1); (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.wide 0) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 8 8) else (if (phase =? boundary) then (ctor GraphResponse.instruction (ctor WordOperation.wide 2) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 8 8) else (let offset : Nat := (prim subtract phase (if (phase <? boundary) then 1 else (boundary + 1)) : Nat); (let part : Nat := (prim remainder offset 3 0 : Nat); (let atByte : Nat := (prim multiply 4 ((prim multiply (prim quotient index stride 0 : Nat) width : Nat) + (prim quotient offset 3 0 : Nat)) : Nat); (if (phase <? boundary) then (if (part =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 atByte) (ctor WordOperand.source 0 atByte) (ctor WordTarget.scratch 1) 4 4) else (if (part =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.wide 1) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.wide 0) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 0) 8 8))) else (if (part =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.source 0 atByte) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 1) 4 4) else (if (part =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.immediate scale) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 1) (ctor WordOperand.source 1 atByte) (ctor WordTarget.output atByte) 4 4)))))))))))),
+  executable: true
+}
+
+definition{
   name: executionStep,
   parameters: [
     index : Nat,
@@ -2200,6 +2245,7 @@ definition{
     | CopyMode.constant kind bits => (copyOffsets index source destination mode)
     | CopyMode.arithmetic kind unary right => (copyOffsets index source destination mode)
     | CopyMode.smallFloatCast sourceType destinationType => (smallFloatCastStep index source destination sourceType destinationType)
+    | CopyMode.softmaxGradient scale => (softmaxGradientStep index (project source u0) scale)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
     | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)
     | CopyMode.transformed kind storage a b => (copyOffsets index source destination mode)
@@ -3408,6 +3454,20 @@ theorem{
   name: backwardDoesNotAddBindingsToForwardNorm,
   parameters: [],
   statement: ((sourceBindings (ctor CopyMode.normalized 64 0 4 6)) = (ctor GraphResponse.bindings 1 0 0 false)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gradientRejectsMissingProbabilities,
+  parameters: [options : OperationParameters, dy : TensorDescriptor, output : TensorDescriptor],
+  statement: ((planSoftmaxGradient options dy (ctor Option.none [TensorDescriptor]) output) = (ctor PointwiseDecision.invalidShape)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gradientNarrowingPrecedesWrites,
+  parameters: [],
+  statement: ((softmaxGradientStep 7 2 1065353216) = (ctor GraphResponse.instruction (ctor WordOperation.wide 2) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 8 8)),
   proof: reflexivity{}
 }
 

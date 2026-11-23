@@ -354,6 +354,8 @@ ggml_batches! {
     fn logistic_graphs_vt_61() { "upstream-SIGMOID,SILU,SIGMOID_MUL,SILU_MUL,ADD_SIGMOID_MUL,ADD_SILU_MUL", 122, ["pointwise"] }
 
     #[test]
+    fn softmax_gradient_vt_121() { "upstream-SOFTMAX_GRADIENT", 2, ["pointwise"] }
+    #[test]
     fn small_float_add_vt_120() { "upstream-SMALL_FLOAT_ADD", 6, ["typed", "pointwise"] }
     #[test]
     fn exponential_difference_vt_118() { "upstream-EXPM1", 12, ["pointwise"] }
@@ -1490,11 +1492,8 @@ mod native_backend_oracle {
 
     fn frozen_json(name: &str, expected: &str) -> serde_json::Value {
         let bytes = std::fs::read(super::root().join(format!("verification/{name}.json"))).unwrap();
-        assert_eq!(
-            repo_model::artifact::sha256_hex(&bytes),
-            expected,
-            "frozen {name} changed"
-        );
+        let digest = repo_model::artifact::sha256_hex(&bytes);
+        assert_eq!(digest, expected, "frozen {name} changed");
         serde_json::from_slice(&bytes).unwrap()
     }
 
@@ -1503,7 +1502,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "6a1dc2f1efba6cd2e6a5fe92b20ebd79c838c2c8a3cd8a8477774988492802ab",
+            "e214c20489fad4d81bc311fb029db7dd20bcb9d6b1d5af9c1e7cc7372e82a789",
         )
     });
 
@@ -1720,12 +1719,11 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             publish_file(&pending, &program, cache.join("program.sha256"));
         }
         verify_file(&program, cache.join("program.sha256"));
-        static STORAGE_TYPES: LazyLock<Vec<u8>> = LazyLock::new(|| {
+        static STORAGE_TYPES: LazyLock<String> = LazyLock::new(|| {
             super::ggml_inventory::STORAGE_TYPES
                 .iter()
                 .map(|kind| format!("{kind}\n"))
-                .collect::<String>()
-                .into_bytes()
+                .collect()
         });
         let input: &[u8] = match mode {
             "matrix" | "elementwise" => fixture_input(u64::from(mode == "elementwise")),
@@ -1734,7 +1732,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .as_str()
                 .unwrap_or("")
                 .as_bytes(),
-            _ => &STORAGE_TYPES,
+            _ => STORAGE_TYPES.as_bytes(),
         };
         static SOURCES: std::sync::Once = std::sync::Once::new();
         SOURCES.call_once(|| {

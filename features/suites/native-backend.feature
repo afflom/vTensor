@@ -380,3 +380,9 @@ Feature: native-backend
     Given all six imported E4M3 addition graphs with F32 right operands
     When the backend adds the widened operands and stores the result
     Then the original CPU graph agrees for ordinary and aliased outputs
+
+  @VT-121 @build
+  Scenario: Prism schedules the rowwise softmax derivative and Verdant reproduces the imported GGML gradient
+    Given the imported binary32 softmax gradient graphs with zero and positive head bias
+    When the backend reduces each probability-gradient dot product and applies the upstream scale
+    Then the results agree with the pinned GGML CPU and Vulkan backends for their admitted graphs
