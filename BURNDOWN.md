@@ -60,6 +60,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 108 Q4_K, Q4_0 and Q8_0 products with F16 activations against the pinned CPU cast and matrix product. [VT-90 results](verification/factory-packed-half-vt90.json)
 - [x] Pass all 170 ordinary and 150 indexed Q1_0/Q2_0 graphs with F32 activations. The Verdant row products matched 224 independent CPU words. [VT-91 results](verification/factory-bitrows-vt91.json) · [Engine PR #32](https://github.com/afflom/verdant-engine/pull/32)
 - [x] Pass all 72 Q1_0/Q2_0 products with F16 activations and 170 additional F32 matrix fusions. [CPU widening reference](verification/factory-bitrows-half-activations.json) · [Fusion comparisons](verification/factory-bitrows-compositions.json)
+- [ ] Implement shared MXFP4/NVFP4 × Q8_0 row products in Verdant. Wire them into vTensor’s matrix plans and compare 215 MUL_MAT and 171 MUL_MAT_ID factory graphs. [GGML CPU reference](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/quants.c#L303)
 - [ ] Pass the remaining 335 block-encoded MUL_MAT_ID cases. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
@@ -91,6 +92,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Encode Q8_K activations in Verdant. All 38,544 bytes from 132 blocks matched the imported GGML reference. [Engine PR #23](https://github.com/afflom/verdant-engine/pull/23)
 - [x] Execute all 55 Q2_K × F32 MUL_MAT cases and the graph combining MUL_MAT, GET_ROWS, REPEAT and ADD (809) with the pinned Verdant row product. [VT-65 results](verification/factory-grouped-matrix-vt65.json)
 - [x] Execute BF16 GET_ROWS_BACK on vTensor. The two factory graphs match 10,240 CPU-reference bytes, and 1,680 strided, empty and invalid-index cases pass. The direct factory reports CPU-only refusal on both ordinals. [VT-62 evidence](verification/factory-bf16-row-gradient-vt62.json)
+- [ ] Pass the 29 E4M3 scalar CPY conversions using existing Verdant primitives.
 - [x] Compare all 63 CPU-refused identity copies across seven IQ formats with the pinned CPU copy kernel. All destination bytes match, including permuted layouts. [63 direct comparisons](verification/factory-iq-copy.json) · [IQ2_XXS regression](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
 - [x] Pass all 534 TOP_K and 98 ARGSORT factory cases, including ties and infinities. [VT-86 results](verification/factory-row-ranking-vt86.json) · [Verdant row ranking](https://github.com/afflom/verdant-engine/pull/28)
 - [x] Pass 172 TOPK_MOE and all four TOPK_QSA graphs unlocked by row ranking. [Full-graph comparisons](verification/factory-row-ranking-compositions.json)
