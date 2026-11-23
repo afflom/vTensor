@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,616 passed**, **1,139 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,622 passed**, **1,133 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -76,6 +76,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 24 SWIGLU_OAI cases and Q6_K fusion 26776 with the existing Verdant operators. [25 GGML comparisons](verification/factory-parameterized-swiglu-vt111.json)
 - [x] Supply grouped affine Q4_K and Q5_K row products in Verdant. All 196 output words matched the pinned CPU. [Engine PR #30](https://github.com/afflom/verdant-engine/pull/30)
 - [x] Pass all 227 ordinary and 119 indexed Q4_K/Q5_K matrix products with F32 activations. [VT-88 results](verification/factory-affine-vt88.json)
+- [x] Pass the six remaining Q4_K shared-expert graphs. Every MUL_MAT_ID_SHARED case passes. [Original CPU comparisons](verification/factory-shared-q4k-experts.json)
 - [x] Pass 174 additional Q4_K/Q5_K compositions, including the final three MUL_MAT_ID_FUSION cases. [Full-graph comparisons](verification/factory-affine-compositions.json)
 - [x] Pass all 108 Q4_K, Q4_0 and Q8_0 products with F16 activations against the pinned CPU cast and matrix product. [VT-90 results](verification/factory-packed-half-vt90.json)
 - [x] Pass all 170 ordinary and 150 indexed Q1_0/Q2_0 graphs with F32 activations. The Verdant row products matched 224 independent CPU words. [VT-91 results](verification/factory-bitrows-vt91.json) · [Engine PR #32](https://github.com/afflom/verdant-engine/pull/32)

@@ -1,0 +1,22 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "implementation": "2394b3ee27959208757e5f429ebddf2fb03b44df",
+  "verdant_revision": "fb2376e63db63d53f95c85fe4d8564b0e1b3a1a4",
+  "provider_sha256": "44db33d7dcd930c668bdaa380206013d70f9ab3da2b2dfc5765dce974964db6b",
+  "provider_inputs_sha256": "e33dba8bd734f927e496e92c836d5220321315fc022fb4f52a5498d2a4a0b577",
+  "oracle_executable_sha256": "cf9c31c1148b7f601a6a3bcdf44d3262781c42ca59a8be37b726cc848f46ff59",
+  "matrix_lock_sha256": "b12f287cabe786e4700e8e6facace56563bdf1f40060a5b2304c1d8e2f8368ac",
+  "oracle": "The original GGML CPU compared the complete shared and routed Q4_K expert graph at each of the six outstanding token counts with the existing provider.",
+  "transcript_sha256": "5f73f72ea414e3ac51f4eb60ecf41d68ffcddc530f8124df282312864eef073a",
+  "case_ordinals": {
+    "MUL_MAT_ID_SHARED": [
+      14079,
+      14080,
+      14081,
+      14082,
+      14083,
+      14084
+    ]
+  }
+}
