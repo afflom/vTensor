@@ -198,6 +198,7 @@ model does not sanction.
 | `VT-109` | `build` | Prism plans full-width sign and centered two-bit writes and Verdant encodes every indexed or copied destination block |
 | `VT-110` | `build` | Prism plans signed three-bit and six-bit grouped matrix and expert graphs and Verdant contracts their quantized weight rows |
 | `VT-111` | `build` | Prism schedules parameterized SwiGLU clipping, exponential and arithmetic through Verdant for fused and separate inputs |
+| `VT-112` | `build` | Prism plans grouped nonlinear four-bit ordinary and expert matrices and Verdant evaluates their row products |
 
 ## normalization-graphs
 

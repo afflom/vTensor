@@ -732,3 +732,9 @@ id = "VT-111"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules parameterized SwiGLU clipping, exponential and arithmetic through Verdant for fused and separate inputs"
+
+[[id]]
+id = "VT-112"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans grouped nonlinear four-bit ordinary and expert matrices and Verdant evaluates their row products"

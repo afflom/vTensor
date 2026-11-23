@@ -2149,45 +2149,51 @@ pub fn f17(v0: u64) -> bool {
     } {
         true
     } else {
-        let a448 = v0;
-        let a449 = 22u64;
-        nat_eq(a448, a449)
+        let a448 = 22u64;
+        let a449 = v0;
+        if nat_le(a448, a449) {
+            let a450 = v0;
+            let a451 = 23u64;
+            nat_le(a450, a451)
+        } else {
+            false
+        }
     }
 }
 
 pub fn f18(v0: u64) -> bool {
-    let a450 = v0;
-    let a451 = 41u64;
-    if nat_eq(a450, a451) {
+    let a452 = v0;
+    let a453 = 41u64;
+    if nat_eq(a452, a453) {
         true
     } else {
-        let a452 = v0;
-        let a453 = 42u64;
-        nat_eq(a452, a453)
+        let a454 = v0;
+        let a455 = 42u64;
+        nat_eq(a454, a455)
     }
 }
 
 pub fn f19(v0: u64) -> bool {
-    let a454 = v0;
-    let a455 = 2u64;
-    if if if if nat_eq(a454, a455) {
-        true
-    } else {
-        let a456 = v0;
-        let a457 = 6u64;
-        nat_eq(a456, a457)
-    } {
+    let a456 = v0;
+    let a457 = 2u64;
+    if if if if nat_eq(a456, a457) {
         true
     } else {
         let a458 = v0;
-        let a459 = 8u64;
+        let a459 = 6u64;
         nat_eq(a458, a459)
     } {
         true
     } else {
         let a460 = v0;
-        let a461 = 20u64;
+        let a461 = 8u64;
         nat_eq(a460, a461)
+    } {
+        true
+    } else {
+        let a462 = v0;
+        let a463 = 20u64;
+        nat_eq(a462, a463)
     } {
         true
     } else {
@@ -2196,14 +2202,14 @@ pub fn f19(v0: u64) -> bool {
 }
 
 pub fn f20(v0: u64) -> bool {
-    let a462 = v0;
-    let a463 = 3u64;
-    if nat_eq(a462, a463) {
+    let a464 = v0;
+    let a465 = 3u64;
+    if nat_eq(a464, a465) {
         true
     } else {
-        let a464 = v0;
-        let a465 = 7u64;
-        nat_eq(a464, a465)
+        let a466 = v0;
+        let a467 = 7u64;
+        nat_eq(a466, a467)
     }
 }
 

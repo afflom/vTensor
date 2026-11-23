@@ -326,3 +326,9 @@ Feature: native-backend
     Given clipped activation and gate values in a GGML SwiGLU graph
     When the provider applies the supplied alpha and limit
     Then its output matches the imported GGML CPU graph
+
+  @VT-112 @build
+  Scenario: Prism plans grouped nonlinear four-bit ordinary and expert matrices and Verdant evaluates their row products
+    Given grouped IQ4_XS weights and F32 activations
+    When the provider executes an ordinary or indexed matrix product
+    Then each output matches the pinned GGML CPU

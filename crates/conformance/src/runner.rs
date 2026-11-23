@@ -880,13 +880,13 @@ impl<'a> TensorInput<'a> {
     }
 }
 
-type SymmetricDot = fn(&[u8], &[linear::SymmetricQ8Block<32>]) -> Result<f32, TensorComputeError>;
+type BlockDot<B> = fn(&[u8], &[B]) -> Result<f32, TensorComputeError>;
 
 #[derive(Clone, Copy)]
 enum PackedWeight {
-    Symmetric(SymmetricDot),
-    Grouped(fn(&[u8], &[linear::GroupedQ8Block]) -> Result<f32, TensorComputeError>),
-    Affine(linear::AffineWeightEncoding),
+    Symmetric(BlockDot<linear::SymmetricQ8Block<32>>),
+    Grouped(BlockDot<linear::GroupedQ8Block>),
+    Affine(BlockDot<linear::AffineQ8Block<32>>),
 }
 
 fn packed_weight(kind: u64) -> Option<PackedWeight> {
@@ -895,9 +895,9 @@ fn packed_weight(kind: u64) -> Option<PackedWeight> {
     use PackedWeight::{Affine, Grouped, Symmetric};
     Some(match kind {
         2 => Symmetric(linear::dot_symmetric_q4_row),
-        3 => Affine(FourBit),
+        3 => Affine(|w, a| linear::dot_affine_weight_row(w, a, FourBit)),
         6 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, SignedFive)),
-        7 => Affine(FiveBit),
+        7 => Affine(|w, a| linear::dot_affine_weight_row(w, a, FiveBit)),
         8 => Symmetric(linear::dot_symmetric_q8_row),
         10 => Grouped(linear::dot_grouped_q2_row),
         11 => Grouped(|w, a| linear::dot_grouped_weight_row(w, a, GroupedFormat::SignedThree)),
@@ -908,6 +908,7 @@ fn packed_weight(kind: u64) -> Option<PackedWeight> {
         17 => Grouped(|w, a| linear::dot_codebook_row(w, a, ExtendedIndex)),
         22 => Grouped(|w, a| linear::dot_codebook_row(w, a, ExplicitSigns)),
         20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)),
+        23 => Grouped(|w, a| linear::dot_grouped_weight_row(w, a, GroupedFormat::NonlinearFour)),
         39 => Symmetric(|w, a| linear::dot_block_float_row(w, a, ExponentOnly)),
         40 => Symmetric(|w, a| linear::dot_block_float_row(w, a, GroupedE4M3)),
         41 => Symmetric(linear::dot_binary_sign_row),
@@ -947,11 +948,7 @@ fn execute_row_products(
         C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
             PackedWeight::Grouped(dot) => packed!(linear::encode_grouped_q8_block, dot),
             PackedWeight::Symmetric(dot) => packed!(linear::encode_symmetric_q8_block, dot),
-            PackedWeight::Affine(encoding) => {
-                packed!(linear::encode_affine_q8_block::<32>, |w, a| {
-                    linear::dot_affine_weight_row(w, a, encoding)
-                })
-            }
+            PackedWeight::Affine(dot) => packed!(linear::encode_affine_q8_block, dot),
         },
     }
 }
@@ -1894,10 +1891,13 @@ mod attention {
         }
     }
 
+    use super::BlockDot;
+    use linear::{AffineQ8Block, SymmetricQ8Block};
+
     enum KeyRows {
         Scalar(Vec<f32>),
-        Symmetric(super::SymmetricDot, Vec<linear::SymmetricQ8Block<32>>),
-        Affine(linear::AffineWeightEncoding, Vec<linear::AffineQ8Block<32>>),
+        Symmetric(BlockDot<SymmetricQ8Block<32>>, Vec<SymmetricQ8Block<32>>),
+        Affine(BlockDot<AffineQ8Block<32>>, Vec<AffineQ8Block<32>>),
     }
 
     fn prepare_blocks<B>(
@@ -2020,11 +2020,9 @@ mod attention {
                             KeyRows::Symmetric(dot, blocks) => {
                                 dot(k.blocks(key_offset, query.len())?, blocks)?
                             }
-                            KeyRows::Affine(kind, blocks) => linear::dot_affine_weight_row(
-                                k.blocks(key_offset, query.len())?,
-                                blocks,
-                                *kind,
-                            )?,
+                            KeyRows::Affine(dot, blocks) => {
+                                dot(k.blocks(key_offset, query.len())?, blocks)?
+                            }
                             KeyRows::Scalar(key) => k.dot(key_offset, &query, key)?,
                         };
                         v.decode(voff + row * vs, &mut value)?;
