@@ -644,6 +644,8 @@ mod ggml_oracle {
         ORACLE.get_or_init(|| build_storage_oracle(root)).clone()
     }
 
+    pub(super) const GGML_CORE: &str = "ggml-oracle-core.o";
+
     fn build_storage_oracle(root: &Path) -> PathBuf {
         let imported = root.join("vendor/llama.cpp-oracle");
         let lock = read_toml(imported.join("upstream.toml"));
@@ -706,38 +708,30 @@ mod ggml_oracle {
         std::fs::write(cache.join("ggml-version.h"), version).expect("version header");
         std::fs::write(cache.join("boundary.cpp"), STORAGE_ORACLE_SOURCE)
             .expect("oracle transport");
-        for (input, object) in [
-            (source.join("ggml.c"), "ggml.o"),
-            (source.join("ggml-quants.c"), "quants.o"),
-            (source.join("ggml-alloc.c"), "alloc.o"),
-            (cache.join("boundary.cpp"), "boundary.o"),
-            (source.join("ggml-backend.cpp"), "backend.o"),
-            (source.join("ggml-backend-meta.cpp"), "meta.o"),
+        let core = cache.join(GGML_CORE);
+        let pending = core.with_extension("new");
+        let mut combine = Command::new("c++");
+        combine.arg("-r").arg("-o").arg(&pending);
+        for name in [
+            "ggml.c",
+            "ggml-quants.c",
+            "ggml-alloc.c",
+            "ggml-backend.cpp",
+            "ggml-backend-meta.cpp",
         ] {
-            compile(&cache, input, cache.join(object));
+            let object = cache.join(name).with_extension("o");
+            compile(&cache, source.join(name), &object);
+            combine.arg(object);
         }
-        let objects: serde_json::Map<String, serde_json::Value> =
-            ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"]
-                .into_iter()
-                .map(|name| (name.into(), file_digest(cache.join(name)).into()))
-                .collect();
-        std::fs::write(
-            cache.join("objects.json"),
-            serde_json::to_vec(&objects).unwrap(),
-        )
-        .expect("object bindings");
+        run(&mut combine);
+        publish_file(&pending, &core, core.with_extension("sha256"));
+        let boundary = cache.join("boundary.o");
+        compile(&cache, cache.join("boundary.cpp"), &boundary);
         let candidate = executable.with_extension("new");
-        let shared = [
-            "boundary.o",
-            "meta.o",
-            "alloc.o",
-            "backend.o",
-            "ggml.o",
-            "quants.o",
-        ];
         run(Command::new("c++")
             .arg("-Wl,--gc-sections")
-            .args(shared.map(|name| cache.join(name)))
+            .arg(boundary)
+            .arg(core)
             .args(["-lm", "-o"])
             .arg(&candidate));
         publish_file(&candidate, &executable, executable.with_extension("sha256"));
@@ -1366,13 +1360,9 @@ mod verdant_api {
     /// `VT-03`: vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results
     #[test]
     fn verdant_api_vt_03() {
-        assert!(supportsF64Matmul4(true, true, true));
-        for (type_is_f64, lhs_is_4x4, rhs_is_4x4) in [
-            (false, true, true),
-            (true, false, true),
-            (true, true, false),
-        ] {
-            assert!(!supportsF64Matmul4(type_is_f64, lhs_is_4x4, rhs_is_4x4));
+        for bits in 0..8 {
+            let [f64_type, left_4x4, right_4x4] = [1, 2, 4].map(|mask| bits & mask != 0);
+            assert_eq!(supportsF64Matmul4(f64_type, left_4x4, right_4x4), bits == 7);
         }
 
         let [lhs, rhs, expected]: [[[f64; 4]; 4]; 3] = serde_json::from_value(
@@ -1421,9 +1411,7 @@ fn buffer_transfer_vt_09() {
 }
 
 mod native_backend_oracle {
-    use super::ggml_oracle::{
-        compile, digest, file_digest, publish_file, run, storage_oracle, verify_file,
-    };
+    use super::ggml_oracle::{compile, digest, publish_file, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
     use std::path::Path;
@@ -1619,10 +1607,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let oracle = storage_oracle(root);
         let common = oracle.parent().unwrap();
-        let objects = super::ggml_oracle::read_json(common.join("objects.json"));
-        for name in ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"] {
-            assert_eq!(objects[name], file_digest(common.join(name)));
-        }
+        let core = common.join(super::ggml_oracle::GGML_CORE);
+        verify_file(&core, core.with_extension("sha256"));
         let library = super::provider_library();
         let mut driver = String::from(HEADER);
         if mode.starts_with("upstream-") {
@@ -1706,10 +1692,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 linker.arg(object);
             }
             linker.arg(cache.join("driver.o"));
-            linker.args(
-                ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"]
-                    .map(|name| common.join(name)),
-            );
+            linker.arg(core);
             let pending = program.with_extension("new");
             linker.args(cpu_objects);
             linker

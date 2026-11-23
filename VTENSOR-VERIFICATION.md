@@ -4862,3 +4862,7 @@ The storage, allocation and transfer tests now share one oracle executable and o
 ### Rectified and Gaussian gated rows
 
 VT-77 compares all 36 original factory cases for each of REGLU, GEGLU and GEGLU_QUICK against GGML CPU. Prism resolves gate selection, operand order and addresses. Verdant performs the comparisons, storage conversions, activations and products. Swapping the activation and gate inputs failed REGLU ordinal 584 with error 0.967962058 against the upstream limit of 0.0000001. Restoring the operands passed all 108 cases. VT-04 also verifies the values and order of every GLU enumerator against the imported header. [Factory and mutation evidence](verification/factory-gated-activations-vt77.json)
+
+### Shared GGML CPU oracle object
+
+The SDK combines the five imported GGML core objects into one relocatable object. Storage and graph oracles link the same bytes. Each cached graph check verifies one shared object and its SHA-256 stamp. The loader still checks the executable independently. The storage oracle, fixed-matrix contract and three contiguous-convolution graphs passed. Changing one byte at offset 504,024 of the 1,008,048-byte object made the graph check reject its digest before execution. Restoring the original object passed the same graph check. The change reduced the measured native source from 12,117 to 12,099 lines.

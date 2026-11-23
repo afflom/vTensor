@@ -12,7 +12,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] When Verdant releases these primitives, switch to the published production packages, verify provenance and checksums, and build a clean consumer. Continue implementation on the PR pin until then.
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
-- [ ] Recover **1,568 non-Prism lines** (12,117 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,550 non-Prism lines** (12,099 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -45,7 +45,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
 - [x] Pass all 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 533 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
-- [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. Bind the Verdant slope once per query head and compare each original graph to GGML CPU. [Factory cases](verification/ggml-factory-cases.tsv.gz)
+- [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. Bind the Verdant slope once per query head for the 1,190 cases using existing formats. Add Q4_1, Q5_0, Q5_1 and IQ4_NL for the other 384. [Factory cases](verification/ggml-factory-cases.tsv.gz)
 - [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 2,902 pass, 2,609 are refused and 264 still need an evaluator verdict.
 - [x] Execute all 39 LOG, SIN, COS and EXP cases through Verdant, including the upstream storage and view variants. [Factory verdicts](verification/factory-elementary-vt60.json)
 - [x] Execute the 122 sigmoid and SiLU standalone, multiplied and added graphs on the pinned Verdant primitives. [Factory verdicts](verification/factory-logistic-vt61.json)
