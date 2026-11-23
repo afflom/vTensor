@@ -1202,11 +1202,8 @@ mod tensor_layout {
         };
         let bundle = format!("generated/{directory}");
         let result = ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
-        let current = ggml_oracle::tool_json(
-            root,
-            "lexlean",
-            &["--project", &project, "--diagnostic-format", "json", "check"],
-        );
+        let flags = ["--project", &project, "--diagnostic-format=json", "check"];
+        let current = ggml_oracle::tool_json(root, "lexlean", &flags);
         for key in ["source_id", "semantic_id"] {
             assert_eq!(
                 current[key], result["source"][key],
