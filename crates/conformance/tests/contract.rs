@@ -456,7 +456,7 @@ fn boundary_rows<const N: usize, const M: usize>(
     for row in &rows {
         writeln!(input, "{}", row.map(|word| word.to_string()).join(" ")).unwrap();
     }
-    let reference = ggml_oracle::boundary(name, &input);
+    let reference = ggml_oracle::rows(name, &input);
     assert_eq!(rows.len(), reference.len());
     rows.into_iter().zip(reference)
 }
@@ -698,22 +698,15 @@ mod ggml_oracle {
                 lock["commit"].as_str().expect("upstream revision"),
             );
         std::fs::write(cache.join("ggml-version.h"), version).expect("version header");
-        for (name, bytes) in [
-            ("storage_oracle.c", STORAGE_ORACLE_SOURCE),
-            ("transfer.cpp", TRANSFER_ORACLE_SOURCE),
-            ("allocation.cpp", ALLOCATION_ORACLE_SOURCE),
-        ] {
-            std::fs::write(cache.join(name), bytes).expect("oracle transport");
-        }
+        std::fs::write(cache.join("boundary.cpp"), STORAGE_ORACLE_SOURCE)
+            .expect("oracle transport");
         for (input, object) in [
             (source.join("ggml.c"), "ggml.o"),
             (source.join("ggml-quants.c"), "quants.o"),
             (source.join("ggml-alloc.c"), "alloc.o"),
-            (cache.join("storage_oracle.c"), "storage.o"),
-            (cache.join("allocation.cpp"), "allocation.o"),
+            (cache.join("boundary.cpp"), "boundary.o"),
             (source.join("ggml-backend.cpp"), "backend.o"),
             (source.join("ggml-backend-meta.cpp"), "meta.o"),
-            (cache.join("transfer.cpp"), "transfer.o"),
         ] {
             compile(&cache, input, cache.join(object));
         }
@@ -727,29 +720,21 @@ mod ggml_oracle {
             serde_json::to_vec(&objects).unwrap(),
         )
         .expect("object bindings");
-        let programs: [(&str, &[&str]); 3] = [
-            ("transfer", &["backend", "ggml", "quants"]),
-            (
-                "allocation",
-                &["meta", "alloc", "backend", "ggml", "quants"],
-            ),
-            ("storage", &["ggml", "quants"]),
+        let candidate = executable.with_extension("new");
+        let shared = [
+            "boundary.o",
+            "meta.o",
+            "alloc.o",
+            "backend.o",
+            "ggml.o",
+            "quants.o",
         ];
-        for (name, shared) in programs {
-            let destination = cache.join(format!("{name}-oracle"));
-            let candidate = destination.with_extension("new");
-            let objects = std::iter::once(name).chain(shared.iter().copied());
-            run(Command::new("c++")
-                .arg("-Wl,--gc-sections")
-                .args(objects.map(|object| cache.join(format!("{object}.o"))))
-                .args(["-lm", "-o"])
-                .arg(&candidate));
-            publish_file(
-                &candidate,
-                &destination,
-                destination.with_extension("sha256"),
-            );
-        }
+        run(Command::new("c++")
+            .arg("-Wl,--gc-sections")
+            .args(shared.map(|name| cache.join(name)))
+            .args(["-lm", "-o"])
+            .arg(&candidate));
+        publish_file(&candidate, &executable, executable.with_extension("sha256"));
         executable
     }
 
@@ -776,9 +761,11 @@ mod ggml_oracle {
         String::from_utf8(checked_output(command, output)).expect("oracle text")
     }
 
-    /// Query the upstream storage-size functions in one batch.
-    pub fn spans<const N: usize>(executable: &Path, input: &str) -> Vec<[u64; N]> {
-        batch(&mut Command::new(executable), input)
+    /// Query the selected imported interface using its verified executable.
+    pub(super) fn rows<const N: usize>(mode: &str, input: &str) -> Vec<[u64; N]> {
+        let executable = storage_oracle(&super::root());
+        verify_file(&executable, executable.with_extension("sha256"));
+        batch(Command::new(executable).arg(mode), input)
             .lines()
             .map(|line| {
                 let mut values = line
@@ -791,15 +778,8 @@ mod ggml_oracle {
             .collect()
     }
 
-    /// Query an imported boundary oracle after checking its executable digest.
-    pub(super) fn boundary<const N: usize>(name: &str, input: &str) -> Vec<[u64; N]> {
-        let base = storage_oracle(&super::root());
-        let executable = base.with_file_name(format!("{name}-oracle"));
-        verify_file(&executable, executable.with_extension("sha256"));
-        spans(&executable, input)
-    }
-
-    const ALLOCATION_ORACLE_SOURCE: &[u8] = br##"#include "ggml.h"
+    const STORAGE_ORACLE_SOURCE: &[u8] = br##"// Test transport for three independent upstream GGML interfaces.
+#include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-backend-impl.h"
@@ -810,12 +790,16 @@ mod ggml_oracle {
 #include <vector>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <climits>
+
 static size_t alignment;
 static size_t get_alignment(ggml_backend_buffer_type_t) { return alignment; }
 static void *get_base(ggml_backend_buffer_t buffer) { return buffer->context; }
-static void refusal(const char *message) { _exit(strstr(message, "not enough space in the buffer") ? 10 : 99); }
+static void allocation_refusal(const char *message) { _exit(strstr(message, "not enough space in the buffer") ? 10 : 99); }
 static void quiet(enum ggml_log_level, const char *, void *) {}
-int main() {
+static int allocation() {
     size_t capacity, offset, size;
     for (;;) {
         const int fields = scanf("%zu %zu %zu %zu", &capacity, &offset, &size, &alignment);
@@ -825,7 +809,7 @@ int main() {
         pid_t child = fork();
         if (child < 0) return 3;
         if (!child) {
-            ggml_set_abort_callback(refusal); ggml_log_set(quiet, nullptr);
+            ggml_set_abort_callback(allocation_refusal); ggml_log_set(quiet, nullptr);
             std::vector<char> allocation(capacity + alignment + 1);
             void *base = allocation.data(); size_t space = allocation.size();
             if (!std::align(alignment, capacity, base, space)) _exit(99);
@@ -846,15 +830,8 @@ int main() {
         else if (WEXITSTATUS(status) != 0) return 6;
     }
 }
-"##;
 
-    const STORAGE_ORACLE_SOURCE: &[u8] =
-        br##"/* Test transport only. Storage semantics are evaluated by unmodified GGML. */
-#include "ggml.h"
-#include <inttypes.h>
-#include <stdio.h>
-
-int main(void) {
+static int storage() {
     for (;;) {
         int type;
         int64_t ne[4];
@@ -865,7 +842,7 @@ int main(void) {
                                 &nb[0], &nb[1], &nb[2], &nb[3]);
         if (fields == EOF) { return 0; }
         if (fields != 9 || type < 0 || type >= GGML_TYPE_COUNT) { return 2; }
-        struct ggml_tensor tensor = {0};
+        ggml_tensor tensor = {};
         tensor.type = (enum ggml_type) type;
         for (int i = 0; i < GGML_MAX_DIMS; ++i) {
             tensor.ne[i] = ne[i];
@@ -875,26 +852,17 @@ int main(void) {
                ggml_blck_size(tensor.type), ggml_type_size(tensor.type));
     }
 }
-"##;
-    const TRANSFER_ORACLE_SOURCE: &[u8] = br##"#include "ggml.h"
-#include "ggml-backend.h"
-#include "ggml-backend-impl.h"
-#include <cstdio>
-#include <cstring>
-#include <climits>
-#include <vector>
-#include <sys/wait.h>
-#include <unistd.h>
+
 static int calls;
 static void set(ggml_backend_buffer_t, ggml_tensor *, const void *, size_t, size_t) { calls++; }
 static void get(ggml_backend_buffer_t, const ggml_tensor *, void *, size_t, size_t) { calls++; }
-static void refusal(const char *message) {
+static void transfer_refusal(const char *message) {
     if (strstr(message, "tensor buffer not set")) _exit(10);
     if (strstr(message, "tensor not allocated")) _exit(11);
     if (strstr(message, "out of bounds")) _exit(12);
     _exit(99);
 }
-int main() {
+static int transfer() {
     unsigned mode, has_buffer, has_data;
     unsigned long long capacity, offset, size;
     for (;;) {
@@ -905,7 +873,7 @@ int main() {
         pid_t child = fork();
         if (child < 0) return 3;
         if (child == 0) {
-            ggml_set_abort_callback(refusal);
+            ggml_set_abort_callback(transfer_refusal);
             ggml_backend_buffer buffer = {};
             buffer.iface.set_tensor = set; buffer.iface.get_tensor = get;
             ggml_tensor tensor = {}, parent = {};
@@ -924,6 +892,13 @@ int main() {
         if (waitpid(child, &status, 0) != child) return 4;
         printf("%d\n", WIFEXITED(status) ? WEXITSTATUS(status) : 99);
     }
+}
+
+int main(int argc, char **argv) {
+    if (argc==1 || (argc==2 && !strcmp(argv[1],"storage"))) return storage();
+    if (argc==2 && !strcmp(argv[1],"allocation")) return allocation();
+    if (argc==2 && !strcmp(argv[1],"transfer")) return transfer();
+    return 2;
 }
 "##;
 }
@@ -1060,7 +1035,7 @@ mod ggml_storage_oracle {
         let expected: [[u64; 3]; 6] =
             serde_json::from_value(fixture["span_block_bytes"].clone()).unwrap();
         assert_eq!(
-            ggml_oracle::spans(&executable, fixture["request"].as_str().unwrap()),
+            ggml_oracle::rows("storage", fixture["request"].as_str().unwrap()),
             expected
         );
         let malformed =
@@ -1069,7 +1044,7 @@ mod ggml_storage_oracle {
 
         // Exercise enough input and output to exceed pipe capacity in both
         // directions without starting a separate oracle process for every case.
-        let batch = ggml_oracle::spans(&executable, &"0 1 1 1 1 4 4 4 4\n".repeat(8192));
+        let batch = ggml_oracle::rows("storage", &"0 1 1 1 1 4 4 4 4\n".repeat(8192));
         assert_eq!(batch.len(), 8192);
         assert!(batch.iter().all(|row| *row == [4, 1, 4]));
         let modified = || std::fs::metadata(&executable).unwrap().modified().unwrap();
@@ -1278,7 +1253,7 @@ mod tensor_layout {
             for &kind in kinds {
                 request(&mut input, kind, [0; 4], [0; 4]);
             }
-            let metadata = ggml_oracle::spans(&ggml_oracle::storage_oracle(&root), &input);
+            let metadata = ggml_oracle::rows("storage", &input);
             assert_eq!(metadata.len(), kinds.len(), "oracle omitted a type");
             metadata
         });
@@ -1310,8 +1285,7 @@ mod tensor_layout {
             repo_model::artifact::sha256_hex(inputs.as_bytes()),
             "c16f7845ee80d5bcc0cdba789e92eff7395c84b28a95fd06407bef0e14172570"
         );
-        let expected =
-            ggml_oracle::spans::<3>(&ggml_oracle::storage_oracle(&super::root()), &inputs);
+        let expected = ggml_oracle::rows::<3>("storage", &inputs);
         assert_eq!(expected.len(), layouts.len(), "oracle omitted a layout");
         for (index, (input, reference)) in layouts.into_iter().zip(expected).enumerate() {
             match run(input).expect("bounded layout fits machine arithmetic") {

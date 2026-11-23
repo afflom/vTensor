@@ -284,7 +284,8 @@ inductive{
     {name: stateful, fields: [Nat, IndexContext, IndexContext, CopyMode, Nat]},
     {name: bindings, fields: [CopyMode]},
     {name: machineWord, fields: [Bool, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: convolutionAddress, fields: [ConvolutionGeometry, Nat, Nat, Nat]}
+    {name: convolutionAddress, fields: [ConvolutionGeometry, Nat, Nat, Nat]},
+    {name: gaussianF32Table, fields: [Nat]}
   ]
 }
 
@@ -341,7 +342,8 @@ inductive{
     {name: decoded, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: bindings, fields: [Nat, Nat, Nat, Bool]},
     {name: instruction, fields: [WordOperation, WordOperand, WordOperand, WordTarget, Nat, Nat]},
-    {name: sample, fields: [(Option Nat)]}
+    {name: sample, fields: [(Option Nat)]},
+    {name: tableResult, fields: [(Option Nat)]}
   ]
 }
 
@@ -910,7 +912,7 @@ definition{
   name: unaryKind,
   parameters: [operation : Nat, variant : Nat],
   result: (Option Nat),
-  body: (if ((operation =? 89) && (variant =? 4)) then (ctor Option.some [Nat] 19) else (if ((10 <=? operation) && (operation <=? 12)) then (ctor Option.some [Nat] (operation + 3)) else (if ((operation =? 89) && (variant =? 7)) then (ctor Option.some [Nat] 17) else (if ((operation =? 89) && (variant =? 10)) then (ctor Option.some [Nat] 18) else (if ((operation =? 89) && (variant =? 13)) then (ctor Option.some [Nat] 16) else (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat]))))))))),
+  body: (if ((operation =? 89) && ((8 <=? variant) && (variant <=? 9))) then (ctor Option.some [Nat] (variant + 12)) else (if ((operation =? 89) && (variant =? 4)) then (ctor Option.some [Nat] 19) else (if ((10 <=? operation) && (operation <=? 12)) then (ctor Option.some [Nat] (operation + 3)) else (if ((operation =? 89) && (variant =? 7)) then (ctor Option.some [Nat] 17) else (if ((operation =? 89) && (variant =? 10)) then (ctor Option.some [Nat] 18) else (if ((operation =? 89) && (variant =? 13)) then (ctor Option.some [Nat] 16) else (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat])))))))))),
   executable: true
 }
 
@@ -1692,6 +1694,7 @@ definition{
   result: GraphResponse,
   body: (match response
     | GraphResponse.sample address => (ctor GraphResponse.sample address)
+    | GraphResponse.tableResult word => (ctor GraphResponse.tableResult word)
     | GraphResponse.planned decision => (ctor GraphResponse.planned decision)
     | GraphResponse.offsets choosingRight from to => (ctor GraphResponse.offsets choosingRight from to)
     | GraphResponse.arithmetic a b c d e f => (ctor GraphResponse.arithmetic a b c d e f)
@@ -1798,6 +1801,9 @@ definition{
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
       | Option.some left => (if (operation =? 53) then (ctor GraphResponse.planned (planDirectConvolution options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output)))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (convolutionAddress geometry phase start index)
+    | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult
+      (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else
+      (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
     | GraphRequest.bindings mode => (sourceBindings mode)
     | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),
@@ -3002,5 +3008,26 @@ theorem{
   statement: ((unaryKind 89 4) = (ctor Option.some [Nat] 19)),
   proof: reflexivity{}
 }
+theorem{
+  name: gaussianSelectsBinary32,
+  parameters: [],
+  statement: ((unaryKind 89 8) = (ctor Option.some [Nat] 20)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: quickGaussianSelectsLogistic,
+  parameters: [],
+  statement: ((unaryKind 89 9) = (ctor Option.some [Nat] 21)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gaussianNegativeTenHasPositiveZero,
+  parameters: [],
+  statement: ((evaluate (ctor GraphRequest.gaussianF32Table 3240099840)) = (ctor GraphResponse.tableResult (ctor Option.some [Nat] 0))),
+  proof: reflexivity{}
+}
+
 \end{semanticmodule}
 \end{lexlean}

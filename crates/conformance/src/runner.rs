@@ -1066,6 +1066,22 @@ fn execute_word(
                 17 => sigmoid_f32(input),
                 18 => silu_f32(input),
                 19 => verdant_tensor::linear::tanh_f32(input),
+                20 if source == 0 => {
+                    // The imported F32 profile uses a half table inside its two cutoffs.
+                    match vtensor_pointwise::run(GraphRequest::C5(a))
+                        .map_err(|_| BackendError::Overflow)?
+                    {
+                        GraphResponse::C9(Some(word)) => Ok(f32::from_bits(word as u32)),
+                        GraphResponse::C9(None) => {
+                            let rounded = prepare_float(0, 1, a)?;
+                            let value = verdant_tensor::linear::gelu_f32(rounded)?;
+                            Ok(prepare_float(0, 1, u64::from(value.to_bits()))?)
+                        }
+                        _ => return Err(BackendError::InvalidTensor),
+                    }
+                }
+                20 => verdant_tensor::linear::gelu_f32(input),
+                21 => verdant_tensor::linear::gelu_quick_f32(input),
                 _ => return Err(BackendError::InvalidTensor),
             }
             .map_err(|_| BackendError::Overflow)?;
