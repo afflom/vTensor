@@ -9,8 +9,8 @@ use verdant_tensor::{linear, TensorComputeError};
 use vtensor_matrix_q8::Adt2 as RowProductPlan;
 use vtensor_pointwise::{
     Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as GraphPlan, Adt11 as WordOperation,
-    Adt12 as WordOperand, Adt13 as WordTarget, Adt2 as TensorDescriptor, Adt3 as IndexContext,
-    Adt4 as CopyMode, Adt8 as ConvolutionGeometry, Adt9 as GraphResponse,
+    Adt12 as WordOperand, Adt13 as WordTarget, Adt2 as TensorDescriptor, Adt4 as CopyMode,
+    Adt8 as ConvolutionGeometry, Adt9 as GraphResponse,
 };
 
 /// Typed refusals at the native tensor boundary.
