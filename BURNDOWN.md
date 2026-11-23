@@ -74,6 +74,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 214 SOFT_MAX cases, including masks, sinks and in-place output. [VT-87 results](verification/factory-row-softmax-vt87.json)
 - [x] Pass the 344 TOPK_MOE graphs unlocked by SOFT_MAX. [Original graph comparisons](verification/factory-row-softmax-compositions.json)
 - [ ] Complete FLASH_ATTN_EXT. Of 5,775 attention cases, 5,641 pass, 34 are refused and 100 still need an evaluator verdict.
+- [ ] Pass the 19 Q1_0, Q2_0 and F8_E4M3 attention graphs with the existing Verdant row products and storage decoder.
+- [ ] Implement the optional I32 key/value row map in Prism and pass the 15 refused indexed attention graphs. [Pinned constructor and CPU fixtures](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/tests/test-backend-ops.cpp#L9235)
 - [x] Execute all 39 LOG, SIN, COS and EXP cases through Verdant, including the upstream storage and view variants. [Factory verdicts](verification/factory-elementary-vt60.json)
 - [x] Execute the 122 sigmoid and SiLU standalone, multiplied and added graphs on the pinned Verdant primitives. [Factory verdicts](verification/factory-logistic-vt61.json)
 - [x] Supply binary32 hyperbolic tangent in Verdant. All 128,870 GGML scalar comparisons pass. [Verdant PR #25](https://github.com/afflom/verdant-engine/pull/25)
