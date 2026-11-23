@@ -179,7 +179,7 @@ definition{
   result: Bool,
   body: (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.unknownType => false
-    | TensorTypes::TypeStorageDecision.knownType storage => ((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (ScalarDotStorage::packedActivationWeights kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
+    | TensorTypes::TypeStorageDecision.knownType storage => (((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (kind =? 43)) || (ScalarDotStorage::packedActivationWeights kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
   executable: true
 }
 
