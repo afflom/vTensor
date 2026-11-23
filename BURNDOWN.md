@@ -46,7 +46,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, the 1,932 refused standalone MUL_MAT cases, precision modes and 1,630 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 230 Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs, including skipped experts and offset index views. [VT-83 results](verification/factory-indexed-products-vt83.json)
 - [x] Pass the 130 newly admitted packed expert compositions, including six shared-expert graphs and 124 matrix fusions. [Original full-graph comparisons](verification/factory-indexed-expert-compositions.json)
-- [ ] Pass the remaining 1,023 MUL_MAT_ID graphs. Connect 251 F32, F16 and BF16 cases to Verdant, then cover the other 772 packed cases. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
+- [ ] Integrate VT-84 on main. All 251 scalar MUL_MAT_ID graphs pass on the implementation branch. [Verified F32, F16 and BF16 results](https://github.com/afflom/vTensor/blob/e227dea668118e5f86ec82f4ada2c1aa19b2cb47/verification/factory-scalar-experts-vt84.json)
+- [ ] Pass the remaining 772 packed MUL_MAT_ID cases. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
 - [x] Pass all 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 533 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
