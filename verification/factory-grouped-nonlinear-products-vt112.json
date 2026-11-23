@@ -1,0 +1,229 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-112",
+  "implementation": "fa1f9102137d487b2c382d305c02d71c0b761ae1",
+  "verdant_revision": "5c20574c145d5d01668df13a77863e4b2569865c",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/41",
+  "provider_sha256": "e0529110c14345dbd18bdf55e0b6885071adc211c5c023c0fc8720526acd126b",
+  "provider_inputs_sha256": "924e7fe621a194c9fa54daea0a03b20c6f63bc41d7b1c0c07925a103329f0e23",
+  "oracle_executable_sha256": "7188354f371ad2b715f7deb506225db33690ebab863c36e133ff5472835774c9",
+  "matrix_lock_sha256": "62cb9902eb37614bb4dfbb14aaffb5a8665d85807ded7608d08ce3df5dee22cb",
+  "oracle": "The pinned GGML CPU compares the complete original ordinary, expert and gated fusion graphs with the provider.",
+  "contract_ordinals": [
+    10912,
+    14147
+  ],
+  "contract_transcript_sha256": "e7c180c5aae2f2fba00a9da8c797b42c432518f84a131787be7d5e8ddee7b99f",
+  "runs": {
+    "fusion": {
+      "passed": 1,
+      "transcript_sha256": "73e28fb984a58e886c2802f4d678a28b10e54bbcd19660facc0882409520efc0"
+    },
+    "rows-0": {
+      "passed": 20,
+      "transcript_sha256": "3a8b3dad071a06133f604f6227edc38290c2bbba4e959538687e6facb5a5e15f"
+    },
+    "rows-1": {
+      "passed": 20,
+      "transcript_sha256": "ccee5440cc44e8e8e3bc8ab263a4e3b5db62d127a16c743ef8b701f4d20aab04"
+    },
+    "rows-2": {
+      "passed": 19,
+      "transcript_sha256": "08997c3405f1306e5b70a282f26110c1ef7f68ec53533a111bc0c60455a1e7bd"
+    }
+  },
+  "mutation": {
+    "ordinal": 10912,
+    "change": "Negate the IQ4_XS row product.",
+    "error": 4.0,
+    "tolerance": 0.0005
+  },
+  "case_ordinals": {
+    "MUL_MAT": [
+      10912,
+      10913,
+      10914,
+      10915,
+      10916,
+      10917,
+      10918,
+      10919,
+      10920,
+      10921,
+      10922,
+      11123,
+      11124,
+      11125,
+      11126,
+      11127,
+      11307,
+      11308,
+      11309,
+      11310,
+      11311,
+      11491,
+      11492,
+      11493,
+      11494,
+      11495,
+      11675,
+      11676,
+      11677,
+      11678,
+      11679,
+      11859,
+      11860,
+      11861,
+      11862,
+      11863,
+      12043,
+      12044,
+      12045,
+      12046,
+      12047,
+      12227,
+      12228,
+      12229,
+      12230,
+      12231,
+      12331,
+      12332,
+      12333,
+      12334,
+      12335,
+      12336,
+      13494,
+      13504,
+      13615
+    ],
+    "MUL_MAT_FUSION": [
+      26778
+    ],
+    "MUL_MAT_ID": [
+      12337,
+      12338,
+      14139,
+      14147,
+      15050,
+      15051
+    ]
+  },
+  "llama_host": {
+    "source_gguf_sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+    "model_sha256": "6537a691d684f67af704fa6bd9b96b23626050565ef1b03673b201d0686e2de4",
+    "quantizer_arguments": [
+      "--tensor-type",
+      "blk\\.[0-9]+\\.ffn_down\\.weight=iq4_xs",
+      "q4_0",
+      "4"
+    ],
+    "iq4_xs_projections": 6,
+    "placement_records": 585,
+    "vTensor_placement_records": 585,
+    "comparison": "Separate CPU and vTensor processes run public llama_decode for prefill and two decoded tokens.",
+    "steps": [
+      {
+        "step": 0,
+        "logits": 32000,
+        "top_token": 29892,
+        "max_abs_logit_difference": 0.49631547927856445,
+        "normalized_squared_logit_error": 0.0001242516982835314,
+        "cache_fp16_values": 6912,
+        "cache_bit_mismatches": 2277,
+        "max_abs_cache_difference": 0.0810546875
+      },
+      {
+        "step": 1,
+        "logits": 32000,
+        "top_token": 14332,
+        "max_abs_logit_difference": 0.48612165451049805,
+        "normalized_squared_logit_error": 0.0008248812180229438,
+        "cache_fp16_values": 3456,
+        "cache_bit_mismatches": 1704,
+        "max_abs_cache_difference": 0.0703125
+      },
+      {
+        "step": 2,
+        "logits": 32000,
+        "top_token": 6575,
+        "max_abs_logit_difference": 0.3162970542907715,
+        "normalized_squared_logit_error": 1.1049622136539453e-05,
+        "cache_fp16_values": 3456,
+        "cache_bit_mismatches": 1713,
+        "max_abs_cache_difference": 0.05828857421875
+      }
+    ],
+    "outputs_sha256": {
+      "cpu-logits.f32": "0fd10c325c4d7874d8651ce15c8c5a7f650afbe9f1031ee7ece30b4ef55ed105",
+      "cpu-kv.tsv": "21a1ff7f4c7d130673a402d726cb8015f6b40d2c7bd7b967f03885fc8a8a218e",
+      "provider-logits.f32": "798575455f3e217feb54bc14c17ee6bf326edb7e5337431f37b26a84a5354f0a",
+      "provider-kv.tsv": "7e209c74b33c7642bb1249d81e465caa28dd863ea298c4f06d8b6d7bd86214c7"
+    },
+    "cpu_repacking_control": {
+      "change": "Set llama_model_params.use_extra_bufts to false on CPU. The GGML and llama.cpp libraries, model, tokens, callback and vTensor run are identical.",
+      "default_cpu_repacked_tensors": 36,
+      "default_cpu_repack_layout": "q4_0_8x8",
+      "iq4_xs_projections_repacked": 0,
+      "cpu_without_repacking_vs_vTensor": [
+        {
+          "step": 0,
+          "top_token": 29892,
+          "max_abs_logit_difference": 6.67572021484375e-06,
+          "normalized_squared_logit_error": 8.950566063397045e-14,
+          "cache_bit_mismatches": 7,
+          "max_abs_cache_difference": 6.103515625e-05
+        },
+        {
+          "step": 1,
+          "top_token": 14332,
+          "max_abs_logit_difference": 7.152557373046875e-06,
+          "normalized_squared_logit_error": 3.6747855081955235e-14,
+          "cache_bit_mismatches": 1,
+          "max_abs_cache_difference": 1.52587890625e-05
+        },
+        {
+          "step": 2,
+          "top_token": 6575,
+          "max_abs_logit_difference": 3.814697265625e-06,
+          "normalized_squared_logit_error": 7.379659107568239e-15,
+          "cache_bit_mismatches": 2,
+          "max_abs_cache_difference": 3.0517578125e-05
+        }
+      ],
+      "default_cpu_vs_cpu_without_repacking": [
+        {
+          "step": 0,
+          "top_token": 29892,
+          "max_abs_logit_difference": 0.49631547927856445,
+          "normalized_squared_logit_error": 0.00012424656643213213,
+          "cache_bit_mismatches": 2277,
+          "max_abs_cache_difference": 0.0810546875
+        },
+        {
+          "step": 1,
+          "top_token": 14332,
+          "max_abs_logit_difference": 0.48612213134765625,
+          "normalized_squared_logit_error": 0.0008248765023014813,
+          "cache_bit_mismatches": 1704,
+          "max_abs_cache_difference": 0.0703125
+        },
+        {
+          "step": 2,
+          "top_token": 6575,
+          "max_abs_logit_difference": 0.3162975311279297,
+          "normalized_squared_logit_error": 1.1049474696537502e-05,
+          "cache_bit_mismatches": 1712,
+          "max_abs_cache_difference": 0.05828857421875
+        }
+      ],
+      "outputs_sha256": {
+        "logits.f32": "2e5752bd54652b3bf8457524cd1882aebb60c0708d57418d041c569623abb998",
+        "kv.tsv": "662a1a213b7dd705145132c7d3edf08e58dc6bd563a826796e95ea1312032f90"
+      },
+      "default_cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+      "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
+      "control_harness_source_sha256": "83d003d0b89aa27557bf85779d2b48e03aede538faa1bdbf2c0c3c071df0bfa7"
+    }
+  }
+}
