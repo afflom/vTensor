@@ -12,10 +12,18 @@ definition{
 }
 
 definition{
+  name: shortBitWeights,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((kind =? 41) || (kind =? 42)),
+  executable: true
+}
+
+definition{
   name: symmetricActivationWeights,
   parameters: [kind : Nat],
   result: Bool,
-  body: ((((kind =? 2) || (kind =? 6)) || (kind =? 8)) || (kind =? 20)),
+  body: (((((kind =? 2) || (kind =? 6)) || (kind =? 8)) || (kind =? 20)) || (shortBitWeights kind)),
   executable: true
 }
 

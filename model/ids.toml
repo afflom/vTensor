@@ -642,3 +642,9 @@ id = "VT-95"
 level = "build"
 suite = "native-backend"
 statement = "Prism binds affine four- and five-bit matrix and attention rows to Verdant activation encoding, row products and value decoding"
+
+[[id]]
+id = "VT-96"
+level = "build"
+suite = "native-backend"
+statement = "Prism admits sign, two-bit and E4M3 attention rows and binds their query conversion, key contraction and value reads to Verdant"

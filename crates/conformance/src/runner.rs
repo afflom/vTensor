@@ -206,6 +206,10 @@ impl BufferContext {
 }
 
 fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
+    tensor_layout(tensor).map(|(metadata, _)| metadata)
+}
+
+fn tensor_layout(tensor: &Tensor) -> Result<(TensorDescriptor, usize), BackendError> {
     let ty = u64::try_from(tensor.ty).map_err(|_| BackendError::InvalidTensor)?;
     let vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(_, block, element)) =
         vtensor_types::run(ty)
@@ -226,8 +230,9 @@ fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
     };
     usize::try_from(size).map_err(|_| BackendError::Overflow)?;
     let address = tensor.data as usize as u64;
-    Ok(TensorDescriptor::C0(
-        ty, n0, n1, n2, n3, s0, s1, s2, s3, size, address,
+    Ok((
+        TensorDescriptor::C0(ty, n0, n1, n2, n3, s0, s1, s2, s3, size, address),
+        block as usize,
     ))
 }
 
@@ -825,6 +830,7 @@ fn decode_words(
 }
 
 struct TensorInput<'a> {
+    block_lanes: usize,
     bytes: &'a [u8],
     ty: c_int,
     ne: [i64; 4],
@@ -833,7 +839,8 @@ struct TensorInput<'a> {
 
 impl<'a> TensorInput<'a> {
     fn new(t: &'a Tensor) -> Result<Self, BackendError> {
-        let span = tensor_span(t)?;
+        let (TensorDescriptor::C0(.., span, _), block_lanes) = tensor_layout(t)?;
+        let span = span as usize;
         let bytes = if span == 0 {
             &[]
         } else {
@@ -842,6 +849,7 @@ impl<'a> TensorInput<'a> {
         };
         Ok(Self {
             bytes,
+            block_lanes,
             ty: t.ty,
             ne: t.ne,
             nb: t.nb,
@@ -860,9 +868,11 @@ impl<'a> TensorInput<'a> {
     }
 }
 
+type SymmetricDot = fn(&[u8], &[linear::SymmetricQ8Block<32>]) -> Result<f32, TensorComputeError>;
+
 #[derive(Clone, Copy)]
 enum PackedWeight {
-    Symmetric(linear::SymmetricWeightEncoding),
+    Symmetric(SymmetricDot),
     Affine(linear::AffineWeightEncoding),
 }
 
@@ -870,12 +880,14 @@ fn packed_weight(kind: u64) -> Option<PackedWeight> {
     use linear::{AffineWeightEncoding::*, SymmetricWeightEncoding::*};
     use PackedWeight::{Affine, Symmetric};
     Some(match kind {
-        2 => Symmetric(SignedFour),
+        2 => Symmetric(linear::dot_symmetric_q4_row),
         3 => Affine(FourBit),
-        6 => Symmetric(SignedFive),
+        6 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, SignedFive)),
         7 => Affine(FiveBit),
-        8 => Symmetric(SignedByte),
-        20 => Symmetric(NonlinearFour),
+        8 => Symmetric(linear::dot_symmetric_q8_row),
+        20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)),
+        41 => Symmetric(linear::dot_binary_sign_row),
+        42 => Symmetric(linear::dot_two_bit_row),
         _ => return None,
     })
 }
@@ -931,14 +943,8 @@ fn execute_row_products(
         C0(.., None, 10) => packed!(encode_grouped_q8_block, dot_grouped_q2_row),
         C0(.., None, 12) => packed!(encode_grouped_q8_block, linear::dot_grouped_q4_row),
         C0(.., None, 13) => packed!(encode_grouped_q8_block, linear::dot_grouped_q5_row),
-        C0(.., None, 41) => packed!(symmetric, linear::dot_binary_sign_row),
-        C0(.., None, 42) => packed!(symmetric, linear::dot_two_bit_row),
         C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
-            PackedWeight::Symmetric(encoding) => {
-                packed!(symmetric, |w, a| linear::dot_encoded_symmetric_row(
-                    w, a, encoding
-                ))
-            }
+            PackedWeight::Symmetric(dot) => packed!(symmetric, dot),
             PackedWeight::Affine(encoding) => {
                 packed!(linear::encode_affine_q8_block::<32>, |w, a| {
                     linear::dot_affine_weight_row(w, a, encoding)
@@ -1759,13 +1765,10 @@ mod attention {
                             *value = scalar(0, *value, scalar(2, slope, weight)?)?;
                         }
                     }
-                    let extra = if let Some(sink) = &sink {
-                        let mut score = [0.0];
-                        sink.decode(soff, &mut score)?;
-                        Some(score[0])
-                    } else {
-                        None
-                    };
+                    let extra = sink
+                        .as_ref()
+                        .map(|s| s.word(soff).map(f32::from_ne_bytes))
+                        .transpose()?;
                     linear::normalize_exponential_f32(&mut row, extra)?;
                     // SAFETY: Prism bound this row to the dense destination, disjoint from mask and sink.
                     unsafe { super::write_row(output.add(to as usize), &row) }
@@ -1814,25 +1817,27 @@ mod attention {
     }
 
     impl TensorInput<'_> {
-        fn half(&self, offset: u64) -> Result<u16, BackendError> {
-            Ok(u16::from_ne_bytes(
-                self.region(offset, 2)?.try_into().unwrap(),
-            ))
+        fn word<const N: usize>(&self, offset: u64) -> Result<[u8; N], BackendError> {
+            Ok(self.region(offset, N)?.try_into().unwrap())
         }
 
-        fn blocks(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
-            let bytes = count.checked_mul(self.nb[0]).ok_or(Overflow)?;
+        fn blocks(&self, offset: u64, lanes: usize) -> Result<&[u8], BackendError> {
+            if !lanes.is_multiple_of(self.block_lanes) {
+                return Err(InvalidTensor);
+            }
+            let bytes = (lanes / self.block_lanes)
+                .checked_mul(self.nb[0])
+                .ok_or(Overflow)?;
             self.region(offset, bytes)
         }
 
         pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
-            if super::packed_weight(self.ty as u64).is_some() {
-                let (blocks, tail) = out.as_chunks_mut::<32>();
-                if !tail.is_empty() {
-                    return Err(InvalidTensor);
-                }
-                let source = self.blocks(offset, blocks.len())?;
-                for (input, block) in source.chunks_exact(self.nb[0]).zip(blocks) {
+            if self.block_lanes > 1 {
+                let source = self.blocks(offset, out.len())?;
+                for (input, block) in source
+                    .chunks_exact(self.nb[0])
+                    .zip(out.chunks_exact_mut(self.block_lanes))
+                {
                     super::decode_words(self.ty as u64, input, block, 4)?;
                 }
                 return Ok(());
@@ -1861,10 +1866,7 @@ mod attention {
 
     enum KeyRows {
         Scalar(Vec<f32>),
-        Symmetric(
-            linear::SymmetricWeightEncoding,
-            Vec<linear::SymmetricQ8Block<32>>,
-        ),
+        Symmetric(super::SymmetricDot, Vec<linear::SymmetricQ8Block<32>>),
         Affine(linear::AffineWeightEncoding, Vec<linear::AffineQ8Block<32>>),
     }
 
@@ -1948,7 +1950,7 @@ mod attention {
                     for row in 0..key_rows {
                         let bias = match &mask {
                             Some(m) => {
-                                let half = m.half(moff + row * m.nb[0] as u64)?;
+                                let half = u16::from_ne_bytes(m.word(moff + row * m.nb[0] as u64)?);
                                 if vtensor_attention_mask::run(u64::from(half), slope_word) {
                                     continue;
                                 }
@@ -1962,13 +1964,11 @@ mod attention {
                         };
                         let key_offset = koff + row * ks;
                         let dot = match &mut keys {
-                            KeyRows::Symmetric(kind, blocks) => linear::dot_encoded_symmetric_row(
-                                k.blocks(key_offset, blocks.len())?,
-                                blocks,
-                                *kind,
-                            )?,
+                            KeyRows::Symmetric(dot, blocks) => {
+                                dot(k.blocks(key_offset, query.len())?, blocks)?
+                            }
                             KeyRows::Affine(kind, blocks) => linear::dot_affine_weight_row(
-                                k.blocks(key_offset, blocks.len())?,
+                                k.blocks(key_offset, query.len())?,
                                 blocks,
                                 *kind,
                             )?,
@@ -1988,9 +1988,8 @@ mod attention {
                         mean.push(score, Some(&value)).map_err(|_| Overflow)?;
                     }
                     if let Some(sink) = &sink {
-                        let mut score = [0.0];
-                        sink.decode(soff, &mut score)?;
-                        mean.push(score[0], None).map_err(|_| Overflow)?;
+                        mean.push(f32::from_ne_bytes(sink.word(soff)?), None)
+                            .map_err(|_| Overflow)?;
                     }
                     let row = mean.finish().map_err(|_| Overflow)?;
                     // SAFETY: the Prism plan bounds this contiguous F32 row. Verdant owns its separate workspace.
