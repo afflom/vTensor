@@ -576,3 +576,9 @@ id = "VT-85"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules ordinary and indexed E4M3 weight products and Verdant decodes the weights and contracts binary32 rows"
+
+[[id]]
+id = "VT-86"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules binary32 row ranking and Verdant selects deterministic indices for GGML ARGSORT and TOP_K"
