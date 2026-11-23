@@ -4870,3 +4870,7 @@ The SDK combines the five imported GGML core objects into one relocatable object
 ### VT-76 complete checkpoint
 
 The full locked-SDK `just vv` passed on vTensor `4231e4422b59cb75a5671ad05913c4ee44de076e` using Verdant PR #26. All 83 backend contract tests passed, including the Gaussian operations, direct convolution and the independent contiguous CPU reference. The workspace checks and cargo-deny passed. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/4231e4422b59cb75a5671ad05913c4ee44de076e)
+
+### Forward pooling
+
+VT-79 covers all 240 POOL_1D and 144 POOL_2D factory graphs and four additional F16 graphs. The Prism model plans each window and requests Verdant storage conversion, addition, comparison, count conversion and division. One-dimensional average pooling divides by the valid width. Two-dimensional average pooling includes padded elements in the divisor. Swapping average and maximum at the parameter binding failed the padded F16 one-dimensional case. GGML CPU returned zero and vTensor returned negative FLT_MAX. Restoring the binding passed all four affected contracts. The provider retained the five approved GGML host imports. [Case ordinals, hashes and planted defect](verification/factory-pooling-vt79.json)
