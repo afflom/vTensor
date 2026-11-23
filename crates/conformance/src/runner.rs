@@ -924,6 +924,8 @@ fn execute_row_products(
         C0(.., None, 10) => packed!(encode_grouped_q8_block, dot_grouped_q2_row),
         C0(.., None, 12) => packed!(encode_grouped_q8_block, linear::dot_grouped_q4_row),
         C0(.., None, 13) => packed!(encode_grouped_q8_block, linear::dot_grouped_q5_row),
+        C0(.., None, 41) => packed!(symmetric, linear::dot_binary_sign_row),
+        C0(.., None, 42) => packed!(symmetric, linear::dot_two_bit_row),
         _ => Err(BackendError::InvalidTensor),
     }
 }
@@ -943,7 +945,8 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     let weights = TensorInput::new(w)?;
     let indices = tensor.input(2)?;
     let request = |query| run(query).map_err(|_| BackendError::Overflow);
-    let activations = graph_tensor_data(a)?;
+    let activations = TensorInput::new(a)?;
+    let mut widened = workspace(if a.ty == 1 { a.ne[0] as u64 } else { 0 }, 0.0_f32)?;
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = workspace(visits, 0u64)?;
@@ -970,12 +973,21 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         };
         *offset = dest;
         prepared.clear();
+        let source = if a.ty == 1 {
+            activations.decode(activation, &mut widened)?;
+            widened.as_ptr().cast::<u8>()
+        } else {
+            let bytes = usize::try_from(a.ne[0])
+                .ok()
+                .and_then(|n| n.checked_mul(size_of::<f32>()))
+                .ok_or(BackendError::Overflow)?;
+            activations.region(activation, bytes)?.as_ptr()
+        };
         for block in 0..blocks {
-            // SAFETY: the certified column lies in the admitted activation span and has
-            // exactly this many contiguous blocks. GGML views may be unaligned.
+            // SAFETY: both branches supply the entire column as contiguous binary32.
+            // Imported GGML views can begin at an unaligned address.
             let lanes = unsafe {
-                activations
-                    .add(activation as usize)
+                source
                     .cast::<[f32; LANES]>()
                     .add(block as usize)
                     .read_unaligned()

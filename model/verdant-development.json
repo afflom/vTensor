@@ -1,7 +1,7 @@
 {
   "spec": "vtensor/verdant-patch/1",
   "upstream": "https://github.com/afflom/verdant-engine",
-  "base": "3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81",
-  "commit": "50e511da18a009256af76d20e9b15c943ab0b54c",
-  "pull_request": "https://github.com/afflom/verdant-engine/pull/31"
+  "base": "50e511da18a009256af76d20e9b15c943ab0b54c",
+  "commit": "aa8b246e52a0b97b20d1d58ecd72ef2c6c71cff6",
+  "pull_request": "https://github.com/afflom/verdant-engine/pull/32"
 }
