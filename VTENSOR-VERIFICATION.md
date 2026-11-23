@@ -4874,3 +4874,7 @@ The full locked-SDK `just vv` passed on vTensor `4231e4422b59cb75a5671ad05913c4e
 ### Forward pooling
 
 VT-79 covers all 240 POOL_1D and 144 POOL_2D factory graphs and four additional F16 graphs. The Prism model plans each window and requests Verdant storage conversion, addition, comparison, count conversion and division. One-dimensional average pooling divides by the valid width. Two-dimensional average pooling includes padded elements in the divisor. Swapping average and maximum at the parameter binding failed the padded F16 one-dimensional case. GGML CPU returned zero and vTensor returned negative FLT_MAX. Restoring the binding passed all four affected contracts. The provider retained the five approved GGML host imports. [Case ordinals, hashes and planted defect](verification/factory-pooling-vt79.json)
+
+### Direct volumetric convolution
+
+VT-80 runs the original GGML CONV_3D graphs through the existing Verdant matrix product. Prism maps each kernel, input and output address across the three spatial axes and the packed batch and channel dimension. The six permanent cases cover dilation, separate batches, offset F16 and F32 filters, and two empty-kernel axes. Sampling every tile from the first tile’s origin failed ordinal 7723 with NMSE 3.720924840 against the upstream limit of 0.0005. Restoring the coordinates passed the volumetric, planar convolution, channel-major convolution and pooling contracts. [Case ordinals and binary hashes](verification/factory-volume-convolution-vt80.json)

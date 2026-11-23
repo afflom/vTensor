@@ -1,0 +1,47 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "8e41fee8386914e55842a6de69d5b25de50cf4fe",
+  "requirement": "VT-80",
+  "implementation": "189a8d57c931b843e83adf1865e5331a2fb8f493",
+  "provider_sha256": "794a214c2a166c2bf03bed6b81cc73268731d0931d8dcc0ae0bfd6880cc4487c",
+  "oracle_executable_sha256": "7fa5a221b2cc5d274d33fea4ba382c5a8d17ed85915515013889429512400d4f",
+  "pointwise_lock_sha256": "9e31be195a1d446374a9504c6ca4497f9cbad1da4c5eb10880a386f2de9e95e1",
+  "oracle": "Unmodified GGML test_conv_3d graphs, original F16/F32 filters and F32 images, ggml_compute_forward_conv_3d CPU reference, original test_case::eval.",
+  "contract_ordinals": [
+    7723,
+    7785,
+    7815,
+    7816,
+    7961,
+    7964
+  ],
+  "contract_transcript_sha256": "1ea3c2343bd8c7fad9cc7d541dae10c63ab9bde528c555025a7f3529278cf356",
+  "comparison_tolerance": 0.0005,
+  "standalone_mapping": "Sort non-contract ordinals by the product of the constructor batch, input, channel and kernel extents, breaking ties by ordinal, descending. Assign round robin to four workers.",
+  "standalone_runs": {},
+  "case_ordinals": {
+    "CONV_3D": [
+      7723,
+      7785,
+      7815,
+      7816,
+      7961,
+      7964
+    ]
+  },
+  "imported_ggml_symbols": [
+    "ggml_abort",
+    "ggml_backend_buffer_init",
+    "ggml_backend_buffer_is_host",
+    "ggml_graph_n_nodes",
+    "ggml_graph_node"
+  ],
+  "mutant": {
+    "mutation": "For volumetric convolution only, read every image tile from the first set of patches.",
+    "ordinal": 7723,
+    "parameters": "N=1,IC=3,ID=18,IH=22,IW=20,OC=1,KD=3,KH=1,KW=5,s0=2,s1=1,s2=1,p0=2,p1=0,p2=1,d0=1,d1=1,d2=2,type_kernel=f32,kernel_offset=0",
+    "nmse": 3.72092484,
+    "maximum": 0.0005
+  }
+}
