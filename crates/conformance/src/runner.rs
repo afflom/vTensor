@@ -5,6 +5,7 @@ use std::cell::UnsafeCell;
 use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
+use verdant_tensor::linear;
 use vtensor_pointwise::{
     Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as GraphPlan, Adt11 as WordOperation,
     Adt12 as WordOperand, Adt13 as WordTarget, Adt2 as TensorDescriptor, Adt3 as IndexContext,
@@ -719,7 +720,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
             Instruction::C2 => {
                 let (left, rest) = values.split_at_mut(left_count as usize);
                 let (right, output) = rest.split_at_mut(right_count as usize);
-                verdant_tensor::linear::multiply_matrix_rows_f32(m, k, n, left, right, output)?;
+                linear::multiply_matrix_rows_f32(m, k, n, left, right, output)?;
             }
             _ => return Err(BackendError::InvalidTensor),
         }
@@ -781,7 +782,7 @@ fn execute_convolution(
             };
         }
         let output = &mut output[..rows * channels as usize];
-        verdant_tensor::linear::multiply_matrix_rows_f32(
+        linear::multiply_matrix_rows_f32(
             rows,
             inner as usize,
             channels as usize,
@@ -824,9 +825,7 @@ fn decode_words(
             std::mem::size_of_val(destination),
         )
     };
-    Ok(verdant_tensor::linear::decode_storage_block(
-        kind, source, bytes, stride,
-    )?)
+    Ok(linear::decode_storage_block(kind, source, bytes, stride)?)
 }
 
 struct TensorInput<'a> {
@@ -862,7 +861,6 @@ fn execute_quantized_matrix(
     tensor: &Tensor,
     plan: vtensor_matrix_q8::Adt2,
 ) -> Result<(), BackendError> {
-    use verdant_tensor::linear;
     use vtensor_matrix_q8::Adt2::C0;
     macro_rules! block_rows {
         ($encode:expr, $dot:path) => {
@@ -969,7 +967,7 @@ unsafe fn scalar_word(
 }
 
 fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
-    verdant_tensor::linear::convert_float_storage(from, to, word)
+    linear::convert_float_storage(from, to, word)
         .map_err(|_| BackendError::Overflow)?
         .ok_or(BackendError::InvalidTensor)
 }
@@ -994,7 +992,7 @@ fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
         GraphResponse::C9(Some(bits)) => Ok(Some(f32::from_bits(bits as u32))),
         GraphResponse::C9(None) => {
             let input = prepare_float(0, 1, word)?;
-            let value = verdant_tensor::linear::gelu_f32(input)?;
+            let value = linear::gelu_f32(input)?;
             Ok(Some(prepare_float(0, 1, u64::from(value.to_bits()))?))
         }
         _ => Err(BackendError::InvalidTensor),
@@ -1002,7 +1000,6 @@ fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
 }
 
 fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32, BackendError> {
-    use verdant_tensor::linear;
     let word = u64::from(input.to_bits());
     let activation = match variant {
         0 => match linear::evaluate_encoded_word(0, word, 0)
@@ -1035,27 +1032,21 @@ fn execute_word(
     destination: *mut u8,
     words: &mut [u64],
 ) -> Result<(), BackendError> {
-    use verdant_tensor::linear;
+    use BackendError::InvalidTensor;
     let GraphResponse::C7(operation, left, right, target, read_bytes, write_bytes) = response
     else {
-        return Err(BackendError::InvalidTensor);
+        return Err(InvalidTensor);
     };
     let read = |operand| match operand {
-        WordOperand::C1(index) => words
-            .get(index as usize)
-            .copied()
-            .ok_or(BackendError::InvalidTensor),
+        WordOperand::C1(index) => words.get(index as usize).copied().ok_or(InvalidTensor),
         WordOperand::C2(value) => Ok(value),
         operand => {
             let (pointer, offset) = match operand {
-                WordOperand::C0(index, offset) => (
-                    *pointers
-                        .get(index as usize)
-                        .ok_or(BackendError::InvalidTensor)?,
-                    offset,
-                ),
+                WordOperand::C0(index, offset) => {
+                    (*pointers.get(index as usize).ok_or(InvalidTensor)?, offset)
+                }
                 WordOperand::C3(offset) => (destination, offset),
-                _ => return Err(BackendError::InvalidTensor),
+                _ => return Err(InvalidTensor),
             };
             // SAFETY: Prism bounds the selected source or output word and its byte width.
             unsafe { scalar_word(pointer.add(offset as usize), read_bytes, None) }
@@ -1066,7 +1057,7 @@ fn execute_word(
         if overflow {
             BackendError::Overflow
         } else {
-            BackendError::InvalidTensor
+            InvalidTensor
         }
     };
     let float = |word: u64| f32::from_bits(word as u32);
@@ -1087,9 +1078,9 @@ fn execute_word(
                 .map_err(|_| BackendError::Overflow)?
         }
         WordOperation::C5(kind) => {
-            linear::evaluate_encoded_word(kind, a, b).map_err(|_| BackendError::InvalidTensor)?
+            linear::evaluate_encoded_word(kind, a, b).map_err(|_| InvalidTensor)?
         }
-        WordOperation::C6 => return Err(BackendError::InvalidTensor),
+        WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
             let input = decode_float(source, a)?;
             let result = match kind {
@@ -1103,24 +1094,20 @@ fn execute_word(
                 20 if source == 0 => Ok(gaussian_table(a)?.unwrap_or_default()),
                 20 => linear::gelu_f32(input),
                 21 => linear::gelu_quick_f32(input),
-                _ => return Err(BackendError::InvalidTensor),
+                _ => return Err(InvalidTensor),
             }
             .map_err(|_| BackendError::Overflow)?;
             Some(convert(0, destination, u64::from(result.to_bits()))?)
         }
     }
-    .ok_or(BackendError::InvalidTensor)?;
+    .ok_or(InvalidTensor)?;
     match target {
-        WordTarget::C0(index) => {
-            *words
-                .get_mut(index as usize)
-                .ok_or(BackendError::InvalidTensor)? = value
-        }
+        WordTarget::C0(index) => *words.get_mut(index as usize).ok_or(InvalidTensor)? = value,
         // SAFETY: Prism bounds each output word, including eight-byte COUNT_EQUAL results.
         WordTarget::C1(offset) => unsafe {
             scalar_word(destination.add(offset as usize), write_bytes, Some(value))?;
         },
-        WordTarget::C2 => return Err(BackendError::InvalidTensor),
+        WordTarget::C2 => return Err(InvalidTensor),
     }
     Ok(())
 }
@@ -1335,7 +1322,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                     destination_data.add(to as usize),
                     span as usize,
                 );
-                verdant_tensor::linear::decode_storage_block(kind, input, output, stride as usize)?;
+                linear::decode_storage_block(kind, input, output, stride as usize)?;
             }
             continue;
         }
@@ -1570,9 +1557,10 @@ mod attention {
         self, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
     };
     use vtensor_attention::{Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as Response};
+    use BackendError::{InvalidTensor, Overflow};
 
     fn request(query: Request) -> Result<Response, BackendError> {
-        vtensor_attention::run(query).map_err(|_| BackendError::Overflow)
+        vtensor_attention::run(query).map_err(|_| Overflow)
     }
 
     pub(super) fn plan(
@@ -1581,7 +1569,7 @@ mod attention {
         output: TensorDescriptor,
     ) -> Result<Option<super::ExecutionPlan>, BackendError> {
         let [Some(query), Some(key), Some(value), mask, sink] = sources else {
-            return Err(BackendError::InvalidTensor);
+            return Err(InvalidTensor);
         };
         let word = |index: usize| u64::from(tensor.op_params[index] as u32);
         let descriptor = descriptor_for!(Descriptor::C0);
@@ -1599,7 +1587,7 @@ mod attention {
             descriptor(output),
         ))? {
             Response::C1(p) => Ok(Some(super::ExecutionPlan::Attention(Box::new(p)))),
-            _ => Err(BackendError::InvalidTensor),
+            _ => Err(InvalidTensor),
         }
     }
 
@@ -1611,9 +1599,7 @@ mod attention {
         }
 
         fn blocks(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
-            let bytes = count
-                .checked_mul(self.tensor.nb[0])
-                .ok_or(BackendError::Overflow)?;
+            let bytes = count.checked_mul(self.tensor.nb[0]).ok_or(Overflow)?;
             self.region(offset, bytes)
         }
 
@@ -1622,7 +1608,7 @@ mod attention {
             if matches!(self.tensor.ty, 2 | 8) {
                 let (blocks, tail) = out.as_chunks_mut::<32>();
                 if !tail.is_empty() {
-                    return Err(BackendError::InvalidTensor);
+                    return Err(InvalidTensor);
                 }
                 let source = self.blocks(offset, blocks.len())?;
                 for (input, block) in source.chunks_exact(width).zip(blocks) {
@@ -1636,7 +1622,7 @@ mod attention {
                     (kind @ (1 | 30), &[a, b]) => {
                         super::decode_float(kind, u16::from_ne_bytes([a, b]).into())?
                     }
-                    _ => return Err(BackendError::InvalidTensor),
+                    _ => return Err(InvalidTensor),
                 };
             }
             Ok(())
@@ -1653,30 +1639,43 @@ mod attention {
         let (Some(q), Some(k), Some(v), mask, sink) =
             (input(0)?, input(1)?, input(2)?, input(3)?, input(4)?)
         else {
-            return Err(BackendError::InvalidTensor);
+            return Err(InvalidTensor);
         };
         let shape = q.tensor.ne;
         let key_rows = k.tensor.ne[1] as u64;
         let mut query = workspace(shape[0] as u64, 0.0)?;
-        let packed_key = matches!(k.tensor.ty, 2 | 8);
-        let mut key = workspace(if packed_key { 0 } else { shape[0] as u64 }, 0.0)?;
+        let packed_product = match k.tensor.ty {
+            2 => Some(linear::dot_symmetric_q4_row::<32> as fn(&[u8], &[_]) -> _),
+            8 => Some(linear::dot_symmetric_q8_row::<32> as _),
+            _ => None,
+        };
+        let (mut key, mut packed) = if packed_product.is_some() {
+            (Vec::new(), super::reserved(query.len() / 32)?)
+        } else {
+            (workspace(shape[0] as u64, 0.0)?, Vec::new())
+        };
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
-        let mut packed = super::reserved(if packed_key { query.len() / 32 } else { 0 })?;
         let output = graph_tensor_data(tensor)?;
-        let Plan::C0(.., cap) = &plan;
-        let cap = cap.map(|bits| f32::from_bits(bits as u32));
-        let scalar = |op, a, b| evaluate_f32_scalar(op, a, b).map_err(|_| BackendError::Overflow);
+        let Plan::C0(.., head_bias, cap) = &plan;
+        let decode = |bits: u64| f32::from_bits(bits as u32);
+        let cap = cap.map(decode);
+        let head_bias = head_bias.map(decode);
+        let scalar = |op, a, b| evaluate_f32_scalar(op, a, b).map_err(|_| Overflow);
         let mut scale = f32::from_bits(tensor.op_params[0] as u32);
         if let Some(cap) = cap {
             scale = scalar(3, scale, cap)?;
         }
-        for batch in 0..shape[3] as u64 {
-            for head in 0..shape[2] as u64 {
+        for head in 0..shape[2] as u64 {
+            let slope = head_bias
+                .map(|bias| linear::attention_head_slope_f32(bias, shape[2] as u32, head as u32))
+                .transpose()?;
+            let slope_word = u64::from(slope.unwrap_or(1.0).to_bits());
+            for batch in 0..shape[3] as u64 {
                 for token in 0..shape[1] as u64 {
                     let Response::C2(qoff, koff, voff, moff, soff, dst, ks, vs, dot_type) =
                         request(Request::C1(plan.clone(), token, head, batch))?
                     else {
-                        return Err(BackendError::InvalidTensor);
+                        return Err(InvalidTensor);
                     };
                     q.decode(qoff, &mut query)?;
                     // GGML prepares the query in the key's dot-product storage once per head.
@@ -1695,22 +1694,20 @@ mod attention {
                         let bias = match &mask {
                             Some(m) => {
                                 let half = m.half(moff + row * m.tensor.nb[0] as u64)?;
-                                if vtensor_attention_mask::run(u64::from(half)) {
+                                if vtensor_attention_mask::run(u64::from(half), slope_word) {
                                     continue;
                                 }
-                                super::decode_float(1, half.into())?
+                                let word = super::decode_float(1, half.into())?;
+                                match slope {
+                                    Some(slope) => scalar(2, slope, word)?,
+                                    None => word,
+                                }
                             }
                             None => 0.0,
                         };
                         let key_offset = koff + row * ks;
-                        let dot = if dot_type == 8 {
-                            let bytes = k.blocks(key_offset, packed.len())?;
-                            let product = match k.tensor.ty {
-                                2 => linear::dot_symmetric_q4_row,
-                                8 => linear::dot_symmetric_q8_row,
-                                _ => return Err(BackendError::InvalidTensor),
-                            };
-                            product(bytes, &packed)?
+                        let dot = if let Some(product) = packed_product {
+                            product(k.blocks(key_offset, packed.len())?, &packed)?
                         } else {
                             k.decode(key_offset, &mut key)?;
                             let mut dot = [0.0];
@@ -1723,16 +1720,14 @@ mod attention {
                             scaled = scalar(2, cap, linear::tanh_f32(scaled)?)?;
                         }
                         let score = scalar(0, scaled, bias)?;
-                        mean.push(score, Some(&value))
-                            .map_err(|_| BackendError::Overflow)?;
+                        mean.push(score, Some(&value)).map_err(|_| Overflow)?;
                     }
                     if let Some(sink) = &sink {
                         let mut score = [0.0];
                         sink.decode(soff, &mut score)?;
-                        mean.push(score[0], None)
-                            .map_err(|_| BackendError::Overflow)?;
+                        mean.push(score[0], None).map_err(|_| Overflow)?;
                     }
-                    let row = mean.finish().map_err(|_| BackendError::Overflow)?;
+                    let row = mean.finish().map_err(|_| Overflow)?;
                     // SAFETY: the Prism plan bounds this contiguous F32 row. Verdant owns its separate workspace.
                     unsafe { super::write_float_row(output.add(dst as usize), &row) }
                 }

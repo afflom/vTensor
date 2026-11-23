@@ -528,6 +528,12 @@ suite = "native-backend"
 statement = "Prism plans combined split and swapped gated rows and Verdant evaluates their rectified and Gaussian activations"
 
 [[id]]
+id = "VT-78"
+level = "build"
+suite = "native-backend"
+statement = "Prism binds head-specific masked attention and Verdant evaluates linear bias slopes before the weighted mean"
+
+[[id]]
 id = "VT-79"
 level = "build"
 suite = "native-backend"
