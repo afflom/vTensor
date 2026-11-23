@@ -542,7 +542,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x3d287b3a }]
 name = "vtensor_probes"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x5dc40509 }]
+license-files = [{ path = "src/lib.rs", hash = 0x6defd61a }]
 
 [[licenses.clarify]]
 name = "verdant_weighted_blend"
@@ -566,7 +566,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x1a27f392 }]
 name = "vtensor_attention"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xb3c69147 }]
+license-files = [{ path = "src/lib.rs", hash = 0xf95b2141 }]
 
 [[licenses.clarify]]
 name = "vtensor_attention_mask"

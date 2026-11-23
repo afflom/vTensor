@@ -648,3 +648,9 @@ id = "VT-96"
 level = "build"
 suite = "native-backend"
 statement = "Prism admits sign, two-bit and E4M3 attention rows and binds their query conversion, key contraction and value reads to Verdant"
+
+[[id]]
+id = "VT-97"
+level = "build"
+suite = "native-backend"
+statement = "Prism validates indexed key and value cache rows and maps each unmasked column to the selected cache cell for Verdant attention"

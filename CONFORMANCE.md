@@ -184,6 +184,7 @@ model does not sanction.
 | `VT-94` | `build` | Prism binds Q5_0 and IQ4_NL matrix and attention rows to Verdant signed-coefficient contractions and value decoding |
 | `VT-95` | `build` | Prism binds affine four- and five-bit matrix and attention rows to Verdant activation encoding, row products and value decoding |
 | `VT-96` | `build` | Prism admits sign, two-bit and E4M3 attention rows and binds their query conversion, key contraction and value reads to Verdant |
+| `VT-97` | `build` | Prism validates indexed key and value cache rows and maps each unmasked column to the selected cache cell for Verdant attention |
 
 ## normalization-graphs
 

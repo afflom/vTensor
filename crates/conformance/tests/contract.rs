@@ -244,6 +244,9 @@ ggml_batches! {
     fn small_format_attention_vt_96() { "upstream-SMALL_FORMAT_ATTENTION", 19, ["attention"] }
 
     #[test]
+    fn indexed_cache_attention_vt_97() { "upstream-INDEXED_KV_ATTENTION", 4, ["attention"] }
+
+    #[test]
     fn affine_weight_rows_vt_95() { "upstream-AFFINE_WEIGHT_ROWS", 8, ["attention", "matrix"] }
 
     #[test]
@@ -428,15 +431,18 @@ fn verify_row_graphs() {
 #[test]
 fn fixture_generation_vt_35() {
     native_backend_oracle::fixture_input(0);
-    use vtensor_fixtures::Adt0 as Request;
-    for (family, request) in [
-        (1, Request::C0(0)),
-        (0, Request::C0(4)),
-        (0, Request::C1(1280, 0)),
-        (0, Request::C1(0, 24)),
-        (0, Request::C2(0, 2, 0)),
-        (0, Request::C3(0, 0, 0)),
-    ] {
+    for probe in probes(35, 6, 0, 0) {
+        use vtensor_fixtures::Adt0 as Request;
+        let vtensor_probes::Adt0::C6(family, op, a, b, c) = probe else {
+            panic!("missing matrix fixture")
+        };
+        let request = match op {
+            0 => Request::C0(a),
+            1 => Request::C1(a, b),
+            2 => Request::C2(a, b, c),
+            3 => Request::C3(a, b, c),
+            _ => panic!("unexpected matrix fixture request"),
+        };
         assert_eq!(vtensor_fixtures::run(family, request).unwrap(), None);
     }
 }
@@ -1079,8 +1085,7 @@ mod ggml_storage_oracle {
     /// `VT-05`: The pinned GGML storage oracle executes upstream byte-span semantics for scalar and block-encoded tensors
     #[test]
     fn ggml_storage_oracle_vt_05() {
-        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let executable = ggml_oracle::storage_oracle(&root);
+        let executable = ggml_oracle::storage_oracle(&super::root());
         let fixture = &super::native_backend_oracle::ORACLE_BINDINGS["storage_probe"];
         let expected: [[u64; 3]; 6] =
             serde_json::from_value(fixture["span_block_bytes"].clone()).unwrap();
@@ -1099,7 +1104,7 @@ mod ggml_storage_oracle {
         assert!(batch.iter().all(|row| *row == [4, 1, 4]));
         let modified = || std::fs::metadata(&executable).unwrap().modified().unwrap();
         let built_at = modified();
-        assert_eq!(ggml_oracle::storage_oracle(&root), executable);
+        assert_eq!(ggml_oracle::storage_oracle(&super::root()), executable);
         assert_eq!(
             modified(),
             built_at,
@@ -1248,15 +1253,6 @@ mod tensor_layout {
         );
     }
 
-    fn layout(
-        [n0, n1, n2, n3]: [u64; 4],
-        [s0, s1, s2, s3]: [u64; 4],
-        block: u64,
-        bytes: u64,
-    ) -> Adt0 {
-        Adt0::C0(n0, n1, n2, n3, s0, s1, s2, s3, block, bytes)
-    }
-
     fn storage_metadata() -> &'static [[u64; 3]] {
         static METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
             certified_current_model(&super::root(), "layout");
@@ -1304,19 +1300,17 @@ mod tensor_layout {
                 Adt1::C0 => panic!("valid layout case {index} was rejected"),
             }
         }
-        assert!(matches!(run(layout([1; 4], [4; 4], 0, 4)), Ok(Adt1::C0)));
-        for (ne, nb, block, bytes) in [
-            ([u64::MAX, 1, 1, 1], [8; 4], 1, 8),
-            ([u64::MAX, 1, 1, 1], [18; 4], 32, 18),
-            ([2, 2, 1, 1], [1, u64::MAX, 1, 1], 1, 1),
-        ] {
-            assert!(matches!(run(layout(ne, nb, block, bytes)), Err(Overflow)));
+        for probe in super::probes(106, 5, 0, 0) {
+            let vtensor_probes::Adt0::C5(a, b, c, d, e, f, g, h, block, width, expected) = probe
+            else {
+                panic!("missing layout boundary");
+            };
+            let result = run(Adt0::C0(a, b, c, d, e, f, g, h, block, width));
+            assert!(matches!(
+                (expected, result),
+                (0, Ok(Adt1::C0)) | (1, Err(Overflow)) | (2, Ok(Adt1::C1(0)))
+            ));
         }
-        // Empty dimensions must short circuit unsafe arithmetic.
-        assert!(matches!(
-            run(layout([u64::MAX, 0, 1, 1], [u64::MAX; 4], 1, 8)),
-            Ok(Adt1::C1(0))
-        ));
     }
 
     /// `VT-07`: The Prism-generated type catalog matches every declared GGML storage type and refuses removed and out-of-range identifiers
@@ -1474,7 +1468,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "076dc6e27e012338eeadf07666915c0e10b939288348cbe61147335f6a76e70a",
+            "a429e49c2024ddd3a97215784237fa4cd056d39999539eeeac7cd7d477ba8f32",
         )
     });
 
@@ -2106,6 +2100,12 @@ int main(int argc, char **argv) {
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
     ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
     ggml_backend_cpu_set_n_threads(reference,1);
+    auto finish = [&](size_t cases) {
+        ggml_backend_free(reference);
+        ggml_backend_free(backend);
+        printf("RESULT cases %zu\n", cases);
+        return 0;
+    };
     if (!strcmp(argv[3],"cpu-threadpool")) {
         std::array<std::array<float,17>,4> expected{};
         for(auto selected : {reference,backend}) {
@@ -2153,8 +2153,7 @@ int main(int argc, char **argv) {
             release(first);release(second);release(nullptr);
             ggml_backend_buffer_free(storage);ggml_free(ctx);
         }
-        ggml_backend_free(reference);ggml_backend_free(backend);
-        printf("RESULT cases %zu\n",expected.size()); return 0;
+        return finish(expected.size());
     }
     if (!strcmp(argv[3],"iq2-identity-copy")) {
         for (auto selected : {reference, backend}) {
@@ -2177,8 +2176,7 @@ int main(int argc, char **argv) {
             CHECK(observed==data);
             ggml_backend_buffer_free(buffer); ggml_free(ctx);
         }
-        ggml_backend_free(reference); ggml_backend_free(backend);
-        puts("RESULT cases 1"); return 0;
+        return finish(1);
     }
     if (!strcmp(argv[3],"scheduled-flags")) {
         std::array<std::array<float,2>,3> expected{};
@@ -2210,8 +2208,7 @@ int main(int argc, char **argv) {
             }
             ggml_backend_sched_free(sched); ggml_free(ctx);
         }
-        ggml_backend_free(reference); ggml_backend_free(backend);
-        printf("RESULT cases %zu\n",expected.size()); return 0;
+        return finish(expected.size());
     }
 #ifdef VTENSOR_IMPORTED_SUITE
     if (!strncmp(argv[3], "upstream-", 9)) {
@@ -2536,8 +2533,7 @@ int main(int argc, char **argv) {
         }
         CHECK(refusal_probes==28);
       }
-      printf("RESULT cases %zu\n",cases);
-      ggml_backend_free(reference);ggml_backend_free(backend);return 0;
+      return finish(cases);
     }
 #endif
     if (!strcmp(argv[3], "update")) {
@@ -2577,7 +2573,7 @@ int main(int argc, char **argv) {
         if(actual!=expected) {fprintf(stderr,"update mismatch add=%d type=%d patch=%d inplace=%d alias=%d layout=%d offset=%zu shape=%d,%d,%d,%d\n",add,type,patch_type,inplace,alias,layout,base,width,rows,planes,batches);return 2;}
         ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;
       }
-      ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases); return 0;
+      return finish(cases);
     }
     const bool indexed=!strcmp(argv[3], "indexed-add");
     if (!strcmp(argv[3], "row-gather") || indexed) {
@@ -2679,8 +2675,7 @@ int main(int argc, char **argv) {
       }
       CHECK(types==36 && decoders==(indexed?1:30));
       CHECK(complete);
-      ggml_backend_free(reference); ggml_backend_free(backend);
-      printf("RESULT cases %zu\n",cases); return 0;
+      return finish(cases);
     }
     const bool bf16_gradient = !strcmp(argv[3], "row-gradient-bf16");
     if (bf16_gradient || !strcmp(argv[3], "row-gradient")) {
@@ -2729,7 +2724,7 @@ int main(int argc, char **argv) {
         CHECK(compare_result(result,invalid?nullptr:oracle,initial,invalid?0:1));
         ggml_backend_buffer_free(buffer);ggml_free(ctx);cases++;
       }
-      ggml_backend_free(reference);ggml_backend_free(backend);printf("RESULT cases %zu\n",cases);return 0;
+      return finish(cases);
     }
     const bool repeating=!strcmp(argv[3], "repeat"), concatenating=!strcmp(argv[3], "concat");
     const bool spatial=!strcmp(argv[3], "spatial"), folding=!strcmp(argv[3], "fold"), diagonal=!strcmp(argv[3], "diagonal"), triangular=!strcmp(argv[3], "triangular"), filling=!strcmp(argv[3], "fill"), casting=!strcmp(argv[3], "cast"), windowing=!strcmp(argv[3], "window"), transforming=!strcmp(argv[3], "transform"), unarying=!strcmp(argv[3], "unary"), scanning=!strcmp(argv[3], "scan"), reducing=!strcmp(argv[3], "reduction"), selecting=!strcmp(argv[3], "rows");
@@ -2991,7 +2986,7 @@ int main(int argc, char **argv) {
       CHECK(refused==((normalizing)?fixture(0,0,0,5):spatial?200:triangular?384:windowing?216:0));
       recipe_word(4);recipe_word(cases);recipe_word(refusal_probes);recipe_word(refused);
       if(filling) {recipe_trace=&released;recipe_word(UINT64_MAX);recipe_word(source_releases);recipe_trace=&trace;}
-      ggml_backend_free(reference); ggml_backend_free(backend); printf("RESULT cases %zu\n",cases);return 0;
+      return finish(cases);
     }
     if (!strcmp(argv[3], "empty")) {
       size_t cases=0; int kind;
@@ -3013,8 +3008,7 @@ int main(int argc, char **argv) {
         }
         ggml_free(ctx);
       }
-      ggml_backend_free(reference); ggml_backend_free(backend);
-      printf("RESULT cases %zu\n",cases); return 0;
+      return finish(cases);
     }
     const bool matrix = !strcmp(argv[3], "matrix");
     if (matrix || !strcmp(argv[3], "elementwise")) {
@@ -3099,8 +3093,7 @@ int main(int argc, char **argv) {
       }
       CHECK((!matrix || matrix_refusals_checked) && refusal_probes==5 && fgetc(stdin)==EOF);
       CHECK(ggml_backend_reg_count()==1 && ggml_backend_dev_count()==1);
-      ggml_backend_free(reference); ggml_backend_free(backend);
-      printf("RESULT cases %zu\n",size_t(header[0])); return 0;
+      return finish(size_t(header[0]));
     }
     ggml_backend_buffer_t empty = ggml_backend_alloc_buffer(backend, 0);
     CHECK(empty && !ggml_backend_buffer_get_base(empty) && ggml_backend_buffer_get_size(empty) == 0);
@@ -3201,8 +3194,7 @@ int main(int argc, char **argv) {
     invalid_op->op = GGML_OP_COUNT;
     CHECK(!ggml_backend_dev_supports_op(dev, invalid_op));
     CHECK(ggml_backend_graph_compute(backend, unsupported) == GGML_STATUS_FAILED);
-    ggml_backend_buffer_free(graph_buffer); ggml_free(ctx); ggml_backend_free(reference); ggml_backend_free(backend);
-    printf("RESULT cases %zu\n", cases); return 0;
+    ggml_backend_buffer_free(graph_buffer); ggml_free(ctx); return finish(cases);
 }
 "##;
 }

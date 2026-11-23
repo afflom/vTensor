@@ -12,7 +12,9 @@ inductive{
     {name: query, fields: [Nat, Nat, Nat, Nat, (Option Nat)]},
     {name: place, fields: [Nat, Nat, Nat, Nat]},
     {name: transfer, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: layout, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: layout, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: boundaryLayout, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: matrixRequest, fields: [Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -89,10 +91,26 @@ definition{
 }
 
 definition{
+  name: matrixRefusals,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index =? 0) then (ctor Probe.matrixRequest 1 0 0 0 0) else (if (index =? 1) then (ctor Probe.matrixRequest 0 0 4 0 0) else (if (index =? 2) then (ctor Probe.matrixRequest 0 1 1280 0 0) else (if (index =? 3) then (ctor Probe.matrixRequest 0 1 0 24 0) else (if (index =? 4) then (ctor Probe.matrixRequest 0 2 0 2 0) else (if (index =? 5) then (ctor Probe.matrixRequest 0 3 0 0 0) else (ctor Probe.end))))))),
+  executable: true
+}
+
+definition{
+  name: layoutBoundaries,
+  parameters: [index : Nat],
+  result: Probe,
+  body: (if (index =? 0) then (ctor Probe.boundaryLayout 1 1 1 1 4 4 4 4 0 4 0) else (if (index =? 1) then (ctor Probe.boundaryLayout 18446744073709551615 1 1 1 8 8 8 8 1 8 1) else (if (index =? 2) then (ctor Probe.boundaryLayout 18446744073709551615 1 1 1 18 18 18 18 32 18 1) else (if (index =? 3) then (ctor Probe.boundaryLayout 2 2 1 1 1 18446744073709551615 1 1 1 1 1) else (if (index =? 4) then (ctor Probe.boundaryLayout 18446744073709551615 0 1 1 18446744073709551615 18446744073709551615 18446744073709551615 18446744073709551615 1 8 2) else (ctor Probe.end)))))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [suite : Nat, index : Nat, block : Nat, bytes : Nat],
   result: Probe,
-  body: (if (suite =? 6) then (layoutProbe index block bytes) else (if (suite =? 10) then (allocation index) else (if (suite =? 9) then (transfers index) else (if (suite =? 47) then (spatialProbes index) else (if (suite =? 44) then (typedProbes index) else (if (suite =? 43) then (concatProbes index) else (if (suite =? 42) then (repeatProbes index) else (if (suite =? 41) then (copyProbes index) else (if (suite =? 36) then (arithmeticProbes index) else (ctor Probe.end)))))))))),
+  body: (if (suite =? 35) then (matrixRefusals index) else (if (suite =? 106) then (layoutBoundaries index) else (if (suite =? 6) then (layoutProbe index block bytes) else (if (suite =? 10) then (allocation index) else (if (suite =? 9) then (transfers index) else (if (suite =? 47) then (spatialProbes index) else (if (suite =? 44) then (typedProbes index) else (if (suite =? 43) then (concatProbes index) else (if (suite =? 42) then (repeatProbes index) else (if (suite =? 41) then (copyProbes index) else (if (suite =? 36) then (arithmeticProbes index) else (ctor Probe.end)))))))))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -110,6 +128,7 @@ theorem{
   statement: ((evaluate 9 1024 0 0) = (ctor Probe.end)),
   proof: reflexivity{}
 }
+
 theorem{
   name: layoutEnd,
   parameters: [block : Nat, bytes : Nat],

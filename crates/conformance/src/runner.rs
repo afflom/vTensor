@@ -509,6 +509,14 @@ impl Tensor {
         unsafe { self.src[slot].as_ref() }
     }
 
+    fn inputs<const N: usize>(&self) -> Result<[Option<TensorInput<'_>>; N], BackendError> {
+        let mut inputs = [const { None }; N];
+        for (slot, input) in inputs.iter_mut().enumerate() {
+            *input = self.input(slot)?;
+        }
+        Ok(inputs)
+    }
+
     fn input(&self, slot: usize) -> Result<Option<TensorInput<'_>>, BackendError> {
         self.source(slot).map(TensorInput::new).transpose()
     }
@@ -741,12 +749,11 @@ fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result
         tile,
         input_capacity,
         output_capacity,
-        kind,
         ..,
     ) = geometry;
-    // SAFETY: the certified plan requires both input descriptors and disjoint output storage.
-    let (kernel, image) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
-    let (kernel, image) = (graph_tensor_data(kernel)?, graph_tensor_data(image)?);
+    let [Some(kernel), Some(image)] = tensor.inputs()? else {
+        return Err(BackendError::InvalidTensor);
+    };
     let destination = graph_tensor_data(tensor)?;
     let sample = |phase, start, index| {
         let query = GraphRequest::C4(geometry.clone(), phase, start, index as u64);
@@ -755,20 +762,10 @@ fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result
             _ => Err(BackendError::InvalidTensor),
         }
     };
-    let count = usize::try_from(weight_count).map_err(|_| BackendError::Overflow)?;
-    let mut weights = reserved(count)?;
-    for index in 0..count {
+    let mut weights = workspace(weight_count, 0.0_f32)?;
+    for (index, weight) in weights.iter_mut().enumerate() {
         let offset = sample(0, 0, index)?.ok_or(BackendError::InvalidTensor)?;
-        // SAFETY: the plan bounds the full kernel word, including unaligned views.
-        let value = unsafe {
-            let pointer = kernel.add(offset as usize);
-            if kind == 0 {
-                pointer.cast::<f32>().read_unaligned()
-            } else {
-                decode_float(kind, u64::from(pointer.cast::<u16>().read_unaligned()))?
-            }
-        };
-        weights.push(value);
+        kernel.decode(offset, std::slice::from_mut(weight))?;
     }
     let mut input = workspace(input_capacity, 0.0_f32)?;
     let mut output = workspace(output_capacity, 0.0_f32)?;
@@ -777,8 +774,7 @@ fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result
         let input = &mut input[..rows * inner as usize];
         for (index, value) in input.iter_mut().enumerate() {
             *value = match sample(1, start, index)? {
-                // SAFETY: Prism resolves each interior image coordinate through its actual byte strides.
-                Some(at) => unsafe { image.add(at as usize).cast::<f32>().read_unaligned() },
+                Some(at) => f32::from_ne_bytes(image.word(at)?),
                 None => 0.0,
             };
         }
@@ -926,19 +922,7 @@ fn execute_row_products(
                     prepare_float(0, precision, x.to_bits().into())
                 }
             },
-            |source, at, activations, weights| {
-                source.decode(at, weights)?;
-                let mut value = [0.0];
-                linear::multiply_matrix_rows_f32(
-                    1,
-                    weights.len(),
-                    1,
-                    weights,
-                    activations,
-                    &mut value,
-                )?;
-                Ok(value[0])
-            },
+            |source, at, activations, weights| source.dot(at, activations, weights),
         ),
         C0(.., None, 10) => packed!(encode_grouped_q8_block, dot_grouped_q2_row),
         C0(.., None, 12) => packed!(encode_grouped_q8_block, linear::dot_grouped_q4_row),
@@ -964,13 +948,13 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
     let Plan::C0(blocks, _, rows, _, _, visits, outputs, ..) = plan;
-    // SAFETY: graph admission retained both typed GGML source descriptors.
-    let (w, a) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
-    let weights = TensorInput::new(w)?;
-    let indices = tensor.input(2)?;
+    let [Some(weights), Some(activations), indices] = tensor.inputs()? else {
+        return Err(BackendError::InvalidTensor);
+    };
     let request = |query| run(query).map_err(|_| BackendError::Overflow);
-    let activations = TensorInput::new(a)?;
-    let mut widened = workspace(if a.ty == 1 { a.ne[0] as u64 } else { 0 }, 0.0_f32)?;
+    let width = usize::try_from(activations.ne[0]).map_err(|_| BackendError::Overflow)?;
+    let mut widened = workspace(if activations.ty == 1 { width as u64 } else { 0 }, 0.0_f32)?;
+    let column_bytes = width.checked_mul(4).ok_or(BackendError::Overflow)?;
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = workspace(visits, 0u64)?;
@@ -997,15 +981,11 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         };
         *offset = dest;
         prepared.clear();
-        let source = if a.ty == 1 {
+        let source = if activations.ty == 1 {
             activations.decode(activation, &mut widened)?;
             widened.as_ptr().cast::<u8>()
         } else {
-            let bytes = usize::try_from(a.ne[0])
-                .ok()
-                .and_then(|n| n.checked_mul(size_of::<f32>()))
-                .ok_or(BackendError::Overflow)?;
-            activations.region(activation, bytes)?.as_ptr()
+            activations.region(activation, column_bytes)?.as_ptr()
         };
         for block in 0..blocks {
             // SAFETY: both branches supply the entire column as contiguous binary32.
@@ -1616,11 +1596,9 @@ mod attention {
     pub(super) fn sparse_mask(tensor: &Tensor, plan: SparsePlan) -> Result<(), BackendError> {
         use verdant_tensor::memory::copy_storage_block;
         let SparsePlan::C0(_, _, _, _, _, _, width, excluded, _) = plan;
-        let mask = tensor.input(0)?.ok_or(InvalidTensor)?;
-        let top = tensor.input(1)?.ok_or(InvalidTensor)?;
-        let score = tensor.input(2)?;
-        let blocks = tensor.input(3)?;
-        let extra = tensor.input(4)?;
+        let [Some(mask), Some(top), score, blocks, extra] = tensor.inputs()? else {
+            return Err(InvalidTensor);
+        };
         let output = graph_tensor_data(tensor)?;
         let row_bytes = (tensor.ne[0] as u64).checked_mul(width).ok_or(Overflow)?;
         if row_bytes == 0 {
@@ -1642,8 +1620,7 @@ mod attention {
                 _ => Err(InvalidTensor),
             };
         let read = |input: &TensorInput, base: u64, at: u64| -> Result<u64, BackendError> {
-            let bytes = input.region(base.checked_add(at).ok_or(Overflow)?, size_of::<u32>())?;
-            Ok(u32::from_ne_bytes(bytes.try_into().map_err(|_| InvalidTensor)?) as u64)
+            Ok(u32::from_ne_bytes(input.word(base.checked_add(at).ok_or(Overflow)?)?) as u64)
         };
         for batch in 0..tensor.ne[3] as u64 {
             for head in 0..tensor.ne[2] as u64 {
@@ -1785,7 +1762,7 @@ mod attention {
     ) -> Result<Option<super::ExecutionPlan>, BackendError> {
         use super::ExecutionPlan;
         let descriptor = descriptor_for!(Descriptor::C0);
-        let [a, b, c, d, e] = [0, 1, 2, 3, 4].map(|i| {
+        let [a, b, c, d, e, rows] = [0, 1, 2, 3, 4, 5].map(|i| {
             tensor
                 .source(i)
                 .map(super::tensor_metadata)
@@ -1793,8 +1770,8 @@ mod attention {
                 .map(|v| v.map(descriptor))
         });
         let [p0, p1, p2, p3, ..] = tensor.op_params.map(|w| u64::from(w as u32));
-        let trailing = tensor.src[5..].iter().any(|p| !p.is_null());
-        let query = Request::C7(
+        let trailing = tensor.src[6..].iter().any(|p| !p.is_null());
+        let query = Request::C8(
             op,
             trailing,
             p0,
@@ -1806,6 +1783,7 @@ mod attention {
             c?,
             d?,
             e?,
+            rows?,
             descriptor(output),
         );
         Ok(Some(match request(query)? {
@@ -1817,7 +1795,19 @@ mod attention {
     }
 
     impl TensorInput<'_> {
-        fn word<const N: usize>(&self, offset: u64) -> Result<[u8; N], BackendError> {
+        pub(super) fn dot(
+            &self,
+            offset: u64,
+            activations: &[f32],
+            weights: &mut [f32],
+        ) -> Result<f32, BackendError> {
+            self.decode(offset, weights)?;
+            let mut value = [0.0];
+            multiply_matrix_rows_f32(1, weights.len(), 1, weights, activations, &mut value)?;
+            Ok(value[0])
+        }
+
+        pub(super) fn word<const N: usize>(&self, offset: u64) -> Result<[u8; N], BackendError> {
             Ok(self.region(offset, N)?.try_into().unwrap())
         }
 
@@ -1887,17 +1877,31 @@ mod attention {
     }
 
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
-        let [Some(q), Some(k), Some(v), mask, sink] = [
-            tensor.input(0)?,
-            tensor.input(1)?,
-            tensor.input(2)?,
-            tensor.input(3)?,
-            tensor.input(4)?,
-        ] else {
+        let [Some(q), Some(k), Some(v), mask, sink, indices] = tensor.inputs()? else {
             return Err(InvalidTensor);
         };
         let shape = q.ne;
-        let key_rows = k.ne[1] as u64;
+        let Plan::C0(.., columns, head_bias, cap) = &plan;
+        let columns = usize::try_from(*columns).map_err(|_| Overflow)?;
+        // Validate all cache indices before writing the first output row.
+        let cells = indices
+            .map(|indices| {
+                let (words, tail) = indices.bytes.as_chunks::<4>();
+                if !tail.is_empty() || Some(words.len()) != columns.checked_mul(shape[3] as usize) {
+                    return Err(InvalidTensor);
+                }
+                let mut cells = super::reserved(words.len())?;
+                for &word in words {
+                    let raw = u32::from_ne_bytes(word);
+                    cells.push(match request(Request::C9(raw.into(), k.ne[1] as u64))? {
+                        Response::C9(cell) => Some(cell),
+                        Response::C8 => None,
+                        _ => return Err(InvalidTensor),
+                    });
+                }
+                Ok(cells)
+            })
+            .transpose()?;
         let mut query = workspace(shape[0] as u64, 0.0)?;
         let mut keys = match super::packed_weight(k.ty as u64) {
             Some(super::PackedWeight::Symmetric(kind)) => {
@@ -1910,7 +1914,6 @@ mod attention {
         };
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
         let output = graph_tensor_data(tensor)?;
-        let Plan::C0(.., head_bias, cap) = &plan;
         let decode = |bits: u64| f32::from_bits(bits as u32);
         let cap = cap.map(decode);
         let head_bias = head_bias.map(decode);
@@ -1923,6 +1926,9 @@ mod attention {
             let slope = head_slope(head_bias, shape[2], head)?;
             let slope_word = u64::from(slope.unwrap_or(1.0).to_bits());
             for batch in 0..shape[3] as u64 {
+                let cells = cells
+                    .as_ref()
+                    .map(|v| &v[batch as usize * columns..][..columns]);
                 for token in 0..shape[1] as u64 {
                     let Response::C2(qoff, koff, voff, moff, soff, dst, ks, vs, dot_type) =
                         request(Request::C1(plan.clone(), token, head, batch))?
@@ -1947,10 +1953,15 @@ mod attention {
                         _ => return Err(InvalidTensor),
                     }
                     let mut mean = WeightedMeanF32::new(value.len());
-                    for row in 0..key_rows {
+                    for column in 0..columns {
+                        let Some(row) = cells.map_or(Some(column as u64), |v| v[column]) else {
+                            continue;
+                        };
                         let bias = match &mask {
                             Some(m) => {
-                                let half = u16::from_ne_bytes(m.word(moff + row * m.nb[0] as u64)?);
+                                let half = u16::from_ne_bytes(
+                                    m.word(moff + column as u64 * m.nb[0] as u64)?,
+                                );
                                 if vtensor_attention_mask::run(u64::from(half), slope_word) {
                                     continue;
                                 }
@@ -1972,12 +1983,7 @@ mod attention {
                                 blocks,
                                 *kind,
                             )?,
-                            KeyRows::Scalar(key) => {
-                                k.decode(key_offset, key)?;
-                                let mut dot = [0.0];
-                                multiply_matrix_rows_f32(1, key.len(), 1, key, &query, &mut dot)?;
-                                dot[0]
-                            }
+                            KeyRows::Scalar(key) => k.dot(key_offset, &query, key)?,
                         };
                         v.decode(voff + row * vs, &mut value)?;
                         let mut scaled = scalar(2, dot, scale)?;

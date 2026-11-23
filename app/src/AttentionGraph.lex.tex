@@ -18,6 +18,7 @@ structure{
     {name: mask, type: (Option NormPlan::TensorDescriptor)},
     {name: sink, type: (Option NormPlan::TensorDescriptor)},
     {name: output, type: NormPlan::TensorDescriptor},
+    {name: cacheColumns, type: Nat},
     {name: headBias, type: (Option Nat)},
     {name: capBeforeMask, type: (Option Nat)}
   ]
@@ -120,7 +121,26 @@ inductive{
         (Option NormPlan::TensorDescriptor),
         NormPlan::TensorDescriptor
       ]
-    }
+    },
+    {
+      name: cachePlacement,
+      fields: [
+        Nat,
+        Bool,
+        Nat,
+        Nat,
+        Nat,
+        Nat,
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        NormPlan::TensorDescriptor
+      ]
+    },
+    {name: cacheIndex, fields: [Nat, Nat]}
   ]
 }
 
@@ -137,7 +157,8 @@ inductive{
     {name: sparsePlan, fields: [SparsePlan]},
     {name: sparseRows, fields: [Nat, Nat, Nat, Nat, Nat]},
     {name: sparseWord, fields: [Nat]},
-    {name: skip, fields: []}
+    {name: skip, fields: []},
+    {name: cacheCell, fields: [Nat]}
   ]
 }
 
@@ -214,13 +235,13 @@ definition{
   parameters: [
     mask : (Option NormPlan::TensorDescriptor),
     q : NormPlan::TensorDescriptor,
-    k : NormPlan::TensorDescriptor,
+    columns : Nat,
     o : NormPlan::TensorDescriptor
   ],
   result: Bool,
   body: (match mask
     | Option.none => true
-    | Option.some m => ((((((((project m ty) =? 1) && ((project m s0) =? 2)) && ((project k n1) <=? (project m n0))) && ((project q n1) <=? (project m n1))) && (multiple (project q n2) (project m n2))) && (multiple (project q n3) (project m n3))) && (NormPlan::separateTensors m o))),
+    | Option.some m => ((((((((project m ty) =? 1) && ((project m s0) =? 2)) && (columns <=? (project m n0))) && ((project q n1) <=? (project m n1))) && (multiple (project q n2) (project m n2))) && (multiple (project q n3) (project m n3))) && (NormPlan::separateTensors m o))),
   executable: true
 }
 
@@ -293,6 +314,33 @@ theorem{
 }
 
 definition{
+  name: contiguousScalar,
+  parameters: [t : NormPlan::TensorDescriptor, bytes : Nat],
+  result: Bool,
+  body: ((((((project t n0) =? 1) || ((project t s0) =? bytes)) && (((project t n1) =? 1) || ((project t s1) =? (prim multiply bytes (project t n0) : Nat)))) && (((project t n2) =? 1) || ((project t s2) =? (prim multiply (prim multiply bytes (project t n0) : Nat) (project t n1) : Nat)))) && (((project t n3) =? 1) || ((project t s3) =? (prim multiply (prim multiply (prim multiply bytes (project t n0) : Nat) (project t n1) : Nat) (project t n2) : Nat)))),
+  executable: true
+}
+
+definition{
+  name: cacheColumnCount,
+  parameters: [
+    rows : (Option NormPlan::TensorDescriptor),
+    mask : (Option NormPlan::TensorDescriptor),
+    q : NormPlan::TensorDescriptor,
+    k : NormPlan::TensorDescriptor,
+    v : NormPlan::TensorDescriptor,
+    out : NormPlan::TensorDescriptor
+  ],
+  result: (Option Nat),
+  body: (match rows
+    | Option.none => (ctor Option.some [Nat] (project k n1))
+    | Option.some r => (match mask
+      | Option.none => (ctor Option.none [Nat])
+      | Option.some m => (if ((((((((((project r ty) =? 26) && (contiguousScalar r 4)) && ((project r n0) =? (project m n0))) && ((project r n1) =? (project q n3))) && ((project r n2) =? 1)) && ((project r n3) =? 1)) && ((project k n3) =? 1)) && ((project v n3) =? 1)) && (NormPlan::separateTensors r out)) then (ctor Option.some [Nat] (project r n0)) else (ctor Option.none [Nat])))),
+  executable: true
+}
+
+definition{
   name: graphPlan,
   parameters: [
     opcode : Nat,
@@ -305,10 +353,13 @@ definition{
     value : NormPlan::TensorDescriptor,
     mask : (Option NormPlan::TensorDescriptor),
     sink : (Option NormPlan::TensorDescriptor),
+    rows : (Option NormPlan::TensorDescriptor),
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if ((((((((((((((((((opcode =? 71) && (if extra then false else true)) && (validBias bias (project query n2) mask)) && (((precision =? 0) || (precision =? 10)) || (precision =? 15))) && ((project query ty) =? 0)) && ((project query s0) =? 4)) && (denseOutput output)) && (rowTensor key query output)) && (rowTensor value query output)) && ((project query n0) =? (project key n0))) && ((project key n1) =? (project value n1))) && ((project output n0) =? (project value n0))) && ((project output n1) =? (project query n2))) && ((project output n2) =? (project query n1))) && ((project output n3) =? (project query n3))) && (NormPlan::separateTensors query output)) && (maskValid mask query key output)) && (sinkValid sink query output)) then (ctor Response.admitted (record Plan {query := query, key := key, value := value, mask := mask, sink := sink, output := output, headBias := (headBias bias), capBeforeMask := (capBeforeMask softcap)})) else (ctor Response.invalid)),
+  body: (match (cacheColumnCount rows mask query key value output)
+    | Option.none => (ctor Response.invalid)
+    | Option.some columns => (if ((((((((((((((((((opcode =? 71) && (if extra then false else true)) && (validBias bias (project query n2) mask)) && (((precision =? 0) || (precision =? 10)) || (precision =? 15))) && ((project query ty) =? 0)) && ((project query s0) =? 4)) && (denseOutput output)) && (rowTensor key query output)) && (rowTensor value query output)) && ((project query n0) =? (project key n0))) && ((project key n1) =? (project value n1))) && ((project output n0) =? (project value n0))) && ((project output n1) =? (project query n2))) && ((project output n2) =? (project query n1))) && ((project output n3) =? (project query n3))) && (NormPlan::separateTensors query output)) && (maskValid mask query columns output)) && (sinkValid sink query output)) then (ctor Response.admitted (record Plan {query := query, key := key, value := value, mask := mask, sink := sink, output := output, cacheColumns := columns, headBias := (headBias bias), capBeforeMask := (capBeforeMask softcap)})) else (ctor Response.invalid))),
   executable: true
 }
 
@@ -319,14 +370,6 @@ definition{
   body: (if (((token <? (project (project plan query) n1)) && (head <? (project (project plan query) n2))) && (batch <? (project (project plan query) n3))) then (ctor Response.offsets (rowOffset (project plan query) token head batch) (rowOffset (project plan key) 0 (prim quotient head (prim quotient (project (project plan query) n2) (project (project plan key) n2) 0 : Nat) 0 : Nat) (prim quotient batch (prim quotient (project (project plan query) n3) (project (project plan key) n3) 0 : Nat) 0 : Nat)) (rowOffset (project plan value) 0 (prim quotient head (prim quotient (project (project plan query) n2) (project (project plan value) n2) 0 : Nat) 0 : Nat) (prim quotient batch (prim quotient (project (project plan query) n3) (project (project plan value) n3) 0 : Nat) 0 : Nat)) (match (project plan mask)
     | Option.none => 0
     | Option.some m => (rowOffset m token (prim remainder head (project m n2) 0 : Nat) (prim remainder batch (project m n3) 0 : Nat))) (prim multiply head 4 : Nat) (rowOffset (project plan output) head token batch) (project (project plan key) s1) (project (project plan value) s1) (queryStorage (project (project plan key) ty))) else (ctor Response.invalid)),
-  executable: true
-}
-
-definition{
-  name: contiguousScalar,
-  parameters: [t : NormPlan::TensorDescriptor, bytes : Nat],
-  result: Bool,
-  body: ((((((project t n0) =? 1) || ((project t s0) =? bytes)) && (((project t n1) =? 1) || ((project t s1) =? (prim multiply bytes (project t n0) : Nat)))) && (((project t n2) =? 1) || ((project t s2) =? (prim multiply (prim multiply bytes (project t n0) : Nat) (project t n1) : Nat)))) && (((project t n3) =? 1) || ((project t s3) =? (prim multiply (prim multiply (prim multiply bytes (project t n0) : Nat) (project t n1) : Nat) (project t n2) : Nat)))),
   executable: true
 }
 
@@ -475,7 +518,7 @@ definition{
       | Option.none => (ctor Response.invalid)
       | Option.some b => (if (op =? 88) then (sparseGraph op trailing a b slotC slotD slotE output) else (match slotC
         | Option.none => (ctor Response.invalid)
-        | Option.some c => (graphPlan op trailing p1 p2 p3 a b c slotD slotE output)))))),
+        | Option.some c => (graphPlan op trailing p1 p2 p3 a b c slotD slotE (ctor Option.none [NormPlan::TensorDescriptor]) output)))))),
   executable: true
 }
 
@@ -484,8 +527,18 @@ definition{
   parameters: [request : Request],
   result: Response,
   body: (match request
+    | Request.cacheIndex raw cells => (if (raw <? 2147483648) then (if (raw <? cells) then (ctor Response.cacheCell raw) else (ctor Response.invalid)) else (if (raw <? 4294967296) then (ctor Response.skip) else (ctor Response.invalid)))
+    | Request.cachePlacement op trailing p0 p1 p2 p3 a b c d e rows out => (match rows
+      | Option.none => (placement op trailing p0 p1 p2 p3 a b c d e out)
+      | Option.some indices => (match a
+        | Option.none => (ctor Response.invalid)
+        | Option.some q => (match b
+          | Option.none => (ctor Response.invalid)
+          | Option.some k => (match c
+            | Option.none => (ctor Response.invalid)
+            | Option.some v => (graphPlan op trailing p1 p2 p3 q k v d e rows out)))))
     | Request.placement op trailing p0 p1 p2 p3 a b c d e out => (placement op trailing p0 p1 p2 p3 a b c d e out)
-    | Request.graph opcode extra bias softcap precision query key value mask sink output => (graphPlan opcode extra bias softcap precision query key value mask sink output)
+    | Request.graph opcode extra bias softcap precision query key value mask sink output => (graphPlan opcode extra bias softcap precision query key value mask sink (ctor Option.none [NormPlan::TensorDescriptor]) output)
     | Request.sparse op trailing mask top score blocks extra out => (sparseGraph op trailing mask top score blocks extra out)
     | Request.sparseRow plan token head batch => (sparseRows plan token head batch)
     | Request.sparseIndex plan role index lane => (sparseIndex plan role index lane)
@@ -494,6 +547,20 @@ definition{
     | Request.row plan token head batch => (row plan token head batch)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: paddedCacheCell,
+  parameters: [],
+  statement: ((evaluate (ctor Request.cacheIndex 4294967295 32)) = (ctor Response.skip)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: pastCacheEnd,
+  parameters: [],
+  statement: ((evaluate (ctor Request.cacheIndex 32 32)) = (ctor Response.invalid)),
+  proof: reflexivity{}
 }
 
 theorem{
