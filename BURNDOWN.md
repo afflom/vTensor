@@ -64,6 +64,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 128 scalar expert compositions, including eight indexed matrix fusions. [Original graph comparisons](verification/factory-scalar-expert-compositions.json)
 - [x] Pass all 157 MUL_MAT and 73 MUL_MAT_ID graphs with E4M3 weights. [VT-85 comparisons](verification/factory-e4m3-products-vt85.json)
 - [x] Pass all 164 newly admitted E4M3 matrix fusions. [Full-graph comparisons](verification/factory-e4m3-compositions.json)
+- [x] Supply Q3_K and Q6_K row products in Verdant. All 196 output words matched the pinned GGML CPU. [Verdant PR #40](https://github.com/afflom/verdant-engine/pull/40)
+- [ ] Pass the 126 Q3_K/Q6_K matrix cases, 21 expert cases and 33 matrix fusions on the provider. [Factory ordinals](verification/ggml-factory-cases.tsv.gz)
 - [x] Supply grouped affine Q4_K and Q5_K row products in Verdant. All 196 output words matched the pinned CPU. [Engine PR #30](https://github.com/afflom/verdant-engine/pull/30)
 - [x] Pass all 227 ordinary and 119 indexed Q4_K/Q5_K matrix products with F32 activations. [VT-88 results](verification/factory-affine-vt88.json)
 - [x] Pass 174 additional Q4_K/Q5_K compositions, including the final three MUL_MAT_ID_FUSION cases. [Full-graph comparisons](verification/factory-affine-compositions.json)
