@@ -238,7 +238,7 @@ ggml_batches! {
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
     #[test]
-    fn row_softmax_vt_87() { "upstream-ROW_SOFTMAX", 6, ["pointwise"] }
+    fn row_softmax_vt_87() { "upstream-ROW_SOFTMAX", 6, ["attention"] }
 
     #[test]
     fn row_ranking_vt_86() { "upstream-ROW_RANKING", 6, ["typed"] }
@@ -2183,6 +2183,32 @@ int main(int argc, char **argv) {
     if (!strncmp(argv[3], "upstream-", 9)) {
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
+      if (!strcmp(argv[3]+9,"ROW_SOFTMAX")) {
+        std::vector<float> expected;
+        for (auto selected : {reference,backend}) {
+          auto ctx=ggml_init({ggml_graph_overhead()+12*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+          auto scores=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,4,2);
+          auto mask=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,4,3);
+          auto sink=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,1);
+          scores->nb[2]+=4; mask->nb[3]+=8; sink->nb[0]=16;
+          auto out=ggml_soft_max_ext_inplace(ctx,scores,mask,0.5f,2.0f); ggml_soft_max_add_sinks(out,sink);
+          auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
+          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+          const float inputs[]={1,2,3,-4,9,3,-2,1}, weights[]={0,-INFINITY,1,-2,1,2,-INFINITY,0,91,92,93,94}, extra[]={1};
+          ggml_backend_tensor_set(scores,inputs,0,sizeof(inputs)); ggml_backend_tensor_set(mask,weights,0,sizeof(weights)); ggml_backend_tensor_set(sink,extra,0,sizeof(extra));
+          CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+          std::vector<float> actual(8); ggml_backend_tensor_get(out,actual.data(),0,ggml_nbytes(out));
+          if(selected==reference) expected=actual;
+          else {
+            for(size_t i=0;i<actual.size();++i) CHECK(std::abs(actual[i]-expected[i])<1e-6f);
+            CHECK(refuses_change(backend,dev,graph,out,out->src[1],static_cast<ggml_tensor*>(nullptr)));
+            CHECK(refuses_change(backend,dev,graph,out,mask->type,GGML_TYPE_I32));
+            CHECK(refuses_change(backend,dev,graph,out,sink->ne[0],int64_t(2)));
+            CHECK(refuses_change(backend,dev,graph,out,out->src[3],mask));
+          }
+          ggml_backend_buffer_free(buffer); ggml_free(ctx);
+        }
+      }
       if (!strcmp(argv[3]+9,"ROW_RANKING")) {
         for (bool partial : {false,true}) {
           std::vector<int32_t> expected;

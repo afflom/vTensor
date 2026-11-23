@@ -22,6 +22,19 @@ structure{
   ]
 }
 
+structure{
+  name: NormalizedPlan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: source, type: NormPlan::TensorDescriptor},
+    {name: mask, type: (Option NormPlan::TensorDescriptor)},
+    {name: output, type: NormPlan::TensorDescriptor},
+    {name: scale, type: Nat},
+    {name: bias, type: (Option Nat)}
+  ]
+}
+
 inductive{
   name: Request,
   type_parameters: [],
@@ -43,7 +56,21 @@ inductive{
         NormPlan::TensorDescriptor
       ]
     },
-    {name: row, fields: [Plan, Nat, Nat, Nat]}
+    {name: row, fields: [Plan, Nat, Nat, Nat]},
+    {
+      name: normalized,
+      fields: [
+        Nat,
+        Bool,
+        Nat,
+        Nat,
+        NormPlan::TensorDescriptor,
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        NormPlan::TensorDescriptor
+      ]
+    },
+    {name: normalizedRow, fields: [NormalizedPlan, Nat, Nat, Nat]}
   ]
 }
 
@@ -54,7 +81,9 @@ inductive{
   constructors: [
     {name: invalid, fields: []},
     {name: admitted, fields: [Plan]},
-    {name: offsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: offsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: normalized, fields: [NormalizedPlan]},
+    {name: normalizedOffsets, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -190,7 +219,9 @@ definition{
   name: validBias,
   parameters: [bits : Nat, heads : Nat, mask : (Option NormPlan::TensorDescriptor)],
   result: Bool,
-  body: (if ((bits =? 0) || ((2147483648 <=? bits) && (bits <? 4286578688))) then true else (if ((bits <? 2139095040) && (heads <=? 4294967295)) then (match mask | Option.some m => true | Option.none => false) else false)),
+  body: (if ((bits =? 0) || ((2147483648 <=? bits) && (bits <? 4286578688))) then true else (if ((bits <? 2139095040) && (heads <=? 4294967295)) then (match mask
+    | Option.some m => true
+    | Option.none => false) else false)),
   executable: true
 }
 
@@ -239,11 +270,76 @@ definition{
 }
 
 definition{
+  name: contiguousScalar,
+  parameters: [t : NormPlan::TensorDescriptor, bytes : Nat],
+  result: Bool,
+  body: ((((((project t n0) =? 1) || ((project t s0) =? bytes)) && (((project t n1) =? 1) || ((project t s1) =? (prim multiply bytes (project t n0) : Nat)))) && (((project t n2) =? 1) || ((project t s2) =? (prim multiply (prim multiply bytes (project t n0) : Nat) (project t n1) : Nat)))) && (((project t n3) =? 1) || ((project t s3) =? (prim multiply (prim multiply (prim multiply bytes (project t n0) : Nat) (project t n1) : Nat) (project t n2) : Nat)))),
+  executable: true
+}
+
+definition{
+  name: normalizedMask,
+  parameters: [
+    mask : (Option NormPlan::TensorDescriptor),
+    q : NormPlan::TensorDescriptor,
+    o : NormPlan::TensorDescriptor
+  ],
+  result: Bool,
+  body: (match mask
+    | Option.none => true
+    | Option.some m => (((((((((project m ty) =? 0) || ((project m ty) =? 1)) && (contiguousScalar m (if ((project m ty) =? 0) then 4 else 2))) && ((project m n0) =? (project q n0))) && ((project q n1) <=? (project m n1))) && (multiple (project q n2) (project m n2))) && (multiple (project q n3) (project m n3))) && (NormPlan::separateTensors m o))),
+  executable: true
+}
+
+definition{
+  name: normalizedSink,
+  parameters: [
+    sink : (Option NormPlan::TensorDescriptor),
+    q : NormPlan::TensorDescriptor,
+    o : NormPlan::TensorDescriptor
+  ],
+  result: Bool,
+  body: (match sink
+    | Option.none => true
+    | Option.some s => ((((((((project s ty) =? 0) && (((project s n0) =? 1) || ((project s s0) =? 4))) && ((project s n0) =? (project q n2))) && ((project s n1) =? 1)) && ((project s n2) =? 1)) && ((project s n3) =? 1)) && (NormPlan::separateTensors s o))),
+  executable: true
+}
+
+definition{
+  name: normalizedPlan,
+  parameters: [
+    opcode : Nat,
+    extra : Bool,
+    scale : Nat,
+    bias : Nat,
+    q : NormPlan::TensorDescriptor,
+    mask : (Option NormPlan::TensorDescriptor),
+    sink : (Option NormPlan::TensorDescriptor),
+    o : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (if extra then (ctor Response.invalid) else (if ((((((((opcode =? 43) && (((project q ty) =? 0) && (contiguousScalar q 4))) && (((project o ty) =? 0) && (contiguousScalar o 4))) && (NormPlan::sameShape q o)) && ((NormPlan::separateTensors q o) || (NormPlan::sameWordView q o))) && (normalizedMask mask q o)) && (normalizedSink sink q o)) && (validBias bias (project q n2) mask)) then (ctor Response.normalized (record NormalizedPlan {source := q, mask := mask, output := o, scale := scale, bias := (headBias bias)})) else (ctor Response.invalid))),
+  executable: true
+}
+
+definition{
+  name: normalizedOffsets,
+  parameters: [plan : NormalizedPlan, token : Nat, head : Nat, batch : Nat],
+  result: Response,
+  body: (let q : NormPlan::TensorDescriptor := (project plan source); (if (((token <? (project q n1)) && (head <? (project q n2))) && (batch <? (project q n3))) then (let m : Nat := (match (project plan mask)
+    | Option.none => 0
+    | Option.some mask => (rowOffset mask token (prim remainder head (project mask n2) 0 : Nat) (prim remainder batch (project mask n3) 0 : Nat))); (ctor Response.normalizedOffsets (rowOffset q token head batch) m (prim multiply head 4 : Nat) (rowOffset (project plan output) token head batch))) else (ctor Response.invalid))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
   body: (match request
     | Request.graph opcode extra bias softcap precision query key value mask sink output => (graphPlan opcode extra bias softcap precision query key value mask sink output)
+    | Request.normalized opcode extra scale bias q mask sink o => (normalizedPlan opcode extra scale bias q mask sink o)
+    | Request.normalizedRow plan token head batch => (normalizedOffsets plan token head batch)
     | Request.row plan token head batch => (row plan token head batch)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -278,6 +374,7 @@ theorem{
   statement: ((excluded 64512 1065353216) = true),
   proof: reflexivity{}
 }
+
 theorem{
   name: zeroSlopePreservesMaskProduct,
   parameters: [],
