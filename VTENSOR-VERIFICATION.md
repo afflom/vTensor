@@ -5056,3 +5056,7 @@ Prism selects source lanes and destination blocks for the existing Verdant Q8_0 
 ### Decoded row gradients
 
 VT-102 passes 54 upstream GET_ROWS_BACK graphs across 27 source formats. Prism bounds each block and checks the index vector before writes. Verdant decodes the input and accumulates binary32 lanes. For these formats the upstream CPU refuses the original graph, so the reference converts the identical gradient with GGML’s own tensor conversion and executes GGML CPU GET_ROWS_BACK on the same indices. Subtracting each gradient produced error 4.0 on Q4_0 ordinal 1071 at tolerance 0.0000001. Restoring addition passed all 54 cases and the F16, F32, BF16 and forward-gather regressions. [Factory evidence](verification/factory-decoded-row-gradients-vt102.json)
+
+### Two-bit codebook matrix products
+
+VT-103 passes 222 ordinary matrix products, 94 expert products and 121 fused graphs using IQ2_XXS, IQ2_XS and IQ2_S weights. Each original factory graph ran on the provider. For 36 F16 activation inputs the independent reference widened the activations with GGML before executing its CPU matrix product. Negating the IQ2_XXS result failed ordinal 10824 with error 4.0 against the 0.0005 limit. Restoring it passed all three formats through ordinary and expert dispatch. The pinned Verdant patch separately matched 294 CPU vector products bit-for-bit. [Factory transcripts](verification/factory-codebook-products-vt103.json) · [Verdant PR #36](https://github.com/afflom/verdant-engine/pull/36)
