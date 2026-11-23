@@ -989,6 +989,49 @@ fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendEr
     }
 }
 
+// The F32 GGML profile returns an unconditional positive zero below its lower
+// cutoff. The gated operation must preserve that result even for a negative gate.
+fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
+    match vtensor_pointwise::run(GraphRequest::C5(word)).map_err(|_| BackendError::Overflow)? {
+        GraphResponse::C9(Some(0)) => Ok(None),
+        GraphResponse::C9(Some(bits)) => Ok(Some(f32::from_bits(bits as u32))),
+        GraphResponse::C9(None) => {
+            let input = prepare_float(0, 1, word)?;
+            let value = verdant_tensor::linear::gelu_f32(input)?;
+            Ok(Some(prepare_float(0, 1, u64::from(value.to_bits()))?))
+        }
+        _ => Err(BackendError::InvalidTensor),
+    }
+}
+
+fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32, BackendError> {
+    use verdant_tensor::linear;
+    let word = u64::from(input.to_bits());
+    let activation = match variant {
+        0 => match linear::evaluate_encoded_word(0, word, 0)
+            .map_err(|_| BackendError::InvalidTensor)?
+        {
+            Some(2) => input,
+            Some(_) => return Ok(0.0),
+            None => return Err(BackendError::InvalidTensor),
+        },
+        1 if storage == 0 => match gaussian_table(word)? {
+            Some(value) => value,
+            None => return Ok(0.0),
+        },
+        1 => linear::gelu_f32(input)?,
+        2 => return Ok(linear::swiglu_f32(input, gate)?),
+        5 => linear::gelu_quick_f32(input)?,
+        _ => return Err(BackendError::InvalidTensor),
+    };
+    let activation = if storage == 1 && variant != 0 {
+        prepare_float(0, 1, u64::from(activation.to_bits()))?
+    } else {
+        activation
+    };
+    Ok(linear::evaluate_f32_scalar(2, activation, gate)?)
+}
+
 fn execute_word(
     response: GraphResponse,
     pointers: &[*mut u8],
@@ -1066,20 +1109,7 @@ fn execute_word(
                 17 => sigmoid_f32(input),
                 18 => silu_f32(input),
                 19 => verdant_tensor::linear::tanh_f32(input),
-                20 if source == 0 => {
-                    // The imported F32 profile uses a half table inside its two cutoffs.
-                    match vtensor_pointwise::run(GraphRequest::C5(a))
-                        .map_err(|_| BackendError::Overflow)?
-                    {
-                        GraphResponse::C9(Some(word)) => Ok(f32::from_bits(word as u32)),
-                        GraphResponse::C9(None) => {
-                            let rounded = prepare_float(0, 1, a)?;
-                            let value = verdant_tensor::linear::gelu_f32(rounded)?;
-                            Ok(prepare_float(0, 1, u64::from(value.to_bits()))?)
-                        }
-                        _ => return Err(BackendError::InvalidTensor),
-                    }
-                }
+                20 if source == 0 => Ok(gaussian_table(a)?.unwrap_or_default()),
                 20 => verdant_tensor::linear::gelu_f32(input),
                 21 => verdant_tensor::linear::gelu_quick_f32(input),
                 _ => return Err(BackendError::InvalidTensor),
@@ -1182,14 +1212,14 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
                 .map_err(|_| BackendError::Overflow)?;
-        if let vtensor_typed::Adt3::C4(first, second, target) = instruction {
+        if let vtensor_typed::Adt3::C4(variant, storage, first, second, target) = instruction {
             let operand = |slot: u64| {
                 words
                     .get(slot as usize)
                     .map(|word| f32::from_bits(*word as u32))
                     .ok_or(BackendError::InvalidTensor)
             };
-            let value = verdant_tensor::linear::swiglu_f32(operand(first)?, operand(second)?)?;
+            let value = gated_value(variant, storage, operand(first)?, operand(second)?)?;
             *words
                 .get_mut(target as usize)
                 .ok_or(BackendError::InvalidTensor)? = u64::from(value.to_bits());

@@ -648,3 +648,35 @@ value = 21
 [[unary]]
 symbol = "GGML_UNARY_OP_COUNT"
 value = 22
+
+[[glu]]
+symbol = "GGML_GLU_OP_REGLU"
+value = 0
+
+[[glu]]
+symbol = "GGML_GLU_OP_GEGLU"
+value = 1
+
+[[glu]]
+symbol = "GGML_GLU_OP_SWIGLU"
+value = 2
+
+[[glu]]
+symbol = "GGML_GLU_OP_SWIGLU_OAI"
+value = 3
+
+[[glu]]
+symbol = "GGML_GLU_OP_GEGLU_ERF"
+value = 4
+
+[[glu]]
+symbol = "GGML_GLU_OP_GEGLU_QUICK"
+value = 5
+
+[[glu]]
+symbol = "GGML_GLU_OP_SWIGLU_CLAMP"
+value = 6
+
+[[glu]]
+symbol = "GGML_GLU_OP_COUNT"
+value = 7

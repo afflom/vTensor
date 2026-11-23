@@ -295,6 +295,7 @@
     "spatial": "spatial",
     "typed-binary": "typedfixtures"
   },
+  "ggml_source_manifest_sha256": "09aba8d8812ca41894b28d1f7084422b71ce55b4a5200f5ba54b38292c2d19f3",
   "storage_probe": {
     "request": "0 1 1 1 1 4 4 4 4\n0 3 2 1 1 4 32 64 64\n28 2 3 2 2 8 16 48 96\n2 64 2 1 1 18 64 128 128\n0 3 0 1 1 4 12 12 12\n0 -1 2 1 1 4 12 24 24\n",
     "span_block_bytes": [

@@ -14,6 +14,7 @@ structure{
     {name: steps, type: Nat},
     {name: capacity, type: Nat},
     {name: operation, type: Nat},
+    {name: gateVariant, type: Nat},
     {name: left, type: NormPlan::TensorDescriptor},
     {name: rhs, type: NormPlan::TensorDescriptor},
     {name: output, type: NormPlan::TensorDescriptor}
@@ -29,7 +30,7 @@ inductive{
     {name: invalid, fields: []},
     {name: planned, fields: [Plan]},
     {name: instruction, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: gated, fields: [Nat, Nat, Nat]}
+    {name: gated, fields: [Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -187,7 +188,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if ((((NormPlan::sameShape left output) && (repeatValid left rhs)) && (storageTuple (project left ty) (project rhs ty) (project output ty))) && (if (empty left) then true else (((((((((project left s0) =? (bytes (project left ty))) && ((project output s0) =? (bytes (project output ty)))) && (aligned left)) && (aligned rhs)) && (aligned output)) && (countersAdmitted left rhs)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)))) then (let slots : Nat := (if ((empty left) || (nested output)) then 0 else (prim quotient (project output span) (bytes (project output ty)) 0 : Nat)); (ctor Response.planned (record Plan {steps := (steps (elements left) slots (elementSteps (project left ty) (project rhs ty) (project output ty))), capacity := (3 + slots), operation := kind, left := left, rhs := rhs, output := output}))) else (ctor Response.invalid)),
+  body: (if ((((NormPlan::sameShape left output) && (repeatValid left rhs)) && (storageTuple (project left ty) (project rhs ty) (project output ty))) && (if (empty left) then true else (((((((((project left s0) =? (bytes (project left ty))) && ((project output s0) =? (bytes (project output ty)))) && (aligned left)) && (aligned rhs)) && (aligned output)) && (countersAdmitted left rhs)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)))) then (let slots : Nat := (if ((empty left) || (nested output)) then 0 else (prim quotient (project output span) (bytes (project output ty)) 0 : Nat)); (ctor Response.planned (record Plan {steps := (steps (elements left) slots (elementSteps (project left ty) (project rhs ty) (project output ty))), capacity := (3 + slots), operation := kind, gateVariant := 0, left := left, rhs := rhs, output := output}))) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -216,8 +217,17 @@ definition{
 }
 
 definition{
+  name: admittedGate,
+  parameters: [variant : Nat],
+  result: Bool,
+  body: ((variant <=? 2) || (variant =? 5)),
+  executable: true
+}
+
+definition{
   name: gatePlan,
   parameters: [
+    variant : Nat,
     split : Bool,
     swapped : Nat,
     left : NormPlan::TensorDescriptor,
@@ -225,7 +235,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if (((((((((((((((swapped <=? 1) && (0 <? (bytes (project left ty)))) && ((project left ty) =? (project rhs ty))) && ((project left ty) =? (project output ty))) && (NormPlan::sameShape left rhs)) && (gateRows left)) && (gateRows rhs)) && (gateRows output)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project output n0) =? (if split then (project left n0) else (prim quotient (project left n0) 2 0 : Nat)))) && ((project output n0) <=? 2147483647)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) then (ctor Response.planned (record Plan {steps := (prim multiply 4 (elements output) : Nat), capacity := 3, operation := (if split then 98 else (99 + swapped)), left := left, rhs := rhs, output := output})) else (ctor Response.invalid)),
+  body: (if (((((((((((((((swapped <=? 1) && (0 <? (bytes (project left ty)))) && ((project left ty) =? (project rhs ty))) && ((project left ty) =? (project output ty))) && (NormPlan::sameShape left rhs)) && (gateRows left)) && (gateRows rhs)) && (gateRows output)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project output n0) =? (if split then (project left n0) else (prim quotient (project left n0) 2 0 : Nat)))) && ((project output n0) <=? 2147483647)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) then (ctor Response.planned (record Plan {steps := (prim multiply 4 (elements output) : Nat), capacity := 3, operation := (if split then 98 else (99 + swapped)), gateVariant := variant, left := left, rhs := rhs, output := output})) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -233,7 +243,7 @@ definition{
   name: gateStep,
   parameters: [index : Nat, execution : Plan],
   result: Response,
-  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let rhs : NormPlan::TensorDescriptor := (project execution rhs); (let output : NormPlan::TensorDescriptor := (project execution output); (let mode : Nat := (project execution operation); (let phase : Nat := (prim remainder index 4 0 : Nat); (let item : Nat := (prim quotient index 4 0 : Nat); (let row : Nat := (prim quotient item (project output n0) 0 : Nat); (let width : Nat := (bytes (project output ty)); (let column : Nat := (prim multiply (prim remainder item (project output n0) 0 : Nat) width : Nat); (let half : Nat := (prim multiply (project output n0) width : Nat); (if (index <? (project execution steps)) then (if (phase =? 0) then (ctor Response.instruction 0 0 (project left ty) 0 0 (((prim multiply row (project left s1) : Nat) + column) + (if (mode =? 100) then half else 0)) 2 0 0 0 width 4) else (if (phase =? 1) then (ctor Response.instruction 0 0 (project rhs ty) 0 (if (mode =? 98) then 4 else 0) (((prim multiply row (project rhs s1) : Nat) + column) + (if (mode =? 99) then half else 0)) 2 0 0 1 width 4) else (if (phase =? 2) then (ctor Response.gated 0 1 0) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 ((prim multiply row (project output s1) : Nat) + column) 4 width)))) else (ctor Response.invalid)))))))))))),
+  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let rhs : NormPlan::TensorDescriptor := (project execution rhs); (let output : NormPlan::TensorDescriptor := (project execution output); (let mode : Nat := (project execution operation); (let phase : Nat := (prim remainder index 4 0 : Nat); (let item : Nat := (prim quotient index 4 0 : Nat); (let row : Nat := (prim quotient item (project output n0) 0 : Nat); (let width : Nat := (bytes (project output ty)); (let column : Nat := (prim multiply (prim remainder item (project output n0) 0 : Nat) width : Nat); (let half : Nat := (prim multiply (project output n0) width : Nat); (if (index <? (project execution steps)) then (if (phase =? 0) then (ctor Response.instruction 0 0 (project left ty) 0 0 (((prim multiply row (project left s1) : Nat) + column) + (if (mode =? 100) then half else 0)) 2 0 0 0 width 4) else (if (phase =? 1) then (ctor Response.instruction 0 0 (project rhs ty) 0 (if (mode =? 98) then 4 else 0) (((prim multiply row (project rhs s1) : Nat) + column) + (if (mode =? 99) then half else 0)) 2 0 0 1 width 4) else (if (phase =? 2) then (ctor Response.gated (project execution gateVariant) (project output ty) 0 1 0) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 ((prim multiply row (project output s1) : Nat) + column) 4 width)))) else (ctor Response.invalid)))))))))))),
   executable: true
 }
 
@@ -262,7 +272,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if (((((((((((((((destinationView base output) && (((project left ty) =? 0) || ((project left ty) =? 1))) && (0 <? (bytes (project output ty)))) && (0 <? (indexWidth (project ids ty)))) && ((project left n0) =? (project output n0))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project left n1) =? (project ids n0))) && ((project ids n3) =? 1)) && (0 <? (project ids n1))) && (0 <? (project ids n2))) && ((prim remainder (project left n2) (project ids n1) 0 : Nat) =? 0)) && ((prim remainder (project left n3) (project ids n2) 0 : Nat) =? 0)) && (contiguousRightRows left)) && (contiguousRightRows output)) then (let indices : Nat := (elements ids); (let rows : Nat := (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat); (let count : Nat := (if (empty left) then 0 else ((prim multiply 2 indices : Nat) + (prim multiply rows (1 + (project left n0)) : Nat))); (ctor Response.planned (record Plan {steps := count, capacity := (if (empty left) then 3 else (3 + indices)), operation := 41, left := left, rhs := ids, output := output}))))) else (ctor Response.invalid)),
+  body: (if (((((((((((((((destinationView base output) && (((project left ty) =? 0) || ((project left ty) =? 1))) && (0 <? (bytes (project output ty)))) && (0 <? (indexWidth (project ids ty)))) && ((project left n0) =? (project output n0))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project left n1) =? (project ids n0))) && ((project ids n3) =? 1)) && (0 <? (project ids n1))) && (0 <? (project ids n2))) && ((prim remainder (project left n2) (project ids n1) 0 : Nat) =? 0)) && ((prim remainder (project left n3) (project ids n2) 0 : Nat) =? 0)) && (contiguousRightRows left)) && (contiguousRightRows output)) then (let indices : Nat := (elements ids); (let rows : Nat := (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat); (let count : Nat := (if (empty left) then 0 else ((prim multiply 2 indices : Nat) + (prim multiply rows (1 + (project left n0)) : Nat))); (ctor Response.planned (record Plan {steps := count, capacity := (if (empty left) then 3 else (3 + indices)), operation := 41, gateVariant := 0, left := left, rhs := ids, output := output}))))) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -317,9 +327,9 @@ definition{
           | Option.none => (ctor Response.invalid)
           | Option.some rhs => (plan kind left rhs output))))
     | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
-    | Request.gate operation variant swapped extra left secondary output => (if (operation =? 98) then (if ((variant =? 2) && (if extra then false else true)) then (match secondary
-      | Option.none => (gatePlan false swapped left left output)
-      | Option.some rhs => (gatePlan true swapped left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))
+    | Request.gate operation variant swapped extra left secondary output => (if (operation =? 98) then (if ((admittedGate variant) && (if extra then false else true)) then (match secondary
+      | Option.none => (gatePlan variant false swapped left left output)
+      | Option.some rhs => (gatePlan variant true swapped left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))
     | Request.step index execution flag => (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (gateStep index execution) else (step index execution flag)))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -412,14 +422,14 @@ theorem{
 theorem{
   name: bf16F32Plan,
   parameters: [],
-  statement: ((plan 0 (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}) (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}) (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})) = (ctor Response.planned (record Plan {steps := 9, capacity := 3, operation := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}))),
+  statement: ((plan 0 (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}) (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}) (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})) = (ctor Response.planned (record Plan {steps := 9, capacity := 3, operation := 0, gateVariant := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}))),
   proof: reflexivity{}
 }
 
 theorem{
   name: pastEndRefused,
   parameters: [],
-  statement: ((step 9 (record Plan {steps := 9, capacity := 3, operation := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.invalid)),
+  statement: ((step 9 (record Plan {steps := 9, capacity := 3, operation := 0, gateVariant := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.invalid)),
   proof: reflexivity{}
 }
 
@@ -433,7 +443,7 @@ theorem{
 theorem{
   name: identicalAliasAdmitted,
   parameters: [],
-  statement: ((plan 0 (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}) (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}) (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096})) = (ctor Response.planned (record Plan {steps := 9, capacity := 3, operation := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096})}))),
+  statement: ((plan 0 (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}) (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}) (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096})) = (ctor Response.planned (record Plan {steps := 9, capacity := 3, operation := 0, gateVariant := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096})}))),
   proof: reflexivity{}
 }
 
@@ -482,35 +492,35 @@ theorem{
 theorem{
   name: mixedStep0,
   parameters: [],
-  statement: ((step 0 (record Plan {steps := 9, capacity := 3, operation := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 0 0 30 0 0 0 2 0 0 0 2 4)),
+  statement: ((step 0 (record Plan {steps := 9, capacity := 3, operation := 0, gateVariant := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 0 0 30 0 0 0 2 0 0 0 2 4)),
   proof: reflexivity{}
 }
 
 theorem{
   name: mixedStep1,
   parameters: [],
-  statement: ((step 1 (record Plan {steps := 9, capacity := 3, operation := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 1 0 0 0 1 0 4 0 0 0 4 4)),
+  statement: ((step 1 (record Plan {steps := 9, capacity := 3, operation := 0, gateVariant := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 1 0 0 0 1 0 4 0 0 0 4 4)),
   proof: reflexivity{}
 }
 
 theorem{
   name: mixedStep2,
   parameters: [],
-  statement: ((step 2 (record Plan {steps := 9, capacity := 3, operation := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 0 0 0 30 1 0 2 0 3 0 4 2)),
+  statement: ((step 2 (record Plan {steps := 9, capacity := 3, operation := 0, gateVariant := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 0 0 0 30 1 0 2 0 3 0 4 2)),
   proof: reflexivity{}
 }
 
 theorem{
   name: mixedStep4,
   parameters: [],
-  statement: ((step 4 (record Plan {steps := 9, capacity := 3, operation := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 1 0 0 0 1 0 4 0 0 0 4 4)),
+  statement: ((step 4 (record Plan {steps := 9, capacity := 3, operation := 0, gateVariant := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 1 0 0 0 1 0 4 0 0 0 4 4)),
   proof: reflexivity{}
 }
 
 theorem{
   name: mixedStep5,
   parameters: [],
-  statement: ((step 5 (record Plan {steps := 9, capacity := 3, operation := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 0 0 0 30 1 0 2 0 3 2 4 2)),
+  statement: ((step 5 (record Plan {steps := 9, capacity := 3, operation := 0, gateVariant := 0, left := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 4096}), rhs := (record NormPlan::TensorDescriptor {ty := 0, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 4, s3 := 4, span := 4, address := 8192}), output := (record NormPlan::TensorDescriptor {ty := 30, n0 := 3, n1 := 1, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 6, s3 := 6, span := 6, address := 12288})}) 0) = (ctor Response.instruction 0 0 0 30 1 0 2 0 3 2 4 2)),
   proof: reflexivity{}
 }
 
@@ -541,5 +551,33 @@ theorem{
   statement: ((elementSteps 30 0 0) = 2),
   proof: reflexivity{}
 }
+theorem{
+  name: rectifiedGateAdmitted,
+  parameters: [],
+  statement: ((admittedGate 0) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gaussianGateAdmitted,
+  parameters: [],
+  statement: ((admittedGate 1) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: quickGaussianGateAdmitted,
+  parameters: [],
+  statement: ((admittedGate 5) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: erfGateRequiresItsOwnEvaluator,
+  parameters: [],
+  statement: ((admittedGate 4) = false),
+  proof: reflexivity{}
+}
+
 \end{semanticmodule}
 \end{lexlean}

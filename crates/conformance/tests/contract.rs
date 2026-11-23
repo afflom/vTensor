@@ -977,18 +977,21 @@ mod ggml_inventory {
         let lock =
             super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
         let inventory = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
-        for (key, value) in [
-            ("spec", "vtensor/ggml-declarations/1"),
-            ("authority", "LLAMA-CPP-GGML-BACKEND"),
-        ] {
-            assert_eq!(inventory[key].as_str(), Some(value));
-        }
+        assert_eq!(
+            inventory["spec"].as_str(),
+            Some("vtensor/ggml-declarations/1")
+        );
+        assert_eq!(
+            inventory["authority"].as_str(),
+            Some("LLAMA-CPP-GGML-BACKEND")
+        );
         assert_eq!(inventory["revision"], lock["commit"]);
         assert_eq!(inventory["source"].as_str(), Some("ggml/include/ggml.h"));
         for (key, name, prefix) in [
             ("operation", "ggml_op", "GGML_OP_"),
             ("tensor_type", "ggml_type", "GGML_TYPE_"),
             ("unary", "ggml_unary_op", "GGML_UNARY_OP_"),
+            ("glu", "ggml_glu_op", "GGML_GLU_OP_"),
         ] {
             let expected: Vec<_> = declarations(&header, name, prefix)
                 .into_iter()
@@ -996,18 +999,16 @@ mod ggml_inventory {
                     toml::Value::Table(toml::toml! { symbol = (symbol) value = (value) })
                 })
                 .collect();
-            let matches = |candidate: &toml::Value| {
-                candidate.get(key).and_then(toml::Value::as_array) == Some(&expected)
-            };
+            let original = inventory[key].as_array().expect("declarations");
+            let matches = |rows: &[toml::Value]| rows == expected;
             assert!(
-                matches(&inventory),
+                matches(original),
                 "{key} differs from the pinned declarations"
             );
             // This gate must reject omissions, additions, reordering, numeric drift,
             // and invented implementation claims, including changes to its own comparator.
             for mutation in 0..5 {
-                let mut damaged = inventory.clone();
-                let rows = damaged[key].as_array_mut().expect("rows");
+                let mut rows = original.clone();
                 match mutation {
                     0 => {
                         rows.remove(0);
@@ -1016,13 +1017,11 @@ mod ggml_inventory {
                     2 => rows.swap(0, 1),
                     3 => rows[0]["value"] = toml::Value::Integer(-1),
                     _ => {
-                        rows[0]
-                            .as_table_mut()
-                            .expect("table")
-                            .insert("implemented".into(), toml::Value::Boolean(true));
+                        let table = rows[0].as_table_mut().expect("table");
+                        table.insert("implemented".into(), true.into());
                     }
                 }
-                assert!(!matches(&damaged), "mutation {mutation} escaped");
+                assert!(!matches(&rows), "mutation {mutation} escaped");
             }
         }
     }
@@ -1067,7 +1066,6 @@ mod ggml_storage_oracle {
 mod oracle_import {
 
     use super::{ggml_oracle::file_digest, root};
-    use std::collections::BTreeSet;
 
     use repo_model::Model;
 
@@ -1076,59 +1074,30 @@ mod oracle_import {
     fn oracle_import_vt_01() {
         let root = root();
         let artifact = root.join("vendor/llama.cpp-oracle");
-        let lock = super::ggml_oracle::read_toml(artifact.join("upstream.toml"));
-
-        for (key, value) in [
-            ("repository", "https://github.com/ggml-org/llama.cpp"),
-            ("commit", "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5"),
-        ] {
-            assert_eq!(lock[key].as_str(), Some(value));
-        }
-
-        let files = lock["file"]
-            .as_array()
-            .expect("the lock records every imported source file");
-        let mut paths = BTreeSet::new();
-        for entry in files {
-            let path = entry["path"].as_str().expect("source path");
-            let expected = entry["sha256"].as_str().expect("source SHA-256");
-            let observed = file_digest(artifact.join(path));
-            assert_eq!(observed, expected, "upstream source drifted: {path}");
-            assert!(
-                paths.insert(path),
-                "upstream source is pinned twice: {path}"
+        // The frozen manifest binds the exact upstream revision, archive selection,
+        // order, filenames and digests. Check the bytes of every listed artifact.
+        let manifest = artifact.join("upstream.toml");
+        let pin = &super::native_backend_oracle::ORACLE_BINDINGS["ggml_source_manifest_sha256"];
+        assert_eq!(pin, &file_digest(&manifest), "GGML source manifest changed");
+        let lock = super::ggml_oracle::read_toml(manifest);
+        let files = lock["file"].as_array().expect("pinned GGML files");
+        for entry in files
+            .iter()
+            .chain(lock["archive"].as_array().expect("pinned GGML archive"))
+        {
+            let path = entry["path"].as_str().expect("artifact path");
+            assert_eq!(
+                file_digest(artifact.join(path)),
+                entry["sha256"].as_str().unwrap(),
+                "{path}"
             );
         }
 
-        let required = BTreeSet::from([
-            "LICENSE",
-            "ggml/include/ggml-backend.h",
-            "ggml/include/ggml.h",
-            "ggml/include/ggml-alloc.h",
-            "ggml/src/ggml-backend-impl.h",
-            "tests/test-backend-ops.cpp",
-        ]);
-        assert_eq!(
-            paths, required,
-            "the pinned snapshot must include the backend contract, implementation interface, and upstream operation oracle"
-        );
-
-        let archive_sha = file_digest(artifact.join("source.tar.gz"));
-        let archive = toml::Value::Table(toml::toml! {
-            path = "source.tar.gz"
-            format = "git-archive-tar-gzip"
-            paths = ["ggml", "tests/test-backend-ops.cpp", "LICENSE"]
-            sha256 = (archive_sha)
-        });
-        assert_eq!(lock["archive"].as_array().unwrap(), &[archive]);
-
         let exemption = super::ggml_oracle::read_json(root.join("oracle-import.lock"));
         let expected_files: Vec<_> = files.iter().map(|file| serde_json::json!({"path": format!("vendor/llama.cpp-oracle/{}", file["path"].as_str().expect("path")), "sha256": file["sha256"].as_str().expect("digest")})).collect();
-        assert_eq!(exemption["source"]["repository"], "ggml-org/llama.cpp");
-        assert_eq!(
-            exemption["source"]["commit"].as_str(),
-            lock["commit"].as_str()
-        );
+        let origin = &exemption["source"];
+        assert_eq!(origin["repository"], "ggml-org/llama.cpp");
+        assert_eq!(origin["commit"].as_str(), lock["commit"].as_str());
         assert_eq!(
             exemption["files"],
             serde_json::Value::Array(expected_files),
@@ -1475,7 +1444,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "21771f618a8cef32ffcf9e2c6231f1d285fbd2ec869fa65055fd4897f6a8da8c",
+            "b9573da1648f466c115d39dd5471bd0ae830aab1f08c46920605457cfc1a53cd",
         )
     });
 

@@ -362,7 +362,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xc2d2f2dc }]
+license-files = [{ path = "src/lib.rs", hash = 0xb57e4bb5 }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"
