@@ -5,10 +5,16 @@ substrate is Verdant Tensor. Its target is the complete public GGML backend
 contract, so arbitrary GGML applications can select it as a device without an
 operation-support gap. The pinned llama.cpp host loads the plugin through GGML and runs the stories15M models. llama.cpp owns model loading and graph construction.
 
-Device and buffer integration has passed its complete repository checkpoint.
-Numerical graph execution is under development and does **not** yet provide
-full GGML backend support. The imported source and oracle are pinned in
-[`vendor/llama.cpp-oracle`](vendor/llama.cpp-oracle/README.md).
+vTensor owns the GGML ABI, devices and buffers. Its Prism models decide which
+graphs it can execute and map tensor views, strides and indices to the bytes
+each operation reads and writes. Verdant Engine owns the numerical primitives,
+including storage conversion, row products and reductions. The provider calls
+Verdant for that computation. VT-02 checks the plugin’s imported GGML symbols
+against its host-service allowlist. The test suite runs the imported GGML CPU
+backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION.md#provider-linkage) · [Oracle source](vendor/llama.cpp-oracle/README.md)
+
+The completion checklist tracks remaining GGML operations, scheduler callbacks
+and consumer checks. [Provider burndown](BURNDOWN.md)
 
 Cargo fetches the certified Verdant tensor primitives by the immutable commit in
 [Verdant Engine PR #27](https://github.com/afflom/verdant-engine/pull/27), which builds on PRs #12 through #26.
