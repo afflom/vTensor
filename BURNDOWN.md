@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,728 passed**, **1,027 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,788 passed**, **967 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -60,7 +60,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pin the four block encoders from Verdant PR #37 and pass VT-02. All 96 Q4/Q5 SET_ROWS and 25 CPY cases pass the original GGML factory comparisons. [VT-105 results](verification/factory-low-bit-writes-vt105.json) · [Verdant byte comparisons](https://github.com/afflom/verdant-engine/pull/37)
 - [x] Supply TQ1_0 and TQ2_0 encoders in Verdant. All 34,560 bytes matched the two upstream encoders. [Verdant PR #42](https://github.com/afflom/verdant-engine/pull/42)
 - [x] Pass all 48 TQ1_0/TQ2_0 SET_ROWS cases and 12 CPY cases. Invalid indices and nonfinite inputs preserve the destination. [Factory comparisons](verification/factory-ternary-writes-vt113.json)
-- [ ] Implement MXFP4 and NVFP4 encoders. Pass 48 SET_ROWS and 12 CPY cases. [Factory inputs](verification/ggml-factory-cases.tsv.gz)
+- [x] Pass all 48 MXFP4/NVFP4 indexed writes and 12 copies. Invalid indices and nonfinite inputs preserve the destination. [GGML comparisons](verification/factory-compact-float-writes-vt117.json)
 - [ ] Implement Q2_K through Q6_K encoders. Pass 120 SET_ROWS and 30 CPY cases. [Factory inputs](verification/ggml-factory-cases.tsv.gz)
 - [ ] Implement IQ4_NL and IQ4_XS encoders. Pass 48 SET_ROWS and 12 CPY cases against the CPU backend. [CPU encoder registration](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.c#L387-L397)
 - [ ] Verify the seven CPU-refused IQ encoders against the upstream quantizers. Cover 168 SET_ROWS and 42 CPY cases. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)

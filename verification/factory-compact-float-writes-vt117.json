@@ -1,0 +1,109 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-117",
+  "implementation": "019b43eb6170897762d26705f8f35d1005ffaa7e",
+  "verdant_revision": "5e825eb99be98ab160a9fec9dc8febedb84501b0",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/46",
+  "provider_sha256": "298c00ea2d45de77dd576b01e3dbfb8acc5af9363f813dd72e4ce7be589d72e9",
+  "provider_inputs_sha256": "07e252ade77b5c1c289cc3a674c65674772cd72ce25439b00ac2f381a510e161",
+  "oracle_executable_sha256": "2e00e6899127c85e0402219ebd4cc55ffe12b31fc77a07f0d42e2ce3462a6ee3",
+  "typed_lock_sha256": "87179fd89b189017db0fc10ae6de006cc12023dba9335d0b38e4641c9fb3d567",
+  "oracle": "The pinned GGML CPU compares the original indexed-write and copy graphs for MXFP4 and NVFP4 with the provider.",
+  "contract_ordinals": [
+    1272,
+    1664,
+    8585,
+    8471
+  ],
+  "contract_transcript_sha256": "8ec0bf8479e4c72eb15a459440d5e2ade616c7dba1df242a25ffbbdac260b3be",
+  "runs": {
+    "rows-0": {
+      "passed": 14,
+      "transcript_sha256": "8cf25b568123d4b65550a3166bdca5bf86b81f1001117ee11fe096f13647d374"
+    },
+    "rows-1": {
+      "passed": 14,
+      "transcript_sha256": "a176c544ca1995a5e3d2ab723886e8f6460b128eacb7a73e16f00e4291d42e8f"
+    },
+    "rows-2": {
+      "passed": 14,
+      "transcript_sha256": "152e8f2645532aacc126cee146f6a1c93a23a4b0070451199809c0195ce00c8e"
+    },
+    "rows-3": {
+      "passed": 14,
+      "transcript_sha256": "ce9f829339669b5f089cf8c4f800dac4087d7d9f394ecf9caa1c23ba4a81db53"
+    }
+  },
+  "case_ordinals": {
+    "CPY": [
+      8469,
+      8470,
+      8471,
+      8472,
+      8527,
+      8528,
+      8529,
+      8530,
+      8585,
+      8586,
+      8587,
+      8588
+    ],
+    "SET_ROWS": [
+      1272,
+      1273,
+      1274,
+      1275,
+      1276,
+      1277,
+      1278,
+      1279,
+      1280,
+      1281,
+      1282,
+      1283,
+      1284,
+      1285,
+      1286,
+      1287,
+      1288,
+      1289,
+      1290,
+      1291,
+      1292,
+      1293,
+      1294,
+      1295,
+      1652,
+      1653,
+      1654,
+      1655,
+      1656,
+      1657,
+      1658,
+      1659,
+      1660,
+      1661,
+      1662,
+      1663,
+      1664,
+      1665,
+      1666,
+      1667,
+      1668,
+      1669,
+      1670,
+      1671,
+      1672,
+      1673,
+      1674,
+      1675
+    ]
+  },
+  "mutation": {
+    "change": "Zero each encoded block before placing its bytes.",
+    "ordinal": 1272,
+    "diagnostic": "[SET_ROWS] ERR = 0.247462767 > 0.000000100"
+  }
+}

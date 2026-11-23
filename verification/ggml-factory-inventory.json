@@ -310,7 +310,7 @@
         "ADD_SILU_MUL"
       ]
     },
-    "passed": 26728,
+    "passed": 26788,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -403,7 +403,7 @@
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
     "rotary_composition_evidence": "verification/factory-rotary-compositions.json",
-    "refused": 1027,
+    "refused": 967,
     "failed": 0,
     "standalone_evidence": "verification/factory-standalone-vt59.json",
     "superseded_standalone_verdicts": {
@@ -490,7 +490,8 @@
       "VT-114": "verification/factory-ternary-products-vt114.json",
       "VT-115": "verification/factory-four-lane-codebooks-vt115.json",
       "VT-88-SHARED": "verification/factory-shared-q4k-experts.json",
-      "VT-116": "verification/factory-shifted-codebooks-vt116.json"
+      "VT-116": "verification/factory-shifted-codebooks-vt116.json",
+      "VT-117": "verification/factory-compact-float-writes-vt117.json"
     }
   }
 }
