@@ -1,0 +1,321 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-116",
+  "implementation": "7586c826501990f38967635d940a16d02e8f4a17",
+  "verdant_revision": "8f06f422cc19e98ad2fb820140a3e9466b9c3671",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/45",
+  "provider_sha256": "74ba2aff0b5191b841d90abc979515e0c93266c2bc114163cc7fc4e05bf7a4df",
+  "provider_inputs_sha256": "27167cbf0bdac685cd29189b72b746590c4d25acbb728441258b391fd24f1f8d",
+  "oracle_executable_sha256": "cf9c31c1148b7f601a6a3bcdf44d3262781c42ca59a8be37b726cc848f46ff59",
+  "matrix_lock_sha256": "b5aeede01bfba67d3fd6012fa7b9edd8819a77d997307a9b362ab0a5ab49c1f2",
+  "oracle": "The pinned GGML CPU compares the complete original ordinary and expert IQ1_S and IQ1_M matrices with the provider.",
+  "contract_ordinals": [
+    10868,
+    10879,
+    15042,
+    15044
+  ],
+  "contract_transcript_sha256": "411d654a202c3accf1f143b1fbbb43c517c9bf0eedee765e9348607fdfb393cc",
+  "runs": {
+    "rows-0": {
+      "passed": 26,
+      "transcript_sha256": "734b5d233301ff87126e8ec6bbab7876888ecd3a13314d7cfdcc18c77ed6e4a9"
+    },
+    "rows-1": {
+      "passed": 26,
+      "transcript_sha256": "b159a53d0bd9db73efec1ac8a70a30cc59fe100e3ecc4c102f8090d838f5f7d8"
+    },
+    "rows-2": {
+      "passed": 25,
+      "transcript_sha256": "8bd3edfc2cb94adb7e55ddc4acdbae7dab7d4b8d2c84308dbeed8d8b658fbc9e"
+    },
+    "rows-3": {
+      "passed": 25,
+      "transcript_sha256": "1a4636e1df966b074c7924e4d222bd2579cf29d2b8ff26a31c53005681f20bec"
+    }
+  },
+  "mutation": {
+    "change": "Negate the grouped row product before returning it to the matrix executor.",
+    "ordinal": 10868,
+    "diagnostic": "[MUL_MAT] ERR = 4.000000000 > 0.000500000"
+  },
+  "case_ordinals": {
+    "MUL_MAT": [
+      10868,
+      10869,
+      10870,
+      10871,
+      10872,
+      10873,
+      10874,
+      10875,
+      10876,
+      10877,
+      10878,
+      10879,
+      10880,
+      10881,
+      10882,
+      10883,
+      10884,
+      10885,
+      10886,
+      10887,
+      10888,
+      10889,
+      11107,
+      11108,
+      11109,
+      11110,
+      11111,
+      11112,
+      11113,
+      11114,
+      11115,
+      11116,
+      11291,
+      11292,
+      11293,
+      11294,
+      11295,
+      11296,
+      11297,
+      11298,
+      11299,
+      11300,
+      11475,
+      11476,
+      11477,
+      11478,
+      11479,
+      11480,
+      11481,
+      11482,
+      11483,
+      11484,
+      11659,
+      11660,
+      11661,
+      11662,
+      11663,
+      11664,
+      11665,
+      11666,
+      11667,
+      11668,
+      11843,
+      11844,
+      11845,
+      11846,
+      11847,
+      11848,
+      11849,
+      11850,
+      11851,
+      11852,
+      12027,
+      12028,
+      12029,
+      12030,
+      12031,
+      12032,
+      12033,
+      12034,
+      12035,
+      12036,
+      12211,
+      12212,
+      12213,
+      12214,
+      12215,
+      12216,
+      12217,
+      12218,
+      12219,
+      12220,
+      13489,
+      13490,
+      13502,
+      13503,
+      13611,
+      13612
+    ],
+    "MUL_MAT_ID": [
+      14135,
+      14136,
+      14145,
+      14146,
+      15042,
+      15043,
+      15044,
+      15045
+    ]
+  },
+  "llama_host": {
+    "model_sha256": "4894382dfada69a67d6221cd4f26070ea47474792fa51b074f3ece0b19851b03",
+    "source_gguf_sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+    "calibration": {
+      "source": "README.md at the GGML authority revision",
+      "source_sha256": "461b38efc8ce48e8c752e38daba1aaf6169aba4ed81c2651d6e2e031d708f771",
+      "ctx_size": 128,
+      "chunks": 2,
+      "imatrix_sha256": "695c08a3a89bb9637ab63048c82cbf221dda90ae3d528e4a5ffe2c24549ad391"
+    },
+    "quantizer": {
+      "baseline": "q4_0",
+      "tensor_overrides": {
+        "blk.0.ffn_down.weight": "tq1_0",
+        "blk.1.ffn_down.weight": "tq2_0",
+        "blk.2.ffn_down.weight": "iq3_xxs",
+        "blk.3.ffn_down.weight": "iq3_s",
+        "blk.4.ffn_down.weight": "iq1_s",
+        "blk.5.ffn_down.weight": "iq1_m"
+      }
+    },
+    "placement_records": 585,
+    "provider_placements": 585,
+    "comparison": "Separate processes run public llama_decode for prefill and two decodes. Each process reads the same GGUF. The ordered CPU control changes only llama_model_params.use_extra_bufts to false.",
+    "default_cpu_vs_provider": [
+      {
+        "step": 0,
+        "logits": 32000,
+        "top_tokens": [
+          408,
+          408
+        ],
+        "max_abs_logit_difference": 3.337860107421875e-06,
+        "normalized_squared_logit_error": 6.644523579287851e-15,
+        "cache_fp16_values": 6912,
+        "cache_bit_mismatches": 4,
+        "max_abs_cache_difference": 0.00048828125
+      },
+      {
+        "step": 1,
+        "logits": 32000,
+        "top_tokens": [
+          278,
+          278
+        ],
+        "max_abs_logit_difference": 4.76837158203125e-06,
+        "normalized_squared_logit_error": 1.2421308081444436e-14,
+        "cache_fp16_values": 3456,
+        "cache_bit_mismatches": 2,
+        "max_abs_cache_difference": 4.76837158203125e-07
+      },
+      {
+        "step": 2,
+        "logits": 32000,
+        "top_tokens": [
+          3186,
+          3186
+        ],
+        "max_abs_logit_difference": 2.86102294921875e-06,
+        "normalized_squared_logit_error": 9.970686576854463e-15,
+        "cache_fp16_values": 3456,
+        "cache_bit_mismatches": 1,
+        "max_abs_cache_difference": 2.384185791015625e-07
+      }
+    ],
+    "ordered_cpu_vs_provider": [
+      {
+        "step": 0,
+        "logits": 32000,
+        "top_tokens": [
+          408,
+          408
+        ],
+        "max_abs_logit_difference": 3.337860107421875e-06,
+        "normalized_squared_logit_error": 6.644523579287851e-15,
+        "cache_fp16_values": 6912,
+        "cache_bit_mismatches": 3,
+        "max_abs_cache_difference": 0.0001220703125
+      },
+      {
+        "step": 1,
+        "logits": 32000,
+        "top_tokens": [
+          278,
+          278
+        ],
+        "max_abs_logit_difference": 0.30086231231689453,
+        "normalized_squared_logit_error": 0.00021819872874534338,
+        "cache_fp16_values": 3456,
+        "cache_bit_mismatches": 1700,
+        "max_abs_cache_difference": 0.1016845703125
+      },
+      {
+        "step": 2,
+        "logits": 32000,
+        "top_tokens": [
+          3186,
+          3186
+        ],
+        "max_abs_logit_difference": 0.2672295570373535,
+        "normalized_squared_logit_error": 0.00019255607153415783,
+        "cache_fp16_values": 3456,
+        "cache_bit_mismatches": 1135,
+        "max_abs_cache_difference": 0.07421875
+      }
+    ],
+    "default_cpu_vs_ordered_cpu": [
+      {
+        "step": 0,
+        "logits": 32000,
+        "top_tokens": [
+          408,
+          408
+        ],
+        "max_abs_logit_difference": 0.0,
+        "normalized_squared_logit_error": 0.0,
+        "cache_fp16_values": 6912,
+        "cache_bit_mismatches": 5,
+        "max_abs_cache_difference": 0.00048828125
+      },
+      {
+        "step": 1,
+        "logits": 32000,
+        "top_tokens": [
+          278,
+          278
+        ],
+        "max_abs_logit_difference": 0.30086183547973633,
+        "normalized_squared_logit_error": 0.00021223768570817093,
+        "cache_fp16_values": 3456,
+        "cache_bit_mismatches": 1700,
+        "max_abs_cache_difference": 0.1016845703125
+      },
+      {
+        "step": 2,
+        "logits": 32000,
+        "top_tokens": [
+          3186,
+          3186
+        ],
+        "max_abs_logit_difference": 0.2672295570373535,
+        "normalized_squared_logit_error": 0.00019751148732537104,
+        "cache_fp16_values": 3456,
+        "cache_bit_mismatches": 1136,
+        "max_abs_cache_difference": 0.07421875
+      }
+    ],
+    "outputs_sha256": {
+      "cpu-logits.f32": "c6ec45e8c386db85f952ec4c6b4bae46a2a6d89b721ccffbd8254d3264446521",
+      "cpu-kv.tsv": "50f40f96f111331279ca453bb60b36d11a0842a82692f0aeec4565021d2df98f",
+      "ordered-cpu-logits.f32": "318da09d38a93c578bfc2196e77cc6e2102815e6cf57f82c11eb7407f11fb671",
+      "ordered-cpu-kv.tsv": "429c04cef6e816bbd1dd28bb15e6bb6ff426f882c1d532c332e72b644ef70dff",
+      "provider-logits.f32": "58c87064eff2c43d8b75a8bb117b4f0335a1f23d09e615d9f4ff10142305d6aa",
+      "provider-kv.tsv": "f6a3feeedcc78ddfc83ee0d7e313fab4a56f0e3d37bd885a1fa72b99c86e097e"
+    },
+    "repacked_tensors": {
+      "cpu": 36,
+      "ordered-cpu": 0,
+      "provider": 0
+    },
+    "repeat": "All three configurations reproduced their logits and KV files byte-for-byte in fresh processes.",
+    "cpu_control": "Disabling CPU repacking changes the CPU reference on this model. The default CPU comparison is within 0.000005 across 96,000 logits. The comparison with CPU repacking disabled exceeds 0.001. The CPU-to-CPU rows record this independent control.",
+    "quantizer_output_fallback": "The upstream quantizer selected Q8_0 for output.weight because its 288 columns do not fit Q6_K. All six requested projection overrides were preserved.",
+    "driver_source_sha256": "d390ca22d61fc6aebe894dbb737a2e9934f487e8b5a00989f0966523570e1b91",
+    "cpu_control_driver_source_sha256": "83d003d0b89aa27557bf85779d2b48e03aede538faa1bdbf2c0c3c071df0bfa7"
+  }
+}
