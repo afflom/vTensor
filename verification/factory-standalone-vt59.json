@@ -8,18 +8,242 @@
   "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "case_transcript_sha256": "b8db09b2a7176384d84ed4b56e0a3eeed86437405bd2c45211c35df4cbd064a9",
   "verdict_table": "factory-standalone-vt59.tsv.gz",
-  "uncompressed_verdicts_sha256": "1cb7f336eead1105790740ac0161cd01338420b7a95a790bf60a7fa44ddc0b3c",
+  "uncompressed_verdicts_sha256": "9d43af9809a1c477f47804de0a004b76ff1f9a4e75a990e5086d014a57543ccc",
   "mapping": "Match the complete ordered parameter sequence of each label and optional parameters_regex to the imported factory inventory. The table preserves the evaluator\u2019s backend names and error field. Multiple occurrences of a backend indicate separate refusals inside one graph.",
-  "runs": {},
+  "runs": {
+    "activations": {
+      "labels": [
+        "TANH",
+        "ELU",
+        "SIGMOID",
+        "GELU",
+        "GELU_QUICK",
+        "SILU",
+        "EXP",
+        "EXPM1",
+        "SOFTPLUS",
+        "GELU_ERF",
+        "GELU_MUL",
+        "ADD_SILU_MUL",
+        "ADD_SIGMOID_MUL",
+        "ADD_SOFTPLUS_MUL",
+        "ADD_GELU_MUL",
+        "REGLU",
+        "GEGLU",
+        "GEGLU_ERF",
+        "GEGLU_QUICK",
+        "SILU_BACK",
+        "ADD_ADD",
+        "LOG",
+        "SIN",
+        "COS"
+      ],
+      "rows": 374,
+      "csv_sha256": "154e6e6d1ef2bb0fabae9acf746918fd707595271d0dfbdf7b65c0dc751eb0d6"
+    },
+    "convs": {
+      "labels": [
+        "IM2COL",
+        "IM2COL_3D",
+        "CONV_2D",
+        "CONV_1D_DW",
+        "CONV_2D_DW",
+        "CONV_3D",
+        "CONV_TRANSPOSE_1D",
+        "COL2IM_1D",
+        "CONV_TRANSPOSE_2D"
+      ],
+      "rows": 5774,
+      "csv_sha256": "f2b95131891943834912bb2442e5e10daa6b1e8e611614153a1f1509d5ab8c90"
+    },
+    "diag": {
+      "labels": [
+        "DIAG"
+      ],
+      "rows": 9,
+      "csv_sha256": "d10766211c17327c31268386886b6c791495db61afb7ffc95eef825e1ac6d373"
+    },
+    "routing": {
+      "labels": [
+        "TOP_K_MASK",
+        "MUL_MAT_ID_W4A8",
+        "MUL_MAT_ID_W4A4",
+        "MUL_MAT_ID",
+        "MUL_MAT_ID_FUSION",
+        "MUL_MAT_ID_SHARED",
+        "ARGSORT",
+        "TOP_K",
+        "TOPK_QSA",
+        "TOPK_MOE",
+        "MOE_REDUCE",
+        "LIGHTNING_INDEXER"
+      ],
+      "rows": 2867,
+      "csv_sha256": "f9069d287f2cc9669b1f893c5304449c2b8b6c704fa8763b761963175538e8dd"
+    },
+    "sequence": {
+      "labels": [
+        "DSV4_HC_COMB",
+        "DSV4_HC_PRE",
+        "DSV4_HC_POST",
+        "SSM_CONV",
+        "SSM_CONV_BIAS_SILU",
+        "SSM_SCAN",
+        "SSM_SCAN_ROLLBACK",
+        "SSM_SCAN_CACHE_FUSION",
+        "RWKV_WKV6",
+        "RWKV_WKV7",
+        "GATED_LINEAR_ATTN",
+        "TRI",
+        "SOLVE_TRI",
+        "GATED_DELTA_NET",
+        "GATED_DELTA_NET_CACHE_FUSION"
+      ],
+      "rows": 366,
+      "csv_sha256": "4437d1c4cef304228de502ffdf6ad2923fc5d5d1fd0251a463d3be50eac2e033"
+    },
+    "misc": {
+      "labels": [
+        "RELU_SQR",
+        "SILU_MUL",
+        "RELU_MUL",
+        "SIGMOID_MUL",
+        "SOFTPLUS_MUL",
+        "SNAKE_FUSE",
+        "SWIGLU_OAI",
+        "SWIGLU_CLAMP",
+        "POOL_2D",
+        "POOL_1D",
+        "SOFTCAP",
+        "SOFT_MAX",
+        "SOFT_MAX_BACK",
+        "UPSCALE",
+        "TIMESTEP_EMBEDDING",
+        "XIELU",
+        "SLEEP",
+        "CROSS_ENTROPY_LOSS",
+        "CROSS_ENTROPY_LOSS_BACK",
+        "OPT_STEP_ADAMW",
+        "OPT_STEP_SGD"
+      ],
+      "rows": 912,
+      "csv_sha256": "5e18129a1862117cd7654af4afe2ac73537edffa29b945aa00d97e55000d4940"
+    },
+    "products": {
+      "labels": [
+        "MUL_MAT_HADAMARD",
+        "MUL_MAT_PREC_SRC1_BF16",
+        "MUL_MAT_PREC_SRC1_F32",
+        "MUL_MAT_PREC_SRC1_BF16_SRC0",
+        "MUL_MAT_W4A8",
+        "MUL_MAT_W4A4",
+        "MUL_MAT_ADD",
+        "OUT_PROD",
+        "MUL_MAT_FUSION",
+        "MUL_MAT_FUSION_W4A8"
+      ],
+      "rows": 3563,
+      "csv_sha256": "67ec45b42683ba4a09b04df345c4ee7bb1457d5abf88c5e4bf7af93be42a0685"
+    },
+    "setrows": {
+      "labels": [
+        "SET_ROWS"
+      ],
+      "rows": 641,
+      "csv_sha256": "272f68f279cdc5287190eae7d236666a9dc99692073bb0f5d849e1ecb4441fbd",
+      "parameters_regex": "^(?!(?:type_src=f16,type_dst=bf16,type_idx=i64,|type_src=f16,type_dst=f16,type_idx=i32,|type_src=f16,type_dst=f16,type_idx=i64,|type_src=f16,type_dst=f32,type_idx=i64,|type_src=f32,type_dst=bf16,type_idx=i64,|type_src=f32,type_dst=f16,type_idx=i64,|type_src=f32,type_dst=f32,type_idx=i32,|type_src=f32,type_dst=f32,type_idx=i64,))"
+    },
+    "add": {
+      "labels": [
+        "ADD"
+      ],
+      "rows": 172,
+      "csv_sha256": "37dbd0ee632feffef2760fd1a7ef8bdc8039c1a37b5d0658f176fe1f6819e15c",
+      "parameters_regex": "^(?!type=q2_K,n=256,m=16,r=4$)"
+    },
+    "get_rows_back": {
+      "labels": [
+        "GET_ROWS_BACK"
+      ],
+      "rows": 61,
+      "csv_sha256": "ad437b10a74be101272e41d60bdfb3c2fd06718e1746eae2a35c714a30831e48",
+      "parameters_regex": "^(?!type=bf16,n=256,m=5,r=4,b=1,v=0$)"
+    },
+    "cpy": {
+      "labels": [
+        "CPY"
+      ],
+      "rows": 641,
+      "csv_sha256": "4306c608e1259ca902b8d73d3141284bf030dd8f21b2768f3a160ffe2c03a3f2",
+      "parameters_regex": "^(?!type_src=iq2_xxs,type_dst=iq2_xxs,ne_src=\\[256,2,3,4\\],permute_src=\\[0,0,0,0\\],permute_dst=\\[0,0,0,0\\],_src_transpose=0$)"
+    },
+    "attention-packed": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 2470,
+      "csv_sha256": "2dbf060f3b7a217a3f957bec6448ac2dda4fb0f0791b743be6101240e02e1c72",
+      "parameters_regex": "type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)"
+    },
+    "attention-bias": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 1144,
+      "csv_sha256": "69bd2a14c52339d819c3de66c3acac08ce6a499ad2c9f2ffb97f4082ea289912",
+      "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?=.*(?:max_bias|logit_softcap)=(?!0\\.000000,))"
+    },
+    "matrix": {
+      "labels": [
+        "MUL_MAT"
+      ],
+      "rows": 2969,
+      "csv_sha256": "27e030682f5fc6ac9a30fcc190dc5e7b64df6201929275c04ccae3bfcaee35cc",
+      "parameters_regex": "^(?!type_a=(q8_0|q4_0),type_b=f32,)"
+    },
+    "attention-small": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 524,
+      "csv_sha256": "8de1efe70fb402722fdfd6487ce7be07543ec029a8e0d7e7fd05e25f9e492067",
+      "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?=.*\\bnb=1,)"
+    },
+    "attention-dense-0": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 64,
+      "csv_sha256": "c20a83eded798c95905c2393166884aea5eb5c75dc8c43d4c58bb9dd0c818b9b",
+      "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?!.*\\bnb=1,)(?=.*\\bnb=(64|1024|8|4|256),)"
+    },
+    "attention-dense-1": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 1024,
+      "csv_sha256": "117250ec7bdf8b3457dd8ab61a5947397ae609b00636d613b90f275ace8488b0",
+      "status": "complete output rows in an active sequential run; raw hash covers the last complete line",
+      "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?!.*\\bnb=1,)(?=.*\\bnb=(32|3|512|16|35),)"
+    },
+    "attention-dense-2": {
+      "labels": [
+        "FLASH_ATTN_EXT"
+      ],
+      "rows": 521,
+      "csv_sha256": "e6ed92a3cd571c7d87b9a19a63c23ab7c2970bedfd9df0042768f3a9d10bee83",
+      "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?!.*\\bnb=1,)(?!.*\\bnb=(64|1024|8|4|256|32|3|512|16|35),)"
+    }
+  },
   "new_verdicts": {
-    "passed": 0,
-    "refused": 0,
+    "passed": 3646,
+    "refused": 20450,
     "failed": 0
   },
   "cumulative_verdicts": {
-    "passed": 3631,
-    "refused": 3,
+    "passed": 7277,
+    "refused": 20453,
     "failed": 0,
-    "untested": 24121
+    "untested": 25
   }
 }
