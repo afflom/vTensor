@@ -5026,3 +5026,7 @@ VT-96 runs all 19 upstream attention constructors with Q1_0, Q2_0 or F8_E4M3 cac
 Verdant PR #34 passed the complete locked-SDK `just vv` at the immutable patch used by vTensor, including 85 engine conformance tests and 68 tensor tests. [Upstream verification](https://github.com/afflom/verdant-engine/blob/a2c6a4d/ENGINE-VERIFICATION.md#vtk-37-affine-four--and-five-bit-row-products)
 
 At vTensor `2256d53` the VT-95 run passed 103 backend contract tests and verified the Prism application attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. Its final dependency check rejected stale generated-source hashes for the matrix and attention crates. At `eea1bad` the locked SDK passed all four cargo-deny checks with the hashes for the VT-96 certified outputs.
+
+## Indexed key/value cache attention
+
+VT-97 follows GGML’s logical mask columns and selects physical key/value rows per query slice. Prism validates the index tensor shape, skips negative padding indices and rejects positive indices outside the cache. The provider checks all index values before writing output and reuses the map across heads and query tokens. All numerical work uses the existing Verdant row primitives. Pinning every physical read to row zero failed GGML ordinal 24835 with error 1.007883375 against tolerance 0.0005. The restored implementation passed the four representative F16/Q8_0 graphs and the 12-test integration run. The receipt lists each completed original graph once. [Factory evidence](verification/factory-indexed-cache-attention-vt97.json)

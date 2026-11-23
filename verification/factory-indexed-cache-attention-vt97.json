@@ -1,0 +1,110 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "0c70cf1d9e52268a9a1b5af913aee4c177103e56",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/34",
+  "requirement": "VT-97",
+  "implementation": "15af61f0ccc174aa62cbc553af09b23406d21d9f",
+  "oracle_provider_revision": "4c4ae3b8a8c157b97e81b5bcbb0962640d6d7781",
+  "provider_sha256": "c8e7d85a9604f971a4c50f5d29aed5efa87441d5df863085365974beeb380dec",
+  "provider_inputs_sha256": "42b6427eede9026016bd576701dfd94c932ea1244d0559d7ee1752eede61a08d",
+  "oracle_executable_sha256": "a849c70b88c198887e1b13009e61dbbc2f76e30b4d261a1f615429c354b86ae6",
+  "attention_lock_sha256": "8336c258ae2b0dc04bb5ab442115870042c95cab8ac216e44ef04c700a4bd0b5",
+  "oracle": "Original ggml_flash_attn_ext_rows graphs evaluated by the pinned GGML CPU and the vTensor plugin. Each listed CASE line follows a successful upstream comparison.",
+  "contract_ordinals": [
+    24835,
+    24836,
+    24841,
+    24842
+  ],
+  "contract_transcript_sha256": "4383aea7cb8e9e49f043a33f4757f08431cfa33a96ef55c9a3c3de3c31e2cd17",
+  "runs": {
+    "0": {
+      "status": "completed case lines from active evaluator",
+      "passed": 15,
+      "transcript_sha256": "f8399379ae2228c8d04308a0c228316872a19ef58e5e53238644887142f9efa6"
+    },
+    "1": {
+      "status": "completed case lines from active evaluator",
+      "passed": 15,
+      "transcript_sha256": "071995dced7a561c1cb1d4057ddfe2a81dce8a179449d20cf8c025fea20c1ace"
+    },
+    "2": {
+      "status": "completed case lines from active evaluator",
+      "passed": 15,
+      "transcript_sha256": "57c883ce5c4a01d27e25d1a4989fb99a3e875c63f4ffa8353c9e9b57655a8c37"
+    }
+  },
+  "case_ordinals": {
+    "FLASH_ATTN_EXT": [
+      24833,
+      24834,
+      24835,
+      24836,
+      24837,
+      24838,
+      24839,
+      24840,
+      24841,
+      24842,
+      24843,
+      24844,
+      24845,
+      24846,
+      24847,
+      24848,
+      24849,
+      24850,
+      24851,
+      24852,
+      24853,
+      24854,
+      24855,
+      24856,
+      24857,
+      24858,
+      24859,
+      24860,
+      24861,
+      24862,
+      24863,
+      24864,
+      24865,
+      24866,
+      24867,
+      24868,
+      24869,
+      24870,
+      24871,
+      24872,
+      24873,
+      24874,
+      24876,
+      24877,
+      24878,
+      24883,
+      24884,
+      24889,
+      24890
+    ]
+  },
+  "remaining_ordinals": [
+    24875,
+    24879,
+    24880,
+    24881,
+    24882,
+    24885,
+    24886,
+    24887,
+    24888,
+    24891,
+    24892
+  ],
+  "mutation": {
+    "ordinal": 24835,
+    "change": "Read physical cache row zero for every valid logical column.",
+    "error": 1.007883375,
+    "tolerance": 0.0005
+  }
+}
