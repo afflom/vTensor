@@ -596,6 +596,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                     operation,
                     p0,
                     p1,
+                    p3,
                     extra,
                     metadata(w.clone()),
                     secondary.clone().map(metadata),

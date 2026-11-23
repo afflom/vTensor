@@ -2236,6 +2236,31 @@ int main(int argc, char **argv) {
           ggml_backend_buffer_free(buffer); ggml_free(ctx);
         }
       }
+      if (!strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
+        const std::array<float,12> inputs={8,-8,0,-0.f,2,-2,-8,8,-3,3,0,-0.f};
+        for (int swapped : {0,1}) {
+          std::array<float,6> expected;
+          for (auto selected : {reference,backend}) {
+            auto ctx=ggml_init({ggml_graph_overhead()+4*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+            auto x=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,inputs.size());
+            auto out=ggml_swiglu_clamp(ctx,x,nullptr,2.f);
+            out->op_params[1]=swapped;
+            auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
+            auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+            ggml_backend_tensor_set(x,inputs.data(),0,sizeof(inputs));
+            CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+            std::array<float,6> actual; ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
+            if (selected==reference) expected=actual;
+            else {
+              for (size_t i=0;i<actual.size();++i) {
+                CHECK(std::fabs(actual[i]-expected[i])<=1e-6f && std::signbit(actual[i])==std::signbit(expected[i]));
+              }
+              CHECK(refuses_change(backend,dev,graph,out,out->op_params[1],int32_t(2)));
+            }
+            ggml_backend_buffer_free(buffer); ggml_free(ctx);
+          }
+        }
+      }
       if (!strcmp(argv[3]+9,"ROW_SOFTMAX")) {
         std::vector<float> expected;
         for (auto selected : {reference,backend}) {
