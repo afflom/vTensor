@@ -103,7 +103,24 @@ inductive{
       ]
     },
     {name: sparseRow, fields: [SparsePlan, Nat, Nat, Nat]},
-    {name: sparseIndex, fields: [SparsePlan, Nat, Nat, Nat]}
+    {name: sparseIndex, fields: [SparsePlan, Nat, Nat, Nat]},
+    {
+      name: placement,
+      fields: [
+        Nat,
+        Bool,
+        Nat,
+        Nat,
+        Nat,
+        Nat,
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        (Option NormPlan::TensorDescriptor),
+        NormPlan::TensorDescriptor
+      ]
+    }
   ]
 }
 
@@ -152,7 +169,7 @@ definition{
   name: queryStorage,
   parameters: [kind : Nat],
   result: Nat,
-  body: (if (ScalarDotStorage::symmetricActivationWeights kind) then 8 else (ScalarDotStorage::activationType kind)),
+  body: (if (ScalarDotStorage::symmetricActivationWeights kind) then 8 else (if (ScalarDotStorage::affineActivationWeights kind) then 9 else (ScalarDotStorage::activationType kind))),
   executable: true
 }
 
@@ -162,8 +179,15 @@ definition{
   result: Bool,
   body: (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.unknownType => false
-    | TensorTypes::TypeStorageDecision.knownType storage => ((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (ScalarDotStorage::symmetricActivationWeights kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
+    | TensorTypes::TypeStorageDecision.knownType storage => ((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (ScalarDotStorage::packedActivationWeights kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
   executable: true
+}
+
+theorem{
+  name: affineQueriesUseScaledSum,
+  parameters: [],
+  statement: ((queryStorage 7) = 9),
+  proof: reflexivity{}
 }
 
 theorem{
@@ -425,10 +449,42 @@ definition{
 }
 
 definition{
+  name: placement,
+  parameters: [
+    op : Nat,
+    trailing : Bool,
+    p0 : Nat,
+    p1 : Nat,
+    p2 : Nat,
+    p3 : Nat,
+    slotA : (Option NormPlan::TensorDescriptor),
+    slotB : (Option NormPlan::TensorDescriptor),
+    slotC : (Option NormPlan::TensorDescriptor),
+    slotD : (Option NormPlan::TensorDescriptor),
+    slotE : (Option NormPlan::TensorDescriptor),
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (match slotA
+    | Option.none => (ctor Response.invalid)
+    | Option.some a => (if (op =? 43) then (match slotD
+      | Option.some unused => (ctor Response.invalid)
+      | Option.none => (match slotE
+        | Option.some unused => (ctor Response.invalid)
+        | Option.none => (normalizedPlan op trailing p0 p1 a slotB slotC output))) else (match slotB
+      | Option.none => (ctor Response.invalid)
+      | Option.some b => (if (op =? 88) then (sparseGraph op trailing a b slotC slotD slotE output) else (match slotC
+        | Option.none => (ctor Response.invalid)
+        | Option.some c => (graphPlan op trailing p1 p2 p3 a b c slotD slotE output)))))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
   body: (match request
+    | Request.placement op trailing p0 p1 p2 p3 a b c d e out => (placement op trailing p0 p1 p2 p3 a b c d e out)
     | Request.graph opcode extra bias softcap precision query key value mask sink output => (graphPlan opcode extra bias softcap precision query key value mask sink output)
     | Request.sparse op trailing mask top score blocks extra out => (sparseGraph op trailing mask top score blocks extra out)
     | Request.sparseRow plan token head batch => (sparseRows plan token head batch)

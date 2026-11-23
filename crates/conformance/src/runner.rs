@@ -517,23 +517,15 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
         return Ok(None);
     }
+    if matches!(operation, 43 | 71 | 88) {
+        return attention::plan(tensor, operation, output);
+    }
     let source = |slot| tensor.source(slot).map(tensor_metadata).transpose();
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
     let primary = source(0)?;
     let secondary = source(1)?;
     let base = source(2)?;
-    if matches!(operation, 71 | 88) {
-        let inputs = [primary, secondary, base, source(3)?, source(4)?];
-        return if operation == 71 {
-            attention::plan(tensor, inputs, output)
-        } else {
-            attention::sparse_plan(tensor, inputs, output)
-        };
-    }
-    if operation == 43 {
-        return attention::softmax_plan(tensor, [primary, secondary, base], output);
-    }
     if matches!(operation, 45 | 46) {
         return rotary::plan(
             tensor,
@@ -868,15 +860,24 @@ impl<'a> TensorInput<'a> {
     }
 }
 
-fn symmetric_weight_encoding(kind: u64) -> Option<linear::SymmetricWeightEncoding> {
-    use linear::SymmetricWeightEncoding::*;
-    match kind {
-        2 => Some(SignedFour),
-        6 => Some(SignedFive),
-        8 => Some(SignedByte),
-        20 => Some(NonlinearFour),
-        _ => None,
-    }
+#[derive(Clone, Copy)]
+enum PackedWeight {
+    Symmetric(linear::SymmetricWeightEncoding),
+    Affine(linear::AffineWeightEncoding),
+}
+
+fn packed_weight(kind: u64) -> Option<PackedWeight> {
+    use linear::{AffineWeightEncoding::*, SymmetricWeightEncoding::*};
+    use PackedWeight::{Affine, Symmetric};
+    Some(match kind {
+        2 => Symmetric(SignedFour),
+        3 => Affine(FourBit),
+        6 => Symmetric(SignedFive),
+        7 => Affine(FiveBit),
+        8 => Symmetric(SignedByte),
+        20 => Symmetric(NonlinearFour),
+        _ => return None,
+    })
 }
 
 fn execute_row_products(
@@ -932,12 +933,18 @@ fn execute_row_products(
         C0(.., None, 13) => packed!(encode_grouped_q8_block, linear::dot_grouped_q5_row),
         C0(.., None, 41) => packed!(symmetric, linear::dot_binary_sign_row),
         C0(.., None, 42) => packed!(symmetric, linear::dot_two_bit_row),
-        C0(.., None, kind) => {
-            let encoding = symmetric_weight_encoding(kind).ok_or(BackendError::InvalidTensor)?;
-            packed!(symmetric, |w, a| linear::dot_encoded_symmetric_row(
-                w, a, encoding
-            ))
-        }
+        C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
+            PackedWeight::Symmetric(encoding) => {
+                packed!(symmetric, |w, a| linear::dot_encoded_symmetric_row(
+                    w, a, encoding
+                ))
+            }
+            PackedWeight::Affine(encoding) => {
+                packed!(linear::encode_affine_q8_block::<32>, |w, a| {
+                    linear::dot_affine_weight_row(w, a, encoding)
+                })
+            }
+        },
     }
 }
 
@@ -1252,43 +1259,31 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 .ok_or(BackendError::InvalidTensor)? = u64::from(value.to_bits());
             continue;
         }
-        let vtensor_typed::Adt3::C3(
+        // The typed planner and the pointwise interpreter export separate Rust enums
+        // for the same word fields. Bind the ordering once across this package boundary.
+        macro_rules! forward_word {
+            ($($field:ident),+) => {
+                match instruction {
+                    vtensor_typed::Adt3::C3($($field),+) => GraphRequest::C3(true, $($field),+),
+                    _ => return Err(BackendError::InvalidTensor),
+                }
+            };
+        }
+        let request = forward_word!(
             family,
             operation,
             source_type,
             destination_type,
-            a,
+            left,
             from,
-            b,
             right,
+            at,
             target,
             to,
             read_bytes,
-            write_bytes,
-        ) = instruction
-        else {
-            return Err(BackendError::InvalidTensor);
-        };
-        execute_word(
-            pointwise(GraphRequest::C3(
-                true,
-                family,
-                operation,
-                source_type,
-                destination_type,
-                a,
-                from,
-                b,
-                right,
-                target,
-                to,
-                read_bytes,
-                write_bytes,
-            ))?,
-            &pointers,
-            output,
-            &mut words,
-        )?;
+            write_bytes
+        );
+        execute_word(pointwise(request)?, &pointers, output, &mut words)?;
     }
     Ok(())
 }
@@ -1612,28 +1607,6 @@ mod attention {
         vtensor_attention::run(query).map_err(|_| Overflow)
     }
 
-    pub(super) fn sparse_plan(
-        tensor: &Tensor,
-        sources: [Option<TensorDescriptor>; 5],
-        output: TensorDescriptor,
-    ) -> Result<Option<super::ExecutionPlan>, BackendError> {
-        let [mask, top, score, blocks, extra] = sources;
-        let descriptor = descriptor_for!(Descriptor::C0);
-        match request(Request::C4(
-            tensor.op as u64,
-            tensor.src[5..].iter().any(|ptr| !ptr.is_null()),
-            descriptor(mask.ok_or(InvalidTensor)?),
-            descriptor(top.ok_or(InvalidTensor)?),
-            score.map(descriptor),
-            blocks.map(descriptor),
-            extra.map(descriptor),
-            descriptor(output),
-        ))? {
-            Response::C5(plan) => Ok(Some(super::ExecutionPlan::SparseMask(Box::new(plan)))),
-            _ => Err(InvalidTensor),
-        }
-    }
-
     pub(super) fn sparse_mask(tensor: &Tensor, plan: SparsePlan) -> Result<(), BackendError> {
         use verdant_tensor::memory::copy_storage_block;
         let SparsePlan::C0(_, _, _, _, _, _, width, excluded, _) = plan;
@@ -1740,27 +1713,6 @@ mod attention {
         Ok(())
     }
 
-    pub(super) fn softmax_plan(
-        tensor: &Tensor,
-        [source, mask, sink]: [Option<TensorDescriptor>; 3],
-        output: TensorDescriptor,
-    ) -> Result<Option<super::ExecutionPlan>, BackendError> {
-        let descriptor = descriptor_for!(Descriptor::C0);
-        match request(Request::C2(
-            tensor.op as u64,
-            tensor.src[3..].iter().any(|p| !p.is_null()),
-            u64::from(tensor.op_params[0] as u32),
-            u64::from(tensor.op_params[1] as u32),
-            descriptor(source.ok_or(InvalidTensor)?),
-            mask.map(descriptor),
-            sink.map(descriptor),
-            descriptor(output),
-        ))? {
-            Response::C3(plan) => Ok(Some(super::ExecutionPlan::Softmax(Box::new(plan)))),
-            _ => Err(InvalidTensor),
-        }
-    }
-
     fn head_slope(
         bias: Option<f32>,
         heads: i64,
@@ -1825,30 +1777,40 @@ mod attention {
 
     pub(super) fn plan(
         tensor: &Tensor,
-        sources: [Option<TensorDescriptor>; 5],
+        op: u64,
         output: TensorDescriptor,
     ) -> Result<Option<super::ExecutionPlan>, BackendError> {
-        let [Some(query), Some(key), Some(value), mask, sink] = sources else {
-            return Err(InvalidTensor);
-        };
-        let word = |index: usize| u64::from(tensor.op_params[index] as u32);
+        use super::ExecutionPlan;
         let descriptor = descriptor_for!(Descriptor::C0);
-        match request(Request::C0(
-            tensor.op as u64,
-            tensor.src[5..].iter().any(|p| !p.is_null()),
-            word(1),
-            word(2),
-            word(3),
-            descriptor(query),
-            descriptor(key),
-            descriptor(value),
-            mask.map(descriptor),
-            sink.map(descriptor),
+        let [a, b, c, d, e] = [0, 1, 2, 3, 4].map(|i| {
+            tensor
+                .source(i)
+                .map(super::tensor_metadata)
+                .transpose()
+                .map(|v| v.map(descriptor))
+        });
+        let [p0, p1, p2, p3, ..] = tensor.op_params.map(|w| u64::from(w as u32));
+        let trailing = tensor.src[5..].iter().any(|p| !p.is_null());
+        let query = Request::C7(
+            op,
+            trailing,
+            p0,
+            p1,
+            p2,
+            p3,
+            a?,
+            b?,
+            c?,
+            d?,
+            e?,
             descriptor(output),
-        ))? {
-            Response::C1(p) => Ok(Some(super::ExecutionPlan::Attention(Box::new(p)))),
-            _ => Err(InvalidTensor),
-        }
+        );
+        Ok(Some(match request(query)? {
+            Response::C1(p) => ExecutionPlan::Attention(Box::new(p)),
+            Response::C3(p) => ExecutionPlan::Softmax(Box::new(p)),
+            Response::C5(p) => ExecutionPlan::SparseMask(Box::new(p)),
+            _ => return Err(InvalidTensor),
+        }))
     }
 
     impl TensorInput<'_> {
@@ -1864,7 +1826,7 @@ mod attention {
         }
 
         pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
-            if super::symmetric_weight_encoding(self.ty as u64).is_some() {
+            if super::packed_weight(self.ty as u64).is_some() {
                 let (blocks, tail) = out.as_chunks_mut::<32>();
                 if !tail.is_empty() {
                     return Err(InvalidTensor);
@@ -1897,6 +1859,31 @@ mod attention {
         }
     }
 
+    enum KeyRows {
+        Scalar(Vec<f32>),
+        Symmetric(
+            linear::SymmetricWeightEncoding,
+            Vec<linear::SymmetricQ8Block<32>>,
+        ),
+        Affine(linear::AffineWeightEncoding, Vec<linear::AffineQ8Block<32>>),
+    }
+
+    fn prepare_blocks<B>(
+        query: &[f32],
+        target: &mut Vec<B>,
+        encode: impl Fn(&[f32; 32]) -> Result<B, verdant_tensor::TensorComputeError>,
+    ) -> Result<(), BackendError> {
+        let (blocks, tail) = query.as_chunks::<32>();
+        if !tail.is_empty() {
+            return Err(InvalidTensor);
+        }
+        target.clear();
+        for block in blocks {
+            target.push(encode(block)?);
+        }
+        Ok(())
+    }
+
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
         let [Some(q), Some(k), Some(v), mask, sink] = [
             tensor.input(0)?,
@@ -1910,11 +1897,14 @@ mod attention {
         let shape = q.ne;
         let key_rows = k.ne[1] as u64;
         let mut query = workspace(shape[0] as u64, 0.0)?;
-        let packed_encoding = super::symmetric_weight_encoding(k.ty as u64);
-        let (mut key, mut packed) = if packed_encoding.is_some() {
-            (Vec::new(), super::reserved(query.len() / 32)?)
-        } else {
-            (workspace(shape[0] as u64, 0.0)?, Vec::new())
+        let mut keys = match super::packed_weight(k.ty as u64) {
+            Some(super::PackedWeight::Symmetric(kind)) => {
+                KeyRows::Symmetric(kind, super::reserved(query.len() / 32)?)
+            }
+            Some(super::PackedWeight::Affine(kind)) => {
+                KeyRows::Affine(kind, super::reserved(query.len() / 32)?)
+            }
+            None => KeyRows::Scalar(workspace(shape[0] as u64, 0.0)?),
         };
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
         let output = graph_tensor_data(tensor)?;
@@ -1939,15 +1929,20 @@ mod attention {
                     };
                     q.decode(qoff, &mut query)?;
                     // GGML prepares the query in the key's dot-product storage once per head.
-                    if dot_type == 8 {
-                        packed.clear();
-                        for block in query.as_chunks::<32>().0 {
-                            packed.push(linear::encode_symmetric_q8_block(block)?);
+                    match (&mut keys, dot_type) {
+                        (KeyRows::Symmetric(_, blocks), 8) => {
+                            prepare_blocks(&query, blocks, linear::encode_symmetric_q8_block)?
                         }
-                    } else if dot_type != 0 {
-                        for word in &mut query {
-                            *word = super::prepare_float(0, dot_type, word.to_bits().into())?;
+                        (KeyRows::Affine(_, blocks), 9) => {
+                            prepare_blocks(&query, blocks, linear::encode_affine_q8_block)?
                         }
+                        (KeyRows::Scalar(_), 0) => {}
+                        (KeyRows::Scalar(_), 30) => {
+                            for word in &mut query {
+                                *word = super::prepare_float(0, dot_type, word.to_bits().into())?;
+                            }
+                        }
+                        _ => return Err(InvalidTensor),
                     }
                     let mut mean = WeightedMeanF32::new(value.len());
                     for row in 0..key_rows {
@@ -1966,17 +1961,23 @@ mod attention {
                             None => 0.0,
                         };
                         let key_offset = koff + row * ks;
-                        let dot = if let Some(encoding) = packed_encoding {
-                            linear::dot_encoded_symmetric_row(
-                                k.blocks(key_offset, packed.len())?,
-                                &packed,
-                                encoding,
-                            )?
-                        } else {
-                            k.decode(key_offset, &mut key)?;
-                            let mut dot = [0.0];
-                            multiply_matrix_rows_f32(1, key.len(), 1, &key, &query, &mut dot)?;
-                            dot[0]
+                        let dot = match &mut keys {
+                            KeyRows::Symmetric(kind, blocks) => linear::dot_encoded_symmetric_row(
+                                k.blocks(key_offset, blocks.len())?,
+                                blocks,
+                                *kind,
+                            )?,
+                            KeyRows::Affine(kind, blocks) => linear::dot_affine_weight_row(
+                                k.blocks(key_offset, blocks.len())?,
+                                blocks,
+                                *kind,
+                            )?,
+                            KeyRows::Scalar(key) => {
+                                k.decode(key_offset, key)?;
+                                let mut dot = [0.0];
+                                multiply_matrix_rows_f32(1, key.len(), 1, key, &query, &mut dot)?;
+                                dot[0]
+                            }
                         };
                         v.decode(voff + row * vs, &mut value)?;
                         let mut scaled = scalar(2, dot, scale)?;

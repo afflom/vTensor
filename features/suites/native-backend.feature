@@ -230,3 +230,9 @@ Feature: native-backend
     Given original ordinary matrix indexed expert and extended attention graphs
     When vTensor runs with signed five-bit or nonlinear four-bit rows
     Then the imported CPU accepts each numerical output
+
+  @VT-95 @build
+  Scenario: Prism binds affine four- and five-bit matrix and attention rows to Verdant activation encoding, row products and value decoding
+    Given original ordinary matrix indexed expert and extended attention graphs
+    When vTensor runs with affine four- or five-bit weight rows
+    Then the imported CPU accepts each numerical output

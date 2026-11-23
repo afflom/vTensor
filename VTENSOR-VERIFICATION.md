@@ -5008,3 +5008,9 @@ All 674 original Q5_0 and IQ4_NL attention graphs completed, including the 192 p
 ### Compact row acceptance
 
 The locked SDK ran `just vv` on vTensor `1a62f2826abb30dbfe32d16b76969241cc3bc21a` with Verdant PR #33 pinned at `709ca3b02fb3c61109b1ee4a3a07d3e0034d2904`. It rebuilt the Prism proof after its inputs changed. All 102 backend contracts passed with zero ignored or filtered. The model, BDD, remaining workspace tests and dependency audit passed. The complete gate exited 0.
+
+### Affine matrix and attention rows
+
+VT-95 imports Q8_1 preparation and Q4_1/Q5_1 row products from Verdant PR #34 at `0c70cf1d9e52268a9a1b5af913aee4c177103e56`. Prism selects graph operands and maps GGML layouts and strides. vTensor prepares each query once and passes its encoded blocks to Verdant for each key row.
+
+Before implementation, the original Q4_1 matrix graph at ordinal 13468 was refused. Reusing the first affine key row on the implemented backend produced error 0.125441625 at the 0.000500000 limit on Q5_1 attention ordinal 19542. Restoring the Prism key offset passed the eight bound factory graphs. The shared placement path also passed the softmax, sparse-mask, head-bias, typed-execution and VT-02 dependency regressions.
