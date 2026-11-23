@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,083 passed**, **1,672 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,264 passed**, **1,491 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -17,7 +17,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Confirm Verdant main includes the PR #32 pin and its prerequisites. [Upstream integration](https://github.com/afflom/verdant-engine/commit/0001659b991a054cd6c48fdf2cd5b18d1cb1398f)
 - [x] Confirm Verdant main includes VTK-36 through VTK-40 and the provider’s pinned block encoders. [Upstream integration](https://github.com/afflom/verdant-engine/commit/a51262d2008b030b290f70cd0b39a080f72cb4e9)
 - [x] Verify the Verdant release dependency closure and confirm it landed on upstream main. A clean consumer executes the encoder, and a missing archive fails the release verifier. [Upstream integration](https://github.com/afflom/verdant-engine/commit/2c6ff1c) · [Verdant PR #38](https://github.com/afflom/verdant-engine/pull/38)
-- [ ] Switch to published Verdant packages when a release contains the pinned primitives. Verify provenance, checksums and a clean consumer build. [Current patch](model/verdant-development.json) · [Verdant releases](https://github.com/afflom/verdant-engine/releases)
+- [ ] Switch to published Verdant packages when a release contains the pinned primitives. Verify provenance, checksums and a clean consumer build. Verdant v2.20.0 includes the Cargo package closure. The VTK-41 encoders and VTK-42 row products still require patches. [Current patch](model/verdant-development.json) · [Verdant releases](https://github.com/afflom/verdant-engine/releases)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
@@ -57,7 +57,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass the 1,312 CPU-refused OUT_PROD graphs against the upstream decoder and F32 CPU contraction. All 1,543 factory outer products now have passing comparisons. [VT-73 evidence](verification/factory-decoded-outer-products-vt73.json)
 - [x] Pass 68 additional dense matrix and activation compositions across F32, F16, Q4_0, Q8_0 and Q2_K. [Full-graph comparisons](verification/factory-dense-matrix-fusions.json)
 - [x] Pin the four block encoders from Verdant PR #37 and pass VT-02. All 96 Q4/Q5 SET_ROWS and 25 CPY cases pass the original GGML factory comparisons. [VT-105 results](verification/factory-low-bit-writes-vt105.json) · [Verdant byte comparisons](https://github.com/afflom/verdant-engine/pull/37)
-- [ ] Complete embedding, projection and KV-cache operations. Implement the 432 refused SET_ROWS factory cases, the 110 unresolved CPY cases, block encoding and quantized dot products, the 445 refused standalone MUL_MAT cases, precision modes and 34 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
+- [ ] Complete embedding, projection and KV-cache operations. Implement the 432 refused SET_ROWS factory cases, the 110 unresolved CPY cases, block encoding and quantized dot products, the 319 refused standalone MUL_MAT cases, precision modes and 34 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 230 Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs, including skipped experts and offset index views. [VT-83 results](verification/factory-indexed-products-vt83.json)
 - [x] Pass the 130 newly admitted packed expert compositions, including six shared-expert graphs and 124 matrix fusions. [Original full-graph comparisons](verification/factory-indexed-expert-compositions.json)
 - [x] Execute all 251 F32, F16 and BF16 MUL_MAT_ID cases, including invalid expert IDs and strided index views. [VT-84 results](verification/factory-scalar-experts-vt84.json)
@@ -65,7 +65,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 157 MUL_MAT and 73 MUL_MAT_ID graphs with E4M3 weights. [VT-85 comparisons](verification/factory-e4m3-products-vt85.json)
 - [x] Pass all 164 newly admitted E4M3 matrix fusions. [Full-graph comparisons](verification/factory-e4m3-compositions.json)
 - [x] Supply Q3_K and Q6_K row products in Verdant. All 196 output words matched the pinned GGML CPU. [Verdant PR #40](https://github.com/afflom/verdant-engine/pull/40)
-- [ ] Pass the 126 Q3_K/Q6_K matrix cases, 21 expert cases and 33 matrix fusions on the provider. [Factory ordinals](verification/ggml-factory-cases.tsv.gz)
+- [x] Pass the 126 Q3_K/Q6_K matrix cases, 21 expert cases, 32 matrix fusions and both ADD compositions. [181 GGML comparisons](verification/factory-grouped-signed-products-vt110.json)
+- [ ] Pass Q6_K fusion 26776 with SWIGLU_OAI. [Factory case](verification/ggml-factory-cases.tsv.gz)
 - [x] Supply grouped affine Q4_K and Q5_K row products in Verdant. All 196 output words matched the pinned CPU. [Engine PR #30](https://github.com/afflom/verdant-engine/pull/30)
 - [x] Pass all 227 ordinary and 119 indexed Q4_K/Q5_K matrix products with F32 activations. [VT-88 results](verification/factory-affine-vt88.json)
 - [x] Pass 174 additional Q4_K/Q5_K compositions, including the final three MUL_MAT_ID_FUSION cases. [Full-graph comparisons](verification/factory-affine-compositions.json)
@@ -74,7 +75,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 72 Q1_0/Q2_0 products with F16 activations and 170 additional F32 matrix fusions. [CPU widening reference](verification/factory-bitrows-half-activations.json) · [Fusion comparisons](verification/factory-bitrows-compositions.json)
 - [x] Implement MXFP4/NVFP4 row products in Verdant and dispatch them from vTensor matrix plans. All 1,024 CPU row comparisons and four bound provider graphs passed. [Verdant verification](https://github.com/afflom/verdant-engine/blob/8b6bbc2c/ENGINE-VERIFICATION.md#vtk-38-block-float-row-products)
 - [x] Pass all 215 block-float MUL_MAT, 171 MUL_MAT_ID and 371 composition graphs. [757 GGML CPU comparisons](verification/factory-block-float-products-vt99.json)
-- [ ] Pass the remaining 70 block-encoded MUL_MAT_ID cases. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
+- [ ] Pass the remaining 49 block-encoded MUL_MAT_ID cases. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
 - [x] Pass all 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 533 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
@@ -97,7 +98,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 12 TANH graphs and the composed SOFTCAP graph on Verdant PR #25. [VT-67 results](verification/factory-hyperbolic-vt68.json)
 - [x] Pass all 241 zero-bias F16 attention graphs with soft cap 10. 241 pass. [VT-68 results](verification/factory-hyperbolic-vt68.json)
 - [x] Pass all 12 SWIGLU_CLAMP graphs across F32, F16 and BF16 and 303 newly supported matrix fusions. [VT-93 results](verification/factory-clamped-swiglu-vt93.json)
-- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, SWIGLU_OAI and GEGLU_ERF, and their composed graphs. Close the 12 refused standalone ADD cases. The other 161 pass. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
+- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, SWIGLU_OAI and GEGLU_ERF, and their composed graphs. Close the 10 refused ADD cases. The other 163 pass. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract
