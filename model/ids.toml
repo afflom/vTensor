@@ -532,3 +532,9 @@ id = "VT-78"
 level = "build"
 suite = "native-backend"
 statement = "Prism binds head-specific masked attention and Verdant evaluates linear bias slopes before the weighted mean"
+
+[[id]]
+id = "VT-79"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant"

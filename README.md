@@ -118,6 +118,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-75` | build | Executes the 64 Gaussian unary and composed factory graphs using the Verdant primitives and the GGML binary32 lookup-table precision profile. [Results](verification/factory-gaussian-activations-vt75.json) |
 | `VT-76` | build | Runs original channel-major convolution graphs against independently materialized CPU operands. [Case-level comparisons](verification/factory-contiguous-convolution-vt76.json) |
 | `VT-77` | build | Executes split, combined and swapped REGLU, GEGLU and GEGLU_QUICK rows using Verdant. [All 108 original cases](verification/factory-gated-activations-vt77.json) |
+| `VT-79` | build | Executes forward average and maximum pooling. All 384 factory graphs and four F16 graphs match the imported CPU oracle. [Oracle results](verification/factory-pooling-vt79.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32

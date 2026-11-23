@@ -128,3 +128,9 @@ Feature: native-backend
     Given original attention graphs with head-specific mask scaling
     When the GGML CPU and vTensor process the same query keys values and masks
     Then each output matches the upstream comparator and tolerance
+
+  @VT-79 @build
+  Scenario: Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant
+    Given original GGML pooling graphs with strided windows and padding
+    When vTensor executes the windows and their dimension-specific padding rules
+    Then every result matches the original GGML CPU evaluator

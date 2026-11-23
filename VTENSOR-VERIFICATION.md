@@ -4862,3 +4862,15 @@ The storage, allocation and transfer tests now share one oracle executable and o
 ### Rectified and Gaussian gated rows
 
 VT-77 compares all 36 original factory cases for each of REGLU, GEGLU and GEGLU_QUICK against GGML CPU. Prism resolves gate selection, operand order and addresses. Verdant performs the comparisons, storage conversions, activations and products. Swapping the activation and gate inputs failed REGLU ordinal 584 with error 0.967962058 against the upstream limit of 0.0000001. Restoring the operands passed all 108 cases. VT-04 also verifies the values and order of every GLU enumerator against the imported header. [Factory and mutation evidence](verification/factory-gated-activations-vt77.json)
+
+### Shared GGML CPU oracle object
+
+The SDK combines the five imported GGML core objects into one relocatable object. Storage and graph oracles link the same bytes. Each cached graph check verifies one shared object and its SHA-256 stamp. The loader still checks the executable independently. The storage oracle, fixed-matrix contract and three contiguous-convolution graphs passed. Changing one byte at offset 504,024 of the 1,008,048-byte object made the graph check reject its digest before execution. Restoring the original object passed the same graph check. The change reduced the measured native source from 12,117 to 12,099 lines.
+
+### VT-76 complete checkpoint
+
+The full locked-SDK `just vv` passed on vTensor `4231e4422b59cb75a5671ad05913c4ee44de076e` using Verdant PR #26. All 83 backend contract tests passed, including the Gaussian operations, direct convolution and the independent contiguous CPU reference. The workspace checks and cargo-deny passed. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/4231e4422b59cb75a5671ad05913c4ee44de076e)
+
+### Forward pooling
+
+VT-79 covers all 240 POOL_1D and 144 POOL_2D factory graphs and four additional F16 graphs. The Prism model plans each window and requests Verdant storage conversion, addition, comparison, count conversion and division. One-dimensional average pooling divides by the valid width. Two-dimensional average pooling includes padded elements in the divisor. Swapping average and maximum at the parameter binding failed the padded F16 one-dimensional case. GGML CPU returned zero and vTensor returned negative FLT_MAX. Restoring the binding passed all four affected contracts. The provider retained the five approved GGML host imports. [Case ordinals, hashes and planted defect](verification/factory-pooling-vt79.json)
