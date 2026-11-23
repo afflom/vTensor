@@ -60,6 +60,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Complete sorting, TOP_K and masks, expert routing, indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
 - [x] Pass all 2,051 IM2COL_3D factory cases. The 1,539 previous refusals now match the CPU for F32/F16 output, padded and dilated inputs and views. [VT-70 results](verification/factory-image-columns-vt70.json)
 - [x] Pass all 113 IM2COL factory cases, both supplemental F16-input graphs and all nine CONV_1D_DW compositions. [VT-72 evidence](verification/factory-planar-columns-vt72.json)
+- [ ] Pass the 2,030 directly CPU-supported CONV_2D cases with Verdant matrix contraction. Cover the 1,114 CPU-refused layouts against a contiguous GGML CPU reference. [Direct convolution regression](https://github.com/afflom/vTensor/commit/d251fe8fbe9d4d6162af6d22570b503955ba623c)
 - [ ] Complete convolution, im2col/col2im, transpose/depthwise forms, pooling, upscaling, timestep embeddings and their defined backward paths.
 - [ ] Complete SSM convolution/scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
 - [ ] Complete remaining gradients, cross-entropy, SGD and AdamW. Exercise applicable upstream gradient checks and parameter updates.
