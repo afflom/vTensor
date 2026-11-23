@@ -852,6 +852,12 @@ impl<'a> TensorInput<'a> {
         })
     }
 
+    fn float_block<const N: usize>(&self, offset: u64) -> Result<[f32; N], BackendError> {
+        let mut lanes = [0.0; N];
+        self.decode(offset, &mut lanes)?;
+        Ok(lanes)
+    }
+
     fn region(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
         if count == 0 {
             return Ok(&[]);
@@ -947,12 +953,12 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         return Err(BackendError::InvalidTensor);
     };
     let request = |query| run(query).map_err(|_| BackendError::Overflow);
-    let width = usize::try_from(activations.ne[0]).map_err(|_| BackendError::Overflow)?;
-    let mut widened = workspace(if activations.ty == 1 { width as u64 } else { 0 }, 0.0_f32)?;
-    let column_bytes = width.checked_mul(4).ok_or(BackendError::Overflow)?;
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = workspace(visits, 0u64)?;
+    let stride = LANES
+        .checked_mul(activations.nb[0])
+        .ok_or(BackendError::Overflow)? as u64;
     let mut prepared = reserved(usize::try_from(blocks).map_err(|_| BackendError::Overflow)?)?;
     for (column, (values, offset)) in results
         .chunks_exact_mut(rows as usize)
@@ -976,18 +982,10 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         };
         *offset = dest;
         prepared.clear();
-        let source = if activations.ty == 1 {
-            activations.decode(activation, &mut widened)?;
-            widened.as_ptr().cast::<u8>()
-        } else {
-            activations.region(activation, column_bytes)?.as_ptr()
-        }
-        .cast::<[f32; LANES]>();
-        for block in 0..blocks {
-            // SAFETY: both branches supply the entire column as contiguous binary32.
-            // Imported GGML views can begin at an unaligned address.
-            let lanes = unsafe { source.add(block as usize).read_unaligned() };
-            prepared.push(encode(&lanes)?);
+        let mut from = activation;
+        for _ in 0..blocks {
+            prepared.push(encode(&activations.float_block(from)?)?);
+            from = from.checked_add(stride).ok_or(BackendError::Overflow)?;
         }
         execution.fill(values, |first, chunk| {
             let mut scratch = workspace(scratch_width, 0.0_f32)?;
@@ -1200,11 +1198,25 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let (left, secondary) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
     let primary = graph_tensor_data(left)?;
     let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
+    let block_source = (tensor.ty == 8)
+        .then(|| TensorInput::new(left))
+        .transpose()?;
+    const _: () = assert!(size_of::<linear::SymmetricQ8Block<32>>() == 34);
+    let mut block_writes = Vec::new();
     let output = graph_tensor_data(tensor)?;
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
                 .map_err(|_| BackendError::Overflow)?;
+        if let vtensor_typed::Adt3::C6(from, to) = instruction {
+            let source = block_source.as_ref().ok_or(BackendError::InvalidTensor)?;
+            let block = linear::encode_symmetric_q8_block(&source.float_block::<32>(from)?)?;
+            block_writes
+                .try_reserve(1)
+                .map_err(|_| BackendError::Allocation)?;
+            block_writes.push((to, block));
+            continue;
+        }
         if let vtensor_typed::Adt3::C5(from, to, width, count, descending) = instruction {
             let rank = match &mut ranker {
                 Some(rank) => rank,
@@ -1261,6 +1273,11 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
             write_bytes
         );
         execute_word(pointwise(request)?, &pointers, output, &mut words)?;
+    }
+    for (offset, block) in block_writes {
+        // SAFETY: Prism bounded each complete block in the destination. All reads and
+        // numerical conversions have finished, including any overlapping source views.
+        unsafe { std::ptr::write_unaligned(output.add(offset as usize).cast(), block) };
     }
     Ok(())
 }
@@ -1813,6 +1830,12 @@ mod attention {
         }
 
         pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
+            if self.ty == 0 && (self.nb[0] == size_of::<f32>() || out.len() == 1) {
+                let bytes = self.region(offset, size_of_val(out))?;
+                // SAFETY: out exclusively owns the full destination and every binary32 word is valid.
+                unsafe { super::write_row(out.as_mut_ptr().cast(), bytes) };
+                return Ok(());
+            }
             if self.block_lanes > 1 {
                 let source = self.blocks(offset, out.len())?;
                 for (input, block) in source
@@ -1825,7 +1848,6 @@ mod attention {
             }
             // A scalar read has no inter-element stride. The Prism offset already selects its lane.
             let width = match (out.len(), self.ty) {
-                (1, 0) => size_of::<f32>(),
                 (1, 1 | 30) => size_of::<u16>(),
                 (1, 43) => 1,
                 _ => self.nb[0],
@@ -1833,7 +1855,6 @@ mod attention {
             let bytes = out.len().checked_mul(width).ok_or(Overflow)?;
             for (bytes, value) in self.region(offset, bytes)?.chunks_exact(width).zip(out) {
                 *value = match (self.ty as u64, bytes) {
-                    (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
                     (43, &[byte]) => super::decode_float(43, byte.into())?,
                     (kind @ (1 | 30), &[a, b]) => {
                         super::decode_float(kind, u16::from_ne_bytes([a, b]).into())?

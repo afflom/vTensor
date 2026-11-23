@@ -672,3 +672,9 @@ id = "VT-100"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps indexed scalar row writes to E4M3 storage and Verdant performs the signed conversion after source widening"
+
+[[id]]
+id = "VT-101"
+level = "build"
+suite = "native-backend"
+statement = "Prism selects scalar source lanes and destination blocks for copies and indexed row writes while Verdant encodes Q8_0"

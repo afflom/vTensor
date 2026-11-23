@@ -368,7 +368,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xae573b33 }]
+license-files = [{ path = "src/lib.rs", hash = 0xf30b558a }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"
@@ -542,7 +542,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x3d287b3a }]
 name = "vtensor_probes"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x6defd61a }]
+license-files = [{ path = "src/lib.rs", hash = 0x17852b2b }]
 
 [[licenses.clarify]]
 name = "verdant_weighted_blend"

@@ -1,6 +1,7 @@
 \begin{lexlean}{FixtureProbes}
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
+\importmodule{MatrixFixtures}
 \title{Natural number}
 \begin{semanticmodule}
 inductive{
@@ -14,7 +15,8 @@ inductive{
     {name: transfer, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: layout, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: boundaryLayout, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: matrixRequest, fields: [Nat, Nat, Nat, Nat, Nat]}
+    {name: observed, fields: [Bool]},
+    {name: emptyRow, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -91,10 +93,20 @@ definition{
 }
 
 definition{
+  name: matrixRefusal,
+  parameters: [family : Nat, request : MatrixFixtures::Request],
+  result: Probe,
+  body: (ctor Probe.observed (match (MatrixFixtures::evaluate family request)
+    | Option.none => true
+    | Option.some value => false)),
+  executable: true
+}
+
+definition{
   name: matrixRefusals,
   parameters: [index : Nat],
   result: Probe,
-  body: (if (index =? 0) then (ctor Probe.matrixRequest 1 0 0 0 0) else (if (index =? 1) then (ctor Probe.matrixRequest 0 0 4 0 0) else (if (index =? 2) then (ctor Probe.matrixRequest 0 1 1280 0 0) else (if (index =? 3) then (ctor Probe.matrixRequest 0 1 0 24 0) else (if (index =? 4) then (ctor Probe.matrixRequest 0 2 0 2 0) else (if (index =? 5) then (ctor Probe.matrixRequest 0 3 0 0 0) else (ctor Probe.end))))))),
+  body: (if (index =? 0) then (matrixRefusal 1 (ctor MatrixFixtures::Request.describe 0)) else (if (index =? 1) then (matrixRefusal 0 (ctor MatrixFixtures::Request.describe 4)) else (if (index =? 2) then (matrixRefusal 0 (ctor MatrixFixtures::Request.metadata 1280 0)) else (if (index =? 3) then (matrixRefusal 0 (ctor MatrixFixtures::Request.metadata 0 24)) else (if (index =? 4) then (matrixRefusal 0 (ctor MatrixFixtures::Request.extent 0 2 0)) else (if (index =? 5) then (matrixRefusal 0 (ctor MatrixFixtures::Request.word 0 0 0)) else (ctor Probe.end))))))),
   executable: true
 }
 
@@ -110,7 +122,7 @@ definition{
   name: evaluate,
   parameters: [suite : Nat, index : Nat, block : Nat, bytes : Nat],
   result: Probe,
-  body: (if (suite =? 35) then (matrixRefusals index) else (if (suite =? 106) then (layoutBoundaries index) else (if (suite =? 6) then (layoutProbe index block bytes) else (if (suite =? 10) then (allocation index) else (if (suite =? 9) then (transfers index) else (if (suite =? 47) then (spatialProbes index) else (if (suite =? 44) then (typedProbes index) else (if (suite =? 43) then (concatProbes index) else (if (suite =? 42) then (repeatProbes index) else (if (suite =? 41) then (copyProbes index) else (if (suite =? 36) then (arithmeticProbes index) else (ctor Probe.end)))))))))))),
+  body: (if (suite =? 30) then (if (index =? 0) then (ctor Probe.emptyRow 13 0 0 1099511627776) else (if (index =? 1) then (ctor Probe.emptyRow 18 26 27 1099511627776) else (ctor Probe.end))) else (if (suite =? 35) then (matrixRefusals index) else (if (suite =? 106) then (layoutBoundaries index) else (if (suite =? 6) then (layoutProbe index block bytes) else (if (suite =? 10) then (allocation index) else (if (suite =? 9) then (transfers index) else (if (suite =? 47) then (spatialProbes index) else (if (suite =? 44) then (typedProbes index) else (if (suite =? 43) then (concatProbes index) else (if (suite =? 42) then (repeatProbes index) else (if (suite =? 41) then (copyProbes index) else (if (suite =? 36) then (arithmeticProbes index) else (ctor Probe.end))))))))))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }

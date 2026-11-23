@@ -821,7 +821,6 @@ dependencies = [
  "vtensor_attention_mask",
  "vtensor_buffer_region",
  "vtensor_fixture_stream",
- "vtensor_fixtures",
  "vtensor_index",
  "vtensor_layout",
  "vtensor_matrix_execution",

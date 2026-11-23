@@ -111,7 +111,7 @@ ggml_batches! {
     fn reduction_graphs_vt_29() { "reduction", 4080, [] }
     /// `VT-30`: Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs
     #[test]
-    fn row_graphs_vt_30() { "rows", 2264, [] => verify_row_graphs() }
+    fn row_graphs_vt_30() { "rows", 2264, ["pointwise"] => verify_row_graphs() }
     /// `VT-31`: Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals
     #[test]
     fn row_gradient_graphs_vt_31() { "row-gradient", 3360, [] }
@@ -254,6 +254,9 @@ ggml_batches! {
 
     #[test]
     fn e4m3_row_stores_vt_100() { "upstream-E4M3_ROW_STORES", 40, ["typed", "pointwise"] }
+
+    #[test]
+    fn q8_storage_writes_vt_101() { "upstream-Q8_STORAGE_WRITES", 31, ["typed"] }
 
     #[test]
     fn affine_weight_rows_vt_95() { "upstream-AFFINE_WEIGHT_ROWS", 8, ["attention", "matrix"] }
@@ -415,23 +418,19 @@ fn buffer_allocation_vt_10() {
 
 fn verify_row_graphs() {
     use vtensor_pointwise::{
-        Adt0 as Request, Adt1 as Parameters, Adt10 as Plan, Adt2 as Descriptor, Adt9 as Response,
+        Adt0::C0 as plan, Adt1::C0 as params, Adt10, Adt2::C0 as tensor, Adt9,
     };
-    for (operation, ty, output_type) in [(13, 0, 0), (18, 26, 27)] {
-        let empty = Descriptor::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
-        let output = Descriptor::C0(output_type, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
-        let params = Parameters::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        let request = Request::C0(
-            operation,
-            params,
-            Some(empty.clone()),
-            Some(empty),
-            None,
-            output,
-        );
+    for probe in probes(30, 2, 0, 0) {
+        let vtensor_probes::Adt0::C7(op, ty, dest, extent) = probe else {
+            panic!("missing empty row")
+        };
+        let empty = Some(tensor(ty, 0, extent, extent, extent, 4, 0, 0, 0, 0, 0));
+        let output = tensor(dest, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
+        let parameters = params(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let request = plan(op, parameters, empty.clone(), empty, None, output);
         assert!(matches!(
             vtensor_pointwise::run(request),
-            Ok(Response::C0(Plan::C4(2, ..)))
+            Ok(Adt9::C0(Adt10::C4(2, ..)))
         ));
     }
 }
@@ -441,18 +440,7 @@ fn verify_row_graphs() {
 fn fixture_generation_vt_35() {
     native_backend_oracle::fixture_input(0);
     for probe in probes(35, 6, 0, 0) {
-        use vtensor_fixtures::Adt0 as Request;
-        let vtensor_probes::Adt0::C6(family, op, a, b, c) = probe else {
-            panic!("missing matrix fixture")
-        };
-        let request = match op {
-            0 => Request::C0(a),
-            1 => Request::C1(a, b),
-            2 => Request::C2(a, b, c),
-            3 => Request::C3(a, b, c),
-            _ => panic!("unexpected matrix fixture request"),
-        };
-        assert_eq!(vtensor_fixtures::run(family, request).unwrap(), None);
+        assert!(matches!(probe, vtensor_probes::Adt0::C6(true)));
     }
 }
 
@@ -1262,20 +1250,17 @@ mod tensor_layout {
         );
     }
 
-    fn storage_metadata() -> &'static [[u64; 3]] {
-        static METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
-            certified_current_model(&super::root(), "layout");
-            let kinds = &*super::ggml_inventory::STORAGE_TYPES;
-            let input: String = kinds
-                .iter()
-                .map(|kind| format!("{kind} 0 0 0 0 0 0 0 0\n"))
-                .collect();
-            let metadata = ggml_oracle::rows("storage", &input);
-            assert_eq!(metadata.len(), kinds.len(), "oracle omitted a type");
-            metadata
-        });
-        &METADATA
-    }
+    static STORAGE_METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
+        certified_current_model(&super::root(), "layout");
+        let kinds = &*super::ggml_inventory::STORAGE_TYPES;
+        let input: String = kinds
+            .iter()
+            .map(|kind| format!("{kind} 0 0 0 0 0 0 0 0\n"))
+            .collect();
+        let metadata = ggml_oracle::rows("storage", &input);
+        assert_eq!(metadata.len(), kinds.len(), "oracle omitted a type");
+        metadata
+    });
 
     /// `VT-06`: The Prism-generated four-dimensional byte-span function matches the pinned GGML storage oracle and rejects invalid blocks and arithmetic overflow
     #[test]
@@ -1283,7 +1268,7 @@ mod tensor_layout {
         let kinds = &*super::ggml_inventory::STORAGE_TYPES;
         let mut inputs = String::new();
         let mut layouts = Vec::new();
-        for (&kind, &[_, block, bytes]) in kinds.iter().zip(storage_metadata()) {
+        for (&kind, &[_, block, bytes]) in kinds.iter().zip(STORAGE_METADATA.iter()) {
             assert!(
                 block > 0 && bytes > 0,
                 "invalid upstream descriptor for type {kind}"
@@ -1326,7 +1311,7 @@ mod tensor_layout {
     #[test]
     fn tensor_layout_vt_07() {
         let kinds = &*super::ggml_inventory::STORAGE_TYPES;
-        for (&kind, &[_, block, bytes]) in kinds.iter().zip(storage_metadata()) {
+        for (&kind, &[_, block, bytes]) in kinds.iter().zip(STORAGE_METADATA.iter()) {
             let vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(id, lanes, width)) =
                 vtensor_types::run(kind)
             else {
@@ -1477,7 +1462,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "d64f13a596952bfb323ca297a70cb7b920ecf8a487e740ec7e9a6a0ddaf7e8d6",
+            "c6583fb4d72c68496f46d82c4580a301f38511fb26ac75ceb4462939204142f8",
         )
     });
 
@@ -1964,7 +1949,7 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
 }
 "##;
 
-    const HEADER: &str = r##"#include "ggml.h"
+    const HEADER: &str = r##"#include "ggml-cpp.h"
 #include "ggml-backend.h"
 #include "ggml-backend-impl.h"
 #include "ggml-alloc.h"
@@ -1980,6 +1965,7 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
 #include <iterator>
 #include <filesystem>
 #include <limits>
+#include <numeric>
 #include <vector>
 #include <dlfcn.h>
 #include <sys/wait.h>
@@ -2019,6 +2005,18 @@ static void recipe_state(uint64_t phase) {
     }
 }
 static void unexpected_abort(const char *message) { fprintf(stderr, "upstream abort at type %d layout %d: %s\n", current_kind, current_layout, message); _exit(99); }
+struct graph_fixture {
+    ggml_context_ptr arena;
+    ggml_backend_buffer_ptr storage;
+    explicit graph_fixture(size_t tensors) : arena(ggml_init({ggml_graph_overhead()+tensors*ggml_tensor_overhead(),nullptr,true})) {}
+    operator ggml_context *() const { return arena.get(); }
+    ggml_cgraph *allocate(ggml_tensor *out, ggml_backend_t backend) {
+        auto graph=ggml_new_graph(arena.get());
+        ggml_build_forward_expand(graph,out);
+        storage.reset(ggml_backend_alloc_ctx_tensors(arena.get(),backend));
+        return storage ? graph : nullptr;
+    }
+};
 template<class T, class U>
 static bool refuses_change(ggml_backend_t backend, ggml_backend_dev_t dev, ggml_cgraph *graph, ggml_tensor *result, T &field, U bad, bool capability=true) {
     ++refusal_probes;
@@ -2136,12 +2134,10 @@ int main(int argc, char **argv) {
                 auto invalid=one;invalid.poll=101;CHECK(!create(&invalid));
             }
             auto first=create(&one), second=create(&two); CHECK(first && second && first!=second);
-            auto ctx=ggml_init({ggml_graph_overhead()+8*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+            graph_fixture ctx(8); CHECK(ctx);
             auto input=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,32);
             auto weights=ggml_new_tensor_2d(ctx,GGML_TYPE_Q8_0,32,17);
-            auto output=ggml_mul_mat(ctx,weights,input); auto graph=ggml_new_graph(ctx);
-            ggml_build_forward_expand(graph,output);
-            auto storage=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(storage);
+            auto output=ggml_mul_mat(ctx,weights,input); auto graph=ctx.allocate(output,selected); CHECK(graph);
             std::array<float,32*17> original{};
             for(size_t i=0;i<original.size();i++) original[i]=float(int(i/32)+1)*float(int(i%7)-3);
             std::vector<uint8_t> encoded(ggml_nbytes(weights));
@@ -2160,22 +2156,18 @@ int main(int argc, char **argv) {
                 else CHECK(result==expected[step]);
             }
             release(first);release(second);release(nullptr);
-            ggml_backend_buffer_free(storage);ggml_free(ctx);
+
         }
         return finish(expected.size());
     }
     if (!strcmp(argv[3],"iq2-identity-copy")) {
         for (auto selected : {reference, backend}) {
-            auto ctx=ggml_init({ggml_graph_overhead()+8*ggml_tensor_overhead(),nullptr,true});
-            CHECK(ctx);
+            graph_fixture ctx(8); CHECK(ctx);
             auto src=ggml_new_tensor_4d(ctx,GGML_TYPE_IQ2_XXS,256,2,3,4);
             ggml_set_param(src);
             auto dst=ggml_dup_tensor(ctx,src);
             auto out=ggml_cpy(ctx,src,dst);
-            auto graph=ggml_new_graph(ctx);
-            ggml_build_forward_expand(graph,out);
-            auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected);
-            CHECK(buffer);
+            auto graph=ctx.allocate(out,selected); CHECK(graph);
             std::vector<uint8_t> data(ggml_nbytes(src)), observed(data.size(),0);
             for(size_t i=0;i<data.size();++i) data[i]=uint8_t(i*197+19);
             ggml_backend_tensor_set(src,data.data(),0,data.size());
@@ -2183,7 +2175,7 @@ int main(int argc, char **argv) {
             CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
             ggml_backend_tensor_get(out,observed.data(),0,observed.size());
             CHECK(observed==data);
-            ggml_backend_buffer_free(buffer); ggml_free(ctx);
+
         }
         return finish(1);
     }
@@ -2226,15 +2218,14 @@ int main(int argc, char **argv) {
       if (!strcmp(argv[3]+9,"TOP_K_MASK_VARIANTS")) {
         std::array<uint32_t,28> expected{};
         for(auto selected : {reference,backend}) {
-          auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true}); CHECK(ctx);
+          graph_fixture ctx(12); CHECK(ctx);
           auto mask=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,4);
           auto top=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,7,2,2);
           auto scores=ggml_new_tensor_3d(ctx,GGML_TYPE_F32,4,2,2);
           auto extra=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,3,2,2);
           auto out=ggml_top_k_mask(ctx,mask,top,scores,nullptr,extra);
           out->nb[2]=8*sizeof(uint32_t); out->nb[1]=2*out->nb[2]; out->nb[3]=2*out->nb[1];
-          auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
-          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+          auto graph=ctx.allocate(out,selected); CHECK(graph);
           const uint32_t words[]={0x3f800000,0x80000000,0x7fc01234,1};
           const uint32_t gates[]={0xff800000,0x7f800000,0x7fc01234,0x80000000,0,0xff800000,0xff800000,0xff800000};
           const int32_t picks[]={0,1,2,3,-1,99,1,0,1,2,3,-1,99,1}, extras[]={-1,99,2,-1,99,3};
@@ -2251,7 +2242,7 @@ int main(int argc, char **argv) {
             CHECK(refuses_change(backend,dev,graph,out,scores->ne[1],int64_t(3)));
             CHECK(refuses_change(backend,dev,graph,out,out->src[5],extra));
           }
-          ggml_backend_buffer_free(buffer); ggml_free(ctx);
+
         }
       }
       if (!strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
@@ -2259,12 +2250,11 @@ int main(int argc, char **argv) {
         for (int swapped : {0,1}) {
           std::array<float,6> expected;
           for (auto selected : {reference,backend}) {
-            auto ctx=ggml_init({ggml_graph_overhead()+4*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+            graph_fixture ctx(4); CHECK(ctx);
             auto x=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,inputs.size());
             auto out=ggml_swiglu_clamp(ctx,x,nullptr,2.f);
             out->op_params[1]=swapped;
-            auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
-            auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+            auto graph=ctx.allocate(out,selected); CHECK(graph);
             ggml_backend_tensor_set(x,inputs.data(),0,sizeof(inputs));
             CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
             std::array<float,6> actual; ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
@@ -2275,21 +2265,20 @@ int main(int argc, char **argv) {
               }
               CHECK(refuses_change(backend,dev,graph,out,out->op_params[1],int32_t(2)));
             }
-            ggml_backend_buffer_free(buffer); ggml_free(ctx);
+
           }
         }
       }
       if (!strcmp(argv[3]+9,"ROW_SOFTMAX")) {
         std::vector<float> expected;
         for (auto selected : {reference,backend}) {
-          auto ctx=ggml_init({ggml_graph_overhead()+12*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+          graph_fixture ctx(12); CHECK(ctx);
           auto scores=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,4,2);
           auto mask=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,4,3);
           auto sink=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,1);
           scores->nb[2]+=4; mask->nb[3]+=8; sink->nb[0]=16;
           auto out=ggml_soft_max_ext_inplace(ctx,scores,mask,0.5f,2.0f); ggml_soft_max_add_sinks(out,sink);
-          auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
-          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+          auto graph=ctx.allocate(out,selected); CHECK(graph);
           const float inputs[]={1,2,3,-4,9,3,-2,1}, weights[]={0,-INFINITY,1,-2,1,2,-INFINITY,0,91,92,93,94}, extra[]={1};
           ggml_backend_tensor_set(scores,inputs,0,sizeof(inputs)); ggml_backend_tensor_set(mask,weights,0,sizeof(weights)); ggml_backend_tensor_set(sink,extra,0,sizeof(extra));
           CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
@@ -2302,19 +2291,18 @@ int main(int argc, char **argv) {
             CHECK(refuses_change(backend,dev,graph,out,sink->ne[0],int64_t(2)));
             CHECK(refuses_change(backend,dev,graph,out,out->src[3],mask));
           }
-          ggml_backend_buffer_free(buffer); ggml_free(ctx);
+
         }
       }
       if (!strcmp(argv[3]+9,"ROW_RANKING")) {
         for (bool partial : {false,true}) {
           std::vector<int32_t> expected;
           for (auto selected : {reference,backend}) {
-            auto ctx=ggml_init({ggml_graph_overhead()+12*ggml_tensor_overhead(),nullptr,true}); CHECK(ctx);
+            graph_fixture ctx(12); CHECK(ctx);
             auto base=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,8,2);
             auto source=ggml_view_2d(ctx,base,4,2,base->nb[1],sizeof(float));
             auto out=partial?ggml_top_k(ctx,source,2):ggml_argsort(ctx,source,GGML_SORT_ORDER_DESC);
-            auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
-            auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+            auto graph=ctx.allocate(out,selected); CHECK(graph);
             const float values[]={99,1,3,4,2,99,99,99,99,-2,-5,0,1,99,99,99};
             ggml_backend_tensor_set(base,values,0,sizeof(values));
             CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
@@ -2328,21 +2316,20 @@ int main(int argc, char **argv) {
               CHECK(refuses_change(backend,dev,graph,out,out->type,GGML_TYPE_F32));
               if(!partial) CHECK(refuses_change(backend,dev,graph,out,out->op_params[0],int32_t(2)));
             }
-            ggml_backend_buffer_free(buffer); ggml_free(ctx);
+
           }
         }
       }
       if (!strcmp(argv[3]+9,"SCALAR_MUL_MAT_ID")) {
         for (auto kind : {GGML_TYPE_F32, GGML_TYPE_Q4_0}) {
-          auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true}); CHECK(ctx);
+          graph_fixture ctx(12); CHECK(ctx);
           auto weights=ggml_new_tensor_3d(ctx,kind,32,2,2);
           auto inputs=ggml_new_tensor_3d(ctx,GGML_TYPE_F32,32,1,2);
           auto storage=ggml_new_tensor_2d(ctx,GGML_TYPE_I32,3,2);
           auto ids=ggml_view_2d(ctx,storage,1,2,storage->nb[1],sizeof(int32_t));
           auto output=ggml_mul_mat_id(ctx,weights,inputs,ids);
-          auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,output);
-          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
-          ggml_backend_buffer_clear(buffer,0);
+          auto graph=ctx.allocate(output,backend); CHECK(graph);
+          ggml_backend_buffer_clear(ctx.storage.get(),0);
           CHECK(ggml_backend_dev_supports_op(dev,output));
           const std::array<float,4> marker={11,12,13,14}, zeros={};
           for (int32_t last : {-1, -2, 2}) {
@@ -2354,30 +2341,31 @@ int main(int argc, char **argv) {
             std::array<float,4> actual; ggml_backend_tensor_get(output,actual.data(),0,sizeof(actual));
             CHECK(actual==(last==-1?zeros:marker));
           }
-          ggml_backend_buffer_free(buffer); ggml_free(ctx);
+
         }
       }
-      if (!strcmp(argv[3]+9,"SET_ROWS_SCALAR")) {
+      if (!strcmp(argv[3]+9,"SET_ROWS_SCALAR") || !strcmp(argv[3]+9,"Q8_STORAGE_WRITES")) {
+        const bool packed = !strcmp(argv[3]+9,"Q8_STORAGE_WRITES");
+        const int width = packed ? 32 : 2;
         for (const auto type : {GGML_TYPE_I32, GGML_TYPE_I64}) {
-          auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true});CHECK(ctx);
-          auto dst=ggml_new_tensor_2d(ctx,GGML_TYPE_F16,2,3);
-          auto src=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,2,2);
+          graph_fixture ctx(12); CHECK(ctx);
+          auto dst=ggml_new_tensor_2d(ctx,packed ? GGML_TYPE_Q8_0 : GGML_TYPE_F16,width,3);
+          auto src=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,width,2);
           auto idx=ggml_new_tensor_1d(ctx,type,2);
           auto out=ggml_set_rows(ctx,dst,src,idx);
-          auto graph=ggml_new_graph(ctx);ggml_build_forward_expand(graph,out);
-          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,backend);CHECK(buffer);
+          auto graph=ctx.allocate(out,backend); CHECK(graph);
           CHECK(ggml_backend_dev_supports_op(dev,out));
-          const uint16_t original[]={1,2,3,4,5,6};
-          const float values[]={1,2,3,4};
-          ggml_backend_tensor_set(src,values,0,sizeof(values));
-          ggml_backend_tensor_set(dst,original,0,sizeof(original));
-          const int32_t narrow[]={0,-1}; const int64_t wide[]={0,INT64_C(4294967296)};
-          if(type==GGML_TYPE_I32) ggml_backend_tensor_set(idx,narrow,0,sizeof(narrow));
-          else ggml_backend_tensor_set(idx,wide,0,sizeof(wide));
-          CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
-          uint16_t after[6];ggml_backend_tensor_get(dst,after,0,sizeof(after));
-          CHECK(!std::memcmp(original,after,sizeof(after)));
-          ggml_backend_buffer_free(buffer);ggml_free(ctx);
+          std::vector<uint16_t> original(ggml_nbytes(dst)/sizeof(uint16_t));
+          std::iota(original.begin(),original.end(),uint16_t(1));
+          std::vector<float> values(2*width);
+          std::iota(values.begin(),values.end(),1.0f);
+          ggml_backend_tensor_set(src,values.data(),0,ggml_nbytes(src));
+          ggml_backend_tensor_set(dst,original.data(),0,ggml_nbytes(dst));
+          const int64_t wide[]={0,1}; const int32_t narrow[]={0,1};
+          ggml_backend_tensor_set(idx,type==GGML_TYPE_I32?(const void*)narrow:(const void*)wide,0,ggml_nbytes(idx));
+          if (packed) CHECK(refuses_change(backend,dev,graph,out,static_cast<float*>(src->data)[width],NAN,false));
+          if (type==GGML_TYPE_I32) CHECK(refuses_change(backend,dev,graph,out,static_cast<int32_t*>(idx->data)[1],-1,false));
+          else CHECK(refuses_change(backend,dev,graph,out,static_cast<int64_t*>(idx->data)[1],INT64_C(4294967296),false));
         }
       }
       if (!strcmp(argv[3]+9,"ORACLE_CALIBRATION")) {

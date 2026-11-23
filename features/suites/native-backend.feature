@@ -266,3 +266,9 @@ Feature: native-backend
     Given the original F16 and F32 indexed row writes into E4M3 storage
     When vTensor executes the indexed writes through the original destination view
     Then the imported CPU accepts each numerical result
+
+  @VT-101 @build
+  Scenario: Prism selects scalar source lanes and destination blocks for copies and indexed row writes while Verdant encodes Q8_0
+    Given the original GGML indexed row writes and scalar copies into symmetric byte blocks
+    When vTensor gathers the source lanes and writes each encoded block through the original destination view
+    Then the imported CPU accepts each numerical result

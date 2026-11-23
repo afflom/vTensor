@@ -188,6 +188,7 @@ model does not sanction.
 | `VT-98` | `build` | Prism maps strided scalar copies between E4M3 and GGML float storage to the existing Verdant word conversions |
 | `VT-99` | `build` | Prism plans MXFP4 and NVFP4 matrix and indexed expert rows and Verdant contracts their E2M1 weights with signed-byte activations |
 | `VT-100` | `build` | Prism maps indexed scalar row writes to E4M3 storage and Verdant performs the signed conversion after source widening |
+| `VT-101` | `build` | Prism selects scalar source lanes and destination blocks for copies and indexed row writes while Verdant encodes Q8_0 |
 
 ## normalization-graphs
 

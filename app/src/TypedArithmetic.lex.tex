@@ -4,6 +4,7 @@
 \importmodule{NormPlan}
 \importmodule{RmsNormalization}
 \importmodule{TensorIndex}
+\importmodule{TensorTypes}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -32,7 +33,8 @@ inductive{
     {name: planned, fields: [Plan]},
     {name: instruction, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: gated, fields: [Nat, Nat, Nat, Nat, Nat]},
-    {name: rankRow, fields: [Nat, Nat, Nat, Nat, Bool]}
+    {name: rankRow, fields: [Nat, Nat, Nat, Nat, Bool]},
+    {name: encodeBlock, fields: [Nat, Nat]}
   ]
 }
 
@@ -292,10 +294,22 @@ definition{
 }
 
 definition{
+  name: storeBlockLanes,
+  parameters: [kind : Nat],
+  result: Nat,
+  body: (if (kind =? 8) then (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.knownType spec => (project spec blockSize)
+    | TensorTypes::TypeStorageDecision.unknownType => 1) else 1),
+  executable: true
+}
+
+definition{
   name: rowTargetWidth,
   parameters: [kind : Nat],
   result: Nat,
-  body: (if (kind =? 43) then 1 else (bytes kind)),
+  body: (if (kind =? 8) then (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.knownType spec => (project spec typeSize)
+    | TensorTypes::TypeStorageDecision.unknownType => 0) else (if (kind =? 43) then 1 else (bytes kind))),
   executable: true
 }
 
@@ -308,6 +322,34 @@ definition{
 }
 
 definition{
+  name: rowStoreSteps,
+  parameters: [left : NormPlan::TensorDescriptor, target : Nat],
+  result: Nat,
+  body: (prim multiply (prim quotient (project left n0) (storeBlockLanes target) 0 : Nat) (rowLaneSteps (project left ty) target) : Nat),
+  executable: true
+}
+
+definition{
+  name: blockCopyPlan,
+  parameters: [
+    left : NormPlan::TensorDescriptor,
+    base : NormPlan::TensorDescriptor,
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (let lanes : Nat := (storeBlockLanes (project output ty)); (if ((((((((project output ty) =? 8) && (destinationView base output)) && (0 <? (bytes (project left ty)))) && ((project left s0) =? (bytes (project left ty)))) && (((prim remainder (project left n0) lanes 1 : Nat) =? 0) && ((prim remainder (project output n0) lanes 1 : Nat) =? 0))) && ((project output s0) =? (rowTargetWidth (project output ty)))) && ((elements left) =? (elements output))) then (ctor Response.planned (record Plan {steps := (prim quotient (elements left) lanes 0 : Nat), capacity := 3, operation := 33, gateVariant := 0, gateLimit := 0, left := left, rhs := base, output := output})) else (ctor Response.invalid))),
+  executable: true
+}
+
+definition{
+  name: blockCopyStep,
+  parameters: [index : Nat, execution : Plan],
+  result: Response,
+  body: (if (index <? (project execution steps)) then (let output : NormPlan::TensorDescriptor := (project execution output); (let lanes : Nat := (storeBlockLanes (project output ty)); (let width : Nat := (prim quotient (project output n0) lanes 0 : Nat); (let row : Nat := (prim quotient index width 0 : Nat); (let batch : Nat := (prim quotient row (project output n1) 0 : Nat); (ctor Response.encodeBlock (offset (prim multiply index lanes : Nat) (project execution left)) (TensorIndex::elementOffset (prim remainder index width 0 : Nat) (prim remainder row (project output n1) 0 : Nat) (prim remainder batch (project output n2) 0 : Nat) (prim quotient batch (project output n2) 0 : Nat) (project output s0) (project output s1) (project output s2) (project output s3)))))))) else (ctor Response.invalid)),
+  executable: true
+}
+
+definition{
   name: rowPlan,
   parameters: [
     left : NormPlan::TensorDescriptor,
@@ -316,7 +358,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if (((((((((((((((destinationView base output) && (((project left ty) =? 0) || ((project left ty) =? 1))) && (0 <? (rowTargetWidth (project output ty)))) && (0 <? (indexWidth (project ids ty)))) && ((project left n0) =? (project output n0))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project left n1) =? (project ids n0))) && ((project ids n3) =? 1)) && (0 <? (project ids n1))) && (0 <? (project ids n2))) && ((prim remainder (project left n2) (project ids n1) 0 : Nat) =? 0)) && ((prim remainder (project left n3) (project ids n2) 0 : Nat) =? 0)) && (contiguousRightRows left)) && (((project output n0) =? 1) || ((project output s0) =? (rowTargetWidth (project output ty))))) then (let indices : Nat := (elements ids); (let rows : Nat := (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat); (let count : Nat := (if (empty left) then 0 else ((prim multiply 2 indices : Nat) + (prim multiply rows (1 + (prim multiply (project left n0) (rowLaneSteps (project left ty) (project output ty)) : Nat)) : Nat))); (ctor Response.planned (record Plan {steps := count, capacity := (if (empty left) then 3 else (3 + indices)), operation := 41, gateVariant := 0, gateLimit := 0, left := left, rhs := ids, output := output}))))) else (ctor Response.invalid)),
+  body: (if (((((((((((((((destinationView base output) && (((project left ty) =? 0) || ((project left ty) =? 1))) && (0 <? (rowTargetWidth (project output ty)))) && (0 <? (indexWidth (project ids ty)))) && ((project left n0) =? (project output n0))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project left n1) =? (project ids n0))) && ((project ids n3) =? 1)) && (0 <? (project ids n1))) && (0 <? (project ids n2))) && ((prim remainder (project left n2) (project ids n1) 0 : Nat) =? 0)) && ((prim remainder (project left n3) (project ids n2) 0 : Nat) =? 0)) && (contiguousRightRows left)) && (((project output n0) =? 1) || ((project output s0) =? (rowTargetWidth (project output ty))))) then (let indices : Nat := (elements ids); (let rows : Nat := (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat); (let count : Nat := (if (empty left) then 0 else ((prim multiply 2 indices : Nat) + (prim multiply rows (1 + (rowStoreSteps left (project output ty))) : Nat))); (ctor Response.planned (record Plan {steps := count, capacity := (if (empty left) then 3 else (3 + indices)), operation := 41, gateVariant := 0, gateLimit := 0, left := left, rhs := ids, output := output}))))) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -346,7 +388,7 @@ definition{
     flag : Nat
   ],
   result: Response,
-  body: (let stride : Nat := (1 + (prim multiply (project left n0) (rowLaneSteps (project left ty) (project output ty)) : Nat)); (let phase : Nat := (prim remainder index stride 0 : Nat); (let ordinal : Nat := (prim quotient index stride 0 : Nat); (let row : Nat := (prim remainder ordinal (project left n1) 0 : Nat); (let batch : Nat := (prim quotient ordinal (project left n1) 0 : Nat); (let b2 : Nat := (prim remainder batch (project left n2) 0 : Nat); (let b3 : Nat := (prim quotient batch (project left n2) 0 : Nat); (if (phase =? 0) then (let entry : Nat := (row + (prim multiply (project ids n0) ((prim remainder b2 (project ids n1) 0 : Nat) + (prim multiply (project ids n1) (prim remainder b3 (project ids n2) 0 : Nat) : Nat)) : Nat)); (ctor Response.instruction 2 3 0 0 1 (3 + entry) 2 0 0 2 8 8)) else (if (flag <? (project output n1)) then (let col : Nat := (prim quotient (prim subtract phase 1 : Nat) (rowLaneSteps (project left ty) (project output ty)) 0 : Nat); (let src : Nat := (TensorIndex::elementOffset col row b2 b3 (project left s0) (project left s1) (project left s2) (project left s3)); (let dst : Nat := (TensorIndex::elementOffset col flag b2 b3 (project output s0) (project output s1) (project output s2) (project output s3)); (storeRowLane (project left ty) (project output ty) (prim subtract phase 1 : Nat) src dst)))) else (ctor Response.invalid)))))))))),
+  body: (let stride : Nat := (1 + (rowStoreSteps left (project output ty))); (let phase : Nat := (prim remainder index stride 0 : Nat); (let ordinal : Nat := (prim quotient index stride 0 : Nat); (let row : Nat := (prim remainder ordinal (project left n1) 0 : Nat); (let batch : Nat := (prim quotient ordinal (project left n1) 0 : Nat); (let b2 : Nat := (prim remainder batch (project left n2) 0 : Nat); (let b3 : Nat := (prim quotient batch (project left n2) 0 : Nat); (if (phase =? 0) then (let entry : Nat := (row + (prim multiply (project ids n0) ((prim remainder b2 (project ids n1) 0 : Nat) + (prim multiply (project ids n1) (prim remainder b3 (project ids n2) 0 : Nat) : Nat)) : Nat)); (ctor Response.instruction 2 3 0 0 1 (3 + entry) 2 0 0 2 8 8)) else (if (flag <? (project output n1)) then (let col : Nat := (prim quotient (prim subtract phase 1 : Nat) (rowLaneSteps (project left ty) (project output ty)) 0 : Nat); (let src : Nat := (TensorIndex::elementOffset (prim multiply col (storeBlockLanes (project output ty)) : Nat) row b2 b3 (project left s0) (project left s1) (project left s2) (project left s3)); (let dst : Nat := (TensorIndex::elementOffset col flag b2 b3 (project output s0) (project output s1) (project output s2) (project output s3)); (if ((project output ty) =? 8) then (ctor Response.encodeBlock src dst) else (storeRowLane (project left ty) (project output ty) (prim subtract phase 1 : Nat) src dst))))) else (ctor Response.invalid)))))))))),
   executable: true
 }
 
@@ -408,12 +450,14 @@ definition{
           | Option.none => (ctor Response.invalid)
           | Option.some rhs => (plan kind left rhs output))))
     | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
-    | Request.gate operation variant swapped limit extra left secondary output => (if ((operation =? 66) || (operation =? 67)) then (if extra then (ctor Response.invalid) else (match secondary
+    | Request.gate operation variant swapped limit extra left secondary output => (if (operation =? 33) then (if extra then (ctor Response.invalid) else (match secondary
+      | Option.none => (ctor Response.invalid)
+      | Option.some base => (blockCopyPlan left base output))) else (if ((operation =? 66) || (operation =? 67)) then (if extra then (ctor Response.invalid) else (match secondary
       | Option.none => (rankPlan operation variant left output)
       | Option.some unused => (ctor Response.invalid))) else (if (operation =? 98) then (if ((admittedGate variant) && (if extra then false else true)) then (match secondary
       | Option.none => (gatePlan variant false swapped limit left left output)
-      | Option.some rhs => (gatePlan variant true swapped limit left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported)))
-    | Request.step index execution flag => (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if ((project execution gateVariant) =? 6) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag))))),
+      | Option.some rhs => (gatePlan variant true swapped limit left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))))
+    | Request.step index execution flag => (if ((project execution operation) =? 33) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if ((project execution gateVariant) =? 6) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag)))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -688,6 +732,13 @@ theorem{
   name: rowByteStoreUsesOriginalOffset,
   parameters: [],
   statement: ((storeRowLane 1 43 1 12 7) = (ctor Response.instruction 0 0 0 43 1 0 2 0 3 7 8 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: q8StoreUsesImportedLaneCount,
+  parameters: [],
+  statement: ((storeBlockLanes 8) = 32),
   proof: reflexivity{}
 }
 \end{semanticmodule}
