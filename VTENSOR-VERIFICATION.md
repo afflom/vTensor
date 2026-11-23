@@ -4882,3 +4882,11 @@ VT-80 runs the original GGML CONV_3D graphs through the existing Verdant matrix 
 ### State convolution
 
 Prism maps each sequence, channel and filter tap to GGML byte offsets. Verdant supplies binary32 multiplication, ordered addition, bias addition and SiLU. Six permanent graphs and 189 additional original factory graphs passed the imported CPU evaluator. Replacing multiplication with addition failed ordinal 10260 at NMSE 1.201701697 against the upstream limit of 0.0000001. The restored state convolution, 3D convolution, pooling and logistic contracts passed. The tested binary and source revision are recorded with the per-case evidence. [VT-81 comparisons](verification/factory-state-convolution-vt81.json)
+
+### Biased attention
+
+Prism plans the query head, mask coordinates and skip condition for the imported FLASH_ATTN_EXT graph. Verdant supplies the geometric head slope and arithmetic for each soft-capped score and scaled mask. The seven permanent cases cover F32, F16, BF16, Q4_0 and Q8_0 with shared or per-head masks. Bypassing the slope multiplication failed original ordinal 19442 at NMSE 0.224837896 against the upstream limit of 0.0005. The restored bias, packed attention, softcap and state-convolution contracts passed. VT-02 also verified the upstream Cargo pin and the compiled plugin’s GGML host imports. [Original case verdicts](verification/factory-biased-attention-vt78.json) · [Verdant numerical oracle](https://github.com/afflom/verdant-engine/pull/27)
+
+### VT-80 complete checkpoint
+
+The complete locked-SDK `just vv` passed on `024b20c94de1069d68f0a57ec0624ea45bbc11ef` with Verdant PR #26. All 86 backend contracts passed in 479.51 seconds, including pooling, 2D and 3D convolution. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. The workspace checks and dependency audit passed. [Checked source](https://github.com/afflom/vTensor/commit/024b20c94de1069d68f0a57ec0624ea45bbc11ef)

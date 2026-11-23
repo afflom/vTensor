@@ -164,6 +164,7 @@ model does not sanction.
 | `VT-75` | `build` | Prism admits GELU and GELU_QUICK GGML graphs and vTensor delegates the Gaussian activations to Verdant |
 | `VT-76` | `build` | Original channel-major GGML convolution graphs agree with upstream CPU convolution on equivalent contiguous tensors |
 | `VT-77` | `build` | Prism plans combined split and swapped gated rows and Verdant evaluates their rectified and Gaussian activations |
+| `VT-78` | `build` | Prism binds head-specific masked attention and Verdant evaluates linear bias slopes before the weighted mean |
 | `VT-79` | `build` | Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant |
 | `VT-80` | `build` | Prism maps direct three-dimensional GGML convolution to padded volume patches and packed channel offsets and Verdant contracts each patch matrix |
 | `VT-81` | `build` | Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products |

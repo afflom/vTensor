@@ -123,6 +123,12 @@ Feature: native-backend
     When the vTensor plugin and the pinned CPU process their original rows
     Then every output satisfies the original case tolerance
 
+  @VT-78 @build
+  Scenario: Prism binds head-specific masked attention and Verdant evaluates linear bias slopes before the weighted mean
+    Given original attention graphs with head-specific mask scaling
+    When the GGML CPU and vTensor process the same query keys values and masks
+    Then each output matches the upstream comparator and tolerance
+
   @VT-79 @build
   Scenario: Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant
     Given original GGML pooling graphs with strided windows and padding

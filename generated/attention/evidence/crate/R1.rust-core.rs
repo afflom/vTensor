@@ -627,8 +627,14 @@ pub fn checked_neg_i64(p0: i64) -> Option<i64> {
     i64::checked_neg(p0)
 }
 
-pub fn f0(v0: u64) -> bool {
+pub fn f0(v0: u64, v1: u64) -> bool {
     let a1 = v0;
     let a2 = 64512u64;
-    nat_eq(a1, a2)
+    if nat_eq(a1, a2) {
+        let a3 = 0u64;
+        let a4 = v1;
+        nat_lt(a3, a4)
+    } else {
+        false
+    }
 }

@@ -226,6 +226,9 @@ ggml_batches! {
     fn gated_activations_vt_77() { "upstream-GATED_ACTIVATIONS", 108, ["typed", "pointwise"] }
 
     #[test]
+    fn biased_attention_vt_78() { "upstream-BIASED_ATTENTION", 7, ["attention"] }
+
+    #[test]
     fn pooling_vt_79() { "upstream-POOLING", 8, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-POOL_HALF_INPUT", 4) }
 
     #[test]
@@ -1436,7 +1439,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "4eee67e13bc5127eae540bd778dba0cb03cd99f77cb0cfbaee754026729ce1e5",
+            "220c5f3e04918a93f8ed0efa7b5e3b1dc5a053e7d3a5eea288068a11f50bc129",
         )
     });
 
