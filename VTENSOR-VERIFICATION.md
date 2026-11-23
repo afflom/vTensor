@@ -5066,3 +5066,9 @@ VT-103 passes 222 ordinary matrix products, 94 expert products and 121 fused gra
 VT-104 passes all 53 previously refused factory copies into F32. The original GGML CPU and the provider execute the same contiguous and permuted inputs from 25 packed formats and I32. Prism selects the source block and destination offset. Verdant supplies block decoding and signed integer conversion. Reusing offset zero for every block failed the first Q4_0 case at ordinal 8629, with error 2.355522583 against the 0.000001 limit. Restoring source offsets passed all 53 cases and the copy, gather and gradient regressions. [Factory evidence](verification/factory-decoded-copies-vt104.json)
 
 Verdant PR #36 also passed its complete locked-SDK gate on the pinned revision, including all 70 tensor tests. [Upstream acceptance](https://github.com/afflom/verdant-engine/actions/runs/45202524656/job/137789461958)
+
+## Q4 and Q5 indexed writes and copies
+
+VT-105 passes 96 SET_ROWS graphs and 25 CPY graphs using the original pinned GGML constructors and CPU evaluator. Both four- and five-bit representations cover centered and affine blocks. The copied sources include F32, F16 and BF16, with contiguous and permuted views. The provider stages encoded blocks until all source reads and index checks succeed. Supplemental late-index and nonfinite-input checks preserve destination bytes for all four targets and both index widths. [Factory evidence](verification/factory-low-bit-writes-vt105.json)
+
+Encoding each block from offset zero failed the first Q4_0 indexed write with error 0.381843926 against tolerance 0.001302083. Restoring the Prism source offset passed VT-105, the Q8 and scalar write regressions, and the VT-02 dependency check. Verdant’s four encoders matched 1,104 reference blocks byte-for-byte. [Upstream implementation and mutation](https://github.com/afflom/verdant-engine/pull/37)
