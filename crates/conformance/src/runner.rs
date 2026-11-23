@@ -502,7 +502,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             .map(tensor_metadata)
             .transpose()
     };
-    let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
+    let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, _, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
     let primary = source(0)?;
     let secondary = source(1)?;
@@ -525,21 +525,16 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         )
         .map(|plan| plan.map(ExecutionPlan::Rotary));
     }
+    // Extra ABI sources still have to be valid descriptors. The pointwise model consumes three.
+    for slot in 3..tensor.src.len() {
+        source(slot)?;
+    }
     let response = vtensor_pointwise::run(GraphRequest::C0(
         operation,
-        Parameters::C0(
-            p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15,
-        ),
+        Parameters::C0(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9),
         primary.clone(),
         secondary.clone(),
         base.clone(),
-        source(3)?,
-        source(4)?,
-        source(5)?,
-        source(6)?,
-        source(7)?,
-        source(8)?,
-        source(9)?,
         output.clone(),
     ))
     .map_err(|_| BackendError::Overflow)?;
