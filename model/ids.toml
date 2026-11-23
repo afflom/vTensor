@@ -794,6 +794,12 @@ suite = "native-backend"
 statement = "Prism schedules the rowwise softmax derivative and Verdant reproduces the imported GGML gradient"
 
 [[id]]
+id = "VT-122"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules grouped affine two-, four- and five-bit copies and indexed writes through the Verdant encoders"
+
+[[id]]
 id = "VT-123"
 level = "build"
 suite = "native-backend"

@@ -333,6 +333,8 @@ ggml_batches! {
     #[test]
     fn transpose_plane_vt_107() { "upstream-TRANSPOSE_CONV_2D", 8, ["pointwise"] }
     #[test]
+    fn grouped_affine_writes_vt_122() { "upstream-GROUPED_AFFINE_WRITES", 6, ["typed"] }
+    #[test]
     fn grouped_six_writes_vt_119() { "upstream-GROUPED_SIX_WRITES", 2, ["typed"] }
 
     #[test]
@@ -1169,28 +1171,25 @@ mod oracle_import {
     #[test]
     fn oracle_import_vt_01() {
         let root = root();
-        let artifact = root.join("vendor/llama.cpp-oracle");
+        let directory = "vendor/llama.cpp-oracle";
+        let artifact = root.join(directory);
         // The frozen manifest binds the exact upstream revision, archive selection,
         // order, filenames and digests. Check the bytes of every listed artifact.
-        let manifest = artifact.join("upstream.toml");
+        let manifest = std::fs::read(artifact.join("upstream.toml")).expect("GGML source manifest");
         let pin = &super::native_backend_oracle::ORACLE_BINDINGS["ggml_source_manifest_sha256"];
-        assert_eq!(pin, &file_digest(&manifest), "GGML source manifest changed");
-        let lock = super::ggml_oracle::read_toml(manifest);
+        let digest = repo_model::artifact::sha256_hex(&manifest);
+        assert_eq!(pin, &digest, "GGML source manifest changed");
+        let lock: toml::Value = toml::from_slice(&manifest).expect("GGML source manifest");
         let files = lock["file"].as_array().expect("pinned GGML files");
-        for entry in files
-            .iter()
-            .chain(lock["archive"].as_array().expect("pinned GGML archive"))
-        {
+        let archives = lock["archive"].as_array().expect("pinned GGML archive");
+        for entry in files.iter().chain(archives) {
             let path = entry["path"].as_str().expect("artifact path");
-            assert_eq!(
-                file_digest(artifact.join(path)),
-                entry["sha256"].as_str().unwrap(),
-                "{path}"
-            );
+            let expected = entry["sha256"].as_str().expect("artifact digest");
+            assert_eq!(file_digest(artifact.join(path)), expected, "{path}");
         }
 
         let exemption = super::ggml_oracle::read_json(root.join("oracle-import.lock"));
-        let expected_files: Vec<_> = files.iter().map(|file| serde_json::json!({"path": format!("vendor/llama.cpp-oracle/{}", file["path"].as_str().expect("path")), "sha256": file["sha256"].as_str().expect("digest")})).collect();
+        let expected_files: Vec<_> = files.iter().map(|file| serde_json::json!({"path": format!("{directory}/{}", file["path"].as_str().expect("path")), "sha256": file["sha256"].as_str().expect("digest")})).collect();
         let origin = &exemption["source"];
         assert_eq!(origin["repository"], "ggml-org/llama.cpp");
         assert_eq!(origin["commit"].as_str(), lock["commit"].as_str());
@@ -1210,10 +1209,7 @@ mod oracle_import {
             .iter()
             .find(|row| row.id == "LLAMA-CPP-GGML-BACKEND")
             .expect("the imported oracle is registered as an authority");
-        assert_eq!(
-            authority.artifact.as_deref(),
-            Some("vendor/llama.cpp-oracle")
-        );
+        assert_eq!(authority.artifact.as_deref(), Some(directory));
     }
 }
 
@@ -1502,7 +1498,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a92f4ada2e3f230406fd1c266250acc8021c82fdd7828451e2f66ca5201a9706",
+            "48108516ab9e27e40e35ad805bf372ab87e19822b93cc8f6e673ae0070758287",
         )
     });
 
@@ -2415,6 +2411,7 @@ int main(int argc, char **argv) {
         {"SET_ROWS_SCALAR", {GGML_TYPE_F16}}, {"Q8_STORAGE_WRITES", {GGML_TYPE_Q8_0}},
         {"SIGN_WEIGHT_WRITES", {GGML_TYPE_Q1_0,GGML_TYPE_Q2_0}},
         {"LOW_BIT_WRITES", {GGML_TYPE_Q4_0,GGML_TYPE_Q4_1,GGML_TYPE_Q5_0,GGML_TYPE_Q5_1}},
+        {"GROUPED_AFFINE_WRITES", {GGML_TYPE_Q2_K,GGML_TYPE_Q4_K,GGML_TYPE_Q5_K}},
         {"GROUPED_SIX_WRITES", {GGML_TYPE_Q6_K}},
         {"COMPACT_FLOAT_WRITES", {GGML_TYPE_MXFP4,GGML_TYPE_NVFP4}},
         {"TERNARY_WEIGHT_WRITES", {GGML_TYPE_TQ1_0,GGML_TYPE_TQ2_0}},

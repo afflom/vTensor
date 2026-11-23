@@ -387,6 +387,12 @@ Feature: native-backend
     When the backend reduces each probability-gradient dot product and applies the upstream scale
     Then the results agree with the pinned GGML CPU and Vulkan backends for their admitted graphs
 
+  @VT-122 @build
+  Scenario: Prism schedules grouped affine two-, four- and five-bit copies and indexed writes through the Verdant encoders
+    Given original GGML copies and indexed writes to grouped affine destinations
+    When vTensor places each encoded block in the requested row or view
+    Then the upstream CPU comparison passes for all three storage formats and rejected indices preserve output
+
   @VT-123 @build
   Scenario: Prism admits GGML scheduler delays that preserve their input view and complete before graph return
     Given an original GGML sleep graph with an aliased input

@@ -1233,8 +1233,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let vtensor_typed::Adt2::C0(count, capacity, ..) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
-    // SAFETY: admission retained the primary descriptor and each present secondary.
-    let (left, secondary) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
+    let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
     use linear::PackedWeightEncoding::*;
     let kind = match tensor.ty {
         2 => Some(CenteredFour),
@@ -1242,6 +1241,9 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         6 => Some(CenteredFive),
         7 => Some(AffineFive),
         8 => Some(SymmetricEight),
+        10 => Some(GroupedAffineTwo),
+        12 => Some(GroupedAffineFour),
+        13 => Some(GroupedAffineFive),
         14 => Some(GroupedSignedSix),
         34 => Some(PackedTrits),
         35 => Some(TwoBitTernary),
