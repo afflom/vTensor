@@ -1588,10 +1588,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
     }
 
     fn compiled_object(common: &Path, source: &Path) -> std::path::PathBuf {
-        let object = common
-            .join("reference-object")
-            .join(source)
-            .with_added_extension("o");
+        let mut name = source.as_os_str().to_owned();
+        name.push(".o");
+        let object = common.join("reference-object").join(name);
         std::fs::create_dir_all(object.parent().unwrap()).unwrap();
         let pending = object.with_extension("new");
         let stamp = object.with_extension("sha256");
