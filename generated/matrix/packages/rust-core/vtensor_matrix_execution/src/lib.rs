@@ -1083,20 +1083,26 @@ pub fn f5(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64) -> Adt1 {
     } else {
         Adt1::C4(v0, v1, v2, v3, v4, {
             let a150 = v3;
-            let a151 = 0u64;
+            let a151 = 43u64;
             if nat_eq(a150, a151) {
-                4u64
+                1u64
             } else {
-                2u64
+                let a152 = v3;
+                let a153 = 0u64;
+                if nat_eq(a152, a153) {
+                    4u64
+                } else {
+                    2u64
+                }
             }
         })
     }
 }
 
 pub fn f6(v0: u64) -> u64 {
-    let a152 = v0;
-    let a153 = 30u64;
-    if nat_eq(a152, a153) {
+    let a154 = v0;
+    let a155 = 30u64;
+    if nat_eq(a154, a155) {
         30u64
     } else {
         0u64
@@ -1104,364 +1110,364 @@ pub fn f6(v0: u64) -> u64 {
 }
 
 pub fn f7(v0: u64) -> bool {
-    let a154 = v0;
-    let a155 = 0u64;
-    if if if if if if if if if if if if if if if if if if if if if if if if if if if if if nat_eq(a154, a155) {
-        true
-    } else {
-        let a156 = v0;
-        let a157 = 1u64;
-        nat_eq(a156, a157)
-    } {
+    let a156 = v0;
+    let a157 = 0u64;
+    if if if if if if if if if if if if if if if if if if if if if if if if if if if if if nat_eq(a156, a157) {
         true
     } else {
         let a158 = v0;
-        let a159 = 2u64;
+        let a159 = 1u64;
         nat_eq(a158, a159)
     } {
         true
     } else {
         let a160 = v0;
-        let a161 = 3u64;
+        let a161 = 2u64;
         nat_eq(a160, a161)
     } {
         true
     } else {
         let a162 = v0;
-        let a163 = 6u64;
+        let a163 = 3u64;
         nat_eq(a162, a163)
     } {
         true
     } else {
         let a164 = v0;
-        let a165 = 7u64;
+        let a165 = 6u64;
         nat_eq(a164, a165)
     } {
         true
     } else {
         let a166 = v0;
-        let a167 = 8u64;
+        let a167 = 7u64;
         nat_eq(a166, a167)
     } {
         true
     } else {
         let a168 = v0;
-        let a169 = 10u64;
+        let a169 = 8u64;
         nat_eq(a168, a169)
     } {
         true
     } else {
         let a170 = v0;
-        let a171 = 11u64;
+        let a171 = 10u64;
         nat_eq(a170, a171)
     } {
         true
     } else {
         let a172 = v0;
-        let a173 = 12u64;
+        let a173 = 11u64;
         nat_eq(a172, a173)
     } {
         true
     } else {
         let a174 = v0;
-        let a175 = 13u64;
+        let a175 = 12u64;
         nat_eq(a174, a175)
     } {
         true
     } else {
         let a176 = v0;
-        let a177 = 14u64;
+        let a177 = 13u64;
         nat_eq(a176, a177)
     } {
         true
     } else {
         let a178 = v0;
-        let a179 = 16u64;
+        let a179 = 14u64;
         nat_eq(a178, a179)
     } {
         true
     } else {
         let a180 = v0;
-        let a181 = 17u64;
+        let a181 = 16u64;
         nat_eq(a180, a181)
     } {
         true
     } else {
         let a182 = v0;
-        let a183 = 18u64;
+        let a183 = 17u64;
         nat_eq(a182, a183)
     } {
         true
     } else {
         let a184 = v0;
-        let a185 = 19u64;
+        let a185 = 18u64;
         nat_eq(a184, a185)
     } {
         true
     } else {
         let a186 = v0;
-        let a187 = 20u64;
+        let a187 = 19u64;
         nat_eq(a186, a187)
     } {
         true
     } else {
         let a188 = v0;
-        let a189 = 21u64;
+        let a189 = 20u64;
         nat_eq(a188, a189)
     } {
         true
     } else {
         let a190 = v0;
-        let a191 = 22u64;
+        let a191 = 21u64;
         nat_eq(a190, a191)
     } {
         true
     } else {
         let a192 = v0;
-        let a193 = 23u64;
+        let a193 = 22u64;
         nat_eq(a192, a193)
     } {
         true
     } else {
         let a194 = v0;
-        let a195 = 26u64;
+        let a195 = 23u64;
         nat_eq(a194, a195)
     } {
         true
     } else {
         let a196 = v0;
-        let a197 = 29u64;
+        let a197 = 26u64;
         nat_eq(a196, a197)
     } {
         true
     } else {
         let a198 = v0;
-        let a199 = 30u64;
+        let a199 = 29u64;
         nat_eq(a198, a199)
     } {
         true
     } else {
         let a200 = v0;
-        let a201 = 34u64;
+        let a201 = 30u64;
         nat_eq(a200, a201)
     } {
         true
     } else {
         let a202 = v0;
-        let a203 = 35u64;
+        let a203 = 34u64;
         nat_eq(a202, a203)
     } {
         true
     } else {
         let a204 = v0;
-        let a205 = 39u64;
+        let a205 = 35u64;
         nat_eq(a204, a205)
     } {
         true
     } else {
         let a206 = v0;
-        let a207 = 40u64;
+        let a207 = 39u64;
         nat_eq(a206, a207)
     } {
         true
     } else {
         let a208 = v0;
-        let a209 = 41u64;
+        let a209 = 40u64;
         nat_eq(a208, a209)
     } {
         true
     } else {
         let a210 = v0;
-        let a211 = 42u64;
+        let a211 = 41u64;
         nat_eq(a210, a211)
     } {
         true
     } else {
         let a212 = v0;
-        let a213 = 43u64;
+        let a213 = 42u64;
         nat_eq(a212, a213)
+    } {
+        true
+    } else {
+        let a214 = v0;
+        let a215 = 43u64;
+        nat_eq(a214, a215)
     }
 }
 
 pub fn f8(v0: u64) -> Adt2 {
-    let a214 = v0;
-    let a215 = 0u64;
-    if nat_eq(a214, a215) {
+    let a216 = v0;
+    let a217 = 0u64;
+    if nat_eq(a216, a217) {
         Adt2::C1(Adt3::C0(0u64, 1u64, 4u64))
     } else {
-        let a216 = v0;
-        let a217 = 1u64;
-        if nat_eq(a216, a217) {
+        let a218 = v0;
+        let a219 = 1u64;
+        if nat_eq(a218, a219) {
             Adt2::C1(Adt3::C0(1u64, 1u64, 2u64))
         } else {
-            let a218 = v0;
-            let a219 = 2u64;
-            if nat_eq(a218, a219) {
+            let a220 = v0;
+            let a221 = 2u64;
+            if nat_eq(a220, a221) {
                 Adt2::C1(Adt3::C0(2u64, 32u64, 18u64))
             } else {
-                let a220 = v0;
-                let a221 = 3u64;
-                if nat_eq(a220, a221) {
+                let a222 = v0;
+                let a223 = 3u64;
+                if nat_eq(a222, a223) {
                     Adt2::C1(Adt3::C0(3u64, 32u64, 20u64))
                 } else {
-                    let a222 = v0;
-                    let a223 = 6u64;
-                    if nat_eq(a222, a223) {
+                    let a224 = v0;
+                    let a225 = 6u64;
+                    if nat_eq(a224, a225) {
                         Adt2::C1(Adt3::C0(6u64, 32u64, 22u64))
                     } else {
-                        let a224 = v0;
-                        let a225 = 7u64;
-                        if nat_eq(a224, a225) {
+                        let a226 = v0;
+                        let a227 = 7u64;
+                        if nat_eq(a226, a227) {
                             Adt2::C1(Adt3::C0(7u64, 32u64, 24u64))
                         } else {
-                            let a226 = v0;
-                            let a227 = 8u64;
-                            if nat_eq(a226, a227) {
+                            let a228 = v0;
+                            let a229 = 8u64;
+                            if nat_eq(a228, a229) {
                                 Adt2::C1(Adt3::C0(8u64, 32u64, 34u64))
                             } else {
-                                let a228 = v0;
-                                let a229 = 9u64;
-                                if nat_eq(a228, a229) {
+                                let a230 = v0;
+                                let a231 = 9u64;
+                                if nat_eq(a230, a231) {
                                     Adt2::C1(Adt3::C0(9u64, 32u64, 36u64))
                                 } else {
-                                    let a230 = v0;
-                                    let a231 = 10u64;
-                                    if nat_eq(a230, a231) {
+                                    let a232 = v0;
+                                    let a233 = 10u64;
+                                    if nat_eq(a232, a233) {
                                         Adt2::C1(Adt3::C0(10u64, 256u64, 84u64))
                                     } else {
-                                        let a232 = v0;
-                                        let a233 = 11u64;
-                                        if nat_eq(a232, a233) {
+                                        let a234 = v0;
+                                        let a235 = 11u64;
+                                        if nat_eq(a234, a235) {
                                             Adt2::C1(Adt3::C0(11u64, 256u64, 110u64))
                                         } else {
-                                            let a234 = v0;
-                                            let a235 = 12u64;
-                                            if nat_eq(a234, a235) {
+                                            let a236 = v0;
+                                            let a237 = 12u64;
+                                            if nat_eq(a236, a237) {
                                                 Adt2::C1(Adt3::C0(12u64, 256u64, 144u64))
                                             } else {
-                                                let a236 = v0;
-                                                let a237 = 13u64;
-                                                if nat_eq(a236, a237) {
+                                                let a238 = v0;
+                                                let a239 = 13u64;
+                                                if nat_eq(a238, a239) {
                                                     Adt2::C1(Adt3::C0(13u64, 256u64, 176u64))
                                                 } else {
-                                                    let a238 = v0;
-                                                    let a239 = 14u64;
-                                                    if nat_eq(a238, a239) {
+                                                    let a240 = v0;
+                                                    let a241 = 14u64;
+                                                    if nat_eq(a240, a241) {
                                                         Adt2::C1(Adt3::C0(14u64, 256u64, 210u64))
                                                     } else {
-                                                        let a240 = v0;
-                                                        let a241 = 15u64;
-                                                        if nat_eq(a240, a241) {
+                                                        let a242 = v0;
+                                                        let a243 = 15u64;
+                                                        if nat_eq(a242, a243) {
                                                             Adt2::C1(Adt3::C0(15u64, 256u64, 292u64))
                                                         } else {
-                                                            let a242 = v0;
-                                                            let a243 = 16u64;
-                                                            if nat_eq(a242, a243) {
+                                                            let a244 = v0;
+                                                            let a245 = 16u64;
+                                                            if nat_eq(a244, a245) {
                                                                 Adt2::C1(Adt3::C0(16u64, 256u64, 66u64))
                                                             } else {
-                                                                let a244 = v0;
-                                                                let a245 = 17u64;
-                                                                if nat_eq(a244, a245) {
+                                                                let a246 = v0;
+                                                                let a247 = 17u64;
+                                                                if nat_eq(a246, a247) {
                                                                     Adt2::C1(Adt3::C0(17u64, 256u64, 74u64))
                                                                 } else {
-                                                                    let a246 = v0;
-                                                                    let a247 = 18u64;
-                                                                    if nat_eq(a246, a247) {
+                                                                    let a248 = v0;
+                                                                    let a249 = 18u64;
+                                                                    if nat_eq(a248, a249) {
                                                                         Adt2::C1(Adt3::C0(18u64, 256u64, 98u64))
                                                                     } else {
-                                                                        let a248 = v0;
-                                                                        let a249 = 19u64;
-                                                                        if nat_eq(a248, a249) {
+                                                                        let a250 = v0;
+                                                                        let a251 = 19u64;
+                                                                        if nat_eq(a250, a251) {
                                                                             Adt2::C1(Adt3::C0(19u64, 256u64, 50u64))
                                                                         } else {
-                                                                            let a250 = v0;
-                                                                            let a251 = 20u64;
-                                                                            if nat_eq(a250, a251) {
+                                                                            let a252 = v0;
+                                                                            let a253 = 20u64;
+                                                                            if nat_eq(a252, a253) {
                                                                                 Adt2::C1(Adt3::C0(20u64, 32u64, 18u64))
                                                                             } else {
-                                                                                let a252 = v0;
-                                                                                let a253 = 21u64;
-                                                                                if nat_eq(a252, a253) {
+                                                                                let a254 = v0;
+                                                                                let a255 = 21u64;
+                                                                                if nat_eq(a254, a255) {
                                                                                     Adt2::C1(Adt3::C0(21u64, 256u64, 110u64))
                                                                                 } else {
-                                                                                    let a254 = v0;
-                                                                                    let a255 = 22u64;
-                                                                                    if nat_eq(a254, a255) {
+                                                                                    let a256 = v0;
+                                                                                    let a257 = 22u64;
+                                                                                    if nat_eq(a256, a257) {
                                                                                         Adt2::C1(Adt3::C0(22u64, 256u64, 82u64))
                                                                                     } else {
-                                                                                        let a256 = v0;
-                                                                                        let a257 = 23u64;
-                                                                                        if nat_eq(a256, a257) {
+                                                                                        let a258 = v0;
+                                                                                        let a259 = 23u64;
+                                                                                        if nat_eq(a258, a259) {
                                                                                             Adt2::C1(Adt3::C0(23u64, 256u64, 136u64))
                                                                                         } else {
-                                                                                            let a258 = v0;
-                                                                                            let a259 = 24u64;
-                                                                                            if nat_eq(a258, a259) {
+                                                                                            let a260 = v0;
+                                                                                            let a261 = 24u64;
+                                                                                            if nat_eq(a260, a261) {
                                                                                                 Adt2::C1(Adt3::C0(24u64, 1u64, 1u64))
                                                                                             } else {
-                                                                                                let a260 = v0;
-                                                                                                let a261 = 25u64;
-                                                                                                if nat_eq(a260, a261) {
+                                                                                                let a262 = v0;
+                                                                                                let a263 = 25u64;
+                                                                                                if nat_eq(a262, a263) {
                                                                                                     Adt2::C1(Adt3::C0(25u64, 1u64, 2u64))
                                                                                                 } else {
-                                                                                                    let a262 = v0;
-                                                                                                    let a263 = 26u64;
-                                                                                                    if nat_eq(a262, a263) {
+                                                                                                    let a264 = v0;
+                                                                                                    let a265 = 26u64;
+                                                                                                    if nat_eq(a264, a265) {
                                                                                                         Adt2::C1(Adt3::C0(26u64, 1u64, 4u64))
                                                                                                     } else {
-                                                                                                        let a264 = v0;
-                                                                                                        let a265 = 27u64;
-                                                                                                        if nat_eq(a264, a265) {
+                                                                                                        let a266 = v0;
+                                                                                                        let a267 = 27u64;
+                                                                                                        if nat_eq(a266, a267) {
                                                                                                             Adt2::C1(Adt3::C0(27u64, 1u64, 8u64))
                                                                                                         } else {
-                                                                                                            let a266 = v0;
-                                                                                                            let a267 = 28u64;
-                                                                                                            if nat_eq(a266, a267) {
+                                                                                                            let a268 = v0;
+                                                                                                            let a269 = 28u64;
+                                                                                                            if nat_eq(a268, a269) {
                                                                                                                 Adt2::C1(Adt3::C0(28u64, 1u64, 8u64))
                                                                                                             } else {
-                                                                                                                let a268 = v0;
-                                                                                                                let a269 = 29u64;
-                                                                                                                if nat_eq(a268, a269) {
+                                                                                                                let a270 = v0;
+                                                                                                                let a271 = 29u64;
+                                                                                                                if nat_eq(a270, a271) {
                                                                                                                     Adt2::C1(Adt3::C0(29u64, 256u64, 56u64))
                                                                                                                 } else {
-                                                                                                                    let a270 = v0;
-                                                                                                                    let a271 = 30u64;
-                                                                                                                    if nat_eq(a270, a271) {
+                                                                                                                    let a272 = v0;
+                                                                                                                    let a273 = 30u64;
+                                                                                                                    if nat_eq(a272, a273) {
                                                                                                                         Adt2::C1(Adt3::C0(30u64, 1u64, 2u64))
                                                                                                                     } else {
-                                                                                                                        let a272 = v0;
-                                                                                                                        let a273 = 34u64;
-                                                                                                                        if nat_eq(a272, a273) {
+                                                                                                                        let a274 = v0;
+                                                                                                                        let a275 = 34u64;
+                                                                                                                        if nat_eq(a274, a275) {
                                                                                                                             Adt2::C1(Adt3::C0(34u64, 256u64, 54u64))
                                                                                                                         } else {
-                                                                                                                            let a274 = v0;
-                                                                                                                            let a275 = 35u64;
-                                                                                                                            if nat_eq(a274, a275) {
+                                                                                                                            let a276 = v0;
+                                                                                                                            let a277 = 35u64;
+                                                                                                                            if nat_eq(a276, a277) {
                                                                                                                                 Adt2::C1(Adt3::C0(35u64, 256u64, 66u64))
                                                                                                                             } else {
-                                                                                                                                let a276 = v0;
-                                                                                                                                let a277 = 39u64;
-                                                                                                                                if nat_eq(a276, a277) {
+                                                                                                                                let a278 = v0;
+                                                                                                                                let a279 = 39u64;
+                                                                                                                                if nat_eq(a278, a279) {
                                                                                                                                     Adt2::C1(Adt3::C0(39u64, 32u64, 17u64))
                                                                                                                                 } else {
-                                                                                                                                    let a278 = v0;
-                                                                                                                                    let a279 = 40u64;
-                                                                                                                                    if nat_eq(a278, a279) {
+                                                                                                                                    let a280 = v0;
+                                                                                                                                    let a281 = 40u64;
+                                                                                                                                    if nat_eq(a280, a281) {
                                                                                                                                         Adt2::C1(Adt3::C0(40u64, 64u64, 36u64))
                                                                                                                                     } else {
-                                                                                                                                        let a280 = v0;
-                                                                                                                                        let a281 = 41u64;
-                                                                                                                                        if nat_eq(a280, a281) {
+                                                                                                                                        let a282 = v0;
+                                                                                                                                        let a283 = 41u64;
+                                                                                                                                        if nat_eq(a282, a283) {
                                                                                                                                             Adt2::C1(Adt3::C0(41u64, 128u64, 18u64))
                                                                                                                                         } else {
-                                                                                                                                            let a282 = v0;
-                                                                                                                                            let a283 = 42u64;
-                                                                                                                                            if nat_eq(a282, a283) {
+                                                                                                                                            let a284 = v0;
+                                                                                                                                            let a285 = 42u64;
+                                                                                                                                            if nat_eq(a284, a285) {
                                                                                                                                                 Adt2::C1(Adt3::C0(42u64, 64u64, 18u64))
                                                                                                                                             } else {
-                                                                                                                                                let a284 = v0;
-                                                                                                                                                let a285 = 43u64;
-                                                                                                                                                if nat_eq(a284, a285) {
+                                                                                                                                                let a286 = v0;
+                                                                                                                                                let a287 = 43u64;
+                                                                                                                                                if nat_eq(a286, a287) {
                                                                                                                                                     Adt2::C1(Adt3::C0(43u64, 1u64, 1u64))
                                                                                                                                                 } else {
                                                                                                                                                     Adt2::C0
@@ -1504,73 +1510,73 @@ pub fn f8(v0: u64) -> Adt2 {
 }
 
 pub fn f9(v0: u64, v1: u64, v2: u64, v3: u64) -> bool {
-    let a286 = v0;
-    let a287 = 0u64;
-    if if if nat_eq(a286, a287) {
+    let a288 = v0;
+    let a289 = 0u64;
+    if if if nat_eq(a288, a289) {
         true
     } else {
-        let a288 = v1;
-        let a289 = 0u64;
-        nat_eq(a288, a289)
-    } {
-        true
-    } else {
-        let a290 = v2;
+        let a290 = v1;
         let a291 = 0u64;
         nat_eq(a290, a291)
     } {
         true
     } else {
-        let a292 = v3;
+        let a292 = v2;
         let a293 = 0u64;
         nat_eq(a292, a293)
+    } {
+        true
+    } else {
+        let a294 = v3;
+        let a295 = 0u64;
+        nat_eq(a294, a295)
     }
 }
 
 pub fn f10(v0: u64, v1: u64, v2: u64, v3: u64, v4: Adt0) -> R<u64> {
-    let a310 = {
-        let a305 = {
-            let a300 = {
-                let a295 = v0;
-                let a296 = match v4.clone() {
-                    Adt0::C0(h294, _, _, _) => {
-                        h294
+    let a312 = {
+        let a307 = {
+            let a302 = {
+                let a297 = v0;
+                let a298 = match v4.clone() {
+                    Adt0::C0(h296, _, _, _) => {
+                        h296
                     }
                 };
-                nat_mul(a295, a296)?
+                nat_mul(a297, a298)?
             };
-            let a301 = {
-                let a298 = v1;
-                let a299 = match v4.clone() {
-                    Adt0::C0(_, h297, _, _) => {
-                        h297
+            let a303 = {
+                let a300 = v1;
+                let a301 = match v4.clone() {
+                    Adt0::C0(_, h299, _, _) => {
+                        h299
                     }
                 };
-                nat_mul(a298, a299)?
+                nat_mul(a300, a301)?
             };
-            nat_add(a300, a301)?
+            nat_add(a302, a303)?
         };
-        let a306 = {
-            let a303 = v2;
-            let a304 = match v4.clone() {
-                Adt0::C0(_, _, h302, _) => {
-                    h302
+        let a308 = {
+            let a305 = v2;
+            let a306 = match v4.clone() {
+                Adt0::C0(_, _, h304, _) => {
+                    h304
                 }
             };
-            nat_mul(a303, a304)?
+            nat_mul(a305, a306)?
         };
-        nat_add(a305, a306)?
+        nat_add(a307, a308)?
     };
-    let a311 = {
-        let a308 = v3;
-        let a309 = match v4 {
-            Adt0::C0(_, _, _, h307) => {
-                h307
+    let a313 = {
+        let a310 = v3;
+        let a311 = match v4 {
+            Adt0::C0(_, _, _, h309) => {
+                h309
             }
         };
-        nat_mul(a308, a309)?
+        nat_mul(a310, a311)?
     };
-    nat_add(a310, a311)
+    nat_add(a312, a313)
 }
 
 pub fn run(p0: u64, p1: u64, p2: u64, p3: u64, p4: u64, p5: u64, p6: u64, p7: u64, p8: Adt0, p9: Adt0, p10: Adt0, p11: u64, p12: u64, p13: u64) -> R<Adt1> {

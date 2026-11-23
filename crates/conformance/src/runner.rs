@@ -831,6 +831,7 @@ fn decode_scalar_row(kind: u64, bytes: &[u8], out: &mut [f32]) -> Result<(), Bac
     let width = match kind {
         0 => 4,
         1 | 30 => 2,
+        43 => 1,
         _ => return Err(BackendError::InvalidTensor),
     };
     if out.len().checked_mul(width) != Some(bytes.len()) {
@@ -839,6 +840,8 @@ fn decode_scalar_row(kind: u64, bytes: &[u8], out: &mut [f32]) -> Result<(), Bac
     for (word, value) in bytes.chunks_exact(width).zip(out) {
         *value = if kind == 0 {
             f32::from_ne_bytes(word.try_into().unwrap())
+        } else if kind == 43 {
+            decode_float(kind, word[0].into())?
         } else {
             decode_float(kind, u16::from_ne_bytes(word.try_into().unwrap()).into())?
         };
@@ -1025,7 +1028,14 @@ fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
 }
 
 fn decode_float(storage: u64, word: u64) -> Result<f32, BackendError> {
-    convert(storage, 0, word).map(|bits| f32::from_bits(bits as u32))
+    let bits = if storage == 43 {
+        linear::evaluate_small_float(3, word)
+            .map_err(|_| BackendError::Overflow)?
+            .ok_or(BackendError::InvalidTensor)?
+    } else {
+        convert(storage, 0, word)?
+    };
+    Ok(f32::from_bits(bits as u32))
 }
 
 fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendError> {

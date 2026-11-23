@@ -73,7 +73,7 @@ definition{
   name: scalarLoad,
   parameters: [slot : Nat, at : Nat, offset : Nat, source : Nat, dotType : Nat],
   result: Instruction,
-  body: (if ((source =? 0) && (dotType =? 0)) then (ctor Instruction.transfer false slot at offset) else (ctor Instruction.loadConverted slot at offset source dotType (if (source =? 0) then 4 else 2))),
+  body: (if ((source =? 0) && (dotType =? 0)) then (ctor Instruction.transfer false slot at offset) else (ctor Instruction.loadConverted slot at offset source dotType (if (source =? 43) then 1 else (if (source =? 0) then 4 else 2)))),
   executable: true
 }
 

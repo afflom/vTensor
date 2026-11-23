@@ -89,7 +89,7 @@ definition{
     outputBatch3 : Nat
   ],
   result: MatrixDecision,
-  body: (if (operation =? 30) then (if (((rightType =? 0) || (rightType =? 1)) && ((leftType =? 0) || (outerWeight leftType inner))) then (planMatrix 28 0 0 outputType rows inner leftBatch2 leftBatch3 columns rightInner batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported)) else (if (((floatWord leftType) && (floatWord rightType)) && (((leftType =? 0) || (rightType =? 0)) || (leftType =? rightType))) then (planMatrix operation 0 0 outputType inner rows leftBatch2 leftBatch3 rightInner columns batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported))),
+  body: (if (operation =? 30) then (if (((rightType =? 0) || (rightType =? 1)) && ((leftType =? 0) || (outerWeight leftType inner))) then (planMatrix 28 0 0 outputType rows inner leftBatch2 leftBatch3 columns rightInner batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported)) else (if ((((floatWord leftType) && (floatWord rightType)) && (((leftType =? 0) || (rightType =? 0)) || (leftType =? rightType))) || ((leftType =? 43) && (floatWord rightType))) then (planMatrix operation 0 0 outputType inner rows leftBatch2 leftBatch3 rightInner columns batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported))),
   executable: true
 }
 
