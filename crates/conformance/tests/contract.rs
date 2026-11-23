@@ -306,6 +306,9 @@ ggml_batches! {
     /// Decode contiguous and permuted source blocks with all original upstream copy inputs.
     #[test]
     fn decoded_copies_vt_104() { "upstream-DECODED_COPIES", 53, ["pointwise"] }
+    /// Compare the original indexed and copied low-bit block stores.
+    #[test]
+    fn low_bit_writes_vt_105() { "upstream-LOW_BIT_WRITES", 121, ["typed"] }
     /// Compare all remaining source formats against authoritative GGML decoding and CPU scatter.
     #[test]
     fn decoded_row_gradients_vt_102() { "upstream-GET_ROWS_BACK_DECODED", 54, ["pointwise"] }
@@ -1471,7 +1474,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "c683c79bf4803be55fd09574eaf7ee1bfb7efcfd8d6c8e32e5a4db64c1090f27",
+            "d27e06328745dd89ef148b63266dbddaffe4deae108b0735e46a9a14e5bc9171",
         )
     });
 
@@ -2358,12 +2361,14 @@ int main(int argc, char **argv) {
 
         }
       }
-      if (!strcmp(argv[3]+9,"SET_ROWS_SCALAR") || !strcmp(argv[3]+9,"Q8_STORAGE_WRITES")) {
-        const bool packed = !strcmp(argv[3]+9,"Q8_STORAGE_WRITES");
+      if (!strcmp(argv[3]+9,"SET_ROWS_SCALAR") || !strcmp(argv[3]+9,"Q8_STORAGE_WRITES") || !strcmp(argv[3]+9,"LOW_BIT_WRITES")) {
+        const bool low_bit = !strcmp(argv[3]+9,"LOW_BIT_WRITES");
+        const bool packed = low_bit || !strcmp(argv[3]+9,"Q8_STORAGE_WRITES");
         const int width = packed ? 32 : 2;
-        for (const auto type : {GGML_TYPE_I32, GGML_TYPE_I64}) {
+        const std::vector<ggml_type> kinds = low_bit ? std::vector<ggml_type>{GGML_TYPE_Q4_0,GGML_TYPE_Q4_1,GGML_TYPE_Q5_0,GGML_TYPE_Q5_1} : std::vector<ggml_type>{packed ? GGML_TYPE_Q8_0 : GGML_TYPE_F16};
+        for (const auto kind : kinds) for (const auto type : {GGML_TYPE_I32, GGML_TYPE_I64}) {
           graph_fixture ctx(12); CHECK(ctx);
-          auto dst=ggml_new_tensor_2d(ctx,packed ? GGML_TYPE_Q8_0 : GGML_TYPE_F16,width,3);
+          auto dst=ggml_new_tensor_2d(ctx,kind,width,3);
           auto src=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,width,2);
           auto idx=ggml_new_tensor_1d(ctx,type,2);
           auto out=ggml_set_rows(ctx,dst,src,idx);

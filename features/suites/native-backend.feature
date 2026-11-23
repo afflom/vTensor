@@ -290,3 +290,9 @@ Feature: native-backend
     Given a packed or signed integer GGML source and binary32 destination
     When vTensor copies contiguous or permuted source views
     Then the destination values match the imported CPU evaluator
+
+  @VT-105 @build
+  Scenario: Prism plans indexed and copied four- and five-bit block writes and Verdant encodes the original binary32 and half-width sources
+    Given an indexed destination or a copied view of four- or five-bit blocks
+    When the provider stores complete weight blocks
+    Then the original GGML comparisons pass and late failures preserve destination bytes

@@ -696,3 +696,9 @@ id = "VT-104"
 level = "build"
 suite = "native-backend"
 statement = "Prism addresses source blocks and binary32 destination lanes for type-changing copies and Verdant decodes each original GGML input"
+
+[[id]]
+id = "VT-105"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans indexed and copied four- and five-bit block writes and Verdant encodes the original binary32 and half-width sources"

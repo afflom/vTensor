@@ -1213,33 +1213,43 @@ fn execute_word(
 }
 
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
+    use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode};
+    use BackendError::InvalidTensor;
     let vtensor_typed::Adt2::C0(count, capacity, ..) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
     // SAFETY: admission retained the primary descriptor and each present secondary.
     let (left, secondary) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
-    let primary = graph_tensor_data(left)?;
+    let source = TensorInput::new(left)?;
+    let primary = source.bytes.as_ptr().cast_mut();
     let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
-    let block_source = (tensor.ty == 8)
-        .then(|| TensorInput::new(left))
-        .transpose()?;
-    const _: () = assert!(size_of::<linear::SymmetricQ8Block<32>>() == 34);
+    use linear::WeightBlockEncoding::*;
+    let encoding = match tensor.ty {
+        2 => Some(CenteredFour),
+        3 => Some(AffineFour),
+        6 => Some(CenteredFive),
+        7 => Some(AffineFive),
+        8 => Some(SymmetricEight),
+        _ => None,
+    };
     let mut block_writes = Vec::new();
     let output = graph_tensor_data(tensor)?;
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
                 .map_err(|_| BackendError::Overflow)?;
-        if let vtensor_typed::Adt3::C6(from, to) = instruction {
-            let source = block_source.as_ref().ok_or(BackendError::InvalidTensor)?;
-            let block = linear::encode_symmetric_q8_block(&source.float_block::<32>(from)?)?;
+        if let Encode(from, to) = instruction {
+            let kind = encoding.ok_or(InvalidTensor)?;
+            let mut block = [0; size_of::<linear::SymmetricQ8Block<32>>()];
+            let bytes = block.get_mut(..tensor.nb[0]).ok_or(InvalidTensor)?;
+            linear::encode_weight_block(&source.float_block::<32>(from)?, kind, bytes)?;
             block_writes
                 .try_reserve(1)
                 .map_err(|_| BackendError::Allocation)?;
             block_writes.push((to, block));
             continue;
         }
-        if let vtensor_typed::Adt3::C5(from, to, width, count, descending) = instruction {
+        if let Rank(from, to, width, count, descending) = instruction {
             let rank = match &mut ranker {
                 Some(rank) => rank,
                 None => ranker.insert(linear::RowRankingF32::new(
@@ -1257,49 +1267,33 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
             unsafe { write_row(output.add(to as usize), indices) };
             continue;
         }
-        if let vtensor_typed::Adt3::C4(variant, storage, first, second, target) = instruction {
+        if let Gate(variant, storage, first, second, target) = instruction {
             let operand = |slot: u64| {
                 words
                     .get(slot as usize)
                     .map(|word| f32::from_bits(*word as u32))
-                    .ok_or(BackendError::InvalidTensor)
+                    .ok_or(InvalidTensor)
             };
             let value = gated_value(variant, storage, operand(first)?, operand(second)?)?;
-            *words
-                .get_mut(target as usize)
-                .ok_or(BackendError::InvalidTensor)? = u64::from(value.to_bits());
+            *words.get_mut(target as usize).ok_or(InvalidTensor)? = u64::from(value.to_bits());
             continue;
         }
         // The typed planner and the pointwise interpreter export separate Rust enums
         // for the same word fields. Bind the ordering once across this package boundary.
-        macro_rules! forward_word {
-            ($($field:ident),+) => {
-                match instruction {
-                    vtensor_typed::Adt3::C3($($field),+) => GraphRequest::C3(true, $($field),+),
-                    _ => return Err(BackendError::InvalidTensor),
-                }
-            };
-        }
-        let request = forward_word!(
-            family,
-            operation,
-            source_type,
-            destination_type,
-            left,
-            from,
-            right,
-            at,
-            target,
-            to,
-            read_bytes,
-            write_bytes
+        let Word(family, op, src, dst, left, from, right, at, target, to, read, write) =
+            instruction
+        else {
+            return Err(InvalidTensor);
+        };
+        let request = GraphRequest::C3(
+            true, family, op, src, dst, left, from, right, at, target, to, read, write,
         );
         execute_word(pointwise(request)?, &pointers, output, &mut words)?;
     }
     for (offset, block) in block_writes {
         // SAFETY: Prism bounded each complete block in the destination. All reads and
         // numerical conversions have finished, including any overlapping source views.
-        unsafe { std::ptr::write_unaligned(output.add(offset as usize).cast(), block) };
+        unsafe { write_row(output.add(offset as usize), &block[..tensor.nb[0]]) };
     }
     Ok(())
 }
