@@ -1,8 +1,8 @@
 {
-  "name": "Template contract",
-  "shortName": "Contract",
-  "live": "https://uor-foundation.github.io/template/",
-  "purpose": "Checks each universal policy file of a UOR template repository against its locked digest. Send the six expected and observed digests; it answers conformant, or names every file that drifted, and invalid request for anything else.",
+  "name": "vTensor contract checker",
+  "shortName": "vTensor",
+  "live": "https://afflom.github.io/vTensor/",
+  "purpose": "Verify the six policy-file digests for the vTensor repository against its locked Prism contract. The checker identifies each file whose digest differs.",
   "inputLabel": "Expected and observed digests",
   "placeholder": "hex: followed by 384 bytes",
   "submitLabel": "Check",
@@ -65,14 +65,14 @@
   ],
   "attestations": {
     "proof": {
-      "id": "not recorded for the template's own app; an instance records the UOR MCP server's attestation here",
-      "url": "https://github.com/UOR-Foundation/template/actions/workflows/bootstrap.yml"
+      "id": "The locked SDK reports the verified attestation in the acceptance run.",
+      "url": "https://github.com/afflom/vTensor/actions/workflows/bootstrap.yml"
     },
     "build": {
-      "id": "printed by prismpm verify in every pages run; an instance records it here",
-      "url": "https://github.com/UOR-Foundation/template/actions/workflows/pages.yml"
+      "id": "The Pages build records the holo fingerprint and commit.",
+      "url": "https://github.com/afflom/vTensor/actions/workflows/pages.yml"
     }
   },
-  "repository": "https://github.com/UOR-Foundation/template",
-  "report": "https://github.com/UOR-Foundation/template/blob/main/TEMPLATE-VERIFICATION.md"
+  "repository": "https://github.com/afflom/vTensor",
+  "report": "https://github.com/afflom/vTensor/blob/main/TEMPLATE-VERIFICATION.md"
 }
