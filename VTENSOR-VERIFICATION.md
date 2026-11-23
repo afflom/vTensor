@@ -4800,3 +4800,9 @@ Changing pre-cap division to multiplication in the vTensor adapter made the orig
 ## VT-65 complete checkpoint
 
 The locked SDK passed `just vv` at `31b0c5c589e3b3a25263d883d5f547be38d73fe3` using Verdant PR #24. The gate reused attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. All 72 backend contracts passed, followed by the remaining workspace tests and dependency checks. [Checked source](https://github.com/afflom/vTensor/commit/31b0c5c589e3b3a25263d883d5f547be38d73fe3)
+
+## Three-dimensional image columns
+
+VT-70 models the IM2COL_3D stride, dilation, signed padding, batch and channel coordinates in Prism. It uses the input view's actual byte strides. Verdant converts each selected F32 word or padding zero to the requested output storage. The pinned CPU passed all six contract graphs and 1,533 disjoint standalone graphs. These 1,539 passes close the previous refusals. Another 512 factory ordinals already had passing verdicts. [Imported constructor](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L4706)
+
+Replacing every interior sample address with zero made ordinal 2466 fail with error 1.334158325 against its 0.0000001 limit. Restoring the Prism offset passed the contract and the spatial, capped-attention and hyperbolic regressions.
