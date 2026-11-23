@@ -307,6 +307,8 @@ ggml_batches! {
     #[test]
     fn codebook_products_vt_103() { "upstream-CODEBOOK_PRODUCTS", 6, ["matrix"] }
     #[test]
+    fn four_lane_codebooks_vt_115() { "upstream-FOUR_LANE_CODEBOOKS", 4, ["matrix"] }
+    #[test]
     fn ternary_row_products_vt_114() { "upstream-TERNARY_ROW_PRODUCTS", 4, ["matrix"] }
     #[test]
     fn grouped_nonlinear_product_vt_112() { "upstream-GROUPED_NONLINEAR_PRODUCT", 2, ["matrix"] }
@@ -1489,7 +1491,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "ec1f20a93135bc72433d4f7ce3984ab409b6fb41d8e36635ffcd2913f9af9cc9",
+            "d47b30c038edd20a2b973b8159495ffbc27db88863d04f8ade239e3935d6d2c3",
         )
     });
 

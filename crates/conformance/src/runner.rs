@@ -511,6 +511,10 @@ impl Tensor {
         unsafe { self.src[slot].as_ref() }
     }
 
+    fn source_metadata(&self, slot: usize) -> Result<Option<TensorDescriptor>, BackendError> {
+        self.source(slot).map(tensor_metadata).transpose()
+    }
+
     fn inputs<const N: usize>(&self) -> Result<[Option<TensorInput<'_>>; N], BackendError> {
         let mut inputs = [const { None }; N];
         for (slot, input) in inputs.iter_mut().enumerate() {
@@ -535,12 +539,11 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     if matches!(operation, 43 | 71 | 88) {
         return attention::plan(tensor, operation, output);
     }
-    let source = |slot| tensor.source(slot).map(tensor_metadata).transpose();
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
-    let primary = source(0)?;
-    let secondary = source(1)?;
-    let base = source(2)?;
+    let primary = tensor.source_metadata(0)?;
+    let secondary = tensor.source_metadata(1)?;
+    let base = tensor.source_metadata(2)?;
     if matches!(operation, 45 | 46) {
         return rotary::plan(
             tensor,
@@ -553,8 +556,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         .map(|plan| plan.map(ExecutionPlan::Rotary));
     }
     // Extra ABI sources still have to be valid descriptors. The pointwise model consumes three.
+    let mut extra = false;
     for slot in 3..tensor.src.len() {
-        source(slot)?;
+        extra |= tensor.source_metadata(slot)?.is_some();
     }
     let response = pointwise(GraphRequest::C0(
         operation,
@@ -584,7 +588,6 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             let descriptor = |TensorDescriptor::C0(ty, a, b, c, d, e, f, g, h, _, _)| {
                 vtensor_matrix_q8::Adt1::C0(ty, a, b, c, d, e, f, g, h)
             };
-            let extra = tensor.src[3..].iter().any(|ptr| !ptr.is_null());
             let w = primary.ok_or(InvalidTensor)?;
             // MUL_MAT owns the ordinary row-product route. Other two-input fallbacks use the typed planner.
             if base.is_none() && operation != 28 {
@@ -906,6 +909,8 @@ fn packed_weight(kind: u64) -> Option<PackedWeight> {
         14 => Grouped(GroupedFormat::SignedSix),
         16 => Grouped(GroupedFormat::Codebook(IndexedSigns)),
         17 => Grouped(GroupedFormat::Codebook(ExtendedIndex)),
+        18 => Grouped(GroupedFormat::Codebook(FourLaneIndexedSigns)),
+        21 => Grouped(GroupedFormat::Codebook(FourLaneExplicitSigns)),
         22 => Grouped(GroupedFormat::Codebook(ExplicitSigns)),
         20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)),
         23 => Grouped(GroupedFormat::NonlinearFour),
@@ -966,19 +971,18 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     dot: impl Fn(&TensorInput, u64, &[Block], &mut [f32]) -> Result<f32, BackendError> + Sync,
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
+    use BackendError::{InvalidTensor, Overflow};
     let Plan::C0(blocks, _, rows, _, _, visits, outputs, ..) = plan;
     let [Some(weights), Some(activations), indices] = tensor.inputs()? else {
-        return Err(BackendError::InvalidTensor);
+        return Err(InvalidTensor);
     };
-    let request = |query| run(query).map_err(|_| BackendError::Overflow);
+    let request = |query| run(query).map_err(|_| Overflow);
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = workspace(visits, 0u64)?;
-    let stride = LANES
-        .checked_mul(activations.nb[0])
-        .ok_or(BackendError::Overflow)? as u64;
+    let stride = LANES.checked_mul(activations.nb[0]).ok_or(Overflow)? as u64;
     let mut lanes = [0.0; LANES];
-    let mut prepared = reserved(usize::try_from(blocks).map_err(|_| BackendError::Overflow)?)?;
+    let mut prepared = reserved(usize::try_from(blocks).map_err(|_| Overflow)?)?;
     for (column, (values, offset)) in results
         .chunks_exact_mut(rows as usize)
         .zip(&mut offsets)
@@ -987,7 +991,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         let column = column as u64;
         let mut address = request(Request::C1(plan.clone(), column))?;
         if let Response::C4(at) = address {
-            let source = indices.as_ref().ok_or(BackendError::InvalidTensor)?;
+            let source = indices.as_ref().ok_or(InvalidTensor)?;
             let expert = u32::from_ne_bytes(source.word(at)?);
             address = request(Request::C4(plan.clone(), column, expert.into()))?;
         }
@@ -997,7 +1001,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
                 *offset = dest;
                 continue;
             }
-            _ => return Err(BackendError::InvalidTensor),
+            _ => return Err(InvalidTensor),
         };
         *offset = dest;
         prepared.clear();
@@ -1005,16 +1009,15 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         for _ in 0..blocks {
             activations.decode(from, &mut lanes)?;
             prepared.push(encode(&lanes)?);
-            from = from.checked_add(stride).ok_or(BackendError::Overflow)?;
+            from = from.checked_add(stride).ok_or(Overflow)?;
         }
         execution.fill(values, |first, chunk| {
             let mut scratch = workspace(scratch_width, 0.0_f32)?;
-            for (index, value) in chunk.iter_mut().enumerate() {
-                let row = first + index;
+            for (row, value) in (first..).zip(chunk) {
                 let Response::C3(start) =
                     request(Request::C2(plan.clone(), weight_base, row as u64))?
                 else {
-                    return Err(BackendError::InvalidTensor);
+                    return Err(InvalidTensor);
                 };
                 *value = dot(&weights, start, &prepared, &mut scratch)?;
             }
@@ -1801,13 +1804,8 @@ mod attention {
     ) -> Result<Option<super::ExecutionPlan>, BackendError> {
         use super::ExecutionPlan;
         let descriptor = descriptor_for!(Descriptor::C0);
-        let [a, b, c, d, e, rows] = [0, 1, 2, 3, 4, 5].map(|i| {
-            tensor
-                .source(i)
-                .map(super::tensor_metadata)
-                .transpose()
-                .map(|v| v.map(descriptor))
-        });
+        let [a, b, c, d, e, rows] =
+            [0, 1, 2, 3, 4, 5].map(|slot| tensor.source_metadata(slot).map(|v| v.map(descriptor)));
         let [p0, p1, p2, p3, ..] = tensor.op_params.map(|w| u64::from(w as u32));
         let trailing = tensor.src[6..].iter().any(|p| !p.is_null());
         let query = Request::C8(

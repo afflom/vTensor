@@ -398,7 +398,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x9f696a2e }]
 name = "vtensor_matrix_q8"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xf54fec86 }]
+license-files = [{ path = "src/lib.rs", hash = 0xa22707e9 }]
 
 [[licenses.clarify]]
 name = "verdant_packed_dot"
@@ -696,9 +696,9 @@ license-files = [{ path = "src/lib.rs", hash = 0x8fd1c57a }]
 
 [[licenses.clarify]]
 name = "verdant_grouped_affine"
-version = "=2.36.0"
+version = "=2.39.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x9ecfc923 }]
+license-files = [{ path = "src/lib.rs", hash = 0x0c88246a }]
 
 [[licenses.clarify]]
 name = "verdant_softplus"

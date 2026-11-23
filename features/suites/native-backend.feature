@@ -344,3 +344,9 @@ Feature: native-backend
     Given TQ1_0 or TQ2_0 weights in ordinary and indexed matrix graphs
     When vTensor computes the imported graph
     Then each result passes the pinned GGML CPU comparison
+
+  @VT-115 @build
+  Scenario: Prism plans ordinary and expert matrices with four-lane codebooks and Verdant contracts their quantized rows
+    Given IQ3_XXS or IQ3_S weight rows and F32 activations
+    When the provider evaluates an ordinary or indexed matrix
+    Then each result matches the imported GGML CPU

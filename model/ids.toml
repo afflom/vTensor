@@ -750,3 +750,9 @@ id = "VT-114"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans ordinary and expert matrices with ternary weights and Verdant contracts their rows"
+
+[[id]]
+id = "VT-115"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans ordinary and expert matrices with four-lane codebooks and Verdant contracts their quantized rows"
