@@ -21,7 +21,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,301 non-Prism lines** (12,850 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,300 non-Prism lines** (12,849 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -64,6 +64,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 128 scalar expert compositions, including eight indexed matrix fusions. [Original graph comparisons](verification/factory-scalar-expert-compositions.json)
 - [x] Pass all 157 MUL_MAT and 73 MUL_MAT_ID graphs with E4M3 weights. [VT-85 comparisons](verification/factory-e4m3-products-vt85.json)
 - [x] Pass all 164 newly admitted E4M3 matrix fusions. [Full-graph comparisons](verification/factory-e4m3-compositions.json)
+- [ ] Supply the grouped IQ4_XS row product in Verdant and bind it in vTensor. Pass 55 MUL_MAT cases, six MUL_MAT_ID cases and fusion 26778. [Factory ordinals](verification/ggml-factory-cases.tsv.gz)
 - [x] Supply Q3_K and Q6_K row products in Verdant. All 196 output words matched the pinned GGML CPU. [Verdant PR #40](https://github.com/afflom/verdant-engine/pull/40)
 - [x] Pass the 126 Q3_K/Q6_K matrix cases, 21 expert cases, 32 matrix fusions and both ADD compositions. [181 GGML comparisons](verification/factory-grouped-signed-products-vt110.json)
 - [x] Run a mixed Q3_K/Q6_K GGUF through llama.cpp. All 96,000 logits and the KV writes were compared with CPU across prefill and two decodes. [Host evidence](verification/factory-grouped-signed-products-vt110.json)
