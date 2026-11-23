@@ -260,3 +260,9 @@ Feature: native-backend
     Given the pinned GGML block-float matrix and expert constructors
     When vTensor runs the original graphs on the imported inputs
     Then the numerical rows match the independent GGML CPU evaluator
+
+  @VT-100 @build
+  Scenario: Prism maps indexed scalar row writes to E4M3 storage and Verdant performs the signed conversion after source widening
+    Given the original F16 and F32 indexed row writes into E4M3 storage
+    When vTensor executes the indexed writes through the original destination view
+    Then the imported CPU accepts each numerical result

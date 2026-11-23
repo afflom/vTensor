@@ -253,6 +253,9 @@ ggml_batches! {
     fn scaled_fp4_products_vt_99() { "upstream-SCALED_FP4_PRODUCTS", 4, ["matrix"] }
 
     #[test]
+    fn e4m3_row_stores_vt_100() { "upstream-E4M3_ROW_STORES", 40, ["typed", "pointwise"] }
+
+    #[test]
     fn affine_weight_rows_vt_95() { "upstream-AFFINE_WEIGHT_ROWS", 8, ["attention", "matrix"] }
 
     #[test]
@@ -1474,7 +1477,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "f6ece75d3d2846f32dfa893f5e9651836e9ceb3afdc3d91005774d9e2dde0e4d",
+            "d64f13a596952bfb323ca297a70cb7b920ecf8a487e740ec7e9a6a0ddaf7e8d6",
         )
     });
 

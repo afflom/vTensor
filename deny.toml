@@ -111,7 +111,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xadc19a0d }]
+license-files = [{ path = "src/lib.rs", hash = 0xfd3bdb74 }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -368,7 +368,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xe1315dd4 }]
+license-files = [{ path = "src/lib.rs", hash = 0xae573b33 }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"

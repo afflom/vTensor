@@ -1938,10 +1938,18 @@ definition{
 }
 
 definition{
+  name: castWord,
+  parameters: [source : Nat, target : Nat],
+  result: WordOperation,
+  body: (if (source =? 43) then (ctor WordOperation.smallFloat 3) else (if (target =? 43) then (ctor WordOperation.smallFloat 4) else (ctor WordOperation.storage source target true))),
+  executable: true
+}
+
+definition{
   name: machineOperation,
   parameters: [typed : Bool, family : Nat, operation : Nat, source : Nat, destination : Nat],
   result: WordOperation,
-  body: (if (family =? 0) then (if typed then (ctor WordOperation.storage source destination false) else (ctor WordOperation.wide operation)) else (if (family =? 1) then (ctor WordOperation.scalar operation) else (if (family =? 2) then (ctor WordOperation.encoded operation) else (if (family =? 3) then (ctor WordOperation.unary operation operation false) else (if (family =? 4) then (ctor WordOperation.storage source destination false) else (ctor WordOperation.invalid)))))),
+  body: (if (family =? 0) then (if typed then (if ((source =? 0) && (destination =? 43)) then (castWord source destination) else (ctor WordOperation.storage source destination false)) else (ctor WordOperation.wide operation)) else (if (family =? 1) then (ctor WordOperation.scalar operation) else (if (family =? 2) then (ctor WordOperation.encoded operation) else (if (family =? 3) then (ctor WordOperation.unary operation operation false) else (if (family =? 4) then (ctor WordOperation.storage source destination false) else (ctor WordOperation.invalid)))))),
   executable: true
 }
 
@@ -1999,14 +2007,6 @@ definition{
   body: (match (RmsBackwardGraph::dispatch selected index (project source u0) (project source n1) (project source n2) (project source n3) (project source s0) (project source s1) (project source s2) (project source s3) x0 x1 x2 x3 (project destination s0) (project destination s1) (project destination s2) (project destination s3) flag)
     | NormGraph::Instruction.invalid => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | NormGraph::Instruction.step family operation left from right at target to => (machineWord false family operation 0 0 left from right at target to bytes bytes)),
-  executable: true
-}
-
-definition{
-  name: castWord,
-  parameters: [source : Nat, target : Nat],
-  result: WordOperation,
-  body: (if (source =? 43) then (ctor WordOperation.smallFloat 3) else (if (target =? 43) then (ctor WordOperation.smallFloat 4) else (ctor WordOperation.storage source target true))),
   executable: true
 }
 

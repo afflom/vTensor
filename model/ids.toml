@@ -666,3 +666,9 @@ id = "VT-99"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans MXFP4 and NVFP4 matrix and indexed expert rows and Verdant contracts their E2M1 weights with signed-byte activations"
+
+[[id]]
+id = "VT-100"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps indexed scalar row writes to E4M3 storage and Verdant performs the signed conversion after source widening"

@@ -916,13 +916,7 @@ fn execute_row_products(
             inner,
             tensor,
             plan,
-            |&[x]| {
-                if precision == 0 {
-                    Ok(x)
-                } else {
-                    prepare_float(0, precision, x.to_bits().into())
-                }
-            },
+            |&[x]| prepare_float(0, precision, x.to_bits().into()),
             |source, at, activations, weights| source.dot(at, activations, weights),
         ),
         C0(.., None, 10) => packed!(encode_grouped_q8_block, dot_grouped_q2_row),
@@ -1057,10 +1051,12 @@ fn decode_float(storage: u64, word: u64) -> Result<f32, BackendError> {
 }
 
 fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendError> {
-    if source == dot_type || dot_type == 0 {
-        decode_float(source, word)
-    } else {
-        decode_float(dot_type, convert(source, dot_type, word)?)
+    match (source, dot_type) {
+        (0, 0) => u32::try_from(word)
+            .map(f32::from_bits)
+            .map_err(|_| BackendError::InvalidTensor),
+        _ if source == dot_type || dot_type == 0 => decode_float(source, word),
+        _ => decode_float(dot_type, convert(source, dot_type, word)?),
     }
 }
 
