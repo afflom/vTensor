@@ -146,3 +146,9 @@ Feature: native-backend
     Given original state convolution graphs with batched F32 inputs and optional channel bias and SiLU
     When vTensor maps each sequence and channel to a sliding window
     Then every result matches the original GGML CPU evaluator
+
+  @VT-83 @build
+  Scenario: Prism selects expert rows and Verdant evaluates packed indexed matrix products
+    Given original GGML expert matrices, F32 activations and strided I32 indices
+    When vTensor executes packed matrix products with repeated, broadcast or skipped experts
+    Then its outputs agree with the pinned GGML CPU evaluator

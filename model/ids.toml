@@ -550,3 +550,9 @@ id = "VT-81"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products"
+
+[[id]]
+id = "VT-83"
+level = "build"
+suite = "native-backend"
+statement = "Prism selects expert rows and Verdant evaluates packed indexed matrix products"
