@@ -2,6 +2,7 @@
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{MatrixGraph}
+\importmodule{ScalarDotStorage}
 \importmodule{TensorTypes}
 \title{Natural number}
 \begin{semanticmodule}
@@ -58,6 +59,7 @@ structure{
     {name: o2, type: Nat},
     {name: o3, type: Nat},
     {name: expert, type: (Option ExpertLayout)},
+    {name: scalarPrecision, type: (Option Nat)},
     {name: weightType, type: Nat}
   ]
 }
@@ -101,15 +103,15 @@ definition{
   name: makePlan,
   parameters: [w : Tensor, a : Tensor, o : Tensor, lanes : Nat, width : Nat, rows : Nat, columns : Nat, b2 : Nat, b3 : Nat, ratio2 : Nat, ratio3 : Nat, expert : (Option ExpertLayout)],
   result: Plan,
-  body: (record Plan {blocks := (prim quotient (project w n0) lanes 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply rows (prim multiply columns (prim multiply b2 b3 : Nat) : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), expert := expert, weightType := (project w kind)}),
+  body: (record Plan {blocks := (prim quotient (project w n0) lanes 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply rows (prim multiply columns (prim multiply b2 b3 : Nat) : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), expert := expert, scalarPrecision := (if (MatrixGraph::floatWord (project w kind)) then (ctor Option.some [Nat] (ScalarDotStorage::activationType (project w kind))) else (ctor Option.none [Nat])), weightType := (project w kind)}),
   executable: true
 }
 
 definition{
   name: productStorage,
-  parameters: [w : Tensor, a : Tensor, o : Tensor, lanes : Nat, width : Nat],
+  parameters: [w : Tensor, a : Tensor, o : Tensor, indexed : Bool, lanes : Nat, width : Nat],
   result: Bool,
-  body: ((((((((rowProductType (project w kind)) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && ((project a s0) =? 4)) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))),
+  body: (((((((((rowProductType (project w kind)) || (indexed && (MatrixGraph::floatWord (project w kind)))) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && ((project a s0) =? 4)) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))),
   executable: true
 }
 
@@ -117,7 +119,7 @@ definition{
   name: planStorage,
   parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor, lanes : Nat, width : Nat],
   result: Response,
-  body: (if (productStorage w a o lanes width) then (match (MatrixGraph::planMatrix op 0 (project a kind) (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
+  body: (if (productStorage w a o false lanes width) then (match (MatrixGraph::planMatrix op 0 (project a kind) (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
     | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor Response.planned (makePlan w a o lanes width rows columns b2 b3 ratio2 ratio3 (ctor Option.none [ExpertLayout])))
     | MatrixGraph::MatrixDecision.unsupported => (ctor Response.refused)
     | MatrixGraph::MatrixDecision.invalidShape => (ctor Response.refused)) else (ctor Response.refused)),
@@ -140,7 +142,7 @@ definition{
   result: Response,
   body: (if ((((((((((((((((((((op =? 29) && (if extra then false else true)) && ((project ids kind) =? 26)) && ((project a kind) =? 0)) && ((project o kind) =? 0)) && ((project w n3) =? 1)) && ((project a n3) =? 1)) && ((project ids n3) =? 1)) && ((project o n3) =? 1)) && ((project ids n2) =? 1)) && ((project ids n1) =? (project a n2))) && ((project w n0) =? (project a n0))) && (0 <? (project a n1))) && ((prim remainder (project ids n0) (project a n1) 0 : Nat) =? 0)) && ((project o n0) =? (project w n1))) && ((project o n1) =? (project ids n0))) && ((project o n2) =? (project a n2))) && ((project w s0) <=? (project w s1))) && ((prim multiply (project o n0) 4 : Nat) <=? (project o s1))) && ((prim multiply (project o n1) (project o s1) : Nat) <=? (project o s2))) then (match (TensorTypes::tensorTypeStorage (project w kind))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor Response.refused)
-    | TensorTypes::TypeStorageDecision.knownType storage => (if (productStorage w a o (project storage blockSize) (project storage typeSize)) then (ctor Response.planned (makePlan w a o (project storage blockSize) (project storage typeSize) (project w n1) (project ids n0) (project ids n1) 1 1 1 (ctor Option.some [ExpertLayout] (record ExpertLayout {experts := (project w n2), activationRows := (project a n1), indexLane := (project ids s0), indexToken := (project ids s1)})))) else (ctor Response.refused))) else (ctor Response.refused)),
+    | TensorTypes::TypeStorageDecision.knownType storage => (if (productStorage w a o true (project storage blockSize) (project storage typeSize)) then (ctor Response.planned (makePlan w a o (project storage blockSize) (project storage typeSize) (project w n1) (project ids n0) (project ids n1) 1 1 1 (ctor Option.some [ExpertLayout] (record ExpertLayout {experts := (project w n2), activationRows := (project a n1), indexLane := (project ids s0), indexToken := (project ids s1)})))) else (ctor Response.refused))) else (ctor Response.refused)),
   executable: true
 }
 

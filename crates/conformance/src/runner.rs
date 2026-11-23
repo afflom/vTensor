@@ -6,7 +6,7 @@ use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
 use verdant_tensor::{linear, TensorComputeError};
-use vtensor_matrix_q8::Adt2 as PackedMatrixPlan;
+use vtensor_matrix_q8::Adt2 as RowProductPlan;
 use vtensor_pointwise::{
     Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as GraphPlan, Adt11 as WordOperation,
     Adt12 as WordOperand, Adt13 as WordTarget, Adt2 as TensorDescriptor, Adt3 as IndexContext,
@@ -477,7 +477,7 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
 enum ExecutionPlan {
     Standard(GraphPlan),
     Typed(vtensor_typed::Adt2),
-    Quantized(PackedMatrixPlan),
+    RowProduct(RowProductPlan),
     Rotary(vtensor_rotary::Adt3),
     Attention(Box<vtensor_attention::Adt2>),
 }
@@ -607,7 +607,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 Product::C0(operation, extra, w, a, out)
             };
             match vtensor_matrix_q8::run(request).map_err(|_| BackendError::Overflow)? {
-                vtensor_matrix_q8::Adt4::C1(plan) => Ok(Some(ExecutionPlan::Quantized(plan))),
+                vtensor_matrix_q8::Adt4::C1(plan) => Ok(Some(ExecutionPlan::RowProduct(plan))),
                 _ => Err(InvalidTensor),
             }
         }
@@ -827,6 +827,25 @@ fn decode_words(
     Ok(linear::decode_storage_block(kind, source, bytes, stride)?)
 }
 
+fn decode_scalar_row(kind: u64, bytes: &[u8], out: &mut [f32]) -> Result<(), BackendError> {
+    let width = match kind {
+        0 => 4,
+        1 | 30 => 2,
+        _ => return Err(BackendError::InvalidTensor),
+    };
+    if out.len().checked_mul(width) != Some(bytes.len()) {
+        return Err(BackendError::InvalidTensor);
+    }
+    for (word, value) in bytes.chunks_exact(width).zip(out) {
+        *value = if kind == 0 {
+            f32::from_ne_bytes(word.try_into().unwrap())
+        } else {
+            decode_float(kind, u16::from_ne_bytes(word.try_into().unwrap()).into())?
+        };
+    }
+    Ok(())
+}
+
 struct TensorInput<'a> {
     bytes: &'a [u8],
     tensor: &'a Tensor,
@@ -856,23 +875,55 @@ impl<'a> TensorInput<'a> {
     }
 }
 
-fn execute_quantized_matrix(tensor: &Tensor, plan: PackedMatrixPlan) -> Result<(), BackendError> {
+fn execute_row_products(tensor: &Tensor, plan: RowProductPlan) -> Result<(), BackendError> {
     use linear::{dot_grouped_q2_row, encode_grouped_q8_block};
-    use PackedMatrixPlan::C0;
+    use RowProductPlan::C0;
     let symmetric = linear::encode_symmetric_q8_block::<32>;
+    macro_rules! packed {
+        ($encode:expr, $dot:path) => {
+            execute_block_rows(tensor, plan, |x| Ok($encode(x)?), |w, a| Ok($dot(w, a)?))
+        };
+    }
     match plan {
-        C0(.., 2) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q4_row),
-        C0(.., 8) => execute_block_rows(tensor, plan, symmetric, linear::dot_symmetric_q8_row),
-        C0(.., 10) => execute_block_rows(tensor, plan, encode_grouped_q8_block, dot_grouped_q2_row),
+        C0(inner, _, _, _, _, _, _, .., Some(precision), kind) => {
+            let mut weights = workspace(inner, 0.0_f32)?;
+            execute_block_rows(
+                tensor,
+                plan,
+                |&[x]| {
+                    if precision == 0 {
+                        Ok(x)
+                    } else {
+                        prepare_float(0, precision, x.to_bits().into())
+                    }
+                },
+                |bytes, activations| {
+                    decode_scalar_row(kind, bytes, &mut weights)?;
+                    let mut value = [0.0];
+                    linear::multiply_matrix_rows_f32(
+                        1,
+                        weights.len(),
+                        1,
+                        &weights,
+                        activations,
+                        &mut value,
+                    )?;
+                    Ok(value[0])
+                },
+            )
+        }
+        C0(.., None, 2) => packed!(symmetric, linear::dot_symmetric_q4_row),
+        C0(.., None, 8) => packed!(symmetric, linear::dot_symmetric_q8_row),
+        C0(.., None, 10) => packed!(encode_grouped_q8_block, dot_grouped_q2_row),
         _ => Err(BackendError::InvalidTensor),
     }
 }
 
 fn execute_block_rows<const LANES: usize, Block>(
     tensor: &Tensor,
-    plan: PackedMatrixPlan,
-    encode: impl Fn(&[f32; LANES]) -> Result<Block, TensorComputeError>,
-    dot: impl Fn(&[u8], &[Block]) -> Result<f32, TensorComputeError>,
+    plan: RowProductPlan,
+    encode: impl Fn(&[f32; LANES]) -> Result<Block, BackendError>,
+    mut dot: impl FnMut(&[u8], &[Block]) -> Result<f32, BackendError>,
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
     let Plan::C0(blocks, weight_bytes, rows, _, _, visits, outputs, ..) = plan;
@@ -1375,7 +1426,7 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
                 ExecutionPlan::Attention(plan) => attention::execute(&*tensor, *plan),
                 ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
-                ExecutionPlan::Quantized(plan) => execute_quantized_matrix(&*tensor, plan),
+                ExecutionPlan::RowProduct(plan) => execute_row_products(&*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),
             };
             if result.is_err() {
@@ -1613,16 +1664,7 @@ mod attention {
                 }
                 return Ok(());
             }
-            for (bytes, value) in self.blocks(offset, out.len())?.chunks_exact(width).zip(out) {
-                *value = match (self.tensor.ty as u64, bytes) {
-                    (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
-                    (kind @ (1 | 30), &[a, b]) => {
-                        super::decode_float(kind, u16::from_ne_bytes([a, b]).into())?
-                    }
-                    _ => return Err(InvalidTensor),
-                };
-            }
-            Ok(())
+            super::decode_scalar_row(self.tensor.ty as u64, self.blocks(offset, out.len())?, out)
         }
     }
 

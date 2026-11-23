@@ -2151,6 +2151,31 @@ int main(int argc, char **argv) {
     if (!strncmp(argv[3], "upstream-", 9)) {
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
+      if (!strcmp(argv[3]+9,"SCALAR_MUL_MAT_ID")) {
+        for (auto kind : {GGML_TYPE_F32, GGML_TYPE_Q4_0}) {
+          auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true}); CHECK(ctx);
+          auto weights=ggml_new_tensor_3d(ctx,kind,32,2,2);
+          auto inputs=ggml_new_tensor_3d(ctx,GGML_TYPE_F32,32,1,2);
+          auto storage=ggml_new_tensor_2d(ctx,GGML_TYPE_I32,3,2);
+          auto ids=ggml_view_2d(ctx,storage,1,2,storage->nb[1],sizeof(int32_t));
+          auto output=ggml_mul_mat_id(ctx,weights,inputs,ids);
+          auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,output);
+          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,backend); CHECK(buffer);
+          ggml_backend_buffer_clear(buffer,0);
+          CHECK(ggml_backend_dev_supports_op(dev,output));
+          const std::array<float,4> marker={11,12,13,14}, zeros={};
+          for (int32_t last : {-1, -2, 2}) {
+            const int32_t words[]={9,0,9,9,last,9};
+            ggml_backend_tensor_set(storage,words,0,sizeof(words));
+            ggml_backend_tensor_set(output,marker.data(),0,sizeof(marker));
+            const auto status=ggml_backend_graph_compute(backend,graph);
+            CHECK(status==(last==-1?GGML_STATUS_SUCCESS:GGML_STATUS_FAILED));
+            std::array<float,4> actual; ggml_backend_tensor_get(output,actual.data(),0,sizeof(actual));
+            CHECK(actual==(last==-1?zeros:marker));
+          }
+          ggml_backend_buffer_free(buffer); ggml_free(ctx);
+        }
+      }
       if (!strcmp(argv[3]+9,"SET_ROWS_SCALAR")) {
         for (const auto type : {GGML_TYPE_I32, GGML_TYPE_I64}) {
           auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true});CHECK(ctx);
