@@ -80,3 +80,9 @@ Feature: native-backend
     Given imported IM2COL_3D graphs with strided input views and F16 or F32 output
     When vTensor places each image sample or padding value in its result column
     Then every result matches the original GGML CPU evaluator
+
+  @VT-71 @build
+  Scenario: Prism maps packed GGML outer-product rows into strided Verdant block decoding and matrix contraction and matches the imported CPU evaluator
+    Given all 144 CPU-supported outer-product cases with packed left operands
+    When vTensor contracts each loaded row through the pinned Verdant kernels
+    Then every output matches the upstream CPU reference

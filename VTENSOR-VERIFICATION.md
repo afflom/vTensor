@@ -4812,3 +4812,7 @@ Reading every right-hand word at offset zero corrupted the second batch of ordin
 VT-70 models the IM2COL_3D stride, dilation, signed padding, batch and channel coordinates in Prism. It uses the input view's actual byte strides. Verdant converts each selected F32 word or padding zero to the requested output storage. The pinned CPU passed all six contract graphs and 1,533 disjoint standalone graphs. These 1,539 passes close the previous refusals. Another 512 factory ordinals already had passing verdicts. [Imported constructor](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L4706)
 
 Replacing every interior sample address with zero made ordinal 2466 fail with error 1.334158325 against its 0.0000001 limit. Restoring the Prism offset passed the contract and the spatial, capped-attention and hyperbolic regressions.
+
+### Packed outer products
+
+VT-71 passed all 144 directly CPU-supported packed OUT_PROD factory graphs, covering nine weight formats. Prism schedules each source block from its physical stride. Verdant decodes the block and performs the contraction. Redirecting all block reads to offset zero failed ordinal 15493 with error 1.739076707 against 0.0005. Restoring the implementation passed all nine affected contracts. The locked Clippy and dependency checks passed.

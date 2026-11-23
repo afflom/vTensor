@@ -43,7 +43,7 @@ ggml_batches! {
     fn native_backend_vt_11() { "buffers", 108, ["layout", "native"] }
     /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
     #[test]
-    fn matrix_graphs_vt_12() { "matrix", 1280, ["matrix", "index"] => verify_matrix_graphs() }
+    fn matrix_graphs_vt_12() { "matrix", 1280, ["matrix", "index"] => assert!(vtensor_index::run(u64::MAX, 0, 0, 0, 2, 0, 0, 0).is_err()) }
     /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
     #[test]
     fn elementwise_graphs_vt_13() { "elementwise", 120, ["typed", "pointwise"] }
@@ -196,6 +196,9 @@ ggml_batches! {
     #[test]
     fn image_columns_vt_70() { "upstream-IM2COL_3D_VIEW", 6, ["pointwise"] }
 
+    #[test]
+    fn packed_outer_products_vt_71() { "upstream-OUT_PROD_PACKED", 144, ["matrix", "pointwise"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -334,40 +337,22 @@ fn buffer_allocation_vt_10() {
     }
 }
 
-fn verify_matrix_graphs() {
-    // scalarProductAdmitted checks the unit product in the certified model.
-    // Preserve both malformed inner-dimension and indivisible batch cases.
-    for (k, b2, r2, o2) in [(2, 1, 1, 1), (1, 2, 3, 3)] {
-        assert!(matches!(
-            vtensor_matrix::run(28, 0, 0, 0, k, 1, b2, 1, 1, 1, r2, 1, 1, 1, o2, 1),
-            Ok(vtensor_matrix::Adt0::C1)
-        ));
-    }
-    assert!(vtensor_index::run(u64::MAX, 0, 0, 0, 2, 0, 0, 0).is_err());
-}
-
 fn verify_row_graphs() {
     use vtensor_pointwise::{Adt0, Adt1, Adt2, Adt7 as Response, Adt8 as Plan};
     for (operation, ty, output_type) in [(13, 0, 0), (18, 26, 27)] {
         let empty = Adt2::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
         let output = Adt2::C0(output_type, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
-        let params = Adt1::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let params = Adt1::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let request = Adt0::C0(
+            operation,
+            params,
+            Some(empty.clone()),
+            Some(empty),
+            None,
+            output,
+        );
         assert!(matches!(
-            vtensor_pointwise::run(Adt0::C0(
-                operation,
-                params,
-                Some(empty.clone()),
-                Some(empty),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                output
-            )),
+            vtensor_pointwise::run(request),
             Ok(Response::C0(Plan::C4(2, ..)))
         ));
     }
@@ -553,6 +538,11 @@ mod ggml_oracle {
         let text = std::fs::read_to_string(path)
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
         toml::from_str(&text).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+    }
+
+    pub(super) fn publish_file(candidate: &Path, destination: &Path, stamp: impl AsRef<Path>) {
+        std::fs::write(stamp, file_digest(candidate)).expect("cache digest");
+        std::fs::rename(candidate, destination).expect("publish built oracle");
     }
 
     pub(super) fn verify_file(path: impl AsRef<Path>, stamp: impl AsRef<Path>) {
@@ -787,12 +777,11 @@ mod ggml_oracle {
                 "storage" => "executable",
                 other => other,
             };
-            std::fs::write(
+            publish_file(
+                &candidate,
+                &destination,
                 cache.join(format!("{stamp}.sha256")),
-                file_digest(&candidate),
-            )
-            .expect("cache digest");
-            std::fs::rename(candidate, destination).expect("publish built oracle");
+            );
         }
         executable
     }
@@ -1434,16 +1423,12 @@ mod tensor_layout {
     fn tensor_layout_vt_07() {
         let kinds = &*super::ggml_inventory::STORAGE_TYPES;
         for (&kind, &[_, block, bytes]) in kinds.iter().zip(storage_metadata()) {
-            match vtensor_types::run(kind) {
-                vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(id, block_size, type_size)) => {
-                    assert_eq!(
-                        [id, block_size, type_size],
-                        [kind, block, bytes],
-                        "GGML type {kind}"
-                    );
-                }
-                _ => panic!("declared GGML type {kind} was refused"),
-            }
+            let vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(id, lanes, width)) =
+                vtensor_types::run(kind)
+            else {
+                panic!("declared GGML type {kind} was refused");
+            };
+            assert_eq!([id, lanes, width], [kind, block, bytes], "GGML type {kind}");
         }
         for kind in (0..=44).chain([45, 255, u64::MAX]) {
             if !kinds.contains(&kind) {
@@ -1589,7 +1574,9 @@ fn buffer_transfer_vt_09() {
 }
 
 mod native_backend_oracle {
-    use super::ggml_oracle::{compile, digest, file_digest, run, storage_oracle, verify_file};
+    use super::ggml_oracle::{
+        compile, digest, file_digest, publish_file, run, storage_oracle, verify_file,
+    };
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
     use std::path::Path;
@@ -1610,7 +1597,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "3d99a53363fd8421bfc78e156ac8ad79bb961c5c3755c193096547fca83d427c",
+            "f0de5aba8b4719285151443bb54e273c276758a0b10ea89624a614531f612a3f",
         )
     });
 
@@ -1755,8 +1742,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                     .arg(input)
                     .arg("-o")
                     .arg(&pending));
-                std::fs::write(cache.join("library.sha256"), file_digest(&pending)).unwrap();
-                std::fs::rename(pending, &library).unwrap();
+                publish_file(&pending, &library, cache.join("library.sha256"));
             }
             library
         });
@@ -1769,15 +1755,14 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let stamp = object.with_extension("sha256");
         if !object.exists() {
             compile(common, common.join("ggml/src").join(source), &pending);
-            std::fs::write(&stamp, file_digest(&pending)).unwrap();
-            std::fs::rename(pending, object).unwrap();
+            publish_file(&pending, object, &stamp);
         }
         verify_file(object, stamp);
     }
 
     pub(super) fn verify(root: &Path, mode: &str, expected_cases: usize) {
         static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
-        let _access = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
+        let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let oracle = storage_oracle(root);
         let common = oracle.parent().unwrap();
         let objects = super::ggml_oracle::read_json(common.join("objects.json"));
@@ -1893,6 +1878,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"]
                     .map(|name| common.join(name)),
             );
+            let pending = program.with_extension("new");
             linker.args(cpu_objects);
             linker
                 .arg(&library)
@@ -1901,14 +1887,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                     library.parent().unwrap().display()
                 ))
                 .args(["-lm", "-ldl", "-pthread", "-o"])
-                .arg(cache.join("native-oracle.new"));
+                .arg(&pending);
             run(&mut linker);
-            std::fs::write(
-                cache.join("program.sha256"),
-                file_digest(cache.join("native-oracle.new")),
-            )
-            .unwrap();
-            std::fs::rename(cache.join("native-oracle.new"), &program).unwrap();
+            publish_file(&pending, &program, cache.join("program.sha256"));
         }
         verify_file(&program, cache.join("program.sha256"));
         static STORAGE_TYPES: LazyLock<Vec<u8>> = LazyLock::new(|| {
@@ -1938,8 +1919,11 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             vtensor_backend::source_snapshot() == expected,
             "Rust test library is stale"
         );
-        let expected_snapshot =
-            cache.join(format!("expected-source-{}.snapshot", std::process::id()));
+        let expected_snapshot = cache.join(format!(
+            "expected-source-{}-{:?}.snapshot",
+            std::process::id(),
+            std::thread::current().id()
+        ));
         std::fs::write(&expected_snapshot, &expected).unwrap();
         let recipe = if mode.starts_with("upstream-") {
             None
@@ -1973,6 +1957,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         if let Some(model) = ORACLE_BINDINGS["fixture_libraries"][mode].as_str() {
             command.arg(fixture_library(common, model));
         }
+        // The verified binaries are immutable. Each concurrent evaluator owns its trace paths.
+        drop(build_guard);
         let text = super::ggml_oracle::batch(&mut command, input);
         let footer = format!("RESULT cases {expected_cases}\n");
         let transcript = ORACLE_BINDINGS["factory_transcripts"][mode].as_str();

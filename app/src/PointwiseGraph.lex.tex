@@ -27,13 +27,7 @@ structure{
     {name: p6, type: Nat},
     {name: p7, type: Nat},
     {name: p8, type: Nat},
-    {name: p9, type: Nat},
-    {name: p10, type: Nat},
-    {name: p11, type: Nat},
-    {name: p12, type: Nat},
-    {name: p13, type: Nat},
-    {name: p14, type: Nat},
-    {name: p15, type: Nat}
+    {name: p9, type: Nat}
   ]
 }
 
@@ -257,13 +251,6 @@ inductive{
       fields: [
         Nat,
         OperationParameters,
-        (Option TensorDescriptor),
-        (Option TensorDescriptor),
-        (Option TensorDescriptor),
-        (Option TensorDescriptor),
-        (Option TensorDescriptor),
-        (Option TensorDescriptor),
-        (Option TensorDescriptor),
         (Option TensorDescriptor),
         (Option TensorDescriptor),
         (Option TensorDescriptor),
@@ -1714,7 +1701,7 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 input7 input8 input9 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
+    | GraphRequest.plan operation options input0 input1 input2 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
       | Option.some left => (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)

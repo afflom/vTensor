@@ -715,7 +715,6 @@ dependencies = [
  "vtensor_fixtures",
  "vtensor_index",
  "vtensor_layout",
- "vtensor_matrix",
  "vtensor_matrix_execution",
  "vtensor_matrix_q8",
  "vtensor_native_config",
