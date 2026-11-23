@@ -245,5 +245,75 @@
       15030,
       15031
     ]
+  },
+  "llama_host": {
+    "source_model": "stories15M.gguf",
+    "source_gguf_sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+    "quantizer_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "quantizer_arguments": [
+      "--tensor-type",
+      "blk\\.0\\.ffn_down\\.weight=q3_k",
+      "--tensor-type",
+      "blk\\.1\\.ffn_down\\.weight=q6_k",
+      "stories15M.gguf",
+      "stories15M-vt110-mixed.gguf",
+      "q4_0",
+      "4"
+    ],
+    "quantized_gguf_sha256": "18c52d3c8d509e6a8d5957b50bfb78b5e198b77f1b52b264d54bf87daa75bd1d",
+    "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
+    "prompt": "hello",
+    "public_llama_decode": {
+      "driver_sha256": "d390ca22d61fc6aebe894dbb737a2e9934f487e8b5a00989f0966523570e1b91",
+      "threads": 1,
+      "steps": [
+        {
+          "step": 0,
+          "logits": 32000,
+          "top_token": 29892,
+          "max_abs_logit_difference": 5.7220458984375e-06,
+          "normalized_squared_logit_error": 4.681612498077312e-14,
+          "cache_fp16_values": 6912,
+          "cache_bit_mismatches": 2,
+          "max_abs_cache_difference": 1.52587890625e-05
+        },
+        {
+          "step": 1,
+          "logits": 32000,
+          "top_token": 263,
+          "max_abs_logit_difference": 8.106231689453125e-06,
+          "normalized_squared_logit_error": 2.5825821384158373e-14,
+          "cache_fp16_values": 3456,
+          "cache_bit_mismatches": 2,
+          "max_abs_cache_difference": 0.000244140625
+        },
+        {
+          "step": 2,
+          "logits": 32000,
+          "top_token": 6575,
+          "max_abs_logit_difference": 3.814697265625e-06,
+          "normalized_squared_logit_error": 7.163790424454436e-15,
+          "cache_fp16_values": 3456,
+          "cache_bit_mismatches": 3,
+          "max_abs_cache_difference": 7.62939453125e-06
+        }
+      ],
+      "placement_records": 585,
+      "placement_sha256": "009257bf57c28df88b5878eba014a19ca704785bf1ecc55ef11835e8d33b1cf3",
+      "all_placement_records": "vTensor",
+      "projected_layers": [
+        "blk.0.ffn_down.weight",
+        "blk.1.ffn_down.weight"
+      ]
+    },
+    "unmodified_eval_callback": {
+      "threads": 2,
+      "seed": 42,
+      "reported_sums": 195,
+      "identical_reported_sums": 70,
+      "max_abs_difference": 0.03125,
+      "final_sum_cpu": -317050.625,
+      "final_sum_vtensor": -317050.59375
+    }
   }
 }
