@@ -502,7 +502,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             .map(tensor_metadata)
             .transpose()
     };
-    let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, _, p11, p12, p13, p14, p15] =
+    let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
     let primary = source(0)?;
     let secondary = source(1)?;
@@ -531,7 +531,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     }
     let response = vtensor_pointwise::run(GraphRequest::C0(
         operation,
-        Parameters::C0(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9),
+        Parameters::C0(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11),
         primary.clone(),
         secondary.clone(),
         base.clone(),
@@ -743,13 +743,9 @@ fn execute_convolution(
         ..,
     ) = geometry;
     // SAFETY: the certified plan requires both input descriptors and disjoint output storage.
-    let [kernel, image, destination] = unsafe {
-        [
-            graph_tensor_data(&*tensor.src[0])?,
-            graph_tensor_data(&*tensor.src[1])?,
-            graph_tensor_data(tensor)?,
-        ]
-    };
+    let (kernel, image) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
+    let (kernel, image) = (graph_tensor_data(kernel)?, graph_tensor_data(image)?);
+    let destination = graph_tensor_data(tensor)?;
     let sample = |phase, start, index| {
         let query = GraphRequest::C4(geometry.clone(), phase, start, index as u64);
         match vtensor_pointwise::run(query).map_err(|_| BackendError::Overflow)? {
@@ -757,19 +753,20 @@ fn execute_convolution(
             _ => Err(BackendError::InvalidTensor),
         }
     };
-    let mut weights = workspace(weight_count, 0.0_f32)?;
-    for (index, value) in weights.iter_mut().enumerate() {
+    let count = usize::try_from(weight_count).map_err(|_| BackendError::Overflow)?;
+    let mut weights = reserved(count)?;
+    for index in 0..count {
         let offset = sample(0, 0, index)?.ok_or(BackendError::InvalidTensor)?;
-        // SAFETY: the certified kernel layout bounds this physical F32 or F16 word.
-        let pointer = unsafe { kernel.add(offset as usize) };
-        *value = if kind == 0 {
-            // SAFETY: GGML views can be unaligned, including kernel-offset graphs.
-            unsafe { pointer.cast::<f32>().read_unaligned() }
-        } else {
-            // SAFETY: the selected half word lies in the kernel buffer.
-            let bits = unsafe { pointer.cast::<u16>().read_unaligned() };
-            decode_float(kind, u64::from(bits))?
+        // SAFETY: the plan bounds the full kernel word, including unaligned views.
+        let value = unsafe {
+            let pointer = kernel.add(offset as usize);
+            if kind == 0 {
+                pointer.cast::<f32>().read_unaligned()
+            } else {
+                decode_float(kind, u64::from(pointer.cast::<u16>().read_unaligned()))?
+            }
         };
+        weights.push(value);
     }
     let mut input = workspace(input_capacity, 0.0_f32)?;
     let mut output = workspace(output_capacity, 0.0_f32)?;

@@ -228,6 +228,9 @@ ggml_batches! {
     #[test]
     fn pooling_vt_79() { "upstream-POOLING", 8, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-POOL_HALF_INPUT", 4) }
 
+    #[test]
+    fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -346,12 +349,12 @@ fn buffer_allocation_vt_10() {
 
 fn verify_row_graphs() {
     use vtensor_pointwise::{
-        Adt0 as Request, Adt1 as Parameters, Adt2 as Descriptor, Adt9 as Response, Adt10 as Plan,
+        Adt0 as Request, Adt1 as Parameters, Adt10 as Plan, Adt2 as Descriptor, Adt9 as Response,
     };
     for (operation, ty, output_type) in [(13, 0, 0), (18, 26, 27)] {
         let empty = Descriptor::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
         let output = Descriptor::C0(output_type, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
-        let params = Parameters::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let params = Parameters::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         let request = Request::C0(
             operation,
             params,
@@ -925,6 +928,7 @@ mod ggml_inventory {
         let body = body.split_once("};").expect("enum closes").0;
         let mut next = 0;
         let mut rows = Vec::new();
+        let mut symbols = BTreeSet::new();
         for line in body.lines() {
             let line = line.split("//").next().expect("line").trim();
             if line.is_empty() {
@@ -945,14 +949,11 @@ mod ggml_inventory {
                         .all(|c| c.is_ascii_alphanumeric() || c == b'_'),
                 "unexpected declaration: {symbol}"
             );
+            assert!(symbols.insert(symbol), "duplicate {symbol}");
             rows.push((symbol.to_string(), value));
             next = value.checked_add(1).expect("enum value fits");
         }
         assert!(!rows.is_empty());
-        assert_eq!(
-            rows.iter().map(|r| &r.0).collect::<BTreeSet<_>>().len(),
-            rows.len()
-        );
         rows
     }
 
@@ -1210,8 +1211,7 @@ mod tensor_layout {
 
     fn storage_metadata() -> &'static [[u64; 3]] {
         static METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
-            let root = super::root();
-            certified_current_model(&root, "layout");
+            certified_current_model(&super::root(), "layout");
             let kinds = &*super::ggml_inventory::STORAGE_TYPES;
             let mut input = String::new();
             for &kind in kinds {
@@ -1427,7 +1427,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "fff1c7b7288e1af75fb1a9d5b7b1219d085c7966812629991e78c53ab02b79a6",
+            "1df653bdf9b86f2c70ab791141c7b770bab28643b6089606a017f748b9054a14",
         )
     });
 
