@@ -814,7 +814,6 @@ source = "git+https://github.com/afflom/verdant-engine?rev=204b1de06f0057deaa4bb
 name = "vtensor-backend"
 version = "0.1.0"
 dependencies = [
- "proc-macro2",
  "repo-model",
  "serde_json",
  "sha2",

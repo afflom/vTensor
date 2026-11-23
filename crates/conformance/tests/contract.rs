@@ -165,6 +165,9 @@ ggml_batches! {
     fn typed_runtime_edges_vt_51() { "typed-binary", 977, ["pointwise", "typed"] }
     /// `VT-52`: Scheduled node selection and reuse match the imported CPU.
     #[test]
+    fn synchronous_delay_vt_123() { "upstream-SLEEP", 3, ["native"] }
+
+    #[test]
     fn scheduled_compute_flags_vt_52() { "scheduled-flags", 3, ["native"] }
     /// `VT-53`: The upstream factory evaluates all Q8_0 by F32 matrix cases.
     #[test]
@@ -621,6 +624,12 @@ fn fixture_generation_vt_47() {
     fixture_queries(47, 4);
 }
 
+// Hash the compiler's own recipe tokens. A change to either the cached
+// artifact's inputs or the command that produces it selects a new artifact.
+macro_rules! build_recipe {
+    ($id:ident; $($item:item)+) => { const $id: &str = stringify!($($item)+); $($item)+ };
+}
+build_recipe! { STORAGE_RECIPE;
 mod ggml_oracle {
 
     use sha2::{Digest, Sha256};
@@ -707,17 +716,6 @@ mod ggml_oracle {
         output.stdout
     }
 
-    pub(super) fn recipe_tokens(start: &str, end: &str, closing: &str) -> String {
-        let (_, tail) = include_str!("contract.rs")
-            .split_once(start)
-            .expect("recipe start");
-        let (body, _) = tail.split_once(end).expect("recipe end");
-        format!("{start}{body}{closing}")
-            .parse::<proc_macro2::TokenStream>()
-            .unwrap()
-            .to_string()
-    }
-
     fn verify_source_cache(root: &Path, cache: &Path) {
         // GNU tar checks content, size and file type against the pinned archive in one pass.
         // Extraction by the unprivileged SDK user may change ownership, modes or timestamps.
@@ -770,7 +768,7 @@ mod ggml_oracle {
         let mut identity = Sha256::new();
         for input in [
             archive_digest.as_bytes(),
-            recipe_tokens("\nmod ggml_oracle {", "\nmod ggml_inventory {", "").as_bytes(),
+            super::STORAGE_RECIPE.as_bytes(),
             &run(Command::new("cc").arg("--version")),
             &run(Command::new("c++").arg("--version")),
         ] {
@@ -1008,6 +1006,8 @@ int main(int argc, char **argv) {
     return 2;
 }
 "##;
+}
+
 }
 
 mod ggml_inventory {
@@ -1502,7 +1502,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "d42956db261c2f90875c19056200cf2ab87b012b657b324da7ab52d240c89e7c",
+            "a92f4ada2e3f230406fd1c266250acc8021c82fdd7828451e2f66ca5201a9706",
         )
     });
 
@@ -1565,6 +1565,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 }
 "#;
 
+    build_recipe! { FIXTURE_RECIPE;
     fn fixture_library(common: &Path, model: &'static str) -> std::path::PathBuf {
         use std::{collections::BTreeMap, path::PathBuf, sync::Mutex};
         static LIBRARIES: Mutex<BTreeMap<&str, PathBuf>> = Mutex::new(BTreeMap::new());
@@ -1577,23 +1578,18 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             let mut identity = Sha256::new();
             identity.update(std::fs::read(&source).unwrap());
             identity.update(FIXTURE_BRIDGE);
-            identity.update(super::ggml_oracle::recipe_tokens(
-                "\n    fn fixture_library(",
-                "\n    fn compiled_object(",
-                "",
-            ));
+            identity.update(FIXTURE_RECIPE);
+            identity.update(OBJECT_RECIPE);
             identity.update(run(Command::new("rustc").args(["--version", "--verbose"])));
             let cache = common
                 .join("fixture-model")
                 .join(digest(&identity.finalize()));
-            std::fs::create_dir_all(&cache).unwrap();
             let library = cache.join("libfixtures.so");
-            if !library.exists() {
+            checked_build(&library, &cache.join("library.sha256"), |pending| {
                 let input = cache.join("bridge.rs");
                 let bridge =
                     format!("#[path = {source:?}] mod vtensor_fixture_model;\n{FIXTURE_BRIDGE}");
                 std::fs::write(&input, bridge).unwrap();
-                let pending = library.with_extension("new");
                 run(Command::new("rustc")
                     .args([
                         "--edition=2021",
@@ -1604,40 +1600,43 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                     ])
                     .arg(input)
                     .arg("-o")
-                    .arg(&pending));
-                publish_file(&pending, &library, cache.join("library.sha256"));
-            }
+                    .arg(pending));
+            });
             library
         });
         verify_file(&*library, library.parent().unwrap().join("library.sha256"));
         library.clone()
     }
 
+    }
+
+    build_recipe! { OBJECT_RECIPE;
     fn compiled_object(common: &Path, source: &Path) -> std::path::PathBuf {
-        let mut name = source.as_os_str().to_owned();
-        name.push(".o");
-        let object = common.join("reference-object").join(name);
-        std::fs::create_dir_all(object.parent().unwrap()).unwrap();
-        let pending = object.with_extension("new");
-        let stamp = object.with_extension("sha256");
-        if !object.exists() {
-            compile(common, common.join("ggml/src").join(source), &pending);
-            publish_file(&pending, &object, &stamp);
-        }
-        verify_file(&object, stamp);
+        let mut filename = source.as_os_str().to_owned();
+        filename.push(".o");
+        let object = common.join("reference-object").join(filename);
+        checked_build(&object, &object.with_extension("sha256"), |pending| {
+            compile(common, common.join("ggml/src").join(source), pending);
+        });
         object
     }
 
-    pub(super) fn verify(root: &Path, mode: &str, expected_cases: usize) {
-        static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
-        let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
-        let oracle = storage_oracle(root);
-        let common = oracle.parent().unwrap();
-        let core = common.join(super::ggml_oracle::GGML_CORE);
-        verify_file(&core, core.with_extension("sha256"));
-        let library = super::provider_library();
+    fn checked_build(output: &Path, stamp: &Path, build: impl FnOnce(&Path)) {
+        if !output.exists() {
+            std::fs::create_dir_all(output.parent().unwrap()).unwrap();
+            let pending = output.with_extension("new");
+            build(&pending);
+            publish_file(&pending, output, stamp);
+        }
+        verify_file(output, stamp);
+    }
+
+    }
+
+    build_recipe! { HOST_RECIPE;
+    fn build_host(common: &Path, library: &Path, imported: bool) -> std::path::PathBuf {
         let mut driver = String::from(HEADER);
-        if mode.starts_with("upstream-") {
+        if imported {
             driver.insert_str(0, "#define VTENSOR_IMPORTED_SUITE\n");
         }
         for (key, value) in vtensor_backend::abi_layout() {
@@ -1655,20 +1654,14 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         // The host dynamically loads this path; live provenance checks bind its contents.
         identity.update(driver.as_bytes());
         identity.update(common.as_os_str().as_encoded_bytes());
-        // Bind the compiler/linker recipe, not fixture generation or runtime orchestration.
-        // The synthetic closing brace completes `verify` for lossless Rust tokenization.
-        identity.update(super::ggml_oracle::recipe_tokens(
-            "\n    fn compiled_object(",
-            "\n        verify_file(&program,",
-            "\n}",
-        ));
-        if mode.starts_with("upstream-") {
+        identity.update(HOST_RECIPE);
+        identity.update(OBJECT_RECIPE);
+        if imported {
             identity.update(UPSTREAM_SUITE.as_bytes());
         }
         let cache = common.join("native").join(digest(&identity.finalize()));
-        std::fs::create_dir_all(&cache).unwrap();
         let program = cache.join("native-oracle");
-        if !program.exists() {
+        checked_build(&program, &cache.join("program.sha256"), |pending| {
             std::fs::write(cache.join("driver.cpp"), &driver).unwrap();
             let mut linker = Command::new("c++");
             linker.args(["-Wl,--gc-sections", "-Wl,--export-dynamic"]);
@@ -1689,7 +1682,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .0
                 .split_whitespace()
                 .filter(|name| name.ends_with(".c") || name.ends_with(".cpp"));
-            if mode.starts_with("upstream-") {
+            if imported {
                 let suite = common
                     .join("imported-suite")
                     .join(digest(&Sha256::digest(UPSTREAM_SUITE)));
@@ -1699,8 +1692,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 linker.arg(compiled_object(common, &input));
             }
             linker.arg(cache.join("driver.o"));
-            linker.arg(core);
-            let pending = program.with_extension("new");
+            linker.arg(common.join(super::ggml_oracle::GGML_CORE));
             linker.args(
                 frontend
                     .into_iter()
@@ -1708,17 +1700,34 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                     .map(|source| compiled_object(common, Path::new(source))),
             );
             linker
-                .arg(&library)
+                .arg(library)
                 .arg(format!(
                     "-Wl,-rpath,{}",
                     library.parent().unwrap().display()
                 ))
                 .args(["-lm", "-ldl", "-pthread", "-o"])
-                .arg(&pending);
+                .arg(pending);
             run(&mut linker);
-            publish_file(&pending, &program, cache.join("program.sha256"));
-        }
-        verify_file(&program, cache.join("program.sha256"));
+        });
+        program
+    }
+    }
+
+    pub(super) fn verify(root: &Path, mode: &str, expected_cases: usize) {
+        static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
+        let oracle = storage_oracle(root);
+        let common = oracle.parent().unwrap();
+        let core = common.join(super::ggml_oracle::GGML_CORE);
+        verify_file(&core, core.with_extension("sha256"));
+        let library = super::provider_library();
+        static HOSTS: [std::sync::OnceLock<std::path::PathBuf>; 2] =
+            [const { std::sync::OnceLock::new() }; 2];
+        let imported = mode.starts_with("upstream-");
+        let program =
+            HOSTS[usize::from(imported)].get_or_init(|| build_host(common, &library, imported));
+        let cache = program.parent().unwrap();
+        verify_file(program, cache.join("program.sha256"));
         static STORAGE_TYPES: LazyLock<String> = LazyLock::new(|| {
             super::ggml_inventory::STORAGE_TYPES
                 .iter()
@@ -1772,7 +1781,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 std::fs::remove_file(path).unwrap();
             }
         }
-        let mut command = Command::new(&program);
+        let mut command = Command::new(program);
         command.arg(&library).arg(&expected_snapshot).arg(mode);
         if let Some(model) = ORACLE_BINDINGS["fixture_libraries"][mode].as_str() {
             command.arg(fixture_library(common, model));
@@ -1824,13 +1833,6 @@ struct vtensor_observation : printer {
     }
   }
 };
-static bool vtensor_use_reference(ggml_backend_t reference) {
-    using set_reference = void (*)(ggml_backend_t,bool);
-    auto reg=ggml_backend_dev_backend_reg(ggml_backend_get_device(reference));
-    auto use_reference=(set_reference)ggml_backend_reg_get_proc_address(reg,"ggml_backend_cpu_set_use_ref");
-    if(!use_reference) return false;
-    use_reference(reference,true);return true;
-}
 // Both references run the original graph on the provider. The CPU either decodes
 // the operand types or independently materializes their strided views.
 static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_backend_t cpu, ggml_op op) {
@@ -1901,7 +1903,6 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
     return true;
 }
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
-    if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
     decltype(make_test_cases_eval()) tests;
     if (!strcmp(op,"POOL_HALF_INPUT")) {
@@ -1987,13 +1988,13 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
       std::string vars() override {return label;}
       double max_nmse_err() override {return 0.0;}
     } test(payload,factory,initialize,label);
-    if(!vtensor_use_reference(reference)) return false;
     vtensor_observation observed;
     return test.eval(backend,reference,op,&observed)==test_status_t::OK && !observed.bad && observed.records==1;
 }
 "##;
 
-    const HEADER: &str = r##"#include "ggml-cpp.h"
+    const HEADER: &str = concat!(
+        r##"#include "ggml-cpp.h"
 #include "ggml-backend.h"
 #include "ggml-backend-impl.h"
 #include "ggml-alloc.h"
@@ -2022,6 +2023,15 @@ extern "C" size_t vtensor_build_sources_size();
 extern size_t vtensor_imported_suite(ggml_backend_t, ggml_backend_t, const char *);
 extern bool vtensor_imported_case(ggml_backend_t, ggml_backend_t, const char *, const char *, void *, ggml_tensor * (*)(ggml_context *, void *, void *), void (*)(ggml_context *, void *)=nullptr);
 extern ggml_tensor *vtensor_oracle_tensor(void *,ggml_context *,ggml_type,int64_t,int64_t,int64_t,int64_t);
+#endif
+#ifdef VTENSOR_IMPORTED_SUITE
+#define main vtensor_sleep_main
+#define printf(...) std::fprintf(stderr,__VA_ARGS__)
+"##,
+        include_str!("../../../vendor/llama.cpp-oracle/tests/test-sleep.cpp"),
+        r##"
+#undef printf
+#undef main
 #endif
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "native check line %d: %s\n", __LINE__, #x); return 2; } } while (0)
 static void refusal(const char *message) { _exit(strstr(message, "out of bounds") ? 12 : 99); }
@@ -2128,7 +2138,8 @@ int main(int argc, char **argv) {
     const std::vector<unsigned char> expected_source((std::istreambuf_iterator<char>(expected_file)), std::istreambuf_iterator<char>());
     CHECK(expected_source.size() == vtensor_build_sources_size());
     CHECK(!memcmp(expected_source.data(), vtensor_build_sources(), expected_source.size()));
-"##;
+"##
+    );
 
     const BODY: &str = r##"
     ggml_set_abort_callback(unexpected_abort);
@@ -2256,6 +2267,18 @@ int main(int argc, char **argv) {
     }
 #ifdef VTENSOR_IMPORTED_SUITE
     if (!strncmp(argv[3], "upstream-", 9)) {
+      ggml_backend_cpu_set_use_ref(reference,true);
+      if (!strcmp(argv[3], "upstream-SLEEP")) {
+        CHECK(test_sleep(backend,GGML_TYPE_F32,4096,5000,4)==TEST_OK);
+        graph_fixture ctx(6); CHECK(ctx);
+        auto storage=ggml_new_tensor_1d(ctx,GGML_TYPE_I32,5);
+        auto view=ggml_view_1d(ctx,storage,3,sizeof(int32_t));
+        auto out=ggml_sleep(ctx,view,0);
+        auto graph=ctx.allocate(out,backend); CHECK(graph && out->data==view->data);
+        CHECK(ggml_backend_supports_op(backend,out));
+        CHECK(refuses_change(backend,dev,graph,out,out->op_params[0],int32_t(-1)));
+        CHECK(refuses_change(backend,dev,graph,out,out->view_offs,size_t(0)));
+      }
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
       if (!strcmp(argv[3]+9,"TOP_K_MASK_VARIANTS")) {

@@ -23,6 +23,7 @@ const EVIDENCE: [&str; 3] = [
 const INPUT_PATHS: &str = "app :(exclude)app/specs prismpm.lock Justfile rust-toolchain.toml";
 
 /// A kept proof, as read back from `.prism-proof`.
+#[derive(Clone)]
 struct Kept {
     attestation: String,
     manifest: Vec<u8>,
@@ -32,6 +33,7 @@ struct Kept {
 }
 
 /// What this checkout and this SDK image would prove now.
+#[derive(Clone)]
 struct Observed {
     inputs: String,
     source_id: String,
@@ -62,12 +64,16 @@ fn same(what: &str, kept: &str, observed: &str) -> Result<(), String> {
     }
 }
 
-fn workspace_paths(lexlean: &Value) -> Result<Vec<String>, String> {
-    let rows = lexlean
+fn workspace_rows(lexlean: &Value) -> Result<&Vec<Value>, String> {
+    lexlean
         .get("lake_workspace")
         .and_then(Value::as_array)
-        .ok_or("the attestation names no Lake workspace")?;
-    rows.iter()
+        .ok_or_else(|| "the attestation names no Lake workspace".into())
+}
+
+fn workspace_paths(lexlean: &Value) -> Result<Vec<String>, String> {
+    workspace_rows(lexlean)?
+        .iter()
         .map(|row| {
             let path = text(row, "/path")?;
             if path.is_empty() || path.starts_with('/') || path.split('/').any(|part| part == "..")
@@ -96,34 +102,29 @@ fn acceptance_digest(acceptance: &Value) -> Result<String, String> {
 }
 
 /// The whole read-time check. Pure, so each planted defect is a unit test.
-fn binds(kept: &Kept, observed: &Observed) -> Result<(), String> {
+fn binds(
+    kept: &Kept,
+    observe: impl FnOnce(&Value) -> Result<Observed, String>,
+) -> Result<(), String> {
     if !repo_model::artifact::is_lowercase_hex(&kept.attestation, 64) {
         return Err("the kept attestation ID is not a SHA-256".into());
     }
     // The ID resolves: prismpm defines the attestation ID as the SHA-256 of
     // the manifest bytes.
-    same(
-        "the manifest's address",
-        &kept.attestation,
-        &hex(&kept.manifest),
-    )?;
+    let address = hex(&kept.manifest);
+    same("the manifest's address", &kept.attestation, &address)?;
     let parse = |bytes: &[u8], name: &str| {
         serde_json::from_slice::<Value>(bytes).map_err(|error| format!("{name}: {error}"))
     };
     let manifest = parse(&kept.manifest, "manifest.json")?;
     let lexlean = parse(&kept.lexlean, "lexlean-attestation.json")?;
     let acceptance = parse(&kept.acceptance, "application-acceptance.json")?;
-    same(
-        "the manifest schema",
-        text(&manifest, "/schema")?,
-        "prismpm/application-verification-manifest/2",
-    )?;
-    // The manifest binds the evidence it names, byte for byte.
-    same(
-        "the LexLean attestation",
-        text(&manifest, "/lexlean_attestation_sha256")?,
-        &hex(&kept.lexlean),
-    )?;
+    let check_field =
+        |doc: &Value, path: &str, expected: &str| same(path, text(doc, path)?, expected);
+    let schema = "prismpm/application-verification-manifest/2";
+    check_field(&manifest, "/schema", schema)?;
+    let lexlean_digest = hex(&kept.lexlean);
+    check_field(&manifest, "/lexlean_attestation_sha256", &lexlean_digest)?;
     // PrismPM's own verifier reads the acceptance only in canonical framing.
     if serde_json::to_vec(&acceptance).ok().as_deref() != Some(kept.acceptance.as_slice()) {
         return Err("the application acceptance is not canonical JSON".into());
@@ -133,52 +134,31 @@ fn binds(kept: &Kept, observed: &Observed) -> Result<(), String> {
         text(&manifest, "/acceptance_sha256")?,
         &acceptance_digest(&acceptance)?,
     )?;
-    same("the LexLean status", text(&lexlean, "/status")?, "verified")?;
-    same(
-        "the acceptance status",
-        text(&acceptance, "/status")?,
-        "verified",
-    )?;
-    same(
-        "the acceptance's LexLean attestation",
-        text(&acceptance, "/lexlean_attestation_id")?,
-        text(&lexlean, "/attestation_id")?,
-    )?;
-    same(
-        "the acceptance's build",
-        text(&acceptance, "/build_id")?,
-        text(&manifest, "/build_id")?,
-    )?;
-    // The attestation binds this checkout's model and this image's Lean.
-    same(
-        "the source ID",
-        text(&lexlean, "/source_id")?,
-        &observed.source_id,
-    )?;
-    same(
-        "the semantic ID",
-        text(&lexlean, "/semantic_id")?,
-        &observed.semantic_id,
-    )?;
-    same(
-        "the Lean executable",
-        text(&lexlean, "/toolchain/lean/executable_sha256")?,
-        &observed.lean_sha256,
-    )?;
-    same(
-        "the Lake executable",
-        text(&lexlean, "/toolchain/lake/executable_sha256")?,
-        &observed.lake_sha256,
-    )?;
-    same(
-        "the architecture",
-        text(&lexlean, "/host/arch")?,
-        &observed.arch,
-    )?;
-    let rows = lexlean
-        .get("lake_workspace")
-        .and_then(Value::as_array)
-        .ok_or("the attestation names no Lake workspace")?;
+    for (label, document) in [
+        ("the LexLean status", &lexlean),
+        ("the acceptance status", &acceptance),
+    ] {
+        same(label, text(document, "/status")?, "verified")?;
+    }
+    let model_id = text(&lexlean, "/attestation_id")?;
+    check_field(&acceptance, "/lexlean_attestation_id", model_id)?;
+    check_field(&acceptance, "/build_id", text(&manifest, "/build_id")?)?;
+    let recorded = kept
+        .inputs
+        .strip_prefix(&format!("attestation {}\n", kept.attestation))
+        .ok_or("the kept inputs name another attestation")?;
+    // Check the live model and toolchain only once the sealed documents agree.
+    let observed = observe(&lexlean)?;
+    for (path, expected) in [
+        ("/source_id", &observed.source_id),
+        ("/semantic_id", &observed.semantic_id),
+        ("/toolchain/lean/executable_sha256", &observed.lean_sha256),
+        ("/toolchain/lake/executable_sha256", &observed.lake_sha256),
+        ("/host/arch", &observed.arch),
+    ] {
+        check_field(&lexlean, path, expected)?;
+    }
+    let rows = workspace_rows(&lexlean)?;
     if rows.len() != observed.workspace.len() {
         return Err("the Lake workspace differs".into());
     }
@@ -188,10 +168,6 @@ fn binds(kept: &Kept, observed: &Observed) -> Result<(), String> {
     }
     // Every other proof input: the SDK image, the tools it runs, and every
     // checked-in byte the cache key names.
-    let recorded = kept
-        .inputs
-        .strip_prefix(&format!("attestation {}\n", kept.attestation))
-        .ok_or("the kept inputs name another attestation")?;
     if recorded != observed.inputs {
         return Err("the proof inputs differ from the kept proof's".into());
     }
@@ -289,8 +265,9 @@ fn read_kept(root: &Path) -> Result<Kept, Fail> {
 
 fn check(root: &Path) -> Result<String, Fail> {
     let kept = read_kept(root)?;
-    let lexlean: Value = serde_json::from_slice(&kept.lexlean)?;
-    binds(&kept, &observe(root, &lexlean)?)?;
+    binds(&kept, |lexlean| {
+        observe(root, lexlean).map_err(|e| e.to_string())
+    })?;
     Ok(kept.attestation)
 }
 
@@ -340,7 +317,11 @@ pub fn keep(root: &Path, attestation: &str) -> Result<(), Fail> {
 
 #[cfg(test)]
 mod tests {
-    use super::{acceptance_digest, binds, hex, Kept, Observed};
+    use super::{acceptance_digest, hex, Kept, Observed};
+
+    fn binds(kept: &Kept, observed: &Observed) -> Result<(), String> {
+        super::binds(kept, |_| Ok(observed.clone()))
+    }
     use serde_json::json;
 
     const LEAN: &str = "e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550";
@@ -445,91 +426,59 @@ mod tests {
 
     #[test]
     fn a_kept_proof_that_does_not_bind_these_inputs_is_proved_again() {
-        let mut plants: Vec<(&str, Kept, Observed)> = Vec::new();
-        let sealed = || seal(&proof());
+        let baseline = seal(&proof());
+        let now = observed();
 
-        let mut kept = sealed();
-        kept.attestation = "f".repeat(64);
-        plants.push(("an ID that does not resolve", kept, observed()));
+        // Damage sealed evidence without updating the manifest.
+        type Mutation<T> = (&'static str, fn(&mut T));
+        let corrupt_kept: &[Mutation<Kept>] = &[
+            ("attestation ID", |k| k.attestation = "f".repeat(64)),
+            ("inputs name another attestation", |k| {
+                k.inputs.insert(0, '!')
+            }),
+            ("manifest", |k| k.manifest.push(b' ')),
+            ("LexLean attestation", |k| k.lexlean.push(b' ')),
+            ("application acceptance", |k| k.acceptance.push(b' ')),
+        ];
+        for (defect, corrupt) in corrupt_kept {
+            let mut kept = baseline.clone();
+            corrupt(&mut kept);
+            assert!(super::binds(&kept, |_| panic!(
+                "observed checkout after invalid {defect}"
+            ))
+            .is_err());
+        }
 
-        let mut kept = sealed();
-        kept.manifest.push(b' ');
-        plants.push(("a manifest changed after sealing", kept, observed()));
+        // Seal a consistent hash over documents that disagree about their verdict or identity.
+        for (document, key, value) in [
+            ("lexlean", "status", "failed"),
+            ("acceptance", "status", "failed"),
+            ("acceptance", "lexlean_attestation_id", &"3".repeat(64)),
+        ] {
+            let mut changed = proof();
+            let target = if document == "lexlean" {
+                &mut changed.lexlean
+            } else {
+                &mut changed.acceptance
+            };
+            target[key] = json!(value);
+            assert!(binds(&seal(&changed), &now).is_err(), "{document}/{key}");
+        }
 
-        let mut kept = sealed();
-        kept.lexlean.push(b' ');
-        plants.push((
-            "a LexLean attestation the manifest does not hash",
-            kept,
-            observed(),
-        ));
-
-        let mut kept = sealed();
-        kept.acceptance.push(b' ');
-        plants.push(("an acceptance the manifest does not hash", kept, observed()));
-
-        let mut failed = proof();
-        failed.lexlean["status"] = json!("failed");
-        plants.push((
-            "a LexLean verdict that is not verified",
-            seal(&failed),
-            observed(),
-        ));
-
-        let mut failed = proof();
-        failed.acceptance["status"] = json!("failed");
-        plants.push((
-            "an acceptance that is not verified",
-            seal(&failed),
-            observed(),
-        ));
-
-        let mut other = proof();
-        other.acceptance["lexlean_attestation_id"] = json!("3".repeat(64));
-        plants.push((
-            "an acceptance of another LexLean attestation",
-            seal(&other),
-            observed(),
-        ));
-
-        let mut now = observed();
-        now.source_id = "4".repeat(64);
-        plants.push(("a changed model", sealed(), now));
-
-        let mut now = observed();
-        now.semantic_id = "5".repeat(64);
-        plants.push(("a changed meaning", sealed(), now));
-
-        let mut now = observed();
-        now.lean_sha256 = "6".repeat(64);
-        plants.push(("another Lean toolchain", sealed(), now));
-
-        let mut now = observed();
-        now.lake_sha256 = "7".repeat(64);
-        plants.push(("another Lake", sealed(), now));
-
-        let mut now = observed();
-        now.arch = "aarch64".to_owned();
-        plants.push(("another architecture", sealed(), now));
-
-        let mut now = observed();
-        now.workspace[0].1 = "8".repeat(64);
-        plants.push(("a changed lean-toolchain file", sealed(), now));
-
-        let mut now = observed();
-        now.inputs = INPUTS.replace("cd3b", "0000");
-        plants.push(("another SDK image", sealed(), now));
-
-        let mut now = observed();
-        now.inputs.push_str(" M Justfile\n");
-        plants.push(("a modified input", sealed(), now));
-
-        let mut kept = sealed();
-        kept.inputs = format!("attestation {}\n{INPUTS}", "9".repeat(64));
-        plants.push(("inputs recorded for another attestation", kept, observed()));
-
-        for (defect, kept, now) in &plants {
-            assert!(binds(kept, now).is_err(), "{defect} was reused");
+        let corrupt_observed: &[Mutation<Observed>] = &[
+            ("source", |o| o.source_id = "4".repeat(64)),
+            ("semantics", |o| o.semantic_id = "5".repeat(64)),
+            ("Lean", |o| o.lean_sha256 = "6".repeat(64)),
+            ("Lake", |o| o.lake_sha256 = "7".repeat(64)),
+            ("architecture", |o| o.arch = "aarch64".into()),
+            ("workspace", |o| o.workspace[0].1 = "8".repeat(64)),
+            ("SDK image", |o| o.inputs = INPUTS.replace("cd3b", "0000")),
+            ("modified input", |o| o.inputs.push_str(" M Justfile\n")),
+        ];
+        for (defect, corrupt) in corrupt_observed {
+            let mut changed = now.clone();
+            corrupt(&mut changed);
+            assert!(binds(&baseline, &changed).is_err(), "{defect} was reused");
         }
     }
 

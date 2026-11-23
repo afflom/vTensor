@@ -386,3 +386,9 @@ Feature: native-backend
     Given the imported binary32 softmax gradient graphs with zero and positive head bias
     When the backend reduces each probability-gradient dot product and applies the upstream scale
     Then the results agree with the pinned GGML CPU and Vulkan backends for their admitted graphs
+
+  @VT-123 @build
+  Scenario: Prism admits GGML scheduler delays that preserve their input view and complete before graph return
+    Given an original GGML sleep graph with an aliased input
+    When the graph runs on the CPU oracle and vTensor
+    Then both preserve the input bytes and wait for the requested duration

@@ -792,3 +792,9 @@ id = "VT-121"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules the rowwise softmax derivative and Verdant reproduces the imported GGML gradient"
+
+[[id]]
+id = "VT-123"
+level = "build"
+suite = "native-backend"
+statement = "Prism admits GGML scheduler delays that preserve their input view and complete before graph return"

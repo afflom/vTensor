@@ -633,6 +633,7 @@ pub enum Adt0 {
     C1(u64, u64),
     C2(u64),
     C3(u64, u64, u64),
+    C4(u64, u64, bool, bool),
 }
 
 #[derive(Clone)]
@@ -719,6 +720,25 @@ pub fn f0(v0: Adt0) -> bool {
                 let a29 = v7;
                 let a30 = 100u64;
                 nat_le(a29, a30)
+            } else {
+                false
+            }
+        }
+        Adt0::C4(v8, v9, v10, v11) => {
+            let a31 = v8;
+            let a32 = 99u64;
+            if if if nat_eq(a31, a32) {
+                let a33 = v9;
+                let a34 = 2147483648u64;
+                nat_lt(a33, a34)
+            } else {
+                false
+            } {
+                v10
+            } else {
+                false
+            } {
+                v11
             } else {
                 false
             }

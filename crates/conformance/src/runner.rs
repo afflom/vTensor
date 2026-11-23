@@ -483,6 +483,7 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
 }
 
 enum ExecutionPlan {
+    Delay(std::time::Duration),
     Standard(GraphPlan),
     Typed(vtensor_typed::Adt2),
     RowProduct(RowProductPlan),
@@ -535,6 +536,22 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     let operation = u64::try_from(tensor.op).map_err(|_| InvalidTensor)?;
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
         return Ok(None);
+    }
+    if operation == 99 {
+        let source = tensor.source(0).ok_or(InvalidTensor)?;
+        let backing = std::ptr::NonNull::new(source.view_src).unwrap_or_else(|| source.into());
+        let layout = |t: &Tensor| (t.ty, t.ne, t.nb, t.data);
+        let micros = u64::from(tensor.op_params[0] as u32);
+        let request = vtensor_native_predicates::Adt0::C4(
+            operation,
+            micros,
+            layout(tensor) == layout(source),
+            tensor.view_src == backing.as_ptr() && tensor.view_offs == source.view_offs,
+        );
+        let delay = ExecutionPlan::Delay(std::time::Duration::from_micros(micros));
+        return vtensor_native_predicates::run(request)
+            .then_some(Some(delay))
+            .ok_or(InvalidTensor);
     }
     if matches!(operation, 43 | 71 | 88) {
         return attention::plan(tensor, operation, output);
@@ -1436,6 +1453,10 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
                 ExecutionPlan::Standard(GraphPlan::C6(geometry)) => {
                     execute_convolution(&*tensor, geometry)
+                }
+                ExecutionPlan::Delay(duration) => {
+                    std::thread::sleep(duration);
+                    Ok(())
                 }
                 ExecutionPlan::SparseMask(plan) => attention::sparse_mask(&*tensor, *plan),
                 ExecutionPlan::Softmax(plan) => attention::softmax(&*tensor, *plan),
