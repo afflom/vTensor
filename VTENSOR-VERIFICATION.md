@@ -5020,3 +5020,9 @@ All 1,063 distinct ordinals passed. The original factory supplied 155 F32-activa
 ## Small-format attention
 
 VT-96 runs all 19 upstream attention constructors with Q1_0, Q2_0 or F8_E4M3 cache storage against GGML CPU. Prism admits each layout and selects query storage. The provider uses the existing Verdant encoders, row products and block decoders. Substituting the Q2_0 product for Q1_0 failed ordinal 24788 with error 0.999872080 against the upstream tolerance of 0.0005. After restoration VT-96 and the VT-87, VT-94 and VT-95 regression tests passed. [Artifact and ordinal hashes](verification/factory-small-format-attention-vt96.json)
+
+## Affine block dependency and provider checks
+
+Verdant PR #34 passed the complete locked-SDK `just vv` at the immutable patch used by vTensor, including 85 engine conformance tests and 68 tensor tests. [Upstream verification](https://github.com/afflom/verdant-engine/blob/a2c6a4d/ENGINE-VERIFICATION.md#vtk-37-affine-four--and-five-bit-row-products)
+
+At vTensor `2256d53` the VT-95 run passed 103 backend contract tests and verified the Prism application attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. Its final dependency check rejected stale generated-source hashes for the matrix and attention crates. At `eea1bad` the locked SDK passed all four cargo-deny checks with the hashes for the VT-96 certified outputs.
