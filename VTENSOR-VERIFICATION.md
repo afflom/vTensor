@@ -4911,3 +4911,9 @@ The complete locked-SDK `just vv` passed at `685b50a364772537ad6ba33054df523bea3
 ### Matrix and arithmetic fixture streams
 
 Prism generates the four header words, each case descriptor and every operand word in the matrix and elementwise fixture streams. VT-35 and VT-36 check the byte counts and SHA-256 digests against the frozen baselines. VT-12 and VT-13 execute the same cached inputs against the imported GGML CPU backend. Flipping one bit in the first matrix record changed its digest from `b9b926d7…` to `54e256fd…` and failed VT-35. Restoring the original word passed.
+
+### Scalar expert selection and E4M3 products
+
+VT-84 compares all 251 original F32, F16 and BF16 indexed matrix graphs. It also sets the final expert ID to an out-of-range number through a strided index view and checks that the destination retains every byte on refusal. Prism resolves the expert and the byte ranges. Verdant prepares the activations and computes the row product. [VT-84 results](verification/factory-scalar-experts-vt84.json)
+
+VT-85 compares all 230 original E4M3 matrix and indexed matrix graphs and 164 additional matrix fusions. The plugin calls the existing Verdant eight-bit float decoder. Selecting the wrong format failed the original evaluator on ordinal 13232 with normalized squared error 1.0 against a maximum of 0.0005. Restoring the decoder passed. VT-02 checked the compiled plugin’s upstream dependency pin and GGML imports after integration. [Product evidence](verification/factory-e4m3-products-vt85.json) · [Fusion evidence](verification/factory-e4m3-compositions.json)
