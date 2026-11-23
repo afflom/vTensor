@@ -1,7 +1,7 @@
 {
   "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
-  "verdant_revision": "8e41fee8386914e55842a6de69d5b25de50cf4fe",
+  "verdant_revision": "24d9acbd0520d56f6fc9b27e5e67f70d0de17774",
   "requirement": "VT-81",
   "implementation": "ccde11c569e90fd76dc1950f21afcec0c8084b4f",
   "provider_sha256": "aaeca4605ac3716775b668222c0c836cd9a7b042bb9350e2436233ec42fa3d3d",

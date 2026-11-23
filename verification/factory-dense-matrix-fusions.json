@@ -2,7 +2,7 @@
   "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
   "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
   "implementation": "ccde11c569e90fd76dc1950f21afcec0c8084b4f",
-  "verdant_revision": "8e41fee8386914e55842a6de69d5b25de50cf4fe",
+  "verdant_revision": "24d9acbd0520d56f6fc9b27e5e67f70d0de17774",
   "oracle_executable_sha256": "aedff5021dc10bdd37584c52abdcc1c53ea83ca8962166c1e8e80fe4ed9d6b95",
   "provider_sha256": "aaeca4605ac3716775b668222c0c836cd9a7b042bb9350e2436233ec42fa3d3d",
   "pointwise_lock_sha256": "d0dfb87aad7ab18775ce07fefb6fb1eba6b3655d6d08058bae5f73844eeb2822",
