@@ -266,7 +266,7 @@ model does not sanction.
 
 | ID | Level | Statement |
 | --- | --- | --- |
-| `VT-02` | `build` | The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API |
+| `VT-02` | `build` | The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services |
 | `VT-03` | `build` | vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results |
 
 ## window-graphs

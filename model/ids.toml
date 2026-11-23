@@ -77,7 +77,7 @@ statement = "The imported GGML backend contract, implementation interface, and o
 id = "VT-02"
 level = "build"
 suite = "verdant-api"
-statement = "The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API"
+statement = "The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services"
 
 [[id]]
 id = "VT-03"

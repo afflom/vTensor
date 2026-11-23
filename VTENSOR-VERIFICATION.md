@@ -4824,3 +4824,9 @@ The complete locked-SDK `just vv` passed at `3f1cabd0b5de78bb31b8485bf1f1a1223a9
 ## Planar image columns and depthwise 1D convolution
 
 VT-72 passed all 113 original IM2COL cases and both supplemental GGML graphs with F16 inputs. The nine original CONV_1D_DW graphs also passed, including BF16 kernels. They compose the existing image-column and matrix primitives. Prism selects each image sample, and Verdant converts the encoded word. Reading every interior sample at offset zero failed ordinal 2361 with error 1.992249257 against 0.0000001. The restored implementation passed the planar, 3D, row, packed outer-product and buffer-transfer contracts. [Oracle records](verification/factory-planar-columns-vt72.json)
+
+## Provider linkage
+
+VT-02 reads the undefined dynamic symbols of the backend that Cargo built. Its GGML imports are the host abort hook, buffer initialization and host query, graph size and node lookup. The GGML CPU oracle lives in the separate test executable. The check runs once alongside the existing Verdant source and descriptor checks.
+
+Changing the compiled graph-size binding to resolve `ggml_mul_mat` made VT-02 fail with `unexpected provider import ggml_mul_mat`. Restoring the binding passed VT-02 and the declaration-inventory regression in the locked SDK. [Approved GGML host imports](verification/native-oracle-bindings.json)

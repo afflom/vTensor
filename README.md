@@ -43,7 +43,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | ID | Level | Status |
 | --- | --- | --- |
 | `VT-01` | build | Pins and checks the imported GGML contract and oracle source. |
-| `VT-02` | build | Verifies Cargo resolves the exact upstream patch and Verdant exposes its fifteen ordered kernel descriptors. |
+| `VT-02` | build | Checks the exact Verdant patch, fifteen ordered kernel descriptors and the compiled provider’s GGML host imports. [Linkage check](VTENSOR-VERIFICATION.md#provider-linkage) |
 | `VT-03` | build | Delegates one fixed 4×4 F64 matrix primitive to Verdant. |
 | `VT-04` | build | Inventories GGML operations, nested unary variants and storage-type declarations without claiming their implementation. |
 | `VT-05` | build | Executes upstream storage-size functions from the pinned source. |

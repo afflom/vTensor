@@ -1022,35 +1022,6 @@ mod ggml_inventory {
         rows
     }
 
-    fn compare(
-        inventory: &toml::Value,
-        key: &str,
-        expected: &[(String, i64)],
-    ) -> Result<(), String> {
-        let rows = inventory[key]
-            .as_array()
-            .ok_or("missing declaration array")?;
-        let actual: Result<Vec<_>, String> = rows
-            .iter()
-            .map(|row| {
-                let fields = row.as_table().ok_or("declaration is not a table")?;
-                if fields.len() != 2 {
-                    return Err("declaration must contain exactly symbol and value".into());
-                }
-                Ok((
-                    row["symbol"].as_str().ok_or("missing symbol")?.to_string(),
-                    row["value"].as_integer().ok_or("missing numeric value")?,
-                ))
-            })
-            .collect();
-        if actual? != expected {
-            return Err(format!(
-                "{key}: inventory differs from pinned upstream declarations"
-            ));
-        }
-        Ok(())
-    }
-
     /// `VT-04`: The imported GGML operation and tensor type declarations are inventoried exactly without implementation claims
     #[test]
     fn ggml_inventory_vt_04() {
@@ -1074,8 +1045,19 @@ mod ggml_inventory {
             ("tensor_type", "ggml_type", "GGML_TYPE_"),
             ("unary", "ggml_unary_op", "GGML_UNARY_OP_"),
         ] {
-            let expected = declarations(&header, name, prefix);
-            compare(&inventory, key, &expected).expect("exact upstream declaration inventory");
+            let expected: Vec<_> = declarations(&header, name, prefix)
+                .into_iter()
+                .map(|(symbol, value)| {
+                    toml::Value::Table(toml::toml! { symbol = (symbol) value = (value) })
+                })
+                .collect();
+            let matches = |candidate: &toml::Value| {
+                candidate.get(key).and_then(toml::Value::as_array) == Some(&expected)
+            };
+            assert!(
+                matches(&inventory),
+                "{key} differs from the pinned declarations"
+            );
             // This gate must reject omissions, additions, reordering, numeric drift,
             // and invented implementation claims, including changes to its own comparator.
             for mutation in 0..5 {
@@ -1095,10 +1077,7 @@ mod ggml_inventory {
                             .insert("implemented".into(), toml::Value::Boolean(true));
                     }
                 }
-                assert!(
-                    compare(&damaged, key, &expected).is_err(),
-                    "mutation {mutation} escaped"
-                );
+                assert!(!matches(&damaged), "mutation {mutation} escaped");
             }
         }
     }
@@ -1475,14 +1454,31 @@ mod verdant_api {
             .to_owned()
     });
 
-    /// `VT-02`: The Verdant integration exposes the fifteen unified tensor kernel descriptors from its pinned API
+    /// `VT-02`: The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services
     #[test]
     fn verdant_api_vt_02() {
         LazyLock::force(&ENGINE_ROOT);
         let kernels = verified_unified_tensor_kernels().expect("Verdant verified kernel inventory");
-        assert_eq!(kernels.len(), 15);
-        for (index, kernel) in kernels.iter().enumerate() {
-            assert_eq!(kernel.index, index as u64);
+        assert!(kernels.iter().map(|kernel| kernel.index).eq(0..15));
+
+        let library = std::env::current_exe()
+            .unwrap()
+            .with_file_name("libvtensor_backend.so");
+        let listing = super::ggml_oracle::run(
+            std::process::Command::new("nm")
+                .args(["-D", "--undefined-only", "--format=just-symbols"])
+                .arg(library),
+        );
+        let allowed = super::native_backend_oracle::ORACLE_BINDINGS["allowed_ggml_host_imports"]
+            .as_array()
+            .expect("GGML host imports");
+        for symbol in std::str::from_utf8(&listing).unwrap().lines() {
+            if symbol.starts_with("ggml_") || symbol.starts_with("gguf_") {
+                assert!(
+                    allowed.iter().any(|entry| entry.as_str() == Some(symbol)),
+                    "unexpected provider import {symbol}"
+                );
+            }
         }
     }
 
@@ -1583,10 +1579,10 @@ mod native_backend_oracle {
 
     use std::sync::LazyLock;
 
-    static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
+    pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "e77124f96cfaee8c88ee9d25b07660edef62c885b5a36f8eb2d85a0a2867f1f0",
+            "1085ee7e12b9c55183a87e43357f77dd4ac00587af8da38061b3b2d26c2ddb94",
         )
     });
 
