@@ -236,3 +236,9 @@ Feature: native-backend
     Given original ordinary matrix indexed expert and extended attention graphs
     When vTensor runs with affine four- or five-bit weight rows
     Then the imported CPU accepts each numerical output
+
+  @VT-96 @build
+  Scenario: Prism admits sign, two-bit and E4M3 attention rows and binds their query conversion, key contraction and value reads to Verdant
+    Given the nineteen original GGML short-bit and E4M3 attention constructors
+    When vTensor executes the original key, value and query layouts
+    Then the imported CPU accepts each numerical result
