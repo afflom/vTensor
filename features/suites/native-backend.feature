@@ -107,6 +107,6 @@ Feature: native-backend
 
   @VT-76 @build
   Scenario: Original channel-major GGML convolution graphs agree with upstream CPU convolution on equivalent contiguous tensors
-    Given original GGML convolution graphs with F32 images and F16 or F32 kernels
-    When vTensor gathers a tile of patches and Verdant multiplies it by the filter matrix
-    Then every result matches the original GGML CPU evaluator
+    Given an original channel-major factory graph declined by the CPU kernel
+    When GGML CPU independently materializes both operands from the same initialized leaves
+    Then the original vTensor output agrees with the CPU convolution
