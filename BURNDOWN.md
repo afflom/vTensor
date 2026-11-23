@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,800 passed**, **955 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,806 passed**, **949 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -117,7 +117,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 12 TANH graphs and the composed SOFTCAP graph on Verdant PR #25. [VT-67 results](verification/factory-hyperbolic-vt68.json)
 - [x] Pass all 241 zero-bias F16 attention graphs with soft cap 10. 241 pass. [VT-68 results](verification/factory-hyperbolic-vt68.json)
 - [x] Pass all 12 SWIGLU_CLAMP graphs across F32, F16 and BF16 and 303 newly supported matrix fusions. [VT-93 results](verification/factory-clamped-swiglu-vt93.json)
-- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, GEGLU_ERF, and their composed graphs. Close the 10 refused ADD cases. The other 163 pass. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
+- [x] Pass all 173 ADD graphs, including ordinary and in-place E4M3 + F32. All 427 SUB, MUL and DIV graphs also pass. [E4M3 comparisons](verification/factory-small-float-add-vt120.json) · [Binary arithmetic](verification/factory-checkpoint-vt57.json)
+- [ ] Pass the remaining GELU_ERF (12), GEGLU_ERF (36), ELU (12) and XIELU (6) graphs.
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract
@@ -135,7 +136,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass 12 SOFTPLUS, 39 SOFTPLUS_MUL, 10 ADD_SOFTPLUS_MUL and the final 176 TOPK_MOE cases. All 692 TOPK_MOE graphs pass. [VT-89](verification/factory-softplus-vt89.json) · [Compositions](verification/factory-softplus-compositions.json)
 - [x] Pass all 38 TOP_K_MASK graphs, including broadcast masks, optional scores, block maps and extra cells. [VT-92 results](verification/factory-mask-vt92.json)
 - [x] Verify padded and permuted TOP_K_MASK outputs, untouched padding and rejection of overlapping rows. [CPU regression](VTENSOR-VERIFICATION.md#sparse-mask-output-strides)
-- [ ] Implement LIGHTNING_INDEXER and DSV4 operations.
+- [ ] Verify all 210 LIGHTNING_INDEXER graphs. Implement DSV4_HC_PRE (18), DSV4_HC_POST (11) and DSV4_HC_COMB (11).
 - [x] Pass all 2,051 IM2COL_3D factory cases. The 1,539 previous refusals now match the CPU for F32/F16 output, padded and dilated inputs and views. [VT-70 results](verification/factory-image-columns-vt70.json)
 - [x] Pass all 113 IM2COL factory cases, both supplemental F16-input graphs and all nine CONV_1D_DW compositions. [VT-72 evidence](verification/factory-planar-columns-vt72.json)
 - [x] Pass all 2,030 directly CPU-supported CONV_2D cases through the Verdant matrix product. 2,030 pass. [VT-74 results](verification/factory-direct-convolution-vt74.json)
@@ -148,8 +149,10 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Pass the remaining spatial factory graphs (8 CONV_2D_DW, 24 UPSCALE, 6 TIMESTEP_EMBEDDING). [Case inventory](verification/ggml-factory-inventory.json)
 - [ ] Compare IM2COL_BACK and POOL_2D_BACK gradients with the pinned GGML CPU using original forward inputs, padding and overlapping windows. [Imported declarations](model/ggml-declarations.toml)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
-- [ ] Complete SSM scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
-- [ ] Complete remaining gradients, cross-entropy, SGD and AdamW. Exercise applicable upstream gradient checks and parameter updates.
+- [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).
+- [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5), RWKV_WKV6 (4), RWKV_WKV7 (5), GATED_LINEAR_ATTN (4) and SOLVE_TRI (26).
+- [ ] Pass SOFT_MAX_BACK (48) and SILU_BACK (1).
+- [ ] Pass cross-entropy forward (2) and backward (2), SGD (1) and AdamW (1). Verify gradients and parameter updates.
 - [ ] Implement MAP_CUSTOM1/2/3, CUSTOM and SLEEP effects. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.
 - [ ] Close every residual legal variant in the ledger, including partial families from VT-01–51. Cover strides, empty axes, broadcasting, overlapping views, precision and typed failures where applicable.
 

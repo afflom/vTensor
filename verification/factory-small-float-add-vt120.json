@@ -1,0 +1,29 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-120",
+  "implementation": "c7e1b7aab5a4161c1480402b7665fab3f4910997",
+  "verdant_revision": "5e825eb99be98ab160a9fec9dc8febedb84501b0",
+  "provider_sha256": "4b4fb6ccf504218078f7b11229b101410727b03d77389e24bc2b9bc1cf8e5395",
+  "provider_inputs_sha256": "6aa9612d6a4ea1fabc973b55cd79baabbf93c07119f3fc438d25d536eb46ffce",
+  "oracle_executable_sha256": "2e00e6899127c85e0402219ebd4cc55ffe12b31fc77a07f0d42e2ce3462a6ee3",
+  "pointwise_lock_sha256": "af5053ba9a2acedb3789c792ef6d904d3c5d7df32a6d8ba947b0776284fe15d6",
+  "typed_lock_sha256": "e7d036883ac0801bb7e13265c4cc5f4bc58cd78aafdb591b7e0e23d2c34bc15c",
+  "oracle": "The pinned GGML CPU evaluates all six original E4M3 + F32 graphs, including ordinary and in-place output at widths 1, 7 and 33.",
+  "mutation": {
+    "change": "Zero the input byte before widening E4M3.",
+    "diagnostic": "[ADD] ERR = 0.819584899 > 0.000000100",
+    "ordinal": 9473
+  },
+  "contract_transcript_sha256": "ceb683ebb31bfbbaa4d63c030903fbad035077e8c26285bc4ead6779798f4e8f",
+  "case_ordinals": {
+    "ADD": [
+      9473,
+      9474,
+      9475,
+      9476,
+      9477,
+      9478
+    ]
+  }
+}
