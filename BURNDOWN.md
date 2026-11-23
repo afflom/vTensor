@@ -122,6 +122,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass the full locked-SDK gate at VT-80. All 86 backend contracts passed. [Checkpoint](VTENSOR-VERIFICATION.md#vt-80-complete-checkpoint)
 - [x] Pass the full locked-SDK gate at VT-82 on Verdant PR #27. All 89 backend contracts passed. [Checkpoint](VTENSOR-VERIFICATION.md#vt-82-complete-checkpoint)
 - [x] Pass the complete VT-85 gate on the upstream Verdant PR #27 pin. All 92 backend contracts passed. [Checkpoint](VTENSOR-VERIFICATION.md#vt-85-complete-checkpoint)
+- [x] Pass the complete VT-90 gate. All 98 backend contracts and the dependency checks passed on the Verdant PR #31 pin. [Checkpoint](VTENSOR-VERIFICATION.md#vt-90-complete-checkpoint)
 - [x] Restore the dependency license check on the PR #31 pin. VT-87 passed all 95 contracts, then caught two missing clarifications. The upstream records for all four new primitives now pass `just deny`. [Verification](VTENSOR-VERIFICATION.md#verdant-generated-package-licenses)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 

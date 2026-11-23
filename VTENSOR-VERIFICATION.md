@@ -4982,3 +4982,7 @@ Prism maps each 128-lane Q1_0 or 64-lane Q2_0 weight block to its 32-lane activa
 ### Sparse top-k masks
 
 VT-92 compares all 38 original TOP_K_MASK graphs with the pinned CPU for F16 and F32 masks. Prism determines the live index ranges and source and destination offsets. Verdant's existing ordered binary32 comparison rejects NaNs and negative infinity for score liveness. Its storage transfer preserves selected mask words. A supplemental CPU graph checked signed zero, a NaN payload, a subnormal, infinities, repeated and invalid indices. The provider refused three invalid descriptors with output preserved. Inverting score liveness produced negative infinity for a cell where the CPU read 0.164429. Restoration passed. The integrated provider passed VT-02, VT-87, VT-91 and VT-92 and workspace Clippy. [Oracle evidence](verification/factory-mask-vt92.json)
+
+### VT-90 complete checkpoint
+
+The locked SDK ran `just vv` on `c9a725d991423928dead64e3f7eabe4f7cde6480` with Verdant PR #31. All 98 backend contracts passed in 305.56 seconds with zero failures, skips or filters. Cargo-deny accepted the advisories, bans, licenses and sources. The complete gate exited successfully. [Tested vTensor revision](https://github.com/afflom/vTensor/commit/c9a725d991423928dead64e3f7eabe4f7cde6480)
