@@ -4894,3 +4894,12 @@ The complete locked-SDK `just vv` passed on `024b20c94de1069d68f0a57ec0624ea45bb
 ### Column-to-signal overlap
 
 Prism finds the contributing columns in the upstream summation order. Verdant converts each F16, BF16 or F32 input, sums it in binary32 and converts the final value to the destination type. All 33 original COL2IM_1D cases passed. Replacing addition with subtraction failed ordinal 8093 at NMSE 4.0 against the CPU limit of 0.0000001. The factory driver ran the single-column cases first, preserved the requested transcript order and rejected repeated and out-of-range ordinals before comparing any graph. The native source check now reads each compiler input once per test process. Changing the live ABI source made a prebuilt test fail with the stale filename. After restoring it, the same prebuilt test passed. The F16 pooling and image-column supplemental graphs also passed through the shared evaluator. [Case-level evidence](verification/factory-column-overlap-vt82.json)
+
+
+### Packed indexed matrix products
+
+VT-83 compares all 230 original Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs with the pinned GGML CPU backend. Nine cases run in the permanent contract. The other 221 ran once against the same certified matrix root. The first comparison refused the graph before implementation. Forcing every active slot to select expert zero produced NMSE 2.164573898 at ordinal 13528 against the original limit of 0.0005. Restoring expert selection passed the comparison. [Ordinals, digests and mutation](verification/factory-indexed-products-vt83.json)
+
+Prism validates shapes and strides, maps each index through its GGML view and resolves the weight, activation and destination offsets. A skipped expert yields a zero result. An invalid expert stops the operation before destination writes. The provider calls the existing Verdant row encoders and dot products. VT-02 checks the compiled plugin's GGML imports. The source audit measures 12,084 native lines across 51 files.
+
+A metadata scan selected previously refused factory graphs for numerical replay. The original evaluator passed all 24 selected Snake activation graphs and all 42 selected matrix-plus-add graphs. The evidence records each completed ordinal and transcript. [Original comparisons](verification/factory-admitted-compositions.json)

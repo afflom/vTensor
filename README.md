@@ -123,6 +123,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-80` | build | Executes tiled CONV_3D through the same Verdant matrix product as CONV_2D. [Completed factory comparisons](verification/factory-volume-convolution-vt80.json) |
 | `VT-81` | build | Executes all 75 state convolutions and 120 compositions with SiLU and optional bias through Verdant. [Factory comparisons](verification/factory-state-convolution-vt81.json) |
 | `VT-82` | build | Gathers overlapping, cropped and gapped signal windows through Verdant. [All 33 original comparisons](verification/factory-column-overlap-vt82.json) |
+| `VT-83` | build | Selects indexed expert rows in Prism and contracts Q4_0, Q8_0 and Q2_K weights with Verdant. [230 factory comparisons](verification/factory-indexed-products-vt83.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
