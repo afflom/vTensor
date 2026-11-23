@@ -720,3 +720,9 @@ id = "VT-109"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans full-width sign and centered two-bit writes and Verdant encodes every indexed or copied destination block"
+
+[[id]]
+id = "VT-110"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans signed three-bit and six-bit grouped matrix and expert graphs and Verdant contracts their quantized weight rows"

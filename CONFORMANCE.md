@@ -196,6 +196,7 @@ model does not sanction.
 | `VT-106` | `build` | Prism addresses one-dimensional transposed convolution taps and overlaps and Verdant contracts and sums the input channels |
 | `VT-107` | `build` | Prism addresses two-dimensional transposed convolution taps and overlaps and Verdant contracts and sums the input channels |
 | `VT-109` | `build` | Prism plans full-width sign and centered two-bit writes and Verdant encodes every indexed or copied destination block |
+| `VT-110` | `build` | Prism plans signed three-bit and six-bit grouped matrix and expert graphs and Verdant contracts their quantized weight rows |
 
 ## normalization-graphs
 

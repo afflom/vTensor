@@ -111,7 +111,7 @@ definition{
   name: groupedWeights,
   parameters: [kind : Nat],
   result: Bool,
-  body: ((((((kind =? 10) || (kind =? 12)) || (kind =? 13)) || (kind =? 16)) || (kind =? 17)) || (kind =? 22)),
+  body: (((((10 <=? kind) && (kind <=? 14)) || (kind =? 16)) || (kind =? 17)) || (kind =? 22)),
   executable: true
 }
 

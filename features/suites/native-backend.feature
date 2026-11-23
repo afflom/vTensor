@@ -314,3 +314,9 @@ Feature: native-backend
     Given copied or indexed rows of sign or centered two-bit coefficients
     When the provider encodes each destination block
     Then the output matches the original GGML CPU row writes
+
+  @VT-110 @build
+  Scenario: Prism plans signed three-bit and six-bit grouped matrix and expert graphs and Verdant contracts their quantized weight rows
+    Given Q3_K or Q6_K weights and grouped activations
+    When the provider evaluates ordinary and indexed matrix products
+    Then each graph matches the pinned GGML CPU evaluator

@@ -893,8 +893,8 @@ enum PackedWeight {
 }
 
 fn packed_weight(kind: u64) -> Option<PackedWeight> {
-    use linear::CodebookEncoding::*;
     use linear::{AffineWeightEncoding::*, BlockFloatEncoding::*, SymmetricWeightEncoding::*};
+    use linear::{CodebookEncoding::*, GroupedWeightEncoding as GroupedFormat};
     use PackedWeight::{Affine, Grouped, Symmetric};
     Some(match kind {
         2 => Symmetric(linear::dot_symmetric_q4_row),
@@ -903,8 +903,10 @@ fn packed_weight(kind: u64) -> Option<PackedWeight> {
         7 => Affine(FiveBit),
         8 => Symmetric(linear::dot_symmetric_q8_row),
         10 => Grouped(linear::dot_grouped_q2_row),
+        11 => Grouped(|w, a| linear::dot_grouped_weight_row(w, a, GroupedFormat::SignedThree)),
         12 => Grouped(linear::dot_grouped_q4_row),
         13 => Grouped(linear::dot_grouped_q5_row),
+        14 => Grouped(|w, a| linear::dot_grouped_weight_row(w, a, GroupedFormat::SignedSix)),
         16 => Grouped(|w, a| linear::dot_codebook_row(w, a, IndexedSigns)),
         17 => Grouped(|w, a| linear::dot_codebook_row(w, a, ExtendedIndex)),
         22 => Grouped(|w, a| linear::dot_codebook_row(w, a, ExplicitSigns)),
