@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **8,743 passed**, **18,576 refused** and **436 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The imported evaluator reports **8,830 passed**, **18,536 refused** and **389 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -34,11 +34,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Integrate VT-59 on main. Recover the 349 additional native lines measured against its main base and pass the complete locked-SDK gate.
 - [x] Pass all 252 GET_ROWS factory cases on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [x] Pass all 694 F16/BF16 scalar MUL_MAT cases across six operand pairs and the high-range F32 precision regression. [VT-64 factory results](verification/factory-scalar-matrix-vt64.json)
+- [ ] Execute the 87 CPU-supported scalar OUT_PROD cases. Map contraction axes, strides and batch replication in Prism and reuse the Verdant matrix primitive. [Failing factory regression](https://github.com/afflom/vTensor/commit/8b2274eefd797023e887a31ae05599bba5f8629d)
 - [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, the 1,932 refused standalone MUL_MAT cases, precision modes, MUL_MAT_ID and OUT_PROD. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
-- [ ] Finish the 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 479 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
-- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 2,573 pass, 2,766 are refused and 436 still need an evaluator verdict.
+- [ ] Finish the 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 519 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
+- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 2,660 pass, 2,726 are refused and 389 still need an evaluator verdict.
 - [x] Execute all 39 LOG, SIN, COS and EXP cases through Verdant, including the upstream storage and view variants. [Factory verdicts](verification/factory-elementary-vt60.json)
 - [x] Execute the 122 sigmoid and SiLU standalone, multiplied and added graphs on the pinned Verdant primitives. [Factory verdicts](verification/factory-logistic-vt61.json)
 - [x] Supply binary32 hyperbolic tangent in Verdant. All 128,870 GGML scalar comparisons pass. [Verdant PR #25](https://github.com/afflom/verdant-engine/pull/25)
@@ -54,6 +55,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Execute BF16 GET_ROWS_BACK on vTensor. The two factory graphs match 10,240 CPU-reference bytes, and 1,680 strided, empty and invalid-index cases pass. The direct factory reports CPU-only refusal on both ordinals. [VT-62 evidence](verification/factory-bf16-row-gradient-vt62.json)
 - [x] Compare all 63 CPU-refused identity copies across seven IQ formats with the pinned CPU copy kernel. All destination bytes match, including permuted layouts. [63 direct comparisons](verification/factory-iq-copy.json) · [IQ2_XXS regression](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
 - [ ] Complete sorting, TOP_K and masks, expert routing, indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
+- [ ] Execute the 1,539 refused IM2COL_3D cases. Model padded and dilated addresses in Prism and use Verdant for storage conversion. [Failing factory regression](https://github.com/afflom/vTensor/commit/9300199e9efa784948ea7577883798d6d8927d4e)
 - [ ] Complete convolution, im2col/col2im, transpose/depthwise forms, pooling, upscaling, timestep embeddings and their defined backward paths.
 - [ ] Complete SSM convolution/scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
 - [ ] Complete remaining gradients, cross-entropy, SGD and AdamW. Exercise applicable upstream gradient checks and parameter updates.
