@@ -82,5 +82,18 @@
     "change": "Read every input block at byte offset zero.",
     "error": 0.340358888,
     "tolerance": 1e-07
+  },
+  "llama_cpp_callback": {
+    "host_sha256": "c3dc62e927382ecf10999dfb4413d9e0b8e62529d2f320ca7753e0d8a13ffbd0",
+    "gguf_sha256": "66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739",
+    "model": "stories15M-q4_0.gguf",
+    "prompt": "hello",
+    "seed": 42,
+    "threads": 2,
+    "n_gpu_layers": 0,
+    "matching_callback_sums": 195,
+    "newline_separated_callback_sums_sha256": "326e2426a0d60b2b9c1436198daba0757e40511de203a3c67b17bb1b21717bc4",
+    "final_logit_sum": "-298643.687500",
+    "previous_provider_receipt": "verification/llama-threadpool-vt59.json"
   }
 }
