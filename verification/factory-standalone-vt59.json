@@ -8,7 +8,7 @@
   "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "case_transcript_sha256": "b8db09b2a7176384d84ed4b56e0a3eeed86437405bd2c45211c35df4cbd064a9",
   "verdict_table": "factory-standalone-vt59.tsv.gz",
-  "uncompressed_verdicts_sha256": "888324ac7c38722dc215faf9831c017358afc5a3315d7bdb718b929cc4a76a55",
+  "uncompressed_verdicts_sha256": "f67e58a45fe526d7b2d434b1386851355bc31753ae14a3862fe0d46c6f7d87d6",
   "mapping": "Match the complete ordered parameter sequence of each label and optional parameters_regex to the imported factory inventory. The table preserves the evaluator\u2019s backend names and error field. Multiple occurrences of a backend indicate separate refusals inside one graph.",
   "runs": {
     "activations": {
@@ -213,8 +213,8 @@
       "labels": [
         "FLASH_ATTN_EXT"
       ],
-      "rows": 965,
-      "csv_sha256": "8042c1fb76ce17184814130039e4e3df9919d93f0fc73c15c3d43950346021d8",
+      "rows": 998,
+      "csv_sha256": "2dd6ee2bc05140872cf4cf6fcec4d7a4da226d80f29538f67f8fce196362c3dd",
       "status": "complete output rows in an active sequential run; raw hash covers the last complete line",
       "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?!.*\\bnb=1,)(?=.*\\bnb=(32|3|512|16|35),)"
     },
@@ -222,21 +222,21 @@
       "labels": [
         "FLASH_ATTN_EXT"
       ],
-      "rows": 295,
-      "csv_sha256": "2c09f4e437c42b6a297b6e98fdbe47db77c69321e1e6d79c0bb03c58f7d244bf",
+      "rows": 311,
+      "csv_sha256": "12738095479c11244c6c36aad9bf3dfec816a1bc83104f0eb0e3699325e89536",
       "status": "complete output rows in an active sequential run; raw hash covers the last complete line",
       "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?!.*\\bnb=1,)(?!.*\\bnb=(64|1024|8|4|256|32|3|512|16|35),)"
     }
   },
   "new_verdicts": {
-    "passed": 3345,
-    "refused": 20402,
+    "passed": 3391,
+    "refused": 20405,
     "failed": 0
   },
   "cumulative_verdicts": {
-    "passed": 6976,
-    "refused": 20405,
+    "passed": 7022,
+    "refused": 20408,
     "failed": 0,
-    "untested": 374
+    "untested": 325
   }
 }

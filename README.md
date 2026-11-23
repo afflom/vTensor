@@ -110,6 +110,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-67` | build | Executes all TANH and composed SOFTCAP graphs through the pinned Verdant tangent. [Oracle results](verification/factory-hyperbolic-vt68.json) |
 | `VT-68` | build | Places attention soft caps before masks and compares F16 outputs with GGML CPU. [Oracle results](verification/factory-hyperbolic-vt68.json) |
 | `VT-69` | build | Executes all 87 directly CPU-supported F32/F16 outer-product graphs. [Oracle results](verification/factory-scalar-outer-products-vt69.json) |
+| `VT-70` | build | Executes all 2,051 three-dimensional image-column factory cases. [Oracle results](verification/factory-image-columns-vt70.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
