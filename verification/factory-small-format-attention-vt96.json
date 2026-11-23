@@ -1,0 +1,44 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "0c70cf1d9e52268a9a1b5af913aee4c177103e56",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/34",
+  "requirement": "VT-96",
+  "implementation": "0d887a40d8b16e081d91ecbd50f1437059743238",
+  "provider_sha256": "92a36e94fbe673e77567747663b01ae9b05c09f72132496388b98e284f0078db",
+  "provider_inputs_sha256": "fb34569fc6452ec178b985672d755b1d74480b1d0c68ef22ce959bdc26a016ea",
+  "oracle_executable_sha256": "a849c70b88c198887e1b13009e61dbbc2f76e30b4d261a1f615429c354b86ae6",
+  "matrix_lock_sha256": "d04b1ce77782fc4ce2ed925832f561ddada966d7a36fb61fbe92a807a49a2f2c",
+  "attention_lock_sha256": "d1c159f52fc2a97db1bc5b8790fafab3a5482814b5a5880decb4b6e5d3154d1b",
+  "oracle": "Original GGML test-backend-ops graphs compared with the pinned GGML CPU evaluator.",
+  "contract_transcript_sha256": "109368077377e150f7d15dd27c89b521e0ad8e6877255c4fd0507450638c00d0",
+  "case_ordinals": {
+    "FLASH_ATTN_EXT": [
+      24788,
+      24789,
+      24790,
+      24791,
+      24792,
+      24793,
+      24794,
+      24795,
+      24796,
+      24797,
+      24798,
+      24799,
+      24800,
+      24801,
+      24802,
+      24803,
+      24804,
+      24805,
+      24806
+    ]
+  },
+  "mutation": {
+    "ordinal": 24788,
+    "change": "Apply the Q2_0 row product to Q1_0 keys.",
+    "error": 0.99987208,
+    "tolerance": 0.0005
+  }
+}
