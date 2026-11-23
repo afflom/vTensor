@@ -199,6 +199,9 @@ ggml_batches! {
     #[test]
     fn packed_outer_products_vt_71() { "upstream-OUT_PROD_PACKED", 144, ["matrix", "pointwise"] }
 
+    #[test]
+    fn planar_columns_vt_72() { "upstream-IM2COL_PLANAR", 4, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-IM2COL_HALF_INPUT", 2) }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1546,30 +1549,16 @@ fn buffer_transfer_vt_09() {
         }
         _ => panic!("missing transfer case"),
     });
-    for ([_, buffer, data, capacity, offset, size], [expected]) in rows {
-        assert_eq!(
-            outcome(vtensor_transfer::run(
-                buffer != 0,
-                data != 0,
-                capacity,
-                offset,
-                size
-            )),
-            expected
-        );
-    }
-    // The native unsigned-add assertion can wrap for invalid requests. The
-    // modeled range check deliberately refuses them without wrapping.
-    for (buffer, data, capacity, offset, size, expected) in [
-        (true, true, 64, u64::MAX, 2, 12),
-        (true, true, u64::MAX, u64::MAX, 1, 12),
-        (true, false, 0, u64::MAX, 0, 0),
-        (false, false, 0, 0, 0, 10),
-    ] {
-        assert_eq!(
-            outcome(vtensor_transfer::run(buffer, data, capacity, offset, size)),
-            expected
-        );
+    // The imported unsigned-add guard can wrap. Preserve typed refusals at those boundaries.
+    let extremes = [
+        ([0, 1, 1, 64, u64::MAX, 2], [12]),
+        ([0, 1, 1, u64::MAX, u64::MAX, 1], [12]),
+        ([0, 1, 0, u64::MAX, 0, 0], [0]),
+        ([0, 0, 0, 0, 0, 0], [10]),
+    ];
+    for ([_, buffer, data, capacity, offset, size], [expected]) in rows.chain(extremes) {
+        let decision = vtensor_transfer::run(buffer != 0, data != 0, capacity, offset, size);
+        assert_eq!(outcome(decision), expected);
     }
 }
 
@@ -1597,7 +1586,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "f0de5aba8b4719285151443bb54e273c276758a0b10ea89624a614531f612a3f",
+            "e77124f96cfaee8c88ee9d25b07660edef62c885b5a36f8eb2d85a0a2867f1f0",
         )
     });
 
@@ -2023,6 +2012,14 @@ static bool vtensor_use_reference(ggml_backend_t reference) {
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
+    if (!strcmp(op,"IM2COL_HALF_INPUT")) {
+      for (bool planar : {false,true}) {
+        const std::array<int64_t,4> input = planar ? std::array<int64_t,4>{7,5,2,3} : std::array<int64_t,4>{7,2,3,1};
+        test_im2col test(GGML_TYPE_F16,GGML_TYPE_F16,GGML_TYPE_F16,input,{3,2,2,1},2,1,1,0,1,1,planar);
+        if (test.eval(backend,reference,nullptr,&observed) != test_status_t::OK || observed.bad) return SIZE_MAX;
+      }
+      return observed.records;
+    }
     std::vector<size_t> selected;
     size_t id;
     while (std::scanf("%zu", &id)==1) selected.push_back(id);

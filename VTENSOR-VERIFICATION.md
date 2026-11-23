@@ -4820,3 +4820,7 @@ VT-71 passed all 144 directly CPU-supported packed OUT_PROD factory graphs, cove
 ## VT-68 complete checkpoint
 
 The complete locked-SDK `just vv` passed at `3f1cabd0b5de78bb31b8485bf1f1a1223a9f5377` on the Verdant PR #25 pin. All 75 backend contracts passed, including VT-02, followed by the remaining workspace tests and dependency checks. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/3f1cabd0b5de78bb31b8485bf1f1a1223a9f5377)
+
+## Planar image columns and depthwise 1D convolution
+
+VT-72 passed all 113 original IM2COL cases and both supplemental GGML graphs with F16 inputs. The nine original CONV_1D_DW graphs also passed, including BF16 kernels. They compose the existing image-column and matrix primitives. Prism selects each image sample, and Verdant converts the encoded word. Reading every interior sample at offset zero failed ordinal 2361 with error 1.992249257 against 0.0000001. The restored implementation passed the planar, 3D, row, packed outer-product and buffer-transfer contracts. [Oracle records](verification/factory-planar-columns-vt72.json)
