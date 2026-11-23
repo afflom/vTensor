@@ -17,6 +17,7 @@ structure{
     {name: mask, type: (Option NormPlan::TensorDescriptor)},
     {name: sink, type: (Option NormPlan::TensorDescriptor)},
     {name: output, type: NormPlan::TensorDescriptor},
+    {name: headBias, type: (Option Nat)},
     {name: capBeforeMask, type: (Option Nat)}
   ]
 }
@@ -178,6 +179,36 @@ theorem{
 }
 
 definition{
+  name: headBias,
+  parameters: [bits : Nat],
+  result: (Option Nat),
+  body: (if ((0 <? bits) && (bits <? 2139095040)) then (ctor Option.some [Nat] bits) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: validBias,
+  parameters: [bits : Nat, heads : Nat, mask : (Option NormPlan::TensorDescriptor)],
+  result: Bool,
+  body: (if ((bits =? 0) || ((2147483648 <=? bits) && (bits <? 4286578688))) then true else (if ((bits <? 2139095040) && (heads <=? 4294967295)) then (match mask | Option.some m => true | Option.none => false) else false)),
+  executable: true
+}
+
+theorem{
+  name: disabledHeadBias,
+  parameters: [],
+  statement: ((headBias 2147483648) = (ctor Option.none [Nat])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: positiveBiasRequiresMask,
+  parameters: [],
+  statement: ((validBias 1090519040 3 (ctor Option.none [NormPlan::TensorDescriptor])) = false),
+  proof: reflexivity{}
+}
+
+definition{
   name: graphPlan,
   parameters: [
     opcode : Nat,
@@ -193,7 +224,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if ((((((((((((((((((opcode =? 71) && (if extra then false else true)) && ((bias =? 0) || (bias =? 2147483648))) && (((precision =? 0) || (precision =? 10)) || (precision =? 15))) && ((project query ty) =? 0)) && ((project query s0) =? 4)) && (denseOutput output)) && (rowTensor key query output)) && (rowTensor value query output)) && ((project query n0) =? (project key n0))) && ((project key n1) =? (project value n1))) && ((project output n0) =? (project value n0))) && ((project output n1) =? (project query n2))) && ((project output n2) =? (project query n1))) && ((project output n3) =? (project query n3))) && (NormPlan::separateTensors query output)) && (maskValid mask query key output)) && (sinkValid sink query output)) then (ctor Response.admitted (record Plan {query := query, key := key, value := value, mask := mask, sink := sink, output := output, capBeforeMask := (capBeforeMask softcap)})) else (ctor Response.invalid)),
+  body: (if ((((((((((((((((((opcode =? 71) && (if extra then false else true)) && (validBias bias (project query n2) mask)) && (((precision =? 0) || (precision =? 10)) || (precision =? 15))) && ((project query ty) =? 0)) && ((project query s0) =? 4)) && (denseOutput output)) && (rowTensor key query output)) && (rowTensor value query output)) && ((project query n0) =? (project key n0))) && ((project key n1) =? (project value n1))) && ((project output n0) =? (project value n0))) && ((project output n1) =? (project query n2))) && ((project output n2) =? (project query n1))) && ((project output n3) =? (project query n3))) && (NormPlan::separateTensors query output)) && (maskValid mask query key output)) && (sinkValid sink query output)) then (ctor Response.admitted (record Plan {query := query, key := key, value := value, mask := mask, sink := sink, output := output, headBias := (headBias bias), capBeforeMask := (capBeforeMask softcap)})) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -234,9 +265,9 @@ theorem{
 
 definition{
   name: excluded,
-  parameters: [halfWord : Nat],
+  parameters: [halfWord : Nat, slopeWord : Nat],
   result: Bool,
-  body: (halfWord =? 64512),
+  body: ((halfWord =? 64512) && (0 <? slopeWord)),
   executable: true,
   production: {effects: [], targets: [rust-core]}
 }
@@ -244,7 +275,13 @@ definition{
 theorem{
   name: negativeInfinityMask,
   parameters: [],
-  statement: ((excluded 64512) = true),
+  statement: ((excluded 64512 1065353216) = true),
+  proof: reflexivity{}
+}
+theorem{
+  name: zeroSlopePreservesMaskProduct,
+  parameters: [],
+  statement: ((excluded 64512 0) = false),
   proof: reflexivity{}
 }
 \end{semanticmodule}
