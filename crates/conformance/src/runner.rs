@@ -1014,7 +1014,14 @@ fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
 }
 
 fn decode_float(storage: u64, word: u64) -> Result<f32, BackendError> {
-    convert(storage, 0, word).map(|bits| f32::from_bits(bits as u32))
+    let bits = if storage == 43 {
+        linear::evaluate_small_float(3, word)
+            .map_err(|_| BackendError::Overflow)?
+            .ok_or(BackendError::InvalidTensor)?
+    } else {
+        convert(storage, 0, word)?
+    };
+    Ok(f32::from_bits(bits as u32))
 }
 
 fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendError> {
@@ -1655,6 +1662,7 @@ mod attention {
             for (bytes, value) in self.blocks(offset, out.len())?.chunks_exact(width).zip(out) {
                 *value = match (self.tensor.ty as u64, bytes) {
                     (0, &[a, b, c, d]) => f32::from_ne_bytes([a, b, c, d]),
+                    (43, &[byte]) => super::decode_float(43, byte.into())?,
                     (kind @ (1 | 30), &[a, b]) => {
                         super::decode_float(kind, u16::from_ne_bytes([a, b]).into())?
                     }

@@ -164,3 +164,9 @@ Feature: native-backend
     Given original indexed matrix graphs with F32, F16 or BF16 expert weights
     When vTensor executes the selected experts over broadcast activations and offset index views
     Then each output matches the original GGML CPU evaluator
+
+  @VT-85 @build
+  Scenario: Prism schedules ordinary and indexed E4M3 weight products and Verdant decodes the weights and contracts binary32 rows
+    Given original GGML matrix and expert graphs with E4M3 weights
+    When vTensor executes the selected rows with F32, F16 or BF16 activation storage
+    Then the original CPU evaluator accepts every output
