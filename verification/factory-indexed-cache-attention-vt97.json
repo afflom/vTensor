@@ -20,19 +20,19 @@
   "contract_transcript_sha256": "4383aea7cb8e9e49f043a33f4757f08431cfa33a96ef55c9a3c3de3c31e2cd17",
   "runs": {
     "0": {
-      "status": "completed case lines from active evaluator",
-      "passed": 17,
-      "transcript_sha256": "db81afcf4875d8604d1097a453fbe6ae720ccbcc75c7ce8f6c528aac8f9caed8"
+      "status": "complete",
+      "passed": 19,
+      "transcript_sha256": "a2a68df9d0615ad01e3dc293560dfd99bdd2f52d751a9a4fe78b09e2ed271106"
     },
     "1": {
-      "status": "completed case lines from active evaluator",
-      "passed": 17,
-      "transcript_sha256": "73db2afeb2a54525658e7c75734b90b8e572ef5e248f66e8e1ca0259b05b4af2"
+      "status": "complete",
+      "passed": 19,
+      "transcript_sha256": "598168d12fb83b1c3a847c8e2ece1aa9d2df8d9fad965dfee743c9304fcd946a"
     },
     "2": {
-      "status": "completed case lines from active evaluator",
-      "passed": 16,
-      "transcript_sha256": "2c6c33d91c1b27d5567110b4dd1e60b3e21d571dccf930a42da35dc325a22285"
+      "status": "complete",
+      "passed": 18,
+      "transcript_sha256": "53cf7b6d864a565658a7b408ac9e1c36117bcaefb372d95e7231d72eb1e15680"
     }
   },
   "case_ordinals": {
@@ -89,18 +89,17 @@
       24882,
       24883,
       24884,
+      24885,
+      24886,
+      24887,
+      24888,
       24889,
-      24890
+      24890,
+      24891,
+      24892
     ]
   },
-  "remaining_ordinals": [
-    24885,
-    24886,
-    24887,
-    24888,
-    24891,
-    24892
-  ],
+  "remaining_ordinals": [],
   "mutation": {
     "ordinal": 24835,
     "change": "Read physical cache row zero for every valid logical column.",

@@ -5034,3 +5034,9 @@ VT-97 follows GGML’s logical mask columns and selects physical key/value rows 
 ## E4M3 scalar copies
 
 VT-98 compares all 29 E4M3 conversions with GGML CPU on the original factory layouts. Prism uses one Verdant conversion for binary32 and stages one intermediate binary32 word for binary16 or BF16. Selecting the unsigned encoder for signed E4M3 failed ordinal 8473 with error 1.038817393 against the CPU tolerance of 0.000001. Restoring the signed encoder passed VT-98, the existing E4M3 matrix checks and the 1,920-case scalar cast regression. [Factory evidence](verification/factory-e4m3-copies-vt98.json)
+
+### Indexed cache acceptance
+
+On commit `15af61f0ccc174aa62cbc553af09b23406d21d9f`, the locked SDK verified Prism attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14` and passed all 105 backend contracts, with zero skipped or filtered. The workspace tests, model, formatting and lint checks passed. The final dependency audit initially failed to reach the RustSec database. Running the same `just deny` on the same source and SDK passed advisories, bans, licenses and sources.
+
+All 60 indexed-cache factory graphs passed the independent CPU comparison. The four contract cases and the three disjoint batches of 19, 19 and 18 cases are recorded with their source and transcript hashes. [Factory evidence](verification/factory-indexed-cache-attention-vt97.json)

@@ -16,10 +16,9 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 The completion checklist tracks remaining GGML operations, scheduler callbacks
 and consumer checks. [Provider burndown](BURNDOWN.md)
 
-Cargo fetches the certified Verdant tensor primitives by the immutable commit in
-[Verdant Engine PR #33](https://github.com/afflom/verdant-engine/pull/33), based on upstream main after integration of PRs #12 through #32.
-The [patch record](model/verdant-development.json) identifies the dependency
-until a published Verdant release includes these APIs.
+Cargo fetches Verdant Tensor from the immutable upstream commit in the
+[patch record](model/verdant-development.json), which links the submitted
+Verdant Engine PR. The patch stays pinned until a release includes its primitives.
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940
@@ -172,7 +171,7 @@ The development Verdant dependency also provides a certified F32/F16/BF16
 storage conversion root, independently checked against 1,397,260 imported GGML
 comparisons. FILL and admitted mixed F32/F16/BF16 copies use this primitive.
 
-The last full pinned-SDK `just vv` pass covers VT-52 on the Verdant PR #12 pin.
+The VT-52 pinned-SDK `just vv` pass used Verdant PR #12.
 An earlier full contract run passed 40 checks and VT-02 rejected the local
 Verdant override. That run included the expanded 1,280
 matrix cases, 384 GET_ROWS cases, 192 GET_REL_POS cases and 164 ADD_ID cases.
