@@ -632,7 +632,16 @@ mod ggml_oracle {
         let source = source.as_ref();
         let c = source.extension().is_some_and(|extension| extension == "c");
         let mut command = Command::new(if c { "cc" } else { "c++" });
-        command.args(["-O2", "-ffunction-sections", "-fdata-sections"]);
+        // Keep the external CPU oracle reproducible across SDK architectures.
+        // Verdant uses these same upstream scalar and binary16 reference paths.
+        command.args([
+            "-O2",
+            "-ffp-contract=off",
+            "-DGGML_CPU_GENERIC",
+            "-U__ARM_FP16_FORMAT_IEEE",
+            "-ffunction-sections",
+            "-fdata-sections",
+        ]);
         command.args(if c {
             &["-std=c11", "-D_GNU_SOURCE"][..]
         } else {
@@ -1653,7 +1662,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             compile(common, cache.join("driver.cpp"), cache.join("driver.o"));
             let build_list =
                 std::fs::read_to_string(common.join("ggml/src/ggml-cpu/CMakeLists.txt")).unwrap();
-            let mut cpu_sources: Vec<String> = build_list
+            let cpu_sources: Vec<String> = build_list
                 .split_once("list (APPEND GGML_CPU_SOURCES")
                 .unwrap()
                 .1
@@ -1664,15 +1673,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .filter(|name| name.ends_with(".c") || name.ends_with(".cpp"))
                 .map(str::to_string)
                 .collect();
-            let architecture = match std::env::consts::ARCH {
-                "x86_64" => "x86",
-                "aarch64" => "arm",
-                other => panic!("unmodeled oracle architecture: {other}"),
-            };
-            cpu_sources.extend([
-                format!("ggml-cpu/arch/{architecture}/quants.c"),
-                format!("ggml-cpu/arch/{architecture}/repack.cpp"),
-            ]);
             if mode.starts_with("upstream-") {
                 let suite = common
                     .join("imported-suite")

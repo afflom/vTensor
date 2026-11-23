@@ -5080,3 +5080,7 @@ VT-106 passes all 116 original GGML graphs. Prism maps image, kernel and output 
 ### Transposed 2D convolution
 
 VT-107 passes all eight imported GGML graphs with F16 and F32 kernels. Prism normalizes both convolution ranks to width, height, channel and batch coordinates so the existing Verdant matrix and overlap operations execute both ranks. Folding adjacent output addresses together failed ordinal 8119 at error 1.850980376 against 0.0005. Restoring the addresses passed all eight graphs. The 116 original 1D cases and two supplemental half-precision cases also passed. [Factory evidence](verification/factory-transpose-plane-vt107.json)
+
+### Portable GGML reference build
+
+The conformance oracle uses Verdant’s upstream reference build settings for deterministic half conversions, generic quantization kernels and separate multiply and add. GGML supplies all reference source. CAST, CONCAT, ROWS, TRANSFORM, backward edges and normalization edges passed on x86-64 with their original thresholds and frozen transcripts. Hosted ARM validation remains tracked in the checklist. [Upstream reference build](https://github.com/afflom/verdant-engine/blob/a51262d2008b030b290f70cd0b39a080f72cb4e9/crates/verdant-tensor/tests/models/matrix_product_tests.rs)
