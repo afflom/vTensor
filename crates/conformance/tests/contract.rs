@@ -354,23 +354,17 @@ fn verify_row_graphs() {
     for (operation, ty, output_type) in [(13, 0, 0), (18, 26, 27)] {
         let empty = Adt2::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
         let output = Adt2::C0(output_type, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
-        let params = Adt1::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let params = Adt1::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let request = Adt0::C0(
+            operation,
+            params,
+            Some(empty.clone()),
+            Some(empty),
+            None,
+            output,
+        );
         assert!(matches!(
-            vtensor_pointwise::run(Adt0::C0(
-                operation,
-                params,
-                Some(empty.clone()),
-                Some(empty),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                output
-            )),
+            vtensor_pointwise::run(request),
             Ok(Response::C0(Plan::C4(2, ..)))
         ));
     }

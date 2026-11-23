@@ -1,6 +1,8 @@
 \begin{lexlean}{MatrixGraph}
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
+\importmodule{RowGather}
+\importmodule{TensorTypes}
 \title{Natural number}
 \begin{semanticmodule}
 inductive{
@@ -49,6 +51,24 @@ definition{
 }
 
 definition{
+  name: packedOuterLanes,
+  parameters: [kind : Nat],
+  result: Nat,
+  body: (if (RowGather::cpuSource kind) then (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => 0
+    | TensorTypes::TypeStorageDecision.knownType spec => (if (1 <? (project spec blockSize)) then (project spec blockSize) else 0)) else 0),
+  executable: true
+}
+
+definition{
+  name: outerWeight,
+  parameters: [kind : Nat, width : Nat],
+  result: Bool,
+  body: (if (kind =? 1) then true else (let lanes : Nat := (packedOuterLanes kind); ((0 <? lanes) && ((prim remainder width lanes 1 : Nat) =? 0)))),
+  executable: true
+}
+
+definition{
   name: planScalarProduct,
   parameters: [
     operation : Nat,
@@ -69,7 +89,7 @@ definition{
     outputBatch3 : Nat
   ],
   result: MatrixDecision,
-  body: (if (operation =? 30) then (if ((rightType =? 0) && ((leftType =? 0) || (((leftType =? 1) && (leftBatch2 =? batch2)) && (leftBatch3 =? batch3)))) then (planMatrix 28 0 0 outputType rows inner leftBatch2 leftBatch3 columns rightInner batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported)) else (if (((floatWord leftType) && (floatWord rightType)) && (((leftType =? 0) || (rightType =? 0)) || (leftType =? rightType))) then (planMatrix operation 0 0 outputType inner rows leftBatch2 leftBatch3 rightInner columns batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported))),
+  body: (if (operation =? 30) then (if ((rightType =? 0) && ((leftType =? 0) || (((outerWeight leftType inner) && (leftBatch2 =? batch2)) && (leftBatch3 =? batch3)))) then (planMatrix 28 0 0 outputType rows inner leftBatch2 leftBatch3 columns rightInner batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported)) else (if (((floatWord leftType) && (floatWord rightType)) && (((leftType =? 0) || (rightType =? 0)) || (leftType =? rightType))) then (planMatrix operation 0 0 outputType inner rows leftBatch2 leftBatch3 rightInner columns batch2 batch3 outputRows outputColumns outputBatch2 outputBatch3) else (ctor MatrixDecision.unsupported))),
   executable: true
 }
 
