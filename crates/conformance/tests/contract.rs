@@ -244,6 +244,9 @@ ggml_batches! {
     fn small_format_attention_vt_96() { "upstream-SMALL_FORMAT_ATTENTION", 19, ["attention"] }
 
     #[test]
+    fn indexed_cache_attention_vt_97() { "upstream-INDEXED_KV_ATTENTION", 4, ["attention"] }
+
+    #[test]
     fn affine_weight_rows_vt_95() { "upstream-AFFINE_WEIGHT_ROWS", 8, ["attention", "matrix"] }
 
     #[test]
@@ -1474,7 +1477,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "076dc6e27e012338eeadf07666915c0e10b939288348cbe61147335f6a76e70a",
+            "a429e49c2024ddd3a97215784237fa4cd056d39999539eeeac7cd7d477ba8f32",
         )
     });
 

@@ -242,3 +242,9 @@ Feature: native-backend
     Given the nineteen original GGML short-bit and E4M3 attention constructors
     When vTensor executes the original key, value and query layouts
     Then the imported CPU accepts each numerical result
+
+  @VT-97 @build
+  Scenario: Prism validates indexed key and value cache rows and maps each unmasked column to the selected cache cell for Verdant attention
+    Given original GGML indexed key and value cache constructors across slice counts and storage types
+    When vTensor executes the original per-slice cache indices and negative padding
+    Then the imported CPU accepts each numerical result
