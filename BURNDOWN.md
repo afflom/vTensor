@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,264 passed**, **1,491 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,289 passed**, **1,466 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -67,7 +67,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Supply Q3_K and Q6_K row products in Verdant. All 196 output words matched the pinned GGML CPU. [Verdant PR #40](https://github.com/afflom/verdant-engine/pull/40)
 - [x] Pass the 126 Q3_K/Q6_K matrix cases, 21 expert cases, 32 matrix fusions and both ADD compositions. [181 GGML comparisons](verification/factory-grouped-signed-products-vt110.json)
 - [x] Run a mixed Q3_K/Q6_K GGUF through llama.cpp. All 96,000 logits and the KV writes were compared with CPU across prefill and two decodes. [Host evidence](verification/factory-grouped-signed-products-vt110.json)
-- [ ] Pass Q6_K fusion 26776 with SWIGLU_OAI. [Factory case](verification/ggml-factory-cases.tsv.gz)
+- [x] Pass all 24 SWIGLU_OAI cases and Q6_K fusion 26776 with the existing Verdant operators. [25 GGML comparisons](verification/factory-parameterized-swiglu-vt111.json)
 - [x] Supply grouped affine Q4_K and Q5_K row products in Verdant. All 196 output words matched the pinned CPU. [Engine PR #30](https://github.com/afflom/verdant-engine/pull/30)
 - [x] Pass all 227 ordinary and 119 indexed Q4_K/Q5_K matrix products with F32 activations. [VT-88 results](verification/factory-affine-vt88.json)
 - [x] Pass 174 additional Q4_K/Q5_K compositions, including the final three MUL_MAT_ID_FUSION cases. [Full-graph comparisons](verification/factory-affine-compositions.json)
@@ -99,7 +99,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 12 TANH graphs and the composed SOFTCAP graph on Verdant PR #25. [VT-67 results](verification/factory-hyperbolic-vt68.json)
 - [x] Pass all 241 zero-bias F16 attention graphs with soft cap 10. 241 pass. [VT-68 results](verification/factory-hyperbolic-vt68.json)
 - [x] Pass all 12 SWIGLU_CLAMP graphs across F32, F16 and BF16 and 303 newly supported matrix fusions. [VT-93 results](verification/factory-clamped-swiglu-vt93.json)
-- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, SWIGLU_OAI and GEGLU_ERF, and their composed graphs. Close the 10 refused ADD cases. The other 163 pass. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
+- [ ] Complete the feed-forward path. Close remaining binary formats, transcendental and unary functions, GEGLU_ERF, and their composed graphs. Close the 10 refused ADD cases. The other 163 pass. All 427 SUB, MUL and DIV cases passed on the plugin. [Factory results](verification/factory-checkpoint-vt57.json)
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract

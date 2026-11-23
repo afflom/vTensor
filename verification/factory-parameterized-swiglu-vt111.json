@@ -1,0 +1,53 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "0ca9e1b9e9d643db07975c34c628ca4f267c7c75",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/40",
+  "requirement": "VT-111",
+  "implementation": "482ae56a43ab800f482c5c69162e4dc630f0d35b",
+  "provider_sha256": "3926f73f30ccb0d67089c93f1a289fe50a64a37f01378089d01041ed3c00eb15",
+  "provider_inputs_sha256": "c15c7757e4c8f088d539cd02d7a9fd8c7a627a5475264995744c7f9ddf83793d",
+  "oracle_executable_sha256": "7188354f371ad2b715f7deb506225db33690ebab863c36e133ff5472835774c9",
+  "typed_lock_sha256": "2349d1856c17bf7c86afff6d9583f127910e2d3d239182be2c49c3677914f44b",
+  "pointwise_lock_sha256": "0d44451853ce4172480264454bf3760fa79647599b1fa9414f611938b8aa0b4f",
+  "oracle": "Pinned GGML CPU evaluates the original 24 SWIGLU_OAI graphs and the original Q6_K matrix fusion. Supplemental CPU graphs exercise both orderings in a single two-half input with a negative alpha.",
+  "contract_transcript_sha256": "f8d915e61ee0102b768973c7151fcce81a94380e077105315f46cef3f2caedbc",
+  "fusion_transcript_sha256": "df3e55d6f34671da2452589c166a045d6a7cff550aa1362dc1e8a65a9ce89952",
+  "mutation": {
+    "ordinal": 764,
+    "change": "Supply zero instead of the GGML alpha parameter.",
+    "error": 0.999499977,
+    "tolerance": 1e-07
+  },
+  "case_ordinals": {
+    "SWIGLU_OAI": [
+      764,
+      765,
+      766,
+      767,
+      768,
+      769,
+      770,
+      771,
+      772,
+      773,
+      774,
+      775,
+      776,
+      777,
+      778,
+      779,
+      780,
+      781,
+      782,
+      783,
+      784,
+      785,
+      786,
+      787
+    ],
+    "MUL_MAT_FUSION": [
+      26776
+    ]
+  }
+}
