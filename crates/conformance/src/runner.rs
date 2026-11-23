@@ -1220,11 +1220,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let mut ranker = None;
     // SAFETY: admission retained the primary descriptor and each present secondary.
     let (left, secondary) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
-    let source = TensorInput::new(left)?;
-    let primary = source.bytes.as_ptr().cast_mut();
-    let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
     use linear::WeightBlockEncoding::*;
-    let encoding = match tensor.ty {
+    let kind = match tensor.ty {
         2 => Some(CenteredFour),
         3 => Some(AffineFour),
         6 => Some(CenteredFive),
@@ -1232,63 +1229,68 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         8 => Some(SymmetricEight),
         _ => None,
     };
+    // Word instructions can update their input in place. Only staged block encoding
+    // retains an immutable input slice throughout the instruction loop.
+    let source = kind.map(|_| TensorInput::new(left)).transpose()?;
+    let primary = match &source {
+        Some(input) => input.bytes.as_ptr().cast_mut(),
+        None => graph_tensor_data(left)?,
+    };
+    let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
     let mut block_writes = Vec::new();
     let output = graph_tensor_data(tensor)?;
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
                 .map_err(|_| BackendError::Overflow)?;
-        if let Encode(from, to) = instruction {
-            let kind = encoding.ok_or(InvalidTensor)?;
-            let mut block = [0; size_of::<linear::SymmetricQ8Block<32>>()];
-            let bytes = block.get_mut(..tensor.nb[0]).ok_or(InvalidTensor)?;
-            linear::encode_weight_block(&source.float_block::<32>(from)?, kind, bytes)?;
-            block_writes
-                .try_reserve(1)
-                .map_err(|_| BackendError::Allocation)?;
-            block_writes.push((to, block));
-            continue;
+        match instruction {
+            Encode(from, to) => {
+                let (input, kind) = source.as_ref().zip(kind).ok_or(InvalidTensor)?;
+                let mut block = [0; size_of::<linear::SymmetricQ8Block<32>>()];
+                let bytes = block.get_mut(..tensor.nb[0]).ok_or(InvalidTensor)?;
+                linear::encode_weight_block(&input.float_block::<32>(from)?, kind, bytes)?;
+                block_writes
+                    .try_reserve(1)
+                    .map_err(|_| BackendError::Allocation)?;
+                block_writes.push((to, block));
+            }
+            Rank(from, to, width, count, descending) => {
+                let width = width as usize;
+                let rank = match &mut ranker {
+                    Some(rank) => rank,
+                    None => ranker.insert(linear::RowRankingF32::new(
+                        width,
+                        count as usize,
+                        descending,
+                    )?),
+                };
+                // SAFETY: Prism admits aligned binary32 lanes, disjoint output storage and the full row spans.
+                let input =
+                    unsafe { std::slice::from_raw_parts(primary.add(from as usize).cast(), width) };
+                let indices = rank.select(input)?;
+                // SAFETY: the selected prefix fits this certified contiguous GGML I32 row.
+                unsafe { write_row(output.add(to as usize), indices) };
+            }
+            Gate(variant, storage, first, second, target) => {
+                let operand = |slot: u64| {
+                    words
+                        .get(slot as usize)
+                        .map(|word| f32::from_bits(*word as u32))
+                        .ok_or(InvalidTensor)
+                };
+                let value = gated_value(variant, storage, operand(first)?, operand(second)?)?;
+                *words.get_mut(target as usize).ok_or(InvalidTensor)? = u64::from(value.to_bits());
+            }
+            // The typed planner and the pointwise interpreter export separate Rust enums
+            // for the same word fields. Bind the ordering once across this package boundary.
+            Word(family, op, src, dst, left, from, right, at, target, to, read, write) => {
+                let request = GraphRequest::C3(
+                    true, family, op, src, dst, left, from, right, at, target, to, read, write,
+                );
+                execute_word(pointwise(request)?, &pointers, output, &mut words)?;
+            }
+            _ => return Err(InvalidTensor),
         }
-        if let Rank(from, to, width, count, descending) = instruction {
-            let rank = match &mut ranker {
-                Some(rank) => rank,
-                None => ranker.insert(linear::RowRankingF32::new(
-                    width as usize,
-                    count as usize,
-                    descending,
-                )?),
-            };
-            // SAFETY: Prism admits aligned binary32 lanes, disjoint output storage and the full row spans.
-            let input = unsafe {
-                std::slice::from_raw_parts(primary.add(from as usize).cast::<f32>(), width as usize)
-            };
-            let indices = rank.select(input)?;
-            // SAFETY: the selected prefix fits this certified contiguous GGML I32 row.
-            unsafe { write_row(output.add(to as usize), indices) };
-            continue;
-        }
-        if let Gate(variant, storage, first, second, target) = instruction {
-            let operand = |slot: u64| {
-                words
-                    .get(slot as usize)
-                    .map(|word| f32::from_bits(*word as u32))
-                    .ok_or(InvalidTensor)
-            };
-            let value = gated_value(variant, storage, operand(first)?, operand(second)?)?;
-            *words.get_mut(target as usize).ok_or(InvalidTensor)? = u64::from(value.to_bits());
-            continue;
-        }
-        // The typed planner and the pointwise interpreter export separate Rust enums
-        // for the same word fields. Bind the ordering once across this package boundary.
-        let Word(family, op, src, dst, left, from, right, at, target, to, read, write) =
-            instruction
-        else {
-            return Err(InvalidTensor);
-        };
-        let request = GraphRequest::C3(
-            true, family, op, src, dst, left, from, right, at, target, to, read, write,
-        );
-        execute_word(pointwise(request)?, &pointers, output, &mut words)?;
     }
     for (offset, block) in block_writes {
         // SAFETY: Prism bounded each complete block in the destination. All reads and
