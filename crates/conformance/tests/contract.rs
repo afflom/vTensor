@@ -196,6 +196,9 @@ ggml_batches! {
     #[test]
     fn image_columns_vt_70() { "upstream-IM2COL_3D_VIEW", 6, ["pointwise"] }
 
+    #[test]
+    fn planar_columns_vt_72() { "upstream-IM2COL_PLANAR", 4, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-IM2COL_HALF_INPUT", 2) }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1610,7 +1613,7 @@ mod native_backend_oracle {
     static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "3d99a53363fd8421bfc78e156ac8ad79bb961c5c3755c193096547fca83d427c",
+            "428ba43dc777b1b4003b7d8fd3736a86582f6c3f0fd78189ba2e55afc7a62ce2",
         )
     });
 
@@ -2037,6 +2040,14 @@ static bool vtensor_use_reference(ggml_backend_t reference) {
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
+    if (!strcmp(op,"IM2COL_HALF_INPUT")) {
+      for (bool planar : {false,true}) {
+        const std::array<int64_t,4> input = planar ? std::array<int64_t,4>{7,5,2,3} : std::array<int64_t,4>{7,2,3,1};
+        test_im2col test(GGML_TYPE_F16,GGML_TYPE_F16,GGML_TYPE_F16,input,{3,2,2,1},2,1,1,0,1,1,planar);
+        if (test.eval(backend,reference,nullptr,&observed) != test_status_t::OK || observed.bad) return SIZE_MAX;
+      }
+      return observed.records;
+    }
     std::vector<size_t> selected;
     size_t id;
     while (std::scanf("%zu", &id)==1) selected.push_back(id);

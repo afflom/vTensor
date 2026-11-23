@@ -484,3 +484,9 @@ id = "VT-70"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps GGML three-dimensional image columns through padded and dilated input views, with Verdant storing each typed output"
+
+[[id]]
+id = "VT-72"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps one- and two-dimensional GGML image columns across channel and batch strides and Verdant converts the result storage"

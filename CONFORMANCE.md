@@ -157,6 +157,7 @@ model does not sanction.
 | `VT-68` | `build` | Prism places attention logit soft caps before the mask and Verdant evaluates the scaled hyperbolic tangent against the imported GGML CPU |
 | `VT-69` | `build` | Prism maps GGML scalar outer-product axes and batch replication to the Verdant matrix primitive and matches the imported CPU evaluator |
 | `VT-70` | `build` | Prism maps GGML three-dimensional image columns through padded and dilated input views, with Verdant storing each typed output |
+| `VT-72` | `build` | Prism maps one- and two-dimensional GGML image columns across channel and batch strides and Verdant converts the result storage |
 
 ## normalization-graphs
 

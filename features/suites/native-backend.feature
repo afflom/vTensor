@@ -80,3 +80,9 @@ Feature: native-backend
     Given imported IM2COL_3D graphs with strided input views and F16 or F32 output
     When vTensor places each image sample or padding value in its result column
     Then every result matches the original GGML CPU evaluator
+
+  @VT-72 @build
+  Scenario: Prism maps one- and two-dimensional GGML image columns across channel and batch strides and Verdant converts the result storage
+    Given imported IM2COL graphs with horizontal or planar kernels and F16 or F32 output
+    When vTensor places each image sample or padding value in its result column
+    Then every result matches the original GGML CPU evaluator
