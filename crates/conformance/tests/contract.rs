@@ -2202,6 +2202,34 @@ int main(int argc, char **argv) {
     if (!strncmp(argv[3], "upstream-", 9)) {
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
+      if (!strcmp(argv[3]+9,"TOP_K_MASK_VARIANTS")) {
+        std::array<uint32_t,4> expected{};
+        for(auto selected : {reference,backend}) {
+          auto ctx=ggml_init({ggml_tensor_overhead()*12+ggml_graph_overhead(),nullptr,true}); CHECK(ctx);
+          auto mask=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,4);
+          auto top=ggml_new_tensor_1d(ctx,GGML_TYPE_I32,7);
+          auto scores=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,4);
+          auto extra=ggml_new_tensor_1d(ctx,GGML_TYPE_I32,3);
+          auto out=ggml_top_k_mask(ctx,mask,top,scores,nullptr,extra);
+          auto graph=ggml_new_graph(ctx); ggml_build_forward_expand(graph,out);
+          auto buffer=ggml_backend_alloc_ctx_tensors(ctx,selected); CHECK(buffer);
+          const uint32_t words[]={0x3f800000,0x80000000,0x7fc01234,1};
+          const uint32_t gates[]={0xff800000,0x7f800000,0x7fc01234,0x80000000};
+          const int32_t picks[]={0,1,2,3,-1,99,1}, extras[]={-1,99,2};
+          ggml_backend_tensor_set(mask,words,0,sizeof(words)); ggml_backend_tensor_set(scores,gates,0,sizeof(gates));
+          ggml_backend_tensor_set(top,picks,0,sizeof(picks)); ggml_backend_tensor_set(extra,extras,0,sizeof(extras));
+          CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+          std::array<uint32_t,4> actual{}; ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
+          if(selected==reference) expected=actual;
+          else {
+            CHECK(actual==expected);
+            CHECK(refuses_change(backend,dev,graph,out,top->type,GGML_TYPE_F32));
+            CHECK(refuses_change(backend,dev,graph,out,scores->ne[1],int64_t(2)));
+            CHECK(refuses_change(backend,dev,graph,out,out->src[5],extra));
+          }
+          ggml_backend_buffer_free(buffer); ggml_free(ctx);
+        }
+      }
       if (!strcmp(argv[3]+9,"ROW_SOFTMAX")) {
         std::vector<float> expected;
         for (auto selected : {reference,backend}) {

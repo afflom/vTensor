@@ -482,6 +482,7 @@ enum ExecutionPlan {
     Rotary(vtensor_rotary::Adt3),
     Attention(Box<vtensor_attention::Adt2>),
     Softmax(Box<vtensor_attention::Adt3>),
+    SparseMask(Box<vtensor_attention::Adt4>),
 }
 
 // Each certified graph bundle renders its own type for the same GGML metadata.
@@ -522,6 +523,13 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     let primary = source(0)?;
     let secondary = source(1)?;
     let base = source(2)?;
+    if operation == 88 {
+        return attention::sparse_plan(
+            tensor,
+            [primary, secondary, base, source(3)?, source(4)?],
+            output,
+        );
+    }
     if operation == 43 {
         return attention::softmax_plan(
             tensor,
@@ -1406,6 +1414,7 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                 ExecutionPlan::Standard(GraphPlan::C6(geometry)) => {
                     execute_convolution(&*tensor, geometry)
                 }
+                ExecutionPlan::SparseMask(plan) => attention::sparse_mask(&*tensor, *plan),
                 ExecutionPlan::Softmax(plan) => attention::softmax(&*tensor, *plan),
                 ExecutionPlan::Attention(plan) => attention::execute(&*tensor, *plan),
                 ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
@@ -1589,12 +1598,141 @@ mod attention {
         self, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
     };
     use vtensor_attention::{
-        Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as SoftmaxPlan, Adt4 as Response,
+        Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as SoftmaxPlan, Adt4 as SparsePlan,
+        Adt5 as Response,
     };
     use BackendError::{InvalidTensor, Overflow};
 
     fn request(query: Request) -> Result<Response, BackendError> {
         vtensor_attention::run(query).map_err(|_| Overflow)
+    }
+
+    pub(super) fn sparse_plan(
+        tensor: &Tensor,
+        sources: [Option<TensorDescriptor>; 5],
+        output: TensorDescriptor,
+    ) -> Result<Option<super::ExecutionPlan>, BackendError> {
+        let [mask, top, score, blocks, extra] = sources;
+        let descriptor = descriptor_for!(Descriptor::C0);
+        match request(Request::C4(
+            tensor.op as u64,
+            tensor.src[5..].iter().any(|ptr| !ptr.is_null()),
+            descriptor(mask.ok_or(InvalidTensor)?),
+            descriptor(top.ok_or(InvalidTensor)?),
+            score.map(descriptor),
+            blocks.map(descriptor),
+            extra.map(descriptor),
+            descriptor(output),
+        ))? {
+            Response::C5(plan) => Ok(Some(super::ExecutionPlan::SparseMask(Box::new(plan)))),
+            _ => Err(InvalidTensor),
+        }
+    }
+
+    pub(super) fn sparse_mask(tensor: &Tensor, plan: SparsePlan) -> Result<(), BackendError> {
+        use verdant_tensor::memory::copy_storage_block;
+        let SparsePlan::C0(_, _, _, _, _, _, width, excluded, _) = plan;
+        let mask = tensor.input(0)?.ok_or(InvalidTensor)?;
+        let top = tensor.input(1)?.ok_or(InvalidTensor)?;
+        let score = tensor.input(2)?;
+        let blocks = tensor.input(3)?;
+        let extra = tensor.input(4)?;
+        let output = graph_tensor_data(tensor)?;
+        let row_bytes = (tensor.ne[0] as u64).checked_mul(width).ok_or(Overflow)?;
+        if row_bytes == 0 {
+            return Ok(());
+        }
+        let mut template = workspace(row_bytes, 0_u8)?;
+        let mut word = [0; size_of::<u32>()];
+        // SAFETY: the certified mask plan selects a two- or four-byte native word.
+        unsafe {
+            super::scalar_word(word.as_mut_ptr(), width, Some(excluded))?;
+        }
+        for cell in template.chunks_exact_mut(width as usize) {
+            cell.copy_from_slice(&word[..width as usize]);
+        }
+        let offset =
+            |role, index, lane| match request(Request::C6(plan.clone(), role, index, lane))? {
+                Response::C7(at) => Ok(Some(at)),
+                Response::C8 => Ok(None),
+                _ => Err(InvalidTensor),
+            };
+        let read = |input: &TensorInput, base: u64, at: u64| -> Result<u64, BackendError> {
+            let bytes = input.region(base.checked_add(at).ok_or(Overflow)?, size_of::<u32>())?;
+            Ok(u32::from_ne_bytes(bytes.try_into().map_err(|_| InvalidTensor)?) as u64)
+        };
+        for batch in 0..tensor.ne[3] as u64 {
+            for head in 0..tensor.ne[2] as u64 {
+                for token in 0..tensor.ne[1] as u64 {
+                    let Response::C6(mask_row, top_row, score_row, extra_row, out) =
+                        request(Request::C5(plan.clone(), token, head, batch))?
+                    else {
+                        return Err(InvalidTensor);
+                    };
+                    // SAFETY: Prism admits the entire dense row and separates it from each input.
+                    let target = unsafe {
+                        std::slice::from_raw_parts_mut(output.add(out as usize), template.len())
+                    };
+                    copy_storage_block(&template, target)?;
+                    let mut keep = |index| -> Result<(), BackendError> {
+                        if let Some(at) = offset(4, index, 0)? {
+                            let src = mask.region(
+                                mask_row.checked_add(at).ok_or(Overflow)?,
+                                width as usize,
+                            )?;
+                            let start = at as usize;
+                            copy_storage_block(
+                                src,
+                                target
+                                    .get_mut(start..start + width as usize)
+                                    .ok_or(InvalidTensor)?,
+                            )?;
+                        }
+                        Ok(())
+                    };
+                    for j in 0..top.ne[0] as u64 {
+                        let pick = read(&top, top_row, offset(0, j, 0)?.ok_or(InvalidTensor)?)?;
+                        let Some(score_at) = offset(2, pick, 0)? else {
+                            continue;
+                        };
+                        if let Some(scores) = &score {
+                            let value = read(scores, score_row, score_at)?;
+                            if linear::evaluate_encoded_word(
+                                0,
+                                value,
+                                u64::from(f32::NEG_INFINITY.to_bits()),
+                            )
+                            .map_err(|_| Overflow)?
+                                != Some(2)
+                            {
+                                continue;
+                            }
+                        }
+                        if let Some(cells) = &blocks {
+                            for lane in 0..cells.ne[0] as u64 {
+                                keep(read(
+                                    cells,
+                                    0,
+                                    offset(3, pick, lane)?.ok_or(InvalidTensor)?,
+                                )?)?;
+                            }
+                        } else {
+                            keep(pick)?;
+                        }
+                    }
+                    if let Some(cells) = &extra {
+                        for j in 0..cells.ne[0] as u64 {
+                            keep(read(
+                                cells,
+                                extra_row,
+                                offset(1, j, 0)?.ok_or(InvalidTensor)?,
+                            )?)?;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     pub(super) fn softmax_plan(
