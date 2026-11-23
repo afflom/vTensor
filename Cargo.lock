@@ -805,7 +805,6 @@ dependencies = [
  "vtensor_native_config",
  "vtensor_native_memory",
  "vtensor_native_predicates",
- "vtensor_norm_dispatch",
  "vtensor_pointwise",
  "vtensor_probes",
  "vtensor_repeat_offset",

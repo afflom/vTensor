@@ -12,6 +12,8 @@
 \importmodule{L2Normalization}
 \importmodule{RmsNormalization}
 \importmodule{NormPlan}
+\importmodule{NormGraph}
+\importmodule{RmsBackwardGraph}
 \title{Natural number}
 \begin{semanticmodule}
 structure{
@@ -306,7 +308,11 @@ inductive{
     {name: bindings, fields: [CopyMode]},
     {name: machineWord, fields: [Bool, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: convolutionAddress, fields: [ConvolutionGeometry, Nat, Nat, Nat]},
-    {name: gaussianF32Table, fields: [Nat]}
+    {name: gaussianF32Table, fields: [Nat]},
+    {
+      name: executionStep,
+      fields: [Nat, IndexContext, IndexContext, CopyMode, Nat, Nat, Nat, Nat, Nat, Nat]
+    }
   ]
 }
 
@@ -1909,51 +1915,6 @@ definition{
 }
 
 definition{
-  name: statefulOffsets,
-  parameters: [
-    index : Nat,
-    source : IndexContext,
-    destination : IndexContext,
-    mode : CopyMode,
-    flag : Nat
-  ],
-  result: GraphResponse,
-  body: (bindStep mode (match mode
-    | CopyMode.linear => (copyOffsets index source destination mode)
-    | CopyMode.repeated => (copyOffsets index source destination mode)
-    | CopyMode.concatenated axis right => (copyOffsets index source destination mode)
-    | CopyMode.padded p0 p1 p2 p3 circular => (copyOffsets index source destination mode)
-    | CopyMode.reflected left => (copyOffsets index source destination mode)
-    | CopyMode.rolled p0 p1 p2 p3 => (copyOffsets index source destination mode)
-    | CopyMode.updated initial base adding => (copyOffsets index source destination mode)
-    | CopyMode.folded initial => (copyOffsets index source destination mode)
-    | CopyMode.selected kind => (copyOffsets index source destination mode)
-    | CopyMode.constant kind bits => (copyOffsets index source destination mode)
-    | CopyMode.arithmetic kind unary right => (copyOffsets index source destination mode)
-    | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
-    | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)
-    | CopyMode.transformed kind storage a b => (copyOffsets index source destination mode)
-    | CopyMode.unaryWord kind sourceType destinationType => (copyOffsets index source destination mode)
-    | CopyMode.scanned => (copyOffsets index source destination mode)
-    | CopyMode.reduced operation storage => (copyOffsets index source destination mode)
-    | CopyMode.argmaxRow => (argmaxOffsets index source destination flag)
-    | CopyMode.counted elements right => (copyOffsets index source destination mode)
-    | CopyMode.scattered storage indices => (rowGradientOffsets index source destination indices flag)
-    | CopyMode.gathered storage indices => (gatherOffsets storage index source destination indices flag)
-    | CopyMode.relativePosition => (copyOffsets index source destination mode)
-    | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
-    | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
-    | CopyMode.pooled geometry => (poolStep index source destination geometry flag)
-    | CopyMode.stateConvolution weights => (stateWindowStep index source destination weights)
-    | CopyMode.columnOverlap axis storage => (columnOverlapStep index source destination axis)
-    | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
-    | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
-    | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
-    | CopyMode.arange start stop step count => (arangeOffsets index count start stop step flag))),
-  executable: true
-}
-
-definition{
   name: machineOperation,
   parameters: [typed : Bool, family : Nat, operation : Nat, source : Nat, destination : Nat],
   result: WordOperation,
@@ -1998,6 +1959,92 @@ theorem{
 }
 
 definition{
+  name: normalizationStep,
+  parameters: [
+    selected : RmsBackwardGraph::Selection,
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    flag : Nat,
+    bytes : Nat,
+    x0 : Nat,
+    x1 : Nat,
+    x2 : Nat,
+    x3 : Nat
+  ],
+  result: GraphResponse,
+  body: (match (RmsBackwardGraph::dispatch selected index (project source u0) (project source n1) (project source n2) (project source n3) (project source s0) (project source s1) (project source s2) (project source s3) x0 x1 x2 x3 (project destination s0) (project destination s1) (project destination s2) (project destination s3) flag)
+    | NormGraph::Instruction.invalid => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | NormGraph::Instruction.step family operation left from right at target to => (machineWord false family operation 0 0 left from right at target to bytes bytes)),
+  executable: true
+}
+
+definition{
+  name: executionStep,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    mode : CopyMode,
+    flag : Nat,
+    modeled : Bool,
+    bytes : Nat,
+    x0 : Nat,
+    x1 : Nat,
+    x2 : Nat,
+    x3 : Nat
+  ],
+  result: GraphResponse,
+  body: (bindStep mode (match mode
+    | CopyMode.linear => (copyOffsets index source destination mode)
+    | CopyMode.repeated => (copyOffsets index source destination mode)
+    | CopyMode.concatenated axis right => (copyOffsets index source destination mode)
+    | CopyMode.padded p0 p1 p2 p3 circular => (copyOffsets index source destination mode)
+    | CopyMode.reflected left => (copyOffsets index source destination mode)
+    | CopyMode.rolled p0 p1 p2 p3 => (copyOffsets index source destination mode)
+    | CopyMode.updated initial base adding => (copyOffsets index source destination mode)
+    | CopyMode.folded initial => (copyOffsets index source destination mode)
+    | CopyMode.selected kind => (copyOffsets index source destination mode)
+    | CopyMode.constant kind bits => (copyOffsets index source destination mode)
+    | CopyMode.arithmetic kind unary right => (copyOffsets index source destination mode)
+    | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
+    | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)
+    | CopyMode.transformed kind storage a b => (copyOffsets index source destination mode)
+    | CopyMode.unaryWord kind sourceType destinationType => (copyOffsets index source destination mode)
+    | CopyMode.scanned => (copyOffsets index source destination mode)
+    | CopyMode.reduced operation storage => (copyOffsets index source destination mode)
+    | CopyMode.argmaxRow => (argmaxOffsets index source destination flag)
+    | CopyMode.counted elements right => (copyOffsets index source destination mode)
+    | CopyMode.scattered storage indices => (rowGradientOffsets index source destination indices flag)
+    | CopyMode.gathered storage indices => (gatherOffsets storage index source destination indices flag)
+    | CopyMode.relativePosition => (copyOffsets index source destination mode)
+    | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
+    | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
+    | CopyMode.pooled geometry => (poolStep index source destination geometry flag)
+    | CopyMode.stateConvolution weights => (stateWindowStep index source destination weights)
+    | CopyMode.columnOverlap axis storage => (columnOverlapStep index source destination axis)
+    | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
+    | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (if modeled then (normalizationStep (ctor RmsBackwardGraph::Selection.grouped kind epsilon rows capacity) index source destination flag bytes x0 x1 x2 x3) else (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64))) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
+    | CopyMode.l2Norm epsilon => (if modeled then (normalizationStep (ctor RmsBackwardGraph::Selection.l2 epsilon) index source destination flag bytes x0 x1 x2 x3) else (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65)))
+    | CopyMode.arange start stop step count => (arangeOffsets index count start stop step flag))),
+  executable: true
+}
+
+definition{
+  name: statefulOffsets,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    mode : CopyMode,
+    flag : Nat
+  ],
+  result: GraphResponse,
+  body: (executionStep index source destination mode flag false 0 0 0 0 0),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
@@ -2008,6 +2055,7 @@ definition{
     | GraphRequest.convolutionAddress geometry phase start index => (convolutionAddress geometry phase start index)
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
+    | GraphRequest.executionStep index source destination mode flag bytes x0 x1 x2 x3 => (executionStep index source destination mode flag true bytes x0 x1 x2 x3)
     | GraphRequest.bindings mode => (sourceBindings mode)
     | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),
   executable: true,
