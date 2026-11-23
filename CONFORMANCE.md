@@ -182,6 +182,7 @@ model does not sanction.
 | `VT-92` | `build` | Prism plans sparse GGML top-k mask cells and Verdant compares scores and transfers selected mask words |
 | `VT-93` | `build` | Prism binds GGML clamp limits and storage for SwiGLU and Verdant evaluates the bounded operands in binary32 |
 | `VT-94` | `build` | Prism binds Q5_0 and IQ4_NL matrix and attention rows to Verdant signed-coefficient contractions and value decoding |
+| `VT-95` | `build` | Prism binds affine four- and five-bit matrix and attention rows to Verdant activation encoding, row products and value decoding |
 
 ## normalization-graphs
 

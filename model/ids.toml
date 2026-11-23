@@ -636,3 +636,9 @@ id = "VT-94"
 level = "build"
 suite = "native-backend"
 statement = "Prism binds Q5_0 and IQ4_NL matrix and attention rows to Verdant signed-coefficient contractions and value decoding"
+
+[[id]]
+id = "VT-95"
+level = "build"
+suite = "native-backend"
+statement = "Prism binds affine four- and five-bit matrix and attention rows to Verdant activation encoding, row products and value decoding"
