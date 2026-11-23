@@ -93,6 +93,12 @@ Feature: native-backend
     When vTensor places each image sample or padding value in its result column
     Then every result matches the original GGML CPU evaluator
 
+  @VT-73 @build
+  Scenario: Original GGML outer-product graphs with CPU-refused type and batch combinations match the authoritative decoder followed by the F32 CPU outer product
+    Given the original factory operands for the CPU-refused outer-product cases
+    When the plugin executes each typed graph and the imported evaluator decodes the same inputs for an F32 CPU contraction
+    Then the plugin output satisfies the upstream comparison tolerance
+
   @VT-74 @build
   Scenario: Prism maps direct two-dimensional GGML convolution to padded image patches and kernel strides and Verdant contracts each patch matrix
     Given original GGML convolution graphs with F32 images and F16 or F32 kernels

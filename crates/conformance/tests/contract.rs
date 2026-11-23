@@ -10,6 +10,14 @@
 
 use repo_model::repo_root as root;
 
+fn provider_library() -> std::path::PathBuf {
+    std::env::current_exe()
+        .unwrap()
+        .with_file_name("libvtensor_backend.so")
+        .canonicalize()
+        .expect("Cargo-built vTensor backend")
+}
+
 /// The body of the top-level declaration named `name`, up to its closing brace.
 fn declaration<'a>(model: &'a str, name: &str) -> &'a str {
     let (_, body) = model
@@ -203,6 +211,9 @@ ggml_batches! {
     fn planar_columns_vt_72() { "upstream-IM2COL_PLANAR", 4, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-IM2COL_HALF_INPUT", 2) }
 
     #[test]
+    fn outer_reference_vt_73() { "upstream-OUT_PROD_DECODED", 23, ["matrix", "pointwise"] }
+
+    #[test]
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
     /// Four imported BF16 attention cases vary mask and sink presence independently.
@@ -248,12 +259,11 @@ fn contract_tc_01() {
     // The proposition names every universal policy file whose digest
     // `template.lock` binds: all of them but the self-referential lock.
     let contract = ggml_oracle::read_json(root().join("template-contract.json"));
-    let bound: Vec<_> = contract["universal_policy_paths"]
-        .as_array()
-        .expect("universal_policy_paths")
+    let paths = contract["universal_policy_paths"].as_array().unwrap();
+    let bound: Vec<_> = paths
         .iter()
-        .map(|path| path.as_str().expect("policy path"))
-        .filter(|path| *path != "template.lock")
+        .map(|path| path.as_str().unwrap())
+        .filter(|&path| path != "template.lock")
         .collect();
     let proposition = declaration(&model, "Conformant");
     let fields = [
@@ -302,44 +312,23 @@ fn contract_tc_01() {
 /// `VT-10`: Prism tensor placement matches the imported GGML linear allocator for aligned buffers and refuses invalid alignment, exhausted capacity, and arithmetic overflow
 #[test]
 fn buffer_allocation_vt_10() {
-    fn outcome(decision: vtensor_allocation::Adt0) -> [u64; 4] {
-        match decision {
-            vtensor_allocation::Adt0::C2 => [1, 0, 0, 0],
-            vtensor_allocation::Adt0::C3(offset, padded, next) => [0, offset, padded, next],
-            _ => panic!("valid alignment and offset refused"),
-        }
-    }
+    use vtensor_allocation::Adt0::*;
     let rows = boundary_rows("allocation", 10, 864, |probe| match probe {
         vtensor_probes::Adt0::C2(c, o, s, a) => [c, o, s, a],
         _ => panic!("missing allocation case"),
     });
-    for ([capacity, offset, size, alignment], expected) in rows {
-        assert_eq!(
-            outcome(vtensor_allocation::run(capacity, offset, size, alignment).unwrap()),
-            expected
-        );
-    }
-    for alignment in [0, 3, 6, 63, u64::MAX] {
-        assert!(matches!(
-            vtensor_allocation::run(64, 0, 1, alignment),
-            Ok(vtensor_allocation::Adt0::C0)
-        ));
-    }
-    assert!(matches!(
-        vtensor_allocation::run(64, 1, 1, 8),
-        Ok(vtensor_allocation::Adt0::C1)
-    ));
-    assert!(vtensor_allocation::run(u64::MAX, 0, u64::MAX, 2).is_err());
-    for ((capacity, offset, size, alignment), expected) in [
-        ((u64::MAX, u64::MAX, 0, 1), [0, u64::MAX, 0, u64::MAX]),
-        ((u64::MAX, u64::MAX, 1, 1), [1, 0, 0, 0]),
-        (
-            (u64::MAX, 0, 1, 1_u64 << 63),
-            [0, 0, 1_u64 << 63, 1_u64 << 63],
-        ),
-    ] {
-        let decision = vtensor_allocation::run(capacity, offset, size, alignment).unwrap();
-        assert_eq!(outcome(decision), expected);
+    let edges: [([u64; 4], [u64; 4]); 10] =
+        serde_json::from_value(native_backend_oracle::ORACLE_BINDINGS["allocation_edges"].clone())
+            .unwrap();
+    for ([capacity, offset, size, alignment], expected) in rows.chain(edges) {
+        let actual = match vtensor_allocation::run(capacity, offset, size, alignment) {
+            Ok(C3(at, padded, next)) => [0, at, padded, next],
+            Ok(C2) => [1, 0, 0, 0], // capacity exhausted
+            Ok(C0) => [2, 0, 0, 0], // invalid alignment
+            Ok(C1) => [3, 0, 0, 0], // misaligned offset
+            Err(_) => [4, 0, 0, 0], // overflow
+        };
+        assert_eq!(actual, expected);
     }
 }
 
@@ -406,19 +395,11 @@ fn native_fixture_baselines_vt_40() {
     let modes = baseline["mode"].as_array().unwrap();
     assert_eq!(modes.len(), 16);
     for row in modes {
-        let (name, cases) = (
-            row["name"].as_str().unwrap(),
-            row["cases"].as_u64().unwrap(),
-        );
-        assert_eq!(
-            GGML_BATCHES
-                .iter()
-                .filter(|(mode, _)| *mode == name)
-                .map(|(_, count)| *count as u64)
-                .collect::<Vec<_>>(),
-            [cases],
-            "frozen batch must run once with its registered count"
-        );
+        let name = row["name"].as_str().unwrap();
+        let cases = row["cases"].as_u64().unwrap();
+        let mut registered = GGML_BATCHES.iter().filter(|(mode, _)| *mode == name);
+        assert_eq!(registered.next(), Some(&(name, cases as usize)));
+        assert_eq!(registered.next(), None, "duplicate frozen batch {name}");
         assert!(row["bytes"].as_u64().unwrap() > 0);
         assert_eq!(row["sha256"].as_str().unwrap().len(), 64);
         assert_eq!(row["record"].as_array().unwrap().len() as u64, cases);
@@ -616,54 +597,35 @@ mod ggml_oracle {
     }
 
     fn verify_source_cache(root: &Path, cache: &Path) {
-        let archive = root.join("vendor/llama.cpp-oracle/source.tar.gz");
-        let listing =
-            String::from_utf8(run(Command::new("tar").arg("-tvzf").arg(&archive))).unwrap();
-        let mut inputs = Vec::new();
-        for line in listing.lines() {
-            let fields: Vec<_> = line.split_whitespace().collect();
-            let Some(&name) = fields.get(5) else {
-                panic!("unrecognized archive listing: {line}");
-            };
-            let relevant = name == "tests/test-backend-ops.cpp"
-                || name.starts_with("ggml/include/")
-                || name.starts_with("ggml/src/ggml-cpu/")
-                || name
-                    .strip_prefix("ggml/src/")
-                    .is_some_and(|tail| !tail.contains('/'));
-            if relevant && !name.ends_with('/') {
-                assert!(
-                    line.starts_with('-') && fields.len() == 6,
-                    "non-regular oracle input: {line}"
-                );
-                inputs.push((name.to_string(), fields[2].parse::<usize>().unwrap()));
-            }
-        }
+        // GNU tar checks content, size and file type against the pinned archive in one pass.
+        // Extraction by the unprivileged SDK user may change ownership, modes or timestamps.
+        let result = Command::new("tar")
+            .env("LC_ALL", "C")
+            .args(["--compare", "--gzip", "--file"])
+            .arg(root.join("vendor/llama.cpp-oracle/source.tar.gz"))
+            .arg("--directory")
+            .arg(cache)
+            .output()
+            .expect("compare imported oracle");
+        let differences = std::str::from_utf8(&result.stdout).unwrap();
         assert!(
-            inputs.len() > 100,
-            "upstream source inventory was truncated"
+            result.stderr.is_empty(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
         );
-        let mut extract = Command::new("tar");
-        extract
-            .arg("-xOzf")
-            .arg(archive)
-            .args(inputs.iter().map(|(name, _)| name));
-        let authoritative = Sha256::digest(run(&mut extract));
-        let mut cached = Sha256::new();
-        for (name, length) in inputs {
-            let bytes = std::fs::read(cache.join(&name)).unwrap();
-            assert_eq!(
-                bytes.len(),
-                length,
-                "cached upstream source differs: {name}"
-            );
-            cached.update(bytes);
-        }
         assert_eq!(
-            cached.finalize().as_slice(),
-            authoritative.as_slice(),
-            "cached GGML reference input differs from the authoritative archive"
+            result.status.code(),
+            Some(i32::from(!differences.is_empty()))
         );
+        for line in differences.lines() {
+            assert!(
+                matches!(
+                    line.rsplit_once(": ").map(|(_, reason)| reason),
+                    Some("Uid differs" | "Gid differs" | "Mode differs" | "Mod time differs")
+                ),
+                "cached GGML reference differs from its pinned archive: {line}"
+            );
+        }
     }
 
     /// Build the oracle once per source, compiler, SDK and build-recipe identity.
@@ -676,9 +638,7 @@ mod ggml_oracle {
     fn build_storage_oracle(root: &Path) -> PathBuf {
         let imported = root.join("vendor/llama.cpp-oracle");
         let lock = read_toml(imported.join("upstream.toml"));
-        let archive =
-            std::fs::read(imported.join("source.tar.gz")).expect("upstream source archive");
-        let archive_digest = digest(&Sha256::digest(&archive));
+        let archive_digest = file_digest(imported.join("source.tar.gz"));
         assert_eq!(
             archive_digest,
             lock["archive"][0]["sha256"].as_str().expect("archive pin")
@@ -715,7 +675,7 @@ mod ggml_oracle {
             .join(digest(&identity.finalize()));
         let executable = cache.join("storage-oracle");
         if executable.exists() {
-            verify_file(&executable, cache.join("executable.sha256"));
+            verify_file(&executable, executable.with_extension("sha256"));
             verify_source_cache(root, &cache);
             return executable;
         }
@@ -781,14 +741,10 @@ mod ggml_oracle {
                 .args(objects.map(|object| cache.join(format!("{object}.o"))))
                 .args(["-lm", "-o"])
                 .arg(&candidate));
-            let stamp = match name {
-                "storage" => "executable",
-                other => other,
-            };
             publish_file(
                 &candidate,
                 &destination,
-                cache.join(format!("{stamp}.sha256")),
+                destination.with_extension("sha256"),
             );
         }
         executable
@@ -836,7 +792,7 @@ mod ggml_oracle {
     pub(super) fn boundary<const N: usize>(name: &str, input: &str) -> Vec<[u64; N]> {
         let base = storage_oracle(&super::root());
         let executable = base.with_file_name(format!("{name}-oracle"));
-        verify_file(&executable, base.with_file_name(format!("{name}.sha256")));
+        verify_file(&executable, executable.with_extension("sha256"));
         spans(&executable, input)
     }
 
@@ -1097,27 +1053,12 @@ mod ggml_storage_oracle {
     fn ggml_storage_oracle_vt_05() {
         let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let executable = ggml_oracle::storage_oracle(&root);
-        let output = ggml_oracle::spans(
-            &executable,
-            concat!(
-                "0 1 1 1 1 4 4 4 4\n",        // F32 scalar
-                "0 3 2 1 1 4 32 64 64\n",     // F32 padded rows
-                "28 2 3 2 2 8 16 48 96\n",    // F64 four-dimensional tensor
-                "2 64 2 1 1 18 64 128 128\n", // Q4_0 padded block rows
-                "0 3 0 1 1 4 12 12 12\n",     // empty dimension
-                "0 -1 2 1 1 4 12 24 24\n",    // upstream empty negative extent
-            ),
-        );
+        let fixture = &super::native_backend_oracle::ORACLE_BINDINGS["storage_probe"];
+        let expected: [[u64; 3]; 6] =
+            serde_json::from_value(fixture["span_block_bytes"].clone()).unwrap();
         assert_eq!(
-            output,
-            [
-                [4, 1, 4],
-                [44, 1, 4],
-                [192, 1, 8],
-                [100, 32, 18],
-                [0, 1, 4],
-                [0, 1, 4]
-            ]
+            ggml_oracle::spans(&executable, fixture["request"].as_str().unwrap()),
+            expected
         );
         let malformed =
             ggml_oracle::pipe_input(&mut std::process::Command::new(&executable), b"malformed\n");
@@ -1188,26 +1129,14 @@ mod oracle_import {
             "the pinned snapshot must include the backend contract, implementation interface, and upstream operation oracle"
         );
 
-        let archives = lock["archive"]
-            .as_array()
-            .expect("buildable source archive");
-        assert_eq!(archives.len(), 1);
-        let archive = &archives[0];
-        assert_eq!(archive["path"].as_str(), Some("source.tar.gz"));
-        assert_eq!(archive["format"].as_str(), Some("git-archive-tar-gzip"));
-        assert_eq!(
-            archive["paths"]
-                .as_array()
-                .expect("export paths")
-                .iter()
-                .map(|p| p.as_str().expect("path"))
-                .collect::<Vec<_>>(),
-            ["ggml", "tests/test-backend-ops.cpp", "LICENSE"]
-        );
-        assert_eq!(
-            file_digest(artifact.join("source.tar.gz")),
-            archive["sha256"].as_str().expect("archive digest")
-        );
+        let archive_sha = file_digest(artifact.join("source.tar.gz"));
+        let archive = toml::Value::Table(toml::toml! {
+            path = "source.tar.gz"
+            format = "git-archive-tar-gzip"
+            paths = ["ggml", "tests/test-backend-ops.cpp", "LICENSE"]
+            sha256 = (archive_sha)
+        });
+        assert_eq!(lock["archive"].as_array().unwrap(), &[archive]);
 
         let exemption = super::ggml_oracle::read_json(root.join("oracle-import.lock"));
         let expected_files: Vec<_> = files.iter().map(|file| serde_json::json!({"path": format!("vendor/llama.cpp-oracle/{}", file["path"].as_str().expect("path")), "sha256": file["sha256"].as_str().expect("digest")})).collect();
@@ -1266,17 +1195,14 @@ mod tensor_layout {
         };
         let bundle = format!("generated/{directory}");
         let result = ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
-        let current = ggml_oracle::tool_json(
-            root,
-            "lexlean",
-            &[
-                "--project",
-                &project,
-                "--diagnostic-format",
-                "json",
-                "check",
-            ],
-        );
+        let args = [
+            "--project",
+            &project,
+            "--diagnostic-format",
+            "json",
+            "check",
+        ];
+        let current = ggml_oracle::tool_json(root, "lexlean", &args);
         for key in ["source_id", "semantic_id"] {
             assert_eq!(
                 current[key], result["source"][key],
@@ -1466,9 +1392,7 @@ mod verdant_api {
         let kernels = verified_unified_tensor_kernels().expect("Verdant verified kernel inventory");
         assert!(kernels.iter().map(|kernel| kernel.index).eq(0..15));
 
-        let library = std::env::current_exe()
-            .unwrap()
-            .with_file_name("libvtensor_backend.so");
+        let library = super::provider_library();
         let listing = super::ggml_oracle::run(
             std::process::Command::new("nm")
                 .args(["-D", "--undefined-only", "--format=just-symbols"])
@@ -1499,26 +1423,10 @@ mod verdant_api {
             assert!(!supportsF64Matmul4(type_is_f64, lhs_is_4x4, rhs_is_4x4));
         }
 
-        let lhs = [
-            [1.0, 2.0, 0.0, 1.0],
-            [0.0, 1.0, 1.0, 0.0],
-            [1.0, 0.0, 1.0, 0.0],
-            [2.0, 1.0, 0.0, 1.0],
-        ];
-        let rhs = [
-            [2.0, 0.0, 1.0, 0.0],
-            [1.0, 3.0, 0.0, 1.0],
-            [0.0, 1.0, 2.0, 0.0],
-            [1.0, 0.0, 1.0, 1.0],
-        ];
-        let expected: [[f64; 4]; 4] = std::array::from_fn(|column| {
-            std::array::from_fn(|row| {
-                (0..4)
-                    .map(|inner| lhs[inner][row] * rhs[column][inner])
-                    .sum()
-            })
-        });
-
+        let [lhs, rhs, expected]: [[[f64; 4]; 4]; 3] = serde_json::from_value(
+            super::native_backend_oracle::ORACLE_BINDINGS["fixed_matrix"]["columns"].clone(),
+        )
+        .expect("pinned column-major GGML CPU fixture");
         assert_eq!(
             multiply_mat4_cols_exact(&lhs, &rhs).expect("Verdant matrix multiplication"),
             expected
@@ -1551,12 +1459,9 @@ fn buffer_transfer_vt_09() {
         _ => panic!("missing transfer case"),
     });
     // The imported unsigned-add guard can wrap. Preserve typed refusals at those boundaries.
-    let extremes = [
-        ([0, 1, 1, 64, u64::MAX, 2], [12]),
-        ([0, 1, 1, u64::MAX, u64::MAX, 1], [12]),
-        ([0, 1, 0, u64::MAX, 0, 0], [0]),
-        ([0, 0, 0, 0, 0, 0], [10]),
-    ];
+    let extremes: [([u64; 6], [u64; 1]); 4] =
+        serde_json::from_value(native_backend_oracle::ORACLE_BINDINGS["transfer_edges"].clone())
+            .unwrap();
     for ([_, buffer, data, capacity, offset, size], [expected]) in rows.chain(extremes) {
         let decision = vtensor_transfer::run(buffer != 0, data != 0, capacity, offset, size);
         assert_eq!(outcome(decision), expected);
@@ -1587,7 +1492,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "df9277445fe251dd8bed346138acd6d7db4522f7ff2c78c0448757a35d31e7bd",
+            "c99d4d6c7b210e2af645632f08b60d9decca5400e01611caaa5cfb4506763f01",
         )
     });
 
@@ -1661,7 +1566,7 @@ mod native_backend_oracle {
         })
     }
 
-    const FIXTURE_BRIDGE: &str = r#"extern crate vtensor_fixture_model;
+    const FIXTURE_BRIDGE: &str = r#"
 #[repr(C)]
 pub struct Answer { pub status: u64, pub value: u64 }
 #[no_mangle]
@@ -1710,25 +1615,18 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             let library = cache.join("libfixtures.so");
             if !library.exists() {
                 let input = cache.join("bridge.rs");
-                std::fs::write(&input, FIXTURE_BRIDGE).unwrap();
-                let object = cache.join("libvtensor_fixture_model.rlib");
-                let flags = [
-                    "--edition=2021",
-                    "-Copt-level=2",
-                    "-Cdebug-assertions=on",
-                    "-Coverflow-checks=on",
-                ];
-                run(Command::new("rustc")
-                    .args(flags)
-                    .args(["--crate-name=vtensor_fixture_model", "--crate-type=rlib"])
-                    .arg(source)
-                    .arg("-o")
-                    .arg(&object));
+                let bridge =
+                    format!("#[path = {source:?}] mod vtensor_fixture_model;\n{FIXTURE_BRIDGE}");
+                std::fs::write(&input, bridge).unwrap();
                 let pending = library.with_extension("new");
                 run(Command::new("rustc")
-                    .args(flags)
-                    .args(["--crate-type=cdylib", "--extern"])
-                    .arg(format!("vtensor_fixture_model={}", object.display()))
+                    .args([
+                        "--edition=2021",
+                        "-Copt-level=2",
+                        "-Cdebug-assertions=on",
+                        "-Coverflow-checks=on",
+                        "--crate-type=cdylib",
+                    ])
                     .arg(input)
                     .arg("-o")
                     .arg(&pending));
@@ -1750,6 +1648,20 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         verify_file(object, stamp);
     }
 
+    // The parent cache already binds the source archive, compiler, flags and SDK.
+    fn reference_objects(common: &Path, sources: &[impl AsRef<str>]) -> Vec<std::path::PathBuf> {
+        sources
+            .iter()
+            .map(|source| {
+                let source = source.as_ref();
+                let object = common.join("reference-object").join(format!("{source}.o"));
+                std::fs::create_dir_all(object.parent().unwrap()).unwrap();
+                compiled_object(common, source, &object);
+                object
+            })
+            .collect()
+    }
+
     pub(super) fn verify(root: &Path, mode: &str, expected_cases: usize) {
         static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
         let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
@@ -1759,13 +1671,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         for name in ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"] {
             assert_eq!(objects[name], file_digest(common.join(name)));
         }
-        let executable = std::env::current_exe().unwrap();
-        let library = executable
-            .parent()
-            .unwrap()
-            .join("libvtensor_backend.so")
-            .canonicalize()
-            .expect("Cargo builds the native shared library");
+        let library = super::provider_library();
         let mut driver = String::from(HEADER);
         if mode.starts_with("upstream-") {
             driver.insert_str(0, "#define VTENSOR_IMPORTED_SUITE\n");
@@ -1804,18 +1710,14 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let program = cache.join("native-oracle");
         if !program.exists() {
             std::fs::write(cache.join("driver.cpp"), &driver).unwrap();
-            let source_objects = [
-                ("ggml-backend-reg.cpp", "reg.o"),
-                ("ggml-backend-dl.cpp", "dl.o"),
-                ("ggml-threading.cpp", "threading.o"),
+            let mut linker = Command::new("c++");
+            linker.args(["-Wl,--gc-sections", "-Wl,--export-dynamic"]);
+            let frontend = [
+                "ggml-backend-reg.cpp",
+                "ggml-backend-dl.cpp",
+                "ggml-threading.cpp",
             ];
-            let frontend = common
-                .join("native-frontend")
-                .join(digest(&Sha256::digest(format!("{source_objects:?}"))));
-            std::fs::create_dir_all(&frontend).unwrap();
-            for (source, object) in source_objects {
-                compiled_object(common, source, &frontend.join(object));
-            }
+            linker.args(reference_objects(common, &frontend));
             compile(common, cache.join("driver.cpp"), cache.join("driver.o"));
             let build_list =
                 std::fs::read_to_string(common.join("ggml/src/ggml-cpu/CMakeLists.txt")).unwrap();
@@ -1839,18 +1741,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 format!("ggml-cpu/arch/{architecture}/quants.c"),
                 format!("ggml-cpu/arch/{architecture}/repack.cpp"),
             ]);
-            let cpu = common
-                .join("reference-cpu")
-                .join(digest(&Sha256::digest(format!("{cpu_sources:?}"))));
-            std::fs::create_dir_all(&cpu).unwrap();
-            let mut cpu_objects = Vec::new();
-            for source in cpu_sources {
-                let object = cpu.join(format!("{}.o", source.replace('/', "_")));
-                compiled_object(common, &source, &object);
-                cpu_objects.push(object);
-            }
-            let mut linker = Command::new("c++");
-            linker.args(["-Wl,--gc-sections", "-Wl,--export-dynamic"]);
+            let cpu_objects = reference_objects(common, &cpu_sources);
             if mode.starts_with("upstream-") {
                 let suite = common
                     .join("imported-suite")
@@ -1863,7 +1754,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 linker.arg(object);
             }
             linker.arg(cache.join("driver.o"));
-            linker.args(["reg.o", "dl.o", "threading.o"].map(|name| frontend.join(name)));
             linker.args(
                 ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"]
                     .map(|name| common.join(name)),
@@ -1965,18 +1855,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         for (path, recipe) in recipes {
             let bytes =
                 std::fs::read(&path).expect("this execution must emit its fixture transcript");
-            assert_eq!(
-                bytes.len() as u64,
-                recipe["bytes"].as_u64().unwrap(),
-                "{mode} fixture length changed: {}",
-                path.display()
-            );
-            assert_eq!(
-                repo_model::artifact::sha256_hex(&bytes),
-                recipe["sha256"].as_str().unwrap(),
-                "{mode} fixture corpus changed: {}",
-                path.display()
-            );
+            let hash = repo_model::artifact::sha256_hex(&bytes);
+            assert_eq!(recipe["bytes"], bytes.len(), "{mode} fixture length");
+            assert_eq!(recipe["sha256"], hash, "{mode} fixture digest");
             std::fs::remove_file(path).unwrap();
         }
         if matches!(mode, "matrix" | "elementwise") {
@@ -2010,6 +1891,38 @@ static bool vtensor_use_reference(ggml_backend_t reference) {
     if(!use_reference) return false;
     use_reference(reference,true);return true;
 }
+// Preserve the original provider graph and use the imported decoder and F32 CPU contraction
+// for type pairs that the reference device refuses to execute directly.
+static bool reference_outer(test_case & test, ggml_backend_t backend, ggml_backend_t cpu) {
+    const ggml_init_params init{ggml_tensor_overhead()*128+ggml_graph_overhead(), nullptr, true};
+    ggml_context_ptr target(ggml_init(init)), reference(ggml_init(init));
+    if (!target || !reference) return false;
+    ggml_tensor * out=test.build_graph(target.get());
+    if (out->op!=GGML_OP_OUT_PROD || ggml_backend_dev_supports_op(ggml_backend_get_device(cpu),out)) return false;
+    ggml_tensor * a=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
+    ggml_tensor * b=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[1]->ne);
+    ggml_tensor * expected=ggml_out_prod(reference.get(),a,b);
+    ggml_cgraph * original_graph=ggml_new_graph(target.get()), * reference_graph=ggml_new_graph(reference.get());
+    ggml_build_forward_expand(original_graph,out);
+    ggml_build_forward_expand(reference_graph,expected);
+    ggml_backend_buffer_ptr actual_buffer(ggml_backend_alloc_ctx_tensors(target.get(),backend));
+    ggml_backend_buffer_ptr reference_buffer(ggml_backend_alloc_ctx_tensors(reference.get(),cpu));
+    if (!actual_buffer || !reference_buffer || !ggml_backend_dev_supports_op(ggml_backend_get_device(backend),out)) return false;
+    test.initialize_tensors(target.get());
+    auto left=tensor_to_float(out->src[0]),right=tensor_to_float(out->src[1]);
+    ggml_backend_tensor_set(a,left.data(),0,ggml_nbytes(a));
+    ggml_backend_tensor_set(b,right.data(),0,ggml_nbytes(b));
+    if (ggml_backend_graph_compute(backend,original_graph)!=GGML_STATUS_SUCCESS ||
+        ggml_backend_graph_compute(cpu,reference_graph)!=GGML_STATUS_SUCCESS) return false;
+    auto actual=tensor_to_float(out),wanted=tensor_to_float(expected);
+    if (actual.size()!=wanted.size()) return false;
+    const double error=nmse(wanted.data(),actual.data(),wanted.size());
+    if (!(error<=test.max_nmse_err(backend))) {
+        fprintf(stderr,"[OUT_PROD] ERR = %.9f > %.9f\n",error,test.max_nmse_err(backend));
+        return false;
+    }
+    return true;
+}
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
@@ -2029,9 +1942,18 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for(auto &test:make_test_cases_eval()) {
       const auto i=ordinal++;
       if (!selected.empty() && (cases==selected.size() || selected[cases]!=i)) continue;
-      const auto status=test->eval(backend,reference,selected.empty()?op:nullptr,&observed);
-      if(status==test_status_t::SKIPPED) continue;
-      if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
+      if (!strcmp(op,"OUT_PROD_DECODED")) {
+        if (selected.empty() || !reference_outer(*test,backend,reference)) {
+          fprintf(stderr,"outer reference rejected ordinal %zu: %s\n",i,test->vars().c_str());
+          return SIZE_MAX;
+        }
+        observed.label="OUT_PROD";
+        ++observed.records;
+      } else {
+        const auto status=test->eval(backend,reference,selected.empty()?op:nullptr,&observed);
+        if(status==test_status_t::SKIPPED) continue;
+        if(status!=test_status_t::OK || observed.bad) return SIZE_MAX;
+      }
       if(!selected.empty()) std::printf("CASE\t%zu\t%s\t%s\n",i,observed.label.c_str(),test->vars().c_str());
       ++cases;
     }
