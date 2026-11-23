@@ -1898,10 +1898,15 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     size_t id;
     while (std::scanf("%zu", &id)==1) selected.push_back(id);
     if (!std::feof(stdin)) return SIZE_MAX;
-    size_t ordinal=0;
-    for(auto &test:make_test_cases_eval()) {
-      const auto i=ordinal++;
-      if (!selected.empty() && (cases==selected.size() || selected[cases]!=i)) continue;
+    auto tests=make_test_cases_eval();
+    std::vector<bool> seen(selected.empty()?0:tests.size());
+    for (size_t i:selected) {
+      if (i>=tests.size() || seen[i]) return SIZE_MAX;
+      seen[i]=true;
+    }
+    for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
+      const size_t i=selected.empty()?pos:selected[pos];
+      auto &test=tests[i];
       if (!strcmp(op,"OUT_PROD_DECODED") || !strcmp(op,"CONV_2D_CONTIGUOUS")) {
         const ggml_op operation=!strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : GGML_OP_CONV_2D;
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {

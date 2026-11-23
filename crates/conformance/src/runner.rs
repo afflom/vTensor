@@ -1036,26 +1036,21 @@ fn execute_word(
     words: &mut [u64],
 ) -> Result<(), BackendError> {
     use verdant_tensor::linear;
+    use BackendError::InvalidTensor;
     let GraphResponse::C7(operation, left, right, target, read_bytes, write_bytes) = response
     else {
-        return Err(BackendError::InvalidTensor);
+        return Err(InvalidTensor);
     };
     let read = |operand| match operand {
-        WordOperand::C1(index) => words
-            .get(index as usize)
-            .copied()
-            .ok_or(BackendError::InvalidTensor),
+        WordOperand::C1(index) => words.get(index as usize).copied().ok_or(InvalidTensor),
         WordOperand::C2(value) => Ok(value),
         operand => {
             let (pointer, offset) = match operand {
-                WordOperand::C0(index, offset) => (
-                    *pointers
-                        .get(index as usize)
-                        .ok_or(BackendError::InvalidTensor)?,
-                    offset,
-                ),
+                WordOperand::C0(index, offset) => {
+                    (*pointers.get(index as usize).ok_or(InvalidTensor)?, offset)
+                }
                 WordOperand::C3(offset) => (destination, offset),
-                _ => return Err(BackendError::InvalidTensor),
+                _ => return Err(InvalidTensor),
             };
             // SAFETY: Prism bounds the selected source or output word and its byte width.
             unsafe { scalar_word(pointer.add(offset as usize), read_bytes, None) }
@@ -1066,7 +1061,7 @@ fn execute_word(
         if overflow {
             BackendError::Overflow
         } else {
-            BackendError::InvalidTensor
+            InvalidTensor
         }
     };
     let float = |word: u64| f32::from_bits(word as u32);
@@ -1087,9 +1082,9 @@ fn execute_word(
                 .map_err(|_| BackendError::Overflow)?
         }
         WordOperation::C5(kind) => {
-            linear::evaluate_encoded_word(kind, a, b).map_err(|_| BackendError::InvalidTensor)?
+            linear::evaluate_encoded_word(kind, a, b).map_err(|_| InvalidTensor)?
         }
-        WordOperation::C6 => return Err(BackendError::InvalidTensor),
+        WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
             let input = decode_float(source, a)?;
             let result = match kind {
@@ -1103,24 +1098,20 @@ fn execute_word(
                 20 if source == 0 => Ok(gaussian_table(a)?.unwrap_or_default()),
                 20 => linear::gelu_f32(input),
                 21 => linear::gelu_quick_f32(input),
-                _ => return Err(BackendError::InvalidTensor),
+                _ => return Err(InvalidTensor),
             }
             .map_err(|_| BackendError::Overflow)?;
             Some(convert(0, destination, u64::from(result.to_bits()))?)
         }
     }
-    .ok_or(BackendError::InvalidTensor)?;
+    .ok_or(InvalidTensor)?;
     match target {
-        WordTarget::C0(index) => {
-            *words
-                .get_mut(index as usize)
-                .ok_or(BackendError::InvalidTensor)? = value
-        }
+        WordTarget::C0(index) => *words.get_mut(index as usize).ok_or(InvalidTensor)? = value,
         // SAFETY: Prism bounds each output word, including eight-byte COUNT_EQUAL results.
         WordTarget::C1(offset) => unsafe {
             scalar_word(destination.add(offset as usize), write_bytes, Some(value))?;
         },
-        WordTarget::C2 => return Err(BackendError::InvalidTensor),
+        WordTarget::C2 => return Err(InvalidTensor),
     }
     Ok(())
 }

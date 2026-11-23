@@ -143,7 +143,8 @@ inductive{
     {name: normalized, fields: [Nat, Nat, Nat, Nat]},
     {name: imageColumns, fields: [ColumnGeometry]},
     {name: pooled, fields: [PoolGeometry]},
-    {name: stateConvolution, fields: [IndexContext]}
+    {name: stateConvolution, fields: [IndexContext]},
+    {name: columnOverlap, fields: [ColumnAxis, Nat]}
   ]
 }
 
@@ -1478,6 +1479,51 @@ definition{
 }
 
 definition{
+  name: packedSignalMatrix,
+  parameters: [matrix : TensorDescriptor, bytes : Nat],
+  result: Bool,
+  body: (((((project matrix n2) =? 1) && ((project matrix n3) =? 1)) && ((project matrix s0) =? bytes)) && (((project matrix n1) =? 1) || ((project matrix s1) =? (prim multiply (project matrix n0) bytes : Nat)))),
+  executable: true
+}
+
+definition{
+  name: overlapSteps,
+  parameters: [axis : ColumnAxis],
+  result: Nat,
+  body: (2 + (prim multiply 2 (prim quotient ((project axis kernel) + (prim subtract (project axis stride) 1 : Nat)) (project axis stride) 0 : Nat) : Nat)),
+  executable: true
+}
+
+definition{
+  name: planColumnOverlap,
+  parameters: [options : OperationParameters, source : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let stride : Nat := (project options p0);
+    (let channels : Nat := (project options p1);
+    (let padding : Nat := (project options p2);
+    (let width : Nat := (prim quotient (project source n0) channels 0 : Nat);
+    (let bytes : Nat := (if ((project source ty) =? 0) then 4 else 2);
+    (if (((((((((((((((floatStorageType (project source ty)) && ((project source ty) =? (project output ty))) && (0 <? stride)) && (stride <? 2147483648)) && (0 <? channels)) && (channels <? 2147483648)) && (padding <? 2147483648)) && (0 <? width)) && (0 <? (project output n0))) && ((project source n0) =? (prim multiply width channels : Nat))) && ((project output n1) =? channels)) && ((((project output n0) + (prim multiply padding 2 : Nat)) + stride) =? ((prim multiply (project source n1) stride : Nat) + width))) && (packedSignalMatrix source bytes)) && (packedSignalMatrix output bytes)) && (separateTensors source output)) then (let axis : ColumnAxis := (record ColumnAxis {kernel := width, stride := stride, pad := padding, dilation := 1}); (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (overlapSteps axis) : Nat) bytes (indexContext source 1) (indexContext output 1) (ctor CopyMode.columnOverlap axis (project source ty)))) else (ctor PointwiseDecision.invalidShape))))))),
+  executable: true
+}
+
+definition{
+  name: columnOverlapStep,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, axis : ColumnAxis],
+  result: GraphResponse,
+  body: (let steps : Nat := (overlapSteps axis);
+    (let phase : Nat := (prim remainder index steps 0 : Nat);
+    (let row : Nat := (prim quotient index steps 0 : Nat);
+    (if (phase =? 0) then (ctor GraphResponse.word 19 2 0 2 0 1 0) else (if ((phase + 1) =? steps) then (ctor GraphResponse.word 7 1 0 2 0 3 (blockOffset row destination)) else (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.word 4 1 0 1 1 1 0) else (let position : Nat := ((decodedCoordinate row destination 0) + (project axis pad));
+    (let startColumn : Nat := (prim quotient (prim subtract (position + (project axis stride)) (project axis kernel) : Nat) (project axis stride) 0 : Nat);
+    (let column : Nat := (startColumn + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat));
+    (let origin : Nat := (prim multiply column (project axis stride) : Nat);
+    (let tap : Nat := (prim subtract position origin : Nat);
+    (if (((column <? (project source n1)) && (origin <=? position)) && (tap <? (project axis kernel))) then (ctor GraphResponse.word 6 0 (offsetCoordinates source ((prim multiply (decodedCoordinate row destination 1) (project axis kernel) : Nat) + tap) column 0 0) 2 0 1 1) else (ctor GraphResponse.word 19 2 0 2 0 1 1))))))))))))),
+  executable: true
+}
+
+definition{
   name: stateWindowSteps,
   parameters: [width : Nat],
   result: Nat,
@@ -1618,6 +1664,7 @@ definition{
     | CopyMode.relativeAdd initial width biases => (relativeAddOffsets index initial width biases)
     | CopyMode.pooled geometry => (poolStep index source destination geometry 0)
     | CopyMode.stateConvolution weights => (stateWindowStep index source destination weights)
+    | CopyMode.columnOverlap axis storage => (columnOverlapStep index source destination axis)
     | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
     | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
@@ -1635,11 +1682,11 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right | Option.none => (planPool (operation =? 58) options left output) | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right | Option.none => (planPool (operation =? 58) options left output) | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
     | Option.none => false
     | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -1690,6 +1737,7 @@ definition{
     | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false)
     | CopyMode.pooled geometry => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.stateConvolution weights => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.columnOverlap axis storage => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.imageColumns geometry => (ctor GraphResponse.bindings 2 0 0 false)
     | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings (if (kind =? 66) then 3 else 1) 0 0 false)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
@@ -1738,6 +1786,7 @@ definition{
     | CopyMode.relativeAdd initial width biases => 0
     | CopyMode.pooled geometry => (if (opcode =? 6) then (project geometry storage) else 0)
     | CopyMode.stateConvolution weights => 0
+    | CopyMode.columnOverlap axis storage => (if ((opcode =? 6) || (opcode =? 7)) then storage else 0)
     | CopyMode.imageColumns geometry => (project geometry storage)
     | CopyMode.normalized kind epsilon rows capacity => (if (((opcode =? 6) || (opcode =? 7)) && (kind =? 30)) then 30 else 0)
     | CopyMode.l2Norm epsilon => 0
@@ -1800,6 +1849,7 @@ definition{
     | CopyMode.relativeAdd initial width biases => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.pooled geometry => (ctor WordOperation.invalid)
     | CopyMode.stateConvolution weights => (ctor WordOperation.invalid)
+    | CopyMode.columnOverlap axis storage => (ctor WordOperation.invalid)
     | CopyMode.imageColumns geometry => (ctor WordOperation.storage (project geometry inputStorage) (project geometry storage) true)
     | CopyMode.normalized kind epsilon rows capacity => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.l2Norm epsilon => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -1838,6 +1888,7 @@ definition{
     | CopyMode.relativeAdd initial width biases => 0
     | CopyMode.pooled geometry => 0
     | CopyMode.stateConvolution weights => 0
+    | CopyMode.columnOverlap axis storage => 0
     | CopyMode.imageColumns geometry => 0
     | CopyMode.normalized kind epsilon rows capacity => 0
     | CopyMode.l2Norm epsilon => 0
@@ -1918,6 +1969,7 @@ definition{
     | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
     | CopyMode.pooled geometry => (poolStep index source destination geometry flag)
     | CopyMode.stateConvolution weights => (stateWindowStep index source destination weights)
+    | CopyMode.columnOverlap axis storage => (columnOverlapStep index source destination axis)
     | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
     | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
@@ -3252,6 +3304,13 @@ theorem{
   name: threeStateTapsMultiplyAndAccumulate,
   parameters: [],
   statement: ((stateWindowSteps 3) = 8),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: overlapBoundsNonintegralWindow,
+  parameters: [],
+  statement: ((overlapSteps (record ColumnAxis {kernel := 5, stride := 2, pad := 0, dilation := 1})) = 8),
   proof: reflexivity{}
 }
 
