@@ -429,7 +429,8 @@
       "VT-78": "verification/factory-biased-attention-vt78.json",
       "VT-82": "verification/factory-column-overlap-vt82.json",
       "VT-83": "verification/factory-indexed-products-vt83.json",
-      "VT-64/67/68-compositions": "verification/factory-admitted-compositions.json"
+      "VT-64/67/68-compositions": "verification/factory-admitted-compositions.json",
+      "VT-84": "verification/factory-scalar-experts-vt84.json"
     },
     "supplemental_refusal_evidence": {
       "1069": {
