@@ -130,6 +130,27 @@ inductive{
   ]
 }
 
+structure{
+  name: ConvolutionGeometry,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: patches, type: Nat},
+    {name: inner, type: Nat},
+    {name: channels, type: Nat},
+    {name: weights, type: Nat},
+    {name: tile, type: Nat},
+    {name: inputCapacity, type: Nat},
+    {name: outputCapacity, type: Nat},
+    {name: kernelType, type: Nat},
+    {name: kernel, type: IndexContext},
+    {name: image, type: IndexContext},
+    {name: output, type: IndexContext},
+    {name: x, type: ColumnAxis},
+    {name: y, type: ColumnAxis}
+  ]
+}
+
 inductive{
   name: PointwiseDecision,
   type_parameters: [],
@@ -140,7 +161,8 @@ inductive{
     {name: execute, fields: [Nat, Bool, Nat, Nat, Nat, Nat, Nat]},
     {name: product, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: copyBlocks, fields: [Nat, Nat, IndexContext, IndexContext, CopyMode]},
-    {name: delegated, fields: [Nat]}
+    {name: delegated, fields: [Nat]},
+    {name: convolution, fields: [ConvolutionGeometry]}
   ]
 }
 
@@ -261,7 +283,8 @@ inductive{
     },
     {name: stateful, fields: [Nat, IndexContext, IndexContext, CopyMode, Nat]},
     {name: bindings, fields: [CopyMode]},
-    {name: machineWord, fields: [Bool, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: machineWord, fields: [Bool, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: convolutionAddress, fields: [ConvolutionGeometry, Nat, Nat, Nat]}
   ]
 }
 
@@ -317,7 +340,8 @@ inductive{
     {name: word, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: decoded, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: bindings, fields: [Nat, Nat, Nat, Bool]},
-    {name: instruction, fields: [WordOperation, WordOperand, WordOperand, WordTarget, Nat, Nat]}
+    {name: instruction, fields: [WordOperation, WordOperand, WordOperand, WordTarget, Nat, Nat]},
+    {name: sample, fields: [(Option Nat)]}
   ]
 }
 
@@ -910,6 +934,7 @@ definition{
   result: PointwiseDecision,
   body: (match (numericDecision operation variant left right output)
     | PointwiseDecision.unsupported => (ctor PointwiseDecision.unsupported)
+    | PointwiseDecision.convolution geometry => (ctor PointwiseDecision.convolution geometry)
     | PointwiseDecision.delegated kernel => (ctor PointwiseDecision.delegated kernel)
     | PointwiseDecision.invalidShape => (if ((((operation =? 2) || (operation =? 5)) || (operation =? 6)) || (operation =? 7)) then (ctor PointwiseDecision.delegated 67) else (ctor PointwiseDecision.invalidShape))
     | PointwiseDecision.execute kind unary n0 n1 n2 n3 count => (if unary then (ctor PointwiseDecision.copyBlocks count 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.arithmetic kind unary (match right
@@ -1289,6 +1314,48 @@ definition{
 }
 
 definition{
+  name: planDirectConvolution,
+  parameters: [options : OperationParameters, kernel : TensorDescriptor, source : (Option TensorDescriptor), output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (match source
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some image => (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p2), dilation := (project options p4)});
+    (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p3), dilation := (project options p5)});
+    (let width : Nat := (columnExtent x (project image n0));
+    (let height : Nat := (columnExtent y (project image n1));
+    (let patches : Nat := (prim multiply (prim multiply width height : Nat) (project image n3) : Nat);
+    (let channels : Nat := (project kernel n3);
+    (let inner : Nat := (prim multiply (prim multiply (project x kernel) (project y kernel) : Nat) (project kernel n2) : Nat);
+    (let tile : Nat := (if (patches <? 32) then patches else 32);
+    (if (((((((((((((((project kernel ty) =? 0) || ((project kernel ty) =? 1)) && ((project image ty) =? 0)) && ((project output ty) =? 0)) && ((project kernel n2) =? (project image n2))) && ((project output n0) =? width)) && ((project output n1) =? height)) && ((project output n2) =? channels)) && ((project output n3) =? (project image n3))) && (0 <? inner)) && (0 <? channels)) && (0 <? patches)) && (separateTensors kernel output)) && (separateTensors image output)) then (ctor PointwiseDecision.convolution (record ConvolutionGeometry {patches := patches, inner := inner, channels := channels, weights := (prim multiply inner channels : Nat), tile := tile, inputCapacity := (prim multiply tile inner : Nat), outputCapacity := (prim multiply tile channels : Nat), kernelType := (project kernel ty), kernel := (indexContext kernel 1), image := (indexContext image 1), output := (indexContext output 1), x := x, y := y})) else (ctor PointwiseDecision.invalidShape))))))))))),
+  executable: true
+}
+
+definition{
+  name: convolutionAddress,
+  parameters: [geometry : ConvolutionGeometry, phase : Nat, start : Nat, index : Nat],
+  result: GraphResponse,
+  body: (if (phase =? 0) then (if (index <? (project geometry weights)) then (let k : IndexContext := (project geometry kernel);
+    (let lane : Nat := (prim quotient index (project geometry channels) 0 : Nat);
+    (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates k (decodedCoordinate lane k 0) (decodedCoordinate lane k 1) (decodedCoordinate lane k 2) (prim remainder index (project geometry channels) 0 : Nat)))))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))) else (let o : IndexContext := (project geometry output);
+    (let laneWidth : Nat := (if (phase =? 1) then (project geometry inner) else (project geometry channels));
+    (let patch : Nat := (start + (prim quotient index laneWidth 0 : Nat));
+    (let lane : Nat := (prim remainder index laneWidth 0 : Nat);
+    (let px : Nat := (prim remainder patch (project o u0) 0 : Nat);
+    (let row : Nat := (prim quotient patch (project o u0) 0 : Nat);
+    (let py : Nat := (prim remainder row (project o n1) 0 : Nat);
+    (let batch : Nat := (prim quotient row (project o n1) 0 : Nat);
+    (if (patch <? (project geometry patches)) then (if (phase =? 1) then (let k : IndexContext := (project geometry kernel);
+    (let im : IndexContext := (project geometry image);
+    (match (columnCoordinate (project geometry x) (project im u0) px (decodedCoordinate lane k 0))
+      | Option.none => (ctor GraphResponse.sample (ctor Option.none [Nat]))
+      | Option.some sx => (match (columnCoordinate (project geometry y) (project im n1) py (decodedCoordinate lane k 1))
+        | Option.none => (ctor GraphResponse.sample (ctor Option.none [Nat]))
+        | Option.some sy => (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates im sx sy (decodedCoordinate lane k 2) batch))))))) else (if (phase =? 2) then (ctor GraphResponse.sample (ctor Option.some [Nat] (offsetCoordinates o px py lane batch))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))))))))))),
+  executable: true
+}
+
+definition{
   name: planImageColumns,
   parameters: [options : OperationParameters, kernel : TensorDescriptor, image : (Option TensorDescriptor), output : TensorDescriptor],
   result: PointwiseDecision,
@@ -1624,6 +1691,7 @@ definition{
   parameters: [mode : CopyMode, response : GraphResponse],
   result: GraphResponse,
   body: (match response
+    | GraphResponse.sample address => (ctor GraphResponse.sample address)
     | GraphResponse.planned decision => (ctor GraphResponse.planned decision)
     | GraphResponse.offsets choosingRight from to => (ctor GraphResponse.offsets choosingRight from to)
     | GraphResponse.arithmetic a b c d e f => (ctor GraphResponse.arithmetic a b c d e f)
@@ -1728,7 +1796,8 @@ definition{
   body: (match request
     | GraphRequest.plan operation options input0 input1 input2 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))))))
+      | Option.some left => (if (operation =? 53) then (ctor GraphResponse.planned (planDirectConvolution options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output)))))))))
+    | GraphRequest.convolutionAddress geometry phase start index => (convolutionAddress geometry phase start index)
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
     | GraphRequest.bindings mode => (sourceBindings mode)
     | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),

@@ -6,9 +6,9 @@ use std::ffi::{c_char, c_int, c_void};
 use std::ptr::{self, null, null_mut};
 use std::sync::OnceLock;
 use vtensor_pointwise::{
-    Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as WordOperand, Adt11 as WordTarget,
-    Adt2 as TensorDescriptor, Adt3 as IndexContext, Adt4 as CopyMode, Adt7 as GraphResponse,
-    Adt8 as GraphPlan, Adt9 as WordOperation,
+    Adt0 as GraphRequest, Adt1 as Parameters, Adt10 as WordOperation, Adt11 as WordOperand,
+    Adt12 as WordTarget, Adt2 as TensorDescriptor, Adt3 as IndexContext, Adt4 as CopyMode,
+    Adt8 as GraphResponse, Adt9 as GraphPlan,
 };
 
 /// Typed refusals at the native tensor boundary.
@@ -545,7 +545,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             _ => Err(BackendError::InvalidTensor),
         };
     match response {
-        GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..))) => {
+        GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..) | GraphPlan::C6(..))) => {
             Ok(Some(ExecutionPlan::Standard(plan)))
         }
         GraphResponse::C0(GraphPlan::C5(67)) => typed_plan(vtensor_typed::Adt0::C0(
@@ -722,6 +722,85 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
                 verdant_tensor::linear::multiply_matrix_rows_f32(m, k, n, left, right, output)?;
             }
             _ => return Err(BackendError::InvalidTensor),
+        }
+    }
+    Ok(())
+}
+
+fn execute_convolution(
+    tensor: &Tensor,
+    geometry: vtensor_pointwise::Adt7,
+) -> Result<(), BackendError> {
+    let vtensor_pointwise::Adt7::C0(
+        patches,
+        inner,
+        channels,
+        weight_count,
+        tile,
+        input_capacity,
+        output_capacity,
+        kind,
+        ..,
+    ) = geometry;
+    // SAFETY: the certified plan requires both input descriptors and disjoint output storage.
+    let [kernel, image, destination] = unsafe {
+        [
+            graph_tensor_data(&*tensor.src[0])?,
+            graph_tensor_data(&*tensor.src[1])?,
+            graph_tensor_data(tensor)?,
+        ]
+    };
+    let sample = |phase, start, index| {
+        let query = GraphRequest::C4(geometry.clone(), phase, start, index as u64);
+        match vtensor_pointwise::run(query).map_err(|_| BackendError::Overflow)? {
+            GraphResponse::C8(offset) => Ok(offset),
+            _ => Err(BackendError::InvalidTensor),
+        }
+    };
+    let mut weights = workspace(weight_count, 0.0_f32)?;
+    for (index, value) in weights.iter_mut().enumerate() {
+        let offset = sample(0, 0, index)?.ok_or(BackendError::InvalidTensor)?;
+        // SAFETY: the certified kernel layout bounds this physical F32 or F16 word.
+        let pointer = unsafe { kernel.add(offset as usize) };
+        *value = if kind == 0 {
+            // SAFETY: GGML views can be unaligned, including kernel-offset graphs.
+            unsafe { pointer.cast::<f32>().read_unaligned() }
+        } else {
+            // SAFETY: the selected half word lies in the kernel buffer.
+            let bits = unsafe { pointer.cast::<u16>().read_unaligned() };
+            decode_float(kind, u64::from(bits))?
+        };
+    }
+    let mut input = workspace(input_capacity, 0.0_f32)?;
+    let mut output = workspace(output_capacity, 0.0_f32)?;
+    for start in (0..patches).step_by(tile as usize) {
+        let rows = tile.min(patches - start) as usize;
+        let input = &mut input[..rows * inner as usize];
+        for (index, value) in input.iter_mut().enumerate() {
+            *value = match sample(1, start, index)? {
+                // SAFETY: Prism resolves each interior image coordinate through its actual byte strides.
+                Some(at) => unsafe { image.add(at as usize).cast::<f32>().read_unaligned() },
+                None => 0.0,
+            };
+        }
+        let output = &mut output[..rows * channels as usize];
+        verdant_tensor::linear::multiply_matrix_rows_f32(
+            rows,
+            inner as usize,
+            channels as usize,
+            input,
+            &weights,
+            output,
+        )?;
+        for (index, &value) in output.iter().enumerate() {
+            let at = sample(2, start, index)?.ok_or(BackendError::InvalidTensor)?;
+            // SAFETY: the plan admits the full output span and resolves coordinates in its view.
+            unsafe {
+                destination
+                    .add(at as usize)
+                    .cast::<f32>()
+                    .write_unaligned(value)
+            };
         }
     }
     Ok(())
@@ -1269,6 +1348,9 @@ unsafe extern "C" fn graph_compute(_: BackendPtr, graph: Graph) -> c_int {
             let result = match plan {
                 ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
+                ExecutionPlan::Standard(GraphPlan::C6(geometry)) => {
+                    execute_convolution(&*tensor, geometry)
+                }
                 ExecutionPlan::Attention(plan) => attention::execute(&*tensor, *plan),
                 ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),

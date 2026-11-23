@@ -344,12 +344,14 @@ fn buffer_allocation_vt_10() {
 }
 
 fn verify_row_graphs() {
-    use vtensor_pointwise::{Adt0, Adt1, Adt2, Adt7 as Response, Adt8 as Plan};
+    use vtensor_pointwise::{
+        Adt0 as Request, Adt1 as Parameters, Adt2 as Descriptor, Adt8 as Response, Adt9 as Plan,
+    };
     for (operation, ty, output_type) in [(13, 0, 0), (18, 26, 27)] {
-        let empty = Adt2::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
-        let output = Adt2::C0(output_type, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
-        let params = Adt1::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        let request = Adt0::C0(
+        let empty = Descriptor::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
+        let output = Descriptor::C0(output_type, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
+        let params = Parameters::C0(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let request = Request::C0(
             operation,
             params,
             Some(empty.clone()),
