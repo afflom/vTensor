@@ -8,7 +8,7 @@
   "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "case_transcript_sha256": "b8db09b2a7176384d84ed4b56e0a3eeed86437405bd2c45211c35df4cbd064a9",
   "verdict_table": "factory-standalone-vt59.tsv.gz",
-  "uncompressed_verdicts_sha256": "dd480d4741c2543a21bdbedd4b870cecd69cd300c57d8e57720ba0e3c6496b55",
+  "uncompressed_verdicts_sha256": "4c42fa6c915747e1bfdb4c97ffa4ffa53d819ac1bebb5ed10f01f15b3e5c4078",
   "mapping": "Match the complete ordered parameter sequence of each label and optional parameters_regex to the imported factory inventory. The table preserves the evaluator\u2019s backend names and error field. Multiple occurrences of a backend indicate separate refusals inside one graph.",
   "runs": {
     "activations": {
@@ -231,21 +231,20 @@
       "labels": [
         "FLASH_ATTN_EXT"
       ],
-      "rows": 512,
-      "csv_sha256": "24327d4b170972f41d6fb945c79c130a07d2fa1db942076d4a881f2a5485a27e",
-      "status": "complete output rows in an active sequential run; raw hash covers the last complete line",
+      "rows": 521,
+      "csv_sha256": "e6ed92a3cd571c7d87b9a19a63c23ab7c2970bedfd9df0042768f3a9d10bee83",
       "parameters_regex": "^(?!.*(?:type_K=(?!f16,|f32,)|type_V=(?!f16,|f32,)))(?!(?:hsk=64,hsv=64,nh=8,nr23=\\[4,1\\],kv=1024,nb=32,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=1,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1|hsk=40,hsv=40,nh=4,nr23=\\[1,1\\],kv=113,nb=1,mask=1,sinks=0,max_bias=0\\.000000,logit_softcap=0\\.000000,prec=f32,type_K=f16,type_V=f16,permute=\\[0,1,2,3\\],kv_view=1,v_is_view_of_k=0,n_kv_max=0,q_head_padding=0,mask_heads=1)$)(?!.*(?:max_bias|logit_softcap)=(?!0\\.000000,))(?!.*\\bnb=1,)(?!.*\\bnb=(64|1024|8|4|256|32|3|512|16|35),)"
     }
   },
   "new_verdicts": {
-    "passed": 3607,
+    "passed": 3616,
     "refused": 20405,
     "failed": 0
   },
   "cumulative_verdicts": {
-    "passed": 7238,
+    "passed": 7247,
     "refused": 20408,
     "failed": 0,
-    "untested": 109
+    "untested": 100
   }
 }

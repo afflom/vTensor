@@ -4917,3 +4917,7 @@ Prism generates the four header words, each case descriptor and every operand wo
 VT-84 compares all 251 original F32, F16 and BF16 indexed matrix graphs. It also sets the final expert ID to an out-of-range number through a strided index view and checks that the destination retains every byte on refusal. Prism resolves the expert and the byte ranges. Verdant prepares the activations and computes the row product. [VT-84 results](verification/factory-scalar-experts-vt84.json)
 
 VT-85 compares all 230 original E4M3 matrix and indexed matrix graphs and 164 additional matrix fusions. The plugin calls the existing Verdant eight-bit float decoder. Selecting the wrong format failed the original evaluator on ordinal 13232 with normalized squared error 1.0 against a maximum of 0.0005. Restoring the decoder passed. VT-02 checked the compiled plugin’s upstream dependency pin and GGML imports after integration. [Product evidence](verification/factory-e4m3-products-vt85.json) · [Fusion evidence](verification/factory-e4m3-compositions.json)
+
+### Normalization admission
+
+Prism now supplies the execution plan for NORM, GROUP_NORM and RMS_NORM_BACK directly from the GGML descriptors. Verdant still computes the numerical results. Eight locked-SDK contract tests passed, including the original GGML normalization and composition cases, the strided and invalid-descriptor fixtures and the E4M3 regression. Refusing every NORM graph failed the original CPU comparison. Restoring admission passed. The source audit measured 12,091 non-Prism lines across 51 files.
