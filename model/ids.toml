@@ -588,3 +588,9 @@ id = "VT-59"
 level = "build"
 suite = "native-backend"
 statement = "The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions"
+
+[[id]]
+id = "VT-87"
+level = "build"
+suite = "native-backend"
+statement = "Prism binds GGML masks, sinks and row layouts and Verdant normalizes the score rows against the imported CPU softmax"
