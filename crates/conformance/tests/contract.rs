@@ -639,11 +639,13 @@ mod ggml_oracle {
             "-ffp-contract=off",
             "-DGGML_CPU_GENERIC",
             "-U__ARM_FP16_FORMAT_IEEE",
-            "-U__ARM_NEON",
             "-D_GNU_SOURCE",
             "-ffunction-sections",
             "-fdata-sections",
         ]);
+        if source.ends_with("ops.cpp") {
+            command.arg("-U__ARM_NEON");
+        }
         command.arg(if c { "-std=c11" } else { "-std=c++17" });
         for directory in ["ggml/include", "ggml/src", "ggml/src/ggml-cpu", ""] {
             command.arg("-I").arg(root.join(directory));
@@ -1585,21 +1587,19 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         library.clone()
     }
 
-    fn compiled_object(common: &Path, source: &str, object: &Path) {
+    fn compiled_object(common: &Path, source: &Path) -> std::path::PathBuf {
+        let object = common
+            .join("reference-object")
+            .join(source)
+            .with_added_extension("o");
+        std::fs::create_dir_all(object.parent().unwrap()).unwrap();
         let pending = object.with_extension("new");
         let stamp = object.with_extension("sha256");
         if !object.exists() {
             compile(common, common.join("ggml/src").join(source), &pending);
-            publish_file(&pending, object, &stamp);
+            publish_file(&pending, &object, &stamp);
         }
-        verify_file(object, stamp);
-    }
-
-    // The parent cache already binds the source archive, compiler, flags and SDK.
-    fn reference_object(common: &Path, source: &str) -> std::path::PathBuf {
-        let object = common.join("reference-object").join(format!("{source}.o"));
-        std::fs::create_dir_all(object.parent().unwrap()).unwrap();
-        compiled_object(common, source, &object);
+        verify_file(&object, stamp);
         object
     }
 
@@ -1656,11 +1656,10 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 "ggml-backend-dl.cpp",
                 "ggml-threading.cpp",
             ];
-            linker.args(frontend.map(|source| reference_object(common, source)));
             compile(common, cache.join("driver.cpp"), cache.join("driver.o"));
             let build_list =
                 std::fs::read_to_string(common.join("ggml/src/ggml-cpu/CMakeLists.txt")).unwrap();
-            let cpu_sources: Vec<String> = build_list
+            let cpu_sources = build_list
                 .split_once("list (APPEND GGML_CPU_SOURCES")
                 .unwrap()
                 .1
@@ -1668,9 +1667,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .unwrap()
                 .0
                 .split_whitespace()
-                .filter(|name| name.ends_with(".c") || name.ends_with(".cpp"))
-                .map(str::to_string)
-                .collect();
+                .filter(|name| name.ends_with(".c") || name.ends_with(".cpp"));
             if mode.starts_with("upstream-") {
                 let suite = common
                     .join("imported-suite")
@@ -1678,17 +1675,16 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 std::fs::create_dir_all(&suite).unwrap();
                 let input = suite.join("suite.cpp");
                 std::fs::write(&input, UPSTREAM_SUITE).unwrap();
-                let object = suite.join("suite.o");
-                compiled_object(common, input.to_str().unwrap(), &object);
-                linker.arg(object);
+                linker.arg(compiled_object(common, &input));
             }
             linker.arg(cache.join("driver.o"));
             linker.arg(core);
             let pending = program.with_extension("new");
             linker.args(
-                cpu_sources
-                    .iter()
-                    .map(|source| reference_object(common, source)),
+                frontend
+                    .into_iter()
+                    .chain(cpu_sources)
+                    .map(|source| compiled_object(common, Path::new(source))),
             );
             linker
                 .arg(&library)
@@ -2887,7 +2883,10 @@ int main(int argc, char **argv) {
         if(triangular) result->src[0]=input;
         if(inplace) memcpy(result->nb,input->nb,sizeof input->nb);
         if((scanning || reducing || selecting) && layout==3) for(int axis=0;axis<4;axis++) result->nb[axis]*=2;
-        ggml_tensor *expected_tensor=relative?ggml_get_rel_pos(ctx,canonical_copy(ctx,input),rows,rows):selecting?(operation?ggml_count_equal(ctx,(ggml_is_matrix(input) || pattern==9)?input:ggml_cont_2d(ctx,input,input->ne[0],ggml_nrows(input)),(ggml_is_matrix(input) || pattern==9)?right:ggml_cont_2d(ctx,right,right->ne[0],ggml_nrows(right))):ggml_argmax(ctx,input->nb[0]==sizeof(float)?input:canonical_copy(ctx,input))):(physical_norm || typing)?word_operation(input,false):wordwise?word_operation(reducing && !operation && type==GGML_TYPE_F32?input:canonical_copy(ctx,input),false):windowing?(operation?ggml_win_unpart(ctx,canonical_copy(ctx,input),image_width,image_height,window_size):ggml_win_part(ctx,canonical_copy(ctx,input),window_size)):casting?ggml_cast(ctx,canonical_copy(ctx,input),output_type):filling?ggml_fill(ctx,canonical_copy(ctx,input),constant):triangular?ggml_tri(ctx,canonical_copy(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,canonical_copy(ctx,input)):folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),canonical_copy(ctx,right),operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
+        // Allocate the right reference first to preserve the frozen graph's tensor IDs on every ABI.
+        auto reference_right=concatenating ? canonical_copy(ctx,right) : right;
+        if(selecting && operation && !ggml_is_matrix(input) && pattern!=9) reference_right=ggml_cont_2d(ctx,right,right->ne[0],ggml_nrows(right));
+        ggml_tensor *expected_tensor=relative?ggml_get_rel_pos(ctx,canonical_copy(ctx,input),rows,rows):selecting?(operation?ggml_count_equal(ctx,(ggml_is_matrix(input) || pattern==9)?input:ggml_cont_2d(ctx,input,input->ne[0],ggml_nrows(input)),reference_right):ggml_argmax(ctx,input->nb[0]==sizeof(float)?input:canonical_copy(ctx,input))):(physical_norm || typing)?word_operation(input,false):wordwise?word_operation(reducing && !operation && type==GGML_TYPE_F32?input:canonical_copy(ctx,input),false):windowing?(operation?ggml_win_unpart(ctx,canonical_copy(ctx,input),image_width,image_height,window_size):ggml_win_part(ctx,canonical_copy(ctx,input),window_size)):casting?ggml_cast(ctx,canonical_copy(ctx,input),output_type):filling?ggml_fill(ctx,canonical_copy(ctx,input),constant):triangular?ggml_tri(ctx,canonical_copy(ctx,input),(ggml_tri_type)operation):diagonal?ggml_diag(ctx,canonical_copy(ctx,input)):folding?ggml_repeat_back(ctx,canonical_copy(ctx,input),target):spatial?spatial_op(canonical_copy(ctx,input),true):concatenating?ggml_concat(ctx,canonical_copy(ctx,input),reference_right,operation):repeating?ggml_repeat(ctx,canonical_copy(ctx,input),target):canonical_copy(ctx,input);
         if(modeled && !copying) {for(int axis=0;axis<4;++axis)result->nb[axis]=fixture(2,cases,3,axis+4);}
         else if(relative || spatial || folding || diagonal || triangular || (filling && !operation) || (casting && operation<3) || windowing || (wordwise && !inplace)) {result->nb[1]+=output_bytes;result->nb[2]=result->nb[1]*result->ne[1]+output_bytes;result->nb[3]=result->nb[2]*result->ne[2]+output_bytes;}
         if(physical_norm || typing)memcpy(expected_tensor->nb,result->nb,sizeof result->nb);
