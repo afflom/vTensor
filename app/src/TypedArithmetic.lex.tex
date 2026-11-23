@@ -297,7 +297,7 @@ definition{
   name: packedTarget,
   parameters: [kind : Nat],
   result: Bool,
-  body: ((((kind =? 2) || (kind =? 3)) || (kind =? 6)) || ((kind =? 7) || (kind =? 8))),
+  body: (((((kind =? 2) || (kind =? 3)) || (kind =? 6)) || ((kind =? 7) || (kind =? 8))) || ((kind =? 41) || (kind =? 42))),
   executable: true
 }
 
@@ -754,6 +754,12 @@ theorem{
   name: fiveBitRowLayout,
   parameters: [],
   statement: ((((rowTargetWidth 7) =? 24) && ((storeBlockLanes 7) =? 32)) = true),
+  proof: reflexivity{}
+}
+theorem{
+  name: signWeightBlockLayouts,
+  parameters: [],
+  statement: ((((((storeBlockLanes 41) =? 128) && ((rowTargetWidth 41) =? 18)) && ((storeBlockLanes 42) =? 64)) && ((rowTargetWidth 42) =? 18)) = true),
   proof: reflexivity{}
 }
 \end{semanticmodule}

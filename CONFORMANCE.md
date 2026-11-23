@@ -195,6 +195,7 @@ model does not sanction.
 | `VT-105` | `build` | Prism plans indexed and copied four- and five-bit block writes and Verdant encodes the original binary32 and half-width sources |
 | `VT-106` | `build` | Prism addresses one-dimensional transposed convolution taps and overlaps and Verdant contracts and sums the input channels |
 | `VT-107` | `build` | Prism addresses two-dimensional transposed convolution taps and overlaps and Verdant contracts and sums the input channels |
+| `VT-109` | `build` | Prism plans full-width sign and centered two-bit writes and Verdant encodes every indexed or copied destination block |
 
 ## normalization-graphs
 

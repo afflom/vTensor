@@ -871,12 +871,6 @@ impl<'a> TensorInput<'a> {
         })
     }
 
-    fn float_block<const N: usize>(&self, offset: u64) -> Result<[f32; N], BackendError> {
-        let mut lanes = [0.0; N];
-        self.decode(offset, &mut lanes)?;
-        Ok(lanes)
-    }
-
     fn region(&self, offset: u64, count: usize) -> Result<&[u8], BackendError> {
         if count == 0 {
             return Ok(&[]);
@@ -983,6 +977,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     let stride = LANES
         .checked_mul(activations.nb[0])
         .ok_or(BackendError::Overflow)? as u64;
+    let mut lanes = [0.0; LANES];
     let mut prepared = reserved(usize::try_from(blocks).map_err(|_| BackendError::Overflow)?)?;
     for (column, (values, offset)) in results
         .chunks_exact_mut(rows as usize)
@@ -1008,7 +1003,8 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         prepared.clear();
         let mut from = activation;
         for _ in 0..blocks {
-            prepared.push(encode(&activations.float_block(from)?)?);
+            activations.decode(from, &mut lanes)?;
+            prepared.push(encode(&lanes)?);
             from = from.checked_add(stride).ok_or(BackendError::Overflow)?;
         }
         execution.fill(values, |first, chunk| {
@@ -1222,13 +1218,15 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let mut ranker = None;
     // SAFETY: admission retained the primary descriptor and each present secondary.
     let (left, secondary) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
-    use linear::WeightBlockEncoding::*;
+    use linear::PackedWeightEncoding::*;
     let kind = match tensor.ty {
         2 => Some(CenteredFour),
         3 => Some(AffineFour),
         6 => Some(CenteredFive),
         7 => Some(AffineFive),
         8 => Some(SymmetricEight),
+        41 => Some(BinarySign),
+        42 => Some(CenteredTwo),
         _ => None,
     };
     // Word instructions can update their input in place. Only staged block encoding
@@ -1240,7 +1238,9 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     };
     let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
     let mut block_writes = Vec::new();
-    let output = graph_tensor_data(tensor)?;
+    let (TensorDescriptor::C0(.., span, _), lanes) = tensor_layout(tensor)?;
+    let output = graph_tensor_region(tensor, span as usize)?;
+    let mut values = workspace(if kind.is_some() { lanes as u64 } else { 0 }, 0.0)?;
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
@@ -1250,7 +1250,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 let (input, kind) = source.as_ref().zip(kind).ok_or(InvalidTensor)?;
                 let mut block = [0; size_of::<linear::SymmetricQ8Block<32>>()];
                 let bytes = block.get_mut(..tensor.nb[0]).ok_or(InvalidTensor)?;
-                linear::encode_weight_block(&input.float_block::<32>(from)?, kind, bytes)?;
+                input.decode(from, &mut values)?;
+                linear::encode_weight_block(values.as_slice(), kind, bytes)?;
                 block_writes
                     .try_reserve(1)
                     .map_err(|_| BackendError::Allocation)?;

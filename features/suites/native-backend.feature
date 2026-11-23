@@ -308,3 +308,9 @@ Feature: native-backend
     Given a batched binary32 image, a floating-point kernel and a stride
     When vTensor contracts the input channels and accumulates overlapping kernel taps
     Then the transposed convolution matches the pinned GGML CPU evaluator
+
+  @VT-109 @build
+  Scenario: Prism plans full-width sign and centered two-bit writes and Verdant encodes every indexed or copied destination block
+    Given copied or indexed rows of sign or centered two-bit coefficients
+    When the provider encodes each destination block
+    Then the output matches the original GGML CPU row writes
