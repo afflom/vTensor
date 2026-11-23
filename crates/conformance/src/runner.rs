@@ -1164,6 +1164,7 @@ fn execute_word(
                 20 if source == 0 => Ok(gaussian_table(a)?.unwrap_or_default()),
                 20 => linear::gelu_f32(input),
                 21 => linear::gelu_quick_f32(input),
+                22 => linear::softplus_f32(input),
                 _ => return Err(InvalidTensor),
             }
             .map_err(|_| BackendError::Overflow)?;
