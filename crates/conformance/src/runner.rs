@@ -943,7 +943,8 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     let weights = TensorInput::new(w)?;
     let indices = tensor.input(2)?;
     let request = |query| run(query).map_err(|_| BackendError::Overflow);
-    let activations = graph_tensor_data(a)?;
+    let activations = TensorInput::new(a)?;
+    let mut widened = workspace(if a.ty == 1 { a.ne[0] as u64 } else { 0 }, 0.0_f32)?;
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = workspace(visits, 0u64)?;
@@ -970,12 +971,21 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         };
         *offset = dest;
         prepared.clear();
+        let source = if a.ty == 1 {
+            activations.decode(activation, &mut widened)?;
+            widened.as_ptr().cast::<u8>()
+        } else {
+            let bytes = usize::try_from(a.ne[0])
+                .ok()
+                .and_then(|n| n.checked_mul(size_of::<f32>()))
+                .ok_or(BackendError::Overflow)?;
+            activations.region(activation, bytes)?.as_ptr()
+        };
         for block in 0..blocks {
-            // SAFETY: the certified column lies in the admitted activation span and has
-            // exactly this many contiguous blocks. GGML views may be unaligned.
+            // SAFETY: both branches supply the entire column as contiguous binary32.
+            // Imported GGML views can begin at an unaligned address.
             let lanes = unsafe {
-                activations
-                    .add(activation as usize)
+                source
                     .cast::<[f32; LANES]>()
                     .add(block as usize)
                     .read_unaligned()

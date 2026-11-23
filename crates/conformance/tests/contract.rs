@@ -241,6 +241,9 @@ ggml_batches! {
     fn row_softmax_vt_87() { "upstream-ROW_SOFTMAX", 6, ["attention"] }
 
     #[test]
+    fn packed_half_activations_vt_90() { "upstream-MUL_MAT_HALF_ACTIVATIONS", 3, ["matrix"] }
+
+    #[test]
     fn grouped_affine_products_vt_88() { "upstream-GROUPED_AFFINE_PRODUCTS", 6, ["matrix"] }
 
     #[test]
@@ -1453,7 +1456,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "eaf45c1f52159623bb75d87ba4b42f9fc3939185f8d4297152392a0433f71a6b",
+            "a8f8a647d4624ad4e1104396e0a14469e4cd051da65897c31dd7fabf4e946a97",
         )
     });
 
@@ -1823,6 +1826,13 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
         auto a=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
         auto b=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[1]->ne);
         expected=ggml_out_prod(reference.get(),a,b);
+    } else if (op==GGML_OP_MUL_MAT) {
+        auto original=test.build_graph(reference.get());
+        if (original->src[1]->type!=GGML_TYPE_F16) return false;
+        auto activation=ggml_cast(reference.get(),original->src[1],GGML_TYPE_F32);
+        if (!ggml_backend_supports_op(cpu,activation)) return false;
+        expected=ggml_mul_mat(reference.get(),original->src[0],activation);
+        memcpy(expected->op_params,original->op_params,sizeof(expected->op_params));
     } else {
         auto original=test.build_graph(reference.get());
         auto kernel=ggml_cont(reference.get(),original->src[0]);
@@ -1895,8 +1905,8 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
       const size_t i=selected.empty()?pos:selected[pos];
       auto &test=tests[i];
-      if (!strcmp(op,"OUT_PROD_DECODED") || !strcmp(op,"CONV_2D_CONTIGUOUS")) {
-        const ggml_op operation=!strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : GGML_OP_CONV_2D;
+      if (!strcmp(op,"OUT_PROD_DECODED") || !strcmp(op,"CONV_2D_CONTIGUOUS") || !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS")) {
+        const ggml_op operation=!strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : GGML_OP_CONV_2D;
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {
           fprintf(stderr,"CPU reference rejected ordinal %zu: %s\n",i,test->vars().c_str());
           return SIZE_MAX;

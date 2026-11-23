@@ -121,10 +121,18 @@ definition{
 }
 
 definition{
+  name: activationStride,
+  parameters: [kind : Nat, stride : Nat],
+  result: Bool,
+  body: (((kind =? 0) && (stride =? 4)) || ((kind =? 1) && (stride =? 2))),
+  executable: true
+}
+
+definition{
   name: productStorage,
   parameters: [w : Tensor, a : Tensor, o : Tensor, indexed : Bool, lanes : Nat, width : Nat],
   result: Bool,
-  body: (((((((((rowProductType (project w kind)) || (indexed && ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)))) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && ((project a s0) =? 4)) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))),
+  body: (((((((((rowProductType (project w kind)) || (indexed && ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)))) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && (activationStride (project a kind) (project a s0))) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))),
   executable: true
 }
 
@@ -132,7 +140,7 @@ definition{
   name: planStorage,
   parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor, lanes : Nat, width : Nat],
   result: Response,
-  body: (if (productStorage w a o false lanes width) then (match (MatrixGraph::planMatrix op 0 (project a kind) (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
+  body: (if (productStorage w a o false lanes width) then (match (MatrixGraph::planMatrix op 0 0 (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
     | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor Response.planned (makePlan w a o lanes width rows columns b2 b3 ratio2 ratio3 (ctor Option.none [ExpertLayout])))
     | MatrixGraph::MatrixDecision.unsupported => (ctor Response.refused)
     | MatrixGraph::MatrixDecision.invalidShape => (ctor Response.refused)) else (ctor Response.refused)),
@@ -204,6 +212,20 @@ theorem{
   name: refusesExtraSource,
   parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor],
   statement: ((graphPlan op true w a o) = (ctor Response.refused)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: binary16ActivationsUseTwoByteRows,
+  parameters: [],
+  statement: ((activationStride 1 2) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: binary16RejectsBinary32Stride,
+  parameters: [],
+  statement: ((activationStride 1 4) = false),
   proof: reflexivity{}
 }
 \end{semanticmodule}

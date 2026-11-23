@@ -310,7 +310,7 @@
         "ADD_SILU_MUL"
       ]
     },
-    "passed": 21251,
+    "passed": 21359,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -403,7 +403,7 @@
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
     "rotary_composition_evidence": "verification/factory-rotary-compositions.json",
-    "refused": 6404,
+    "refused": 6296,
     "failed": 0,
     "standalone_evidence": "verification/factory-standalone-vt59.json",
     "superseded_standalone_verdicts": {
@@ -442,7 +442,8 @@
       "VT-88": "verification/factory-affine-vt88.json",
       "VT-89": "verification/factory-softplus-vt89.json",
       "VT-88-compositions": "verification/factory-affine-compositions.json",
-      "VT-89-compositions": "verification/factory-softplus-compositions.json"
+      "VT-89-compositions": "verification/factory-softplus-compositions.json",
+      "VT-90": "verification/factory-packed-half-vt90.json"
     },
     "supplemental_refusal_evidence": {
       "1069": {

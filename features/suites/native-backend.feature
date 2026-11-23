@@ -200,3 +200,9 @@ Feature: native-backend
     Given original GGML binary32, binary16 and bfloat16 activation views
     When vTensor applies softplus to each input
     Then the imported CPU evaluator accepts the computed activation
+
+  @VT-90 @build
+  Scenario: Prism binds F16 activation rows for packed matrix products and Verdant widens each activation before the certified dot product
+    Given original GGML matrix graphs with packed weights and F16 activations
+    When the loaded provider evaluates the graphs
+    Then the results match pinned GGML widening and CPU matrix multiplication

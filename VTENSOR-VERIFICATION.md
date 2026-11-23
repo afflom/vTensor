@@ -4966,3 +4966,7 @@ VT-88 ran all 227 ordinary and 119 indexed Q4_K/Q5_K products with F32 activatio
 ### Softplus and expert routing
 
 Prism maps GGML unary variant 15 and validates storage and views. The provider calls Verdant’s binary32 softplus. Substituting sigmoid failed the original CPU comparison on ordinal 114. Restoring softplus passed all 12 standalone graphs. The original evaluator also passed for all 225 newly admitted graphs, including the final 176 TOPK_MOE instances. Integrated VT-02, VT-88, VT-89 and workspace Clippy passed. The source audit measured 12,658 non-Prism lines against the independent ceiling of 10,549. [Standalone results](verification/factory-softplus-vt89.json) · [Graph results](verification/factory-softplus-compositions.json) · [Verdant primitive](https://github.com/afflom/verdant-engine/pull/31)
+
+### Packed weights with F16 activations
+
+The direct GGML CPU backend refused these 108 factory inputs. VT-90 keeps the original constructor, buffers and F16 activation on vTensor. On the imported CPU it copies the same leaf bytes, widens the activation with `ggml_cast`, and calls `ggml_mul_mat` with the original weight and precision parameters. All 36 Q4_K, 36 Q4_0 and 36 Q8_0 outputs passed. Replacing the widened column with zeros produced error 1.0 on ordinal 12660, above the factory limit of 0.0005. Restoring the Verdant conversion passed. The integrated provider also passed VT-02 and VT-89. [Case ordinals and CPU reference](verification/factory-packed-half-vt90.json)
