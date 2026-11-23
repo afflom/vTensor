@@ -4840,3 +4840,11 @@ The pinned CPU refuses 1,312 OUT_PROD graphs covering 23 operand-type pairs and 
 VT-74 runs the original CONV_2D graphs on both vTensor and the pinned GGML CPU reference. Prism resolves stride, dilation, padding, channel order, unaligned F16 or F32 kernel views, and output coordinates. vTensor stages up to 32 patches at a time. Verdant converts kernel words and evaluates the matrix product. Replacing interior image addresses with the first word failed ordinal 7658 with NMSE 2.477084885 against the upstream limit of 0.0005. The restored implementation passed the five permanent cases. [Per-case record](verification/factory-direct-convolution-vt74.json)
 
 VT-03 uses a frozen column-major result from the pinned GGML CPU matrix multiplication. The test inputs, products and sums are exactly representable in both binary32 and binary64. VT-05, VT-09 and VT-10 retain their independent runtime oracles and frozen boundary inputs. The source cache compares the complete imported archive in one pass and reuses compiled CPU objects across test modes.
+
+### Verdant Gaussian activation pin
+
+VT-02 resolved the fifteen ordered kernel descriptors from Verdant commit `24d9acbd0520d56f6fc9b27e5e67f70d0de17774`, inspected the compiled provider imports and passed. Cargo-deny passed. The two Gaussian scalar operations passed 257,548 comparisons against the imported GGML functions in the engine. The complete engine gate still reports the numerical frontier counts and stale digest recorded on the parent patch. [Verdant PR #26](https://github.com/afflom/verdant-engine/pull/26)
+
+### VT-72 complete checkpoint
+
+The complete locked-SDK `just vv` passed on source `4bef86af3e78ccd0f4c02cfba4f5b009abba1bf0` using Verdant PR #25. All 79 backend contracts passed, followed by the workspace checks and cargo-deny. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. [Checked source](https://github.com/afflom/vTensor/commit/4bef86af3e78ccd0f4c02cfba4f5b009abba1bf0)
