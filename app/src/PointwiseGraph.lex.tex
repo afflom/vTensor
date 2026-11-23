@@ -142,7 +142,8 @@ inductive{
     {name: relativeAdd, fields: [Nat, Nat, Nat]},
     {name: normalized, fields: [Nat, Nat, Nat, Nat]},
     {name: imageColumns, fields: [ColumnGeometry]},
-    {name: pooled, fields: [PoolGeometry]}
+    {name: pooled, fields: [PoolGeometry]},
+    {name: stateConvolution, fields: [IndexContext]}
   ]
 }
 
@@ -1477,6 +1478,41 @@ definition{
 }
 
 definition{
+  name: stateWindowSteps,
+  parameters: [width : Nat],
+  result: Nat,
+  body: (2 + (prim multiply width 2 : Nat)),
+  executable: true
+}
+
+definition{
+  name: planStateConvolution,
+  parameters: [source : TensorDescriptor, weights : (Option TensorDescriptor), output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (match weights
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some kernel => (if ((((((((((((((((((((project source ty) =? 0) && ((project kernel ty) =? 0)) && ((project output ty) =? 0)) && ((project source n3) =? 1)) && ((project kernel n2) =? 1)) && ((project kernel n3) =? 1)) && ((project source n1) =? (project kernel n1))) && ((project kernel n0) <=? ((project source n0) + 1))) && ((project output n0) =? (project source n1))) && ((project output n1) =? (prim subtract ((project source n0) + 1) (project kernel n0) : Nat))) && ((project output n2) =? (project source n2))) && ((project output n3) =? 1)) && (contiguousWords output)) && ((project source s0) =? 4)) && ((project kernel s0) =? 4)) && ((project source s1) =? (prim multiply (project source n0) 4 : Nat))) && ((project kernel s1) =? (prim multiply (project kernel n0) 4 : Nat))) && (separateTensors source output)) && (separateTensors kernel output)) then
+      (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (stateWindowSteps (project kernel n0)) : Nat) 4 (indexContext source 1) (indexContext output 1) (ctor CopyMode.stateConvolution (indexContext kernel 1)))
+      else (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+definition{
+  name: stateWindowStep,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, kernel : IndexContext],
+  result: GraphResponse,
+  body: (let steps : Nat := (stateWindowSteps (project kernel u0));
+    (let phase : Nat := (prim remainder index steps 0 : Nat);
+    (let row : Nat := (prim quotient index steps 0 : Nat);
+    (if (phase =? 0) then (ctor GraphResponse.word 19 2 0 2 0 1 0) else (if ((phase + 1) =? steps) then (ctor GraphResponse.word 19 1 0 2 0 3 (blockOffset row destination)) else (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.word 4 1 0 1 1 1 0) else (let tap : Nat := (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat);
+    (let channel : Nat := (decodedCoordinate row destination 0);
+    (let token : Nat := (decodedCoordinate row destination 1);
+    (let sequence : Nat := (decodedCoordinate row destination 2);
+    (ctor GraphResponse.word 10 0 (offsetCoordinates source (token + tap) channel sequence 0) 4 (offsetCoordinates kernel tap channel 0 0) 1 1))))))))))),
+  executable: true
+}
+
+definition{
   name: poolAxisAdmitted,
   parameters: [axis : ColumnAxis, size : Nat, out : Nat],
   result: Bool,
@@ -1581,6 +1617,7 @@ definition{
     | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.relativeAdd initial width biases => (relativeAddOffsets index initial width biases)
     | CopyMode.pooled geometry => (poolStep index source destination geometry 0)
+    | CopyMode.stateConvolution weights => (stateWindowStep index source destination weights)
     | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
     | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
@@ -1598,11 +1635,11 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if ((operation =? 57) || (operation =? 58)) then (match right | Option.none => (planPool (operation =? 58) options left output) | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right | Option.none => (planPool (operation =? 58) options left output) | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
     | Option.none => false
     | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))))),
   executable: true
 }
 
@@ -1652,6 +1689,7 @@ definition{
     | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false)
     | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false)
     | CopyMode.pooled geometry => (ctor GraphResponse.bindings 1 0 0 false)
+    | CopyMode.stateConvolution weights => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.imageColumns geometry => (ctor GraphResponse.bindings 2 0 0 false)
     | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings (if (kind =? 66) then 3 else 1) 0 0 false)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
@@ -1699,6 +1737,7 @@ definition{
     | CopyMode.indexedAdd table indices => 0
     | CopyMode.relativeAdd initial width biases => 0
     | CopyMode.pooled geometry => (if (opcode =? 6) then (project geometry storage) else 0)
+    | CopyMode.stateConvolution weights => 0
     | CopyMode.imageColumns geometry => (project geometry storage)
     | CopyMode.normalized kind epsilon rows capacity => (if (((opcode =? 6) || (opcode =? 7)) && (kind =? 30)) then 30 else 0)
     | CopyMode.l2Norm epsilon => 0
@@ -1760,6 +1799,7 @@ definition{
     | CopyMode.indexedAdd table indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.relativeAdd initial width biases => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.pooled geometry => (ctor WordOperation.invalid)
+    | CopyMode.stateConvolution weights => (ctor WordOperation.invalid)
     | CopyMode.imageColumns geometry => (ctor WordOperation.storage (project geometry inputStorage) (project geometry storage) true)
     | CopyMode.normalized kind epsilon rows capacity => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.l2Norm epsilon => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -1797,6 +1837,7 @@ definition{
     | CopyMode.indexedAdd table indices => 0
     | CopyMode.relativeAdd initial width biases => 0
     | CopyMode.pooled geometry => 0
+    | CopyMode.stateConvolution weights => 0
     | CopyMode.imageColumns geometry => 0
     | CopyMode.normalized kind epsilon rows capacity => 0
     | CopyMode.l2Norm epsilon => 0
@@ -1876,6 +1917,7 @@ definition{
     | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
     | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
     | CopyMode.pooled geometry => (poolStep index source destination geometry flag)
+    | CopyMode.stateConvolution weights => (stateWindowStep index source destination weights)
     | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
     | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
@@ -3196,6 +3238,20 @@ theorem{
   name: emptyKernelIncludesTheExtraDilatedPosition,
   parameters: [],
   statement: ((convolutionExtent (record ColumnAxis {kernel := 0, stride := 1, pad := 0, dilation := 1}) 2) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyStateWindowInitializesAndStores,
+  parameters: [],
+  statement: ((stateWindowSteps 0) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: threeStateTapsMultiplyAndAccumulate,
+  parameters: [],
+  statement: ((stateWindowSteps 3) = 8),
   proof: reflexivity{}
 }
 

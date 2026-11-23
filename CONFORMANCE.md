@@ -166,6 +166,7 @@ model does not sanction.
 | `VT-77` | `build` | Prism plans combined split and swapped gated rows and Verdant evaluates their rectified and Gaussian activations |
 | `VT-79` | `build` | Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant |
 | `VT-80` | `build` | Prism maps direct three-dimensional GGML convolution to padded volume patches and packed channel offsets and Verdant contracts each patch matrix |
+| `VT-81` | `build` | Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products |
 
 ## normalization-graphs
 

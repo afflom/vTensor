@@ -231,6 +231,9 @@ ggml_batches! {
     #[test]
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
+    #[test]
+    fn state_convolution_vt_81() { "upstream-SSM_WINDOWS", 6, ["pointwise"] }
+
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -797,16 +800,23 @@ static size_t get_alignment(ggml_backend_buffer_type_t) { return alignment; }
 static void *get_base(ggml_backend_buffer_t buffer) { return buffer->context; }
 static void allocation_refusal(const char *message) { _exit(strstr(message, "not enough space in the buffer") ? 10 : 99); }
 static void quiet(enum ggml_log_level, const char *, void *) {}
+// Isolate GGML abort callbacks from the other oracle requests in this stream.
+template <class F> static int observe_child(F invoke) {
+    fflush(stdout);
+    const pid_t child = fork();
+    if (child < 0) return -3;
+    if (child == 0) { const int code = invoke(); fflush(stdout); _exit(code); }
+    int status;
+    if (waitpid(child, &status, 0) != child) return -4;
+    return WIFEXITED(status) ? WEXITSTATUS(status) : 99;
+}
 static int allocation() {
     size_t capacity, offset, size;
     for (;;) {
         const int fields = scanf("%zu %zu %zu %zu", &capacity, &offset, &size, &alignment);
         if (fields == EOF) return 0;
         if (fields != 4 || !alignment || (alignment & (alignment - 1)) || alignment > 4096 || capacity > 4096 || size > 4096 || offset > 8192 || offset % alignment) return 2;
-        fflush(stdout);
-        pid_t child = fork();
-        if (child < 0) return 3;
-        if (!child) {
+        const int code = observe_child([&] {
             ggml_set_abort_callback(allocation_refusal); ggml_log_set(quiet, nullptr);
             std::vector<char> allocation(capacity + alignment + 1);
             void *base = allocation.data(); size_t space = allocation.size();
@@ -820,12 +830,12 @@ static int allocation() {
             const auto status = ggml_tallocr_alloc(&allocator, &tensor);
             if (status != GGML_STATUS_SUCCESS || tensor.buffer != &buffer) _exit(99);
             printf("0 %zu %zu %zu\n", (size_t)((uintptr_t)tensor.data - (uintptr_t)ggml_backend_buffer_get_base(&buffer)), allocator.offset - offset, allocator.offset);
-            fflush(stdout); _exit(0);
-        }
-        int status; if (waitpid(child, &status, 0) != child) return 4;
-        if (!WIFEXITED(status) || WEXITSTATUS(status) == 99) return 5;
-        if (WEXITSTATUS(status) == 10) printf("1 0 0 0\n");
-        else if (WEXITSTATUS(status) != 0) return 6;
+            return 0;
+        });
+        if (code < 0) return -code;
+        if (code == 99) return 5;
+        if (code == 10) printf("1 0 0 0\n");
+        else if (code != 0) return 6;
     }
 }
 
@@ -867,10 +877,7 @@ static int transfer() {
         int fields = scanf("%u %u %u %llu %llu %llu", &mode, &has_buffer, &has_data, &capacity, &offset, &size);
         if (fields == EOF) return 0;
         if (fields != 6 || mode > 3 || has_buffer > 1 || has_data > 1 || capacity > LLONG_MAX) return 2;
-        fflush(stdout);
-        pid_t child = fork();
-        if (child < 0) return 3;
-        if (child == 0) {
+        const int code = observe_child([&] {
             ggml_set_abort_callback(transfer_refusal);
             ggml_backend_buffer buffer = {};
             buffer.iface.set_tensor = set; buffer.iface.get_tensor = get;
@@ -884,11 +891,10 @@ static int transfer() {
             std::vector<char> data(size ? size : 1);
             if (mode % 2 == 0) ggml_backend_tensor_set(&tensor, data.data(), offset, size);
             else ggml_backend_tensor_get(&tensor, data.data(), offset, size);
-            _exit(calls ? 1 : 0);
-        }
-        int status;
-        if (waitpid(child, &status, 0) != child) return 4;
-        printf("%d\n", WIFEXITED(status) ? WEXITSTATUS(status) : 99);
+            return calls ? 1 : 0;
+        });
+        if (code < 0) return -code;
+        printf("%d\n", code);
     }
 }
 
@@ -1427,7 +1433,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "1df653bdf9b86f2c70ab791141c7b770bab28643b6089606a017f748b9054a14",
+            "844484e51a27e2e260dec1450fbfe5c998f154f5a46d5367379975ee91a536eb",
         )
     });
 
