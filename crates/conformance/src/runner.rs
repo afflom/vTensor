@@ -1086,8 +1086,9 @@ fn execute_word(
             linear::transform_float_storage(kind, storage, a, first, second)
                 .map_err(|_| BackendError::Overflow)?
         }
-        WordOperation::C5(kind) => linear::evaluate_encoded_word(kind, a, b)
-            .map_err(|_| BackendError::InvalidTensor)?,
+        WordOperation::C5(kind) => {
+            linear::evaluate_encoded_word(kind, a, b).map_err(|_| BackendError::InvalidTensor)?
+        }
         WordOperation::C6 => return Err(BackendError::InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
             let input = decode_float(source, a)?;
