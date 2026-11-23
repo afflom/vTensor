@@ -4852,3 +4852,9 @@ The complete locked-SDK `just vv` passed on source `4bef86af3e78ccd0f4c02cfba4f5
 ### Channel-major convolution
 
 The pinned CPU refuses these original kernel views. VT-76 gives the CPU a separate copy of the original leaf values, uses upstream tensor operations to materialize both operands in logical order, and runs the same convolution parameters. The provider executes the original graph. Setting the copied reference leaves to zero failed ordinal 4742 with infinite NMSE. Restoring the leaves passed all three permanent checks. Outputs consisting entirely of padding must match exactly because their reference energy is zero. [Factory comparisons](verification/factory-contiguous-convolution-vt76.json)
+
+### Gaussian graph execution
+
+VT-75 executes the pinned factory’s 12 GELU, 12 GELU_QUICK, 39 GELU_MUL and one ADD_GELU_MUL on the plugin. Prism selects the GGML binary32 GELU profile and resolves its two cutoffs. Verdant performs the half conversions and evaluates both activations. Replacing the F32 GELU input with zero failed factory ordinal 100 with error 0.000255365 against 0.000000100. Restoring the original input passed every case. [Factory and mutation record](verification/factory-gaussian-activations-vt75.json)
+
+The storage, allocation and transfer tests now share one oracle executable and one link step. Each mode still calls the pinned GGML implementation. All three modes and the certified layout comparisons passed in the integrated check.

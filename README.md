@@ -115,6 +115,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-72` | build | Executes all planar and linear IM2COL factory cases, F16 inputs and all nine depthwise 1D convolution graphs. [Oracle results](verification/factory-planar-columns-vt72.json) |
 | `VT-73` | build | Executes 1,312 outer-product graphs for which the direct CPU kernel refuses the operands. [Decoded F32 CPU comparisons](verification/factory-decoded-outer-products-vt73.json) |
 | `VT-74` | build | Prism gathers strided image tiles and filters for direct GGML convolution. Verdant evaluates the matrix product. [Factory results](verification/factory-direct-convolution-vt74.json) |
+| `VT-75` | build | Executes the 64 Gaussian unary and composed factory graphs using the Verdant primitives and the GGML binary32 lookup-table precision profile. [Results](verification/factory-gaussian-activations-vt75.json) |
 | `VT-76` | build | Runs original channel-major convolution graphs against independently materialized CPU operands. [Case-level comparisons](verification/factory-contiguous-convolution-vt76.json) |
 
 These are component checks. The native backend registers one device, supports
