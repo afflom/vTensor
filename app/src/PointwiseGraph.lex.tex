@@ -94,6 +94,19 @@ structure{
   ]
 }
 
+structure{
+  name: PoolGeometry,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: x, type: ColumnAxis},
+    {name: y, type: ColumnAxis},
+    {name: planar, type: Bool},
+    {name: maximum, type: Bool},
+    {name: storage, type: Nat}
+  ]
+}
+
 inductive{
   name: CopyMode,
   type_parameters: [],
@@ -126,7 +139,8 @@ inductive{
     {name: l2Norm, fields: [Nat]},
     {name: relativeAdd, fields: [Nat, Nat, Nat]},
     {name: normalized, fields: [Nat, Nat, Nat, Nat]},
-    {name: imageColumns, fields: [ColumnGeometry]}
+    {name: imageColumns, fields: [ColumnGeometry]},
+    {name: pooled, fields: [PoolGeometry]}
   ]
 }
 
@@ -1423,6 +1437,81 @@ definition{
 }
 
 definition{
+  name: poolAxisAdmitted,
+  parameters: [axis : ColumnAxis, size : Nat, out : Nat],
+  result: Bool,
+  body: (let last : Nat := (prim multiply (prim subtract out 1 : Nat) (project axis stride) : Nat);
+    (((((((((0 <? (project axis kernel)) && ((project axis kernel) <? 2147483648)) && (0 <? (project axis stride))) && ((project axis stride) <? 2147483648)) && (size <? 2147483648)) && (0 <? out)) && (last <? 2147483648)) && (((last + (prim subtract (project axis kernel) 1 : Nat)) + (negativeWord (project axis pad))) <=? (2147483647 + (positiveWord (project axis pad))))) && (if ((project axis pad) =? 2147483648) then false else true))),
+  executable: true
+}
+
+definition{
+  name: poolValidWidth,
+  parameters: [axis : ColumnAxis, width : Nat, out : Nat],
+  result: Nat,
+  body: (let base : Nat := ((prim multiply out (project axis stride) : Nat) + (negativeWord (project axis pad)));
+    (let padding : Nat := (positiveWord (project axis pad));
+    (let end : Nat := (prim subtract (base + (project axis kernel)) padding : Nat);
+    (prim subtract (if (end <? width) then end else width) (prim subtract base padding : Nat) : Nat)))),
+  executable: true
+}
+
+definition{
+  name: poolTapSteps,
+  parameters: [geometry : PoolGeometry],
+  result: Nat,
+  body: ((if (project geometry maximum) then 2 else 1) + (if ((project geometry storage) =? 1) then 1 else 0)),
+  executable: true
+}
+
+definition{
+  name: poolSteps,
+  parameters: [geometry : PoolGeometry],
+  result: Nat,
+  body: ((if (project geometry maximum) then 2 else 3) + (prim multiply (prim multiply (project (project geometry x) kernel) (project (project geometry y) kernel) : Nat) (poolTapSteps geometry) : Nat)),
+  executable: true
+}
+
+definition{
+  name: planPool,
+  parameters: [planar : Bool, options : OperationParameters, source : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let x : ColumnAxis := (record ColumnAxis {kernel := (project options p1), stride := (if planar then (project options p3) else (project options p2)), pad := (if planar then (project options p5) else (project options p3)), dilation := 1});
+    (let y : ColumnAxis := (if planar then (record ColumnAxis {kernel := (project options p2), stride := (project options p4), pad := (project options p6), dilation := 1}) else (record ColumnAxis {kernel := 1, stride := 1, pad := 0, dilation := 1}));
+    (if ((((((((((((project options p0) <=? 1) && ((project source ty) <=? 1)) && ((project output ty) =? 0)) && ((project source s0) =? (if ((project source ty) =? 0) then 4 else 2))) && (contiguousWords output)) && (separateTensors source output)) && (poolAxisAdmitted x (project source n0) (project output n0))) && (if planar then (poolAxisAdmitted y (project source n1) (project output n1)) else ((project source n1) =? (project output n1)))) && ((project source n2) =? (project output n2))) && ((project source n3) =? (project output n3))) && ((prim multiply (project x kernel) (project y kernel) : Nat) <? 2147483648)) then (let geometry : PoolGeometry := (record PoolGeometry {x := x, y := y, planar := planar, maximum := ((project options p0) =? 0), storage := (project source ty)});
+    (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (poolSteps geometry) : Nat) 4 (indexContext source 1) (indexContext output 1) (ctor CopyMode.pooled geometry))) else (ctor PointwiseDecision.invalidShape)))),
+  executable: true
+}
+
+definition{
+  name: poolAddress,
+  parameters: [geometry : PoolGeometry, source : IndexContext, destination : IndexContext, row : Nat, lane : Nat],
+  result: (Option Nat),
+  body: (match (columnCoordinate (project geometry x) (project source u0) (decodedCoordinate row destination 0) (prim remainder lane (project (project geometry x) kernel) 0 : Nat))
+    | Option.none => (ctor Option.none [Nat])
+    | Option.some px => (match (columnCoordinate (project geometry y) (project source n1) (decodedCoordinate row destination 1) (prim quotient lane (project (project geometry x) kernel) 0 : Nat))
+      | Option.none => (ctor Option.none [Nat])
+      | Option.some py => (ctor Option.some [Nat] (offsetCoordinates source px py (decodedCoordinate row destination 2) (decodedCoordinate row destination 3))))),
+  executable: true
+}
+
+definition{
+  name: poolStep,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, geometry : PoolGeometry, flag : Nat],
+  result: GraphResponse,
+  body: (let steps : Nat := (poolSteps geometry);
+    (let row : Nat := (prim quotient index steps 0 : Nat);
+    (let phase : Nat := (prim remainder index steps 0 : Nat);
+    (let tapSteps : Nat := (poolTapSteps geometry);
+    (if (phase =? 0) then (ctor GraphResponse.word 19 2 (if (project geometry maximum) then 4286578687 else 0) 2 0 1 0) else (if (steps <=? (phase + (if (project geometry maximum) then 1 else 2))) then (if (project geometry maximum) then (ctor GraphResponse.word 19 1 0 2 0 3 (blockOffset row destination)) else (if ((phase + 2) =? steps) then (let count : Nat := (if (project geometry planar) then (prim multiply (project (project geometry x) kernel) (project (project geometry y) kernel) : Nat) else (poolValidWidth (project geometry x) (project source u0) (decodedCoordinate row destination 0)));
+    (ctor GraphResponse.word 3 2 (if (count =? 0) then 1 else count) 2 0 1 1)) else (ctor GraphResponse.word 5 1 0 1 1 3 (blockOffset row destination)))) else (let part : Nat := (prim remainder (prim subtract phase 1 : Nat) tapSteps 0 : Nat);
+    (match (poolAddress geometry source destination row (prim quotient (prim subtract phase 1 : Nat) tapSteps 0 : Nat))
+      | Option.none => (ctor GraphResponse.word 19 1 0 2 0 1 0)
+      | Option.some address => (if (((project geometry storage) =? 1) && (part =? 0)) then (ctor GraphResponse.word 6 0 address 2 0 1 1) else (if (project geometry maximum) then (if ((part + 1) =? tapSteps) then (if (flag =? 2) then (ctor GraphResponse.word 19 1 0 2 0 1 0) else (ctor GraphResponse.word 19 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 2 0 1 0)) else (ctor GraphResponse.word 16 1 0 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 1 2)) else (ctor GraphResponse.word 4 1 0 (if ((project geometry storage) =? 1) then 1 else 0) (if ((project geometry storage) =? 1) then 1 else address) 1 0))))))))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -1451,6 +1540,7 @@ definition{
     | CopyMode.scattered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.gathered storage indices => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.relativeAdd initial width biases => (relativeAddOffsets index initial width biases)
+    | CopyMode.pooled geometry => (poolStep index source destination geometry 0)
     | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
     | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
@@ -1468,11 +1558,11 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if ((operation =? 57) || (operation =? 58)) then (match right | Option.none => (planPool (operation =? 58) options left output) | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (planStorage operation left (match right
     | Option.none => false
     | Option.some value => true) output) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))),
   executable: true
 }
 
@@ -1521,6 +1611,7 @@ definition{
     | CopyMode.relativePosition => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false)
     | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false)
+    | CopyMode.pooled geometry => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.imageColumns geometry => (ctor GraphResponse.bindings 2 0 0 false)
     | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings (if (kind =? 66) then 3 else 1) 0 0 false)
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
@@ -1567,6 +1658,7 @@ definition{
     | CopyMode.relativePosition => 0
     | CopyMode.indexedAdd table indices => 0
     | CopyMode.relativeAdd initial width biases => 0
+    | CopyMode.pooled geometry => (if (opcode =? 6) then (project geometry storage) else 0)
     | CopyMode.imageColumns geometry => (project geometry storage)
     | CopyMode.normalized kind epsilon rows capacity => (if (((opcode =? 6) || (opcode =? 7)) && (kind =? 30)) then 30 else 0)
     | CopyMode.l2Norm epsilon => 0
@@ -1627,6 +1719,7 @@ definition{
     | CopyMode.relativePosition => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.indexedAdd table indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.relativeAdd initial width biases => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.pooled geometry => (ctor WordOperation.invalid)
     | CopyMode.imageColumns geometry => (ctor WordOperation.storage (project geometry inputStorage) (project geometry storage) true)
     | CopyMode.normalized kind epsilon rows capacity => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.l2Norm epsilon => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -1663,6 +1756,7 @@ definition{
     | CopyMode.relativePosition => 0
     | CopyMode.indexedAdd table indices => 0
     | CopyMode.relativeAdd initial width biases => 0
+    | CopyMode.pooled geometry => 0
     | CopyMode.imageColumns geometry => 0
     | CopyMode.normalized kind epsilon rows capacity => 0
     | CopyMode.l2Norm epsilon => 0
@@ -1741,6 +1835,7 @@ definition{
     | CopyMode.relativePosition => (copyOffsets index source destination mode)
     | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
     | CopyMode.relativeAdd initial width biases => (copyOffsets index source destination mode)
+    | CopyMode.pooled geometry => (poolStep index source destination geometry flag)
     | CopyMode.imageColumns geometry => (imageColumnStep index source destination geometry)
     | CopyMode.normalized kind epsilon rows capacity => (if (((kind =? 64) || (kind =? 65)) || (kind =? 66)) then (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 64)) else (if ((kind =? 0) || (kind =? 30)) then (rmsOffsets index source destination kind epsilon rows capacity flag) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
     | CopyMode.l2Norm epsilon => (ctor GraphResponse.planned (ctor PointwiseDecision.delegated 65))
@@ -3026,6 +3121,34 @@ theorem{
   name: gaussianNegativeTenHasPositiveZero,
   parameters: [],
   statement: ((evaluate (ctor GraphRequest.gaussianF32Table 3240099840)) = (ctor GraphResponse.tableResult (ctor Option.some [Nat] 0))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: poolLeftPaddingCountsValidValues,
+  parameters: [],
+  statement: ((poolValidWidth (record ColumnAxis {kernel := 3, stride := 1, pad := 2, dilation := 1}) 5 0) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: poolFullThreeValueWindow,
+  parameters: [],
+  statement: ((poolValidWidth (record ColumnAxis {kernel := 3, stride := 1, pad := 2, dilation := 1}) 5 2) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: poolRightPaddingCountsValidValues,
+  parameters: [],
+  statement: ((poolValidWidth (record ColumnAxis {kernel := 3, stride := 1, pad := 2, dilation := 1}) 5 6) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: poolEmptyWindowHasNoValues,
+  parameters: [],
+  statement: ((poolValidWidth (record ColumnAxis {kernel := 3, stride := 1, pad := 2, dilation := 1}) 5 7) = 0),
   proof: reflexivity{}
 }
 

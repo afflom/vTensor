@@ -226,7 +226,7 @@ ggml_batches! {
     fn gated_activations_vt_77() { "upstream-GATED_ACTIVATIONS", 108, ["typed", "pointwise"] }
 
     #[test]
-    fn pooling_vt_79() { "upstream-POOLING", 8, ["pointwise"] }
+    fn pooling_vt_79() { "upstream-POOLING", 8, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-POOL_HALF_INPUT", 4) }
 
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
@@ -346,7 +346,7 @@ fn buffer_allocation_vt_10() {
 
 fn verify_row_graphs() {
     use vtensor_pointwise::{
-        Adt0 as Request, Adt1 as Parameters, Adt2 as Descriptor, Adt8 as Response, Adt9 as Plan,
+        Adt0 as Request, Adt1 as Parameters, Adt2 as Descriptor, Adt9 as Response, Adt10 as Plan,
     };
     for (operation, ty, output_type) in [(13, 0, 0), (18, 26, 27)] {
         let empty = Descriptor::C0(ty, 0, 1 << 40, 1 << 40, 1 << 40, 4, 0, 0, 0, 0, 0);
@@ -598,14 +598,15 @@ mod ggml_oracle {
         output.stdout
     }
 
-    pub(super) fn source_tokens(body: &str) -> Vec<u8> {
-        // The extracted body retains its closing brace. Tokenization preserves
-        // string literals and code changes while ignoring formatting/comments.
-        format!("{{{body}")
+    pub(super) fn recipe_tokens(start: &str, end: &str, closing: &str) -> String {
+        let (_, tail) = include_str!("contract.rs")
+            .split_once(start)
+            .expect("recipe start");
+        let (body, _) = tail.split_once(end).expect("recipe end");
+        format!("{start}{body}{closing}")
             .parse::<proc_macro2::TokenStream>()
             .unwrap()
             .to_string()
-            .into_bytes()
     }
 
     fn verify_source_cache(root: &Path, cache: &Path) {
@@ -647,6 +648,8 @@ mod ggml_oracle {
         ORACLE.get_or_init(|| build_storage_oracle(root)).clone()
     }
 
+    pub(super) const GGML_CORE: &str = "ggml-oracle-core.o";
+
     fn build_storage_oracle(root: &Path) -> PathBuf {
         let imported = root.join("vendor/llama.cpp-oracle");
         let lock = read_toml(imported.join("upstream.toml"));
@@ -658,16 +661,7 @@ mod ggml_oracle {
         let mut identity = Sha256::new();
         for input in [
             archive_digest.as_bytes(),
-            STORAGE_ORACLE_SOURCE,
-            &source_tokens(
-                include_str!("contract.rs")
-                    .split_once("\nmod ggml_oracle {")
-                    .expect("oracle module")
-                    .1
-                    .split_once("\nmod ggml_inventory {")
-                    .expect("module boundary")
-                    .0,
-            ),
+            recipe_tokens("\nmod ggml_oracle {", "\nmod ggml_inventory {", "").as_bytes(),
             &run(Command::new("cc").arg("--version")),
             &run(Command::new("c++").arg("--version")),
         ] {
@@ -709,38 +703,30 @@ mod ggml_oracle {
         std::fs::write(cache.join("ggml-version.h"), version).expect("version header");
         std::fs::write(cache.join("boundary.cpp"), STORAGE_ORACLE_SOURCE)
             .expect("oracle transport");
-        for (input, object) in [
-            (source.join("ggml.c"), "ggml.o"),
-            (source.join("ggml-quants.c"), "quants.o"),
-            (source.join("ggml-alloc.c"), "alloc.o"),
-            (cache.join("boundary.cpp"), "boundary.o"),
-            (source.join("ggml-backend.cpp"), "backend.o"),
-            (source.join("ggml-backend-meta.cpp"), "meta.o"),
+        let core = cache.join(GGML_CORE);
+        let pending = core.with_extension("new");
+        let mut combine = Command::new("c++");
+        combine.arg("-r").arg("-o").arg(&pending);
+        for name in [
+            "ggml.c",
+            "ggml-quants.c",
+            "ggml-alloc.c",
+            "ggml-backend.cpp",
+            "ggml-backend-meta.cpp",
         ] {
-            compile(&cache, input, cache.join(object));
+            let object = cache.join(name).with_extension("o");
+            compile(&cache, source.join(name), &object);
+            combine.arg(object);
         }
-        let objects: serde_json::Map<String, serde_json::Value> =
-            ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"]
-                .into_iter()
-                .map(|name| (name.into(), file_digest(cache.join(name)).into()))
-                .collect();
-        std::fs::write(
-            cache.join("objects.json"),
-            serde_json::to_vec(&objects).unwrap(),
-        )
-        .expect("object bindings");
+        run(&mut combine);
+        publish_file(&pending, &core, core.with_extension("sha256"));
+        let boundary = cache.join("boundary.o");
+        compile(&cache, cache.join("boundary.cpp"), &boundary);
         let candidate = executable.with_extension("new");
-        let shared = [
-            "boundary.o",
-            "meta.o",
-            "alloc.o",
-            "backend.o",
-            "ggml.o",
-            "quants.o",
-        ];
         run(Command::new("c++")
             .arg("-Wl,--gc-sections")
-            .args(shared.map(|name| cache.join(name)))
+            .arg(boundary)
+            .arg(core)
             .args(["-lm", "-o"])
             .arg(&candidate));
         publish_file(&candidate, &executable, executable.with_extension("sha256"));
@@ -1369,13 +1355,9 @@ mod verdant_api {
     /// `VT-03`: vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results
     #[test]
     fn verdant_api_vt_03() {
-        assert!(supportsF64Matmul4(true, true, true));
-        for (type_is_f64, lhs_is_4x4, rhs_is_4x4) in [
-            (false, true, true),
-            (true, false, true),
-            (true, true, false),
-        ] {
-            assert!(!supportsF64Matmul4(type_is_f64, lhs_is_4x4, rhs_is_4x4));
+        for bits in 0..8 {
+            let [f64_type, left_4x4, right_4x4] = [1, 2, 4].map(|mask| bits & mask != 0);
+            assert_eq!(supportsF64Matmul4(f64_type, left_4x4, right_4x4), bits == 7);
         }
 
         let [lhs, rhs, expected]: [[[f64; 4]; 4]; 3] = serde_json::from_value(
@@ -1424,9 +1406,7 @@ fn buffer_transfer_vt_09() {
 }
 
 mod native_backend_oracle {
-    use super::ggml_oracle::{
-        compile, digest, file_digest, publish_file, run, storage_oracle, verify_file,
-    };
+    use super::ggml_oracle::{compile, digest, publish_file, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
     use std::path::Path;
@@ -1534,17 +1514,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 }
 "#;
 
-    fn recipe_tokens(start: &str, end: &str, closing: &str) -> String {
-        let (_, tail) = include_str!("contract.rs")
-            .split_once(start)
-            .expect("recipe start");
-        let (body, _) = tail.split_once(end).expect("recipe end");
-        format!("{start}{body}{closing}")
-            .parse::<proc_macro2::TokenStream>()
-            .unwrap()
-            .to_string()
-    }
-
     fn fixture_library(common: &Path, model: &'static str) -> std::path::PathBuf {
         use std::{collections::BTreeMap, path::PathBuf, sync::Mutex};
         static LIBRARIES: Mutex<BTreeMap<&str, PathBuf>> = Mutex::new(BTreeMap::new());
@@ -1557,7 +1526,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             let mut identity = Sha256::new();
             identity.update(std::fs::read(&source).unwrap());
             identity.update(FIXTURE_BRIDGE);
-            identity.update(recipe_tokens(
+            identity.update(super::ggml_oracle::recipe_tokens(
                 "\n    fn fixture_library(",
                 "\n    fn compiled_object(",
                 "",
@@ -1622,10 +1591,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let oracle = storage_oracle(root);
         let common = oracle.parent().unwrap();
-        let objects = super::ggml_oracle::read_json(common.join("objects.json"));
-        for name in ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"] {
-            assert_eq!(objects[name], file_digest(common.join(name)));
-        }
+        let core = common.join(super::ggml_oracle::GGML_CORE);
+        verify_file(&core, core.with_extension("sha256"));
         let library = super::provider_library();
         let mut driver = String::from(HEADER);
         if mode.starts_with("upstream-") {
@@ -1652,7 +1619,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         identity.update(common.as_os_str().as_encoded_bytes());
         // Bind the compiler/linker recipe, not fixture generation or runtime orchestration.
         // The synthetic closing brace completes `verify` for lossless Rust tokenization.
-        identity.update(recipe_tokens(
+        identity.update(super::ggml_oracle::recipe_tokens(
             "\n    fn compiled_object(",
             "\n        verify_file(&program,",
             "\n}",
@@ -1709,10 +1676,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 linker.arg(object);
             }
             linker.arg(cache.join("driver.o"));
-            linker.args(
-                ["ggml.o", "quants.o", "alloc.o", "backend.o", "meta.o"]
-                    .map(|name| common.join(name)),
-            );
+            linker.arg(core);
             let pending = program.with_extension("new");
             linker.args(cpu_objects);
             linker
@@ -1903,6 +1867,16 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     if(!vtensor_use_reference(reference)) return SIZE_MAX;
     vtensor_observation observed;size_t cases=0;
+    if (!strcmp(op,"POOL_HALF_INPUT")) {
+      for (ggml_op_pool kind : {GGML_OP_POOL_AVG, GGML_OP_POOL_MAX}) {
+        test_pool1d row(kind, GGML_TYPE_F16, {7,3,2,2}, 3,2,3);
+        test_pool2d plane(kind, GGML_TYPE_F16, {5,3,2,2}, 3,2,2,1,2,2);
+        for (test_case *test : std::array<test_case *,2>{&row, &plane}) {
+          if (test->eval(backend,reference,nullptr,&observed)!=test_status_t::OK || observed.bad) return SIZE_MAX;
+        }
+      }
+      return observed.records;
+    }
     if (!strcmp(op,"IM2COL_HALF_INPUT")) {
       for (bool planar : {false,true}) {
         const std::array<int64_t,4> input = planar ? std::array<int64_t,4>{7,5,2,3} : std::array<int64_t,4>{7,2,3,1};
