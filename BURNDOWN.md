@@ -53,6 +53,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 157 MUL_MAT and 73 MUL_MAT_ID graphs with E4M3 weights. [VT-85 comparisons](verification/factory-e4m3-products-vt85.json)
 - [x] Pass all 164 newly admitted E4M3 matrix fusions. [Full-graph comparisons](verification/factory-e4m3-compositions.json)
 - [ ] Execute 227 ordinary and 119 indexed Q4_K/Q5_K products with F32 activations. [VT-88 registered oracle cases](https://github.com/afflom/vTensor/commit/1e23938e0d4776e08883ad64447c53083d60dddb)
+- [ ] Compare the 36 Q4_K × F16 products refused by the CPU factory against the pinned GGML CPU using exact F16 widening followed by its Q4_K matrix product.
 - [ ] Pass the remaining 699 block-encoded MUL_MAT_ID cases. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
@@ -79,7 +80,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Compare all 63 CPU-refused identity copies across seven IQ formats with the pinned CPU copy kernel. All destination bytes match, including permuted layouts. [63 direct comparisons](verification/factory-iq-copy.json) · [IQ2_XXS regression](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
 - [x] Pass all 534 TOP_K and 98 ARGSORT factory cases, including ties and infinities. [VT-86 results](verification/factory-row-ranking-vt86.json) · [Verdant row ranking](https://github.com/afflom/verdant-engine/pull/28)
 - [x] Pass 172 TOPK_MOE and all four TOPK_QSA graphs unlocked by row ranking. [Full-graph comparisons](verification/factory-row-ranking-compositions.json)
-- [ ] Pass 38 TOP_K_MASK and the remaining 176 TOPK_MOE cases. Implement SOFTPLUS. Complete the indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
+- [ ] Pass 12 SOFTPLUS, 39 SOFTPLUS_MUL, 10 ADD_SOFTPLUS_MUL and the remaining 176 TOPK_MOE cases. [VT-89 registered oracle cases](https://github.com/afflom/vTensor/commit/5e4600044443c4c930357d990dcd4f1a287b7fa9)
+- [ ] Pass 38 TOP_K_MASK cases. Complete the indexed matrix compositions, LIGHTNING_INDEXER and DSV4 operations.
 - [x] Pass all 2,051 IM2COL_3D factory cases. The 1,539 previous refusals now match the CPU for F32/F16 output, padded and dilated inputs and views. [VT-70 results](verification/factory-image-columns-vt70.json)
 - [x] Pass all 113 IM2COL factory cases, both supplemental F16-input graphs and all nine CONV_1D_DW compositions. [VT-72 evidence](verification/factory-planar-columns-vt72.json)
 - [x] Pass all 2,030 directly CPU-supported CONV_2D cases through the Verdant matrix product. 2,030 pass. [VT-74 results](verification/factory-direct-convolution-vt74.json)
