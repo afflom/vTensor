@@ -630,3 +630,9 @@ id = "VT-93"
 level = "build"
 suite = "native-backend"
 statement = "Prism binds GGML clamp limits and storage for SwiGLU and Verdant evaluates the bounded operands in binary32"
+
+[[id]]
+id = "VT-94"
+level = "build"
+suite = "native-backend"
+statement = "Prism binds Q5_0 and IQ4_NL matrix and attention rows to Verdant signed-coefficient contractions and value decoding"

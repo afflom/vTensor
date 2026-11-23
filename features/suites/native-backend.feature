@@ -224,3 +224,9 @@ Feature: native-backend
     Given the original GGML F32 F16 and BF16 SwiGLU graphs with two clamp limits
     When the loaded provider computes the bounded gate and projects each row
     Then the resulting values match the imported CPU precision for each storage type
+
+  @VT-94 @build
+  Scenario: Prism binds Q5_0 and IQ4_NL matrix and attention rows to Verdant signed-coefficient contractions and value decoding
+    Given original ordinary matrix indexed expert and extended attention graphs
+    When vTensor runs with signed five-bit or nonlinear four-bit rows
+    Then the imported CPU accepts each numerical output

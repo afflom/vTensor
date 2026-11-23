@@ -187,6 +187,8 @@ ggml_batches! {
 
     fn top_k_mask_vt_92() { "upstream-TOP_K_MASK_VARIANTS", 6, ["attention"] }
 
+    fn compact_weight_rows_vt_94() { "upstream-COMPACT_WEIGHT_ROWS", 8, ["attention", "matrix"] }
+
     fn clamped_swiglu_vt_93() { "upstream-SWIGLU_CLAMP_VARIANTS", 12, ["typed"] }
 
     fn row_softmax_vt_87() { "upstream-ROW_SOFTMAX", 6, ["attention"] }
@@ -1394,7 +1396,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "70b0c79e5107a0949bc978267cb7c2d250c37bcf9bb6ab643fcafb1a9ebed03a",
+            "91a16b75984fd4089eb4474d953306d9f8d1b930f6060010fc58d8f85a53674a",
         )
     });
 
