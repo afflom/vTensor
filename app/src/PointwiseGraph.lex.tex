@@ -372,7 +372,8 @@ inductive{
     {name: bindings, fields: [Nat, Nat, Nat, Bool]},
     {name: instruction, fields: [WordOperation, WordOperand, WordOperand, WordTarget, Nat, Nat]},
     {name: sample, fields: [(Option Nat)]},
-    {name: tableResult, fields: [(Option Nat)]}
+    {name: tableResult, fields: [(Option Nat)]},
+    {name: accumulateBlock, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -1076,10 +1077,28 @@ definition{
 }
 
 definition{
+  name: gradientBlockLanes,
+  parameters: [kind : Nat],
+  result: Nat,
+  body: (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => 0
+    | TensorTypes::TypeStorageDecision.knownType storage => (project storage blockSize)),
+  executable: true
+}
+
+definition{
+  name: gradientDataSteps,
+  parameters: [kind : Nat, width : Nat],
+  result: Nat,
+  body: (if (floatStorageType kind) then (prim multiply 2 width : Nat) else (prim quotient width (gradientBlockLanes kind) 0 : Nat)),
+  executable: true
+}
+
+definition{
   name: planIndexedRowGradient,
   parameters: [left : TensorDescriptor, indices : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (if ((((((((((((floatStorageType (project left ty)) && ((project indices ty) =? 26)) && ((project output ty) =? 0)) && ((project left n0) =? (project output n0))) && ((project indices n0) <=? (project left n1))) && ((project left n2) =? 1)) && ((project left n3) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) && ((project indices n1) =? 1)) && ((project indices n2) =? 1)) && ((project indices n3) =? 1)) then (if (empty (project output n0) (project output n1) (project output n2) (project output n3)) then (ctor PointwiseDecision.copyBlocks 0 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.constant 0 0)) else (if ((project indices n0) =? 0) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.constant 0 0)) else (if (((((((project left n0) <=? 2147483647) && ((project indices n0) <=? 2147483647)) && (4 <=? (project output s0))) && ((prim multiply (project output n0) (project output s0) : Nat) <=? (project output s1))) && (separateTensors left output)) && (separateTensors indices output)) then (ctor PointwiseDecision.copyBlocks (((prim multiply 2 (project indices n0) : Nat) + (blockCount output 1)) + (prim multiply (project indices n0) (1 + (prim multiply 2 (project left n0) : Nat)) : Nat)) 4 (record IndexContext {u0 := (project left n0), n1 := (project indices n0), n2 := 1, n3 := 1, s0 := (project left s0), s1 := (project left s1), s2 := (project left s2), s3 := (project left s3)}) (indexContext output 1) (ctor CopyMode.scattered (project left ty) (indexContext indices 1))) else (ctor PointwiseDecision.invalidShape)))) else (ctor PointwiseDecision.invalidShape)),
+  body: (if (((((((((((((RowGather::cpuSource (project left ty)) && ((prim remainder (project left n0) (gradientBlockLanes (project left ty)) 1 : Nat) =? 0)) && ((project indices ty) =? 26)) && ((project output ty) =? 0)) && ((project left n0) =? (project output n0))) && ((project indices n0) <=? (project left n1))) && ((project left n2) =? 1)) && ((project left n3) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) && ((project indices n1) =? 1)) && ((project indices n2) =? 1)) && ((project indices n3) =? 1)) then (if (empty (project output n0) (project output n1) (project output n2) (project output n3)) then (ctor PointwiseDecision.copyBlocks 0 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.constant 0 0)) else (if ((project indices n0) =? 0) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.constant 0 0)) else (if (((((((project left n0) <=? 2147483647) && ((project indices n0) <=? 2147483647)) && (4 <=? (project output s0))) && ((prim multiply (project output n0) (project output s0) : Nat) <=? (project output s1))) && (separateTensors left output)) && (separateTensors indices output)) then (ctor PointwiseDecision.copyBlocks (((prim multiply 2 (project indices n0) : Nat) + (blockCount output 1)) + (prim multiply (project indices n0) (1 + (gradientDataSteps (project left ty) (project left n0))) : Nat)) 4 (record IndexContext {u0 := (project left n0), n1 := (project indices n0), n2 := 1, n3 := 1, s0 := (project left s0), s1 := (project left s1), s2 := (project left s2), s3 := (project left s3)}) (indexContext output 1) (ctor CopyMode.scattered (project left ty) (indexContext indices 1))) else (ctor PointwiseDecision.invalidShape)))) else (ctor PointwiseDecision.invalidShape)),
   executable: true
 }
 
@@ -1098,8 +1117,26 @@ definition{
 }
 
 definition{
+  name: gradientBlock,
+  parameters: [
+    kind : Nat,
+    row : Nat,
+    block : Nat,
+    selected : Nat,
+    source : IndexContext,
+    destination : IndexContext
+  ],
+  result: GraphResponse,
+  body: (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | TensorTypes::TypeStorageDecision.knownType storage => (ctor GraphResponse.accumulateBlock kind (TensorIndex::elementOffset block row 0 0 (project source s0) (project source s1) (project source s2) (project source s3)) (project storage typeSize) (TensorIndex::elementOffset (prim multiply block (project storage blockSize) : Nat) selected 0 0 (project destination s0) (project destination s1) (project destination s2) (project destination s3)) (project storage blockSize) (project destination s0))),
+  executable: true
+}
+
+definition{
   name: rowGradientOffsets,
   parameters: [
+    kind : Nat,
     index : Nat,
     source : IndexContext,
     destination : IndexContext,
@@ -1107,7 +1144,7 @@ definition{
     flag : Nat
   ],
   result: GraphResponse,
-  body: (let validated : Nat := (prim multiply 2 (project source n1) : Nat); (if (index <? validated) then (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor GraphResponse.word 19 4 (blockOffset (prim quotient index 2 0 : Nat) indices) 2 0 1 2) else (if ((flag <? 2147483648) && (flag <? (project destination n1))) then (ctor GraphResponse.word 19 2 0 2 0 1 0) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))) else (let cleared : Nat := (prim multiply (project destination u0) (project destination n1) : Nat); (if ((prim subtract index validated : Nat) <? cleared) then (ctor GraphResponse.word 19 2 0 2 0 3 (blockOffset (prim subtract index validated : Nat) destination)) else (let step : Nat := (prim subtract (prim subtract index validated : Nat) cleared : Nat); (let stride : Nat := (1 + (prim multiply 2 (project source u0) : Nat)); (let row : Nat := (prim quotient step stride 0 : Nat); (let phase : Nat := (prim remainder step stride 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.word 19 4 (blockOffset row indices) 2 0 1 2) else (if ((prim remainder phase 2 0 : Nat) =? 1) then (ctor GraphResponse.word 6 0 (blockOffset ((prim multiply row (project source u0) : Nat) + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat)) source) 2 0 1 0) else (ctor GraphResponse.word 4 3 (blockOffset ((prim multiply flag (project source u0) : Nat) + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat)) destination) 1 0 3 (blockOffset ((prim multiply flag (project source u0) : Nat) + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat)) destination)))))))))))),
+  body: (let validated : Nat := (prim multiply 2 (project source n1) : Nat); (if (index <? validated) then (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor GraphResponse.word 19 4 (blockOffset (prim quotient index 2 0 : Nat) indices) 2 0 1 2) else (if ((flag <? 2147483648) && (flag <? (project destination n1))) then (ctor GraphResponse.word 19 2 0 2 0 1 0) else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))) else (let cleared : Nat := (prim multiply (project destination u0) (project destination n1) : Nat); (if ((prim subtract index validated : Nat) <? cleared) then (ctor GraphResponse.word 19 2 0 2 0 3 (blockOffset (prim subtract index validated : Nat) destination)) else (let step : Nat := (prim subtract (prim subtract index validated : Nat) cleared : Nat); (let stride : Nat := (1 + (gradientDataSteps kind (project source u0))); (let row : Nat := (prim quotient step stride 0 : Nat); (let phase : Nat := (prim remainder step stride 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.word 19 4 (blockOffset row indices) 2 0 1 2) else (if (floatStorageType kind) then (if ((prim remainder phase 2 0 : Nat) =? 1) then (ctor GraphResponse.word 6 0 (blockOffset ((prim multiply row (project source u0) : Nat) + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat)) source) 2 0 1 0) else (ctor GraphResponse.word 4 3 (blockOffset ((prim multiply flag (project source u0) : Nat) + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat)) destination) 1 0 3 (blockOffset ((prim multiply flag (project source u0) : Nat) + (prim quotient (prim subtract phase 1 : Nat) 2 0 : Nat)) destination))) else (gradientBlock kind row (prim subtract phase 1 : Nat) flag source destination))))))))))),
   executable: true
 }
 
@@ -1926,6 +1963,7 @@ definition{
   body: (match response
     | GraphResponse.sample address => (ctor GraphResponse.sample address)
     | GraphResponse.tableResult word => (ctor GraphResponse.tableResult word)
+    | GraphResponse.accumulateBlock kind from bytes to lanes stride => (ctor GraphResponse.accumulateBlock kind from bytes to lanes stride)
     | GraphResponse.planned decision => (ctor GraphResponse.planned decision)
     | GraphResponse.offsets choosingRight from to => (ctor GraphResponse.offsets choosingRight from to)
     | GraphResponse.arithmetic a b c d e f => (ctor GraphResponse.arithmetic a b c d e f)
@@ -2061,7 +2099,7 @@ definition{
     | CopyMode.reduced operation storage => (copyOffsets index source destination mode)
     | CopyMode.argmaxRow => (argmaxOffsets index source destination flag)
     | CopyMode.counted elements right => (copyOffsets index source destination mode)
-    | CopyMode.scattered storage indices => (rowGradientOffsets index source destination indices flag)
+    | CopyMode.scattered storage indices => (rowGradientOffsets storage index source destination indices flag)
     | CopyMode.gathered storage indices => (gatherOffsets storage index source destination indices flag)
     | CopyMode.relativePosition => (copyOffsets index source destination mode)
     | CopyMode.indexedAdd table indices => (indexedAddOffsets index source destination table indices flag)
@@ -2461,42 +2499,42 @@ theorem{
 theorem{
   name: rowGradientLoadsStridedIndex,
   parameters: [],
-  statement: ((rowGradientOffsets 0 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 0) = (ctor GraphResponse.word 19 4 0 2 0 1 2)),
+  statement: ((rowGradientOffsets 0 0 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 0) = (ctor GraphResponse.word 19 4 0 2 0 1 2)),
   proof: reflexivity{}
 }
 
 theorem{
   name: rowGradientRejectsSignedIndex,
   parameters: [],
-  statement: ((rowGradientOffsets 1 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 4294967295) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  statement: ((rowGradientOffsets 0 1 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 4294967295) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
   proof: reflexivity{}
 }
 
 theorem{
   name: rowGradientRejectsUpperBound,
   parameters: [],
-  statement: ((rowGradientOffsets 1 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 4) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
+  statement: ((rowGradientOffsets 0 1 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 4) = (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))),
   proof: reflexivity{}
 }
 
 theorem{
   name: rowGradientClearsBeforeAccumulation,
   parameters: [],
-  statement: ((rowGradientOffsets 4 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 0) = (ctor GraphResponse.word 19 2 0 2 0 3 0)),
+  statement: ((rowGradientOffsets 0 4 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 0) = (ctor GraphResponse.word 19 2 0 2 0 3 0)),
   proof: reflexivity{}
 }
 
 theorem{
   name: rowGradientWidensFirstSource,
   parameters: [],
-  statement: ((rowGradientOffsets 17 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 2) = (ctor GraphResponse.word 6 0 0 2 0 1 0)),
+  statement: ((rowGradientOffsets 0 17 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 2) = (ctor GraphResponse.word 6 0 0 2 0 1 0)),
   proof: reflexivity{}
 }
 
 theorem{
   name: rowGradientAddsSelectedRow,
   parameters: [],
-  statement: ((rowGradientOffsets 18 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 2) = (ctor GraphResponse.word 4 3 24 1 0 3 24)),
+  statement: ((rowGradientOffsets 0 18 (record IndexContext {u0 := 3, n1 := 2, n2 := 1, n3 := 1, s0 := 2, s1 := 6, s2 := 12, s3 := 12}) (record IndexContext {u0 := 3, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 12, s2 := 48, s3 := 48}) (record IndexContext {u0 := 2, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 16, s2 := 16, s3 := 16}) 2) = (ctor GraphResponse.word 4 3 24 1 0 3 24)),
   proof: reflexivity{}
 }
 
@@ -2889,7 +2927,7 @@ theorem{
     storage : Nat,
     indices : IndexContext
   ],
-  statement: ((statefulOffsets index source destination (ctor CopyMode.scattered storage indices) flag) = (bindStep (ctor CopyMode.scattered storage indices) (rowGradientOffsets index source destination indices flag))),
+  statement: ((statefulOffsets index source destination (ctor CopyMode.scattered storage indices) flag) = (bindStep (ctor CopyMode.scattered storage indices) (rowGradientOffsets storage index source destination indices flag))),
   proof: reflexivity{}
 }
 
@@ -3387,6 +3425,13 @@ theorem{
   name: softplusSelectsVerdantActivation,
   parameters: [],
   statement: ((unaryKind 89 15) = (ctor Option.some [Nat] 22)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: packedGradientStepsFollowStorageBlocks,
+  parameters: [],
+  statement: ((gradientDataSteps 2 256) = 8),
   proof: reflexivity{}
 }
 \end{semanticmodule}

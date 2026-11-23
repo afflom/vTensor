@@ -678,3 +678,9 @@ id = "VT-101"
 level = "build"
 suite = "native-backend"
 statement = "Prism selects scalar source lanes and destination blocks for copies and indexed row writes while Verdant encodes Q8_0"
+
+[[id]]
+id = "VT-102"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans indexed gradient accumulation by source block and Verdant decodes the source and adds each binary32 lane"

@@ -300,6 +300,9 @@ ggml_batches! {
     #[test]
     fn state_convolution_vt_81() { "upstream-SSM_WINDOWS", 6, ["pointwise"] }
 
+    /// Compare all remaining source formats against authoritative GGML decoding and CPU scatter.
+    #[test]
+    fn decoded_row_gradients_vt_102() { "upstream-GET_ROWS_BACK_DECODED", 54, ["pointwise"] }
     /// Four imported BF16 attention cases vary mask and sink presence independently.
     #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
@@ -1462,7 +1465,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "c6583fb4d72c68496f46d82c4580a301f38511fb26ac75ceb4462939204142f8",
+            "09176ba6e7543e69a37401475c178bfcb81e971f4893c541639f554ade4ff1af",
         )
     });
 
@@ -1832,6 +1835,10 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
         auto a=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
         auto b=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[1]->ne);
         expected=ggml_out_prod(reference.get(),a,b);
+    } else if (op==GGML_OP_GET_ROWS_BACK) {
+        auto original=test.build_graph(reference.get());
+        auto decoded=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
+        expected=ggml_get_rows_back(reference.get(),decoded,original->src[1],original);
     } else if (op==GGML_OP_MUL_MAT) {
         auto original=test.build_graph(reference.get());
         if (original->src[1]->type!=GGML_TYPE_F16) return false;
@@ -1860,6 +1867,10 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
             ggml_backend_tensor_set(expected->src[k],values.data(),0,ggml_nbytes(expected->src[k]));
         }
     } else {
+        if (op==GGML_OP_GET_ROWS_BACK) {
+            auto decoded=tensor_to_float(out->src[0]);
+            ggml_backend_tensor_set(expected->src[0],decoded.data(),0,ggml_nbytes(expected->src[0]));
+        }
         auto copy=ggml_get_first_tensor(reference.get());
         for (auto src=ggml_get_first_tensor(target.get());src;src=ggml_get_next_tensor(target.get(),src)) {
             if (!copy || src->op!=copy->op || src->type!=copy->type || !ggml_are_same_shape(src,copy) || !ggml_are_same_stride(src,copy)) return false;
@@ -1911,8 +1922,8 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
       const size_t i=selected.empty()?pos:selected[pos];
       auto &test=tests[i];
-      if (!strcmp(op,"OUT_PROD_DECODED") || !strcmp(op,"CONV_2D_CONTIGUOUS") || !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS")) {
-        const ggml_op operation=!strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : GGML_OP_CONV_2D;
+      if (!strcmp(op,"GET_ROWS_BACK_DECODED") || !strcmp(op,"OUT_PROD_DECODED") || !strcmp(op,"CONV_2D_CONTIGUOUS") || !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS")) {
+        const ggml_op operation=!strcmp(op,"GET_ROWS_BACK_DECODED") ? GGML_OP_GET_ROWS_BACK : !strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : GGML_OP_CONV_2D;
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {
           fprintf(stderr,"CPU reference rejected ordinal %zu: %s\n",i,test->vars().c_str());
           return SIZE_MAX;

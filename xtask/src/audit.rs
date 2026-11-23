@@ -44,39 +44,15 @@ fn shipped(root: &Path) -> Result<Vec<String>, Fail> {
     Ok(out)
 }
 
-struct Source {
-    rel: String,
-    text: String,
-}
-
-fn shipped_sources(root: &Path) -> Result<Vec<Source>, Fail> {
-    let mut out = Vec::new();
+fn shipped_sources(root: &Path) -> Result<Vec<PathBuf>, Fail> {
+    let mut paths = Vec::new();
     for name in shipped(root)? {
-        let dir = root.join("crates").join(&name).join("src");
-        if !dir.exists() {
-            continue;
-        }
-        collect(&dir, root, &mut out)?;
-    }
-    Ok(out)
-}
-
-fn collect(dir: &Path, root: &Path, out: &mut Vec<Source>) -> Result<(), Fail> {
-    for entry in std::fs::read_dir(dir)? {
-        let path = entry?.path();
-        if path.is_dir() {
-            collect(&path, root, out)?;
-        } else if path.extension().is_some_and(|e| e == "rs") {
-            let text = std::fs::read_to_string(&path)?;
-            let rel = path
-                .strip_prefix(root)
-                .unwrap_or(&path)
-                .display()
-                .to_string();
-            out.push(Source { rel, text });
+        let dir = root.join("crates").join(name).join("src");
+        if dir.exists() {
+            gather_files(&dir, &mut paths, true)?;
         }
     }
-    Ok(())
+    Ok(paths)
 }
 
 /// Lines of `text` outside comments and outside `#[cfg(test)]` modules.
@@ -126,7 +102,10 @@ fn effective_lines(text: &str) -> Vec<(usize, &str)> {
 /// a list in the gate would be a second source for what the model says (R1), and
 /// the error types of one repository are not the error types of the next.
 pub fn audit_limits(root: &Path) -> Result<(), Fail> {
-    let model = Model::load(&root.join("model"))?;
+    check_limits(root, &Model::load(&root.join("model"))?)
+}
+
+pub fn check_limits(root: &Path, model: &Model) -> Result<(), Fail> {
     let declared = model.ids.declared_failures()?;
     let tests = workspace_test_names(root);
 
@@ -140,13 +119,14 @@ pub fn audit_limits(root: &Path) -> Result<(), Fail> {
             ));
         }
     }
-    for src in shipped_sources(root)? {
-        for (line_no, error) in result_errors(&src.text) {
+    for path in shipped_sources(root)? {
+        let relative = path.strip_prefix(root)?.display();
+        for (line_no, error) in result_errors(&std::fs::read_to_string(&path)?) {
             let Some(error) = error else {
                 violations.push(format!(
                     "{}:{line_no}: a `Result` that names no error type (an alias hides it); \
                      write `Result<T, E>` with a declared `E`",
-                    src.rel
+                    relative
                 ));
                 continue;
             };
@@ -156,7 +136,7 @@ pub fn audit_limits(root: &Path) -> Result<(), Fail> {
             if !declared.iter().any(|d| d.type_name == name) {
                 violations.push(format!(
                     "{}:{line_no}: error type `{error}` is not declared in model/ids.toml",
-                    src.rel
+                    relative
                 ));
             }
         }
@@ -269,7 +249,7 @@ pub fn audit_deferral(root: &Path) -> Result<(), Fail> {
     let mut files: Vec<PathBuf> = Vec::new();
     for dir in [root.join("crates"), root.join("xtask")] {
         if dir.exists() {
-            gather_all(&dir, &mut files)?;
+            gather_files(&dir, &mut files, false)?;
         }
     }
     // Every Markdown file at the root, discovered rather than listed. A list
@@ -337,19 +317,20 @@ fn outside_code_spans(line: &str, marker: &str) -> bool {
     false
 }
 
-fn gather_all(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), Fail> {
+/// A shipped source tree includes every Rust module. The repository audit also reads
+/// manifests and prose, skipping build output under target directories.
+fn gather_files(dir: &Path, files: &mut Vec<PathBuf>, shipped: bool) -> Result<(), Fail> {
     for entry in std::fs::read_dir(dir)? {
         let path = entry?.path();
         if path.is_dir() {
-            if path.file_name().is_some_and(|n| n == "target") {
-                continue;
+            if shipped || !path.file_name().is_some_and(|n| n == "target") {
+                gather_files(&path, files, shipped)?;
             }
-            gather_all(&path, out)?;
         } else if path
             .extension()
-            .is_some_and(|e| e == "rs" || e == "md" || e == "toml")
+            .is_some_and(|e| e == "rs" || (!shipped && (e == "md" || e == "toml")))
         {
-            out.push(path);
+            files.push(path);
         }
     }
     Ok(())
@@ -367,7 +348,7 @@ mod tests {
 
     use super::*;
 
-    const HEADER: &str = "spec = \"template/1\"\n";
+    use crate::test_repo::TestRepo;
 
     /// A declared failure type, and the row whose test is its negative test.
     const DECLARED: &str = "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\n\
@@ -382,37 +363,23 @@ mod tests {
 
     const SHIPPED: &str = "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n";
 
-    struct Fixture {
-        root: PathBuf,
-    }
-
-    impl Fixture {
-        fn new(name: &str, ids: &str, lib: &str, test: Option<&str>) -> Self {
-            let root = std::env::temp_dir().join(format!(
-                "template-audit-limits-{}-{name}",
-                std::process::id()
-            ));
-            let _ = std::fs::remove_dir_all(&root);
-            let write = |rel: &str, text: &str| {
-                let path = root.join(rel);
-                std::fs::create_dir_all(path.parent().expect("a parent")).expect("mkdir");
-                std::fs::write(path, text).expect("write");
-            };
-            write(
-                "model/ids.toml",
-                &format!("{HEADER}{}", ids_with_header(ids)),
+    impl TestRepo {
+        fn limits(name: &str, ids: &str, lib: &str, test: Option<&str>) -> Self {
+            let fixture = Self::new(name);
+            fixture.registers(
+                if ids.trim().is_empty() {
+                    "id = []"
+                } else {
+                    ids
+                },
+                "authority = []",
             );
-            write("model/ledger.toml", &format!("{HEADER}claim = []\n"));
-            write(
-                "model/authorities.toml",
-                &format!("{HEADER}authority = []\n"),
-            );
-            write("crates/shipped/Cargo.toml", SHIPPED);
-            write("crates/shipped/src/lib.rs", lib);
+            fixture.write("crates/shipped/Cargo.toml", SHIPPED);
+            fixture.write("crates/shipped/src/lib.rs", lib);
             if let Some(test) = test {
-                write("crates/shipped/tests/negative.rs", test);
+                fixture.write("crates/shipped/tests/negative.rs", test);
             }
-            Self { root }
+            fixture
         }
 
         fn audit(&self) -> Result<(), String> {
@@ -420,35 +387,13 @@ mod tests {
         }
     }
 
-    impl Drop for Fixture {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.root);
-        }
-    }
-
-    fn ids_with_header(rows: &str) -> String {
-        if rows.trim().is_empty() {
-            "id = []\n".to_string()
-        } else {
-            rows.to_string()
-        }
-    }
-
-    fn rejected(fixture: &Fixture, needles: &[&str]) {
-        let message = fixture
-            .audit()
-            .expect_err("the audit must reject this fixture");
-        for needle in needles {
-            assert!(
-                message.contains(needle),
-                "the diagnostic must contain `{needle}`:\n{message}"
-            );
-        }
+    fn rejected(fixture: &TestRepo, needles: &[&str]) {
+        crate::test_repo::rejected(fixture.audit(), needles);
     }
 
     #[test]
     fn a_declared_failure_type_passes() {
-        let f = Fixture::new(
+        let f = TestRepo::limits(
             "declared",
             DECLARED,
             "pub type R<T> = Result<T, Overflow>;\n\
@@ -461,14 +406,14 @@ mod tests {
 
     #[test]
     fn a_result_broken_across_lines_is_read_whole() {
-        let ok = Fixture::new(
+        let ok = TestRepo::limits(
             "multiline-ok",
             DECLARED,
             "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Overflow,\n> { body() }\n",
             Some(NEGATIVE_TEST),
         );
         ok.audit().expect("the error type is on a later line");
-        let bad = Fixture::new(
+        let bad = TestRepo::limits(
             "multiline-bad",
             DECLARED,
             "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Other,\n> { body() }\n",
@@ -479,7 +424,7 @@ mod tests {
 
     #[test]
     fn an_undeclared_failure_type_fails() {
-        let f = Fixture::new(
+        let f = TestRepo::limits(
             "undeclared",
             DECLARED,
             "pub fn f() -> Result<u8, Other> { Ok(0) }\n",
@@ -493,7 +438,7 @@ mod tests {
         // The three names the audit once carried are errors of one library; a
         // register that does not declare them does not sanction them.
         for name in ["NotAProduct", "ObservedBound", "KappaError"] {
-            let f = Fixture::new(
+            let f = TestRepo::limits(
                 &format!("fixed-{name}"),
                 "",
                 &format!("pub fn f() -> Result<u8, {name}> {{ Ok(0) }}\n"),
@@ -506,7 +451,7 @@ mod tests {
     #[test]
     fn an_alias_that_hides_the_error_type_fails() {
         for ret in ["std::io::Result<u8>", "Result<u8>"] {
-            let f = Fixture::new(
+            let f = TestRepo::limits(
                 "alias",
                 DECLARED,
                 &format!("pub fn f() -> {ret} {{ Ok(0) }}\n"),
@@ -521,14 +466,14 @@ mod tests {
         // `Box<dyn Error>` is not the declared type merely because it begins
         // with a name; and the arrow of a function type does not end the
         // argument list early.
-        let boxed = Fixture::new(
+        let boxed = TestRepo::limits(
             "boxed",
             DECLARED,
             "pub fn f() -> Result<u8, Box<dyn Overflow>> { Ok(0) }\n",
             Some(NEGATIVE_TEST),
         );
         rejected(&boxed, &["R5", "`Box<dyn Overflow>`", "not declared"]);
-        let arrow = Fixture::new(
+        let arrow = TestRepo::limits(
             "arrow",
             DECLARED,
             "pub fn f() -> Result<fn(u8) -> u8, Other> { Ok(id) }\n",
@@ -539,7 +484,7 @@ mod tests {
 
     #[test]
     fn a_declared_type_without_its_negative_test_fails() {
-        let f = Fixture::new(
+        let f = TestRepo::limits(
             "no-test",
             DECLARED,
             "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
@@ -554,7 +499,7 @@ mod tests {
     #[test]
     fn a_declared_type_whose_negative_test_is_not_registered_fails() {
         let ids = DECLARED.replace("negative = \"OV-02\"", "negative = \"OV-09\"");
-        let f = Fixture::new(
+        let f = TestRepo::limits(
             "unregistered",
             &ids,
             "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
@@ -571,7 +516,7 @@ mod tests {
             "id = \"OV-02\"\nlevel = \"build\"",
             "id = \"OV-02\"\nlevel = \"open\"",
         );
-        let f = Fixture::new(
+        let f = TestRepo::limits(
             "open-negative",
             &ids,
             "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
@@ -584,12 +529,12 @@ mod tests {
     fn a_declaration_is_a_pair_and_is_made_once() {
         let no_negative = DECLARED.replace("negative = \"OV-02\"\n", "");
         rejected(
-            &Fixture::new("no-negative", &no_negative, "", Some(NEGATIVE_TEST)),
+            &TestRepo::limits("no-negative", &no_negative, "", Some(NEGATIVE_TEST)),
             &["OV-01", "names no negative test"],
         );
         let no_failure = DECLARED.replace("failure = \"Overflow\"\n", "");
         rejected(
-            &Fixture::new("no-failure", &no_failure, "", Some(NEGATIVE_TEST)),
+            &TestRepo::limits("no-failure", &no_failure, "", Some(NEGATIVE_TEST)),
             &["OV-01", "declares no failure type"],
         );
         let twice = format!(
@@ -597,14 +542,14 @@ mod tests {
              statement = \"Declared again.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n"
         );
         rejected(
-            &Fixture::new("twice", &twice, "", Some(NEGATIVE_TEST)),
+            &TestRepo::limits("twice", &twice, "", Some(NEGATIVE_TEST)),
             &["Overflow", "OV-01", "OV-03", "declared twice"],
         );
     }
 
     #[test]
     fn a_crate_that_does_not_ship_is_not_audited() {
-        let f = Fixture::new(
+        let f = TestRepo::limits(
             "unshipped",
             "",
             "pub fn f() -> Result<u8, Other> { Ok(0) }\n",
@@ -621,7 +566,7 @@ mod tests {
 
     #[test]
     fn a_result_in_a_comment_or_a_test_module_is_not_audited() {
-        let f = Fixture::new(
+        let f = TestRepo::limits(
             "comments",
             "",
             "// fn f() -> Result<u8, Other>\n\
@@ -1036,23 +981,16 @@ pub mod prism {
         /// VT-08: source accounting includes newly created implementation files.
         #[test]
         fn source_accounting_vt_08() {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let root = std::env::temp_dir().join(format!(
-                "vtensor-source-accounting-{}-{nonce}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(root.join("src")).unwrap();
+            let fixture = crate::test_repo::TestRepo::new("source-accounting");
+            let root = &fixture.root;
             assert!(Command::new("git")
                 .args(["init", "--quiet"])
-                .arg(&root)
+                .arg(root)
                 .status()
                 .unwrap()
                 .success());
-            std::fs::write(root.join("src/new.rs"), "fn newly_created() {}\n").unwrap();
-            let observed = measure_worktree(&root).unwrap();
+            fixture.write("src/new.rs", "fn newly_created() {}\n");
+            let observed = measure_worktree(root).unwrap();
             assert_eq!(
                 observed.files.get("src/new.rs"),
                 Some(&1),
@@ -1060,13 +998,13 @@ pub mod prism {
             );
             let imported_lock = serde_json::json!({"source": {"repository": "fixture/upstream"}, "files": [{"path": "src/new.rs", "sha256": hex(&Sha256::digest(b"fn newly_created() {}\n"))}]});
             std::fs::write(root.join("frame.lock"), imported_lock.to_string()).unwrap();
-            assert_eq!(measure_worktree(&root).unwrap().total(), 0);
-            std::fs::write(root.join("src/new.rs"), "fn drifted() {}\n").unwrap();
+            assert_eq!(measure_worktree(root).unwrap().total(), 0);
+            fixture.write("src/new.rs", "fn drifted() {}\n");
             assert!(
-                measure_worktree(&root).is_err(),
+                measure_worktree(root).is_err(),
                 "source drift passed despite unused source budget"
             );
-            std::fs::remove_dir_all(&root).unwrap();
+
             let text = b"fn imported() {}\n";
             let mut imported = Measure::default();
             let pins = BTreeMap::from([("oracle.rs".to_string(), hex(&Sha256::digest(text)))]);

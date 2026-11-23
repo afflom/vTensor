@@ -272,3 +272,9 @@ Feature: native-backend
     Given the original GGML indexed row writes and scalar copies into symmetric byte blocks
     When vTensor gathers the source lanes and writes each encoded block through the original destination view
     Then the imported CPU accepts each numerical result
+
+  @VT-102 @build
+  Scenario: Prism plans indexed gradient accumulation by source block and Verdant decodes the source and adds each binary32 lane
+    Given GGML gradient rows and a contiguous or viewed index vector
+    When vTensor scatters the decoded rows into the binary32 gradient
+    Then the output matches authoritative GGML decoding followed by CPU GET_ROWS_BACK

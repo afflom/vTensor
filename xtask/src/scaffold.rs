@@ -210,45 +210,30 @@ pub fn new_capability(root: &Path, args: &[String]) -> Result<(), Fail> {
 #[cfg(test)]
 mod tests {
     use super::{new_capability, register_with, Capability};
+    use crate::test_repo::TestRepo;
     use repo_model::conformance::workspace_test_names;
     use repo_model::Model;
-    use std::path::PathBuf;
 
     fn args(values: [&str; 4]) -> Vec<String> {
         values.iter().map(|v| (*v).to_string()).collect()
     }
 
     /// A fresh repository with mutually consistent empty registers.
-    fn scratch(name: &str) -> PathBuf {
-        let root = std::env::temp_dir().join(format!(
-            "xtask-new-capability-{name}-{}",
-            std::process::id()
-        ));
-        let _ = std::fs::remove_dir_all(&root);
-        for dir in ["model", "features/suites", "crates/conformance/tests"] {
-            std::fs::create_dir_all(root.join(dir)).unwrap();
+    fn scratch(name: &str) -> TestRepo {
+        let fixture = TestRepo::new(name);
+        fixture.registers("id = []", "authority = []");
+        for dir in ["features/suites", "crates/conformance/tests"] {
+            std::fs::create_dir_all(fixture.root.join(dir)).unwrap();
         }
-        // Product authorities and ledger rows can reference product IDs, so
-        // a fresh repository must start with all three registers empty.
-        for (file, field) in [
-            ("ids.toml", "id"),
-            ("authorities.toml", "authority"),
-            ("ledger.toml", "claim"),
-        ] {
-            std::fs::write(
-                root.join("model").join(file),
-                format!("spec = \"template/1\"\n\n{field} = []\n"),
-            )
-            .unwrap();
-        }
-        root
+        fixture
     }
 
     #[test]
     fn scaffolded_capabilities_satisfy_the_meta_gate() {
-        let root = scratch("ok");
+        let fixture = scratch("ok");
+        let root = &fixture.root;
         new_capability(
-            &root,
+            root,
             &args([
                 "CX-01",
                 "build",
@@ -258,7 +243,7 @@ mod tests {
         )
         .unwrap();
         new_capability(
-            &root,
+            root,
             &args(["CX-02", "open", "parsing", "Parsing throughput is measured"]),
         )
         .unwrap();
@@ -272,7 +257,7 @@ mod tests {
         );
 
         let report =
-            repo_model::conformance::check_honesty(&root, &workspace_test_names(&root)).unwrap();
+            repo_model::conformance::check_honesty(root, &workspace_test_names(root)).unwrap();
         assert!(report.is_clean(), "{:?}", report.violations);
         assert_eq!(report.scenarios_checked, 2);
 
@@ -284,12 +269,12 @@ mod tests {
             std::fs::read_to_string(root.join("crates/conformance/tests/parsing.rs")).unwrap();
         assert!(tests.contains("fn parsing_cx_01()") && tests.contains("fn parsing_cx_02()"));
         assert!(root.join("CONFORMANCE.md").is_file());
-        std::fs::remove_dir_all(&root).unwrap();
     }
 
     #[test]
     fn malformed_or_duplicate_capabilities_write_nothing() {
-        let root = scratch("bad");
+        let fixture = scratch("bad");
+        let root = &fixture.root;
         let ids = std::fs::read_to_string(root.join("model/ids.toml")).unwrap();
         for bad in [
             ["cx-01", "build", "parsing", "lowercase ID"],
@@ -302,27 +287,26 @@ mod tests {
             ["CX-01", "build", "parsing", "two\nlines"],
         ] {
             assert!(
-                new_capability(&root, &args(bad)).is_err(),
+                new_capability(root, &args(bad)).is_err(),
                 "{bad:?} was accepted"
             );
         }
         let short = vec!["CX-01".to_string(), "build".to_string()];
-        assert!(new_capability(&root, &short).is_err());
+        assert!(new_capability(root, &short).is_err());
         assert_eq!(
             std::fs::read_to_string(root.join("model/ids.toml")).unwrap(),
             ids
         );
         assert!(!root.join("features/suites/parsing.feature").exists());
 
-        new_capability(&root, &args(["CX-01", "build", "parsing", "first"])).unwrap();
+        new_capability(root, &args(["CX-01", "build", "parsing", "first"])).unwrap();
         let once = std::fs::read_to_string(root.join("model/ids.toml")).unwrap();
-        assert!(new_capability(&root, &args(["CX-01", "open", "other", "again"])).is_err());
+        assert!(new_capability(root, &args(["CX-01", "open", "other", "again"])).is_err());
         assert_eq!(
             std::fs::read_to_string(root.join("model/ids.toml")).unwrap(),
             once
         );
         assert!(!root.join("features/suites/other.feature").exists());
-        std::fs::remove_dir_all(&root).unwrap();
     }
 
     #[test]

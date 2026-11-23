@@ -1313,6 +1313,10 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
             }
         }
     }
+    // SAFETY: both decoder instructions carry a complete source block bounded by Prism.
+    let encoded = |from: u64, bytes: u64| unsafe {
+        std::slice::from_raw_parts(pointers[0].add(from as usize), bytes as usize)
+    };
     let destination_data = graph_tensor_data(tensor)?;
     let mut block = workspace(bytes, 0_u8)?;
     let mut fixed = [0; 3];
@@ -1341,17 +1345,39 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
             execute_word(response, &pointers, destination_data, words)?;
             continue;
         }
+        if let GraphResponse::C10(kind, from, width, to, lanes, stride) = response {
+            // SAFETY: Prism bounds this source block and every strided destination lane.
+            // Index preflight is complete before the output is initialized or accumulated.
+            unsafe {
+                let input = encoded(from, width);
+                let mut decoded = [0.0; 256];
+                let row = decoded
+                    .get_mut(..lanes as usize)
+                    .ok_or(BackendError::InvalidTensor)?;
+                if kind == 26 {
+                    row[0] =
+                        linear::signed_word_f32(input.as_ptr().cast::<i32>().read_unaligned())?;
+                } else {
+                    decode_words(kind, input, row, 4)?;
+                }
+                let base = destination_data.add(to as usize);
+                for (i, &value) in row.iter().enumerate() {
+                    let lane = base.add(i * stride as usize).cast::<f32>();
+                    let sum = linear::evaluate_f32_scalar(0, lane.read_unaligned(), value)?;
+                    lane.write_unaligned(sum);
+                }
+            }
+            continue;
+        }
         if let GraphResponse::C5(kind, from, bytes, to, span, stride) = response {
             // SAFETY: Prism admits both whole tensors and these block spans,
             // refuses source/output aliases, and preflights every index before writes.
             unsafe {
-                let input =
-                    std::slice::from_raw_parts(pointers[0].add(from as usize), bytes as usize);
                 let output = std::slice::from_raw_parts_mut(
                     destination_data.add(to as usize),
                     span as usize,
                 );
-                linear::decode_storage_block(kind, input, output, stride as usize)?;
+                linear::decode_storage_block(kind, encoded(from, bytes), output, stride as usize)?;
             }
             continue;
         }
