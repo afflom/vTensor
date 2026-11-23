@@ -5052,3 +5052,7 @@ The full locked-SDK `just vv` passed on `d5d218b`, including all 107 backend con
 ### Q8_0 indexed writes and copies
 
 Prism selects source lanes and destination blocks for the existing Verdant Q8_0 encoder. All 25 GGML indexed writes and six copies passed against the pinned CPU, including F16 and BF16 copies. A zero-offset mutation failed SET_ROWS ordinal 1127 at error 0.431313023 against tolerance 0.000001272. With the certified offset restored, all 19 selected contracts passed. A nonfinite value in the second row and an invalid final index each left the original destination intact for I32 and I64 indices. [Factory evidence](verification/factory-q8-storage-writes-vt101.json)
+
+### Decoded row gradients
+
+VT-102 passes 54 upstream GET_ROWS_BACK graphs across 27 source formats. Prism bounds each block and checks the index vector before writes. Verdant decodes the input and accumulates binary32 lanes. For these formats the upstream CPU refuses the original graph, so the reference converts the identical gradient with GGML’s own tensor conversion and executes GGML CPU GET_ROWS_BACK on the same indices. Subtracting each gradient produced error 4.0 on Q4_0 ordinal 1071 at tolerance 0.0000001. Restoring addition passed all 54 cases and the F16, F32, BF16 and forward-gather regressions. [Factory evidence](verification/factory-decoded-row-gradients-vt102.json)

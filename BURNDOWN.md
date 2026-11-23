@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **25,209 passed**, **2,521 refused** and **25 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **25,263 passed**, **2,467 refused** and **25 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -16,7 +16,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,318 non-Prism lines** (12,867 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,316 non-Prism lines** (12,865 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -95,6 +95,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Encode Q8_K activations in Verdant. All 38,544 bytes from 132 blocks matched the imported GGML reference. [Engine PR #23](https://github.com/afflom/verdant-engine/pull/23)
 - [x] Execute all 55 Q2_K × F32 MUL_MAT cases and the graph combining MUL_MAT, GET_ROWS, REPEAT and ADD (809) with the pinned Verdant row product. [VT-65 results](verification/factory-grouped-matrix-vt65.json)
 - [x] Execute BF16 GET_ROWS_BACK on vTensor. The two factory graphs match 10,240 CPU-reference bytes, and 1,680 strided, empty and invalid-index cases pass. The direct factory reports CPU-only refusal on both ordinals. [VT-62 evidence](verification/factory-bf16-row-gradient-vt62.json)
+- [x] Pass the remaining 54 GET_ROWS_BACK graphs across 27 gradient formats. All 62 factory cases now pass. [VT-102 comparisons](verification/factory-decoded-row-gradients-vt102.json)
 - [x] Pass all 29 E4M3 scalar CPY conversions using existing Verdant primitives. [VT-98 CPU comparisons](verification/factory-e4m3-copies-vt98.json)
 - [x] Compare all 63 CPU-refused identity copies across seven IQ formats with the pinned CPU copy kernel. All destination bytes match, including permuted layouts. [63 direct comparisons](verification/factory-iq-copy.json) · [IQ2_XXS regression](VTENSOR-VERIFICATION.md#iq2_xxs-identity-copy)
 - [x] Pass all 534 TOP_K and 98 ARGSORT factory cases, including ties and infinities. [VT-86 results](verification/factory-row-ranking-vt86.json) · [Verdant row ranking](https://github.com/afflom/verdant-engine/pull/28)
