@@ -235,6 +235,9 @@ ggml_batches! {
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
     #[test]
+    fn packed_expert_matrix_vt_83() { "upstream-PACKED_MUL_MAT_ID", 9, ["matrix"] }
+
+    #[test]
     fn column_overlap_vt_82() { "upstream-COL2IM_1D", 33, ["pointwise"] }
 
     #[test]
@@ -979,16 +982,14 @@ mod ggml_inventory {
         let lock =
             super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
         let inventory = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
-        assert_eq!(
-            inventory["spec"].as_str(),
-            Some("vtensor/ggml-declarations/1")
-        );
-        assert_eq!(
-            inventory["authority"].as_str(),
-            Some("LLAMA-CPP-GGML-BACKEND")
-        );
+        for (key, expected) in [
+            ("spec", "vtensor/ggml-declarations/1"),
+            ("authority", "LLAMA-CPP-GGML-BACKEND"),
+            ("source", "ggml/include/ggml.h"),
+        ] {
+            assert_eq!(inventory[key].as_str(), Some(expected), "{key}");
+        }
         assert_eq!(inventory["revision"], lock["commit"]);
-        assert_eq!(inventory["source"].as_str(), Some("ggml/include/ggml.h"));
         for (key, name, prefix) in [
             ("operation", "ggml_op", "GGML_OP_"),
             ("tensor_type", "ggml_type", "GGML_TYPE_"),
@@ -1439,7 +1440,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "220c5f3e04918a93f8ed0efa7b5e3b1dc5a053e7d3a5eea288068a11f50bc129",
+            "a5a0c97e2031014e377daeb570ac63c4049f8284526c32291f284a94e0f9f7ad",
         )
     });
 

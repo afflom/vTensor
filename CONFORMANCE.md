@@ -169,6 +169,7 @@ model does not sanction.
 | `VT-80` | `build` | Prism maps direct three-dimensional GGML convolution to padded volume patches and packed channel offsets and Verdant contracts each patch matrix |
 | `VT-81` | `build` | Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products |
 | `VT-82` | `build` | Prism gathers contributing columns in input order and Verdant sums their stored values in binary32 |
+| `VT-83` | `build` | Prism selects expert rows and Verdant evaluates packed indexed matrix products |
 
 ## normalization-graphs
 

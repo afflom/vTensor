@@ -84,6 +84,8 @@ id = "VT-03"
 level = "build"
 suite = "verdant-api"
 statement = "vTensor delegates fixed 4x4 F64 matrix multiplication to Verdant Tensor and preserves column-major results"
+failure = "TensorComputeError"
+negative = "VT-03"
 
 [[id]]
 id = "VT-04"
@@ -556,3 +558,9 @@ id = "VT-82"
 level = "build"
 suite = "native-backend"
 statement = "Prism gathers contributing columns in input order and Verdant sums their stored values in binary32"
+
+[[id]]
+id = "VT-83"
+level = "build"
+suite = "native-backend"
+statement = "Prism selects expert rows and Verdant evaluates packed indexed matrix products"

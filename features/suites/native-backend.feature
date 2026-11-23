@@ -152,3 +152,9 @@ Feature: native-backend
     Given original GGML column-to-signal graphs with F32, F16 and BF16 storage
     When vTensor reconstructs strided overlapping or cropped windows
     Then the result for every output channel matches the imported GGML CPU evaluator
+
+  @VT-83 @build
+  Scenario: Prism selects expert rows and Verdant evaluates packed indexed matrix products
+    Given original GGML expert matrices, F32 activations and strided I32 indices
+    When vTensor executes packed matrix products with repeated, broadcast or skipped experts
+    Then its outputs agree with the pinned GGML CPU evaluator
