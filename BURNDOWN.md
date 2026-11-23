@@ -15,11 +15,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Check the compiled provider’s GGML imports in VT-02. A planted dependency on the GGML matrix kernel is rejected. [Boundary evidence](VTENSOR-VERIFICATION.md#provider-linkage)
 - [x] Confirm Verdant main includes the PR #32 pin and its prerequisites. [Upstream integration](https://github.com/afflom/verdant-engine/commit/0001659b991a054cd6c48fdf2cd5b18d1cb1398f)
 - [x] Confirm Verdant main includes VTK-36 through VTK-40 and the provider’s pinned block encoders. [Upstream integration](https://github.com/afflom/verdant-engine/commit/a51262d2008b030b290f70cd0b39a080f72cb4e9)
+- [x] Reproduce the missing Verdant release dependencies and submit the packaging fix. A clean consumer executes the pinned block encoder, and removing a kernel archive fails the release verifier. [Verdant PR #38](https://github.com/afflom/verdant-engine/pull/38)
 - [ ] Switch to published Verdant packages when a release contains the pinned primitives. Verify provenance, checksums and a clean consumer build. [Current patch](model/verdant-development.json) · [Verdant releases](https://github.com/afflom/verdant-engine/releases)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,306 non-Prism lines** (12,855 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,304 non-Prism lines** (12,853 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
