@@ -398,7 +398,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x9f696a2e }]
 name = "vtensor_matrix_q8"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x1b5c2a8e }]
+license-files = [{ path = "src/lib.rs", hash = 0x3aa4c739 }]
 
 [[licenses.clarify]]
 name = "verdant_packed_dot"
@@ -566,7 +566,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x1a27f392 }]
 name = "vtensor_attention"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xabdb1046 }]
+license-files = [{ path = "src/lib.rs", hash = 0xb3c69147 }]
 
 [[licenses.clarify]]
 name = "vtensor_attention_mask"
