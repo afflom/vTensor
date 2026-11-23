@@ -21,18 +21,18 @@
   "runs": {
     "0": {
       "status": "completed case lines from active evaluator",
-      "passed": 15,
-      "transcript_sha256": "f8399379ae2228c8d04308a0c228316872a19ef58e5e53238644887142f9efa6"
+      "passed": 17,
+      "transcript_sha256": "db81afcf4875d8604d1097a453fbe6ae720ccbcc75c7ce8f6c528aac8f9caed8"
     },
     "1": {
       "status": "completed case lines from active evaluator",
-      "passed": 15,
-      "transcript_sha256": "071995dced7a561c1cb1d4057ddfe2a81dce8a179449d20cf8c025fea20c1ace"
+      "passed": 17,
+      "transcript_sha256": "73db2afeb2a54525658e7c75734b90b8e572ef5e248f66e8e1ca0259b05b4af2"
     },
     "2": {
       "status": "completed case lines from active evaluator",
-      "passed": 15,
-      "transcript_sha256": "57c883ce5c4a01d27e25d1a4989fb99a3e875c63f4ffa8353c9e9b57655a8c37"
+      "passed": 16,
+      "transcript_sha256": "2c6c33d91c1b27d5567110b4dd1e60b3e21d571dccf930a42da35dc325a22285"
     }
   },
   "case_ordinals": {
@@ -79,9 +79,14 @@
       24872,
       24873,
       24874,
+      24875,
       24876,
       24877,
       24878,
+      24879,
+      24880,
+      24881,
+      24882,
       24883,
       24884,
       24889,
@@ -89,11 +94,6 @@
     ]
   },
   "remaining_ordinals": [
-    24875,
-    24879,
-    24880,
-    24881,
-    24882,
     24885,
     24886,
     24887,

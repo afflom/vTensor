@@ -310,7 +310,7 @@
         "ADD_SILU_MUL"
       ]
     },
-    "passed": 24311,
+    "passed": 24345,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -346,7 +346,7 @@
         "attribution_oracle_sha256": "26c67a377e7de1bfe45b9f2ec5388ca326c1143d5d68c6867f5091b232a90e84"
       }
     },
-    "untested": 66,
+    "untested": 61,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -403,7 +403,7 @@
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
     "rotary_composition_evidence": "verification/factory-rotary-compositions.json",
-    "refused": 3378,
+    "refused": 3349,
     "failed": 0,
     "standalone_evidence": "verification/factory-standalone-vt59.json",
     "superseded_standalone_verdicts": {
@@ -471,7 +471,8 @@
       "VT-65": "verification/factory-grouped-matrix-vt65.json",
       "VT-97": "verification/factory-indexed-cache-attention-vt97.json",
       "VT-15-IQ-CPY": "verification/factory-iq-copy.json",
-      "VT-62-BF16": "verification/factory-bf16-row-gradient-vt62.json"
+      "VT-62-BF16": "verification/factory-bf16-row-gradient-vt62.json",
+      "VT-98": "verification/factory-e4m3-copies-vt98.json"
     }
   }
 }

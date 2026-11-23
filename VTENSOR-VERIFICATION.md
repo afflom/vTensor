@@ -5030,3 +5030,7 @@ At vTensor `2256d53` the VT-95 run passed 103 backend contract tests and verifie
 ## Indexed key/value cache attention
 
 VT-97 follows GGML’s logical mask columns and selects physical key/value rows per query slice. Prism validates the index tensor shape, skips negative padding indices and rejects positive indices outside the cache. The provider checks all index values before writing output and reuses the map across heads and query tokens. All numerical work uses the existing Verdant row primitives. Pinning every physical read to row zero failed GGML ordinal 24835 with error 1.007883375 against tolerance 0.0005. The restored implementation passed the four representative F16/Q8_0 graphs and the 12-test integration run. The receipt lists each completed original graph once. [Factory evidence](verification/factory-indexed-cache-attention-vt97.json)
+
+## E4M3 scalar copies
+
+VT-98 compares all 29 E4M3 conversions with GGML CPU on the original factory layouts. Prism uses one Verdant conversion for binary32 and stages one intermediate binary32 word for binary16 or BF16. Selecting the unsigned encoder for signed E4M3 failed ordinal 8473 with error 1.038817393 against the CPU tolerance of 0.000001. Restoring the signed encoder passed VT-98, the existing E4M3 matrix checks and the 1,920-case scalar cast regression. [Factory evidence](verification/factory-e4m3-copies-vt98.json)
