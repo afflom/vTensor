@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **25,990 passed**, **1,740 refused** and **25 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **25,998 passed**, **1,732 refused** and **25 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -14,6 +14,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Resolve the six ARM acceptance failures in CAST, CONCAT, ROWS, TRANSFORM, backward edges and normalization edges. Confirm all six on the hosted ARM runner. [Failure log](https://github.com/afflom/vTensor/actions/runs/45198085111/job/137773823877)
 - [x] Check the compiled provider’s GGML imports in VT-02. A planted dependency on the GGML matrix kernel is rejected. [Boundary evidence](VTENSOR-VERIFICATION.md#provider-linkage)
 - [x] Confirm Verdant main includes the PR #32 pin and its prerequisites. [Upstream integration](https://github.com/afflom/verdant-engine/commit/0001659b991a054cd6c48fdf2cd5b18d1cb1398f)
+- [x] Confirm Verdant main includes VTK-36 through VTK-40 and the provider’s pinned block encoders. [Upstream integration](https://github.com/afflom/verdant-engine/commit/a51262d2008b030b290f70cd0b39a080f72cb4e9)
 - [ ] Switch to published Verdant packages when a release contains the pinned primitives. Verify provenance, checksums and a clean consumer build. [Current patch](model/verdant-development.json) · [Verdant releases](https://github.com/afflom/verdant-engine/releases)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
@@ -117,7 +118,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 292 direct CONV_3D graphs, including packed batches, offset kernels and empty kernels. 292 pass. [VT-80 results](verification/factory-volume-convolution-vt80.json)
 - [x] Pass all 33 COL2IM_1D overlap-add graphs in F32, F16 and BF16. [VT-82 results](verification/factory-column-overlap-vt82.json)
 - [x] Pass all 116 CONV_TRANSPOSE_1D cases and both supplemental F16 comparisons. [VT-106 evidence](verification/factory-transpose-convolution-vt106.json)
-- [ ] Pass the remaining spatial factory graphs (8 CONV_TRANSPOSE_2D, 8 CONV_2D_DW, 24 UPSCALE, 6 TIMESTEP_EMBEDDING). [Case inventory](verification/ggml-factory-inventory.json)
+- [x] Pass all eight CONV_TRANSPOSE_2D cases with F32 and F16 kernels, multiple batches and both strides. [VT-107 evidence](verification/factory-transpose-plane-vt107.json)
+- [ ] Pass the remaining spatial factory graphs (8 CONV_2D_DW, 24 UPSCALE, 6 TIMESTEP_EMBEDDING). [Case inventory](verification/ggml-factory-inventory.json)
 - [ ] Compare IM2COL_BACK and POOL_2D_BACK gradients with the pinned GGML CPU using original forward inputs, padding and overlapping windows. [Imported declarations](model/ggml-declarations.toml)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
 - [ ] Complete SSM scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.

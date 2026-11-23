@@ -1,0 +1,31 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-107",
+  "implementation": "b549e247fd1012d04f555ead6b997213a3122a8f",
+  "verdant_revision": "637a6c15b696b01275c77eb52430f6adf3944afc",
+  "provider_sha256": "771eb82df24533d41fc3d40f27da99a2f6b5a6c7725f533da5ad9ec49badb373",
+  "provider_inputs_sha256": "3797d0585f48888f29fb2a4abe7ad9b6c7b14c41aa751a68555b0902967a293a",
+  "oracle_executable_sha256": "11f13f764928faf7edf8c602fa285a56cf9e686ad00fb6fa8ea3896f7cf6dee6",
+  "pointwise_lock_sha256": "62be15e8884f47260a5c6c56a7dd00d6332ed2d2715627e776a1e80028b271ba",
+  "oracle": "All original GGML CONV_TRANSPOSE_2D graphs run on the plugin and the pinned CPU. The original cases cover F32 and F16 kernels, two strides and multiple batches.",
+  "contract_transcript_sha256": "c4434e4367fd20877ca8b6eab4aeb691b2badc5cd7369000286833264e7340dd",
+  "case_ordinals": {
+    "CONV_TRANSPOSE_2D": [
+      8119,
+      8120,
+      8121,
+      8122,
+      8123,
+      8124,
+      8125,
+      8126
+    ]
+  },
+  "mutation": {
+    "ordinal": 8119,
+    "change": "Fold consecutive output addresses into the same overlap cell.",
+    "error": 1.850980376,
+    "tolerance": 0.0005
+  }
+}

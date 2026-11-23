@@ -5076,3 +5076,7 @@ Encoding each block from offset zero failed the first Q4_0 indexed write with er
 ### Transposed 1D convolution
 
 VT-106 passes all 116 original GGML graphs. Prism maps image, kernel and output coordinates. Verdant computes tiled channel dot products and accumulates overlapping output values. Two additional F16 kernel graphs exercise the imported CPU comparison, including a bit-exact case with representable inputs. Overwriting overlapping cells failed ordinal 7982 with error 0.756488568 at tolerance 0.000000100. All 15 targeted regressions and the locked model gate passed after restoring addition. [Factory evidence](verification/factory-transpose-convolution-vt106.json)
+
+### Transposed 2D convolution
+
+VT-107 passes all eight imported GGML graphs with F16 and F32 kernels. Prism normalizes both convolution ranks to width, height, channel and batch coordinates so the existing Verdant matrix and overlap operations execute both ranks. Folding adjacent output addresses together failed ordinal 8119 at error 1.850980376 against 0.0005. Restoring the addresses passed all eight graphs. The 116 original 1D cases and two supplemental half-precision cases also passed. [Factory evidence](verification/factory-transpose-plane-vt107.json)
