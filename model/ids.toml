@@ -532,3 +532,9 @@ id = "VT-79"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant"
+
+[[id]]
+id = "VT-80"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps direct three-dimensional GGML convolution to padded volume patches and packed channel offsets and Verdant contracts each patch matrix"
