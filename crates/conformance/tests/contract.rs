@@ -235,6 +235,9 @@ ggml_batches! {
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
     #[test]
+    fn scalar_expert_matrix_vt_84() { "upstream-SCALAR_MUL_MAT_ID", 6, ["matrix"] }
+
+    #[test]
     fn packed_expert_matrix_vt_83() { "upstream-PACKED_MUL_MAT_ID", 9, ["matrix"] }
 
     #[test]
@@ -1440,7 +1443,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a5a0c97e2031014e377daeb570ac63c4049f8284526c32291f284a94e0f9f7ad",
+            "d928c8877606e496afb653eb420e3fe00084f89753c7b9fccaa5eb959a919e7d",
         )
     });
 

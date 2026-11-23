@@ -170,6 +170,7 @@ model does not sanction.
 | `VT-81` | `build` | Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products |
 | `VT-82` | `build` | Prism gathers contributing columns in input order and Verdant sums their stored values in binary32 |
 | `VT-83` | `build` | Prism selects expert rows and Verdant evaluates packed indexed matrix products |
+| `VT-84` | `build` | Prism selects scalar expert rows and activation precision and Verdant multiplies the selected rows |
 
 ## normalization-graphs
 
