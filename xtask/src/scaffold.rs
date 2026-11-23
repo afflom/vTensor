@@ -212,7 +212,7 @@ mod tests {
     use super::{new_capability, register_with, Capability};
     use repo_model::conformance::workspace_test_names;
     use repo_model::Model;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     fn args(values: [&str; 4]) -> Vec<String> {
         values.iter().map(|v| (*v).to_string()).collect()
