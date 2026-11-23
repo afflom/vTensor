@@ -161,6 +161,7 @@ model does not sanction.
 | `VT-72` | `build` | Prism maps one- and two-dimensional GGML image columns across channel and batch strides and Verdant converts the result storage |
 | `VT-73` | `build` | Original GGML outer-product graphs with CPU-refused type and batch combinations match the authoritative decoder followed by the F32 CPU outer product |
 | `VT-74` | `build` | Prism maps direct two-dimensional GGML convolution to padded image patches and kernel strides and Verdant contracts each patch matrix |
+| `VT-75` | `build` | Prism admits GELU and GELU_QUICK GGML graphs and vTensor delegates the Gaussian activations to Verdant |
 
 ## normalization-graphs
 

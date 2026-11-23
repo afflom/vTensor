@@ -104,3 +104,9 @@ Feature: native-backend
     Given original GGML convolution graphs with F32 images and F16 or F32 kernels
     When vTensor gathers a tile of patches and Verdant multiplies it by the filter matrix
     Then every result matches the original GGML CPU evaluator
+
+  @VT-75 @build
+  Scenario: Prism admits GELU and GELU_QUICK GGML graphs and vTensor delegates the Gaussian activations to Verdant
+    Given the pinned GGML unary and composed Gaussian activation graphs
+    When both the vTensor plugin and reference CPU evaluate the same inputs
+    Then all 64 original outputs satisfy the upstream case tolerances
