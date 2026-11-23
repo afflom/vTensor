@@ -4830,3 +4830,7 @@ VT-72 passed all 113 original IM2COL cases and both supplemental GGML graphs wit
 VT-02 reads the undefined dynamic symbols of the backend that Cargo built. Its GGML imports are the host abort hook, buffer initialization and host query, graph size and node lookup. The GGML CPU oracle lives in the separate test executable. The check runs once alongside the existing Verdant source and descriptor checks.
 
 Changing the compiled graph-size binding to resolve `ggml_mul_mat` made VT-02 fail with `unexpected provider import ggml_mul_mat`. Restoring the binding passed VT-02 and the declaration-inventory regression in the locked SDK. [Approved GGML host imports](verification/native-oracle-bindings.json)
+
+## Decoded outer-product reference
+
+The pinned CPU refuses 1,312 OUT_PROD graphs covering 23 operand-type pairs and batch replication. VT-73 executes each original graph on vTensor, including transposed right operands. The external evaluator reads both initialized operands using GGML’s own storage decoder, runs the F32 CPU outer product on their logical values, and applies the original test’s normalized mean-square error threshold. All 1,312 passed. The original direct CPU refusal remains in the factory ledger. Reading each packed block at offset zero failed ordinal 15542 at 2.133897848 against 0.0005. [Recorded comparisons](verification/factory-decoded-outer-products-vt73.json)

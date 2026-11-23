@@ -496,3 +496,9 @@ id = "VT-72"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps one- and two-dimensional GGML image columns across channel and batch strides and Verdant converts the result storage"
+
+[[id]]
+id = "VT-73"
+level = "build"
+suite = "native-backend"
+statement = "Original GGML outer-product graphs with CPU-refused type and batch combinations match the authoritative decoder followed by the F32 CPU outer product"
