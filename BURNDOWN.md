@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **16,021 passed**, **11,517 refused** and **217 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **16,043 passed**, **11,510 refused** and **202 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -12,7 +12,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] When Verdant releases these primitives, switch to the published production packages, verify provenance and checksums, and build a clean consumer. Continue implementation on the PR pin until then.
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
-- [ ] Recover **1,546 non-Prism lines** (12,095 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,544 non-Prism lines** (12,093 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -46,7 +46,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
 - [x] Pass all 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 533 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
 - [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. Bind the Verdant slope once per query head for the 1,190 cases using existing formats. Add Q4_1, Q5_0, Q5_1 and IQ4_NL for the other 384. [Factory cases](verification/ggml-factory-cases.tsv.gz)
-- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 2,949 pass, 2,609 are refused and 217 still need an evaluator verdict.
+- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 2,964 pass, 2,609 are refused and 202 still need an evaluator verdict.
 - [x] Execute all 39 LOG, SIN, COS and EXP cases through Verdant, including the upstream storage and view variants. [Factory verdicts](verification/factory-elementary-vt60.json)
 - [x] Execute the 122 sigmoid and SiLU standalone, multiplied and added graphs on the pinned Verdant primitives. [Factory verdicts](verification/factory-logistic-vt61.json)
 - [x] Supply binary32 hyperbolic tangent in Verdant. All 128,870 GGML scalar comparisons pass. [Verdant PR #25](https://github.com/afflom/verdant-engine/pull/25)
@@ -65,9 +65,10 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 2,051 IM2COL_3D factory cases. The 1,539 previous refusals now match the CPU for F32/F16 output, padded and dilated inputs and views. [VT-70 results](verification/factory-image-columns-vt70.json)
 - [x] Pass all 113 IM2COL factory cases, both supplemental F16-input graphs and all nine CONV_1D_DW compositions. [VT-72 evidence](verification/factory-planar-columns-vt72.json)
 - [x] Pass all 2,030 directly CPU-supported CONV_2D cases through the Verdant matrix product. 2,030 pass. [VT-74 results](verification/factory-direct-convolution-vt74.json)
-- [ ] Compare the 1,114 CPU-refused CONV_2D layouts with a contiguous GGML CPU reference. 1,112 pass. [VT-76 results](verification/factory-contiguous-convolution-vt76.json)
+- [ ] Compare the 1,114 CPU-refused CONV_2D layouts with a contiguous GGML CPU reference. 1,113 pass. [VT-76 results](verification/factory-contiguous-convolution-vt76.json)
 - [x] Pass all 240 POOL_1D and 144 POOL_2D forward graphs and four supplemental F16 graphs. [VT-79 comparisons](verification/factory-pooling-vt79.json)
-- [ ] Complete convolution, im2col/col2im, transpose/depthwise forms, pooling backward, upscaling, timestep embeddings and their defined backward paths.
+- [ ] Pass all 292 direct CONV_3D graphs, including packed batches, offset kernels and empty kernels. 6 pass. [VT-80 results](verification/factory-volume-convolution-vt80.json)
+- [ ] Complete col2im, transpose/depthwise convolution, pooling backward, upscaling, timestep embeddings and their defined backward paths.
 - [ ] Complete SSM convolution/scan, RWKV, gated attention, gated delta, triangular solve and state/cache compositions.
 - [ ] Complete remaining gradients, cross-entropy, SGD and AdamW. Exercise applicable upstream gradient checks and parameter updates.
 - [ ] Implement MAP_CUSTOM1/2/3, CUSTOM and SLEEP effects. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.

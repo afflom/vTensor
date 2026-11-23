@@ -134,3 +134,9 @@ Feature: native-backend
     Given original GGML pooling graphs with strided windows and padding
     When vTensor executes the windows and their dimension-specific padding rules
     Then every result matches the original GGML CPU evaluator
+
+  @VT-80 @build
+  Scenario: Prism maps direct three-dimensional GGML convolution to padded volume patches and packed channel offsets and Verdant contracts each patch matrix
+    Given original GGML convolution graphs with F32 images and F16 or F32 kernels
+    When vTensor gathers a tile of patches and Verdant multiplies it by the filter matrix
+    Then every result matches the original GGML CPU evaluator
