@@ -92,10 +92,18 @@ inductive{
 }
 
 definition{
+  name: shortBitWeights,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((kind =? 41) || (kind =? 42)),
+  executable: true
+}
+
+definition{
   name: rowProductType,
   parameters: [kind : Nat],
   result: Bool,
-  body: (((((kind =? 2) || (kind =? 8)) || (kind =? 10)) || (kind =? 12)) || (kind =? 13)),
+  body: ((shortBitWeights kind) || (((((kind =? 2) || (kind =? 8)) || (kind =? 10)) || (kind =? 12)) || (kind =? 13))),
   executable: true
 }
 
@@ -116,7 +124,7 @@ definition{
     expert : (Option ExpertLayout)
   ],
   result: Plan,
-  body: (record Plan {blocks := (prim quotient (project w n0) lanes 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply rows (prim multiply columns (prim multiply b2 b3 : Nat) : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), expert := expert, scalarPrecision := (if ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)) then (ctor Option.some [Nat] (ScalarDotStorage::activationType (project w kind))) else (ctor Option.none [Nat])), weightType := (project w kind)}),
+  body: (record Plan {blocks := (prim quotient (project w n0) (if (shortBitWeights (project w kind)) then 32 else lanes) 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply rows (prim multiply columns (prim multiply b2 b3 : Nat) : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), expert := expert, scalarPrecision := (if ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)) then (ctor Option.some [Nat] (ScalarDotStorage::activationType (project w kind))) else (ctor Option.none [Nat])), weightType := (project w kind)}),
   executable: true
 }
 
@@ -212,6 +220,20 @@ theorem{
   name: refusesExtraSource,
   parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor],
   statement: ((graphPlan op true w a o) = (ctor Response.refused)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: oneBitUsesSymmetricActivationBlocks,
+  parameters: [],
+  statement: ((shortBitWeights 41) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: twoBitUsesSymmetricActivationBlocks,
+  parameters: [],
+  statement: ((shortBitWeights 42) = true),
   proof: reflexivity{}
 }
 

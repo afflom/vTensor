@@ -206,3 +206,9 @@ Feature: native-backend
     Given original GGML matrix graphs with packed weights and F16 activations
     When the loaded provider evaluates the graphs
     Then the results match pinned GGML widening and CPU matrix multiplication
+
+  @VT-91 @build
+  Scenario: Prism plans ordinary and indexed Q1_0 and Q2_0 weight products and Verdant contracts the packed weights against symmetric eight-bit activation blocks
+    Given original GGML one- and two-bit packed weight graphs
+    When the provider computes matrix rows or selects experts
+    Then the independent CPU backend accepts the computed outputs

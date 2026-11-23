@@ -924,6 +924,8 @@ fn execute_row_products(
         C0(.., None, 10) => packed!(encode_grouped_q8_block, dot_grouped_q2_row),
         C0(.., None, 12) => packed!(encode_grouped_q8_block, linear::dot_grouped_q4_row),
         C0(.., None, 13) => packed!(encode_grouped_q8_block, linear::dot_grouped_q5_row),
+        C0(.., None, 41) => packed!(symmetric, linear::dot_binary_sign_row),
+        C0(.., None, 42) => packed!(symmetric, linear::dot_two_bit_row),
         _ => Err(BackendError::InvalidTensor),
     }
 }
