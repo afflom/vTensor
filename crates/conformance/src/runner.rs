@@ -1172,40 +1172,6 @@ fn execute_word(
     Ok(())
 }
 
-fn normalization_word(
-    index: u64,
-    source: &IndexContext,
-    destination: &IndexContext,
-    secondary_strides: [u64; 4],
-    mode: &CopyMode,
-    flag: u64,
-    bytes: u64,
-) -> Result<GraphResponse, BackendError> {
-    let IndexContext::C0(width, n1, n2, n3, s0, s1, s2, s3) = *source;
-    let IndexContext::C0(_, _, _, _, t0, t1, t2, t3) = *destination;
-    use vtensor_norm_dispatch::{Adt0 as Selection, Adt1 as Instruction};
-    let selection = match *mode {
-        CopyMode::C24(epsilon) => Selection::C0(epsilon),
-        CopyMode::C26(kind, epsilon, rows, capacity) => {
-            Selection::C1(kind, epsilon, rows, capacity)
-        }
-        _ => return Err(BackendError::InvalidTensor),
-    };
-    let [x0, x1, x2, x3] = secondary_strides;
-    let Instruction::C1(family, operation, a, from, b, right, target, to) =
-        vtensor_norm_dispatch::run(
-            selection, index, width, n1, n2, n3, s0, s1, s2, s3, x0, x1, x2, x3, t0, t1, t2, t3,
-            flag,
-        )
-        .map_err(|_| BackendError::Overflow)?
-    else {
-        return Err(BackendError::InvalidTensor);
-    };
-    pointwise(GraphRequest::C3(
-        false, family, operation, 0, 0, a, from, b, right, target, to, bytes, bytes,
-    ))
-}
-
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
     let vtensor_typed::Adt2::C0(count, capacity, ..) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
@@ -1333,24 +1299,19 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     };
     let words = dynamic.as_deref_mut().unwrap_or(&mut fixed);
     for index in 0..count {
-        let response = match &mode {
-            CopyMode::C26(64..=66, ..) | CopyMode::C24(_) => normalization_word(
-                index,
-                &source,
-                &destination,
-                secondary_strides,
-                &mode,
-                words[2],
-                bytes,
-            )?,
-            _ => pointwise(GraphRequest::C1(
-                index,
-                source.clone(),
-                destination.clone(),
-                mode.clone(),
-                words[2],
-            ))?,
-        };
+        let [x0, x1, x2, x3] = secondary_strides;
+        let response = pointwise(GraphRequest::C6(
+            index,
+            source.clone(),
+            destination.clone(),
+            mode.clone(),
+            words[2],
+            bytes,
+            x0,
+            x1,
+            x2,
+            x3,
+        ))?;
         if let GraphResponse::C7(..) = response {
             execute_word(response, &pointers, destination_data, words)?;
             continue;
