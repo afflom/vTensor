@@ -4801,6 +4801,12 @@ Changing pre-cap division to multiplication in the vTensor adapter made the orig
 
 The locked SDK passed `just vv` at `31b0c5c589e3b3a25263d883d5f547be38d73fe3` using Verdant PR #24. The gate reused attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. All 72 backend contracts passed, followed by the remaining workspace tests and dependency checks. [Checked source](https://github.com/afflom/vTensor/commit/31b0c5c589e3b3a25263d883d5f547be38d73fe3)
 
+## Scalar outer products
+
+VT-69 executes all 71 F32 × F32 and 16 F16 × F32 OUT_PROD factory cases for which the imported GGML CPU provides a direct verdict. The Prism model contracts the second axis of both inputs and retains each physical stride and batch ratio. F32 weights admit batch replication. The pinned CPU accepts F16 weights with matching batch axes. Verdant performs the storage conversion and the matrix product. [Upstream constructor and shape](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L3435)
+
+Reading every right-hand word at offset zero corrupted the second batch of ordinal 15238. The imported evaluator rejected it with error 1.721467990 and limit 0.0005. The preserved scalar unit-product theorem and the existing 1,280 GGML matrix comparisons cover the positive matrix case. The native test retains the malformed inner-dimension, indivisible-batch and overflow checks.
+
 ## Three-dimensional image columns
 
 VT-70 models the IM2COL_3D stride, dilation, signed padding, batch and channel coordinates in Prism. It uses the input view's actual byte strides. Verdant converts each selected F32 word or padding zero to the requested output storage. The pinned CPU passed all six contract graphs and 1,533 disjoint standalone graphs. These 1,539 passes close the previous refusals. Another 512 factory ordinals already had passing verdicts. [Imported constructor](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L4706)

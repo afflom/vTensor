@@ -69,6 +69,12 @@ Feature: native-backend
     When vTensor runs all four combinations of mask and sink presence
     Then every output passes the upstream CPU comparison
 
+  @VT-69 @build
+  Scenario: Prism maps GGML scalar outer-product axes and batch replication to the Verdant matrix primitive and matches the imported CPU evaluator
+    Given the upstream outer-product factory with F32 activations and F32 or F16 weights
+    When vTensor executes the CPU-supported scalar cases across row and batch shapes
+    Then all 87 outputs match the reference evaluator
+
   @VT-70 @build
   Scenario: Prism maps GGML three-dimensional image columns through padded and dilated input views, with Verdant storing each typed output
     Given imported IM2COL_3D graphs with strided input views and F16 or F32 output

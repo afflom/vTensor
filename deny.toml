@@ -273,7 +273,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xba1d26b1 }]
 name = "vtensor_matrix_execution"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xef8cf836 }]
+license-files = [{ path = "src/lib.rs", hash = 0x866f38a7 }]
 [[licenses.clarify]]
 name = "verdant_count_f64"
 version = "=2.12.0"

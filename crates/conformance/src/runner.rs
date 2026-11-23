@@ -681,6 +681,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
             output_stride.clone(),
             left.ty as u64,
             right.ty as u64,
+            tensor.op as u64,
         )
         .map_err(|_| BackendError::Overflow)
     };

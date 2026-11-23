@@ -474,6 +474,12 @@ suite = "native-backend"
 statement = "Prism places attention logit soft caps before the mask and Verdant evaluates the scaled hyperbolic tangent against the imported GGML CPU"
 
 [[id]]
+id = "VT-69"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps GGML scalar outer-product axes and batch replication to the Verdant matrix primitive and matches the imported CPU evaluator"
+
+[[id]]
 id = "VT-70"
 level = "build"
 suite = "native-backend"
