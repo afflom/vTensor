@@ -19,6 +19,22 @@ definition{
   executable: true
 }
 
+definition{
+  name: affineActivationWeights,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((kind =? 3) || (kind =? 7)),
+  executable: true
+}
+
+definition{
+  name: packedActivationWeights,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((symmetricActivationWeights kind) || (affineActivationWeights kind)),
+  executable: true
+}
+
 theorem{
   name: fiveBitWeightsUseSymmetricActivations,
   parameters: [],

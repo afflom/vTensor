@@ -152,7 +152,7 @@ definition{
   name: queryStorage,
   parameters: [kind : Nat],
   result: Nat,
-  body: (if (ScalarDotStorage::symmetricActivationWeights kind) then 8 else (ScalarDotStorage::activationType kind)),
+  body: (if (ScalarDotStorage::symmetricActivationWeights kind) then 8 else (if (ScalarDotStorage::affineActivationWeights kind) then 9 else (ScalarDotStorage::activationType kind))),
   executable: true
 }
 
@@ -162,8 +162,15 @@ definition{
   result: Bool,
   body: (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.unknownType => false
-    | TensorTypes::TypeStorageDecision.knownType storage => ((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (ScalarDotStorage::symmetricActivationWeights kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
+    | TensorTypes::TypeStorageDecision.knownType storage => ((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (ScalarDotStorage::packedActivationWeights kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
   executable: true
+}
+
+theorem{
+  name: affineQueriesUseScaledSum,
+  parameters: [],
+  statement: ((queryStorage 7) = 9),
+  proof: reflexivity{}
 }
 
 theorem{

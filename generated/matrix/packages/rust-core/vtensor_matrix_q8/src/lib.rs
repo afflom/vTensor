@@ -2124,6 +2124,14 @@ pub fn f14(v0: u64) -> u64 {
 }
 
 pub fn f15(v0: u64) -> bool {
+    if f16(v0) {
+        true
+    } else {
+        f17(v0)
+    }
+}
+
+pub fn f16(v0: u64) -> bool {
     let a446 = v0;
     let a447 = 2u64;
     if if if nat_eq(a446, a447) {
@@ -2144,6 +2152,18 @@ pub fn f15(v0: u64) -> bool {
         let a452 = v0;
         let a453 = 20u64;
         nat_eq(a452, a453)
+    }
+}
+
+pub fn f17(v0: u64) -> bool {
+    let a454 = v0;
+    let a455 = 3u64;
+    if nat_eq(a454, a455) {
+        true
+    } else {
+        let a456 = v0;
+        let a457 = 7u64;
+        nat_eq(a456, a457)
     }
 }
 
