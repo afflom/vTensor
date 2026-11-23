@@ -310,7 +310,7 @@
         "ADD_SILU_MUL"
       ]
     },
-    "passed": 12216,
+    "passed": 14289,
     "refused_ordinals": {
       "1069": {
         "oracle": "make_test_cases_eval / test_case::eval",
@@ -346,7 +346,7 @@
         "attribution_oracle_sha256": "26c67a377e7de1bfe45b9f2ec5388ca326c1143d5d68c6867f5091b232a90e84"
       }
     },
-    "untested": 310,
+    "untested": 279,
     "label_group_evidence_commit": "2ddd3a7",
     "passed_parameter_groups": {
       "VT-53": {
@@ -403,7 +403,7 @@
     },
     "supplemental_factory_evidence": "verification/factory-checkpoint-vt57.json",
     "rotary_composition_evidence": "verification/factory-rotary-compositions.json",
-    "refused": 15229,
+    "refused": 13187,
     "failed": 0,
     "standalone_evidence": "verification/factory-standalone-vt59.json",
     "superseded_standalone_verdicts": {
@@ -417,7 +417,8 @@
       "VT-70": "verification/factory-image-columns-vt70.json",
       "VT-71": "verification/factory-packed-outer-products-vt71.json",
       "VT-72": "verification/factory-planar-columns-vt72.json",
-      "VT-73": "verification/factory-decoded-outer-products-vt73.json"
+      "VT-73": "verification/factory-decoded-outer-products-vt73.json",
+      "VT-74": "verification/factory-direct-convolution-vt74.json"
     },
     "supplemental_refusal_evidence": {
       "1069": {
