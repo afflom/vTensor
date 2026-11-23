@@ -324,7 +324,7 @@ dependencies = [
 [[package]]
 name = "verdant-tensor"
 version = "2.17.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 dependencies = [
  "serde",
  "uor-matmul",
@@ -390,6 +390,7 @@ dependencies = [
  "verdant_row_ranking",
  "verdant_scalar_f32",
  "verdant_small_float",
+ "verdant_softplus",
  "verdant_storage_block",
  "verdant_storage_transfer",
  "verdant_symmetric_dot",
@@ -410,387 +411,392 @@ dependencies = [
 [[package]]
 name = "verdant_add_f64"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_circular_magnitudes"
 version = "2.21.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_circular_orient"
 version = "2.21.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_circular_prepare"
 version = "2.21.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_circular_reduce"
 version = "2.21.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_circular_square"
 version = "2.21.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_count_f32"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_count_f64"
 version = "2.12.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_division_class"
 version = "2.12.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_division_finish"
 version = "2.12.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_division_norm"
 version = "2.12.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_encoded_word"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_exponential_f32"
 version = "2.19.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_exponential_scale"
 version = "2.19.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_exponential_step"
 version = "2.19.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_float_storage"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_float_transform"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_gelu"
 version = "2.28.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_grouped_affine"
 version = "2.31.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_grouped_dot"
 version = "2.26.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_grouped_q8"
 version = "2.25.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_base"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_digit"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_exponent"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_group"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_index"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_limbs"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_multiply"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_normalize"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_power"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_term"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_head_slope_word"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_high_f64"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_integer_f32"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logarithmic_admit"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logarithmic_inverse"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logarithmic_prepare"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logarithmic_product"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logarithmic_scale"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logarithmic_series"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logarithmic_term"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logarithmic_word"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_logistic"
 version = "2.24.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_low_f64"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_matrix_shape"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_narrow_f64"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_normalize_f64"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_normalized_exponential"
 version = "2.30.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_pack_plan_f64"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_packed_dot"
 version = "2.18.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_packed_field"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_quotient_f64"
 version = "2.12.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_quotient_route"
 version = "2.12.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_rotation_geometry"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_rotation_limit"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_rotation_signed"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_rotation_step"
 version = "2.22.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_round_mantissa_f64"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_row_ranking"
 version = "2.29.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_scalar_f32"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_small_float"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
+
+[[package]]
+name = "verdant_softplus"
+version = "2.32.0"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_storage_block"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_storage_transfer"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_symmetric_dot"
 version = "2.17.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_symmetric_dot_layout"
 version = "2.17.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_symmetric_q8"
 version = "2.17.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_tanh"
 version = "2.27.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_unary_activate"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_unary_plan"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_unary_round"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_unary_select"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_weighted_blend"
 version = "2.23.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_weighted_pivot"
 version = "2.23.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_weighted_reciprocal"
 version = "2.23.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_wide_mode"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "verdant_widen_f32"
 version = "2.9.0"
-source = "git+https://github.com/afflom/verdant-engine?rev=3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81#3f5896e644f6f8b0bb1e63e5254fbfd0305e4b81"
+source = "git+https://github.com/afflom/verdant-engine?rev=50e511da18a009256af76d20e9b15c943ab0b54c#50e511da18a009256af76d20e9b15c943ab0b54c"
 
 [[package]]
 name = "vtensor-backend"

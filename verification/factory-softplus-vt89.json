@@ -1,0 +1,47 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "requirement": "VT-89",
+  "verdant_revision": "50e511da18a009256af76d20e9b15c943ab0b54c",
+  "implementation": "d5fdf231a0370e38b5eaa0eddaade51c15c5dadf",
+  "provider_sha256": "8afb8c0bb2c82373e40796e17e329ebdf92bedcbfffa9af11efdf29c43b4516e",
+  "oracle_executable_sha256": "7988062c098af3979bb2263d2857f45bb7042cfc08b113d136a4f78561c0d5a4",
+  "oracle": "Original pinned GGML graph evaluator on the loaded vTensor provider and the reference CPU backend.",
+  "contract_ordinals": [
+    114,
+    72,
+    198
+  ],
+  "contract_transcript_sha256": "fb3797f34bc04d60b713970a9538347699f0f7e9c020181ffdc0d4e1a2da1e29",
+  "standalone_runs": {
+    "remaining": {
+      "passed": 9,
+      "transcript_sha256": "ff98ae7b8f7bb9aa05004314654d3e07f98f436f2017cd3b63a9d2ca36469c71"
+    }
+  },
+  "imported_ggml_symbols": [
+    "ggml_abort",
+    "ggml_backend_buffer_init",
+    "ggml_backend_buffer_is_host",
+    "ggml_graph_n_nodes",
+    "ggml_graph_node"
+  ],
+  "mutation": "Binding softplus to the sigmoid primitive failed ordinal 114 with error 7715.199363397 above 0.000000100. Restoration passed.",
+  "case_ordinals": {
+    "SOFTPLUS": [
+      30,
+      31,
+      72,
+      73,
+      114,
+      115,
+      156,
+      157,
+      198,
+      199,
+      240,
+      241
+    ]
+  },
+  "pointwise_lock_sha256": "5d63ce95c46aef474156231aed89f7404b6b3bc700530dc616dbd0c84b04e3c7"
+}

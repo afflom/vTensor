@@ -194,3 +194,9 @@ Feature: native-backend
     Given original GGML four- and five-bit grouped weight graphs
     When the provider computes matrix rows or selects experts
     Then the independent CPU backend accepts the computed outputs
+
+  @VT-89 @build
+  Scenario: Prism binds GGML softplus storage and views and Verdant computes the binary32 activation against the pinned CPU
+    Given original GGML binary32, binary16 and bfloat16 activation views
+    When vTensor applies softplus to each input
+    Then the imported CPU evaluator accepts the computed activation

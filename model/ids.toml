@@ -600,3 +600,9 @@ id = "VT-88"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans ordinary and indexed Q4_K and Q5_K weight products and Verdant contracts the packed weights against grouped signed activations"
+
+[[id]]
+id = "VT-89"
+level = "build"
+suite = "native-backend"
+statement = "Prism binds GGML softplus storage and views and Verdant computes the binary32 activation against the pinned CPU"

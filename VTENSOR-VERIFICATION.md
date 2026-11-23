@@ -4962,3 +4962,7 @@ awk -F '\t' 'BEGIN {OFS="\t"} $1=="C" {print $1,$2,$NF; next} {print}' \
 ### Grouped affine matrix execution
 
 VT-88 ran all 227 ordinary and 119 indexed Q4_K/Q5_K products with F32 activations against the original GGML factory evaluator. The Prism model admits the packed type and selects matrix dimensions, index addressing and row offsets. The provider calls Verdant to encode the activation blocks and evaluate the dot product. Binding five-bit weights to the four-bit dot failed the Q5_K oracle. Restoration passed. VT-02 confirmed the immutable source and compiled GGML host imports. [Ordinals and mutation](verification/factory-affine-vt88.json) · [Verdant implementation](https://github.com/afflom/verdant-engine/pull/30)
+
+### Softplus and expert routing
+
+Prism maps GGML unary variant 15 and validates storage and views. The provider calls Verdant’s binary32 softplus. Substituting sigmoid failed the original CPU comparison on ordinal 114. Restoring softplus passed all 12 standalone graphs. The original evaluator also passed for all 225 newly admitted graphs, including the final 176 TOPK_MOE instances. Integrated VT-02, VT-88, VT-89 and workspace Clippy passed. The source audit measured 12,658 non-Prism lines against the independent ceiling of 10,549. [Standalone results](verification/factory-softplus-vt89.json) · [Graph results](verification/factory-softplus-compositions.json) · [Verdant primitive](https://github.com/afflom/verdant-engine/pull/31)
