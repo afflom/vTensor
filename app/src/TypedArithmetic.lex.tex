@@ -30,7 +30,8 @@ inductive{
     {name: invalid, fields: []},
     {name: planned, fields: [Plan]},
     {name: instruction, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: gated, fields: [Nat, Nat, Nat, Nat, Nat]}
+    {name: gated, fields: [Nat, Nat, Nat, Nat, Nat]},
+    {name: rankRow, fields: [Nat, Nat, Nat, Nat, Bool]}
   ]
 }
 
@@ -315,6 +316,35 @@ definition{
 }
 
 definition{
+  name: rankLayout,
+  parameters: [tensor : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: (let rowBytes : Nat := (prim multiply (project tensor n0) 4 : Nat); (let plane : Nat := (prim multiply (project tensor s1) (project tensor n1) : Nat); (let volume : Nat := (prim multiply plane (project tensor n2) : Nat); ((((((project tensor s0) =? 4) && ((prim remainder (project tensor address) 4 1 : Nat) =? 0)) && (((prim multiply (project tensor n1) (prim multiply (project tensor n2) (project tensor n3) : Nat) : Nat) <=? 1) || ((rowBytes <=? (project tensor s1)) && ((prim remainder (project tensor s1) 4 1 : Nat) =? 0)))) && (((project tensor n2) <=? 1) || ((project tensor s2) =? plane))) && (((project tensor n3) <=? 1) || ((project tensor s3) =? volume)))))),
+  executable: true
+}
+
+definition{
+  name: rankPlan,
+  parameters: [
+    operation : Nat,
+    order : Nat,
+    left : NormPlan::TensorDescriptor,
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (if ((((((((((((project left ty) =? 0) && ((project output ty) =? 26)) && ((project left n0) <=? 2147483647)) && ((project output n0) <=? (project left n0))) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((operation =? 67) || ((order <=? 1) && ((project output n0) =? (project left n0))))) && (rankLayout left)) && (rankLayout output)) && (NormPlan::separateTensors left output)) then (ctor Response.planned (record Plan {steps := (prim multiply (project output n1) (prim multiply (project output n2) (project output n3) : Nat) : Nat), capacity := 3, operation := operation, gateVariant := (if (operation =? 67) then 1 else order), left := left, rhs := left, output := output})) else (ctor Response.invalid)),
+  executable: true
+}
+
+definition{
+  name: rankStep,
+  parameters: [ordinal : Nat, execution : Plan],
+  result: Response,
+  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let output : NormPlan::TensorDescriptor := (project execution output); (if (ordinal <? (project execution steps)) then (ctor Response.rankRow (prim multiply ordinal (project left s1) : Nat) (prim multiply ordinal (project output s1) : Nat) (project left n0) (project output n0) ((project execution gateVariant) =? 1)) else (ctor Response.invalid)))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
@@ -327,10 +357,12 @@ definition{
           | Option.none => (ctor Response.invalid)
           | Option.some rhs => (plan kind left rhs output))))
     | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
-    | Request.gate operation variant swapped extra left secondary output => (if (operation =? 98) then (if ((admittedGate variant) && (if extra then false else true)) then (match secondary
+    | Request.gate operation variant swapped extra left secondary output => (if ((operation =? 66) || (operation =? 67)) then (if extra then (ctor Response.invalid) else (match secondary
+      | Option.none => (rankPlan operation variant left output)
+      | Option.some unused => (ctor Response.invalid))) else (if (operation =? 98) then (if ((admittedGate variant) && (if extra then false else true)) then (match secondary
       | Option.none => (gatePlan variant false swapped left left output)
-      | Option.some rhs => (gatePlan variant true swapped left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))
-    | Request.step index execution flag => (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (gateStep index execution) else (step index execution flag)))),
+      | Option.some rhs => (gatePlan variant true swapped left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported)))
+    | Request.step index execution flag => (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (gateStep index execution) else (step index execution flag))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -551,6 +583,7 @@ theorem{
   statement: ((elementSteps 30 0 0) = 2),
   proof: reflexivity{}
 }
+
 theorem{
   name: rectifiedGateAdmitted,
   parameters: [],
@@ -578,6 +611,5 @@ theorem{
   statement: ((admittedGate 4) = false),
   proof: reflexivity{}
 }
-
 \end{semanticmodule}
 \end{lexlean}

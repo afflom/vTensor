@@ -810,7 +810,7 @@ fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result
 }
 
 /// The caller supplies a live, disjoint destination spanning the whole row.
-unsafe fn write_float_row(destination: *mut u8, row: &[f32]) {
+unsafe fn write_row<T: Copy>(destination: *mut u8, row: &[T]) {
     // SAFETY: the caller validates the region. Byte copies permit unaligned GGML views.
     unsafe {
         ptr::copy_nonoverlapping(row.as_ptr().cast(), destination, std::mem::size_of_val(row))
@@ -975,7 +975,7 @@ fn execute_block_rows<const LANES: usize, Block>(
     for (column, offset) in results.chunks_exact(rows as usize).zip(offsets) {
         // SAFETY: each certified column fits the checked buffer and the private
         // result workspace is disjoint from it. Byte copying permits unaligned views.
-        unsafe { write_float_row(destination.add(offset as usize), column) }
+        unsafe { write_row(destination.add(offset as usize), column) }
     }
     Ok(())
 }
@@ -1228,6 +1228,7 @@ fn normalization_word(
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
     let vtensor_typed::Adt2::C0(count, capacity, ..) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
+    let mut ranker = None;
     // SAFETY: admission retained the primary descriptor and each present secondary.
     let (left, secondary) = unsafe { (&*tensor.src[0], tensor.src[1].as_ref()) };
     let primary = graph_tensor_data(left)?;
@@ -1237,6 +1238,24 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
                 .map_err(|_| BackendError::Overflow)?;
+        if let vtensor_typed::Adt3::C5(from, to, width, count, descending) = instruction {
+            let rank = match &mut ranker {
+                Some(rank) => rank,
+                None => ranker.insert(linear::RowRankingF32::new(
+                    width as usize,
+                    count as usize,
+                    descending,
+                )?),
+            };
+            // SAFETY: Prism admits aligned binary32 lanes, disjoint output storage and the full row spans.
+            let input = unsafe {
+                std::slice::from_raw_parts(primary.add(from as usize).cast::<f32>(), width as usize)
+            };
+            let indices = rank.select(input)?;
+            // SAFETY: the selected prefix fits this certified contiguous GGML I32 row.
+            unsafe { write_row(output.add(to as usize), indices) };
+            continue;
+        }
         if let vtensor_typed::Adt3::C4(variant, storage, first, second, target) = instruction {
             let operand = |slot: u64| {
                 words
@@ -1771,7 +1790,7 @@ mod attention {
                     }
                     let row = mean.finish().map_err(|_| Overflow)?;
                     // SAFETY: the Prism plan bounds this contiguous F32 row. Verdant owns its separate workspace.
-                    unsafe { super::write_float_row(output.add(dst as usize), &row) }
+                    unsafe { super::write_row(output.add(dst as usize), &row) }
                 }
             }
         }
