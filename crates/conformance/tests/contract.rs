@@ -1894,17 +1894,27 @@ static bool vtensor_use_reference(ggml_backend_t reference) {
     if(!use_reference) return false;
     use_reference(reference,true);return true;
 }
-// Preserve the original provider graph and use the imported decoder and F32 CPU contraction
-// for type pairs that the reference device refuses to execute directly.
-static bool reference_outer(test_case & test, ggml_backend_t backend, ggml_backend_t cpu) {
+// Both references run the original graph on the provider. The CPU either decodes
+// the operand types or independently materializes their strided views.
+static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_backend_t cpu, ggml_op op) {
     const ggml_init_params init{ggml_tensor_overhead()*128+ggml_graph_overhead(), nullptr, true};
     ggml_context_ptr target(ggml_init(init)), reference(ggml_init(init));
     if (!target || !reference) return false;
     ggml_tensor * out=test.build_graph(target.get());
-    if (out->op!=GGML_OP_OUT_PROD || ggml_backend_dev_supports_op(ggml_backend_get_device(cpu),out)) return false;
-    ggml_tensor * a=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
-    ggml_tensor * b=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[1]->ne);
-    ggml_tensor * expected=ggml_out_prod(reference.get(),a,b);
+    if (out->op!=op || ggml_backend_dev_supports_op(ggml_backend_get_device(cpu),out)) return false;
+    ggml_tensor * expected;
+    if (op==GGML_OP_OUT_PROD) {
+        auto a=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
+        auto b=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[1]->ne);
+        expected=ggml_out_prod(reference.get(),a,b);
+    } else {
+        auto original=test.build_graph(reference.get());
+        auto kernel=ggml_cont(reference.get(),original->src[0]);
+        auto image=ggml_cont(reference.get(),original->src[1]);
+        auto p=original->op_params;
+        expected=ggml_conv_2d_direct(reference.get(),kernel,image,p[0],p[1],p[2],p[3],p[4],p[5]);
+    }
+    if (!ggml_are_same_shape(out,expected) || !ggml_backend_supports_op(cpu,expected)) return false;
     ggml_cgraph * original_graph=ggml_new_graph(target.get()), * reference_graph=ggml_new_graph(reference.get());
     ggml_build_forward_expand(original_graph,out);
     ggml_build_forward_expand(reference_graph,expected);
@@ -1912,16 +1922,28 @@ static bool reference_outer(test_case & test, ggml_backend_t backend, ggml_backe
     ggml_backend_buffer_ptr reference_buffer(ggml_backend_alloc_ctx_tensors(reference.get(),cpu));
     if (!actual_buffer || !reference_buffer || !ggml_backend_dev_supports_op(ggml_backend_get_device(backend),out)) return false;
     test.initialize_tensors(target.get());
-    auto left=tensor_to_float(out->src[0]),right=tensor_to_float(out->src[1]);
-    ggml_backend_tensor_set(a,left.data(),0,ggml_nbytes(a));
-    ggml_backend_tensor_set(b,right.data(),0,ggml_nbytes(b));
+    if (op==GGML_OP_OUT_PROD) {
+        for (int k=0;k<2;++k) {
+            auto values=tensor_to_float(out->src[k]);
+            ggml_backend_tensor_set(expected->src[k],values.data(),0,ggml_nbytes(expected->src[k]));
+        }
+    } else {
+        auto copy=ggml_get_first_tensor(reference.get());
+        for (auto src=ggml_get_first_tensor(target.get());src;src=ggml_get_next_tensor(target.get(),src)) {
+            if (!copy || src->op!=copy->op || src->type!=copy->type || !ggml_are_same_shape(src,copy) || !ggml_are_same_stride(src,copy)) return false;
+            if (src->op==GGML_OP_NONE && !src->view_src) ggml_backend_tensor_copy(src,copy);
+            copy=ggml_get_next_tensor(reference.get(),copy);
+        }
+    }
     if (ggml_backend_graph_compute(backend,original_graph)!=GGML_STATUS_SUCCESS ||
         ggml_backend_graph_compute(cpu,reference_graph)!=GGML_STATUS_SUCCESS) return false;
     auto actual=tensor_to_float(out),wanted=tensor_to_float(expected);
     if (actual.size()!=wanted.size()) return false;
+    // An exactly matching all-padding output has zero reference energy and undefined NMSE.
+    if (actual==wanted) return true;
     const double error=nmse(wanted.data(),actual.data(),wanted.size());
     if (!(error<=test.max_nmse_err(backend))) {
-        fprintf(stderr,"[OUT_PROD] ERR = %.9f > %.9f\n",error,test.max_nmse_err(backend));
+        fprintf(stderr,"[%s] ERR = %.9f > %.9f\n",ggml_op_name(op),error,test.max_nmse_err(backend));
         return false;
     }
     return true;
@@ -1945,12 +1967,13 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for(auto &test:make_test_cases_eval()) {
       const auto i=ordinal++;
       if (!selected.empty() && (cases==selected.size() || selected[cases]!=i)) continue;
-      if (!strcmp(op,"OUT_PROD_DECODED")) {
-        if (selected.empty() || !reference_outer(*test,backend,reference)) {
-          fprintf(stderr,"outer reference rejected ordinal %zu: %s\n",i,test->vars().c_str());
+      if (!strcmp(op,"OUT_PROD_DECODED") || !strcmp(op,"CONV_2D_CONTIGUOUS")) {
+        const ggml_op operation=!strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : GGML_OP_CONV_2D;
+        if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {
+          fprintf(stderr,"CPU reference rejected ordinal %zu: %s\n",i,test->vars().c_str());
           return SIZE_MAX;
         }
-        observed.label="OUT_PROD";
+        observed.label=ggml_op_name(operation);
         ++observed.records;
       } else {
         const auto status=test->eval(backend,reference,selected.empty()?op:nullptr,&observed);
