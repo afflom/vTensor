@@ -175,6 +175,7 @@ model does not sanction.
 | `VT-86` | `build` | Prism schedules binary32 row ranking and Verdant selects deterministic indices for GGML ARGSORT and TOP_K |
 | `VT-59` | `build` | The vTensor CPU registry creates attaches switches and releases threadpools while GGML graphs match the imported CPU across repeated submissions |
 | `VT-88` | `build` | Prism plans ordinary and indexed Q4_K and Q5_K weight products and Verdant contracts the packed weights against grouped signed activations |
+| `VT-90` | `build` | Prism binds F16 activation rows for packed matrix products and Verdant widens each activation before the certified dot product |
 
 ## normalization-graphs
 
