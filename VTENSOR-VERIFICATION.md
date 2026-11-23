@@ -4903,3 +4903,7 @@ VT-83 compares all 230 original Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs with the p
 Prism validates shapes and strides, maps each index through its GGML view and resolves the weight, activation and destination offsets. A skipped expert yields a zero result. An invalid expert stops the operation before destination writes. The provider calls the existing Verdant row encoders and dot products. VT-02 checks the compiled plugin's GGML imports. The source audit measures 12,084 native lines across 51 files.
 
 A metadata scan selected previously refused factory graphs for numerical replay. The original evaluator passed all 24 selected Snake activation graphs, all 42 selected matrix-plus-add graphs and all 36 selected attention graphs. The evidence records each completed ordinal and transcript. [Original comparisons](verification/factory-admitted-compositions.json)
+
+### VT-82 complete checkpoint
+
+The complete locked-SDK `just vv` passed at `685b50a364772537ad6ba33054df523bea32220b` on the Verdant PR #27 pin. All 89 backend contracts passed in 738.15 seconds. Prism verified attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14`. The workspace lint, dependency and provider linkage checks passed. [Verified source](https://github.com/afflom/vTensor/commit/685b50a364772537ad6ba33054df523bea32220b)
