@@ -67,6 +67,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pin the Verdant head slope and validate the provider boundary with VT-02. All 40,452 upstream scalar comparisons passed, within one binary32 step. [Engine PR #27](https://github.com/afflom/verdant-engine/pull/27)
 - [x] Pass all 125 Q5_0 and IQ4_NL ordinary matrix graphs and all 17 indexed graphs. [VT-94 results](verification/factory-compact-rows-vt94.json)
 - [x] Pass all 674 Q5_0 and IQ4_NL FLASH_ATTN_EXT graphs. 674 passed the imported CPU comparison. [VT-94 results](verification/factory-compact-rows-vt94.json)
+- [ ] Verify Verdant’s Q8_1 encoder and Q4_1/Q5_1 row products against the pinned GGML CPU. Pin the verified patch, then pass the 233 matrix and 675 attention cases in vTensor. [Verdant PR #34](https://github.com/afflom/verdant-engine/pull/34)
 - [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. 1,382 pass. Complete Q4_1 and Q5_1 support. [VT-78 comparisons](verification/factory-biased-attention-vt78.json) · [VT-94 comparisons](verification/factory-compact-rows-vt94.json)
 - [x] Submit the reusable normalized exponential to Verdant. All 4,164 CPU probability comparisons passed. [Engine PR #29](https://github.com/afflom/verdant-engine/pull/29)
 - [x] Pass all 214 SOFT_MAX cases, including masks, sinks and in-place output. [VT-87 results](verification/factory-row-softmax-vt87.json)
