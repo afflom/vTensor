@@ -4834,3 +4834,9 @@ Changing the compiled graph-size binding to resolve `ggml_mul_mat` made VT-02 fa
 ## Decoded outer-product reference
 
 The pinned CPU refuses 1,312 OUT_PROD graphs covering 23 operand-type pairs and batch replication. VT-73 executes each original graph on vTensor, including transposed right operands. The external evaluator reads both initialized operands using GGML’s own storage decoder, runs the F32 CPU outer product on their logical values, and applies the original test’s normalized mean-square error threshold. All 1,312 passed. The original direct CPU refusal remains in the factory ledger. Reading each packed block at offset zero failed ordinal 15542 at 2.133897848 against 0.0005. [Recorded comparisons](verification/factory-decoded-outer-products-vt73.json)
+
+### Direct 2D convolution
+
+VT-74 runs the original CONV_2D graphs on both vTensor and the pinned GGML CPU reference. Prism resolves stride, dilation, padding, channel order, unaligned F16 or F32 kernel views, and output coordinates. vTensor stages up to 32 patches at a time. Verdant converts kernel words and evaluates the matrix product. Replacing interior image addresses with the first word failed ordinal 7658 with NMSE 2.477084885 against the upstream limit of 0.0005. The restored implementation passed the five permanent cases. [Per-case record](verification/factory-direct-convolution-vt74.json)
+
+VT-03 uses a frozen column-major result from the pinned GGML CPU matrix multiplication. The test inputs, products and sums are exactly representable in both binary32 and binary64. VT-05, VT-09 and VT-10 retain their independent runtime oracles and frozen boundary inputs. The source cache compares the complete imported archive in one pass and reuses compiled CPU objects across test modes.
