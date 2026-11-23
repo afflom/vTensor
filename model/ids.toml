@@ -544,3 +544,9 @@ id = "VT-80"
 level = "build"
 suite = "native-backend"
 statement = "Prism maps direct three-dimensional GGML convolution to padded volume patches and packed channel offsets and Verdant contracts each patch matrix"
+
+[[id]]
+id = "VT-81"
+level = "build"
+suite = "native-backend"
+statement = "Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products"

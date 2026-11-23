@@ -140,3 +140,9 @@ Feature: native-backend
     Given original GGML convolution graphs with F32 images and F16 or F32 kernels
     When vTensor gathers a tile of patches and Verdant multiplies it by the filter matrix
     Then every result matches the original GGML CPU evaluator
+
+  @VT-81 @build
+  Scenario: Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products
+    Given original state convolution graphs with batched F32 inputs and optional channel bias and SiLU
+    When vTensor maps each sequence and channel to a sliding window
+    Then every result matches the original GGML CPU evaluator

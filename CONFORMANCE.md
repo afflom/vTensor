@@ -167,6 +167,7 @@ model does not sanction.
 | `VT-78` | `build` | Prism binds head-specific masked attention and Verdant evaluates linear bias slopes before the weighted mean |
 | `VT-79` | `build` | Prism maps one- and two-dimensional pooling windows and binds their maximum and average reductions to Verdant |
 | `VT-80` | `build` | Prism maps direct three-dimensional GGML convolution to padded volume patches and packed channel offsets and Verdant contracts each patch matrix |
+| `VT-81` | `build` | Prism maps each state convolution window to its channel and Verdant accumulates ordered binary32 products |
 
 ## normalization-graphs
 

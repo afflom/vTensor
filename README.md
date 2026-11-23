@@ -120,6 +120,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | `VT-77` | build | Executes split, combined and swapped REGLU, GEGLU and GEGLU_QUICK rows using Verdant. [All 108 original cases](verification/factory-gated-activations-vt77.json) |
 | `VT-79` | build | Executes forward average and maximum pooling. All 384 factory graphs and four F16 graphs match the imported CPU oracle. [Oracle results](verification/factory-pooling-vt79.json) |
 | `VT-80` | build | Executes tiled CONV_3D through the same Verdant matrix product as CONV_2D. [Completed factory comparisons](verification/factory-volume-convolution-vt80.json) |
+| `VT-81` | build | Executes all 75 state convolutions and 120 compositions with SiLU and optional bias through Verdant. [Factory comparisons](verification/factory-state-convolution-vt81.json) |
 
 These are component checks. The native backend registers one device, supports
 owned and borrowed buffers, executes metadata nodes, and delegates admitted F32
