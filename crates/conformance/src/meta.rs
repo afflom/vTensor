@@ -17,30 +17,40 @@ pub(crate) const GGML_STATUS_FAILED: c_int = -1;
 
 // Shared declarations preserve GGML field order and C layout.
 macro_rules! record {
-    ($(#[$attribute:meta])* $name:ident { $($field:ident: $ty:ty),* $(,)? }) => {
+    (@field ty) => { "type" };
+    (@field asynchronous) => { "async" };
+    (@field $field:ident) => { stringify!($field) };
+    ($(#[$attribute:meta])* $name:ident $ctype:literal { $($field:ident: $ty:ty),* $(,)? }) => {
         $(#[$attribute])*
         #[repr(C)]
         pub(crate) struct $name { $(pub $field: $ty,)* }
+        impl $name {
+            const LAYOUT: &'static [(&'static str, usize)] = &[
+                (concat!($ctype, ".$size"), size_of::<Self>()),
+                (concat!($ctype, ".$align"), align_of::<Self>()),
+                $((concat!($ctype, ".", record!(@field $field)), std::mem::offset_of!(Self, $field)),)*
+            ];
+        }
     };
 }
 macro_rules! interface {
-    ($name:ident { $($field:ident($($arg:ty),* $(,)?) -> $out:ty;)* }) => {
-        record! { #[derive(Default)] $name {
+    ($name:ident $ctype:literal { $($field:ident($($arg:ty),* $(,)?) -> $out:ty;)* }) => {
+        record! { #[derive(Default)] $name $ctype {
             $($field: Option<unsafe extern "C" fn($($arg),*) -> $out>,)*
         } }
     };
 }
 
-record! { #[derive(Clone)] ThreadpoolParams {
-    cpumask: [bool; 512],
-    n_threads: c_int,
-    prio: c_int,
-    poll: u32,
-    strict_cpu: bool,
-    paused: bool,
-} }
+macro_rules! layouts {
+    ($( $declare:ident! { $(#[$attr:meta])* $name:ident $ctype:literal { $($fields:tt)* } } )+) => {
+        $($declare! { $(#[$attr])* $name $ctype { $($fields)* } })+
+        /// Observed native layouts for independent comparison with the imported C headers.
+        pub fn abi_layout() -> Vec<(&'static str, usize)> { [$($name::LAYOUT),+].concat() }
+    };
+}
 
-record! { Tensor {
+layouts! {
+record! { Tensor "ggml_tensor" {
     ty: c_int,
     buffer: Buf,
     ne: [i64; 4],
@@ -57,7 +67,7 @@ record! { Tensor {
     padding: [c_char; 8],
 } }
 
-interface! { BufferTypeInterface {
+interface! { BufferTypeInterface "ggml_backend_buffer_type_i" {
     get_name(Buft) -> *const c_char;
     alloc_buffer(Buft, usize) -> Buf;
     alloc_buffer_n(Buft, *mut TensorPtr, c_int) -> Buf;
@@ -68,13 +78,13 @@ interface! { BufferTypeInterface {
     is_host(Buft) -> bool;
 } }
 
-record! { BufferType {
+record! { BufferType "ggml_backend_buffer_type" {
     iface: BufferTypeInterface,
     device: Dev,
     context: *mut c_void,
 } }
 
-interface! { BufferInterface {
+interface! { BufferInterface "ggml_backend_buffer_i" {
     free_buffer(Buf) -> ();
     get_base(Buf) -> *mut c_void;
     init_tensor(Buf, TensorPtr) -> c_int;
@@ -91,7 +101,7 @@ interface! { BufferInterface {
     cpy_tensor_n(Buf, *const *const Tensor, *const TensorPtr, usize) -> bool;
 } }
 
-record! { Buffer {
+record! { Buffer "ggml_backend_buffer" {
     iface: BufferInterface,
     buft: Buft,
     context: *mut c_void,
@@ -99,7 +109,7 @@ record! { Buffer {
     usage: c_int,
 } }
 
-interface! { BackendInterface {
+interface! { BackendInterface "ggml_backend_i" {
     get_name(BackendPtr) -> *const c_char;
     free(BackendPtr) -> ();
     set_tensor_async(BackendPtr, TensorPtr, *const c_void, usize, usize) -> ();
@@ -118,14 +128,14 @@ interface! { BackendInterface {
     graph_optimize(BackendPtr, Graph, *mut c_void) -> ();
 } }
 
-record! { Backend {
+record! { Backend "ggml_backend" {
     guid: *mut [u8; 16],
     iface: BackendInterface,
     device: Dev,
     context: *mut c_void,
 } }
 
-record! { DeviceCapabilities {
+record! { DeviceCapabilities "ggml_backend_dev_caps" {
     asynchronous: bool,
     host_buffer: bool,
     buffer_from_host_ptr: bool,
@@ -133,7 +143,7 @@ record! { DeviceCapabilities {
     mmap_support: bool,
 } }
 
-record! { DeviceProperties {
+record! { DeviceProperties "ggml_backend_dev_props" {
     name: *const c_char,
     description: *const c_char,
     memory_free: usize,
@@ -143,7 +153,7 @@ record! { DeviceProperties {
     caps: DeviceCapabilities,
 } }
 
-interface! { DeviceInterface {
+interface! { DeviceInterface "ggml_backend_device_i" {
     get_name(Dev) -> *const c_char;
     get_description(Dev) -> *const c_char;
     get_memory(Dev, *mut usize, *mut usize) -> ();
@@ -161,24 +171,34 @@ interface! { DeviceInterface {
     event_synchronize(Dev, Event) -> ();
 } }
 
-record! { Device {
+record! { Device "ggml_backend_device" {
     iface: DeviceInterface,
     reg: Reg,
     context: *mut c_void,
 } }
 
-interface! { RegistryInterface {
+record! { #[derive(Clone)] ThreadpoolParams "ggml_threadpool_params" {
+    cpumask: [bool; 512],
+    n_threads: c_int,
+    prio: c_int,
+    poll: u32,
+    strict_cpu: bool,
+    paused: bool,
+} }
+
+interface! { RegistryInterface "ggml_backend_reg_i" {
     get_name(Reg) -> *const c_char;
     get_device_count(Reg) -> usize;
     get_device(Reg, usize) -> Dev;
     get_proc_address(Reg, *const c_char) -> *mut c_void;
 } }
 
-record! { Registry {
+record! { Registry "ggml_backend_reg" {
     api_version: c_int,
     iface: RegistryInterface,
     context: *mut c_void,
 } }
+}
 
 unsafe extern "C" {
     pub(crate) fn ggml_backend_buffer_init(

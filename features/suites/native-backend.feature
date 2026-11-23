@@ -296,3 +296,9 @@ Feature: native-backend
     Given an indexed destination or a copied view of four- or five-bit blocks
     When the provider stores complete weight blocks
     Then the original GGML comparisons pass and late failures preserve destination bytes
+
+  @VT-106 @build
+  Scenario: Prism addresses one-dimensional transposed convolution taps and overlaps and Verdant contracts and sums the input channels
+    Given a binary32 signal, kernel and stride
+    When vTensor contracts the input channels and accumulates overlapping kernel taps
+    Then the transposed convolution matches the pinned GGML CPU evaluator

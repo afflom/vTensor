@@ -741,6 +741,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
 }
 
 fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result<(), BackendError> {
+    use BackendError::InvalidTensor;
     let ConvolutionGeometry::C0(
         patches,
         inner,
@@ -749,54 +750,55 @@ fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result
         tile,
         input_capacity,
         output_capacity,
+        overlap_cells,
         ..,
     ) = geometry;
     let [Some(kernel), Some(image)] = tensor.inputs()? else {
-        return Err(BackendError::InvalidTensor);
+        return Err(InvalidTensor);
     };
     let destination = graph_tensor_data(tensor)?;
     let sample = |phase, start, index| {
         let query = GraphRequest::C4(geometry.clone(), phase, start, index as u64);
         match pointwise(query)? {
             GraphResponse::C8(offset) => Ok(offset),
-            _ => Err(BackendError::InvalidTensor),
+            _ => Err(InvalidTensor),
         }
     };
     let mut weights = workspace(weight_count, 0.0_f32)?;
     for (index, weight) in weights.iter_mut().enumerate() {
-        let offset = sample(0, 0, index)?.ok_or(BackendError::InvalidTensor)?;
+        let offset = sample(0, 0, index)?.ok_or(InvalidTensor)?;
         kernel.decode(offset, std::slice::from_mut(weight))?;
     }
+    let mut overlap = workspace(overlap_cells, 0.0_f32)?;
+    let (inner, channels) = (inner as usize, channels as usize);
     let mut input = workspace(input_capacity, 0.0_f32)?;
     let mut output = workspace(output_capacity, 0.0_f32)?;
     for start in (0..patches).step_by(tile as usize) {
         let rows = tile.min(patches - start) as usize;
-        let input = &mut input[..rows * inner as usize];
+        let input = &mut input[..rows * inner];
         for (index, value) in input.iter_mut().enumerate() {
             *value = match sample(1, start, index)? {
                 Some(at) => f32::from_ne_bytes(image.word(at)?),
                 None => 0.0,
             };
         }
-        let output = &mut output[..rows * channels as usize];
-        linear::multiply_matrix_rows_f32(
-            rows,
-            inner as usize,
-            channels as usize,
-            input,
-            &weights,
-            output,
-        )?;
+        let output = &mut output[..rows * channels];
+        linear::multiply_matrix_rows_f32(rows, inner, channels, input, &weights, output)?;
         for (index, &value) in output.iter().enumerate() {
-            let at = sample(2, start, index)?.ok_or(BackendError::InvalidTensor)?;
-            // SAFETY: the plan admits the full output span and resolves coordinates in its view.
-            unsafe {
-                destination
-                    .add(at as usize)
-                    .cast::<f32>()
-                    .write_unaligned(value)
-            };
+            let at = sample(2, start, index)?.ok_or(InvalidTensor)?;
+            if overlap.is_empty() {
+                // SAFETY: direct plans resolve each byte offset inside the retained destination.
+                unsafe { write_row(destination.add(at as usize), std::slice::from_ref(&value)) };
+            } else {
+                // Transposed plans return the contiguous output cell receiving this dot product.
+                let cell = overlap.get_mut(at as usize).ok_or(InvalidTensor)?;
+                *cell = linear::evaluate_f32_scalar(0, *cell, value)?;
+            }
         }
+    }
+    if !overlap.is_empty() {
+        // SAFETY: Prism admitted a disjoint contiguous output spanning the completed rows.
+        unsafe { write_row(destination, &overlap) };
     }
     Ok(())
 }
@@ -1301,13 +1303,14 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
 }
 
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
+    use BackendError::InvalidTensor;
     let GraphPlan::C4(count, bytes, source, destination, mode) = plan else {
-        return Err(BackendError::InvalidTensor);
+        return Err(InvalidTensor);
     };
     let GraphResponse::C6(mask, literal_type, bits, constant) =
         pointwise(GraphRequest::C2(mode.clone()))?
     else {
-        return Err(BackendError::InvalidTensor);
+        return Err(InvalidTensor);
     };
     let mut literal = [0_u8; 8];
     if constant {
@@ -1319,12 +1322,12 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     }
     let mut pointers = tensor.src.map(|_| literal.as_mut_ptr());
     if mask >> pointers.len() != 0 {
-        return Err(BackendError::InvalidTensor);
+        return Err(InvalidTensor);
     }
     let mut secondary_strides = [0; 4];
     for (slot, pointer) in pointers.iter_mut().enumerate() {
         if mask & (1 << slot) != 0 {
-            let source = tensor.source(slot).ok_or(BackendError::InvalidTensor)?;
+            let source = tensor.source(slot).ok_or(InvalidTensor)?;
             *pointer = graph_tensor_data(source)?;
             if slot == 1 && matches!(mode, CopyMode::C26(66, ..)) {
                 secondary_strides = source.nb.map(|stride| stride as u64);
@@ -1359,51 +1362,37 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
             x2,
             x3,
         ))?;
-        if let GraphResponse::C7(..) = response {
-            execute_word(response, &pointers, destination_data, words)?;
-            continue;
-        }
-        if let GraphResponse::C10(kind, from, width, to, lanes, stride) = response {
-            // SAFETY: Prism bounds this source block and every strided destination lane.
-            // Index preflight is complete before the output is initialized or accumulated.
-            unsafe {
-                let input = encoded(from, width);
+        match response {
+            GraphResponse::C7(..) => execute_word(response, &pointers, destination_data, words)?,
+            // SAFETY: Prism preflights every index and bounds the complete block and output lanes.
+            GraphResponse::C10(kind, from, width, to, lanes, stride) => unsafe {
                 let mut decoded = [0.0; 256];
-                let row = decoded
-                    .get_mut(..lanes as usize)
-                    .ok_or(BackendError::InvalidTensor)?;
-                decode_words(kind, input, row, 4)?;
+                let row = decoded.get_mut(..lanes as usize).ok_or(InvalidTensor)?;
+                decode_words(kind, encoded(from, width), row, 4)?;
                 let base = destination_data.add(to as usize);
                 for (i, &value) in row.iter().enumerate() {
                     let lane = base.add(i * stride as usize).cast::<f32>();
                     let sum = linear::evaluate_f32_scalar(0, lane.read_unaligned(), value)?;
                     lane.write_unaligned(sum);
                 }
-            }
-            continue;
-        }
-        if let GraphResponse::C5(kind, from, bytes, to, span, stride) = response {
-            // SAFETY: Prism admits both whole tensors and these block spans,
-            // refuses source/output aliases, and preflights every index before writes.
-            unsafe {
+            },
+            // SAFETY: the certified source and destination spans are complete and disjoint.
+            GraphResponse::C5(kind, from, bytes, to, span, stride) => unsafe {
                 let output = std::slice::from_raw_parts_mut(
                     destination_data.add(to as usize),
                     span as usize,
                 );
                 decode_block(kind, encoded(from, bytes), output, stride as usize)?;
-            }
-            continue;
-        }
-        let GraphResponse::C1(second, from, to) = response else {
-            return Err(BackendError::InvalidTensor);
-        };
-        // SAFETY: Prism bounds both block spans. Capture the source before borrowing an aliased output.
-        unsafe {
-            let pointer = pointers[usize::from(second)].add(from as usize);
-            ptr::copy_nonoverlapping(pointer, block.as_mut_ptr(), block.len());
-            let target =
-                std::slice::from_raw_parts_mut(destination_data.add(to as usize), block.len());
-            verdant_tensor::memory::copy_storage_block(&block, target)?;
+            },
+            // SAFETY: capture the admitted source bytes before borrowing an aliased output.
+            GraphResponse::C1(second, from, to) => unsafe {
+                let pointer = pointers[usize::from(second)].add(from as usize);
+                ptr::copy_nonoverlapping(pointer, block.as_mut_ptr(), block.len());
+                let target =
+                    std::slice::from_raw_parts_mut(destination_data.add(to as usize), block.len());
+                verdant_tensor::memory::copy_storage_block(&block, target)?;
+            },
+            _ => return Err(InvalidTensor),
         }
     }
     Ok(())

@@ -702,3 +702,9 @@ id = "VT-105"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans indexed and copied four- and five-bit block writes and Verdant encodes the original binary32 and half-width sources"
+
+[[id]]
+id = "VT-106"
+level = "build"
+suite = "native-backend"
+statement = "Prism addresses one-dimensional transposed convolution taps and overlaps and Verdant contracts and sums the input channels"

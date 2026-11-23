@@ -309,6 +309,9 @@ ggml_batches! {
     /// Compare the original indexed and copied low-bit block stores.
     #[test]
     fn low_bit_writes_vt_105() { "upstream-LOW_BIT_WRITES", 121, ["typed"] }
+    /// Contract and overlap all original one-dimensional transposed convolutions.
+    #[test]
+    fn transpose_convolution_vt_106() { "upstream-TRANSPOSE_CONV_1D", 116, ["pointwise"] }
     /// Compare all remaining source formats against authoritative GGML decoding and CPU scatter.
     #[test]
     fn decoded_row_gradients_vt_102() { "upstream-GET_ROWS_BACK_DECODED", 54, ["pointwise"] }
@@ -501,11 +504,9 @@ fn probes(
     bytes: u64,
 ) -> impl Iterator<Item = vtensor_probes::Adt0> {
     tensor_layout::certified_current_model(&root(), "probes");
-    assert!(matches!(
-        vtensor_probes::run(suite, count, block, bytes).unwrap(),
-        vtensor_probes::Adt0::C0
-    ));
-    (0..count).map(move |index| vtensor_probes::run(suite, index, block, bytes).unwrap())
+    let query = move |index| vtensor_probes::run(suite, index, block, bytes).unwrap();
+    assert!(matches!(query(count), vtensor_probes::Adt0::C0));
+    (0..count).map(query)
 }
 
 fn fixture_queries(suite: u64, count: u64) {
@@ -571,17 +572,11 @@ fn typed_fixture_generation_vt_44() {
 fn normalization_arithmetic_vt_45() {
     use verdant_tensor::linear::evaluate_wide;
     tensor_layout::certified_current_model(&verdant_api::ENGINE_ROOT, "quotient");
-    assert_eq!(
-        evaluate_wide(4, 0x3ff0000000000000, 0x4000000000000000).unwrap(),
-        Some(0x3fe0000000000000)
-    );
-    assert_eq!(
-        evaluate_wide(5, u64::MAX, 0).unwrap(),
-        Some(0x43f0000000000000)
-    );
-    let count = evaluate_wide(5, 5, 0).unwrap().unwrap();
-    let sum = evaluate_wide(5, 16777217, 0).unwrap().unwrap();
-    let mean = evaluate_wide(4, sum, count).unwrap().unwrap();
+    let divide = |a, b| evaluate_wide(4, a, b).unwrap().unwrap();
+    let widen = |a| evaluate_wide(5, a, 0).unwrap().unwrap();
+    assert_eq!(divide(1.0f64.to_bits(), 2.0f64.to_bits()), 0.5f64.to_bits());
+    assert_eq!(widen(u64::MAX), 0x43f0000000000000);
+    let mean = divide(widen(16777217), widen(5));
     assert_eq!(evaluate_wide(2, mean, 0).unwrap(), Some(0x4a4cccce));
     assert_eq!(evaluate_wide(6, 0, 0).unwrap(), None);
 }
@@ -1207,14 +1202,11 @@ mod tensor_layout {
         };
         let bundle = format!("generated/{directory}");
         let result = ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
-        let args = [
-            "--project",
-            &project,
-            "--diagnostic-format",
-            "json",
-            "check",
-        ];
-        let current = ggml_oracle::tool_json(root, "lexlean", &args);
+        let current = ggml_oracle::tool_json(
+            root,
+            "lexlean",
+            &["--project", &project, "--diagnostic-format", "json", "check"],
+        );
         for key in ["source_id", "semantic_id"] {
             assert_eq!(
                 current[key], result["source"][key],
@@ -1474,7 +1466,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "d27e06328745dd89ef148b63266dbddaffe4deae108b0735e46a9a14e5bc9171",
+            "e98bacce124b5321c5249dfd9be6c24bd361459f9a14a0c0e687d4c30f499739",
         )
     });
 
@@ -1810,6 +1802,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
     }
 
     const UPSTREAM_SUITE: &str = r##"#define main vtensor_unused_upstream_main
+#include "ggml-cpu.h"
 #include "tests/test-backend-ops.cpp"
 #undef main
 struct vtensor_observation : printer {
@@ -1943,6 +1936,30 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
       }
       if(!selected.empty()) std::printf("CASE\t%zu\t%s\t%s\n",i,observed.label.c_str(),test->vars().c_str());
       ++cases;
+    }
+    if (!strcmp(op,"TRANSPOSE_CONV_1D")) {
+      struct half_convolution : test_conv_transpose_1d {
+        bool exact=false;
+        ggml_tensor *build_graph(ggml_context *ctx) override {
+          auto kernel=ggml_new_tensor_4d(ctx,GGML_TYPE_F16,3,2,4,1);
+          auto image=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,5,4,1,1);
+          return ggml_conv_transpose_1d(ctx,kernel,image,2,0,1);
+        }
+        void initialize_tensors(ggml_context *ctx) override {
+          test_case::initialize_tensors(ctx);
+          if (exact) for (auto t=ggml_get_first_tensor(ctx);t;t=ggml_get_next_tensor(ctx,t)) {
+            if (t->op!=GGML_OP_NONE || t->view_src) continue;
+            for (int i=0;i<ggml_nelements(t);++i) ggml_set_f32_1d(t,i,float((i*5)%13-6)*0.25f);
+          }
+        }
+        double max_nmse_err() override {return exact?0.0:test_conv_transpose_1d::max_nmse_err();}
+      } half;
+      vtensor_observation checked;
+      for (bool exact : {false,true}) {
+        half.exact=exact;
+        if (half.eval(backend,reference,"CONV_TRANSPOSE_1D",&checked)!=test_status_t::OK || checked.bad) return SIZE_MAX;
+      }
+      if (checked.records!=2) return SIZE_MAX;
     }
     return observed.records==cases && (selected.empty() || cases==selected.size()) ? cases : SIZE_MAX;
 }
