@@ -5040,3 +5040,9 @@ VT-98 compares all 29 E4M3 conversions with GGML CPU on the original factory lay
 On commit `15af61f0ccc174aa62cbc553af09b23406d21d9f`, the locked SDK verified Prism attestation `8592fe790d1cf436393ee8a63901a372ba0e8b038725933257243d7056dc2f14` and passed all 105 backend contracts, with zero skipped or filtered. The workspace tests, model, formatting and lint checks passed. The final dependency audit initially failed to reach the RustSec database. Running the same `just deny` on the same source and SDK passed advisories, bans, licenses and sources.
 
 All 60 indexed-cache factory graphs passed the independent CPU comparison. The four contract cases and the three disjoint batches of 19, 19 and 18 cases are recorded with their source and transcript hashes. [Factory evidence](verification/factory-indexed-cache-attention-vt97.json)
+
+### Block-float matrix products
+
+Commit `d5d218bd40fb812ccb5dc9aa12320f3dd9d54e89` wires the MXFP4 and NVFP4 GGML matrix plans to the numerical row contraction in Verdant PR #35. VT-02 verified the resolved Git revision, the fifteen ordered descriptors and the linked provider’s host-service imports.
+
+All 215 ordinary matrix graphs, 171 indexed expert graphs and 371 compositions passed. For the 72 F16 activation graphs, the reference uses GGML’s own CPU cast to F32 and then its CPU product on the original weights. Dispatching MXFP4 to the grouped E4M3 primitive produced error 89.392259333 on factory ordinal 10714 at tolerance 0.0005. Restoring the encoding passed the four bound graphs and both shared matrix regression groups. [Factory evidence](verification/factory-block-float-products-vt99.json)
