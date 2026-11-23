@@ -149,18 +149,10 @@ definition{
 }
 
 definition{
-  name: packedKey,
-  parameters: [kind : Nat],
-  result: Bool,
-  body: ((kind =? 2) || (kind =? 8)),
-  executable: true
-}
-
-definition{
   name: queryStorage,
   parameters: [kind : Nat],
   result: Nat,
-  body: (if (packedKey kind) then 8 else (ScalarDotStorage::activationType kind)),
+  body: (if (ScalarDotStorage::symmetricActivationWeights kind) then 8 else (ScalarDotStorage::activationType kind)),
   executable: true
 }
 
@@ -170,7 +162,7 @@ definition{
   result: Bool,
   body: (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.unknownType => false
-    | TensorTypes::TypeStorageDecision.knownType storage => ((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (packedKey kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
+    | TensorTypes::TypeStorageDecision.knownType storage => ((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (ScalarDotStorage::symmetricActivationWeights kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
   executable: true
 }
 

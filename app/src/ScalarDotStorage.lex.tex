@@ -11,6 +11,28 @@ definition{
   executable: true
 }
 
+definition{
+  name: symmetricActivationWeights,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((((kind =? 2) || (kind =? 6)) || (kind =? 8)) || (kind =? 20)),
+  executable: true
+}
+
+theorem{
+  name: fiveBitWeightsUseSymmetricActivations,
+  parameters: [],
+  statement: ((symmetricActivationWeights 6) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: nonlinearWeightsUseSymmetricActivations,
+  parameters: [],
+  statement: ((symmetricActivationWeights 20) = true),
+  proof: reflexivity{}
+}
+
 theorem{
   name: halfWeightsRetainFloatActivations,
   parameters: [],

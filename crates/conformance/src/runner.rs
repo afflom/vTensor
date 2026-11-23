@@ -880,6 +880,19 @@ impl<'a> TensorInput<'a> {
     }
 }
 
+type SymmetricRowProduct =
+    fn(&[u8], &[linear::SymmetricQ8Block<32>]) -> Result<f32, TensorComputeError>;
+
+fn symmetric_row_product(kind: u64) -> Option<SymmetricRowProduct> {
+    match kind {
+        2 => Some(linear::dot_symmetric_q4_row),
+        6 => Some(linear::dot_symmetric_q5_row),
+        8 => Some(linear::dot_symmetric_q8_row),
+        20 => Some(linear::dot_nonlinear_q4_row),
+        _ => None,
+    }
+}
+
 fn execute_row_products(
     execution: &threadpool::Execution,
     tensor: &Tensor,
@@ -928,14 +941,15 @@ fn execute_row_products(
                 Ok(value[0])
             },
         ),
-        C0(.., None, 2) => packed!(symmetric, linear::dot_symmetric_q4_row),
-        C0(.., None, 8) => packed!(symmetric, linear::dot_symmetric_q8_row),
         C0(.., None, 10) => packed!(encode_grouped_q8_block, dot_grouped_q2_row),
         C0(.., None, 12) => packed!(encode_grouped_q8_block, linear::dot_grouped_q4_row),
         C0(.., None, 13) => packed!(encode_grouped_q8_block, linear::dot_grouped_q5_row),
         C0(.., None, 41) => packed!(symmetric, linear::dot_binary_sign_row),
         C0(.., None, 42) => packed!(symmetric, linear::dot_two_bit_row),
-        _ => Err(BackendError::InvalidTensor),
+        C0(.., None, kind) => {
+            let product = symmetric_row_product(kind).ok_or(BackendError::InvalidTensor)?;
+            packed!(symmetric, product)
+        }
     }
 }
 
@@ -1876,7 +1890,7 @@ mod attention {
 
         pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
             let width = self.nb[0];
-            if matches!(self.ty, 2 | 8) {
+            if super::symmetric_row_product(self.ty as u64).is_some() {
                 let (blocks, tail) = out.as_chunks_mut::<32>();
                 if !tail.is_empty() {
                     return Err(InvalidTensor);
@@ -1914,11 +1928,7 @@ mod attention {
         let shape = q.ne;
         let key_rows = k.ne[1] as u64;
         let mut query = workspace(shape[0] as u64, 0.0)?;
-        let packed_product = match k.ty {
-            2 => Some(linear::dot_symmetric_q4_row::<32> as fn(&[u8], &[_]) -> _),
-            8 => Some(linear::dot_symmetric_q8_row::<32> as _),
-            _ => None,
-        };
+        let packed_product = super::symmetric_row_product(k.ty as u64);
         let (mut key, mut packed) = if packed_product.is_some() {
             (Vec::new(), super::reserved(query.len() / 32)?)
         } else {

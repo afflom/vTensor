@@ -103,7 +103,7 @@ definition{
   name: rowProductType,
   parameters: [kind : Nat],
   result: Bool,
-  body: ((shortBitWeights kind) || (((((kind =? 2) || (kind =? 8)) || (kind =? 10)) || (kind =? 12)) || (kind =? 13))),
+  body: ((shortBitWeights kind) || ((((ScalarDotStorage::symmetricActivationWeights kind) || (kind =? 10)) || (kind =? 12)) || (kind =? 13))),
   executable: true
 }
 
