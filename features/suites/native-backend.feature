@@ -254,3 +254,9 @@ Feature: native-backend
     Given the original E4M3 copy graphs and their CPU conversion tables
     When vTensor executes the typed copies through the original views and strides
     Then the imported CPU accepts each numerical result
+
+  @VT-99 @build
+  Scenario: Prism plans MXFP4 and NVFP4 matrix and indexed expert rows and Verdant contracts their E2M1 weights with signed-byte activations
+    Given the pinned GGML block-float matrix and expert constructors
+    When vTensor runs the original graphs on the imported inputs
+    Then the numerical rows match the independent GGML CPU evaluator

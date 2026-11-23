@@ -873,7 +873,7 @@ enum PackedWeight {
 }
 
 fn packed_weight(kind: u64) -> Option<PackedWeight> {
-    use linear::{AffineWeightEncoding::*, SymmetricWeightEncoding::*};
+    use linear::{AffineWeightEncoding::*, BlockFloatEncoding::*, SymmetricWeightEncoding::*};
     use PackedWeight::{Affine, Symmetric};
     Some(match kind {
         2 => Symmetric(linear::dot_symmetric_q4_row),
@@ -882,6 +882,8 @@ fn packed_weight(kind: u64) -> Option<PackedWeight> {
         7 => Affine(FiveBit),
         8 => Symmetric(linear::dot_symmetric_q8_row),
         20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)),
+        39 => Symmetric(|w, a| linear::dot_block_float_row(w, a, ExponentOnly)),
+        40 => Symmetric(|w, a| linear::dot_block_float_row(w, a, GroupedE4M3)),
         41 => Symmetric(linear::dot_binary_sign_row),
         42 => Symmetric(linear::dot_two_bit_row),
         _ => return None,
@@ -896,7 +898,6 @@ fn execute_row_products(
     use linear::{dot_grouped_q2_row, encode_grouped_q8_block};
     use RowProductPlan::C0;
     let C0(_, weight_bytes, ..) = plan;
-    let symmetric = linear::encode_symmetric_q8_block::<32>;
     macro_rules! packed {
         ($encode:expr, $dot:expr) => {
             execute_block_rows(
@@ -928,7 +929,7 @@ fn execute_row_products(
         C0(.., None, 12) => packed!(encode_grouped_q8_block, linear::dot_grouped_q4_row),
         C0(.., None, 13) => packed!(encode_grouped_q8_block, linear::dot_grouped_q5_row),
         C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
-            PackedWeight::Symmetric(dot) => packed!(symmetric, dot),
+            PackedWeight::Symmetric(dot) => packed!(linear::encode_symmetric_q8_block, dot),
             PackedWeight::Affine(encoding) => {
                 packed!(linear::encode_affine_q8_block::<32>, |w, a| {
                     linear::dot_affine_weight_row(w, a, encoding)
@@ -968,7 +969,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         let mut address = request(Request::C1(plan.clone(), column))?;
         if let Response::C4(at) = address {
             let source = indices.as_ref().ok_or(BackendError::InvalidTensor)?;
-            let expert = u32::from_ne_bytes(source.region(at, 4)?.try_into().unwrap());
+            let expert = u32::from_ne_bytes(source.word(at)?);
             address = request(Request::C4(plan.clone(), column, expert.into()))?;
         }
         let (weight_base, activation, dest) = match address {
@@ -986,16 +987,12 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
             widened.as_ptr().cast::<u8>()
         } else {
             activations.region(activation, column_bytes)?.as_ptr()
-        };
+        }
+        .cast::<[f32; LANES]>();
         for block in 0..blocks {
             // SAFETY: both branches supply the entire column as contiguous binary32.
             // Imported GGML views can begin at an unaligned address.
-            let lanes = unsafe {
-                source
-                    .cast::<[f32; LANES]>()
-                    .add(block as usize)
-                    .read_unaligned()
-            };
+            let lanes = unsafe { source.add(block as usize).read_unaligned() };
             prepared.push(encode(&lanes)?);
         }
         execution.fill(values, |first, chunk| {

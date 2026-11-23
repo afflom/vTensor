@@ -186,6 +186,7 @@ model does not sanction.
 | `VT-96` | `build` | Prism admits sign, two-bit and E4M3 attention rows and binds their query conversion, key contraction and value reads to Verdant |
 | `VT-97` | `build` | Prism validates indexed key and value cache rows and maps each unmasked column to the selected cache cell for Verdant attention |
 | `VT-98` | `build` | Prism maps strided scalar copies between E4M3 and GGML float storage to the existing Verdant word conversions |
+| `VT-99` | `build` | Prism plans MXFP4 and NVFP4 matrix and indexed expert rows and Verdant contracts their E2M1 weights with signed-byte activations |
 
 ## normalization-graphs
 
