@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **18,050 passed**, **9,581 refused** and **124 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **18,196 passed**, **9,435 refused** and **124 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -45,13 +45,14 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass 68 additional dense matrix and activation compositions across F32, F16, Q4_0, Q8_0 and Q2_K. [Full-graph comparisons](verification/factory-dense-matrix-fusions.json)
 - [ ] Complete embedding, projection and KV-cache operations. Implement the 641 refused SET_ROWS factory cases, CPY/casts, block encoding and quantized dot products, the 1,932 refused standalone MUL_MAT cases, precision modes and 1,630 refused MUL_MAT_FUSION cases. Reuse the verified decoders and F32 matrix path.
 - [x] Pass all 230 Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs, including skipped experts and offset index views. [VT-83 results](verification/factory-indexed-products-vt83.json)
+- [x] Pass the 130 newly admitted packed expert compositions, including six shared-expert graphs and 124 matrix fusions. [Original full-graph comparisons](verification/factory-indexed-expert-compositions.json)
 - [ ] Pass the remaining 1,023 MUL_MAT_ID graphs. Connect 251 F32, F16 and BF16 cases to Verdant, then cover the other 772 packed cases. [Original factory cases](verification/ggml-factory-cases.tsv.gz)
 - [x] Pass all 77 ROPE_SET_ROWS and 281 RMS_NORM_MUL_ROPE graphs on the plugin. [Composition results](verification/factory-rotary-compositions.json)
 - [x] Execute BF16 key/value attention with Verdant query conversion, dot products and weighted means. 246 upstream cases pass, covering every mask/sink combination. [VT-63 results](verification/factory-bf16-attention-vt63.json)
 - [x] Pass all 533 zero-bias, zero-softcap Q4_0 and Q8_0 attention cases. 533 pass. Verdant supplies the encoder, decoder and row products. [VT-66 oracle results](verification/factory-packed-attention-vt66.json)
 - [x] Pin the Verdant head slope and validate the provider boundary with VT-02. All 40,452 upstream scalar comparisons passed, within one binary32 step. [Engine PR #27](https://github.com/afflom/verdant-engine/pull/27)
-- [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. 1,014 of 1,190 cases in the five implemented storage formats pass. Add Q4_1, Q5_0, Q5_1 and IQ4_NL for the other 384. [VT-78 comparisons](verification/factory-biased-attention-vt78.json)
-- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 4,092 pass, 1,559 are refused and 124 still need an evaluator verdict.
+- [ ] Pass the 1,574 FLASH_ATTN_EXT cases with positive head bias. 1,030 of 1,190 cases in the five implemented storage formats pass. Add Q4_1, Q5_0, Q5_1 and IQ4_NL for the other 384. [VT-78 comparisons](verification/factory-biased-attention-vt78.json)
+- [ ] Complete masked softmax and FLASH_ATTN_EXT. Of 5,775 attention cases, 4,108 pass, 1,543 are refused and 124 still need an evaluator verdict.
 - [x] Execute all 39 LOG, SIN, COS and EXP cases through Verdant, including the upstream storage and view variants. [Factory verdicts](verification/factory-elementary-vt60.json)
 - [x] Execute the 122 sigmoid and SiLU standalone, multiplied and added graphs on the pinned Verdant primitives. [Factory verdicts](verification/factory-logistic-vt61.json)
 - [x] Supply binary32 hyperbolic tangent in Verdant. All 128,870 GGML scalar comparisons pass. [Verdant PR #25](https://github.com/afflom/verdant-engine/pull/25)
