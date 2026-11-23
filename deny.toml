@@ -368,7 +368,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x6540db37 }]
+license-files = [{ path = "src/lib.rs", hash = 0x9ff04a83 }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"
@@ -708,6 +708,6 @@ license-files = [{ path = "src/lib.rs", hash = 0x099b2b77 }]
 
 [[licenses.clarify]]
 name = "verdant_bitpacked_product"
-version = "=2.34.0"
+version = "=2.37.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x67ca97b1 }]
+license-files = [{ path = "src/lib.rs", hash = 0xa17cf679 }]

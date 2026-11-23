@@ -26,6 +26,12 @@ pub enum BackendError {
     OutOfBounds,
 }
 
+impl From<std::collections::TryReserveError> for BackendError {
+    fn from(_: std::collections::TryReserveError) -> Self {
+        Self::Allocation
+    }
+}
+
 impl From<TensorComputeError> for BackendError {
     fn from(_: TensorComputeError) -> Self {
         Self::InvalidTensor
@@ -377,11 +383,7 @@ unsafe extern "C" fn tensor_init(buffer: Buf, tensor: TensorPtr) -> c_int {
         let context = &*(*buffer).context.cast::<BufferContext>();
         tensor_span(tensor).and_then(|size| context.region(tensor, size, 0, size))
     };
-    if result.is_ok() {
-        GGML_STATUS_SUCCESS
-    } else {
-        GGML_STATUS_FAILED
-    }
+    result.map_or(GGML_STATUS_FAILED, |_| GGML_STATUS_SUCCESS)
 }
 
 unsafe extern "C" fn buffer_clear(buffer: Buf, value: u8) {
@@ -642,9 +644,7 @@ fn graph_tensor_region(tensor: &Tensor, span: usize) -> Result<*mut u8, BackendE
 
 fn reserved<T>(count: usize) -> Result<Vec<T>, BackendError> {
     let mut result = Vec::new();
-    result
-        .try_reserve_exact(count)
-        .map_err(|_| BackendError::Allocation)?;
+    result.try_reserve_exact(count)?;
     Ok(result)
 }
 
@@ -1127,20 +1127,20 @@ fn execute_word(
     else {
         return Err(InvalidTensor);
     };
-    let read = |operand| match operand {
-        WordOperand::C1(index) => words.get(index as usize).copied().ok_or(InvalidTensor),
-        WordOperand::C2(value) => Ok(value),
-        operand => {
-            let (pointer, offset) = match operand {
-                WordOperand::C0(index, offset) => {
-                    (*pointers.get(index as usize).ok_or(InvalidTensor)?, offset)
-                }
-                WordOperand::C3(offset) => (destination, offset),
-                _ => return Err(InvalidTensor),
-            };
-            // SAFETY: Prism bounds the selected source or output word and its byte width.
-            unsafe { scalar_word(pointer.add(offset as usize), read_bytes, None) }
-        }
+    let read = |operand| {
+        let (pointer, offset) = match operand {
+            WordOperand::C0(index, offset) => {
+                (*pointers.get(index as usize).ok_or(InvalidTensor)?, offset)
+            }
+            WordOperand::C1(index) => {
+                return words.get(index as usize).copied().ok_or(InvalidTensor)
+            }
+            WordOperand::C2(value) => return Ok(value),
+            WordOperand::C3(offset) => (destination, offset),
+            WordOperand::C4 => return Err(InvalidTensor),
+        };
+        // SAFETY: Prism bounds the selected source or output word and its byte width.
+        unsafe { scalar_word(pointer.add(offset as usize), read_bytes, None) }
     };
     let (a, b) = (read(left)?, read(right)?);
     let failure = |overflow| {
@@ -1221,6 +1221,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         6 => Some(CenteredFive),
         7 => Some(AffineFive),
         8 => Some(SymmetricEight),
+        34 => Some(PackedTrits),
+        35 => Some(TwoBitTernary),
         41 => Some(BinarySign),
         42 => Some(CenteredTwo),
         _ => None,
@@ -1233,7 +1235,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         None => graph_tensor_data(left)?,
     };
     let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
-    let mut block_writes = Vec::new();
+    let mut offsets = Vec::new();
+    let mut encoded = Vec::new();
     let (TensorDescriptor::C0(.., span, _), lanes) = tensor_layout(tensor)?;
     let output = graph_tensor_region(tensor, span as usize)?;
     let mut values = workspace(if kind.is_some() { lanes as u64 } else { 0 }, 0.0)?;
@@ -1244,14 +1247,13 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         match instruction {
             Encode(from, to) => {
                 let (input, kind) = source.as_ref().zip(kind).ok_or(InvalidTensor)?;
-                let mut block = [0; size_of::<linear::SymmetricQ8Block<32>>()];
-                let bytes = block.get_mut(..tensor.nb[0]).ok_or(InvalidTensor)?;
                 input.decode(from, &mut values)?;
-                linear::encode_weight_block(values.as_slice(), kind, bytes)?;
-                block_writes
-                    .try_reserve(1)
-                    .map_err(|_| BackendError::Allocation)?;
-                block_writes.push((to, block));
+                let start = encoded.len();
+                encoded.try_reserve(tensor.nb[0])?;
+                encoded.resize(start + tensor.nb[0], 0);
+                linear::encode_weight_block(values.as_slice(), kind, &mut encoded[start..])?;
+                offsets.try_reserve(1)?;
+                offsets.push(to);
             }
             Rank(from, to, width, count, descending) => {
                 let width = width as usize;
@@ -1291,10 +1293,10 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
             _ => return Err(InvalidTensor),
         }
     }
-    for (offset, block) in block_writes {
+    for (offset, block) in offsets.into_iter().zip(encoded.chunks(tensor.nb[0].max(1))) {
         // SAFETY: Prism bounded each complete block in the destination. All reads and
         // numerical conversions have finished, including any overlapping source views.
-        unsafe { write_row(output.add(offset as usize), &block[..tensor.nb[0]]) };
+        unsafe { write_row(output.add(offset as usize), block) };
     }
     Ok(())
 }

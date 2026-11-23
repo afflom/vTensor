@@ -332,3 +332,9 @@ Feature: native-backend
     Given grouped IQ4_XS weights and F32 activations
     When the provider executes an ordinary or indexed matrix product
     Then each output matches the pinned GGML CPU
+
+  @VT-113 @build
+  Scenario: Prism schedules 256-lane ternary row encoders for copied and indexed writes through Verdant
+    Given TQ1_0 or TQ2_0 destinations and scalar source views
+    When vTensor stages a copied or indexed row write
+    Then the stored bytes match GGML CPU and a rejected index preserves the destination
