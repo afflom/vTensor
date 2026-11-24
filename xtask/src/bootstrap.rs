@@ -143,18 +143,10 @@ fn native_coverage_is_complete(bootstrap: &str) -> bool {
     let groups = values("group:");
     let cancels = values("cancel-in-progress:");
     let skips_runs = bootstrap.lines().map(str::trim).any(|line| {
-        [
-            "if:",
-            "continue-on-error:",
-            "include:",
-            "exclude:",
-            "paths:",
-            "paths-ignore:",
-            "branches-ignore:",
-            "tags-ignore:",
-        ]
-        .iter()
-        .any(|key| line.starts_with(key))
+        WORKFLOW
+            .native_skip_keys
+            .iter()
+            .any(|key| line.starts_with(key))
     });
     bootstrap.contains(TRIGGERS)
         && (runners == [BOTH] || runners == [PULL_REQUEST_AMD64])
@@ -191,6 +183,9 @@ struct WorkflowContract {
     deployment: WorkflowTerms,
     docker_mounts: WorkflowTerms,
     docker_workflow: WorkflowTerms,
+    #[cfg(test)]
+    disk_reservation: WorkflowTerms,
+    native_skip_keys: Vec<String>,
 }
 static WORKFLOW: std::sync::LazyLock<WorkflowContract> =
     std::sync::LazyLock::new(|| pinned_fixture!("workflow-contract-fixtures"));
@@ -268,16 +263,13 @@ fn audit_policy_files(root: &Path, lock: &serde_json::Value, sdk_lock: &[u8]) ->
         return Err("template contract schema or version is unsupported".into());
     }
     let paths = |key: &str| -> Result<Vec<&str>, Fail> {
-        contract[key]
+        let rows = contract[key]
             .as_array()
-            .ok_or_else(|| format!("template contract has no {key}"))?
-            .iter()
-            .map(|value| {
-                value
-                    .as_str()
-                    .ok_or_else(|| format!("{key} path is not a string").into())
-            })
-            .collect()
+            .ok_or_else(|| format!("template contract has no {key}"))?;
+        rows.iter()
+            .map(|row| row.as_str())
+            .collect::<Option<_>>()
+            .ok_or_else(|| format!("{key} path is not a string").into())
     };
     let universal = paths("universal_policy_paths")?;
     let project = paths("project_content_paths")?;
@@ -645,40 +637,26 @@ mod tests {
             include_str!("../../.github/workflows/bootstrap.yml"),
             include_str!("../../.github/workflows/template-update.yml"),
         ] {
-            assert_disk_reserved_before_sdk(workflow);
+            assert!(disk_reserved_before_sdk(workflow));
         }
     }
 
     #[test]
     fn sdk_pull_without_disk_reservation_is_rejected() {
         let update = include_str!("../../.github/workflows/template-update.yml");
-        let start = update
-            .find("      - name: Reserve disk for the locked SDK")
-            .expect("reservation step");
-        let end = update
-            .find("      - name: Render the complete proposal from immutable inputs")
-            .expect("render step");
-        let plant = format!("{}{}", &update[..start], &update[end..]);
-        assert!(std::panic::catch_unwind(|| assert_disk_reserved_before_sdk(&plant)).is_err());
+        check_workflow_controls("missing_disk", 1, update, disk_reserved_before_sdk);
     }
 
-    fn assert_disk_reserved_before_sdk(workflow: &str) {
-        let preparation = workflow
-            .find("name: Reserve disk for the locked SDK")
-            .expect("prepare hosted runner storage before pulling the large SDK");
+    fn disk_reserved_before_sdk(workflow: &str) -> bool {
+        let reserve = workflow.find("name: Reserve disk for the locked SDK");
         let pull = ["docker run --rm", "docker buildx imagetools inspect"]
             .iter()
             .filter_map(|needle| workflow.find(needle))
-            .min()
-            .expect("SDK invocation");
-        assert!(preparation < pull);
-        let script = &workflow[preparation..pull];
-        assert!(script.contains("${RUNNER_ENVIRONMENT:-} == github-hosted"));
-        assert!(script.contains("${RUNNER_OS:-} == Linux"));
-        assert!(script.contains("sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL"));
-        assert!(script.contains("df -h / /var/lib/docker"));
-        assert!(!script.contains("rm -rf -- /var/lib/docker"));
-        assert!(!script.contains("rm -rf -- \"$HOME\""));
+            .min();
+        reserve
+            .zip(pull)
+            .and_then(|(start, end)| workflow.get(start..end))
+            .is_some_and(|script| super::WORKFLOW.disk_reservation.matches(script))
     }
 
     fn check_workflow_controls(
@@ -714,18 +692,9 @@ mod tests {
         check_workflow_controls("native", 8, bootstrap, native_coverage_is_complete);
         // Running both architectures on every event, without concurrency, is
         // stronger than the policy and stays admissible.
-        let mut unconditional = bootstrap.replace(
-            r#"${{ fromJSON((github.event_name == 'pull_request' || github.event_name == 'merge_group') && '["ubuntu-24.04"]' || '["ubuntu-24.04", "ubuntu-24.04-arm"]') }}"#,
-            "[ubuntu-24.04, ubuntu-24.04-arm]",
-        );
-        let concurrency = unconditional
-            .find("concurrency:\n")
-            .expect("the workflow declares concurrency");
-        let jobs = unconditional
-            .find("jobs:\n")
-            .expect("the workflow has jobs");
-        unconditional.replace_range(concurrency..jobs, "");
-        assert!(native_coverage_is_complete(&unconditional));
+        check_workflow_controls("unconditional_native", 1, bootstrap, |changed| {
+            !native_coverage_is_complete(changed)
+        });
     }
 
     #[test]

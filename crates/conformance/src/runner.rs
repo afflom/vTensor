@@ -2346,16 +2346,17 @@ mod attention {
 
     enum KeyRows {
         Scalar(Vec<f32>),
+        Grouped(linear::GroupedWeightEncoding, Vec<linear::GroupedQ8Block>),
         Symmetric(BlockDot<SymmetricQ8Block<32>>, Vec<SymmetricQ8Block<32>>),
         Affine(BlockDot<AffineQ8Block<32>>, Vec<AffineQ8Block<32>>),
     }
 
-    fn prepare_blocks<B>(
+    fn prepare_blocks<const LANES: usize, B>(
         query: &[f32],
         target: &mut Vec<B>,
-        encode: impl Fn(&[f32; 32]) -> Result<B, verdant_tensor::TensorComputeError>,
+        encode: impl Fn(&[f32; LANES]) -> Result<B, verdant_tensor::TensorComputeError>,
     ) -> Result<(), BackendError> {
-        tensor_fields!((blocks, []) = query.as_chunks::<32>());
+        tensor_fields!((blocks, []) = query.as_chunks::<LANES>());
         target.clear();
         for block in blocks {
             target.push(encode(block)?);
@@ -2388,12 +2389,13 @@ mod attention {
             })
             .transpose()?;
         let mut query = workspace(shape[0] as u64, 0.0)?;
-        use super::PackedWeight::{Affine, Symmetric};
+        use super::PackedWeight::{Affine, Grouped, Symmetric};
         let blocks = query.len() / 32;
         let mut keys = match super::packed_weight(k.ty as u64) {
             Some(Symmetric(dot)) => KeyRows::Symmetric(dot, super::reserved(blocks)?),
             Some(Affine(dot)) => KeyRows::Affine(dot, super::reserved(blocks)?),
-            _ => KeyRows::Scalar(workspace(query.len() as u64, 0.0)?),
+            Some(Grouped(kind)) => KeyRows::Grouped(kind, super::reserved(query.len() / 256)?),
+            None => KeyRows::Scalar(workspace(query.len() as u64, 0.0)?),
         };
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
         let output = graph_tensor_data(tensor)?;
@@ -2423,6 +2425,9 @@ mod attention {
                         }
                         (KeyRows::Affine(_, blocks), 9) => {
                             prepare_blocks(&query, blocks, linear::encode_affine_q8_block)?
+                        }
+                        (KeyRows::Grouped(_, blocks), 15) => {
+                            prepare_blocks(&query, blocks, linear::encode_grouped_q8_block)?
                         }
                         (KeyRows::Scalar(_), 0) => {}
                         (KeyRows::Scalar(_), 30) => {
@@ -2461,6 +2466,11 @@ mod attention {
                             KeyRows::Affine(dot, blocks) => {
                                 dot(k.blocks(key_offset, query.len())?, blocks)?
                             }
+                            KeyRows::Grouped(kind, blocks) => linear::dot_grouped_weight_row(
+                                k.blocks(key_offset, query.len())?,
+                                blocks,
+                                *kind,
+                            )?,
                             KeyRows::Scalar(key) => k.dot(key_offset, &query, key)?,
                         };
                         v.decode(voff + row * vs, &mut value)?;

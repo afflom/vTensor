@@ -4,16 +4,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Place the remaining 697 of 841 directly executable flash-attention key/value pairs. Compare each output against original GGML CPU. [Descriptor sweep](verification/ggml-attention-type-descriptors.json)
+- [ ] Honor GGML’s F16 minimum accumulator setting for flash attention and verify it against the permitted F32 CPU accumulator. Check Q8/Q4 refusal.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,069 non-Prism lines** (12,618 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,067 non-Prism lines** (12,616 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Switch the signed-conversion and narrowing patches to the Verdant registry when released. [PR #63](https://github.com/afflom/verdant-engine/pull/63) · [PR #64](https://github.com/afflom/verdant-engine/pull/64)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
 
+- [x] Place all 841 directly executable flash-attention key/value pairs at default precision. Compare all 430,592 output values with GGML CPU. [VT-177](verification/supplemental-flash-storage-vt177.json)
 - [x] Execute 175 packed ADD_CAST pairs with seven codebook destinations and verify 14 matching copied or in-place forms. [VT-176](verification/supplemental-codebook-add-vt176.json)
 - [x] Probe 47,952 public binary constructor descriptors. All 709 direct CPU forms and 189 codebook forms pass sole-provider placement. [Binary operator map](verification/ggml-binary-type-descriptors.json)
 - [x] Replay stock llama-simple with the VT-175 provider. All 13 reported layers ran on vTensor and all three eight-token outputs matched CPU. [Consumer replay](verification/llama-consumer-vt175.json)

@@ -211,15 +211,9 @@ mod tests {
     /// A fresh repository with mutually consistent empty registers.
     fn scratch(name: &str) -> TestRepo {
         let fixture = TestRepo::new(name);
-        for (file, key) in [
-            ("ids", "id"),
-            ("ledger", "claim"),
-            ("authorities", "authority"),
-        ] {
-            fixture.write(
-                format!("model/{file}.toml"),
-                format!("spec = \"template/1\"\n{key} = []\n"),
-            );
+        let registers: [(String, String); 3] = pinned_fixture!("scaffold-empty-registers");
+        for (path, text) in registers {
+            fixture.write(path, text);
         }
         for dir in ["features/suites", "crates/conformance/tests"] {
             std::fs::create_dir_all(fixture.root.join(dir)).unwrap();

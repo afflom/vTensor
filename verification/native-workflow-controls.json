@@ -506,5 +506,25 @@
         "\"package-ecosystem\": \"cargo\",\n      \"schedule\": {\n        \"interval\": \"never\""
       ]
     ]
+  ],
+  "missing_disk": [
+    [
+      [
+        "      - name: Reserve disk for the locked SDK\n        shell: bash\n        run: |\n          set -euo pipefail\n          if [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux ]]; then\n            sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL\n          fi\n          df -h / /var/lib/docker\n",
+        ""
+      ]
+    ]
+  ],
+  "unconditional_native": [
+    [
+      [
+        "${{ fromJSON((github.event_name == 'pull_request' || github.event_name == 'merge_group') && '[\"ubuntu-24.04\"]' || '[\"ubuntu-24.04\", \"ubuntu-24.04-arm\"]') }}",
+        "[ubuntu-24.04, ubuntu-24.04-arm]"
+      ],
+      [
+        "concurrency:\n  group: ${{ github.event_name == 'pull_request' && format('bootstrap-pr-{0}', github.event.pull_request.number) || format('bootstrap-run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ github.event_name == 'pull_request' }}\n\n",
+        ""
+      ]
+    ]
   ]
 }

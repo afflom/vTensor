@@ -83,5 +83,28 @@
       "--volume \"$HOME/.docker:/tmp/prismpm-home/.docker:ro\""
     ],
     "counts": {}
-  }
+  },
+  "disk_reservation": {
+    "required": [
+      "${RUNNER_ENVIRONMENT:-} == github-hosted",
+      "${RUNNER_OS:-} == Linux",
+      "sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL",
+      "df -h / /var/lib/docker"
+    ],
+    "forbidden": [
+      "rm -rf -- /var/lib/docker",
+      "rm -rf -- \"$HOME\""
+    ],
+    "counts": {}
+  },
+  "native_skip_keys": [
+    "if:",
+    "continue-on-error:",
+    "include:",
+    "exclude:",
+    "paths:",
+    "paths-ignore:",
+    "branches-ignore:",
+    "tags-ignore:"
+  ]
 }

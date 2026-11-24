@@ -1,0 +1,14 @@
+[
+  [
+    "model/ids.toml",
+    "spec = \"template/1\"\nid = []\n"
+  ],
+  [
+    "model/ledger.toml",
+    "spec = \"template/1\"\nclaim = []\n"
+  ],
+  [
+    "model/authorities.toml",
+    "spec = \"template/1\"\nauthority = []\n"
+  ]
+]

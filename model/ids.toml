@@ -1128,3 +1128,9 @@ id = "VT-176"
 level = "build"
 suite = "native-backend"
 statement = "Packed GGML addition reaches all seven codebook destination encodings through Verdant"
+
+[[id]]
+id = "VT-177"
+level = "build"
+suite = "native-backend"
+statement = "GGML flash attention supports all directly executable key and value storage pairs with default precision"

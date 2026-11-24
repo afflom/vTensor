@@ -264,6 +264,7 @@ model does not sanction.
 | `VT-174` | `build` | Copied and in-place packed GGML addition repeats scalar and partial-width addends across all four axes |
 | `VT-175` | `build` | F8_E4M3 addition repeats dense and offset padded F32 addends across all four axes |
 | `VT-176` | `build` | Packed GGML addition reaches all seven codebook destination encodings through Verdant |
+| `VT-177` | `build` | GGML flash attention supports all directly executable key and value storage pairs with default precision |
 
 ## normalization-graphs
 

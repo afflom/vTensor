@@ -722,3 +722,9 @@ Feature: native-backend
     Given 25 stored weight encodings and seven codebook destinations with original GGML quantizers
     When GGML places packed addition casts and matching in-place graphs on vTensor
     Then every stored output byte matches GGML CPU F32 addition followed by the original GGML codebook quantizer
+
+  @VT-177 @build
+  Scenario: GGML flash attention supports all directly executable key and value storage pairs with default precision
+    Given the original GGML CPU executes 841 key and value type pairs on a two-query attention graph
+    When the stock scheduler places the 697 previously unplaced pairs on vTensor
+    Then each complete output satisfies the original GGML flash attention error limit

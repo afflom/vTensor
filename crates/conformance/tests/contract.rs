@@ -70,6 +70,7 @@ ggml_batches! {
     fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
+    fn flash_storage_pairs_vt_177() { "flash-storage", 697, ["attention"] }
     fn codebook_addition_vt_176() { "codebook-add", 189, ["typed"] }
     fn e4m3_add_repeats_vt_175() { "e4m3-repeat", 12, ["typed"] }
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
@@ -1284,7 +1285,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "0c5284e45b44fe44636ea58b8597f7e3a94ee60a77ed64d98013ab9d7750c23d",
+            "b105c85e655b536d1f08b855aff16fac149221147a9f83ae837dfc52b9ee6e9a",
         )
     });
 
@@ -2167,6 +2168,42 @@ int main(int argc, char **argv) {
             }
         }
         return finish(compared);
+    }
+    if (!strcmp(argv[3],"flash-storage")) {
+        std::map<std::pair<int,int>,std::vector<unsigned char>> samples;
+        int count; CHECK(scanf("%d",&count)==1 && count==59);
+        for(int i=0;i<count;++i) {
+            int slot,kind; size_t size; CHECK(scanf("%d%d%zu",&slot,&kind,&size)==3);
+            auto bytes=read_hex_bytes(size); CHECK(!bytes.empty() && samples.emplace(std::make_pair(slot,kind),std::move(bytes)).second);
+        }
+        size_t cases=0; int key_type,value_type;
+        while(scanf("%d%d",&key_type,&value_type)==2) {
+            graph_fixture ctx(6); CHECK(ctx);
+            auto q=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,256,2);
+            auto k=ggml_new_tensor_2d(ctx,ggml_type(key_type),256,3),v=ggml_new_tensor_2d(ctx,ggml_type(value_type),256,3);
+            auto out=ggml_flash_attn_ext(ctx,q,k,v,nullptr,0.0625f,0,0);
+            auto graph=ctx.build(out); CHECK(ggml_backend_supports_op(backend,out) && ctx.placed(graph,backend));
+            ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend)); CHECK(ctx.storage);
+            int slot=0;
+            for(auto t:{q,k,v}) {
+                const auto &bytes=samples.at({slot++,t->type}); CHECK(bytes.size()==ggml_nbytes(t));
+                ggml_backend_tensor_set(t,bytes.data(),0,bytes.size());
+            }
+            CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+            std::array<float,512> expected,actual; ggml_backend_tensor_get(out,expected.data(),0,sizeof(expected));
+            ggml_backend_tensor_memset(out,0xff,0,sizeof(expected));
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+            ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
+            double energy=0,error=0;
+            for(size_t i=0;i<actual.size();++i) {
+                CHECK(std::isfinite(actual[i]) && std::isfinite(expected[i]));
+                double delta=double(actual[i])-expected[i]; error+=delta*delta; energy+=double(expected[i])*expected[i];
+            }
+            if(!(energy>0 && error<=5e-4*energy)) {fprintf(stderr,"flash attention differs for %d / %d\n",key_type,value_type);return 2;}
+            ++cases;
+        }
+        CHECK(feof(stdin));
+        return finish(cases);
     }
     if (!strcmp(argv[3],"e4m3-repeat")) {
         size_t cases=0;

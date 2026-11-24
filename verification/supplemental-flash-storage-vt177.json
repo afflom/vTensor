@@ -1,0 +1,22 @@
+{
+  "requirement": "VT-177",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "semantic_id": "bf121795f0e4d0e41a338fa4e11a7ad0ea63ab222c86dc6eb1828ae16efc3dac",
+  "attestation": "7b4fe73ad9a0baa652a69a72d063731affbaf491386ee3bc0464443b74fb930d",
+  "provider_sha256": "829f6ec72216a9bd70dc8c87088273f466f2062d30725e75ca831b8226fcf160",
+  "baseline": "ggml-attention-type-descriptors.json",
+  "sdk_inputs": "ggml-flash-storage-oracle.json",
+  "descriptors": 1296,
+  "direct_cpu_pairs": 841,
+  "provider_placements": 841,
+  "previous_placements": 144,
+  "new_pairs": 697,
+  "sdk_comparisons": 356864,
+  "sweep_comparisons": 430592,
+  "sweep_max_nmse": 2.52174307532e-14,
+  "upstream_nmse_limit": 0.0005,
+  "table": "ggml-attention-type-descriptors-vt177.tsv.gz",
+  "table_sha256": "600fcc8fc1999ed88dbadd29ef7b67a35087637f59fc4e56cb9de88dcc05692e",
+  "source_lines": 12616,
+  "negative_control": "Forcing IQ1_M keys with Q2_0 values to reuse the first key row failed flash attention differs for 29 / 42. Restoring per-row addressing passed the complete SDK suite."
+}

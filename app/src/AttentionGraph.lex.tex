@@ -4,6 +4,7 @@
 \importmodule{NormPlan}
 \importmodule{RmsNormalization}
 \importmodule{ScalarDotStorage}
+\importmodule{QuantizedMatrix}
 \importmodule{TensorTypes}
 \title{Natural number}
 \begin{semanticmodule}
@@ -233,7 +234,7 @@ definition{
   name: queryStorage,
   parameters: [kind : Nat],
   result: Nat,
-  body: (if (ScalarDotStorage::symmetricActivationWeights kind) then 8 else (if (ScalarDotStorage::affineActivationWeights kind) then 9 else (ScalarDotStorage::activationType kind))),
+  body: (if (QuantizedMatrix::groupedWeights kind) then 15 else (if ((ScalarDotStorage::symmetricActivationWeights kind) || (QuantizedMatrix::blockFloatWeights kind)) then 8 else (if (ScalarDotStorage::affineActivationWeights kind) then 9 else (ScalarDotStorage::activationType kind)))),
   executable: true
 }
 
@@ -243,7 +244,7 @@ definition{
   result: Bool,
   body: (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.unknownType => false
-    | TensorTypes::TypeStorageDecision.knownType storage => (((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (kind =? 43)) || (ScalarDotStorage::packedActivationWeights kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
+    | TensorTypes::TypeStorageDecision.knownType storage => (((((((kind =? 0) || (kind =? 1)) || (kind =? 30)) || (kind =? 43)) || (QuantizedMatrix::rowProductType kind)) && (stride =? (project storage typeSize))) && (multiple lanes (project storage blockSize)))),
   executable: true
 }
 

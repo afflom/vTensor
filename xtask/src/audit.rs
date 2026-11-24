@@ -739,13 +739,7 @@ pub mod prism {
                 "source drift passed despite unused source budget"
             );
 
-            let text = b"fn imported() {}\n";
-            let mut imported = Measure::default();
-            let pins = BTreeMap::from([("oracle.rs".to_string(), sha256_hex(text))]);
-            imported.add("oracle.rs", text, &pins);
-            assert_eq!(imported.total(), 0);
-            imported.add("oracle.rs", b"fn altered() {}\n", &pins);
-            assert_eq!(imported.total(), 1, "drifted imported bytes were exempted");
+            check_content_binding("oracle.rs", b"fn imported() {}\n", b"fn altered() {}\n", 1);
         }
 
         fn measure<'a>(files: impl IntoIterator<Item = (&'a str, &'a str)>) -> Measure {
@@ -756,65 +750,60 @@ pub mod prism {
             m
         }
 
+        static INPUTS: std::sync::LazyLock<serde_json::Value> =
+            std::sync::LazyLock::new(|| pinned_fixture!("source-accounting-inputs"));
+
         #[test]
         fn counts_code_not_comments_or_blank_lines() {
-            let rust = "// why\n/* a\n block */\nfn a() {}\n\n/* x */ let b = 1;\n";
-            assert_eq!(count_lines(rust, Comments::C), 2);
-            assert_eq!(
-                count_lines("#!/bin/sh\n# why\necho hi\n", Comments::Hash),
-                1
-            );
-            assert_eq!(
-                count_lines("/- doc\n-/\n-- x\ndef a := 1\n", Comments::Lean),
-                1
-            );
-            assert_eq!(count_lines("<!--\n x -->\n<p>a</p>\n", Comments::Html), 1);
+            let samples: [(&str, &str, usize); 4] =
+                serde::Deserialize::deserialize(&INPUTS["comment_styles"]).unwrap();
+            for (path, source, count) in samples {
+                assert_eq!(
+                    count_lines(source, language(path).unwrap()),
+                    count,
+                    "{path}"
+                );
+            }
         }
 
         #[test]
         fn prism_and_data_are_not_counted() {
-            let m = measure([
-                ("app/src/Kernel.lex.tex", "def a := 1\n"),
-                ("model/ids.toml", "x = 1\n"),
-                ("app/product.json", "{}\n"),
-                ("studio/a.mjs", "export {}\n"),
-            ]);
-            assert_eq!(m.files.keys().collect::<Vec<_>>(), ["studio/a.mjs"]);
+            let files: BTreeMap<&str, &str> =
+                serde::Deserialize::deserialize(&INPUTS["paths"]).unwrap();
+            assert_eq!(
+                measure(files).files.keys().collect::<Vec<_>>(),
+                ["studio/a.mjs"]
+            );
         }
 
         #[test]
         fn locks_bind_frame_files_and_generated_output() {
-            let frame = r#"{"source": {"repository": "UOR-Foundation/template"}, "files": [{"path": "site/app.mjs", "sha256": "aa"}]}"#;
-            let stitch = r#"{"repository": "afflom/stitch", "output": {"path": "identity/prism-id.mjs", "sha256": "bb"}}"#;
-            let locks = bound(|name| {
-                Ok(match name {
-                    "frame.lock" => Some(frame.to_string()),
-                    "identity/stitch.lock" => Some(stitch.to_string()),
-                    _ => None,
-                })
-            })
-            .unwrap();
-            assert_eq!(locks.get("site/app.mjs").map(String::as_str), Some("aa"));
-            assert_eq!(
-                locks.get("identity/prism-id.mjs").map(String::as_str),
-                Some("bb")
-            );
-            let bad = r#"{"repository": "afflom/stitch", "files": [{"path": "x"}]}"#;
-            assert!(bound(|_| Ok(Some(bad.to_string()))).is_err());
-            // The template's own frame.lock names no source, so it binds nothing.
-            let own = r#"{"files": [{"path": "site/app.mjs", "sha256": "aa"}]}"#;
-            assert!(bound(|_| Ok(Some(own.to_string()))).unwrap().is_empty());
+            type Locks = BTreeMap<String, String>;
+            let cases: [(BTreeMap<&str, serde_json::Value>, Option<Locks>); 3] =
+                serde::Deserialize::deserialize(&INPUTS["lock_cases"]).unwrap();
+            for (files, expected) in cases {
+                let actual = bound(|name| Ok(files.get(name).map(serde_json::Value::to_string)));
+                assert_eq!(actual.ok(), expected);
+            }
         }
 
         #[test]
         fn frame_counts_only_while_its_bytes_match_the_lock() {
-            let bytes = b"export const a = 1;\n";
-            let lock = BTreeMap::from([("site/app.mjs".to_string(), sha256_hex(bytes))]);
+            check_content_binding(
+                "site/app.mjs",
+                b"export const a = 1;\n",
+                b"export const a = 2;\nlet b;\n",
+                2,
+            );
+        }
+
+        fn check_content_binding(path: &str, original: &[u8], changed: &[u8], lines: usize) {
+            let lock = BTreeMap::from([(path.to_string(), sha256_hex(original))]);
             let mut m = Measure::default();
-            m.add("site/app.mjs", bytes, &lock);
+            m.add(path, original, &lock);
             assert!(m.files.is_empty());
-            m.add("site/app.mjs", b"export const a = 2;\nlet b;\n", &lock);
-            assert_eq!(m.total(), 2);
+            m.add(path, changed, &lock);
+            assert_eq!(m.total(), lines, "drifted imported bytes were exempted");
         }
 
         #[derive(serde::Deserialize)]

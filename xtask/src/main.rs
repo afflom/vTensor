@@ -28,7 +28,7 @@ static FIXTURE_DIGESTS: std::sync::LazyLock<std::collections::BTreeMap<&str, &st
         let bytes = include_bytes!("../../verification/xtask-fixture-digests.json");
         assert_eq!(
             repo_model::artifact::sha256_hex(bytes),
-            "290d25df94427fea77a10b6b2e4f335ce789d41b2c13b9aedb68efdb47d74d2a"
+            "6302051ff88da645fa6476f33d8ba0e5e888919917c09eb14a58ca4c5af85390"
         );
         serde_json::from_slice(bytes).expect("pinned xtask fixture digests")
     });

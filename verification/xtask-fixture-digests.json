@@ -1,13 +1,15 @@
 {
   "authority-pin-controls": "c584ef665bea4bdc6a3e2c159d700791259656e80e35bfddd944ce6fa2dd241e",
   "dependency-update-pinned": "b838a51eda03ca6ce9c47e1e74fc42d4d90176a3d6b6e258f8056acd8ccc0550",
-  "native-workflow-controls": "d444f9dc6af1168fcd0ef2a74a30b62c78dc4870e176a0114740c124719ccfb5",
+  "native-workflow-controls": "b658f4348c19d4a252baaf64c2e030757634885ce44661533bf0b2037c7813ad",
   "proof-reuse-documents": "838d9933dbd95cb9b8a89c26f6e52ae2f6fe6ab4b8dd2786c3550a7ed9235499",
   "proof-reuse-observations": "3e9ef5b1daecc5dae3ed9e692ae9449f4c72b61ce6f4acb6df58976e73ddbfcb",
   "repository-gate-fixtures": "c72231192e8d2e034efef570ddd3f719d54a0562815a58b924e202f5034ba8d5",
+  "scaffold-empty-registers": "c918432b2c3980f564fb913cff4bf305ba471ec1880d844189a1bbce8aad266c",
   "scaffold-invalid-arguments": "fc93df63dedd481e217c462b7ccf7b46cdfca33829ca1dd06b87a6a1268882bf",
   "sdk-identity-controls": "606032aa9bbdf32796eb4e4ab07083851e56f3978174080dfdc90e6c1b54e352",
   "sdk-platform-inventory-controls": "78410957e2a7e8e8b2d0ef1d80d658559873788b9752b6d884ce5c29854d4eb2",
+  "source-accounting-inputs": "53289252d963e9e14b8596eaed0642f6ac0206fa83f36d1abd4c76099cf34917",
   "source-budget-controls": "5a2936c3574b36636a36d00c0530b8c0492930faa82bf56347808bd7af5c3de3",
-  "workflow-contract-fixtures": "2c368019d757aac0e7e4fa3e2019e446b4d61f7a958b9a977a499b8b90205860"
+  "workflow-contract-fixtures": "f830d631778f8d035eef2911efb35df39586d12aef9062334a14d490f4e45e2e"
 }

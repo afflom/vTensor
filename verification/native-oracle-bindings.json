@@ -439,7 +439,8 @@
     "ggml-packed-add-oracle": "962a1d50b1d2a1cf500b8129471e3d3dc634f9e41168ffe2cdf17e5996b8e5cb",
     "ggml-prepacked-matrix-oracle": "affd084b11aad40137318c93ab240986abb49b038f362914577205ab432f348e",
     "ggml-bfloat-matrix-oracle": "74d5e73f1f814339bbb7b57efacf7ceee4ef6447cc1f280e5f84b686635c5266",
-    "ggml-codebook-add-oracle": "c8ec1f1c51eaa21d4b45200c636174d9dc3d2bc4a183ac81008009bfd3807b80"
+    "ggml-codebook-add-oracle": "c8ec1f1c51eaa21d4b45200c636174d9dc3d2bc4a183ac81008009bfd3807b80",
+    "ggml-flash-storage-oracle": "dfc6509dd2187eafb7c99d1622c08873323a6e29b523564cbd9b77b8c61f6518"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -628,6 +629,7 @@
     "bfloat-products": "ggml-bfloat-matrix",
     "packed-broadcast": "ggml-packed-add",
     "packed-lanes": "ggml-packed-add",
-    "codebook-add": "ggml-codebook-add"
+    "codebook-add": "ggml-codebook-add",
+    "flash-storage": "ggml-flash-storage"
   }
 }

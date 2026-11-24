@@ -1,0 +1,84 @@
+{
+  "comment_styles": [
+    [
+      "sample.rs",
+      "// why\n/* a\n block */\nfn a() {}\n\n/* x */ let b = 1;\n",
+      2
+    ],
+    [
+      "sample.sh",
+      "#!/bin/sh\n# why\necho hi\n",
+      1
+    ],
+    [
+      "sample.lean",
+      "/- doc\n-/\n-- x\ndef a := 1\n",
+      1
+    ],
+    [
+      "sample.html",
+      "<!--\n x -->\n<p>a</p>\n",
+      1
+    ]
+  ],
+  "paths": {
+    "app/src/Kernel.lex.tex": "def a := 1\n",
+    "model/ids.toml": "x = 1\n",
+    "app/product.json": "{}\n",
+    "studio/a.mjs": "export {}\n"
+  },
+  "lock_cases": [
+    [
+      {
+        "frame.lock": {
+          "source": {
+            "repository": "UOR-Foundation/template"
+          },
+          "files": [
+            {
+              "path": "site/app.mjs",
+              "sha256": "aa"
+            }
+          ]
+        },
+        "identity/stitch.lock": {
+          "repository": "afflom/stitch",
+          "output": {
+            "path": "identity/prism-id.mjs",
+            "sha256": "bb"
+          }
+        }
+      },
+      {
+        "site/app.mjs": "aa",
+        "identity/prism-id.mjs": "bb"
+      }
+    ],
+    [
+      {
+        "identity/stitch.lock": {
+          "repository": "afflom/stitch",
+          "files": [
+            {
+              "path": "x"
+            }
+          ]
+        }
+      },
+      null
+    ],
+    [
+      {
+        "frame.lock": {
+          "files": [
+            {
+              "path": "site/app.mjs",
+              "sha256": "aa"
+            }
+          ]
+        }
+      },
+      {}
+    ]
+  ]
+}

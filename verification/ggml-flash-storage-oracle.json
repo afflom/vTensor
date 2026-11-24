@@ -1,0 +1,11 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "baseline": "ggml-attention-type-descriptors.json",
+  "constructor": "ggml_flash_attn_ext",
+  "cpu_core_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "fields": "59 original GGML-encoded source buffers indexed by slot and storage ID, followed by the 697 directly executable key/value pairs refused by the VT-175 provider. Each pair is evaluated live on the original GGML CPU kernel in the pinned SDK.",
+  "source_values": "F32 source at index i and slot s is (((i*(13+2*s)+7*s) mod 37)-18)/32. ggml_quantize_chunk encoded each source once, with uniform importance only when required.",
+  "nmse_limit": 0.0005,
+  "upstream_test": "test_flash_attn_ext::max_nmse_err in tests/test-backend-ops.cpp",
+  "words_sha256": "10aaf46845ce1753766b9db5ef649614a977d8dfc32f0b8f2869725cc7085a98"
+}
