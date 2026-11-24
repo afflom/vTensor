@@ -1,0 +1,40 @@
+{
+  "requirement": "VT-165",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "pairs": [
+    "F16 -> F64",
+    "BF16 -> F64",
+    "F8_E4M3 -> F64",
+    "I8 -> F64",
+    "I16 -> F64",
+    "I32 -> F64",
+    "F32 -> I64",
+    "F16 -> I64",
+    "BF16 -> I64",
+    "F8_E4M3 -> I64",
+    "I64 -> F16",
+    "I64 -> F8_E4M3"
+  ],
+  "reference": "ggml-wide-staged-oracle.json",
+  "inputs": "ggml-wide-staged-words.tsv",
+  "groups": 12,
+  "contiguous_graphs": 21,
+  "padded_reshaped_graphs": 21,
+  "compared_words": 2688,
+  "invalid_truncations_preserving_destination": 52,
+  "padding": "Compared every byte in the complete destination storage, including padding and guard columns.",
+  "scheduler": "The stock GGML scheduler assigns every node to vTensor before allocation. The device admits the result after allocation.",
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "semantic_id": "2d02649b24aef387b8692797b41b6a7c8515e58eed459ff3e2ccffd1e0efab18",
+  "attestation": "37ce9547071c5559054302efd49f19a0646ccf7ef94942c50baee1c5227211bd",
+  "verdant_revision": "f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac",
+  "numeric_entry_points": [
+    "evaluate_wide",
+    "evaluate_small_float",
+    "convert_float_storage",
+    "extract_packed_field",
+    "evaluate_encoded_word"
+  ],
+  "negative": "Before implementation vTensor refused the first descriptor. Clearing the upper signed magnitude during widening then failed the independent oracle. Restoring the certified operation passed.",
+  "handwritten_lines": 12700
+}

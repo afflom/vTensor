@@ -252,6 +252,7 @@ model does not sanction.
 | `VT-162` | `build` | Prism composes E4M3 and signed integer conversions against the original GGML E4M3 quantizer and dequantizer |
 | `VT-163` | `build` | Prism and Verdant convert between I64 and each narrower signed GGML storage width against the imported Lean signed word conversions |
 | `VT-164` | `build` | Prism routes signed I64 conversions to F32 and F64 and representable F64 truncations to I64 through Verdant against Berkeley SoftFloat |
+| `VT-165` | `build` | Prism composes twelve wide GGML scalar conversions through Verdant and preserves the whole destination on invalid truncation |
 
 ## normalization-graphs
 
@@ -377,7 +378,7 @@ An authority is cited, never re-derived, and never gated on: what it states is n
 | `LLAMA-CPP-GGML-BACKEND` | https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5 | -- |
 | `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/tree/f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac | `VT-02` |
 | `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
-| `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161`, `VT-164` |
+| `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161`, `VT-164`, `VT-165` |
 | `LEAN-SIGNED-MACHINE-INTEGERS` | https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/Init/Data/SInt/Basic.lean | `VT-163` |
 
 ## Claims that are not conformance IDs

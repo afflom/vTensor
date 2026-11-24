@@ -1808,11 +1808,22 @@ definition{
 }
 
 definition{
+  name: wideCastStages,
+  parameters: [source : Nat, destination : Nat],
+  result: Nat,
+  body: (if (destination =? 28) then
+      (if ((castSignedInteger source) || ((copyFloatType source) && (if (source =? 0) then false else true))) then 2 else 1)
+    else (if ((destination =? 27) && (copyFloatType source)) then (if (source =? 0) then 2 else 3)
+    else (if ((source =? 27) && ((destination =? 1) || (destination =? 43))) then 2 else 1))),
+  executable: true
+}
+
+definition{
   name: signedCopyPair,
   parameters: [source : Nat, destination : Nat],
   result: Bool,
-  body: (if (source =? 27) then (((destination =? 0) || (destination =? 28)) || (castSignedInteger destination)) else
-    (if (destination =? 27) then ((source =? 28) || (castSignedInteger source)) else ((((source =? 0) && (destination =? 28)) || ((source =? 28) && (destination =? 0))) || (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((copyFloatType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((copyFloatType source) && (castSignedInteger destination)))))),
+  body: ((1 <? (wideCastStages source destination)) || (if (source =? 27) then (((destination =? 0) || (destination =? 28)) || (castSignedInteger destination)) else
+    (if (destination =? 27) then ((source =? 28) || (castSignedInteger source)) else ((((source =? 0) && (destination =? 28)) || ((source =? 28) && (destination =? 0))) || (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((copyFloatType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((copyFloatType source) && (castSignedInteger destination))))))),
   executable: true
 }
 
@@ -1820,7 +1831,7 @@ definition{
   name: planSignedCopy,
   parameters: [left : TensorDescriptor, base : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (let readWidth : Nat := (wordBytes (project left ty)); (let writeWidth : Nat := (wordBytes (project output ty)); (let count : Nat := (blockCount left 1); (if (((((sameWordView base output) && (count =? (blockCount output 1))) && (scalarCopySpan left count readWidth)) && (scalarCopySpan output count writeWidth)) && ((count =? 0) || (writeWidth <=? (project output s0)))) then (ctor PointwiseDecision.copyBlocks (prim multiply 2 count : Nat) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.signedCopy count (project left ty) (project output ty))) else (ctor PointwiseDecision.invalidShape))))),
+  body: (let readWidth : Nat := (wordBytes (project left ty)); (let writeWidth : Nat := (wordBytes (project output ty)); (let count : Nat := (blockCount left 1); (if (((((sameWordView base output) && (count =? (blockCount output 1))) && (scalarCopySpan left count readWidth)) && (scalarCopySpan output count writeWidth)) && ((count =? 0) || (writeWidth <=? (project output s0)))) then (ctor PointwiseDecision.copyBlocks (prim multiply ((wideCastStages (project left ty) (project output ty)) + 1) count : Nat) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.signedCopy count (project left ty) (project output ty))) else (ctor PointwiseDecision.invalidShape))))),
   executable: true
 }
 
@@ -3316,10 +3327,35 @@ definition{
 }
 
 definition{
+  name: wideCastStep,
+  parameters: [source : Nat, destination : Nat, stage : Nat, stages : Nat],
+  result: WordOperation,
+  body: (if (stages =? 1) then (signedCopyOperation source destination) else
+    (if (destination =? 28) then
+      (if (castSignedInteger source) then (if (stage =? 0) then (signed64WidthOperation source 27) else (ctor WordOperation.wide 7))
+      else (if (stage =? 0) then (castWord source 0) else (ctor WordOperation.wide 1)))
+    else (if (destination =? 27) then
+      (if ((stage + 1) =? stages) then (ctor WordOperation.wide 8) else
+      (if ((stage + 2) =? stages) then (ctor WordOperation.wide 1) else (castWord source 0)))
+    else (if (stage =? 0) then (ctor WordOperation.wide 9) else (castWord 0 destination))))),
+  executable: true
+}
+
+definition{
   name: signedCopyStep,
   parameters: [index : Nat, count : Nat, sourceKind : Nat, destinationKind : Nat, source : IndexContext, destination : IndexContext],
   result: GraphResponse,
-  body: (if (index <? count) then (ctor GraphResponse.instruction (signedCopyOperation sourceKind destinationKind) (ctor WordOperand.source 0 (blockOffset index source)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch index) (wordBytes sourceKind) 4) else (let element : Nat := (prim subtract index count : Nat); (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch element) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset element destination)) 4 (wordBytes destinationKind)))),
+  body: (let stages : Nat := (wideCastStages sourceKind destinationKind);
+    (let setup : Nat := (prim multiply stages count : Nat);
+      (if (index <? setup) then
+        (let element : Nat := (prim quotient index stages 0 : Nat);
+          (let stage : Nat := (prim remainder index stages 0 : Nat);
+            (ctor GraphResponse.instruction (wideCastStep sourceKind destinationKind stage stages)
+              (if (stage =? 0) then (ctor WordOperand.source 0 (blockOffset element source)) else (ctor WordOperand.scratch element))
+              (ctor WordOperand.immediate 0) (ctor WordTarget.scratch element) (if (stage =? 0) then (wordBytes sourceKind) else 8) 8)))
+      else (let element : Nat := (prim subtract index setup : Nat);
+        (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch element)
+          (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset element destination)) 8 (wordBytes destinationKind)))))),
   executable: true
 }
 

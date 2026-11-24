@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn staged_wide_casts_vt_165() { "wide-staged", 2740, ["pointwise"] }
     fn signed64_floats_vt_164() { "signed64-floats", 396, ["pointwise"] }
     fn signed64_widths_vt_163() { "signed64-widths", 768, ["pointwise"] }
     fn octet_integer_casts_vt_162() { "octet-integers", 12, ["pointwise"] }
@@ -1272,7 +1273,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "9248b2c97b031ecdd9e3a799b24f904f4962328911923f7891a6a6e20d837c01",
+            "2f9cb16ddc3d8b70c67938fc323901be8c4c81c917dc04c543d052dceb040a16",
         )
     });
 
@@ -1856,6 +1857,11 @@ size_t block_address(const ggml_tensor *tensor, size_t ordinal) {
     ggml_unravel_index(tensor,ordinal*block,&i0,&i1,&i2,&i3);
     return (i0/block)*tensor->nb[0]+i1*tensor->nb[1]+i2*tensor->nb[2]+i3*tensor->nb[3];
 }
+static void set_scalar_word(ggml_tensor *tensor, size_t element, uint64_t word) {
+    std::array<uint8_t,8> bytes{};
+    for (size_t j=0;j<tensor->nb[0];++j) bytes.at(j)=uint8_t(word>>(8*j));
+    ggml_backend_tensor_set(tensor,bytes.data(),block_address(tensor,element),tensor->nb[0]);
+}
 static bool read_fixture_word(uint64_t &word) {
     uint8_t bytes[8];if(fread(bytes,1,8,stdin)!=8)return false;
     word=0;for(int i=0;i<8;i++)word|=uint64_t(bytes[i])<<(8*i);
@@ -2092,18 +2098,18 @@ int main(int argc, char **argv) {
     }
     const bool binary_widths=!strcmp(argv[3],"binary-widths");
     const bool signed64_floats=!strcmp(argv[3],"signed64-floats");
-    if (binary_widths || signed64_floats || !strcmp(argv[3],"signed64-widths")) {
+    const bool staged=!strcmp(argv[3],"wide-staged");
+    if (staged || binary_widths || signed64_floats || !strcmp(argv[3],"signed64-widths")) {
         size_t compared=0;
-        for (int pair=0;pair<(binary_widths?2:signed64_floats?3:6);++pair) {
+        for (int pair=0;pair<(staged?21:binary_widths?2:signed64_floats?3:6);++pair) {
             int from=pair==0?GGML_TYPE_F32:GGML_TYPE_F64, to=pair==0?GGML_TYPE_F64:GGML_TYPE_F32;
             if (!binary_widths) CHECK(scanf("%d %d",&from,&to)==2);
+            int invalid_count=(from==GGML_TYPE_F64 && to==GGML_TYPE_I64)?6:0;
+            if (staged) CHECK(scanf("%d",&invalid_count)==1 && invalid_count>=0 && invalid_count<=64);
             std::array<uint64_t,64> inputs{}, expected{};
             for (size_t i=0;i<inputs.size();++i) CHECK(scanf("%" SCNx64 " %" SCNx64,&inputs[i],&expected[i])==2);
-            std::vector<uint64_t> invalid;
-            if (from==GGML_TYPE_F64 && to==GGML_TYPE_I64) {
-                invalid.resize(6);
-                for (auto &word:invalid) CHECK(scanf("%" SCNx64,&word)==1);
-            }
+            std::vector<uint64_t> invalid(invalid_count);
+            for (auto &word:invalid) CHECK(scanf("%" SCNx64,&word)==1);
             for (bool padded : {false,true}) {
                 if (binary_widths && padded) continue;
                 graph_fixture target(8); CHECK(target);
@@ -2120,11 +2126,7 @@ int main(int argc, char **argv) {
                 target.storage.reset(ggml_backend_alloc_ctx_tensors(target,backend));
                 CHECK(target.storage && ggml_backend_supports_op(backend,result));
                 ggml_backend_buffer_clear(target.storage.get(),0xa5);
-                for (size_t i=0;i<inputs.size();++i) {
-                    uint8_t bytes[8];
-                    for (size_t j=0;j<input->nb[0];++j) bytes[j]=uint8_t(inputs[i]>>(8*j));
-                    ggml_backend_tensor_set(input,bytes,block_address(input,i),input->nb[0]);
-                }
+                for (size_t i=0;i<inputs.size();++i) set_scalar_word(input,i,inputs[i]);
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
                 auto actual=tensor_bytes(padded?out:result);
                 std::vector<uint8_t> oracle(actual.size(),0xa5);
@@ -2133,15 +2135,13 @@ int main(int argc, char **argv) {
                     uint64_t word=0;
                     for (size_t j=0;j<result->nb[0];++j) word|=uint64_t(actual.at(offset+j))<<(8*j);
                     const auto nan=[&](uint64_t x){return to==GGML_TYPE_F64 ? (x&0x7fffffffffffffffULL)>0x7ff0000000000000ULL : (x&0x7fffffff)>0x7f800000;};
-                    CHECK(word==expected[i] || (binary_widths && nan(word) && nan(expected[i])));
+                    CHECK(word==expected[i] || ((binary_widths || (staged && to==GGML_TYPE_F64)) && nan(word) && nan(expected[i])));
                     for (size_t j=0;j<result->nb[0];++j) oracle.at(offset+j)=actual.at(offset+j);
                     ++compared;
                 }
                 CHECK(oracle==actual);
                 for (uint64_t word:invalid) {
-                    uint8_t bytes[8];
-                    for (size_t j=0;j<sizeof(word);++j) bytes[j]=uint8_t(word>>(8*j));
-                    ggml_backend_tensor_set(input,bytes,block_address(input,63),sizeof(word));
+                    set_scalar_word(input,inputs.size()-1,word);
                     ggml_backend_tensor_memset(padded?out:result,0x33,0,actual.size());
                     CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
                     CHECK(tensor_bytes(padded?out:result)==std::vector<uint8_t>(actual.size(),0x33));

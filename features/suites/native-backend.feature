@@ -650,3 +650,9 @@ Feature: native-backend
     Given signed extremes, precision boundaries, fractional values and invalid binary64 encodings
     When GGML constructs contiguous casts and reshaped copies into offset views
     Then the output matches SoftFloat and an invalid truncation preserves the destination
+
+  @VT-165 @build
+  Scenario: Prism composes twelve wide GGML scalar conversions through Verdant and preserves the whole destination on invalid truncation
+    Given original GGML octet encodings and SoftFloat conversion words
+    When stock GGML schedules contiguous casts and reshaped copies into offset views
+    Then each word and padding byte matches its oracle and invalid results preserve the destination

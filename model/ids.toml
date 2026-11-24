@@ -1056,3 +1056,9 @@ id = "VT-164"
 level = "build"
 suite = "native-backend"
 statement = "Prism routes signed I64 conversions to F32 and F64 and representable F64 truncations to I64 through Verdant against Berkeley SoftFloat"
+
+[[id]]
+id = "VT-165"
+level = "build"
+suite = "native-backend"
+statement = "Prism composes twelve wide GGML scalar conversions through Verdant and preserves the whole destination on invalid truncation"

@@ -433,7 +433,8 @@
     "matrix-fixture-baseline": "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
     "native-fixture-baseline": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
     "native-fixture-source-release": "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
-    "typed-binary-fixture-baseline": "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959"
+    "typed-binary-fixture-baseline": "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959",
+    "ggml-wide-staged-oracle": "6adb74fa8b28b941c9736191de4f51d586493b8cb494555b749aa94194987d14"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -613,6 +614,7 @@
   "cast_word_tables": {
     "binary-widths": "ggml-binary-width",
     "signed64-widths": "ggml-signed64-width",
-    "signed64-floats": "ggml-signed64-float"
+    "signed64-floats": "ggml-signed64-float",
+    "wide-staged": "ggml-wide-staged"
   }
 }

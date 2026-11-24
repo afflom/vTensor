@@ -1,0 +1,53 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "838cbcb1fa59b5a64066501c624f883a68607635",
+  "provider_sha256": "37d673c270c85b7083defc2eb7951e0cc5bed3c4704133603904866b02b480b8",
+  "embedded_source_files_matched": 19,
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "constructor": "ggml_cast, with one width equal to the least common multiple of the two GGML block sizes and two rows. All descriptors had null data and buffers during capability queries.",
+  "scope": "Every ordered type pair containing at least one block type. The 81 scalar pairs are tracked in ggml-scalar-cast-coverage.tsv.",
+  "pairs": 1215,
+  "original_cpu_dispatch": {
+    "byte_copy": 27,
+    "decode": 25,
+    "encode": 60,
+    "no_branch": 1080,
+    "no_decoder": 2,
+    "no_encoder": 21
+  },
+  "cpu_declared_supported": 963,
+  "provider_admitted": 127,
+  "direct_cpu_paths": 112,
+  "direct_cpu_paths_admitted_by_provider": 106,
+  "provider_refused_cpu_executed": [
+    [
+      "f32",
+      "q8_1"
+    ],
+    [
+      "f32",
+      "q8_K"
+    ],
+    [
+      "f16",
+      "q8_1"
+    ],
+    [
+      "f16",
+      "q8_K"
+    ],
+    [
+      "bf16",
+      "q8_1"
+    ],
+    [
+      "bf16",
+      "q8_K"
+    ]
+  ],
+  "reference_outputs": "Every refused pair with an available CPU copy branch ran in the original GGML CPU backend with one thread. The last column contains the exact output bytes from input (13*i modulo 31 minus 15)/8 stored with ggml_set_f32_1d. Empty result columns indicate that no new numerical run was needed for this inventory.",
+  "dispatch_authority": "ggml_compute_forward_dup in ggml/src/ggml-cpu/ops.cpp, combined with the pinned runtime block sizes, quantization callbacks, and original CPU type table. no_branch, no_encoder and no_decoder are direct CPU coverage classifications.",
+  "dispatch_source_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "table": "ggml-block-cast-descriptors.tsv",
+  "table_sha256": "2d7015df6c9cd500bc31b4d1b26e9ca81d5538cf666e316ca2cdd9b71dda07de"
+}

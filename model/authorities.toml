@@ -59,7 +59,7 @@ citation = "https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55
 checksum = "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34"
 artifact = "vendor/berkeley-softfloat-3e.tar.gz"
 statement = "SoftFloat Release 3e supplies the reference binary32-to-binary64 and binary64-to-binary32 conversions at round-to-nearest-even, signed I64 to binary32 and binary64, and binary64 truncation to signed I64 with the invalid exception flag."
-realized_by = ["VT-161", "VT-164"]
+realized_by = ["VT-161", "VT-164", "VT-165"]
 
 [[authority]]
 id = "LEAN-SIGNED-MACHINE-INTEGERS"
