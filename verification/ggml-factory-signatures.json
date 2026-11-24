@@ -41,5 +41,106 @@
     }
   },
   "reader_sha256": "b61174267bb645f7fde84ca057cecd592be143387c5aa467efc351c213a3f354",
-  "uncompressed_map_sha256": "35c1e0798fb13d1873fad85f1312098e3d0e30738f809f3fd762dd0e3a69824d"
+  "uncompressed_map_sha256": "35c1e0798fb13d1873fad85f1312098e3d0e30738f809f3fd762dd0e3a69824d",
+  "supplemental_operations": [
+    {
+      "operations": [
+        "GGML_OP_WIN_PART",
+        "GGML_OP_WIN_UNPART"
+      ],
+      "requirement": "VT-25",
+      "prism_roots": [
+        "PrismTemplateContract.PointwiseGraph.evaluate"
+      ],
+      "execution": "Verdant memory::copy_storage_block and modeled zero padding.",
+      "verified_forms": "F32 partition and join, strided layouts, padding and empty axes. 2,808 CPU comparisons and 216 constructed refusals.",
+      "evidence": [
+        "verification/native-fixture-baseline.json"
+      ]
+    },
+    {
+      "operations": [
+        "GGML_OP_GET_REL_POS"
+      ],
+      "requirement": "VT-33",
+      "prism_roots": [
+        "PrismTemplateContract.PointwiseGraph.evaluate"
+      ],
+      "execution": "Verdant memory::copy_storage_block preserves the encoded source word.",
+      "verified_forms": "F16 or BF16 sources to F16, four layouts and empty inputs. 192 exact-byte comparisons and 24 descriptor refusals.",
+      "evidence": [
+        "verification/relative-position-runtime.json"
+      ]
+    },
+    {
+      "operations": [
+        "GGML_OP_ADD_REL_POS"
+      ],
+      "requirement": "VT-39",
+      "prism_roots": [
+        "PrismTemplateContract.PointwiseGraph.evaluate"
+      ],
+      "execution": "Verdant byte transfer and linear::evaluate_f32_scalar for the ordered additions.",
+      "verified_forms": "F32 copied and in-place constructors, aliased biases and exceptional values. 1,315 CPU comparisons and 42 descriptor refusals.",
+      "evidence": [
+        "verification/relative-position-add-runtime.json"
+      ]
+    },
+    {
+      "operations": [
+        "GGML_OP_IM2COL_BACK"
+      ],
+      "requirement": "VT-139",
+      "prism_roots": [
+        "PrismTemplateContract.PointwiseGraph.evaluate"
+      ],
+      "execution": "Verdant linear::evaluate_encoded_word and linear::evaluate_f32_scalar.",
+      "verified_forms": "1D and 2D gradients, F16/F32 kernel metadata, stride, dilation, padding and batches. 6,048 exact output words across 64 graphs.",
+      "evidence": [
+        "verification/ggml-spatial-gradient-oracle.json"
+      ]
+    },
+    {
+      "operations": [
+        "GGML_OP_POOL_2D_BACK"
+      ],
+      "requirement": "VT-140",
+      "prism_roots": [
+        "PrismTemplateContract.PointwiseGraph.evaluate"
+      ],
+      "execution": "Verdant linear::evaluate_encoded_word, linear::evaluate_f32_scalar and linear::evaluate_wide.",
+      "verified_forms": "Average and maximum gradients, padding, max ties, F16 average inputs and exceptional values. 32 frozen graphs and five supplemental CPU cases.",
+      "evidence": [
+        "verification/ggml-spatial-gradient-oracle.json"
+      ]
+    },
+    {
+      "operations": [
+        "GGML_OP_MAP_CUSTOM1",
+        "GGML_OP_MAP_CUSTOM2",
+        "GGML_OP_MAP_CUSTOM3",
+        "GGML_OP_CUSTOM"
+      ],
+      "requirement": "VT-136",
+      "prism_roots": [
+        "PrismTemplateContract.NativeBackend.decideNative",
+        "PrismTemplateContract.NativeBackend.planMemory"
+      ],
+      "execution": "GGML invokes the application-supplied callback through the provider with the Prism-selected task width. The application supplies its numerical operation.",
+      "verified_forms": "Eight constructors, copied and in-place calls, generic arities 0/1/5/9, standalone and mixed graphs. 624 CPU comparisons.",
+      "evidence": [
+        "verification/native-custom-callbacks-vt136.json"
+      ]
+    },
+    {
+      "operations": [
+        "GGML_OP_FLASH_ATTN_BACK"
+      ],
+      "oracle_status": "constructor aborts",
+      "verified_forms": "Both mask settings abort inside ggml_flash_attn_back before backend dispatch. A numerical comparison requires an authoritative callable gradient interface.",
+      "evidence": [
+        "verification/ggml-flash-back-constructor.json"
+      ]
+    }
+  ]
 }
