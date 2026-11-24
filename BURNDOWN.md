@@ -26,6 +26,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Verify the v2.21.0 and v2.21.1 releases in one Cargo cache using distinct index paths. All 93 archives per release matched. Q6_K and Q3_K matched GGML. [Release comparison](verification/verdant-versioned-registry.json)
 - [x] Confirm Verdant merged VTK-53. [Upstream merge](https://github.com/afflom/verdant-engine/commit/770b26a872939df32d1ad7ecdac3cf17633dad68)
 - [x] Merge the release-specific Cargo index publisher into Verdant. [Upstream integration](https://github.com/afflom/verdant-engine/commit/47ba77b62d75584e34533d6dbd2a6b9369c47cb7)
+- [x] Verify the published v2.21.2 index at an immutable mirror commit. All 93 resolved archives match the manifest and both IQ4 encoders match GGML byte-for-byte. [Release comparison](verification/verdant-versioned-registry.json)
 - [ ] Pin the published Verdant crates through a release-specific sparse index once it includes VTK-53 and VTK-54. Pass VT-02. [Verdant registry fix](https://github.com/afflom/verdant-engine/pull/53) · [Current patch pin](model/verdant-development.json)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)

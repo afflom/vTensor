@@ -38,5 +38,24 @@
     "other_members_identical": true
   },
   "negative_check": "Writing the v2.21.1 index at the v2.21.0 mirror location failed. Repeating v2.21.0 at its original path passed.",
-  "q3_nonlinear_merge": "770b26a872939df32d1ad7ecdac3cf17633dad68"
+  "q3_nonlinear_merge": "770b26a872939df32d1ad7ecdac3cf17633dad68",
+  "published_v2_21_2": {
+    "release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.2",
+    "registry": "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/679f280d76fa0c9ddf47f1799f825763347026bb/v2.21.2/crates/index/",
+    "manifest_sha256": "a5e3f3f6bf9e19b4b84d91986e9749bf7eab1702c1fa98b1024ae92ca0e2fb02",
+    "resolved_registry_archives": 93,
+    "oracle_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "encoders": [
+      {
+        "oracle": "quantize_row_iq4_nl_ref",
+        "bytes": 18,
+        "sha256": "15aa5279e393ce367b658f75016930511dce586077bf5526b54913f9b78906e6"
+      },
+      {
+        "oracle": "quantize_row_iq4_xs_ref",
+        "bytes": 136,
+        "sha256": "7f8c2aa566611b979a882dcb1fa8ae561676618a7d8528c9e4a2ddd80517ad03"
+      }
+    ]
+  }
 }
