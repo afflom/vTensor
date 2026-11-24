@@ -1,0 +1,189 @@
+{
+  "vtensor_commit": "29413c7b590e0869ef9e37ed8808a46ed6e8ac99",
+  "provider_sha256": "43662828815c058e9f5496f127537b41c5e48c9313bdfa0df0e711229c0f7732",
+  "llama_cpp_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "source": "examples/batched/batched.cpp",
+  "source_sha256": "d15479ec1a38210851bdfbc03e7b19b3eccf899e6d73c17dd6b19c52502d0952",
+  "executable_sha256": "c6a64b05f3f646ce87908cae5e5066c5152ce0b5de253fee997a9c460db753ed",
+  "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "gguf": "stories15M-mixed-codebooks.gguf",
+  "gguf_sha256": "4894382dfada69a67d6221cd4f26070ea47474792fa51b074f3ece0b19851b03",
+  "parameters": [
+    "-p",
+    "Once upon a time",
+    "-n",
+    "16",
+    "-np",
+    "4",
+    "-c",
+    "512",
+    "-t",
+    "1",
+    "-tb",
+    "1",
+    "--seed",
+    "17",
+    "--top-k",
+    "12",
+    "--temp",
+    "0.7",
+    "--kv-unified"
+  ],
+  "runtime": "Private executable directory with one CPU-class provider selected by GGML_BACKEND_PATH. Each process registered only its selected CPU or vTensor backend. Both placed layers 0 through 6 on that device.",
+  "generated_tokens": 44,
+  "streams": 4,
+  "seeded_stream_sha256": [
+    "87fab0d302abdf2225988427dfc559a8ddf589c4541e853754926070daf8a278",
+    "87fab0d302abdf2225988427dfc559a8ddf589c4541e853754926070daf8a278",
+    "87fab0d302abdf2225988427dfc559a8ddf589c4541e853754926070daf8a278",
+    "87fab0d302abdf2225988427dfc559a8ddf589c4541e853754926070daf8a278"
+  ],
+  "greedy_stream_sha256": [
+    "90d8371662dbc599637748736b6811d9b2691dbf0e6b2e53a7ad964a91af2217",
+    "90d8371662dbc599637748736b6811d9b2691dbf0e6b2e53a7ad964a91af2217",
+    "90d8371662dbc599637748736b6811d9b2691dbf0e6b2e53a7ad964a91af2217",
+    "90d8371662dbc599637748736b6811d9b2691dbf0e6b2e53a7ad964a91af2217"
+  ],
+  "unified_cache": "The shared prompt completed on both backends. Both rejected the same coupled sequences with --no-kv-unified.",
+  "sampling": "All four seeded streams matched original CPU with --no-repack. The default CPU repacks Q4_0 weights into q4_0_8x8. Enabling repacking changed the original CPU token at the third sampling step. Greedy streams matched the default CPU across all 44 decoded tokens.",
+  "observer": "The unmodified stock binary supplied the text. A separate build of the same source captured llama_get_logits_ith for stream 0 after each sample, together with its position and selected token. Its emitted streams matched the associated unmodified binary.",
+  "observed_steps": 12,
+  "logits_per_step": 32000,
+  "maximum_unpacked_cpu_nmse": 4.354170058499512e-14,
+  "maximum_unpacked_cpu_absolute_difference": 4.76837158203125e-06,
+  "cpu_profile_comparison": {
+    "CPU_default_to_CPU_unpacked": [
+      {
+        "position": 5,
+        "same_token": true,
+        "top1": true,
+        "nmse": 5.3092994387212735e-05,
+        "max_abs": 0.37783336639404297
+      },
+      {
+        "position": 6,
+        "same_token": true,
+        "top1": true,
+        "nmse": 0.001611741197757174,
+        "max_abs": 0.4147377014160156
+      },
+      {
+        "position": 7,
+        "same_token": false,
+        "top1": true,
+        "nmse": 0.0005081400616393747,
+        "max_abs": 0.41223716735839844
+      }
+    ],
+    "CPU_unpacked_to_provider": [
+      {
+        "position": 5,
+        "same_token": true,
+        "top1": true,
+        "nmse": 4.3523647770479156e-15,
+        "max_abs": 3.814697265625e-06
+      },
+      {
+        "position": 6,
+        "same_token": true,
+        "top1": true,
+        "nmse": 1.3540717345376745e-14,
+        "max_abs": 3.814697265625e-06
+      },
+      {
+        "position": 7,
+        "same_token": true,
+        "top1": true,
+        "nmse": 9.387444976339767e-15,
+        "max_abs": 4.76837158203125e-06
+      },
+      {
+        "position": 8,
+        "same_token": true,
+        "top1": true,
+        "nmse": 6.157938501367371e-15,
+        "max_abs": 2.384185791015625e-06
+      },
+      {
+        "position": 9,
+        "same_token": true,
+        "top1": true,
+        "nmse": 1.184216761921448e-14,
+        "max_abs": 3.337860107421875e-06
+      },
+      {
+        "position": 10,
+        "same_token": true,
+        "top1": true,
+        "nmse": 4.000831521762571e-15,
+        "max_abs": 2.86102294921875e-06
+      },
+      {
+        "position": 11,
+        "same_token": true,
+        "top1": true,
+        "nmse": 1.4859887949306805e-14,
+        "max_abs": 3.814697265625e-06
+      },
+      {
+        "position": 12,
+        "same_token": true,
+        "top1": true,
+        "nmse": 1.4270879610740772e-14,
+        "max_abs": 3.337860107421875e-06
+      },
+      {
+        "position": 13,
+        "same_token": true,
+        "top1": true,
+        "nmse": 5.658568592474121e-15,
+        "max_abs": 3.814697265625e-06
+      },
+      {
+        "position": 14,
+        "same_token": true,
+        "top1": true,
+        "nmse": 7.674062188204718e-15,
+        "max_abs": 3.337860107421875e-06
+      },
+      {
+        "position": 15,
+        "same_token": true,
+        "top1": true,
+        "nmse": 1.8056518482500244e-14,
+        "max_abs": 3.337860107421875e-06
+      },
+      {
+        "position": 16,
+        "same_token": true,
+        "top1": true,
+        "nmse": 4.354170058499512e-14,
+        "max_abs": 4.291534423828125e-06
+      }
+    ],
+    "CPU_default_to_provider": [
+      {
+        "position": 5,
+        "same_token": true,
+        "top1": true,
+        "nmse": 5.309299503909e-05,
+        "max_abs": 0.3778343200683594
+      },
+      {
+        "position": 6,
+        "same_token": true,
+        "top1": true,
+        "nmse": 0.0016117366128237981,
+        "max_abs": 0.41473865509033203
+      },
+      {
+        "position": 7,
+        "same_token": false,
+        "top1": true,
+        "nmse": 0.0005081372835093781,
+        "max_abs": 0.41223716735839844
+      }
+    ]
+  }
+}

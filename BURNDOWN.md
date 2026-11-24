@@ -13,6 +13,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Establish coverage and unblock release
 
+- [x] Run stock llama-batched with four shared-prompt streams. Match all 44 seeded tokens to CPU with stored weights, all 44 greedy tokens to default CPU, and compare 384,000 logits. [Batched replay](verification/llama-batched-four-streams.json)
+
 - [x] Place 6,450 additional packed binary descriptors. All 5,750 copied and in-place graphs matched the original GGML bytes, and 700 ADD_CAST constructors produced identical descriptors. [VT-180](verification/supplemental-packed-binary-vt180.json)
 
 - [x] Run unmodified llama-simple with the certified opcode selector. All 13 layer assignments and three eight-token outputs matched the previous verified run. [Consumer replay](verification/llama-consumer-operation-route.json)
