@@ -319,42 +319,20 @@ mod tests {
     const INPUTS: &str =
         "sdk ghcr.io/uor-foundation/prismpm-sdk-candidate@sha256:cd3b\nprismpm 0.3.0\n";
 
-    struct Proof {
-        lexlean: serde_json::Value,
-        acceptance: serde_json::Value,
-    }
-
-    fn proof() -> Proof {
-        Proof {
-            lexlean: json!({
-                "attestation_id": "1".repeat(64),
-                "host": {"arch": "x86_64", "os": "linux"},
-                "lake_workspace": [{"path": "lean-toolchain", "sha256": TOOLCHAIN_FILE}],
-                "semantic_id": SEMANTIC,
-                "source_id": SOURCE,
-                "spec": "lexlean/attestation/2",
-                "status": "verified",
-                "toolchain": {
-                    "lake": {"executable_sha256": LAKE},
-                    "lean": {"executable_sha256": LEAN}
-                }
-            }),
-            acceptance: json!({
-                "build_id": "2".repeat(64),
-                "lexlean_attestation_id": "1".repeat(64),
-                "schema": "prismpm/application-acceptance/1",
-                "status": "verified"
-            }),
-        }
+    fn proof() -> serde_json::Value {
+        serde_json::from_str(include_str!(
+            "../../verification/proof-reuse-documents.json"
+        ))
+        .unwrap()
     }
 
     /// Seals a proof the way `prismpm verify` does: the manifest hashes the
     /// evidence, and the attestation ID is the manifest's SHA-256.
-    fn seal(proof: &Proof) -> Kept {
-        let lexlean = serde_json::to_vec(&proof.lexlean).unwrap();
-        let acceptance = serde_json::to_vec(&proof.acceptance).unwrap();
+    fn seal(proof: &serde_json::Value) -> Kept {
+        let lexlean = serde_json::to_vec(&proof["lexlean"]).unwrap();
+        let acceptance = serde_json::to_vec(&proof["acceptance"]).unwrap();
         let manifest = serde_json::to_vec(&json!({
-            "acceptance_sha256": acceptance_digest(&mut proof.acceptance.clone()).unwrap(),
+            "acceptance_sha256": acceptance_digest(&mut proof["acceptance"].clone()).unwrap(),
             "build_id": "2".repeat(64),
             "lexlean_attestation_sha256": hex(&lexlean),
             "schema": "prismpm/application-verification-manifest/2"
@@ -393,11 +371,11 @@ mod tests {
     #[test]
     fn browser_timing_is_outside_the_acceptance_digest() {
         let mut timed = proof();
-        timed.acceptance["browser_timing"] = json!({"engine": "chromium", "vectors": []});
+        timed["acceptance"]["browser_timing"] = json!({"engine": "chromium", "vectors": []});
         let kept = seal(&timed);
         assert_ne!(
             hex(&kept.acceptance),
-            acceptance_digest(&mut timed.acceptance.clone()).unwrap()
+            acceptance_digest(&mut timed["acceptance"].clone()).unwrap()
         );
         assert_eq!(binds(&kept, &observed()), Ok(()));
 
@@ -443,12 +421,7 @@ mod tests {
             ("acceptance", "lexlean_attestation_id", &"3".repeat(64)),
         ] {
             let mut changed = proof();
-            let target = if document == "lexlean" {
-                &mut changed.lexlean
-            } else {
-                &mut changed.acceptance
-            };
-            target[key] = json!(value);
+            changed[document][key] = json!(value);
             assert!(binds(&seal(&changed), &now).is_err(), "{document}/{key}");
         }
 
@@ -471,7 +444,7 @@ mod tests {
 
     #[test]
     fn a_lake_file_outside_the_application_is_never_read() {
-        assert!(super::workspace_path(&proof().lexlean["lake_workspace"][0]).is_ok());
+        assert!(super::workspace_path(&proof()["lexlean"]["lake_workspace"][0]).is_ok());
         for path in ["../Justfile", "/etc/passwd", "a/../../b", ""] {
             assert!(
                 super::workspace_path(&json!({"path":path})).is_err(),

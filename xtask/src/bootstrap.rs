@@ -529,49 +529,22 @@ fn upstream_pins(authorities: &repo_model::Authorities) -> Option<Vec<String>> {
     (pins.len() == count && named).then_some(pins)
 }
 
+fn policy_json(value: &serde_json::Value) -> String {
+    format!("{}\n", serde_json::to_string_pretty(value).unwrap())
+}
+
 fn dependency_updates_are_confined(source: &str, pins: &[String]) -> bool {
-    let Ok(config) = serde_json::from_str::<serde_json::Value>(source) else {
-        return false;
-    };
-    // This policy uses canonical JSON-form YAML, not a general YAML parser.
-    // Round-tripping also rejects duplicate keys instead of accepting the last.
-    let Ok(encoded) = serde_json::to_string_pretty(&config) else {
-        return false;
-    };
-    if format!("{encoded}\n") != source {
-        return false;
+    const UNPINNED: &str = include_str!("../../verification/dependency-update-policy.json");
+    if pins.is_empty() {
+        return source == UNPINNED;
     }
-    let mut cargo = serde_json::json!({
-        "package-ecosystem": "cargo",
-        "directory": "/",
-        "schedule": {"interval": "weekly"},
-        "groups": {"build-policy": {"patterns": ["*"]}},
-        "commit-message": {"prefix": "chore(deps)"}
-    });
-    // A dependency an upstream's release line locks is ignored, and only that:
-    // each one is named by an authority row's `pins` (#22).
-    if !pins.is_empty() {
-        cargo["ignore"] = pins
-            .iter()
-            .map(|name| serde_json::json!({"dependency-name": name}))
-            .collect();
-    }
-    config
-        == serde_json::json!({
-            "version": 2,
-            "updates": [
-                {
-                    "package-ecosystem": "github-actions",
-                    "directory": "/",
-                    "schedule": {"interval": "weekly"},
-                    "groups": {"pinned-actions": {"patterns": ["*"]}},
-                    "commit-message": {"prefix": "chore(deps)"},
-                    "ignore": [{"dependency-name": "UOR-Foundation/PrismPM/action"}],
-                    "exclude-paths": [".github/workflows/bootstrap.yml"]
-                },
-                cargo
-            ]
-        })
+    let mut expected: serde_json::Value =
+        serde_json::from_str(UNPINNED).expect("canonical update policy");
+    expected["updates"][1]["ignore"] = pins
+        .iter()
+        .map(|name| serde_json::json!({"dependency-name": name}))
+        .collect();
+    source == policy_json(&expected)
 }
 
 /// Keep SDK/template updates owned by their release flow, without disabling dependency maintenance.
@@ -735,28 +708,8 @@ pub fn audit(root: &Path) -> Result<(), Fail> {
                 .into(),
         );
     }
-    for required in [
-        "permissions: {}",
-        "build product once without publication credentials",
-        "reject publication from an unprotected ref",
-        "REF_PROTECTED: ${{ github.ref_protected }}",
-        "environment: release",
-        "id-token: write",
-        "deploy the planned digest without rebuilding",
-        "Require post-deployment state and release verification",
-        "command: conformance",
-        "command: sign",
-        "command: prepare-promotion",
-        "command: sign-evidence",
-        "command: verify-release",
-        "command: push",
-        "command: promote",
-        "promotion-to: candidate",
-        "promotion-to: accepted",
-        "plan: ${{ needs.plan.outputs.plan-digest }}",
-        "trusted-root: ${{ steps.policy.outputs.trusted-root-path }}",
-        "policy: ${{ steps.policy.outputs.policy-path }}",
-    ] {
+    // The lifecycle predicate above has already checked the command counts and trust paths.
+    for required in include_str!("../../verification/release-workflow-requirements.txt").lines() {
         if !reusable.contains(required) {
             return Err(format!("reusable pipeline is missing policy: {required}").into());
         }
@@ -771,9 +724,9 @@ mod tests {
     use super::{
         action_reference_is_pinned, content_matches, dependency_updates_are_confined,
         docker_credentials_are_confined, immutable_image, native_coverage_is_complete,
-        pipeline_lifecycle_is_complete, policy_boundary_is_canonical, proof_reuse_is_confined,
-        sha256, update_preserves_project_content, upstream_pins, workflow_history_is_complete,
-        PROJECT_CONTENT_PATHS, PROOF_KEY, UNIVERSAL_POLICY_PATHS,
+        pipeline_lifecycle_is_complete, policy_boundary_is_canonical, policy_json,
+        proof_reuse_is_confined, sha256, update_preserves_project_content, upstream_pins,
+        workflow_history_is_complete, PROJECT_CONTENT_PATHS, PROOF_KEY, UNIVERSAL_POLICY_PATHS,
     };
 
     #[test]
@@ -912,14 +865,16 @@ mod tests {
         ));
     }
 
-    fn policy_json(value: &serde_json::Value) -> String {
-        format!("{}\n", serde_json::to_string_pretty(value).unwrap())
-    }
-
     #[test]
     fn dependency_updates_preserve_sdk_ownership_and_ordinary_maintenance() {
         let source = include_str!("../../.github/dependabot.yml");
         assert!(dependency_updates_are_confined(source, &[]));
+        assert_eq!(
+            repo_model::artifact::sha256_hex(include_bytes!(
+                "../../verification/dependency-update-policy.json"
+            )),
+            "12fcd70628c6c9d51f89e52d312432a87a84214511fbf6c22b9128907840a583"
+        );
         check_workflow_controls("dependency_updates", 25, source, |changed| {
             dependency_updates_are_confined(changed, &[])
         });

@@ -144,5 +144,70 @@
       }
     },
     "oracle": "verification/ggml-factory-inventory.json"
-  }
+  },
+  "subsequent_checkpoints": [
+    {
+      "revision": "0cbf0b34ac90db5bde049d4bfedfdbaf66738b7a",
+      "build": "cargo build --locked --release -p vtensor-backend",
+      "plugin_sha256": "e54a4221a9edf4f164137a818aabd26b3197ef851aa02bfac14f3da119c8864d",
+      "embedded_provider_sources_sha256": "c936707080fce570511b66f8d45445621c1c3022872953e62f2d4c782c974d16",
+      "embedded_source_files_checked": 19,
+      "host_and_command_reference": "llama-installed-provider.json",
+      "method": "Reused the original CPU stdout after checking the executable, host library, CPU plugin and model hashes. Loaded the newly built vTensor plugin as the sole backend in each independent stock llama-simple process. Verified all layer and output placements and compared complete stdout.",
+      "cases": [
+        {
+          "model": "tiny-random-gpt2-Q2_K.gguf",
+          "model_sha256": "8393b803d7b11df6f8618e89938ad6a1fc26e06a79e6ca154634116df3eeed94",
+          "assigned_layers": [
+            0,
+            1,
+            2
+          ],
+          "stdout_sha256": "cada01ef028a6d00cf37ff693ddf8368cd7b1ba4ba2bf7c82d613ae69ae49618",
+          "decoded_tokens": 8
+        },
+        {
+          "model": "tiny-mamba-f32.gguf",
+          "model_sha256": "211046273dd3a19d4e1ad4b5a58621b88a093e56e6258eae7070e8966e570a6a",
+          "assigned_layers": [
+            0,
+            1,
+            2
+          ],
+          "stdout_sha256": "14b3fe28432d1eb4e2284362ac7d6c7f2c20ef784d75fe9cfad2bba3e06d5d0a",
+          "decoded_tokens": 8
+        },
+        {
+          "model": "stories15M-mixed-codebooks.gguf",
+          "model_sha256": "4894382dfada69a67d6221cd4f26070ea47474792fa51b074f3ece0b19851b03",
+          "assigned_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "stdout_sha256": "bc81690c4428ff5a7d10afe81609270b5763ddaa3cd2f74e5b8073414d6aa12b",
+          "decoded_tokens": 8
+        }
+      ],
+      "clean_sdk_acceptance": {
+        "run": "https://github.com/afflom/vTensor/actions/runs/45458262670",
+        "jobs": [
+          {
+            "name": "acceptance / ubuntu-24.04-arm",
+            "url": "https://github.com/afflom/vTensor/actions/runs/45458262670/job/138673482084",
+            "conclusion": "success"
+          },
+          {
+            "name": "acceptance / ubuntu-24.04",
+            "url": "https://github.com/afflom/vTensor/actions/runs/45458262670/job/138673482762",
+            "conclusion": "success"
+          }
+        ]
+      }
+    }
+  ]
 }

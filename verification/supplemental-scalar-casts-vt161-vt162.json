@@ -1,0 +1,59 @@
+{
+  "requirements": [
+    "VT-161",
+    "VT-162"
+  ],
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "semantic_id": "7d536f450611104a5060771f4b846345e270f383f0eb6e7fde097212ba1975f4",
+  "attestation_id": "11485708b333f42217698cda7501dbe1918871eed743d2f175430543b099552c",
+  "verdant_release": "v2.21.7",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "admission": "Check each original ggml_cast or ggml_cpy on the loaded backend before and after allocation.",
+  "VT-161": {
+    "pairs": [
+      "F32 -> F64",
+      "F64 -> F32"
+    ],
+    "test": "binary_widths_vt_161",
+    "oracle": "ggml-binary-width-oracle.json",
+    "inputs": "ggml-binary-width-words.tsv",
+    "cases": 2,
+    "compared_words": 128,
+    "layout": "Contiguous 8 by 8 tensors. Compare every result bit including the sign of zero, except for NaNs where the Berkeley/Verdant oracle compares classification.",
+    "numerics": [
+      "evaluate_wide"
+    ],
+    "mutant": "Routing widening through narrowing failed the frozen SoftFloat word comparison."
+  },
+  "VT-162": {
+    "pairs": [
+      "I8 -> F8_E4M3",
+      "F8_E4M3 -> I8",
+      "I16 -> F8_E4M3",
+      "F8_E4M3 -> I16",
+      "I32 -> F8_E4M3",
+      "F8_E4M3 -> I32"
+    ],
+    "test": "octet_integer_casts_vt_162",
+    "oracle": "Pinned GGML CPU scalar integer accessors with ggml_get_type_traits(GGML_TYPE_F8_E4M3)->to_float and from_float_ref.",
+    "cases": 12,
+    "compared_words": 192,
+    "compared_bytes": 400,
+    "invalid_graphs": 6,
+    "shapes": [
+      "ggml_cast on a contiguous 8 by 2 tensor",
+      "ggml_cpy from an 8 by 2 offset view with row pitch 10 to a 4 by 4 offset view with row pitch 6"
+    ],
+    "inputs": "The VT-159 signed integer words and E4M3 codes 00 80 01 81 30 b0 3c bc 41 c1 6f ef 70 f0 7e fe. Place NaN 7f in the final lane of each E4M3 source and compare the full destination with its 0x33 sentinel.",
+    "numerics": [
+      "extract_packed_field",
+      "evaluate_encoded_word",
+      "signed_word_f32",
+      "evaluate_small_float",
+      "truncate_signed_word_f32"
+    ],
+    "mutant": "Replacing the signed operand of the E4M3 quantizer by zero failed the whole-destination GGML comparison."
+  },
+  "old_behavior": "Both registered tests failed at preallocation admission on the VT-160 provider.",
+  "restored": "Both tests passed after restoring released Verdant operations. VT-24, VT-98, VT-159 and VT-160 passed on this Prism root."
+}

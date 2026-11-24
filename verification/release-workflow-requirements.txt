@@ -1,0 +1,14 @@
+permissions: {}
+build product once without publication credentials
+reject publication from an unprotected ref
+REF_PROTECTED: ${{ github.ref_protected }}
+environment: release
+id-token: write
+deploy the planned digest without rebuilding
+Require post-deployment state and release verification
+command: sign
+command: push
+command: promote
+promotion-to: candidate
+promotion-to: accepted
+plan: ${{ needs.plan.outputs.plan-digest }}

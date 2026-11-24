@@ -5,7 +5,7 @@ F32	I8	verified	supplemental-integer-float-casts-vt160.json
 F32	I16	verified	supplemental-integer-float-casts-vt160.json
 F32	I32	verified	ggml-scalar-cast-matrix.tsv,supplemental-integer-float-casts-vt160.json
 F32	I64	open	
-F32	F64	open	
+F32	F64	verified	supplemental-scalar-casts-vt161-vt162.json
 F32	BF16	verified	ggml-scalar-cast-matrix.tsv
 F32	F8_E4M3	verified	ggml-scalar-cast-matrix.tsv
 F16	F32	verified	ggml-scalar-cast-matrix.tsv
@@ -25,7 +25,7 @@ I8	I32	verified	supplemental-integer-casts-vt159.json
 I8	I64	open	
 I8	F64	open	
 I8	BF16	verified	supplemental-integer-float-casts-vt160.json
-I8	F8_E4M3	open	
+I8	F8_E4M3	verified	supplemental-scalar-casts-vt161-vt162.json
 I16	F32	verified	supplemental-integer-float-casts-vt160.json
 I16	F16	verified	supplemental-integer-float-casts-vt160.json
 I16	I8	verified	supplemental-integer-casts-vt159.json
@@ -34,7 +34,7 @@ I16	I32	verified	supplemental-integer-casts-vt159.json
 I16	I64	open	
 I16	F64	open	
 I16	BF16	verified	supplemental-integer-float-casts-vt160.json
-I16	F8_E4M3	open	
+I16	F8_E4M3	verified	supplemental-scalar-casts-vt161-vt162.json
 I32	F32	verified	ggml-scalar-cast-matrix.tsv,supplemental-integer-float-casts-vt160.json
 I32	F16	verified	supplemental-integer-float-casts-vt160.json
 I32	I8	verified	supplemental-integer-casts-vt159.json
@@ -43,7 +43,7 @@ I32	I32	verified	ggml-scalar-cast-matrix.tsv
 I32	I64	open	
 I32	F64	open	
 I32	BF16	verified	supplemental-integer-float-casts-vt160.json
-I32	F8_E4M3	open	
+I32	F8_E4M3	verified	supplemental-scalar-casts-vt161-vt162.json
 I64	F32	open	
 I64	F16	open	
 I64	I8	open	
@@ -53,7 +53,7 @@ I64	I64	verified	ggml-scalar-cast-matrix.tsv
 I64	F64	open	
 I64	BF16	open	
 I64	F8_E4M3	open	
-F64	F32	open	
+F64	F32	verified	supplemental-scalar-casts-vt161-vt162.json
 F64	F16	open	
 F64	I8	open	
 F64	I16	open	
@@ -73,9 +73,9 @@ BF16	BF16	verified	ggml-scalar-cast-matrix.tsv
 BF16	F8_E4M3	verified	ggml-scalar-cast-matrix.tsv
 F8_E4M3	F32	verified	ggml-scalar-cast-matrix.tsv
 F8_E4M3	F16	verified	ggml-scalar-cast-matrix.tsv
-F8_E4M3	I8	open	
-F8_E4M3	I16	open	
-F8_E4M3	I32	open	
+F8_E4M3	I8	verified	supplemental-scalar-casts-vt161-vt162.json
+F8_E4M3	I16	verified	supplemental-scalar-casts-vt161-vt162.json
+F8_E4M3	I32	verified	supplemental-scalar-casts-vt161-vt162.json
 F8_E4M3	I64	open	
 F8_E4M3	F64	open	
 F8_E4M3	BF16	verified	ggml-scalar-cast-matrix.tsv

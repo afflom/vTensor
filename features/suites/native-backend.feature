@@ -626,3 +626,15 @@ Feature: native-backend
     Given signed integers or finite floats with fractional parts in contiguous and offset tensors
     When a graph converts them between floating and integer storage in either direction
     Then all results and padding match the upstream typed accessors and an out-of-range final value preserves the destination
+
+  @VT-161 @build
+  Scenario: Prism and Verdant convert between binary32 and binary64 against imported Berkeley SoftFloat words
+    Given binary32 and binary64 words including subnormals and halfway values
+    When GGML constructs a CAST in each direction
+    Then every numeric result matches Berkeley SoftFloat and each NaN remains a NaN
+
+  @VT-162 @build
+  Scenario: Prism composes E4M3 and signed integer conversions against the original GGML E4M3 quantizer and dequantizer
+    Given F8_E4M3 words and signed integer limits in ordinary and strided storage
+    When the graph casts each direction or copies into a differently shaped view
+    Then every output matches the original quantizer or dequantizer and an invalid source preserves the destination

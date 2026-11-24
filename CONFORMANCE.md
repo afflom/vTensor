@@ -248,6 +248,8 @@ model does not sanction.
 | `VT-158` | `build` | Reusable GGML graph plans preserve the planned topology and execute current tensor data and compute flags through the certified graph planner |
 | `VT-159` | `build` | Prism plans signed integer width conversions and Verdant reproduces the upstream GGML typed accessor bytes |
 | `VT-160` | `build` | Prism converts between GGML signed I8 I16 I32 and F32 F16 BF16 storage through released Verdant scalar operations |
+| `VT-161` | `build` | Prism and Verdant convert between binary32 and binary64 against imported Berkeley SoftFloat words |
+| `VT-162` | `build` | Prism composes E4M3 and signed integer conversions against the original GGML E4M3 quantizer and dequantizer |
 
 ## normalization-graphs
 
@@ -373,6 +375,7 @@ An authority is cited, never re-derived, and never gated on: what it states is n
 | `LLAMA-CPP-GGML-BACKEND` | https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5 | -- |
 | `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/releases/tag/v2.21.7 | `VT-02` |
 | `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
+| `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161` |
 
 ## Claims that are not conformance IDs
 

@@ -1146,6 +1146,7 @@ unsafe fn scalar_word(
 
 fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
     match (from, to) {
+        (0, 43) => linear::evaluate_small_float(4, word).map_err(BackendError::overflow)?,
         (43, 0) => linear::evaluate_small_float(3, word).map_err(BackendError::overflow)?,
         _ => linear::convert_float_storage(from, to, word).map_err(BackendError::overflow)?,
     }

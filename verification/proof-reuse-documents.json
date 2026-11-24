@@ -1,0 +1,33 @@
+{
+  "lexlean": {
+    "attestation_id": "1111111111111111111111111111111111111111111111111111111111111111",
+    "host": {
+      "arch": "x86_64",
+      "os": "linux"
+    },
+    "lake_workspace": [
+      {
+        "path": "lean-toolchain",
+        "sha256": "8e3538e0ab5f81a3ee04927d8838c8c674e0e112838b4b3ce87ec218143276af"
+      }
+    ],
+    "semantic_id": "fbad6e6ba85b0d26526724c760b0080c4a274f9c113c6776357dfd636d3ee02d",
+    "source_id": "c573a7a43bdb1d0561da769cbd12fb9a9dea517fdb004165d5086d292d82a92c",
+    "spec": "lexlean/attestation/2",
+    "status": "verified",
+    "toolchain": {
+      "lake": {
+        "executable_sha256": "60330ab6f07dce20f3fa9ebb08e8b984ea9549eac172afeb15d9d2227060e2b3"
+      },
+      "lean": {
+        "executable_sha256": "e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550"
+      }
+    }
+  },
+  "acceptance": {
+    "build_id": "2222222222222222222222222222222222222222222222222222222222222222",
+    "lexlean_attestation_id": "1111111111111111111111111111111111111111111111111111111111111111",
+    "schema": "prismpm/application-acceptance/1",
+    "status": "verified"
+  }
+}

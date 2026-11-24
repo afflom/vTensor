@@ -1032,3 +1032,15 @@ id = "VT-160"
 level = "build"
 suite = "native-backend"
 statement = "Prism converts between GGML signed I8 I16 I32 and F32 F16 BF16 storage through released Verdant scalar operations"
+
+[[id]]
+id = "VT-161"
+level = "build"
+suite = "native-backend"
+statement = "Prism and Verdant convert between binary32 and binary64 against imported Berkeley SoftFloat words"
+
+[[id]]
+id = "VT-162"
+level = "build"
+suite = "native-backend"
+statement = "Prism composes E4M3 and signed integer conversions against the original GGML E4M3 quantizer and dequantizer"

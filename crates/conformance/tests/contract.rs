@@ -67,6 +67,8 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn octet_integer_casts_vt_162() { "octet-integers", 12, ["pointwise"] }
+    fn binary_widths_vt_161() { "binary-widths", 128, ["pointwise"] }
     fn signed_float_storage_vt_160() { "integer-floats", 36, ["pointwise"] }
     fn signed_integer_widths_vt_159() { "integer-widths", 12, ["pointwise"] }
     fn scalar_diagonals_vt_157() { "scalar-diagonal", 36, ["pointwise"] }
@@ -1268,7 +1270,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "aad7f40e0401eaf90a9ad76ab7dd62310cbb5112642d4367de6b52814f938eb7",
+            "bd81ac45124b2cb42f8210c5e7f8a883f33b002cca6be372ec5a7c45ff3cc9a3",
         )
     });
 
@@ -1441,6 +1443,14 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         });
         let input: &[u8] = match mode {
             "matrix" | "elementwise" => fixture_input(u64::from(mode == "elementwise")),
+            "binary-widths" => {
+                let words = include_bytes!("../../../verification/ggml-binary-width-words.tsv");
+                assert_eq!(
+                    sha256_hex(words),
+                    fixture_record("ggml-binary-width-oracle")["words_sha256"]
+                );
+                words
+            }
             "update" => &[],
             _ if imported => ORACLE_BINDINGS["factory_inputs"][mode]
                 .as_str()
@@ -1751,6 +1761,7 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
 
     const HEADER: &str = concat!(
         r##"#include "ggml-cpp.h"
+#include <cinttypes>
 #include "ggml-backend.h"
 #include "ggml-backend-impl.h"
 #include "ggml-alloc.h"
@@ -2073,15 +2084,43 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
+    if (!strcmp(argv[3],"binary-widths")) {
+        for (bool wide : {true,false}) {
+            graph_fixture target(4); CHECK(target);
+            auto input=ggml_new_tensor_2d(target,wide?GGML_TYPE_F32:GGML_TYPE_F64,8,8);
+            auto result=ggml_cast(target,input,wide?GGML_TYPE_F64:GGML_TYPE_F32);
+            CHECK(ggml_backend_supports_op(backend,result));
+            auto graph=target.allocate(result,backend); CHECK(graph && ggml_backend_supports_op(backend,result));
+            std::array<uint64_t,64> expected{};
+            for (size_t i=0;i<expected.size();++i) {
+                uint64_t word; CHECK(scanf("%" SCNx64 " %" SCNx64,&word,&expected[i])==2);
+                if (wide) { uint32_t bits=uint32_t(word); ggml_backend_tensor_set(input,&bits,4*i,4); }
+                else ggml_backend_tensor_set(input,&word,8*i,8);
+            }
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+            for (size_t i=0;i<expected.size();++i) {
+                uint64_t word;
+                if (wide) ggml_backend_tensor_get(result,&word,8*i,8);
+                else { uint32_t bits; ggml_backend_tensor_get(result,&bits,4*i,4); word=bits; }
+                const auto nan=[&](uint64_t x){return wide ? (x&0x7fffffffffffffffULL)>0x7ff0000000000000ULL : (x&0x7fffffff)>0x7f800000;};
+                CHECK(word==expected[i] || (nan(word) && nan(expected[i])));
+            }
+        }
+        return finish(128);
+    }
     const bool integer_floats=!strcmp(argv[3],"integer-floats");
-    if (integer_floats || !strcmp(argv[3],"integer-widths")) {
+    const bool octet_integers=!strcmp(argv[3],"octet-integers");
+    if (octet_integers || integer_floats || !strcmp(argv[3],"integer-widths")) {
         size_t cases=0;
+        const auto *octet=octet_integers?ggml_get_type_traits(GGML_TYPE_F8_E4M3):nullptr;
         const int32_t values[]={INT32_MIN,INT32_MAX,-32769,-32768,32767,32768,-129,-128,127,128,-1,0,1,255,65535,0x12345678};
         const float fractions[]={-127.875f,127.75f,-0.25f,0.25f,-1.875f,1.875f,-7.5f,7.5f,3.5f,-3.5f,15.75f,-15.75f,0.f,-0.f,-63.25f,63.25f};
-        for (auto from : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32,GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16})
-        for (auto to : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32,GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16}) {
+        for (auto from : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32,GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16,GGML_TYPE_F8_E4M3})
+        for (auto to : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32,GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16,GGML_TYPE_F8_E4M3}) {
           const auto integer=[](ggml_type t){return t>=GGML_TYPE_I8 && t<=GGML_TYPE_I32;};
-          if (integer_floats ? integer(from)==integer(to) : from==to || !integer(from) || !integer(to)) continue;
+          if (octet_integers!=((from==GGML_TYPE_F8_E4M3 && integer(to)) || (to==GGML_TYPE_F8_E4M3 && integer(from)))) continue;
+          if (!octet_integers && (from==GGML_TYPE_F8_E4M3 || to==GGML_TYPE_F8_E4M3)) continue;
+          if (!octet_integers && (integer_floats ? integer(from)==integer(to) : from==to || !integer(from) || !integer(to))) continue;
           for (bool padded : {false,true}) {
             graph_fixture target(9), cpu(4); CHECK(target && cpu);
             auto backing=ggml_new_tensor_2d(target,from,padded?10:8,2);
@@ -2090,12 +2129,21 @@ int main(int argc, char **argv) {
             auto view=ggml_view_2d(target,destination,4,4,destination->nb[1],ggml_type_size(to));
             auto result=padded?ggml_cpy(target,input,view):ggml_cast(target,input,to);
             auto expected=ggml_new_tensor_2d(cpu,to,padded?6:8,padded?4:2);
+            auto fp32=octet_integers?ggml_new_tensor_1d(cpu,GGML_TYPE_F32,1):nullptr;
             auto logical=padded?ggml_view_2d(cpu,expected,4,4,expected->nb[1],ggml_type_size(to)):expected;
             CHECK(ggml_backend_supports_op(backend,result));
             auto graph=target.allocate(result,backend); CHECK(graph && cpu.allocate(logical,reference));
             CHECK(ggml_backend_supports_op(backend,result));
             ggml_backend_buffer_clear(target.storage.get(),0xa5); ggml_backend_buffer_clear(cpu.storage.get(),0xa5);
             for (int i=0;i<16;++i) {
+                if (from==GGML_TYPE_F8_E4M3) {
+                    const uint8_t bytes[]={0,0x80,1,0x81,0x30,0xb0,0x3c,0xbc,0x41,0xc1,0x6f,0xef,0x70,0xf0,0x7e,0xfe};
+                    ggml_backend_tensor_set(input,bytes+i,block_address(input,i),1);
+                    float decoded; octet->to_float(bytes+i,&decoded,1);
+                    ggml_set_f32_1d(fp32,0,decoded);
+                    ggml_set_i32_1d(logical,i,ggml_get_i32_1d(fp32,0));
+                    continue;
+                }
                 if (integer(from)) ggml_set_i32_1d(input,i,values[i]);
                 else {
                     float value=fractions[i];
@@ -2103,13 +2151,21 @@ int main(int argc, char **argv) {
                     if (i==15) value=from==GGML_TYPE_F16 ? 65504.f : 0x1.fcp30f;
                     ggml_set_f32_1d(input,i,value);
                 }
-                ggml_set_i32_1d(logical,i,ggml_get_i32_1d(input,i));
+                if (to==GGML_TYPE_F8_E4M3) {
+                    ggml_set_i32_1d(fp32,0,ggml_get_i32_1d(input,i));
+                    float value=ggml_get_f32_1d(fp32,0); uint8_t bits;
+                    octet->from_float_ref(&value,&bits,1);
+                    ggml_backend_tensor_set(logical,&bits,block_address(logical,i),1);
+                } else ggml_set_i32_1d(logical,i,ggml_get_i32_1d(input,i));
             }
             CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
             CHECK(tensor_bytes(padded?destination:result)==tensor_bytes(expected));
             if (!integer(from)) for (float invalid : {INFINITY,-INFINITY,NAN,0x1p31f}) {
                 if (from==GGML_TYPE_F16 && invalid==0x1p31f) continue;
-                ggml_set_f32_1d(input,15,invalid);
+                if (from==GGML_TYPE_F8_E4M3) {
+                    if (!std::isnan(invalid)) continue;
+                    uint8_t bits=0x7f; ggml_backend_tensor_set(input,&bits,block_address(input,15),1);
+                } else ggml_set_f32_1d(input,15,invalid);
                 ggml_backend_tensor_memset(padded?destination:result,0x33,0,ggml_nbytes(padded?destination:result));
                 auto before=tensor_bytes(padded?destination:result);
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(padded?destination:result)==before);
