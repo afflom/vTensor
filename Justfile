@@ -20,19 +20,75 @@ model:
     cargo run -q --locked -p xtask -- validate
     node bootstrap/frame-sync.mjs --check
 
-# VT-45 replays the imported quotient with its producing compiler. Stream the
-# Cargo checkout because the outer Docker daemon need not share its paths.
-verdant-quotient-check checkout image:
+# VT-02 binds the packages Cargo resolved to their authority. VT-45 reuses
+# that resolution and replays the separate upstream quotient certificate.
+verdant-source-check:
+    #!/usr/bin/env python3
+    import hashlib, json, subprocess, tarfile, tomllib
+    from pathlib import Path
+
+    def digest(data):
+        return hashlib.sha256(data).hexdigest()
+
+    def require(equal, expected, name):
+        if equal != expected:
+            raise ValueError(f"{name}: expected {expected!r}, got {equal!r}")
+
+    pin = json.loads(Path("model/verdant-development.json").read_bytes())
+    metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--locked", "--offline", "--format-version=1"]))
+    packages = {p["name"]: p for p in metadata["packages"] if p["name"].startswith("verdant")}
+    engine = packages["verdant-tensor"]
+    if pin["spec"] == "vtensor/verdant-release/1":
+        registry = "sparse+https://afflom.github.io/verdant-engine/crates/index/"
+        require(engine["source"], registry, "Verdant registry")
+        require(engine["version"], pin["version"], "Verdant release")
+        manifest = Path("vendor/verdant-crates-manifest.json").read_bytes()
+        require(digest(manifest), pin["manifest_sha256"], "release manifest")
+        records = json.loads(manifest)
+        checksums = {(row["name"], row["version"]): row["sha256"] for row in records["crates"] + records["dependencies"]}
+        lock = tomllib.loads(Path("Cargo.lock").read_text())
+        for item in lock["package"]:
+            if item.get("source") == registry:
+                require(item["checksum"], checksums[item["name"], item["version"]], item["name"])
+        for item in metadata["packages"]:
+            if item["source"] == registry:
+                directory = Path(item["manifest_path"]).parent
+                cache = directory.parents[2] / "cache" / directory.parent.name
+                archive = cache / f'{item["name"]}-{item["version"]}.crate'
+                require(digest(archive.read_bytes()), checksums[item["name"], item["version"]], archive)
+    else:
+        require(pin["spec"], "vtensor/verdant-patch/1", "Verdant dependency kind")
+        rev = pin["commit"]
+        require(engine["source"], f"git+https://github.com/afflom/verdant-engine?rev={rev}#{rev}", "Verdant patch")
+    binding = json.loads(Path("verification/native-oracle-bindings.json").read_bytes())["verdant_quotient"]
+    archive = Path("vendor/verdant-quotient.tar.gz")
+    require(digest(archive.read_bytes()), binding["archive_sha256"], archive)
+    with tarfile.open(archive) as bundle:
+        def contents(name):
+            return bundle.extractfile(name).read()
+        for name, expected in binding["sha256"].items():
+            require(digest(contents(name)), expected, name)
+        require(json.loads(contents(".devcontainer/devcontainer.json"))["image"], binding["sdk"], "producer SDK")
+        result = json.loads(contents("generated/tensor-quotient/result.json"))
+        for root in result["roots"]:
+            for output in root["outputs"]:
+                name = output["package"]["name"]
+                package = packages[name]
+                require(package["source"], engine["source"], name)
+                installed = Path(package["manifest_path"]).parent / "src/lib.rs"
+                certified = contents(f"generated/tensor-quotient/packages/rust-core/{name}/src/lib.rs")
+                require(digest(installed.read_bytes()), digest(certified), installed)
+        print(json.dumps(result["source"]))
+
+verdant-quotient-check image:
     #!/usr/bin/env bash
     set -euo pipefail
-    tar -C {{quote(checkout)}} -cf - app/src app/lean-toolchain app/lakefile.toml app/lake-manifest.json \
-        app/quotient.lexlean.toml app/quotient.lexlean.lock generated/tensor-quotient | \
-      docker run --rm -i --network none --entrypoint sh --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp -w /tmp {{quote(image)}} -ec '
-        tar -xf -
-        lexlean --project app/quotient.lexlean.toml lock --check >&2
-        lexlean --project app/quotient.lexlean.toml --diagnostic-format json check
-        lexlean production verify-artifact generated/tensor-quotient >&2
-      '
+    docker run --rm -i --network none --entrypoint sh --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp -w /tmp {{quote(image)}} -ec '
+      tar -xzf -
+      lexlean --project app/quotient.lexlean.toml lock --check >&2
+      lexlean --project app/quotient.lexlean.toml --diagnostic-format json check
+      lexlean production verify-artifact generated/tensor-quotient >&2
+    ' < vendor/verdant-quotient.tar.gz
 
 # The SDK's own checks of the contract and both locks. `template check` also
 # regenerates `CONFORMANCE.md` in an isolated copy through `model-write`.

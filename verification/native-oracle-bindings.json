@@ -508,6 +508,8 @@
       "generated/tensor-quotient/result.json": "df6bf84cc5a92fa5b2ba4485965c381d66e121d34386f1651c3c951c7cee5d6b",
       "app/quotient-production.json": "ff6ca7954228212c64c2032c6ecd180a0e9ed46980fc434ee210bdcc14d88c8e",
       "app/quotient.lexlean.lock": "e75936c9fe696c45b03cff856aa44ff321dc2a449051f5550dbb6710f6cead2f"
-    }
+    },
+    "archive_sha256": "7768b6e02e811d102aa729d0d797677cd3406610cd14d311cf59bbb1380d938e",
+    "upstream_revision": "9712ac5f168a87508ff37f786294060487e8fed2"
   }
 }

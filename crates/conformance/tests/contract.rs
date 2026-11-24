@@ -1408,57 +1408,27 @@ mod verdant_api {
     use verdant_tensor::linear::multiply_mat4_cols_exact;
     use verdant_tensor::{verified_unified_tensor_kernels, TensorComputeError};
 
-    use std::{path::PathBuf, sync::LazyLock};
+    use std::sync::LazyLock;
 
-    pub(super) static ENGINE_ROOT: LazyLock<PathBuf> = LazyLock::new(|| {
-        let root = super::root();
-        let args = ["metadata", "--locked", "--offline", "--format-version=1"];
-        let metadata = super::ggml_oracle::tool_json(&root, "cargo", &args);
-        let packages = metadata["packages"].as_array().expect("resolved packages");
-        let engine = packages
-            .iter()
-            .find(|p| p["name"] == "verdant-tensor")
-            .expect("Verdant package");
-        let pin = super::ggml_oracle::read_json(root.join("model/verdant-development.json"));
-        let revision = pin["commit"].as_str().expect("Verdant patch revision");
-        let expected =
-            format!("git+https://github.com/afflom/verdant-engine?rev={revision}#{revision}");
-        assert_eq!(engine["source"], expected, "wrong Verdant source");
-        let manifest =
-            std::path::Path::new(engine["manifest_path"].as_str().expect("Cargo manifest"));
-        manifest
-            .ancestors()
-            .nth(3)
-            .expect("Engine workspace")
-            .to_owned()
+    static SOURCE: LazyLock<serde_json::Value> = LazyLock::new(|| {
+        super::ggml_oracle::tool_json(&super::root(), "just", &["verdant-source-check"])
     });
 
     pub(super) fn verify_quotient() {
-        use super::ggml_oracle::{file_digest, read_json, tool_json};
-        let root = &*ENGINE_ROOT;
         let binding = &super::native_backend_oracle::ORACLE_BINDINGS["verdant_quotient"];
-        for (path, digest) in binding["sha256"].as_object().unwrap() {
-            assert_eq!(
-                file_digest(root.join(path)),
-                digest.as_str().unwrap(),
-                "{path}"
-            );
-        }
         let image = binding["sdk"].as_str().expect("pinned Verdant compiler");
-        assert_eq!(
-            read_json(root.join(".devcontainer/devcontainer.json"))["image"],
-            image
+        let check = super::ggml_oracle::tool_json(
+            &super::root(),
+            "just",
+            &["verdant-quotient-check", image],
         );
-        let args = ["verdant-quotient-check", root.to_str().unwrap(), image];
-        let check = tool_json(&super::root(), "just", &args);
-        let result = read_json(root.join("generated/tensor-quotient/result.json"));
-        super::assert_model_identity("Verdant quotient", &check, &result["source"]);
+        super::assert_model_identity("Verdant quotient", &check, &SOURCE);
     }
 
     /// `VT-02`: The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services
     #[test]
     fn verdant_api_vt_02() {
-        LazyLock::force(&ENGINE_ROOT);
+        LazyLock::force(&SOURCE);
         let kernels = verified_unified_tensor_kernels().expect("Verdant verified kernel inventory");
         assert!(kernels.iter().map(|kernel| kernel.index).eq(0..15));
 
@@ -1553,7 +1523,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "94462cfcd4ba4b93935f06d376010e52fee45c174e156412b29f8eda3885d411",
+            "af66743358803970ae2f5791ec5af581aa416fe066c8016530dae8dfb322576e",
         )
     });
 

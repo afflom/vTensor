@@ -1,2 +1,5 @@
 [alias]
 xtask = "run --package xtask --"
+
+[registries.verdant]
+index = "sparse+https://afflom.github.io/verdant-engine/crates/index/"
