@@ -1,0 +1,64 @@
+{
+  "contract": "VT-136",
+  "authority": "https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "model": "app/src/NativeBackend.lex.tex",
+  "certificate": "generated/native/result.json",
+  "test": "custom_callbacks_vt_136",
+  "upstream_constructors": [
+    "ggml_map_custom1",
+    "ggml_map_custom2",
+    "ggml_map_custom3",
+    "ggml_map_custom1_inplace",
+    "ggml_map_custom2_inplace",
+    "ggml_map_custom3_inplace",
+    "ggml_custom_4d",
+    "ggml_custom_inplace"
+  ],
+  "callback_opcodes": [
+    90,
+    91,
+    92,
+    93
+  ],
+  "oracle": "Each graph runs in the imported GGML CPU backend and in the loaded vTensor provider. Compare the worker mask, reported task count, and all 17 destination words after compute returns.",
+  "graph_configurations": 624,
+  "destination_words_compared": 10608,
+  "companions": [
+    "none",
+    "ADD",
+    "second callback requesting two workers"
+  ],
+  "task_requests": [
+    1,
+    2,
+    5,
+    -1
+  ],
+  "thread_limits": [
+    "default",
+    1,
+    2,
+    4
+  ],
+  "generic_input_counts": [
+    0,
+    1,
+    5,
+    9
+  ],
+  "abi_checks": [
+    "Source and destination pointer identity",
+    "In-place backing identity",
+    "Exact user pointer including a null companion payload",
+    "Each reported worker index completes once"
+  ],
+  "refusal_checks": [
+    "Extra source",
+    "Null callback",
+    "Task request zero or below -1"
+  ],
+  "mutation": "Using the final graph node task count in place of the maximum failed the CPU comparison when the two-task companion preceded a single-task callback. Restoring the maximum passed all 624 cases.",
+  "initial_probe": "verification/ggml-custom-callback-oracle.json",
+  "initial_probe_provider_transcript_sha256": "0f013fed0de8e3d9b510c2ef2b7386adbb64abd1ff11e1e4274f25aaa909af39",
+  "runtime_sha256": "e2bcfc40aa33089cdda763db004de830c2137393cd0db9ece0ed42501f470679"
+}

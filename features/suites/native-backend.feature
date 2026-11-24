@@ -476,3 +476,9 @@ Feature: native-backend
     Given floating-point source rows and nonlinear four-bit destination storage
     When a GGML graph copies the tensor or updates indexed rows
     Then the resulting tensor matches the imported CPU backend
+
+  @VT-136 @build
+  Scenario: Custom GGML callbacks retain their tensor descriptors, user data, task indices and synchronous graph completion
+    Given an upstream custom graph with in-place or distinct output storage
+    When the host callback runs at the graph task width
+    Then all tasks finish with the same inputs and outputs as GGML CPU

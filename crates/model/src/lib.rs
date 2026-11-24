@@ -297,7 +297,7 @@ mod tests {
 /// Repository behavioral scenarios and honesty checks, used by build and CI tools.
 pub mod conformance {
     pub use meta::{check_honesty, HonestyReport};
-    pub use runner::{scenarios_in, workspace_test_names, Scenario, SuiteReport};
+    pub use runner::{scenarios_in, source_files, workspace_test_names, Scenario, SuiteReport};
     mod runner {
         //! Reading `features/suites/*.feature` (R3).
 
@@ -390,54 +390,60 @@ pub mod conformance {
             }
         }
 
-        /// Every `#[test]` function name in the workspace.
-        ///
-        /// Read from the source rather than from `cargo test -- --list`, because this
-        /// runs *inside* `cargo test` and a nested invocation blocks on the target
-        /// directory lock. The scan is exact for the shape the workspace uses: a
-        /// `#[test]` attribute followed, possibly after further attributes, by the
-        /// function it annotates.
-        ///
-        /// Shared by the meta-gate and by `xtask audit-limits`, which asks the same
-        /// question of a declared failure's negative test; two scanners would be two
-        /// answers to it.
+        /// Gather repository sources, including nested modules. Build output only belongs
+        /// to a shipped source tree if it was deliberately placed under that crate's src.
+        pub fn source_files(
+            dir: &Path,
+            files: &mut Vec<std::path::PathBuf>,
+            shipped: bool,
+            extensions: &[&str],
+        ) -> std::io::Result<()> {
+            for entry in std::fs::read_dir(dir)? {
+                let path = entry?.path();
+                if path.is_dir() {
+                    if shipped || path.file_name().is_none_or(|n| n != "target") {
+                        source_files(&path, files, shipped, extensions)?;
+                    }
+                } else if path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .is_some_and(|e| extensions.contains(&e))
+                {
+                    files.push(path);
+                }
+            }
+            Ok(())
+        }
+
+        /// Find ordinary test functions and the declarations expanded by the GGML batch macro.
+        /// VT-40 also checks the batch names against the enabled tests in the compiled harness.
         pub fn workspace_test_names(root: &Path) -> BTreeSet<String> {
+            let mut files = Vec::new();
+            for dir in [root.join("crates"), root.join("xtask")]
+                .into_iter()
+                .filter(|p| p.is_dir())
+            {
+                source_files(&dir, &mut files, false, &["rs"]).expect("read workspace sources");
+            }
             let mut names = BTreeSet::new();
-            let mut stack = vec![root.join("crates"), root.join("xtask")];
-            while let Some(dir) = stack.pop() {
-                let Ok(entries) = std::fs::read_dir(&dir) else {
-                    continue;
-                };
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        if path.file_name().is_some_and(|n| n == "target") {
-                            continue;
-                        }
-                        stack.push(path);
-                    } else if path.extension().is_some_and(|e| e == "rs") {
-                        let Ok(text) = std::fs::read_to_string(&path) else {
-                            continue;
-                        };
-                        let mut armed = false;
-                        for line in text.lines() {
-                            let line = line.trim();
-                            if line == "#[test]" {
-                                armed = true;
-                            } else if armed {
-                                if let Some(rest) = line.strip_prefix("fn ") {
-                                    let name: String = rest
-                                        .chars()
-                                        .take_while(|c| c.is_alphanumeric() || *c == '_')
-                                        .collect();
-                                    if !name.is_empty() {
-                                        names.insert(name);
-                                    }
-                                    armed = false;
-                                } else if !line.starts_with('#') && !line.is_empty() {
-                                    armed = false;
+            for path in files {
+                let source = std::fs::read_to_string(path).expect("read Rust source");
+                let (mut armed, mut batch) = (false, false);
+                for line in source.lines().map(str::trim) {
+                    match line {
+                        "ggml_batches! {" | "fixture_query_tests! {" => batch = true,
+                        "}" if batch => batch = false,
+                        "#[test]" => armed = true,
+                        attr if attr.is_empty() || attr.starts_with('#') => {}
+                        _ => {
+                            if let Some((name, _)) =
+                                line.strip_prefix("fn ").and_then(|f| f.split_once('('))
+                            {
+                                if armed || batch {
+                                    names.insert(name.to_owned());
                                 }
                             }
+                            armed = false;
                         }
                     }
                 }

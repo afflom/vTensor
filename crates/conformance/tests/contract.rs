@@ -18,23 +18,15 @@ fn provider_library() -> std::path::PathBuf {
         .expect("Cargo-built vTensor backend")
 }
 
-/// The body of the top-level declaration named `name`, up to its closing brace.
-fn declaration<'a>(model: &'a str, name: &str) -> &'a str {
-    let (_, body) = model
-        .split_once(&format!("\n  name: {name},\n"))
-        .unwrap_or_else(|| panic!("{name} is not declared"));
-    body.split_once("\n}\n")
-        .unwrap_or_else(|| panic!("{name} is not closed"))
-        .0
-}
-
 // Keep each imported batch individually selectable with Cargo. The same entries
 // bind the frozen input counts to the test that calls the native evaluator.
 macro_rules! ggml_batches {
     ($( $(#[$doc:meta])* fn $name:ident() { $mode:literal, $cases:literal, [$($model:literal),*] $(=> $probe:expr)? } )+) => {
+        const GGML_TEST_NAMES: &[&str] = &[$(stringify!($name)),+];
         const GGML_BATCHES: &[(&str, usize)] = &[$(($mode, $cases)),+];
         $(
             $(#[$doc])*
+            #[test]
             fn $name() {
                 let root = root();
                 $(tensor_layout::certified_current_model($model);)*
@@ -47,358 +39,235 @@ macro_rules! ggml_batches {
 
 ggml_batches! {
     /// Verify GGML device discovery, transfers and typed buffer refusals.
-    #[test]
     fn native_backend_vt_11() { "buffers", 108, ["layout", "native"] }
+    fn custom_callbacks_vt_136() { "custom-callbacks", 624, ["native"] }
     /// Exercise the CPU threadpool registry functions consumed by the upstream llama host.
-    #[test]
     fn cpu_threadpool_vt_59() { "cpu-threadpool", 4, ["native"] }
     /// `VT-12`: GGML F32 matrix-product graphs execute through Verdant across rectangular shapes, padded storage and batch broadcasting and match the imported GGML CPU reference
-    #[test]
     fn matrix_graphs_vt_12() { "matrix", 1280, ["matrix", "index"] => assert!(vtensor_index::run(u64::MAX, 0, 0, 0, 2, 0, 0, 0).is_err()) }
     /// `VT-13`: F32 arithmetic and unary graphs execute through Verdant with Prism-defined scalar semantics and broadcasting and match the imported GGML CPU reference
-    #[test]
     fn elementwise_graphs_vt_13() { "elementwise", 120, ["typed", "pointwise"] }
     /// `VT-14`: Prism empty-node admission matches the imported GGML CPU no-op behavior for empty copy graphs across every live storage type without accessing operand buffers
-    #[test]
     fn empty_graphs_vt_14() { "empty", 864, [] }
     /// `VT-15`: Prism plans same-type DUP, CONT and CPY across every live GGML storage type and Verdant moves the admitted blocks with upstream-equivalent logical order and preserved padding
-    #[test]
     fn copy_graphs_vt_15() { "copy", 3456, [] }
     /// Compare the IQ2_XXS identity copy with the actual GGML CPU copy kernel.
-    #[test]
     fn iq2_identity_copy_vt_15() { "iq2-identity-copy", 1, [] }
     /// `VT-16`: Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle
-    #[test]
     fn repeat_graphs_vt_16() { "repeat", 160, [] }
     /// `VT-17`: Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types
-    #[test]
     fn concat_graphs_vt_17() { "concat", 10368, [] }
     /// `VT-18`: Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle
-    #[test]
     fn spatial_graphs_vt_18() { "spatial", 2256, [] }
     /// `VT-19`: Prism plans SET and ACC initialization, bounded update views and aliases and Verdant execution matches the imported GGML CPU oracle for supported float and integer storage
-    #[test]
     fn update_graphs_vt_19() { "update", 4608, [] }
     /// `VT-20`: Prism models four-axis REPEAT_BACK initialization and accumulation order and Verdant execution matches the imported GGML F32 CPU oracle across strided and empty tensors
-    #[test]
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
-    #[test]
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
     /// `VT-22`: Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle
-    #[test]
     fn triangular_graphs_vt_22() { "triangular", 1920, [] }
     /// `VT-23`: Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding
-    #[test]
     fn fill_graphs_vt_23() { "fill", 15360, [] }
     /// `VT-24`: Prism plans mixed F32 F16 and BF16 casts and copies by logical element order and Verdant conversion matches the imported GGML CPU oracle across reshaped strided and empty layouts
-    #[test]
     fn cast_graphs_vt_24() { "cast", 1920, [] }
     /// `VT-25`: Prism models window partition padding and window join logical indexing and Verdant transfers match the imported GGML CPU oracle for independent strided empty and bounded window inputs
-    #[test]
     fn window_graphs_vt_25() { "window", 3024, [] }
     /// `VT-26`: Prism plans scale bias clamp and leaky ReLU graphs and Verdant matches the imported GGML CPU kernels for every supported float storage type across copied in-place strided and empty tensors
-    #[test]
     fn transform_graphs_vt_26() { "transform", 18816, [] }
     /// `VT-27`: Prism plans thirteen unary operations for all five supported GGML float source destination pairs and Verdant matches copied in-place strided and empty CPU graphs with exact finite outputs and preserved padding
-    #[test]
     fn unary_graphs_vt_27() { "unary", 4992, [] }
     /// `VT-28`: Prism models row-local F32 cumulative sums with exact first-word preservation and Verdant matches the imported GGML CPU scan across strided and empty graphs
-    #[test]
     fn scan_graphs_vt_28() { "scan", 528, [] }
     /// `VT-29`: Prism models SUM SUM_ROWS and MEAN accumulation precision rounding and empty reductions and Verdant matches every supported float type against the imported GGML CPU oracle
-    #[test]
     fn reduction_graphs_vt_29() { "reduction", 4080, [] }
     /// `VT-30`: Prism models ARGMAX last-tie and NaN state and logical COUNT_EQUAL across all four tensor axes and Verdant matches imported GGML CPU row operations with typed refusals and exact integer outputs
-    #[test]
     fn row_graphs_vt_30() { "rows", 2264, ["pointwise"] => verify_row_graphs() }
     /// `VT-31`: Prism models indexed F16 and F32 row-gradient accumulation into F32 and Verdant matches imported GGML GET_ROWS_BACK graphs with duplicate indices empty tensors and atomic invalid-index refusals
-    #[test]
     fn row_gradient_graphs_vt_31() { "row-gradient", 3360, [] }
     /// `VT-32`: Prism models four-dimensional indexed row gathering and every executable GGML CPU source format and Verdant decodes the packed blocks with imported authoritative codebooks while preserving integer words padding empty tensors and atomic invalid-index refusals
-    #[test]
     fn row_gather_graphs_vt_32() { "row-gather", 384, [] }
     /// `VT-33`: Prism models GGML relative-position word selection and Verdant preserves F16 and BF16 source encodings in F16 outputs across strided empty and higher-dimensional source layouts
-    #[test]
     fn relative_position_graphs_vt_33() { "relative-position", 192, [] }
     /// `VT-34`: Prism models three-source indexed row addition and Verdant matches GGML ADD_ID arithmetic and exact minus-one row copies across strides empty tensors and atomic invalid-index refusals
-    #[test]
     fn indexed_add_graphs_vt_34() { "indexed-add", 164, [] }
     /// `VT-37`: Prism models zero-source GGML ARANGE planning and Verdant executes every required imported upstream ARANGE case with atomic invalid-parameter refusals
-    #[test]
     fn generator_graphs_vt_37() { "upstream-ARANGE", 13, ["pointwise"] }
     /// `VT-38`: Prism models GGML L2 normalization and Verdant matches every imported ordinary and batched upstream case with atomic invalid-parameter refusals
-    #[test]
     fn normalization_graphs_vt_38() { "upstream-L2_NORM,L2_NORM_BATCH", 129, ["pointwise", "norm"] }
     /// `VT-39`: Prism models copied and in-place GGML ADD_REL_POS event ordering and Verdant matches the imported CPU oracle with atomic descriptor refusals
-    #[test]
     fn relative_position_add_vt_39() { "upstream-ADD_REL_POS", 1315, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-ORACLE_CALIBRATION", 2) }
     /// `VT-46`: Prism models copied and in-place F32 and BF16 RMS normalization and Verdant matches every imported GGML CPU case with F64 mean ordering and atomic numeric refusals
-    #[test]
     fn rms_normalization_vt_46() { "upstream-RMS_NORM", 121, ["pointwise"] }
     /// `VT-46`: Supplemental RMS normalization outputs and atomic refusals match Prism fixtures and the imported CPU oracle.
-    #[test]
     fn rms_runtime_edges_vt_46() { "rms-norm", 256, ["pointwise"] }
     /// `VT-48`: NORM preserves stride-selected mean and variance rounding through Prism and Verdant.
-    #[test]
     fn normalization_graphs_vt_48() { "upstream-NORM", 61, ["pointwise", "norm"] }
     /// `VT-48`: Prism NORM fixtures match exact CPU words and preserve atomic refusals and padding.
-    #[test]
     fn norm_runtime_edges_vt_48() { "norm", 184, ["pointwise", "norm"] }
     /// `VT-49`: GROUP_NORM preserves nested row subtotals and matches ordinary and fused imported graphs.
-    #[test]
     fn group_normalization_vt_49() { "upstream-GROUP_NORM,GROUP_NORM_MUL_ADD", 5, ["pointwise", "norm"] }
     /// `VT-49`: GROUP_NORM fixtures preserve nested rounding, physical spacing and atomic refusals.
-    #[test]
     fn group_runtime_edges_vt_49() { "group-norm", 224, ["pointwise", "norm"] }
     /// `VT-50`: RMS_NORM_BACK preserves its two-source reductions and narrowing order.
-    #[test]
     fn backward_normalization_vt_50() { "upstream-RMS_NORM_BACK", 10, ["pointwise", "norm"] }
     /// `VT-50`: Backward normalization fixtures preserve both sources, narrowing and atomic refusals.
-    #[test]
     fn backward_runtime_edges_vt_50() { "rms-backward", 353, ["pointwise", "norm"] }
     /// `VT-51`: Full composed graphs preserve mixed storage, broadcasting and aliases.
-    #[test]
     fn composed_normalization_vt_51() { "upstream-NORM_SCALE,RMS_NORM_SCALE,NORM_MUL_ADD,RMS_NORM_MUL_ADD,ADD_RMS_NORM", 187, ["typed", "pointwise", "norm"] }
     /// `VT-51`: Exact CPU words and atomic refusals cover every scalar storage tuple.
-    #[test]
     fn typed_runtime_edges_vt_51() { "typed-binary", 977, ["pointwise", "typed"] }
     /// `VT-52`: Scheduled node selection and reuse match the imported CPU.
-    #[test]
     fn synchronous_delay_vt_123() { "upstream-SLEEP", 3, ["native"] }
 
-    #[test]
     fn scheduled_compute_flags_vt_52() { "scheduled-flags", 3, ["native"] }
     /// `VT-53`: The upstream factory evaluates all Q8_0 by F32 matrix cases.
-    #[test]
     fn symmetric_matrix_graphs_vt_53() { "upstream-MUL_MAT_Q8_0_F32", 122, ["matrix"] }
     /// `VT-54`: The upstream factory evaluates all Q4_0 by F32 matrix cases.
-    #[test]
     fn packed_matrix_graphs_vt_54() { "upstream-MUL_MAT_Q4_0_F32", 122, ["matrix"] }
     /// The original GGML graphs exercise grouped Q2_K products with contiguous and viewed weights.
-    #[test]
     fn grouped_matrix_graphs_vt_65() { "upstream-MUL_MAT_Q2_K_F32", 56, ["matrix"] }
     /// `VT-55`: Indexed scalar row writes match the independent CPU.
-    #[test]
     fn scalar_set_rows_vt_55() { "upstream-SET_ROWS_SCALAR", 126, ["typed"] }
     /// `VT-56`: The imported CPU checks all split, combined and swapped SWIGLU rows.
-    #[test]
     fn swiglu_rows_vt_56() { "upstream-SWIGLU", 36, ["typed"] }
     /// `VT-57`: Exercise the upstream rotary-position graph factory on the provider.
-    #[test]
     fn rotary_graphs_vt_57() { "upstream-ROPE", 510, ["rotary"] }
     /// `VT-57`: Exercise all upstream inverse-rotation graphs.
-    #[test]
     fn rotary_backward_graphs_vt_57() { "upstream-ROPE_BACK", 424, ["rotary"] }
     /// Six scalar input pairs in upstream dense and permuted matrix products.
-    #[test]
     fn float_matrix_graphs_vt_64() { "upstream-MUL_MAT_FLOAT_STORAGE", 11, ["pointwise", "matrix"] }
 
     /// The CPU compares both packed row formats in all four mask/sink combinations.
-    #[test]
     fn packed_attention_vt_66() { "upstream-FLASH_ATTN_EXT_PACKED", 8, ["attention"] }
 
-    #[test]
     fn hyperbolic_graphs_vt_67() { "upstream-TANH,SOFTCAP", 13, ["pointwise"] }
 
-    #[test]
     fn capped_attention_vt_68() { "upstream-FLASH_ATTN_EXT_SOFTCAP", 4, ["attention"] }
 
-    #[test]
     fn scalar_outer_products_vt_69() { "upstream-OUT_PROD_SCALAR", 87, ["pointwise", "matrix"] }
 
-    #[test]
     fn image_columns_vt_70() { "upstream-IM2COL_3D_VIEW", 6, ["pointwise"] }
 
-    #[test]
     fn packed_outer_products_vt_71() { "upstream-OUT_PROD_PACKED", 144, ["matrix", "pointwise"] }
 
-    #[test]
     fn planar_columns_vt_72() { "upstream-IM2COL_PLANAR", 4, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-IM2COL_HALF_INPUT", 2) }
 
-    #[test]
     fn outer_reference_vt_73() { "upstream-OUT_PROD_DECODED", 23, ["matrix", "pointwise"] }
 
-    #[test]
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
-    #[test]
     fn gaussian_graphs_vt_75() { "upstream-GELU_FAMILIES", 64, ["pointwise"] }
 
-    #[test]
     fn contiguous_convolution_vt_76() { "upstream-CONV_2D_CONTIGUOUS", 3, ["pointwise"] }
 
-    #[test]
     fn gated_activations_vt_77() { "upstream-GATED_ACTIVATIONS", 108, ["typed", "pointwise"] }
 
-    #[test]
     fn biased_attention_vt_78() { "upstream-BIASED_ATTENTION", 7, ["attention"] }
 
-    #[test]
     fn pooling_vt_79() { "upstream-POOLING", 8, ["pointwise"] => native_backend_oracle::verify(&root(), "upstream-POOL_HALF_INPUT", 4) }
 
-    #[test]
     fn volume_convolution_vt_80() { "upstream-CONV_3D_DIRECT", 6, ["pointwise"] }
 
-    #[test]
     fn top_k_mask_vt_92() { "upstream-TOP_K_MASK_VARIANTS", 6, ["attention"] }
 
-    #[test]
     fn small_format_attention_vt_96() { "upstream-SMALL_FORMAT_ATTENTION", 19, ["attention"] }
 
-    #[test]
     fn indexed_cache_attention_vt_97() { "upstream-INDEXED_KV_ATTENTION", 4, ["attention"] }
 
-    #[test]
     fn e4m3_casts_vt_98() { "upstream-E4M3_CASTS", 29, ["pointwise"] }
 
-    #[test]
     fn scaled_fp4_products_vt_99() { "upstream-SCALED_FP4_PRODUCTS", 4, ["matrix"] }
 
-    #[test]
     fn e4m3_row_stores_vt_100() { "upstream-E4M3_ROW_STORES", 40, ["typed", "pointwise"] }
 
-    #[test]
     fn q8_storage_writes_vt_101() { "upstream-Q8_STORAGE_WRITES", 31, ["typed"] }
 
-    #[test]
     fn affine_weight_rows_vt_95() { "upstream-AFFINE_WEIGHT_ROWS", 8, ["attention", "matrix"] }
 
-    #[test]
     fn compact_weight_rows_vt_94() { "upstream-COMPACT_WEIGHT_ROWS", 8, ["attention", "matrix"] }
 
-    #[test]
     fn clamped_swiglu_vt_93() { "upstream-SWIGLU_CLAMP_VARIANTS", 12, ["typed"] }
 
-    #[test]
     fn row_softmax_vt_87() { "upstream-ROW_SOFTMAX", 6, ["attention"] }
 
-    #[test]
     fn packed_half_activations_vt_90() { "upstream-MUL_MAT_HALF_ACTIVATIONS", 3, ["matrix"] }
 
-    #[test]
     fn grouped_affine_products_vt_88() { "upstream-GROUPED_AFFINE_PRODUCTS", 6, ["matrix"] }
 
-    #[test]
     fn softplus_activation_vt_89() { "upstream-SOFTPLUS_ACTIVATION", 3, ["pointwise"] }
 
-    #[test]
     fn bitpacked_products_vt_91() { "upstream-BITPACKED_PRODUCTS", 5, ["matrix"] }
 
-    #[test]
     fn row_ranking_vt_86() { "upstream-ROW_RANKING", 6, ["typed"] }
 
-    #[test]
     fn e4m3_products_vt_85() { "upstream-E4M3_PRODUCTS", 5, ["matrix", "pointwise"] }
 
-    #[test]
     fn scalar_expert_matrix_vt_84() { "upstream-SCALAR_MUL_MAT_ID", 6, ["matrix"] }
 
-    #[test]
     fn packed_expert_matrix_vt_83() { "upstream-PACKED_MUL_MAT_ID", 9, ["matrix"] }
 
-    #[test]
     fn column_overlap_vt_82() { "upstream-COL2IM_1D", 33, ["pointwise"] }
 
-    #[test]
     fn state_convolution_vt_81() { "upstream-SSM_WINDOWS", 6, ["pointwise"] }
 
     /// Exercise all upstream alpha, clipping, view and storage variants.
-    #[test]
     fn parameterized_swiglu_vt_111() { "upstream-SWIGLU_OAI_VARIANTS", 24, ["typed", "pointwise"] }
     /// Compare each signed codebook layout through both ordinary and expert matrix paths.
-    #[test]
     fn codebook_products_vt_103() { "upstream-CODEBOOK_PRODUCTS", 6, ["matrix"] }
-    #[test]
     fn four_lane_codebooks_vt_115() { "upstream-FOUR_LANE_CODEBOOKS", 4, ["matrix"] }
-    #[test]
     fn shifted_codebooks_vt_116() { "upstream-SHIFTED_CODEBOOKS", 4, ["matrix"] }
-    #[test]
     fn ternary_row_products_vt_114() { "upstream-TERNARY_ROW_PRODUCTS", 4, ["matrix"] }
-    #[test]
     fn grouped_nonlinear_product_vt_112() { "upstream-GROUPED_NONLINEAR_PRODUCT", 2, ["matrix"] }
     /// Compare grouped signed weights through ordinary and expert paths.
-    #[test]
     fn grouped_signed_products_vt_110() { "upstream-GROUPED_SIGNED_PRODUCTS", 4, ["matrix"] }
     /// Decode contiguous and permuted source blocks with all original upstream copy inputs.
-    #[test]
     fn decoded_copies_vt_104() { "upstream-DECODED_COPIES", 53, ["pointwise"] }
     /// Compare the original indexed and copied low-bit block stores.
-    #[test]
     fn low_bit_writes_vt_105() { "upstream-LOW_BIT_WRITES", 121, ["typed"] }
     /// Contract and overlap all original one-dimensional transposed convolutions.
-    #[test]
     fn transpose_convolution_vt_106() { "upstream-TRANSPOSE_CONV_1D", 116, ["pointwise"] }
     /// Compare masked and weighted per-head scores with the imported CPU evaluator.
-    #[test]
     fn lightning_indexer_vt_108() { "upstream-LIGHTNING_INDEXER_BOUNDARIES", 10, ["attention"] }
     /// Contract and overlap all original two-dimensional transposed convolutions.
-    #[test]
     fn transpose_plane_vt_107() { "upstream-TRANSPOSE_CONV_2D", 8, ["pointwise"] }
-    #[test]
     fn grouped_affine_writes_vt_122() { "upstream-GROUPED_AFFINE_WRITES", 6, ["typed"] }
-    #[test]
     fn nonlinear_storage_vt_135() { "upstream-NONLINEAR_STORAGE", 4, ["typed"] }
-    #[test]
     fn triangular_solve_vt_134() { "upstream-SOLVE_TRI_BOUNDARIES", 3, ["pointwise"] }
-    #[test]
     fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
-    #[test]
     fn grouped_six_writes_vt_119() { "upstream-GROUPED_SIX_WRITES", 2, ["typed"] }
 
-    #[test]
     fn compact_float_writes_vt_117() { "upstream-COMPACT_FLOAT_WRITES", 4, ["typed"] }
-    #[test]
     fn ternary_weight_writes_vt_113() { "upstream-TERNARY_WEIGHT_WRITES", 60, ["typed"] }
     /// Replay all original copied and indexed sign and two-bit destinations.
-    #[test]
     fn sign_weight_writes_vt_109() { "upstream-SIGN_WEIGHT_WRITES", 60, ["typed"] }
     /// Compare all remaining source formats against authoritative GGML decoding and CPU scatter.
-    #[test]
     fn decoded_row_gradients_vt_102() { "upstream-GET_ROWS_BACK_DECODED", 54, ["pointwise"] }
     /// Four imported BF16 attention cases vary mask and sink presence independently.
-    #[test]
     fn bf16_attention_vt_63() { "upstream-FLASH_ATTN_EXT_BF16", 4, ["attention"] }
 
     /// The first dense attention graph from the imported GGML factory.
-    #[test]
     fn bf16_row_gradient_vt_62() { "row-gradient-bf16", 1680, ["pointwise"] }
 
-    #[test]
     fn logistic_graphs_vt_61() { "upstream-SIGMOID,SILU,SIGMOID_MUL,SILU_MUL,ADD_SIGMOID_MUL,ADD_SILU_MUL", 122, ["pointwise"] }
 
-    #[test]
     fn softmax_gradient_vt_121() { "upstream-SOFTMAX_GRADIENT", 2, ["pointwise"] }
-    #[test]
     fn depthwise_spatial_vt_125() { "upstream-DEPTHWISE_SPATIAL", 8, ["pointwise"] }
-    #[test]
     fn projection_precision_vt_128() { "upstream-PROJECTION_PRECISION", 36, ["matrix", "pointwise"] }
-    #[test]
     fn signed_copy_vt_126() { "upstream-SIGNED_COPY", 2, ["pointwise"] }
-    #[test]
     fn hyperconnection_post_vt_129() { "upstream-HYPERCONNECTION_POST", 11, ["pointwise"] }
-    #[test]
     fn hyperconnection_combination_vt_130() { "upstream-HYPERCONNECTION_COMB", 11, ["pointwise"] }
-    #[test]
     fn cross_entropy_vt_132() { "upstream-CROSS_ENTROPY_TRAINING", 4, ["pointwise"] }
-    #[test]
     fn optimizer_updates_vt_131() { "upstream-OPTIMIZER_UPDATES", 2, ["pointwise"] }
-    #[test]
     fn hyperconnection_pre_vt_127() { "upstream-HYPERCONNECTION_PRE", 18, ["pointwise"] }
-    #[test]
     fn silu_gradient_vt_124() { "upstream-SILU_GRADIENT", 1, ["pointwise"] }
-    #[test]
     fn small_float_add_vt_120() { "upstream-SMALL_FLOAT_ADD", 6, ["typed", "pointwise"] }
-    #[test]
     fn exponential_difference_vt_118() { "upstream-EXPM1", 12, ["pointwise"] }
 
-    #[test]
     fn elementary_graphs_vt_60() { "upstream-LOG,SIN,COS,EXP", 39, ["pointwise"] }
 
-    #[test]
     fn extended_attention_vt_58() { "upstream-FLASH_ATTN_EXT_FIRST", 1, ["attention"] }
     /// Two short attention graphs cover a populated sink and its absence.
-    #[test]
     fn small_attention_vt_58() { "upstream-FLASH_ATTN_EXT_SMALL", 2, ["attention"] }
 }
 
@@ -408,19 +277,23 @@ fn contract_tc_01() {
     let model = std::fs::read_to_string(root().join("app/src/Contract.lex.tex"))
         .expect("the contract model");
 
-    let decides = declaration(&model, "conformant_decides");
-    assert!(
-        decides.contains(
-            "statement: (((conformant observation) = true) <-> (Conformant observation)),"
-        ),
-        "TC-01's statement changed: conformant must be true exactly when Conformant holds:\n{decides}"
+    let closed = model.rsplit_once("\n}\n").expect("closed declarations").0;
+    let declarations: std::collections::BTreeMap<_, _> = closed
+        .split("\n}\n")
+        .filter_map(|block| block.split_once("\n  name: ")?.1.split_once(",\n"))
+        .collect();
+    let requires = |name: &str, term: &str| {
+        assert!(declarations[name].contains(term), "{name} omitted {term}");
+    };
+    requires(
+        "conformant_decides",
+        "parameters: [observation : Observation],",
     );
-    assert!(
-        decides.contains("parameters: [observation : Observation],")
-            && decides.contains("axioms: [propext]"),
-        "TC-01 quantifies over every observation and rests on propext only:\n{decides}"
+    requires(
+        "conformant_decides",
+        "statement: (((conformant observation) = true) <-> (Conformant observation)),",
     );
-
+    requires("conformant_decides", "axioms: [propext]");
     // The proposition names every universal policy file whose digest
     // `template.lock` binds: all of them but the self-referential lock.
     let contract = ggml_oracle::read_json(root().join("template-contract.json"));
@@ -430,7 +303,6 @@ fn contract_tc_01() {
         .map(|path| path.as_str().unwrap())
         .filter(|&path| path != "template.lock")
         .collect();
-    let proposition = declaration(&model, "Conformant");
     let fields = [
         "devcontainer",
         "bootstrap",
@@ -440,38 +312,21 @@ fn contract_tc_01() {
         "templateContract",
     ];
     assert_eq!(bound.len(), fields.len(), "the contract binds {bound:?}");
-    let drifted = declaration(&model, "drifted");
     for (field, path) in fields.iter().zip(&bound) {
-        assert!(
-            proposition.contains(&format!(
-                "(SameDigest (project (project observation {field}) expected) (project (project observation {field}) observed))"
-            )),
-            "Conformant must require {path} ({field}) to match"
+        requires("Conformant", &format!("(SameDigest (project (project observation {field}) expected) (project (project observation {field}) observed))"));
+        requires(
+            "drifted",
+            &format!("(driftEntry (project observation {field})"),
         );
-        assert!(
-            drifted.contains(&format!("(driftEntry (project observation {field})"))
-                && drifted.contains(&format!("\" {path}\"")),
-            "a drifted {path} must be named in the verdict"
-        );
+        requires("drifted", &format!("\" {path}\""));
     }
-
-    // A digest is four 64-bit words, the widest a Nat is compiled to, and
-    // two digests are the same only when every word is.
-    let same = declaration(&model, "SameDigest");
     for word in ["w0", "w1", "w2", "w3"] {
-        assert!(
-            same.contains(&format!("((project left {word}) = (project right {word}))")),
-            "SameDigest must compare digest word {word}"
+        requires(
+            "SameDigest",
+            &format!("((project left {word}) = (project right {word}))"),
         );
     }
-
-    let dispatch = declaration(&model, "dispatch");
-    assert!(
-        dispatch.contains(
-            "(if ((BackendCore::supportsF64Matmul4 true true true) && (conformant (observe value))) then"
-        ),
-        "dispatch must require both the Prism-supported matrix case and the conformant verdict TC-01 proves"
-    );
+    requires("dispatch", "(if ((BackendCore::supportsF64Matmul4 true true true) && (conformant (observe value))) then");
 }
 
 /// `VT-10`: Prism tensor placement matches the imported GGML linear allocator for aligned buffers and refuses invalid alignment, exhausted capacity, and arithmetic overflow
@@ -557,6 +412,23 @@ fn native_fixture_baselines_vt_40() {
     assert!(source
         .lines()
         .any(|line| line.trim() == "native_backend_oracle::verify(&root, $mode, $cases);"));
+    // Verify that each declaration is an independently runnable, enabled libtest case.
+    let listed = |extra: &[&str]| {
+        let mut cmd = std::process::Command::new(std::env::current_exe().unwrap());
+        String::from_utf8(ggml_oracle::run(cmd.arg("--list").args(extra)))
+            .unwrap()
+            .lines()
+            .filter_map(|line| line.strip_suffix(": test").map(str::to_owned))
+            .collect::<std::collections::BTreeSet<_>>()
+    };
+    let active = listed(&[]);
+    let ignored = listed(&["--ignored"]);
+    for &name in GGML_TEST_NAMES.iter().chain(FIXTURE_TEST_NAMES) {
+        assert!(
+            active.contains(name) && !ignored.contains(name),
+            "unregistered or ignored batch {name}"
+        );
+    }
     let modes = baseline["mode"].as_array().unwrap();
     assert_eq!(modes.len(), 16);
     for row in modes {
@@ -623,25 +495,21 @@ fn boundary_rows<const N: usize, const M: usize>(
 
 macro_rules! fixture_query_tests {
     ($( $(#[$meta:meta])* fn $name:ident() { $suite:literal, $count:literal } )+) => {
-        $( $(#[$meta])* fn $name() { fixture_queries($suite, $count); } )+
+        const FIXTURE_TEST_NAMES: &[&str] = &[$(stringify!($name)),+];
+        $( $(#[$meta])* #[test] fn $name() { fixture_queries($suite, $count); } )+
     };
 }
 
 fixture_query_tests! {
     /// `VT-41`: Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results
-    #[test]
     fn copy_fixture_generation_vt_41() { 41, 11 }
     /// `VT-42`: Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results
-    #[test]
     fn repeat_fixture_generation_vt_42() { 42, 5 }
     /// `VT-43`: Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results
-    #[test]
     fn concat_fixture_generation_vt_43() { 43, 5 }
     /// `VT-44`: Prism generates FILL and CAST fixture enumeration typed layouts constants and initial bytes while preserving all 17280 frozen cases source release states and independent GGML CPU expected results
-    #[test]
     fn typed_fixture_generation_vt_44() { 44, 10 }
     /// `VT-47`: Prism supplies spatial fixture parameters and rejects undefined recipe queries.
-    #[test]
     fn fixture_generation_vt_47() { 47, 4 }
 }
 
@@ -694,13 +562,13 @@ mod ggml_oracle {
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()))
     }
 
-    pub(super) fn publish_file(candidate: &Path, destination: &Path, stamp: impl AsRef<Path>) {
-        std::fs::write(stamp, file_digest(candidate)).expect("cache digest");
+    pub(super) fn publish_file(candidate: &Path, destination: &Path) {
+        std::fs::write(destination.with_extension("sha256"), file_digest(candidate)).expect("cache digest");
         std::fs::rename(candidate, destination).expect("publish built oracle");
     }
 
-    pub(super) fn verify_file(path: impl AsRef<Path>, stamp: impl AsRef<Path>) {
-        assert_eq!(file_digest(path), std::fs::read_to_string(stamp).unwrap());
+    pub(super) fn verify_file(path: &Path) {
+        assert_eq!(file_digest(path), std::fs::read_to_string(path.with_extension("sha256")).unwrap());
     }
 
     pub(super) fn file_digest(path: impl AsRef<Path>) -> String {
@@ -709,29 +577,39 @@ mod ggml_oracle {
 
     pub(super) use repo_model::artifact::digest_hex as digest;
 
-    pub(super) fn compile(root: &Path, source: impl AsRef<Path>, output: impl AsRef<Path>) {
-        let source = source.as_ref();
-        let c = source.extension().is_some_and(|extension| extension == "c");
-        let mut command = Command::new(if c { "cc" } else { "c++" });
-        // Keep the external CPU oracle reproducible across SDK architectures.
-        // Verdant uses these same upstream scalar and binary16 reference paths.
-        command.args([
-            "-O2",
-            "-ffp-contract=off",
-            "-DGGML_CPU_GENERIC",
-            "-U__ARM_FP16_FORMAT_IEEE",
-            "-D_GNU_SOURCE",
-            "-ffunction-sections",
-            "-fdata-sections",
-        ]);
-        if source.ends_with("ops.cpp") {
-            command.arg("-U__ARM_NEON");
-        }
-        command.arg(if c { "-std=c11" } else { "-std=c++17" });
-        for directory in ["ggml/include", "ggml/src", "ggml/src/ggml-cpu", ""] {
-            command.arg("-I").arg(root.join(directory));
-        }
-        run(command.arg("-c").arg(source).arg("-o").arg(output.as_ref()));
+    // Build only the requested oracle component. A changed recipe or compiler selects
+    // a fresh cache, while all hosts reuse the same verified CPU and core objects.
+    const MAKEFILE: &str = r#"
+CPPFLAGS = -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -I. -D_GNU_SOURCE -DGGML_CPU_GENERIC -U__ARM_FP16_FORMAT_IEEE
+flags = -O2 -ffp-contract=off -ffunction-sections -fdata-sections
+core = ggml.c ggml-quants.c ggml-alloc.c ggml-backend.cpp ggml-backend-meta.cpp
+cpu = ggml-backend-reg.cpp ggml-backend-dl.cpp ggml-threading.cpp $(shell awk '/list .APPEND GGML_CPU_SOURCES/ {listing=1; next} listing && NF==1 && $$1 !~ /[.]/ {exit} listing && $$1 ~ /[.]c(pp)?$$/ {print $$1}' ggml/src/ggml-cpu/CMakeLists.txt)
+cxx = c++ $(CPPFLAGS) $(flags) -std=c++17
+objects/ggml-cpu/ops.cpp.o: CPPFLAGS += -U__ARM_NEON
+objects/%.c.o: ggml/src/%.c
+	@mkdir -p "$(@D)"
+	cc $(CPPFLAGS) $(flags) -std=c11 -c "$<" -o "$@"
+objects/%.cpp.o: ggml/src/%.cpp
+	@mkdir -p "$(@D)"
+	$(cxx) -c "$<" -o "$@"
+core: $(addprefix objects/,$(addsuffix .o,$(core)))
+	c++ -r $^ -o "$$VT_OUTPUT"
+cpu: $(addprefix objects/,$(addsuffix .o,$(cpu)))
+	c++ -r $^ -o "$$VT_OUTPUT"
+storage:
+	$(cxx) boundary.cpp ggml-oracle-core.o -Wl,--gc-sections -lm -o "$$VT_OUTPUT"
+suite:
+	$(cxx) -c "$$VT_INPUT" -o "$$VT_OUTPUT"
+host:
+	$(cxx) "$$VT_INPUT" $${VT_SUITE:+"$$VT_SUITE"} ggml-oracle-core.o ggml-oracle-cpu.o "$$VT_LIBRARY" -Wl,-rpath,"$$VT_LIBDIR" -Wl,--gc-sections -Wl,--export-dynamic -lm -ldl -pthread -o "$$VT_OUTPUT"
+"#;
+
+    pub(super) fn build(common: &Path, kind: &str, out: &Path, variables: &[(&str, &Path)]) {
+        let mut make = Command::new("make");
+        make.current_dir(common).args(["-rB", "-j4", "-f", "-", kind]).env("VT_OUTPUT", out);
+        make.env_remove("MAKEFLAGS").env_remove("VT_SUITE").envs(variables.iter().copied());
+        let result = pipe_input(&mut make, MAKEFILE.as_bytes());
+        checked_output(&make, result);
     }
 
     pub(super) fn run(command: &mut Command) -> Vec<u8> {
@@ -796,7 +674,6 @@ mod ggml_oracle {
         ORACLE.get_or_init(|| build_storage_oracle(root)).clone()
     }
 
-    pub(super) const GGML_CORE: &str = "ggml-oracle-core.o";
 
     fn build_storage_oracle(root: &Path) -> PathBuf {
         let imported = root.join("vendor/llama.cpp-oracle");
@@ -810,6 +687,7 @@ mod ggml_oracle {
         for input in [
             archive_digest.as_bytes(),
             super::STORAGE_RECIPE.as_bytes(),
+            &run(Command::new("make").arg("--version")),
             &run(Command::new("cc").arg("--version")),
             &run(Command::new("c++").arg("--version")),
         ] {
@@ -829,7 +707,7 @@ mod ggml_oracle {
             .join(digest(&identity.finalize()));
         let executable = cache.join("storage-oracle");
         if executable.exists() {
-            verify_file(&executable, executable.with_extension("sha256"));
+            verify_file(&executable);
             verify_source_cache(root, &cache);
             return executable;
         }
@@ -849,35 +727,25 @@ mod ggml_oracle {
                 lock["commit"].as_str().expect("upstream revision"),
             );
         std::fs::write(cache.join("ggml-version.h"), version).expect("version header");
-        std::fs::write(cache.join("boundary.cpp"), STORAGE_ORACLE_SOURCE)
-            .expect("oracle transport");
-        let core = cache.join(GGML_CORE);
-        let pending = core.with_extension("new");
-        let mut combine = Command::new("c++");
-        combine.arg("-r").arg("-o").arg(&pending);
-        for name in [
-            "ggml.c",
-            "ggml-quants.c",
-            "ggml-alloc.c",
-            "ggml-backend.cpp",
-            "ggml-backend-meta.cpp",
-        ] {
-            let object = cache.join(name).with_extension("o");
-            compile(&cache, source.join(name), &object);
-            combine.arg(object);
+        let header = std::fs::read_to_string(cache.join("ggml/include/ggml.h")).unwrap();
+        let mut declarations = String::new();
+        for (table, name) in [("operation","ggml_op"), ("tensor_type","ggml_type"), ("unary","ggml_unary_op"), ("glu","ggml_glu_op")] {
+            let (_, tail) = header.split_once(&format!("enum {name} {{")).expect("upstream enum");
+            let (body, _) = tail.split_once("};").expect("complete enum");
+            for line in body.lines().map(|s| s.split("//").next().unwrap().trim()).filter(|s| !s.is_empty()) {
+                let item = line.strip_suffix(',').expect("one enumerator per line");
+                let symbol = item.split('=').next().unwrap().trim();
+                assert!(symbol.bytes().all(|b| b.is_ascii_alphanumeric() || b==b'_'));
+                declarations.push_str(&format!("EMIT({table}, {symbol});\n"));
+            }
         }
-        run(&mut combine);
-        publish_file(&pending, &core, core.with_extension("sha256"));
-        let boundary = cache.join("boundary.o");
-        compile(&cache, cache.join("boundary.cpp"), &boundary);
-        let candidate = executable.with_extension("new");
-        run(Command::new("c++")
-            .arg("-Wl,--gc-sections")
-            .arg(boundary)
-            .arg(core)
-            .args(["-lm", "-o"])
-            .arg(&candidate));
-        publish_file(&candidate, &executable, executable.with_extension("sha256"));
+        let boundary = STORAGE_ORACLE_SOURCE.replace("/* pinned enumerators */", &declarations);
+        std::fs::write(cache.join("boundary.cpp"), boundary).expect("oracle transport");
+        for (kind, file) in [("core", cache.join("ggml-oracle-core.o")), ("storage", executable.clone())] {
+            let candidate = file.with_extension("new");
+            build(&cache, kind, &candidate, &[]);
+            publish_file(&candidate, &file);
+        }
         executable
     }
 
@@ -904,11 +772,14 @@ mod ggml_oracle {
         String::from_utf8(checked_output(command, output)).expect("oracle text")
     }
 
-    /// Query the selected imported interface using its verified executable.
-    pub(super) fn rows<const N: usize>(mode: &str, input: &str) -> Vec<[u64; N]> {
+    pub(super) fn query(mode: &str, input: &str) -> String {
         let executable = storage_oracle(&super::root());
-        verify_file(&executable, executable.with_extension("sha256"));
+        verify_file(&executable);
         batch(Command::new(executable).arg(mode), input)
+    }
+
+    pub(super) fn rows<const N: usize>(mode: &str, input: &str) -> Vec<[u64; N]> {
+        query(mode, input)
             .lines()
             .map(|line| {
                 let mut values = line
@@ -921,7 +792,7 @@ mod ggml_oracle {
             .collect()
     }
 
-    const STORAGE_ORACLE_SOURCE: &[u8] = br##"// Test transport for three independent upstream GGML interfaces.
+    const STORAGE_ORACLE_SOURCE: &str = r##"// Test transport for three independent upstream GGML interfaces.
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -1042,6 +913,12 @@ static int transfer() {
 
 int main(int argc, char **argv) {
     if (argc==1 || (argc==2 && !strcmp(argv[1],"storage"))) return storage();
+    if (argc==2 && !strcmp(argv[1],"declarations")) {
+#define EMIT(table, symbol) printf("[[" #table "]]\nsymbol=\"" #symbol "\"\nvalue=%d\n", int(symbol))
+        /* pinned enumerators */
+#undef EMIT
+        return 0;
+    }
     if (argc==2 && !strcmp(argv[1],"allocation")) return allocation();
     if (argc==2 && !strcmp(argv[1],"transfer")) return transfer();
     return 2;
@@ -1052,8 +929,6 @@ int main(int argc, char **argv) {
 }
 
 mod ggml_inventory {
-
-    use std::collections::BTreeSet;
 
     pub(super) static STORAGE_TYPES: std::sync::LazyLock<Vec<u64>> =
         std::sync::LazyLock::new(|| {
@@ -1071,49 +946,12 @@ mod ggml_inventory {
                 .collect()
         });
 
-    // Refuse unfamiliar enum syntax rather than silently dropping declarations.
-    fn declarations(header: &str, name: &str, prefix: &str) -> Vec<(String, i64)> {
-        let start = format!("enum {name} {{");
-        let body = header.split_once(&start).expect("enum exists").1;
-        let body = body.split_once("};").expect("enum closes").0;
-        let mut next = 0;
-        let mut rows = Vec::new();
-        let mut symbols = BTreeSet::new();
-        for line in body.lines() {
-            let line = line.split("//").next().expect("line").trim();
-            if line.is_empty() {
-                continue;
-            }
-            let line = line.strip_suffix(',').expect("one declaration per line");
-            let (symbol, value) = match line.split_once('=') {
-                Some((symbol, value)) => (
-                    symbol.trim(),
-                    value.trim().parse::<i64>().expect("literal enum value"),
-                ),
-                None => (line, next),
-            };
-            assert!(
-                symbol.starts_with(prefix)
-                    && symbol
-                        .bytes()
-                        .all(|c| c.is_ascii_alphanumeric() || c == b'_'),
-                "unexpected declaration: {symbol}"
-            );
-            assert!(symbols.insert(symbol), "duplicate {symbol}");
-            rows.push((symbol.to_string(), value));
-            next = value.checked_add(1).expect("enum value fits");
-        }
-        assert!(!rows.is_empty());
-        rows
-    }
-
     /// `VT-04`: The imported GGML operation and tensor type declarations are inventoried exactly without implementation claims
     #[test]
     fn ggml_inventory_vt_04() {
         let root = super::root();
-        let header =
-            std::fs::read_to_string(root.join("vendor/llama.cpp-oracle/ggml/include/ggml.h"))
-                .expect("pinned header");
+        let compiled: toml::Value =
+            toml::from_str(&super::ggml_oracle::query("declarations", "")).unwrap();
         let lock =
             super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
         let inventory = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
@@ -1125,18 +963,8 @@ mod ggml_inventory {
             assert_eq!(inventory[key].as_str(), Some(expected), "{key}");
         }
         assert_eq!(inventory["revision"], lock["commit"]);
-        for (key, name, prefix) in [
-            ("operation", "ggml_op", "GGML_OP_"),
-            ("tensor_type", "ggml_type", "GGML_TYPE_"),
-            ("unary", "ggml_unary_op", "GGML_UNARY_OP_"),
-            ("glu", "ggml_glu_op", "GGML_GLU_OP_"),
-        ] {
-            let expected: Vec<_> = declarations(&header, name, prefix)
-                .into_iter()
-                .map(|(symbol, value)| {
-                    toml::Value::Table(toml::toml! { symbol = (symbol) value = (value) })
-                })
-                .collect();
+        for key in ["operation", "tensor_type", "unary", "glu"] {
+            let expected = compiled[key].as_array().expect("upstream C enumerators");
             let original = inventory[key].as_array().expect("declarations");
             let matches = |rows: &[toml::Value]| rows == expected;
             assert!(
@@ -1507,7 +1335,7 @@ fn buffer_transfer_vt_09() {
 }
 
 mod native_backend_oracle {
-    use super::ggml_oracle::{compile, digest, publish_file, run, storage_oracle, verify_file};
+    use super::ggml_oracle::{build, digest, publish_file, run, storage_oracle, verify_file};
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
     use std::path::Path;
@@ -1608,7 +1436,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 .join("fixture-model")
                 .join(digest(&identity.finalize()));
             let library = cache.join("libfixtures.so");
-            checked_build(&library, &cache.join("library.sha256"), |pending| {
+            checked_build(&library, |pending| {
                 let input = cache.join("bridge.rs");
                 let bridge =
                     format!("#[path = {source:?}] mod vtensor_fixture_model;\n{FIXTURE_BRIDGE}");
@@ -1627,31 +1455,21 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             });
             library
         });
-        verify_file(&*library, library.parent().unwrap().join("library.sha256"));
+        verify_file(library);
         library.clone()
     }
 
     }
 
     build_recipe! { OBJECT_RECIPE;
-    fn compiled_object(common: &Path, source: &Path) -> std::path::PathBuf {
-        let mut filename = source.as_os_str().to_owned();
-        filename.push(".o");
-        let object = common.join("reference-object").join(filename);
-        checked_build(&object, &object.with_extension("sha256"), |pending| {
-            compile(common, common.join("ggml/src").join(source), pending);
-        });
-        object
-    }
-
-    fn checked_build(output: &Path, stamp: &Path, build: impl FnOnce(&Path)) {
+    fn checked_build(output: &Path, build: impl FnOnce(&Path)) {
         if !output.exists() {
             std::fs::create_dir_all(output.parent().unwrap()).unwrap();
             let pending = output.with_extension("new");
             build(&pending);
-            publish_file(&pending, output, stamp);
+            publish_file(&pending, output);
         }
-        verify_file(output, stamp);
+        verify_file(output);
     }
 
     }
@@ -1684,55 +1502,24 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         }
         let cache = common.join("native").join(digest(&identity.finalize()));
         let program = cache.join("native-oracle");
-        checked_build(&program, &cache.join("program.sha256"), |pending| {
-            std::fs::write(cache.join("driver.cpp"), &driver).unwrap();
-            let mut linker = Command::new("c++");
-            linker.args(["-Wl,--gc-sections", "-Wl,--export-dynamic"]);
-            let frontend = [
-                "ggml-backend-reg.cpp",
-                "ggml-backend-dl.cpp",
-                "ggml-threading.cpp",
-            ];
-            compile(common, cache.join("driver.cpp"), cache.join("driver.o"));
-            let build_list =
-                std::fs::read_to_string(common.join("ggml/src/ggml-cpu/CMakeLists.txt")).unwrap();
-            let cpu_sources = build_list
-                .split_once("list (APPEND GGML_CPU_SOURCES")
-                .unwrap()
-                .1
-                .split_once(')')
-                .unwrap()
-                .0
-                .split_whitespace()
-                .filter(|name| name.ends_with(".c") || name.ends_with(".cpp"));
+        checked_build(&program, |pending| {
+            let input = cache.join("driver.cpp");
+            std::fs::write(&input, &driver).unwrap();
+            let cpu = common.join("ggml-oracle-cpu.o");
+            checked_build(&cpu, |out| build(common, "cpu", out, &[]));
+            let core = common.join("ggml-oracle-core.o");
+            verify_file(&core);
+            let suite = common.join("imported-suite").join(digest(&Sha256::digest(UPSTREAM_SUITE))).join("suite.o");
+            let mut variables = vec![("VT_INPUT", input.as_path()), ("VT_LIBRARY", library), ("VT_LIBDIR", library.parent().unwrap())];
             if imported {
-                let suite = common
-                    .join("imported-suite")
-                    .join(digest(&Sha256::digest(UPSTREAM_SUITE)));
-                std::fs::create_dir_all(&suite).unwrap();
-                let input = suite.join("suite.cpp");
-                std::fs::write(&input, UPSTREAM_SUITE).unwrap();
-                linker.arg(compiled_object(common, &input));
+                checked_build(&suite, |out| {
+                    let source = suite.with_extension("cpp");
+                    std::fs::write(&source, UPSTREAM_SUITE).unwrap();
+                    build(common, "suite", out, &[("VT_INPUT", &source)]);
+                });
+                variables.push(("VT_SUITE", &suite));
             }
-            linker.arg(cache.join("driver.o"));
-            let core = common.join(super::ggml_oracle::GGML_CORE);
-            verify_file(&core, core.with_extension("sha256"));
-            linker.arg(core);
-            linker.args(
-                frontend
-                    .into_iter()
-                    .chain(cpu_sources)
-                    .map(|source| compiled_object(common, Path::new(source))),
-            );
-            linker
-                .arg(library)
-                .arg(format!(
-                    "-Wl,-rpath,{}",
-                    library.parent().unwrap().display()
-                ))
-                .args(["-lm", "-ldl", "-pthread", "-o"])
-                .arg(pending);
-            run(&mut linker);
+            build(common, "host", pending, &variables);
         });
         program
     }
@@ -1750,7 +1537,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let program =
             HOSTS[usize::from(imported)].get_or_init(|| build_host(common, &library, imported));
         let cache = program.parent().unwrap();
-        verify_file(program, cache.join("program.sha256"));
+        verify_file(program);
         static STORAGE_TYPES: LazyLock<String> = LazyLock::new(|| {
             super::ggml_inventory::STORAGE_TYPES
                 .iter()
@@ -2025,6 +1812,8 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
 #include <cmath>
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <tuple>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -2184,13 +1973,85 @@ int main(int argc, char **argv) {
     CHECK(ggml_backend_buft_is_host(buft) && ggml_backend_dev_supports_buft(dev, buft));
     const size_t align = ggml_backend_buft_get_alignment(buft); CHECK(align == 64);
     ggml_backend_t reference=ggml_backend_cpu_init(); CHECK(reference);
-    ggml_backend_cpu_set_n_threads(reference,1);
     auto finish = [&](size_t cases) {
         ggml_backend_free(reference);
         ggml_backend_free(backend);
         printf("RESULT cases %zu\n", cases);
         return 0;
     };
+    if (!strcmp(argv[3],"custom-callbacks")) {
+        static_assert(GGML_DEFAULT_N_THREADS==4);
+        struct observation {
+            ggml_tensor *out=nullptr;
+            std::array<ggml_tensor *,GGML_MAX_SRC> args{};
+            std::atomic<unsigned> mask{0};
+            std::atomic<int> width{0};
+            static void apply(ggml_tensor *dst,int ith,int nth,void *user) {
+                auto &s=*static_cast<observation *>(user);
+                GGML_ASSERT(dst==s.out && ith>=0 && ith<nth && nth<=GGML_DEFAULT_N_THREADS);
+                GGML_ASSERT(!(s.mask.fetch_or(1U<<ith)&(1U<<ith)));
+                int prior=0; GGML_ASSERT(s.width.compare_exchange_strong(prior,nth) || prior==nth);
+                GGML_ASSERT(std::equal(s.args.begin(),s.args.end(),dst->src));
+                for(int i=ith;i<ggml_nelements(dst);i+=nth) {
+                    float value=11.0f;
+                    for(auto src:s.args) if(src) value+=ggml_get_f32_1d(src,i%ggml_nelements(src));
+                    ggml_set_f32_1d(dst,i,value);
+                }
+            }
+        };
+        auto one=[](ggml_tensor *d,const ggml_tensor *a,int i,int n,void *u){GGML_ASSERT(a==d->src[0]);observation::apply(d,i,n,u);};
+        auto two=[](ggml_tensor *d,const ggml_tensor *a,const ggml_tensor *b,int i,int n,void *u){GGML_ASSERT(a==d->src[0] && b==d->src[1]);observation::apply(d,i,n,u);};
+        auto three=[](ggml_tensor *d,const ggml_tensor *a,const ggml_tensor *b,const ggml_tensor *c,int i,int n,void *u){GGML_ASSERT(a==d->src[0] && b==d->src[1] && c==d->src[2]);observation::apply(d,i,n,u);};
+        using result = std::tuple<unsigned,int,std::array<float,17>>;
+        std::vector<result> expected;
+        for (auto selected : {reference,backend}) {
+            auto registry=ggml_backend_dev_backend_reg(ggml_backend_get_device(selected));
+            auto set_threads=reinterpret_cast<ggml_backend_set_n_threads_t>(ggml_backend_reg_get_proc_address(registry,"ggml_backend_set_n_threads")); CHECK(set_threads);
+            size_t count=0;
+            for(int limit : {0,1,2,4}) for(int request : {1,2,5,GGML_N_TASKS_MAX}) for(int mixed : {0,1,2})
+            for(int op : {1,2,3,4}) for(int arity : (op==4?std::vector<int>{0,1,5,9}:std::vector<int>{op})) for(bool alias : {false,true}) {
+                if(!arity && alias) continue;
+                if(limit) set_threads(selected,limit);
+                graph_fixture ctx(16); CHECK(ctx); observation s;
+                for(int j=0;j<arity;++j) s.args[j]=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,j?3+j:17);
+                auto a=s.args[0], b=s.args[1], c=s.args[2];
+                if(op==1) s.out=(alias?ggml_map_custom1_inplace:ggml_map_custom1)(ctx,a,one,request,&s);
+                if(op==2) s.out=(alias?ggml_map_custom2_inplace:ggml_map_custom2)(ctx,a,b,two,request,&s);
+                if(op==3) s.out=(alias?ggml_map_custom3_inplace:ggml_map_custom3)(ctx,a,b,c,three,request,&s);
+                if(op==4) s.out=alias?ggml_custom_inplace(ctx,a,s.args.data()+1,arity-1,observation::apply,request,&s):ggml_custom_4d(ctx,GGML_TYPE_F32,17,1,1,1,s.args.data(),arity,observation::apply,request,&s);
+                CHECK(ggml_backend_supports_op(selected,s.out));
+                auto graph=ggml_new_graph(ctx);
+                if(mixed==1) {auto x=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,17);ggml_build_forward_expand(graph,ggml_add(ctx,x,x));}
+                if(mixed==2) {
+                    auto empty=[](ggml_tensor *,int,int,void *u){GGML_ASSERT(!u);};
+                    ggml_build_forward_expand(graph,ggml_custom_4d(ctx,GGML_TYPE_F32,1,1,1,1,nullptr,0,empty,2,nullptr));
+                }
+                ggml_build_forward_expand(graph,s.out);
+                ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,selected)); CHECK(ctx.storage);
+                ggml_backend_buffer_clear(ctx.storage.get(),0); CHECK(!alias || s.out->data==a->data);
+                for(int j=0;j<arity;++j) for(int i=0;i<ggml_nelements(s.args[j]);++i) ggml_set_f32_1d(s.args[j],i,float(i+j));
+                if(selected==backend && !limit && request==1 && !mixed && !alias) {
+                    CHECK(refuses_change(selected,dev,graph,s.out,s.out->src[GGML_MAX_SRC-1],s.out));
+                    const auto params=s.out->op_params;
+                    std::array<int32_t,GGML_MAX_OP_PARAMS/sizeof(int32_t)> saved; std::copy_n(params,saved.size(),saved.begin());
+                    std::fill_n(s.out->op_params,sizeof(void*)/sizeof(int32_t),0);
+                    CHECK(!ggml_backend_supports_op(selected,s.out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_FAILED && !s.mask);
+                    std::copy(saved.begin(),saved.end(),s.out->op_params);
+                    for(int bad : {-2,0}) CHECK(refuses_change(selected,dev,graph,s.out,s.out->op_params[sizeof(void*)/sizeof(int32_t)],bad));
+                }
+                CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+                std::array<float,17> words;
+                ggml_backend_tensor_get(s.out,words.data(),0,sizeof(words));
+                CHECK(s.width>0 && s.mask==(1U<<s.width)-1);
+                result actual{s.mask.load(),s.width.load(),words};
+                if(selected==reference) expected.push_back(actual); else CHECK(expected.at(count)==actual);
+                ++count;
+            }
+            CHECK(count==expected.size());
+        }
+        return finish(expected.size());
+    }
+    ggml_backend_cpu_set_n_threads(reference,1);
     if (!strcmp(argv[3],"cpu-threadpool")) {
         std::array<std::array<float,17>,4> expected{};
         for(auto selected : {reference,backend}) {

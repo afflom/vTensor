@@ -223,6 +223,7 @@ model does not sanction.
 | `VT-133` | `build` | Prism admits Q3_K copies and indexed writes and Verdant encodes each selected block against the GGML CPU reference |
 | `VT-134` | `build` | Prism schedules batched lower triangular solves and Verdant performs forward substitution against GGML CPU |
 | `VT-135` | `build` | Prism routes nonlinear four-bit row writes and copies through Verdant encoders against GGML CPU |
+| `VT-136` | `build` | Custom GGML callbacks retain their tensor descriptors, user data, task indices and synchronous graph completion |
 
 ## normalization-graphs
 

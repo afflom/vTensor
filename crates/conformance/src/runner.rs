@@ -26,6 +26,15 @@ pub enum BackendError {
     OutOfBounds,
 }
 
+impl BackendError {
+    fn invalid<T>(_: T) -> Self {
+        Self::InvalidTensor
+    }
+    fn overflow<T>(_: T) -> Self {
+        Self::Overflow
+    }
+}
+
 impl From<std::collections::TryReserveError> for BackendError {
     fn from(_: std::collections::TryReserveError) -> Self {
         Self::Allocation
@@ -153,7 +162,7 @@ struct BufferContext {
 impl BufferContext {
     fn allocate(size: usize) -> Result<Self, BackendError> {
         let physical = vtensor_native_memory::run(vtensor_native_memory::Adt0::C0(size as u64))
-            .map_err(|_| BackendError::Overflow)?;
+            .map_err(BackendError::overflow)?;
         let mut owned = workspace(physical, state().initial_byte)?;
         let base = if size == 0 {
             null_mut()
@@ -161,7 +170,7 @@ impl BufferContext {
             let offset = vtensor_native_memory::run(vtensor_native_memory::Adt0::C1(owned.as_ptr()
                 as usize
                 as u64))
-            .map_err(|_| BackendError::Overflow)? as usize;
+            .map_err(BackendError::overflow)? as usize;
             // SAFETY: the certified plan reserves size+alignment-1 bytes and
             // returns an offset below alignment, leaving size logical bytes.
             unsafe { owned.as_mut_ptr().add(offset) }
@@ -200,7 +209,7 @@ impl BufferContext {
             offset as u64,
             size as u64,
         )
-        .map_err(|_| BackendError::Overflow)?;
+        .map_err(BackendError::overflow)?;
         match decision {
             Region::C0 => Ok(null_mut()),
             Region::C1 => Err(BackendError::InvalidTensor),
@@ -216,7 +225,7 @@ fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
 }
 
 fn tensor_layout(tensor: &Tensor) -> Result<(TensorDescriptor, usize, usize), BackendError> {
-    let ty = u64::try_from(tensor.ty).map_err(|_| BackendError::InvalidTensor)?;
+    let ty = u64::try_from(tensor.ty).map_err(BackendError::invalid)?;
     let vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(_, block, element)) =
         vtensor_types::run(ty)
     else {
@@ -230,11 +239,11 @@ fn tensor_layout(tensor: &Tensor) -> Result<(TensorDescriptor, usize, usize), Ba
     let [s0, s1, s2, s3] = tensor.nb.map(|n| n as u64);
     let layout = vtensor_layout::Adt0::C0(n0, n1, n2, n3, s0, s1, s2, s3, block, element);
     let vtensor_layout::Adt1::C1(size) =
-        vtensor_layout::run(layout).map_err(|_| BackendError::Overflow)?
+        vtensor_layout::run(layout).map_err(BackendError::overflow)?
     else {
         return Err(BackendError::InvalidTensor);
     };
-    usize::try_from(size).map_err(|_| BackendError::Overflow)?;
+    usize::try_from(size).map_err(BackendError::overflow)?;
     let address = tensor.data as usize as u64;
     Ok((
         TensorDescriptor::C0(ty, n0, n1, n2, n3, s0, s1, s2, s3, size, address),
@@ -484,6 +493,7 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
 }
 
 enum ExecutionPlan {
+    Callback(CallbackParams),
     Delay(std::time::Duration),
     Standard(GraphPlan),
     Typed(vtensor_typed::Adt2),
@@ -505,7 +515,7 @@ macro_rules! descriptor_for {
 }
 
 fn pointwise(request: GraphRequest) -> Result<GraphResponse, BackendError> {
-    vtensor_pointwise::run(request).map_err(|_| BackendError::Overflow)
+    vtensor_pointwise::run(request).map_err(BackendError::overflow)
 }
 
 impl Tensor {
@@ -537,13 +547,122 @@ impl Tensor {
     }
 }
 
+// GGML stores the three fields of each custom operation in op_params using memcpy.
+#[derive(Clone, Copy)]
+#[repr(C)]
+struct CallbackParams {
+    function: *const c_void,
+    tasks: c_int,
+    user: *mut c_void,
+}
+
+impl CallbackParams {
+    fn read(tensor: &Tensor) -> Self {
+        // SAFETY: op_params has 64 bytes and GGML uses this repr(C) prefix for all four callbacks.
+        unsafe { tensor.op_params.as_ptr().cast::<Self>().read_unaligned() }
+    }
+
+    fn plan(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
+        let params = Self::read(tensor);
+        let mask = tensor
+            .src
+            .iter()
+            .enumerate()
+            .fold(0, |mask, (i, p)| mask | (u64::from(!p.is_null()) << i));
+        let view = !tensor.view_src.is_null();
+        let compatible = tensor.source(0).is_some_and(|a| {
+            a.ty == tensor.ty && a.ne == tensor.ne && (!view || tensor.views_start_of(a))
+        });
+        let request = vtensor_native_predicates::Adt0::C5(
+            tensor.op as u64,
+            mask,
+            u64::from(params.tasks as u32),
+            !params.function.is_null(),
+            view,
+            compatible,
+        );
+        vtensor_native_predicates::run(request)
+            .then_some(Some(ExecutionPlan::Callback(params)))
+            .ok_or(BackendError::InvalidTensor)
+    }
+
+    fn invoke(
+        self,
+        tensor: TensorPtr,
+        width: usize,
+        execution: &threadpool::Execution,
+    ) -> Result<(), BackendError> {
+        // SAFETY: graph_compute retains each descriptor and its allocation until fill joins all callback tasks.
+        let descriptor = unsafe { &*tensor };
+        graph_tensor_data(descriptor)?;
+        descriptor.map_sources::<_, GGML_MAX_SRC>(graph_tensor_data)?;
+        let mut tasks = workspace(width as u64, ())?;
+        let (dst, function, user, operation) = (
+            tensor as usize,
+            self.function as usize,
+            self.user as usize,
+            descriptor.op,
+        );
+        execution.fill(&mut tasks, |first, chunk| {
+            let dst = dst as TensorPtr;
+            let user = user as *mut c_void;
+            for task in first..first+chunk.len() {
+                let (ith, nth) = (task as c_int, width as c_int);
+                // SAFETY: the constructor fixes the callback ABI. The host retains the function and
+                // user data for the synchronous submission and owns synchronization between its tasks.
+                unsafe {
+                    macro_rules! operand { ($index:expr) => { *const Tensor }; }
+                    macro_rules! call {
+                        ($($src:expr),*) => {{
+                            let callback: unsafe extern "C" fn(TensorPtr, $(operand!($src),)* c_int, c_int, *mut c_void) =
+                                std::mem::transmute(function);
+                            callback(dst, $((*dst).src[$src],)* ith, nth, user);
+                        }};
+                    }
+                    match operation {
+                        90 => call!(0),
+                        91 => call!(0, 1),
+                        92 => call!(0, 1, 2),
+                        93 => call!(),
+                        _ => return Err(BackendError::InvalidTensor),
+                    }
+                }
+            }
+            Ok(())
+        })
+    }
+}
+
+fn graph_node_tasks(t: &Tensor, limit: usize) -> Result<usize, BackendError> {
+    let size = |shape: &[i64]| shape.iter().fold(1u64, |n, &v| n.saturating_mul(v as u64));
+    let rows = t.source(0).map_or(0, |input| size(&input.ne[1..]));
+    let heads = t.source(1).map_or(0, |input| input.ne[1] as u64);
+    const TASK_WORD: usize = std::mem::offset_of!(CallbackParams, tasks) / size_of::<i32>();
+    let requested = t.op_params[TASK_WORD] as u32;
+    let request = vtensor_native_memory::Adt0::C4(
+        t.op as u64,
+        u64::from(t.op_params[0] as u32),
+        size(&t.ne),
+        rows,
+        heads,
+        requested.into(),
+        limit as u64,
+    );
+    vtensor_native_memory::run(request)
+        .map(|n| n as usize)
+        .map_err(BackendError::overflow)
+}
+
 fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError> {
     use BackendError::InvalidTensor;
     let output = tensor_metadata(tensor)?;
     let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span, _) = &output;
-    let operation = u64::try_from(tensor.op).map_err(|_| InvalidTensor)?;
+    let operation = u64::try_from(tensor.op).map_err(BackendError::invalid)?;
     if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
         return Ok(None);
+    }
+    if (90..=93).contains(&operation) {
+        return CallbackParams::plan(tensor);
     }
     if operation == 99 {
         let source = tensor.source(0).ok_or(InvalidTensor)?;
@@ -594,11 +713,10 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         output.clone(),
     ))?;
     let metadata = descriptor_for!(vtensor_typed::Adt1::C0);
-    let typed_plan =
-        |request| match vtensor_typed::run(request).map_err(|_| BackendError::Overflow)? {
-            vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan))),
-            _ => Err(InvalidTensor),
-        };
+    let typed_plan = |request| match vtensor_typed::run(request).map_err(BackendError::overflow)? {
+        vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan))),
+        _ => Err(InvalidTensor),
+    };
     let full = matches!(response, GraphResponse::C0(GraphPlan::C7));
     match response {
         GraphResponse::C0(GraphPlan::C8) => Err(InvalidTensor),
@@ -645,7 +763,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 let [w, a, out] = [w, a, output].map(descriptor);
                 Product::C0(operation, extra, w, a, out, full)
             };
-            match vtensor_matrix_q8::run(request).map_err(|_| BackendError::Overflow)? {
+            match vtensor_matrix_q8::run(request).map_err(BackendError::overflow)? {
                 vtensor_matrix_q8::Adt4::C1(plan) => Ok(Some(ExecutionPlan::RowProduct(plan))),
                 _ => Err(InvalidTensor),
             }
@@ -679,7 +797,7 @@ fn reserved<T>(count: usize) -> Result<Vec<T>, BackendError> {
 }
 
 fn workspace<T: Clone>(size: u64, initial: T) -> Result<Vec<T>, BackendError> {
-    let count = usize::try_from(size).map_err(|_| BackendError::Overflow)?;
+    let count = usize::try_from(size).map_err(BackendError::overflow)?;
     let mut result = reserved(count)?;
     result.resize(count, initial);
     Ok(result)
@@ -719,7 +837,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
             right.ty as u64,
             tensor.op as u64,
         )
-        .map_err(|_| BackendError::Overflow)
+        .map_err(BackendError::overflow)
     };
     let Instruction::C0(steps, total) = step(0)? else {
         return Err(BackendError::InvalidTensor);
@@ -845,7 +963,7 @@ fn decode_block(
     stride: usize,
 ) -> Result<(), BackendError> {
     if kind == 26 {
-        let word = source.try_into().map_err(|_| BackendError::InvalidTensor)?;
+        let word = source.try_into().map_err(BackendError::invalid)?;
         let lane = output
             .first_chunk_mut::<4>()
             .ok_or(BackendError::OutOfBounds)?;
@@ -904,7 +1022,7 @@ impl<'a> TensorInput<'a> {
         if count == 0 {
             return Ok(&[]);
         }
-        let offset = usize::try_from(offset).map_err(|_| BackendError::Overflow)?;
+        let offset = usize::try_from(offset).map_err(BackendError::overflow)?;
         self.bytes
             .get(offset..)
             .and_then(|b| b.get(..count))
@@ -1007,13 +1125,13 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     let [Some(weights), Some(activations), indices] = tensor.map_sources(TensorInput::new)? else {
         return Err(InvalidTensor);
     };
-    let request = |query| run(query).map_err(|_| Overflow);
+    let request = |query| run(query).map_err(BackendError::overflow);
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
-    let mut offsets = reserved(usize::try_from(visits).map_err(|_| Overflow)?)?;
+    let mut offsets = reserved(usize::try_from(visits).map_err(BackendError::overflow)?)?;
     let stride = LANES.checked_mul(activations.nb[0]).ok_or(Overflow)? as u64;
     let mut lanes = [0.0; LANES];
-    let mut prepared = reserved(usize::try_from(blocks).map_err(|_| Overflow)?)?;
+    let mut prepared = reserved(usize::try_from(blocks).map_err(BackendError::overflow)?)?;
     for (column, values) in (0..visits).zip(results.chunks_exact_mut(rows as usize)) {
         let mut address = request(Request::C1(plan.clone(), column))?;
         if let Response::C4(at) = address {
@@ -1087,8 +1205,8 @@ unsafe fn scalar_word(
 
 fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
     match (from, to) {
-        (43, 0) => linear::evaluate_small_float(3, word).map_err(|_| BackendError::Overflow)?,
-        _ => linear::convert_float_storage(from, to, word).map_err(|_| BackendError::Overflow)?,
+        (43, 0) => linear::evaluate_small_float(3, word).map_err(BackendError::overflow)?,
+        _ => linear::convert_float_storage(from, to, word).map_err(BackendError::overflow)?,
     }
     .ok_or(BackendError::InvalidTensor)
 }
@@ -1101,7 +1219,7 @@ fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendEr
     match (source, dot_type) {
         (0, 0) => u32::try_from(word)
             .map(f32::from_bits)
-            .map_err(|_| BackendError::InvalidTensor),
+            .map_err(BackendError::invalid),
         _ if source == dot_type || dot_type == 0 => decode_float(source, word),
         _ => decode_float(dot_type, convert(source, dot_type, word)?),
     }
@@ -1125,9 +1243,7 @@ fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
 fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32, BackendError> {
     let word = u64::from(input.to_bits());
     let activation = match variant {
-        0 => match linear::evaluate_encoded_word(0, word, 0)
-            .map_err(|_| BackendError::InvalidTensor)?
-        {
+        0 => match linear::evaluate_encoded_word(0, word, 0).map_err(BackendError::invalid)? {
             Some(2) => input,
             Some(_) => return Ok(0.0),
             None => return Err(BackendError::InvalidTensor),
@@ -1197,15 +1313,15 @@ fn execute_word(
         }
         WordOperation::C4(kind, storage, first, second) => {
             linear::transform_float_storage(kind, storage, a, first, second)
-                .map_err(|_| BackendError::Overflow)?
+                .map_err(BackendError::overflow)?
         }
         WordOperation::C5(kind) => {
-            linear::evaluate_encoded_word(kind, a, b).map_err(|_| InvalidTensor)?
+            linear::evaluate_encoded_word(kind, a, b).map_err(BackendError::invalid)?
         }
         WordOperation::C8(kind) => {
-            linear::evaluate_small_float(kind, a).map_err(|_| InvalidTensor)?
+            linear::evaluate_small_float(kind, a).map_err(BackendError::invalid)?
         }
-        WordOperation::C9 => linear::truncate_signed_word_f32(a).map_err(|_| InvalidTensor)?,
+        WordOperation::C9 => linear::truncate_signed_word_f32(a).map_err(BackendError::invalid)?,
         WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
             let input = decode_float(source, a)?;
@@ -1223,7 +1339,7 @@ fn execute_word(
                 22 => linear::softplus_f32(input),
                 _ => return Err(InvalidTensor),
             }
-            .map_err(|_| BackendError::Overflow)?;
+            .map_err(BackendError::overflow)?;
             Some(convert(0, destination, u64::from(result.to_bits()))?)
         }
     }
@@ -1287,7 +1403,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
-                .map_err(|_| BackendError::Overflow)?;
+                .map_err(BackendError::overflow)?;
         match instruction {
             Encode(from, to) => {
                 let (input, kind) = source.as_ref().zip(kind).ok_or(InvalidTensor)?;
@@ -1304,7 +1420,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 let rank = ranker
                     .get_or_insert_with(|| RowRankingF32::new(width, count, descending))
                     .as_mut()
-                    .map_err(|_| InvalidTensor)?;
+                    .map_err(BackendError::invalid)?;
                 // SAFETY: Prism admits aligned binary32 lanes, disjoint output storage and the full row spans.
                 let input =
                     unsafe { std::slice::from_raw_parts(primary.add(from as usize).cast(), width) };
@@ -1442,11 +1558,8 @@ unsafe extern "C" fn supports_operation(_: Dev, tensor: *const Tensor) -> bool {
 }
 
 unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
-    // SAFETY: the backend and its dispatch settings remain live for this graph call.
-    let Ok(execution) = (unsafe { threadpool::execution(backend) }) else {
-        return GGML_STATUS_FAILED;
-    };
     let mut plans = Vec::new();
+    let mut has_callbacks = false;
     // SAFETY: GGML retains this graph and all descriptors for the synchronous
     // call. Preflight plans every numerical node once before any computation.
     unsafe {
@@ -1457,13 +1570,36 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                 continue;
             }
             match plan_operation(&*tensor) {
-                Ok(Some(plan)) if plans.try_reserve(1).is_ok() => plans.push((tensor, plan)),
+                Ok(Some(plan)) if plans.try_reserve(1).is_ok() => {
+                    has_callbacks |= matches!(plan, ExecutionPlan::Callback(_));
+                    plans.push((tensor, plan));
+                }
                 Ok(None) => {}
                 Ok(Some(_)) | Err(_) => return GGML_STATUS_FAILED,
             }
         }
+        let Ok(execution) = threadpool::execution(backend, has_callbacks) else {
+            return GGML_STATUS_FAILED;
+        };
+        let mut callback_width = 1;
+        if has_callbacks {
+            // The pinned CPU plans one team for the whole graph, including nodes that
+            // request more tasks than a callback. Width only matters for host callbacks.
+            for i in 0..ggml_graph_n_nodes(graph) {
+                if callback_width == execution.threads {
+                    break;
+                }
+                let Ok(n) = graph_node_tasks(&*ggml_graph_node(graph, i), execution.threads) else {
+                    return GGML_STATUS_FAILED;
+                };
+                callback_width = callback_width.max(n);
+            }
+        }
         for (tensor, plan) in plans {
             let result = match plan {
+                ExecutionPlan::Callback(callback) => {
+                    callback.invoke(tensor, callback_width, &execution)
+                }
                 ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
                 ExecutionPlan::Standard(GraphPlan::C6(geometry)) => {
@@ -1505,7 +1641,7 @@ mod rotary {
     };
 
     fn request(query: Request) -> Result<Response, BackendError> {
-        vtensor_rotary::run(query).map_err(|_| BackendError::Overflow)
+        vtensor_rotary::run(query).map_err(BackendError::overflow)
     }
 
     pub(super) fn plan(
@@ -1545,7 +1681,7 @@ mod rotary {
             rotations: [value(9), value(10)],
             truncate: p[3] == 0,
         })
-        .map_err(|_| BackendError::InvalidTensor)
+        .map_err(BackendError::invalid)
     }
 
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
@@ -1664,7 +1800,7 @@ mod attention {
     use BackendError::{InvalidTensor, Overflow};
 
     fn request(query: Request) -> Result<Response, BackendError> {
-        vtensor_attention::run(query).map_err(|_| Overflow)
+        vtensor_attention::run(query).map_err(BackendError::overflow)
     }
 
     pub(super) fn indexer(tensor: &Tensor, plan: IndexerPlan) -> Result<(), BackendError> {
@@ -1815,7 +1951,7 @@ mod attention {
                                 value,
                                 u64::from(f32::NEG_INFINITY.to_bits()),
                             )
-                            .map_err(|_| Overflow)?
+                            .map_err(BackendError::overflow)?
                                 != Some(2)
                             {
                                 continue;
@@ -1867,7 +2003,8 @@ mod attention {
         let bias = bias.map(|bits| f32::from_bits(bits as u32));
         let mut row = workspace(tensor.ne[0] as u64, 0.0_f32)?;
         let mut mask_row = workspace(if mask.is_some() { row.len() as u64 } else { 0 }, 0.0_f32)?;
-        let scalar = |operation, a, b| evaluate_f32_scalar(operation, a, b).map_err(|_| Overflow);
+        let scalar =
+            |operation, a, b| evaluate_f32_scalar(operation, a, b).map_err(BackendError::overflow);
         for head in 0..tensor.ne[2] as u64 {
             let slope = head_slope(bias, tensor.ne[2], head)?.unwrap_or(1.0);
             for batch in 0..tensor.ne[3] as u64 {
@@ -2034,7 +2171,7 @@ mod attention {
         };
         let shape = q.ne;
         let Plan::C0(.., columns, head_bias, cap) = &plan;
-        let columns = usize::try_from(*columns).map_err(|_| Overflow)?;
+        let columns = usize::try_from(*columns).map_err(BackendError::overflow)?;
         // Validate all cache indices before writing the first output row.
         let cells = indices
             .map(|indices| {
@@ -2065,7 +2202,7 @@ mod attention {
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
         let output = graph_tensor_data(tensor)?;
         let [cap, head_bias] = [cap, head_bias].map(|word| word.map(|b| f32::from_bits(b as u32)));
-        let scalar = |op, a, b| evaluate_f32_scalar(op, a, b).map_err(|_| Overflow);
+        let scalar = |op, a, b| evaluate_f32_scalar(op, a, b).map_err(BackendError::overflow);
         let mut scale = f32::from_bits(tensor.op_params[0] as u32);
         if let Some(cap) = cap {
             scale = scalar(3, scale, cap)?;
@@ -2137,13 +2274,14 @@ mod attention {
                             scaled = scalar(2, cap, linear::tanh_f32(scaled)?)?;
                         }
                         let score = scalar(0, scaled, bias)?;
-                        mean.push(score, Some(&value)).map_err(|_| Overflow)?;
+                        mean.push(score, Some(&value))
+                            .map_err(BackendError::overflow)?;
                     }
                     if let Some(sink) = &sink {
                         mean.push(f32::from_ne_bytes(sink.word(soff)?), None)
-                            .map_err(|_| Overflow)?;
+                            .map_err(BackendError::overflow)?;
                     }
-                    let row = mean.finish().map_err(|_| Overflow)?;
+                    let row = mean.finish().map_err(BackendError::overflow)?;
                     // SAFETY: the Prism plan bounds this contiguous F32 row. Verdant owns its separate workspace.
                     unsafe { super::write_row(output.add(dst as usize), &row) }
                 }
@@ -2291,7 +2429,7 @@ mod threadpool {
 
     pub(super) struct Execution {
         pool: Option<Arc<Pool>>,
-        threads: usize,
+        pub(super) threads: usize,
     }
 
     impl Execution {
@@ -2310,7 +2448,7 @@ mod threadpool {
                 self.threads as u64,
                 values.len() as u64,
             ))
-            .map_err(|_| BackendError::Overflow)? as usize;
+            .map_err(BackendError::overflow)? as usize;
             let mut chunks = values.chunks_mut(width);
             let first = chunks.next().ok_or(BackendError::InvalidTensor)?;
             let (send, receive) = mpsc::channel();
@@ -2364,15 +2502,24 @@ mod threadpool {
         // SAFETY: backend_new initialized this context, and GGML destroys it once.
         unsafe { drop(Box::from_raw((*backend).context.cast::<Context>())) }
     }
-    pub(super) unsafe fn execution(backend: BackendPtr) -> Result<Execution, BackendError> {
+    pub(super) unsafe fn execution(
+        backend: BackendPtr,
+        callbacks: bool,
+    ) -> Result<Execution, BackendError> {
         // SAFETY: graph_compute retains its live backend for the entire submission.
         let mut settings = unsafe { &*(*backend).context.cast::<Context>() }
             .lock()
-            .map_err(|_| BackendError::InvalidTensor)?;
-        let limit = settings.limit;
-        if settings.attached.is_none() && limit.unwrap_or(1) > 1 && settings.private.is_none() {
+            .map_err(BackendError::invalid)?;
+        // Unconfigured GGML CPU callbacks observe GGML_DEFAULT_N_THREADS.
+        let default = match (callbacks, settings.attached.is_some()) {
+            (true, _) => 4,
+            (_, true) => usize::MAX,
+            _ => 1,
+        };
+        let limit = settings.limit.unwrap_or(default);
+        if settings.attached.is_none() && limit > 1 && settings.private.is_none() {
             settings.private = Some(Pool::create(ThreadpoolParams {
-                n_threads: limit.unwrap_or(1) as c_int,
+                n_threads: limit as c_int,
                 cpumask: [false; 512],
                 prio: 0,
                 poll: 0,
@@ -2387,7 +2534,7 @@ mod threadpool {
             .cloned();
         let mut threads = 1;
         if let Some(active) = &pool {
-            threads = limit.unwrap_or(usize::MAX).min(active.workers.len() + 1);
+            threads = limit.min(active.workers.len() + 1);
             if active.paused.swap(false, Ordering::Relaxed) {
                 configure(&active.params, active.workers.len());
             }

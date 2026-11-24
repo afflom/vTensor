@@ -882,3 +882,9 @@ id = "VT-135"
 level = "build"
 suite = "native-backend"
 statement = "Prism routes nonlinear four-bit row writes and copies through Verdant encoders against GGML CPU"
+
+[[id]]
+id = "VT-136"
+level = "build"
+suite = "native-backend"
+statement = "Custom GGML callbacks retain their tensor descriptors, user data, task indices and synchronous graph completion"

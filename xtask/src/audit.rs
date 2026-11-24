@@ -7,7 +7,7 @@
 
 use std::path::{Path, PathBuf};
 
-use repo_model::conformance::workspace_test_names;
+use repo_model::conformance::{source_files, workspace_test_names};
 use repo_model::Model;
 
 use crate::Fail;
@@ -49,7 +49,7 @@ fn shipped_sources(root: &Path) -> Result<Vec<PathBuf>, Fail> {
     for name in shipped(root)? {
         let dir = root.join("crates").join(name).join("src");
         if dir.exists() {
-            gather_files(&dir, &mut paths, true)?;
+            source_files(&dir, &mut paths, true, &["rs"])?;
         }
     }
     Ok(paths)
@@ -249,7 +249,7 @@ pub fn audit_deferral(root: &Path) -> Result<(), Fail> {
     let mut files: Vec<PathBuf> = Vec::new();
     for dir in [root.join("crates"), root.join("xtask")] {
         if dir.exists() {
-            gather_files(&dir, &mut files, false)?;
+            source_files(&dir, &mut files, false, &["rs", "md", "toml"])?;
         }
     }
     // Every Markdown file at the root, discovered rather than listed. A list
@@ -315,25 +315,6 @@ fn outside_code_spans(line: &str, marker: &str) -> bool {
         rest = &line[at..];
     }
     false
-}
-
-/// A shipped source tree includes every Rust module. The repository audit also reads
-/// manifests and prose, skipping build output under target directories.
-fn gather_files(dir: &Path, files: &mut Vec<PathBuf>, shipped: bool) -> Result<(), Fail> {
-    for entry in std::fs::read_dir(dir)? {
-        let path = entry?.path();
-        if path.is_dir() {
-            if shipped || !path.file_name().is_some_and(|n| n == "target") {
-                gather_files(&path, files, shipped)?;
-            }
-        } else if path
-            .extension()
-            .is_some_and(|e| e == "rs" || (!shipped && (e == "md" || e == "toml")))
-        {
-            files.push(path);
-        }
-    }
-    Ok(())
 }
 
 #[cfg(test)]

@@ -30,7 +30,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,235 non-Prism lines** (12,784 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,234 non-Prism lines** (12,783 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -182,7 +182,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Verify all three SLEEP factory cases and chained scheduler timing, aliasing and byte preservation. [VT-123](verification/factory-scheduler-delay-vt123.json)
 - [x] Measure callback task width on the pinned CPU across 416 graphs, including default threads, mixed graphs and all eight constructors. [Oracle record](verification/ggml-custom-callback-oracle.json)
 - [x] Export the Prism roots for callback admission and graph-wide task selection. [Certified native model](generated/native/result.json)
-- [ ] Implement MAP_CUSTOM1/2/3 and CUSTOM. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.
+- [x] Implement MAP_CUSTOM1/2/3 and CUSTOM. All eight constructors matched GGML CPU across 624 graphs and 10,608 output words. [VT-136 comparisons](verification/native-custom-callbacks-vt136.json)
 - [ ] Close every residual legal variant in the ledger, including partial families from VT-01–51. Cover strides, empty axes, broadcasting, overlapping views, precision and typed failures where applicable.
 
 ## Accept and ship
