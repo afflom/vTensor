@@ -236,6 +236,7 @@ model does not sanction.
 | `VT-146` | `build` | Prism models GGML bicubic convolution weights and strided sampling through Verdant against the pinned CPU |
 | `VT-147` | `build` | Prism models GGML antialiased bilinear filtering across bounded source windows through Verdant against the pinned CPU |
 | `VT-148` | `build` | Prism routes IQ3 row writes and copies through Verdant encoders against the GGML quantizer |
+| `VT-149` | `build` | Prism models gated delta attention and retained state snapshots through Verdant against GGML CPU |
 
 ## normalization-graphs
 

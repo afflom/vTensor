@@ -960,3 +960,9 @@ id = "VT-148"
 level = "build"
 suite = "native-backend"
 statement = "Prism routes IQ3 row writes and copies through Verdant encoders against the GGML quantizer"
+
+[[id]]
+id = "VT-149"
+level = "build"
+suite = "native-backend"
+statement = "Prism models gated delta attention and retained state snapshots through Verdant against GGML CPU"

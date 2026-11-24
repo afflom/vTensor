@@ -36,6 +36,7 @@ deny = []
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+allow-git = ["https://github.com/afflom/verdant-engine", "https://github.com/UOR-Foundation/uor-matmul"]
 allow-registry = ["https://github.com/rust-lang/crates.io-index", "https://raw.githubusercontent.com/afflom/verdant-engine/39ce03b3165c08ca48378aac97df5d8cd83adddb/v2.21.5/crates/index/"]
 
 # The certified renderer omits package licensing metadata. The repository
@@ -316,7 +317,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x824c1aca }]
 name = "vtensor_spatial"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xf6891fd4 }]
+license-files = [{ path = "src/lib.rs", hash = 0x5d517b2c }]
 
 [[licenses.clarify]]
 name = "vtensor_norm"
@@ -562,7 +563,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x1a27f392 }]
 name = "vtensor_attention"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x07f1c79f }]
+license-files = [{ path = "src/lib.rs", hash = 0x69e30a29 }]
 
 [[licenses.clarify]]
 name = "vtensor_attention_mask"
@@ -843,3 +844,9 @@ name = "verdant_iq3_score"
 version = "=2.49.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x87b02e56 }]
+
+[[licenses.clarify]]
+name = "verdant_delta_rule"
+version = "=2.50.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x4055dbcb }]

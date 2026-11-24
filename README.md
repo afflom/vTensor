@@ -16,7 +16,7 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 The completion checklist tracks remaining GGML operations, scheduler callbacks
 and consumer checks. [Provider burndown](BURNDOWN.md)
 
-Cargo resolves Verdant Tensor v2.21.5 and its IQ3 encoders from the immutable upstream release index. Every locked registry archive is checked against the published manifest. [Release pin](model/verdant-development.json) · [Archive verification](verification/verdant-versioned-registry.json)
+Cargo pins Verdant’s gated delta projection at `36199061` until it ships in the registry. [Verdant PR #57](https://github.com/afflom/verdant-engine/pull/57) · [Dependency record](model/verdant-development.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940

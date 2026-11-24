@@ -1,6 +1,7 @@
 \begin{lexlean}{SpatialFixtures}
 \useglossary{lexlean.std.bool@1.2.0}
 \useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TypedFixtures}
 \title{Natural number}
 \begin{semanticmodule}
 definition{
@@ -60,10 +61,121 @@ definition{
 }
 
 definition{
+  name: windowAxisPeak,
+  parameters: [extent : Nat, stride : Nat, weight : Nat],
+  result: Nat,
+  body: (let last : Nat := (prim subtract extent 1 : Nat);
+      (let tailPeak : Nat := ((prim multiply (prim quotient last stride 0 : Nat) weight : Nat) + (prim remainder last stride 0 : Nat));
+      (let full : Nat := ((prim multiply (prim subtract (prim quotient extent stride 0 : Nat) 1 : Nat) weight : Nat) + (prim subtract stride 1 : Nat));
+      (if (extent <? stride) then tailPeak else (if (tailPeak <? full) then full else tailPeak))))),
+  executable: true
+}
+
+definition{
+  name: fixtureWindow,
+  parameters: [operation : Nat, pattern : Nat, units : Nat, rows : Nat, batches : Nat, axis : Nat],
+  result: Nat,
+  body: (let period : Nat := (if (operation =? 0) then 4 else 10);
+      (let variant : Nat := (prim remainder pattern period 0 : Nat);
+      (let size : Nat := (if ((prim quotient pattern period 0 : Nat) =? 0) then 1 else (if ((prim quotient pattern period 0 : Nat) =? 1) then 2 else 4));
+      (let width : Nat := (if (variant =? 2) then 0 else rows);
+      (let height : Nat := (if (variant =? 3) then 0 else batches);
+      (let wide : Nat := (prim quotient (width + (prim subtract size 1 : Nat)) size 0 : Nat);
+      (let tiles : Nat := (prim multiply wide (prim quotient (height + (prim subtract size 1 : Nat)) size 0 : Nat) : Nat);
+      (let last : Nat := ((windowAxisPeak width size 1) + (windowAxisPeak height size wide));
+      (if (axis =? 4) then variant else (if (axis =? 5) then size else (if (axis =? 6) then width else (if (axis =? 7) then height else (if (axis =? 0) then (if (variant =? 1) then 0 else units) else (if (operation =? 0) then (if (axis =? 0) then units else (if (axis =? 1) then width else (if (axis =? 2) then height else 1))) else (if (7 <=? variant) then (if (axis <? 3) then 1 else (if (variant =? 7) then (prim multiply tiles (prim multiply size size : Nat) : Nat) else (if (variant =? 8) then (last + 1) else last))) else ((if (axis <? 3) then size else tiles) + (if ((4 <=? variant) && (variant =? (axis + 3))) then 1 else 0))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: fixtureShape,
+  parameters: [family : Nat, caseId : Nat, geometry : Nat, axis : Nat],
+  result: Nat,
+  body: (let operation : Nat := (prim quotient caseId 32 0 : Nat);
+      (let pattern : Nat := (prim remainder caseId 32 0 : Nat);
+      (let units : Nat := (prim remainder geometry 128 0 : Nat);
+      (let rows : Nat := (prim remainder (prim quotient geometry 128 0 : Nat) 128 0 : Nat);
+      (let batches : Nat := (prim quotient geometry 16384 0 : Nat);
+      (let side : Nat := (prim subtract (rows + batches) 1 : Nat);
+      (let base : Nat := (if (axis =? 0) then units else (if (axis =? 1) then rows else (if (axis =? 2) then 2 else batches)));
+      (if (family =? 1) then (if (((pattern =? 16) && (axis =? 0)) || (pattern =? (axis + 17))) then 0 else (prim multiply base (1 + (prim remainder (prim quotient pattern (if (axis =? 0) then 1 else (if (axis =? 1) then 2 else (if (axis =? 2) then 4 else 8))) 0 : Nat) 2 0 : Nat)) : Nat)) else (if (family =? 2) then (if (((pattern =? 1) && (axis =? 0)) || ((2 <=? pattern) && (axis =? pattern))) then 0 else (if (axis =? 0) then units else (if (axis =? 1) then 1 else (if (axis =? 2) then rows else batches)))) else (if (family =? 3) then (if (((pattern =? 1) && (axis <? 2)) || ((2 <=? pattern) && ((pattern <? 4) && (pattern =? axis)))) then 0 else (if (axis =? 0) then units else (if (axis =? 1) then units else (if (axis =? 2) then rows else batches)))) else (if (family =? 4) then (fixtureWindow operation pattern units rows batches axis) else (if (family =? 9) then (if (pattern =? (axis + 14)) then 0 else (if ((operation =? 0) || ((10 <=? pattern) && (pattern <? 14))) then (if (axis =? 0) then units else (if (axis =? 1) then (prim multiply rows batches : Nat) else (if (axis =? 2) then 1 else 1))) else (if (pattern =? 9) then (if (axis =? 0) then units else (if (axis =? 1) then side else (if (axis =? 2) then side else (prim multiply side side : Nat)))) else base))) else (if (family =? 10) then (if (axis =? 0) then (if (pattern =? 0) then units else 0) else (if (axis =? 1) then (prim subtract (prim multiply 2 rows : Nat) 1 : Nat) else (if (axis =? 2) then 2 else batches))) else (if ((family =? 5) && (pattern =? (axis + 24))) then 0 else (if ((family =? 6) && (pattern =? (axis + 1))) then 0 else (if ((family =? 7) && (pattern =? (axis + 8))) then 0 else (if ((family =? 8) && (pattern =? (axis + 10))) then 0 else base))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: scanPattern,
+  parameters: [index : Nat],
+  result: Nat,
+  body: (if (index <? 14) then (if (index <? 7) then (if (index <? 3) then (if (index <? 1) then 1065353216 else (if (index <? 2) then 1073741824 else 3212836864)) else (if (index <? 5) then (if (index <? 4) then 0 else 1266679808) else (if (index <? 6) then 1065353216 else 3414163456))) else (if (index <? 10) then (if (index <? 8) then 3212836864 else (if (index <? 9) then 2147483648 else 2147483648)) else (if (index <? 12) then (if (index <? 11) then 0 else 2147483648) else (if (index <? 13) then 2139095040 else 4286578688)))) else (if (index <? 21) then (if (index <? 17) then (if (index <? 15) then 1065353216 else (if (index <? 16) then 0 else 2139095041)) else (if (index <? 19) then (if (index <? 18) then 4290772993 else 2143289635) else (if (index <? 20) then 4286578689 else 2139095039))) else (if (index <? 24) then (if (index <? 22) then 2139095039 else (if (index <? 23) then 4286578687 else 8388608)) else (if (index <? 26) then (if (index <? 25) then 1 else 2147483649) else (if (index <? 27) then 8388607 else 8388608))))),
+  executable: true
+}
+
+definition{
+  name: rankingPattern,
+  parameters: [index : Nat],
+  result: Nat,
+  body: (if (index <? 8) then (if (index <? 4) then (if (index <? 2) then (if (index <? 1) then 4286578688 else 4286578688) else (if (index <? 3) then 4286578688 else 4286578688)) else (if (index <? 6) then (if (index <? 5) then 2139095041 else 1065353216) else (if (index <? 7) then 0 else 3212836864))) else (if (index <? 12) then (if (index <? 10) then (if (index <? 9) then 1065353216 else 2143289345) else (if (index <? 11) then 3212836864 else 0)) else (if (index <? 14) then (if (index <? 13) then 3225419776 else 3221225472) else (if (index <? 15) then 3212836864 else 3221225472)))),
+  executable: true
+}
+
+definition{
+  name: unaryPattern,
+  parameters: [index : Nat],
+  result: Nat,
+  body: (if (index <? 16) then (if (index <? 8) then (if (index <? 4) then (if (index <? 2) then (if (index <? 1) then 0 else 2147483648) else (if (index <? 3) then 1056964608 else 3204448256)) else (if (index <? 6) then (if (index <? 5) then 1069547520 else 3217031168) else (if (index <? 7) then 1075838976 else 3223322624))) else (if (index <? 12) then (if (index <? 10) then (if (index <? 9) then 1077936128 else 3225419776) else (if (index <? 11) then 1077936127 else 1077936129)) else (if (index <? 14) then (if (index <? 13) then 3225419775 else 3225419777) else (if (index <? 15) then 1065353216 else 3212836864)))) else (if (index <? 24) then (if (index <? 20) then (if (index <? 18) then (if (index <? 17) then 2139095040 else 4286578688) else (if (index <? 19) then 2143289345 else 2139095041)) else (if (index <? 22) then (if (index <? 21) then 4286578689 else 1) else (if (index <? 23) then 2147483649 else 8388608))) else (if (index <? 28) then (if (index <? 26) then (if (index <? 25) then 2139095039 else 4286578687) else (if (index <? 27) then 1258291199 else 3405774847)) else (if (index <? 30) then (if (index <? 29) then 1258291200 else 3405774848) else (if (index <? 31) then 1065353215 else 3212836863))))),
+  executable: true
+}
+
+definition{
+  name: groupedPattern,
+  parameters: [index : Nat],
+  result: Nat,
+  body: (if (index <? 2) then (if (index <? 1) then 1518338048 else 0) else (if (index <? 3) then 3665821696 else 1065353216)),
+  executable: true
+}
+
+definition{
+  name: fixtureWord,
+  parameters: [mode : Nat, pattern : Nat, index : Nat, right : Nat],
+  result: Nat,
+  body: (let lane : Nat := (prim remainder index 4 0 : Nat);
+      (let raw : Nat := (if (mode =? 120) then (TypedFixtures::floatWord (prim remainder index 24 0 : Nat)) else (if (mode =? 121) then (TypedFixtures::smallWord (prim remainder index 24 0 : Nat)) else (if (mode =? 122) then (unaryPattern (prim remainder index 32 0 : Nat)) else (if ((mode =? 124) && ((10 <=? pattern) && (pattern <? 14))) then (rankingPattern ((prim multiply (prim subtract pattern 10 : Nat) 4 : Nat) + lane)) else (if (pattern <? 7) then (scanPattern ((prim multiply pattern 4 : Nat) + lane)) else (if (pattern =? 8) then (groupedPattern lane) else (if (pattern =? 9) then 2139095039 else (prim remainder (2654435769 + (prim multiply 2654435761 index : Nat)) 4294967296 0 : Nat))))))));
+      (let group : Nat := (prim remainder pattern 4 0 : Nat);
+      (if (((mode =? 124) && (right =? 1)) && ((((group =? 1) && (if (pattern =? 9) then false else true)) || (((group =? 2) || (pattern =? 9)) && ((prim remainder index 2 0 : Nat) =? 1))) || ((group =? 3) && ((prim remainder index 7 0 : Nat) =? 3)))) then (prim remainder (2147483648 + raw) 4294967296 0 : Nat) else raw)))),
+  executable: true
+}
+
+definition{
+  name: fixtureEnumeration,
+  parameters: [family : Nat, op : Nat, ordinal : Nat, field : Nat],
+  result: Nat,
+  body: (let patterns : Nat := (if (family =? 0) then (if (op =? 0) then 22 else (if (op =? 1) then 4 else 17)) else (if (family =? 1) then 21 else (if (family =? 2) then 4 else (if (family =? 3) then 5 else (if (family =? 4) then (if (op =? 0) then 12 else 30) else (if (family =? 5) then 28 else (if (family =? 6) then 5 else (if (family =? 7) then 12 else (if (family =? 8) then 14 else (if (family =? 9) then 18 else 2))))))))));
+      (let columns : Nat := (if ((family =? 8) || (family =? 9)) then 5 else (if (family =? 7) then 4 else (if (((family =? 4) || (family =? 10)) || ((family =? 0) && (op =? 0))) then 3 else 2)));
+      (let rows : Nat := (if (((family =? 7) || (family =? 8)) || (family =? 9)) then 2 else columns);
+      (let pairs : Nat := (prim quotient ordinal 2 0 : Nat);
+      (let row : Nat := (prim remainder pairs rows 0 : Nat);
+      (let column : Nat := (prim remainder (prim quotient pairs rows 0 : Nat) columns 0 : Nat);
+      (let plane : Nat := (prim quotient (prim quotient pairs rows 0 : Nat) columns 0 : Nat);
+      (if (field =? 0) then (if (family =? 0) then 3 else (if (family =? 1) then 1 else (if (family =? 2) then 1 else (if (family =? 3) then 4 else (if (family =? 4) then 2 else (if (family =? 5) then 8 else (if (family =? 6) then 39 else (if (family =? 7) then 1 else (if (family =? 8) then 3 else (if (family =? 9) then 2 else 1)))))))))) else (if (field =? 1) then (prim multiply 8 (prim multiply patterns (prim multiply columns rows : Nat) : Nat) : Nat) else (if (field =? 2) then (prim quotient plane 4 0 : Nat) else (if (field =? 3) then (prim remainder plane 4 0 : Nat) else (if (field =? 4) then (if ((family =? 8) || (family =? 9)) then (if (column =? 0) then 1 else (if (column =? 1) then 2 else (if (column =? 2) then 3 else (if (column =? 3) then 17 else 65)))) else (if (family =? 7) then (if (column =? 0) then 1 else (if (column =? 1) then 3 else (if (column =? 2) then 17 else 65))) else (if (family =? 4) then (if (column =? 0) then 1 else (if (column =? 1) then 3 else 5)) else (if (family =? 10) then (if (column =? 0) then 1 else (if (column =? 1) then 3 else 17)) else (if (family =? 0) then (if (op =? 0) then (if (column =? 0) then 0 else (if (column =? 1) then 1 else 3)) else (if (column =? 0) then 2 else 3)) else (if (column =? 0) then 1 else 3)))))) else (if (field =? 5) then (if (family =? 10) then (if (row =? 0) then 1 else (if (row =? 1) then 3 else 7)) else (if (((family =? 7) || (family =? 8)) || (family =? 9)) then (if (row =? 0) then 1 else 3) else (if ((family =? 8) || (family =? 9)) then (if (row =? 0) then 1 else (if (row =? 1) then 2 else (if (row =? 2) then 3 else (if (row =? 3) then 17 else 65)))) else (if (family =? 7) then (if (row =? 0) then 1 else (if (row =? 1) then 3 else (if (row =? 2) then 17 else 65))) else (if (family =? 4) then (if (row =? 0) then 1 else (if (row =? 1) then 3 else 5)) else (if (family =? 10) then (if (row =? 0) then 1 else (if (row =? 1) then 3 else 17)) else (if (family =? 0) then (if (op =? 0) then (if (row =? 0) then 0 else (if (row =? 1) then 1 else 3)) else (if (row =? 0) then 2 else 3)) else (if (row =? 0) then 1 else 3)))))))) else ((prim remainder ordinal 2 0 : Nat) + (if ((family =? 0) && (op =? 2)) then 2 else 1))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: fixtureAdmission,
+  parameters: [family : Nat, caseId : Nat, geometry : Nat, kind : Nat],
+  result: Nat,
+  body: (let op : Nat := (prim quotient caseId 32 0 : Nat);
+      (let pattern : Nat := (prim remainder caseId 32 0 : Nat);
+      (let units : Nat := (prim remainder geometry 128 0 : Nat);
+      (if ((if (family =? 10) then (((kind =? 1) || (kind =? 30)) && ((pattern =? 0) || (units =? 1))) else (if (family =? 9) then (if (op =? 0) then ((kind =? 0) && (pattern <? 16)) else (kind =? 26)) else (if ((((family =? 0) || (family =? 1)) || (family =? 4)) || (family =? 7)) then (kind =? 0) else (if ((family =? 8) && (0 <? op)) then (kind =? 0) else (if ((family =? 6) && ((prim remainder op 3 0 : Nat) =? 2)) then ((kind =? 1) || (kind =? 30)) else (((kind =? 0) || (kind =? 1)) || (kind =? 30))))))) && (if (if (family =? 5) then (24 <=? pattern) else (if (family =? 6) then (0 <? pattern) else (if (family =? 7) then (8 <=? pattern) else (if (family =? 8) then (10 <=? pattern) else (if (family =? 9) then (14 <=? pattern) else false))))) then (geometry =? 16513) else true)) then 1 else 0)))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [mode : Nat, pattern : Nat, extent : Nat, item : Nat],
   result: (Option Nat),
-  body: (if ((extent <=? 2147483647) && (mode <? 4)) then (if ((mode =? 0) || (mode =? 3)) then (if ((pattern <? 22) && (item <? 2)) then (ctor Option.some [Nat] (padWord (mode =? 3) pattern extent item)) else (ctor Option.none [Nat])) else (if (mode =? 1) then (if ((pattern <? 4) && ((item <? 2) && (0 <? extent))) then (ctor Option.some [Nat] (reflectWord pattern extent item)) else (ctor Option.none [Nat])) else (if ((pattern <? 17) && ((item <? 4) && (0 <? extent))) then (ctor Option.some [Nat] (rollWord pattern extent item)) else (ctor Option.none [Nat])))) else (ctor Option.none [Nat])),
+  body: (if ((130 <=? mode) && (mode <? 141)) then (ctor Option.some [Nat] (fixtureEnumeration (prim subtract mode 130 : Nat) pattern extent item)) else (if ((150 <=? mode) && (mode <? 161)) then (ctor Option.some [Nat] (fixtureAdmission (prim subtract mode 150 : Nat) pattern extent item)) else (if ((120 <=? mode) && (mode <=? 124)) then (ctor Option.some [Nat] (fixtureWord mode pattern extent item)) else (if ((100 <=? mode) && ((mode <? 111) && (item <? 8))) then (ctor Option.some [Nat] (fixtureShape (prim subtract mode 100 : Nat) pattern extent item)) else (if ((extent <=? 2147483647) && (mode <? 4)) then (if ((mode =? 0) || (mode =? 3)) then (if ((pattern <? 22) && (item <? 2)) then (ctor Option.some [Nat] (padWord (mode =? 3) pattern extent item)) else (ctor Option.none [Nat])) else (if (mode =? 1) then (if ((pattern <? 4) && ((item <? 2) && (0 <? extent))) then (ctor Option.some [Nat] (reflectWord pattern extent item)) else (ctor Option.none [Nat])) else (if ((pattern <? 17) && ((item <? 4) && (0 <? extent))) then (ctor Option.some [Nat] (rollWord pattern extent item)) else (ctor Option.none [Nat])))) else (ctor Option.none [Nat])))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }

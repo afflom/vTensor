@@ -554,3 +554,9 @@ Feature: native-backend
     Given floating-point source rows and IQ3_XXS or IQ3_S destination storage
     When a GGML graph copies the tensor or updates indexed rows
     Then output bytes match the imported GGML quantizer and untouched bytes are preserved
+
+  @VT-149 @build
+  Scenario: Prism models gated delta attention and retained state snapshots through Verdant against GGML CPU
+    Given strided queries, keys and values, scalar or per-lane gates and an initial state
+    When GGML evaluates gated delta attention with one or more snapshot slots
+    Then attention values and every written state match the imported CPU and older unfilled slots preserve their bytes

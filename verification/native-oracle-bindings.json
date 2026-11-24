@@ -237,7 +237,8 @@
     "upstream-UPSCALE_BILINEAR": "19028 19029 19038 19039 19040",
     "upstream-UPSCALE_BICUBIC": "19032 19033 19042 19043 19044",
     "upstream-UPSCALE_ANTIALIAS": "19036 19037",
-    "upstream-IMPORTANCE_THREE_STORAGE": "1436 1484 8495 8503"
+    "upstream-IMPORTANCE_THREE_STORAGE": "1436 1484 8495 8503",
+    "upstream-GATED_DELTA_BOUNDARIES": "27498 27499 27535 27540"
   },
   "factory_transcripts": {
     "upstream-AFFINE_WEIGHT_ROWS": "68508ede9e210dbd20d9b8f0aded72c6293510e32ccba50dded95ad82434c5a6",
@@ -328,7 +329,8 @@
     "upstream-UPSCALE_BILINEAR": "af0407e8e70937f4b9837269fd75ddc24eef4bc4aa3e4f65f5d1dd664fa73599",
     "upstream-UPSCALE_BICUBIC": "8d625e914376f40b88b863857c139d12b967d04ee0080b7b4909412d679e5e74",
     "upstream-UPSCALE_ANTIALIAS": "4cd8cc69b051f1320de648d687bb901f8e5b5a09baffec4a3f30d719f467db4a",
-    "upstream-IMPORTANCE_THREE_STORAGE": "50db803a4060a12556ef05b0c2c2f72571cf43324e476814605db223919e9efd"
+    "upstream-IMPORTANCE_THREE_STORAGE": "50db803a4060a12556ef05b0c2c2f72571cf43324e476814605db223919e9efd",
+    "upstream-GATED_DELTA_BOUNDARIES": "f55781416ef868c6e88b705e946c7b480d978b96466a9cd8fecd67a974081658"
   },
   "fixed_matrix": {
     "columns": [
@@ -431,7 +433,17 @@
     "rms-backward": "rmsbackfixtures",
     "rms-norm": "arithmetic",
     "spatial": "spatial",
-    "typed-binary": "typedfixtures"
+    "typed-binary": "typedfixtures",
+    "fold": "spatial",
+    "diagonal": "spatial",
+    "triangular": "spatial",
+    "window": "spatial",
+    "transform": "spatial",
+    "unary": "spatial",
+    "scan": "spatial",
+    "reduction": "spatial",
+    "rows": "spatial",
+    "relative-position": "spatial"
   },
   "ggml_source_manifest_sha256": "7dc4aea3bc53f992a1f760df081f43bb54d02eebf60ace2ca02303b1aa9f2f56",
   "storage_probe": {

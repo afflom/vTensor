@@ -1,0 +1,149 @@
+{
+  "requirement": "VT-149",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "case_ordinals": {
+    "GATED_DELTA_NET": [
+      27497,
+      27498,
+      27499,
+      27501,
+      27502,
+      27504,
+      27505,
+      27507,
+      27508,
+      27510,
+      27511,
+      27513,
+      27514,
+      27516,
+      27517,
+      27519,
+      27520,
+      27522,
+      27523,
+      27525,
+      27526,
+      27528,
+      27529,
+      27531,
+      27532,
+      27534,
+      27535,
+      27536,
+      27538,
+      27539
+    ],
+    "GATED_DELTA_NET_CACHE_FUSION": [
+      27540,
+      27542,
+      27543
+    ]
+  },
+  "passed": 33,
+  "pending": [
+    27500,
+    27503,
+    27506,
+    27509,
+    27512,
+    27515,
+    27518,
+    27521,
+    27524,
+    27527,
+    27530,
+    27533,
+    27537,
+    27541,
+    27544
+  ],
+  "factory_transcript_sha256": "94eb67f2d8ae13fb6a481450c8ceb245aac911bb13548bd979de0bc748cc043b",
+  "continuous": {
+    "ordinals": [
+      27498,
+      27499,
+      27535,
+      27540
+    ],
+    "transcript_sha256": "f55781416ef868c6e88b705e946c7b480d978b96466a9cd8fecd67a974081658"
+  },
+  "additional_batches": [
+    {
+      "count": 15,
+      "ordinals": [
+        27497,
+        27502,
+        27505,
+        27508,
+        27511,
+        27514,
+        27517,
+        27520,
+        27523,
+        27526,
+        27529,
+        27532,
+        27536,
+        27539,
+        27543
+      ],
+      "transcript_sha256": "d494c8a9a8e38c2b01f5689d205ee9dda3e387cfab4e8df5ac51f6ed95636d8e"
+    },
+    {
+      "count": 14,
+      "ordinals": [
+        27501,
+        27504,
+        27507,
+        27510,
+        27513,
+        27516,
+        27519,
+        27522,
+        27525,
+        27528,
+        27531,
+        27534,
+        27538,
+        27542
+      ],
+      "transcript_sha256": "0c4855c958c78a7667c0175539d9ce107c4159e684a0da2727ee39b876b3af33"
+    }
+  ],
+  "attention_result": "b12fb2abafe2d94751984556ebce966f8bd218e61f54f584bee7036963714508",
+  "oracle": "The original upstream factory constructed each graph, initialized its tensors and compared vTensor execution against the pinned GGML CPU backend, including cache fusions.",
+  "supplemental": {
+    "delta-state": {
+      "graphs": 72,
+      "words": 37760,
+      "untouched": 11840,
+      "bit_identical": 35984,
+      "max_abs": 5.960464477539063e-08,
+      "provider_transcript_sha256": "99dccb70d5b2520277d5f7f082a5657c5f5ded8684ba67e5bf001c9cdd5b997d",
+      "reference_transcript_sha256": "6c48a9d1453c4d47a44b6aac972a553bc0bcb6cf0e0396d3730cae8e631d2c74"
+    },
+    "delta-empty": {
+      "graphs": 18,
+      "words": 8288,
+      "untouched": 7104,
+      "bit_identical": 8288,
+      "max_abs": 0.0,
+      "provider_transcript_sha256": "6570e59e96afc8b0bfa5b05b8cd140886b597207138c02dd8ff89249c24c11c5",
+      "reference_transcript_sha256": "6570e59e96afc8b0bfa5b05b8cd140886b597207138c02dd8ff89249c24c11c5"
+    }
+  },
+  "atomic_refusal": "Zero snapshot slots must fail admission and execution and preserve every output byte for all 90 supplemental graphs.",
+  "mutation": "Substituting the query for the computed score fails the original upstream numerical comparison on ordinal 27498.",
+  "sweep_build": {
+    "verdant_revision": "e47a0924c2839df3fe9fa49560e7da822ab7bab4",
+    "provider_sha256": "8788c81016761b5fcfebe5ae1caf9c5422b947d6298260995d94c391b524a8a1",
+    "provider_sources_sha256": "4417de8a00afc96a87046919d0a2ee0c4467b933cb3c44ca68d765feaa8bc04b",
+    "oracle_sha256": "2b26985121a64ce2f0a4ffcb37a69879c98db9d65b776704b7c7a86da2cb3f1f"
+  },
+  "verified_dependency": {
+    "upstream_commit": "361990619adca072ba8c201bd10837d4b9b00558",
+    "byte_identical_certified_kernels": 80,
+    "gated_delta_kernel_sha256": "4df99ba85df615fba2abd71382ee7ea16f68dc47fb759d52b829344fa4e3df5a"
+  }
+}

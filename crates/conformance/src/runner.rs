@@ -47,6 +47,16 @@ impl From<TensorComputeError> for BackendError {
     }
 }
 
+// A plan interpreter expects a specific Prism reply or a specific set of source slots.
+// Every mismatched constructor has the same public invalid-tensor result.
+macro_rules! tensor_fields {
+    ($fields:pat = $value:expr) => {
+        let $fields = $value else {
+            return Err(BackendError::InvalidTensor);
+        };
+    };
+}
+
 struct State {
     reg: UnsafeCell<Registry>,
     dev: UnsafeCell<Device>,
@@ -226,23 +236,15 @@ fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
 
 fn tensor_layout(tensor: &Tensor) -> Result<(TensorDescriptor, usize, usize), BackendError> {
     let ty = u64::try_from(tensor.ty).map_err(BackendError::invalid)?;
-    let vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(_, block, element)) =
-        vtensor_types::run(ty)
-    else {
-        return Err(BackendError::InvalidTensor);
-    };
+    let reply = vtensor_types::run(ty);
+    tensor_fields!(vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(_, block, element)) = reply);
     // Zero extents are empty. Negative ABI extents cannot inhabit the Prism
     // model's natural-number domain and must fail before buffer admission.
-    let [Ok(n0), Ok(n1), Ok(n2), Ok(n3)] = tensor.ne.map(u64::try_from) else {
-        return Err(BackendError::InvalidTensor);
-    };
+    tensor_fields!([Ok(n0), Ok(n1), Ok(n2), Ok(n3)] = tensor.ne.map(u64::try_from));
     let [s0, s1, s2, s3] = tensor.nb.map(|n| n as u64);
     let layout = vtensor_layout::Adt0::C0(n0, n1, n2, n3, s0, s1, s2, s3, block, element);
-    let vtensor_layout::Adt1::C1(size) =
-        vtensor_layout::run(layout).map_err(BackendError::overflow)?
-    else {
-        return Err(BackendError::InvalidTensor);
-    };
+    let reply = vtensor_layout::run(layout).map_err(BackendError::overflow)?;
+    tensor_fields!(vtensor_layout::Adt1::C1(size) = reply);
     usize::try_from(size).map_err(BackendError::overflow)?;
     let address = tensor.data as usize as u64;
     Ok((
@@ -499,6 +501,7 @@ enum ExecutionPlan {
     Softmax(Box<vtensor_attention::Adt3>),
     SparseMask(Box<vtensor_attention::Adt4>),
     Indexer(Box<vtensor_attention::Adt5>),
+    GatedDelta(Box<vtensor_attention::Adt6>),
 }
 
 // Each certified graph bundle renders its own type for the same GGML metadata.
@@ -536,6 +539,18 @@ impl Tensor {
             *input = self.source(slot).map(&bind).transpose()?;
         }
         Ok(inputs)
+    }
+
+    fn inputs<const N: usize>(&self) -> Result<[Option<TensorInput<'_>>; N], BackendError> {
+        self.map_sources(TensorInput::new)
+    }
+
+    fn required_inputs<const N: usize>(&self) -> Result<[TensorInput<'_>; N], BackendError> {
+        let slots = self.inputs()?;
+        if slots.iter().any(Option::is_none) {
+            return Err(BackendError::InvalidTensor);
+        }
+        Ok(slots.map(|slot| slot.expect("all required tensor inputs were bound")))
     }
 
     fn input(&self, slot: usize) -> Result<Option<TensorInput<'_>>, BackendError> {
@@ -675,7 +690,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             .then_some(Some(delay))
             .ok_or(InvalidTensor);
     }
-    if matches!(operation, 43 | 71 | 84 | 88) {
+    if matches!(operation, 43 | 71 | 83 | 84 | 88) {
         return attention::plan(tensor, operation, output);
     }
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
@@ -798,9 +813,7 @@ fn workspace<T: Clone>(size: u64, initial: T) -> Result<Vec<T>, BackendError> {
 
 fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     use vtensor_matrix_execution::{Adt0 as Strides, Adt1 as Instruction};
-    let GraphPlan::C3(m, k, n, b2, b3, r2, r3, left_count, right_count, _) = plan else {
-        return Err(BackendError::InvalidTensor);
-    };
+    tensor_fields!(GraphPlan::C3(m, k, n, b2, b3, r2, r3, left_count, right_count, _) = plan);
     // SAFETY: plan_operation admitted both retained source descriptors.
     let (left, right) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
     let weights = TensorInput::new(left)?;
@@ -832,9 +845,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
         )
         .map_err(BackendError::overflow)
     };
-    let Instruction::C0(steps, total) = step(0)? else {
-        return Err(BackendError::InvalidTensor);
-    };
+    tensor_fields!(Instruction::C0(steps, total) = step(0)?);
     let mut values = workspace(total, 0.0_f32)?;
     let [m, k, n] = [m, k, n].map(|n| n as usize);
     let mut index = 1;
@@ -891,9 +902,7 @@ fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result
         overlap_cells,
         ..,
     ) = geometry;
-    let [Some(kernel), Some(image)] = tensor.map_sources(TensorInput::new)? else {
-        return Err(InvalidTensor);
-    };
+    let [kernel, image] = tensor.required_inputs()?;
     let destination = graph_tensor_data(tensor)?;
     let sample = |phase, start, index| {
         let query = GraphRequest::C4(geometry.clone(), phase, start, index as u64);
@@ -1123,9 +1132,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
     use BackendError::{InvalidTensor, Overflow};
     let Plan::C0(blocks, _, rows, _, _, visits, outputs, ..) = plan;
-    let [Some(weights), Some(activations), indices] = tensor.map_sources(TensorInput::new)? else {
-        return Err(InvalidTensor);
-    };
+    tensor_fields!([Some(weights), Some(activations), indices] = tensor.inputs()?);
     let request = |query| run(query).map_err(BackendError::overflow);
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
@@ -1159,11 +1166,8 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         execution.fill(values, |first, chunk| {
             let mut scratch = workspace(scratch_width, 0.0_f32)?;
             for (row, value) in (first..).zip(chunk) {
-                let Response::C3(start) =
-                    request(Request::C2(plan.clone(), weight_base, row as u64))?
-                else {
-                    return Err(InvalidTensor);
-                };
+                let reply = request(Request::C2(plan.clone(), weight_base, row as u64))?;
+                tensor_fields!(Response::C3(start) = reply);
                 *value = dot(&weights, start, &prepared, &mut scratch)?;
             }
             Ok(())
@@ -1274,10 +1278,9 @@ fn execute_word(
     words: &mut [u64],
 ) -> Result<(), BackendError> {
     use BackendError::InvalidTensor;
-    let GraphResponse::C7(operation, left, right, target, read_bytes, write_bytes) = response
-    else {
-        return Err(InvalidTensor);
-    };
+    tensor_fields!(
+        GraphResponse::C7(operation, left, right, target, read_bytes, write_bytes) = response
+    );
     let source = |slot: u64| pointers.get(slot as usize).copied().ok_or(InvalidTensor);
     let read = |operand| {
         let (pointer, offset) = match operand {
@@ -1442,14 +1445,9 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
 
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     use BackendError::InvalidTensor;
-    let GraphPlan::C4(count, bytes, source, destination, mode) = plan else {
-        return Err(InvalidTensor);
-    };
-    let GraphResponse::C6(mask, literal_type, bits, constant, capacity) =
-        pointwise(GraphRequest::C2(mode.clone()))?
-    else {
-        return Err(InvalidTensor);
-    };
+    tensor_fields!(GraphPlan::C4(count, bytes, source, destination, mode) = plan);
+    let reply = pointwise(GraphRequest::C2(mode.clone()))?;
+    tensor_fields!(GraphResponse::C6(mask, literal_type, bits, constant, capacity) = reply);
     let mut literal = [0_u8; 8];
     if constant {
         let value = convert(0, literal_type, bits)?;
@@ -1592,6 +1590,9 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                     std::thread::sleep(duration);
                     Ok(())
                 }
+                ExecutionPlan::GatedDelta(plan) => {
+                    attention::gated_delta(&execution, &*tensor, *plan)
+                }
                 ExecutionPlan::Indexer(plan) => attention::indexer(&*tensor, *plan),
                 ExecutionPlan::SparseMask(plan) => attention::sparse_mask(&*tensor, *plan),
                 ExecutionPlan::Softmax(plan) => attention::softmax(&*tensor, *plan),
@@ -1683,10 +1684,8 @@ mod rotary {
         let mut coefficients = workspace(*pairs, (0_f32, 0_f32))?;
         let mut schedule = workspace(*pairs, (0_usize, None, 1_f32))?;
         for (lane, slot) in schedule.iter_mut().enumerate() {
-            let Response::C6(axis, reset) = request(Request::C3(layout.clone(), lane as u64))?
-            else {
-                return Err(BackendError::InvalidTensor);
-            };
+            let reply = request(Request::C3(layout.clone(), lane as u64))?;
+            tensor_fields!(Response::C6(axis, reset) = reply);
             let factor = match factors {
                 Some(pointer) => {
                     // SAFETY: Prism admitted this contiguous F32 factor word.
@@ -1735,11 +1734,8 @@ mod rotary {
             }
             for batch in 0..*batches {
                 for head in 0..*heads {
-                    let Response::C3(src, dst) =
-                        request(Request::C1(plan.clone(), head, token, batch))?
-                    else {
-                        return Err(BackendError::InvalidTensor);
-                    };
+                    let reply = request(Request::C1(plan.clone(), head, token, batch))?;
+                    tensor_fields!(Response::C3(src, dst) = reply);
                     for &(slot, a, b) in &lanes {
                         // SAFETY: the certified plan bounds both lane addresses in these admitted rows.
                         // Both loads precede either store so an identical source/output view is supported.
@@ -1778,7 +1774,7 @@ mod attention {
     };
     use vtensor_attention::{
         Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as SoftmaxPlan, Adt4 as SparsePlan,
-        Adt5 as IndexerPlan, Adt7 as Response,
+        Adt5 as IndexerPlan, Adt6 as DeltaPlan, Adt7 as Response,
     };
     use BackendError::{InvalidTensor, Overflow};
 
@@ -1786,12 +1782,69 @@ mod attention {
         vtensor_attention::run(query).map_err(BackendError::overflow)
     }
 
-    pub(super) fn indexer(tensor: &Tensor, plan: IndexerPlan) -> Result<(), BackendError> {
-        let [Some(query), Some(key), Some(weights), Some(mask)] =
-            tensor.map_sources(TensorInput::new)?
-        else {
-            return Err(InvalidTensor);
+    pub(super) fn gated_delta(
+        execution: &super::threadpool::Execution,
+        tensor: &Tensor,
+        plan: DeltaPlan,
+    ) -> Result<(), BackendError> {
+        let [q, k, v, gate, gain, initial] = tensor.required_inputs()?;
+        let [width, heads, tokens, _] = v.ne.map(|n| n as u64);
+        let DeltaPlan::C0(.., streams, cells, capacity, written) = plan;
+        let mut staged = workspace(written, 0.0f32)?;
+        let address = staged.as_mut_ptr().expose_provenance();
+        let stage = |offset: Option<u64>, row: &[f32]| {
+            if let Some(at) = offset {
+                let base = std::ptr::with_exposed_provenance_mut::<u8>(address);
+                // SAFETY: Prism assigns each (head, batch) disjoint complete score and state rows
+                // inside this prefix. The allocation stays fixed until every worker has joined.
+                unsafe { super::write_row(base.add(at as usize), row) };
+            }
         };
+        let mut jobs = workspace(streams, ())?;
+        execution.fill(&mut jobs, |first, chunk| {
+            let mut vectors = workspace(width.checked_mul(4).ok_or(Overflow)?, 0.0f32)?;
+            let (query, rest) = vectors.split_at_mut(width as usize);
+            let (key, rest) = rest.split_at_mut(width as usize);
+            let (value, scores) = rest.split_at_mut(width as usize);
+            let mut decay = workspace(gate.ne[0] as u64, 0.0f32)?;
+            let mut state = workspace(cells, 0.0f32)?;
+            let mut scratch = workspace(capacity, 0.0f32)?;
+            for stream in first..first + chunk.len() {
+                let stream = stream as u64;
+                let (head, batch) = (stream % heads, stream / heads);
+                let reply = request(Request::C11(plan.clone(), head, batch))?;
+                tensor_fields!(Response::C13(start, empty_snapshot) = reply);
+                initial.decode(start, &mut state)?;
+                stage(empty_snapshot, &state);
+                for token in 0..tokens {
+                    let reply = request(Request::C12(plan.clone(), head, batch, token))?;
+                    tensor_fields!(Response::C14(a, b, c, d, e, out, snapshot) = reply);
+                    q.decode(a, query)?;
+                    k.decode(b, key)?;
+                    v.decode(c, value)?;
+                    gate.decode(d, &mut decay)?;
+                    let input = linear::GatedDeltaInput {
+                        query,
+                        key,
+                        value,
+                        log_decay: &decay,
+                        gain: f32::from_ne_bytes(gain.word(e)?),
+                    };
+                    linear::gated_delta_step_f32(input, &mut state, scores, &mut scratch)?;
+                    stage(Some(out), scores);
+                    stage(snapshot, &state);
+                }
+            }
+            Ok(())
+        })?;
+        let output = graph_tensor_data(tensor)?;
+        // SAFETY: only the certified initialized prefix is published, after every worker succeeds.
+        unsafe { super::write_row(output, &staged) };
+        Ok(())
+    }
+
+    pub(super) fn indexer(tensor: &Tensor, plan: IndexerPlan) -> Result<(), BackendError> {
+        let [query, key, weights, mask] = tensor.required_inputs()?;
         let offsets = |token, head, stream, key| match request(Request::C10(
             plan.clone(),
             token,
@@ -1866,10 +1919,7 @@ mod attention {
     pub(super) fn sparse_mask(tensor: &Tensor, plan: SparsePlan) -> Result<(), BackendError> {
         use verdant_tensor::memory::copy_storage_block;
         let SparsePlan::C0(_, _, _, _, _, _, width, excluded, _) = plan;
-        let [Some(mask), Some(top), score, blocks, extra] = tensor.map_sources(TensorInput::new)?
-        else {
-            return Err(InvalidTensor);
-        };
+        tensor_fields!([Some(mask), Some(top), score, blocks, extra] = tensor.inputs()?);
         let output = graph_tensor_data(tensor)?;
         let row_bytes = (tensor.ne[0] as u64).checked_mul(width).ok_or(Overflow)?;
         if row_bytes == 0 {
@@ -1896,11 +1946,10 @@ mod attention {
         for batch in 0..tensor.ne[3] as u64 {
             for head in 0..tensor.ne[2] as u64 {
                 for token in 0..tensor.ne[1] as u64 {
-                    let Response::C6(mask_row, top_row, score_row, extra_row, out) =
-                        request(Request::C5(plan.clone(), token, head, batch))?
-                    else {
-                        return Err(InvalidTensor);
-                    };
+                    let reply = request(Request::C5(plan.clone(), token, head, batch))?;
+                    tensor_fields!(
+                        Response::C6(mask_row, top_row, score_row, extra_row, out) = reply
+                    );
                     // SAFETY: Prism admits the entire dense row and separates it from each input.
                     let target = unsafe {
                         std::slice::from_raw_parts_mut(output.add(out as usize), template.len())
@@ -1992,11 +2041,8 @@ mod attention {
             let slope = head_slope(bias, tensor.ne[2], head)?.unwrap_or(1.0);
             for batch in 0..tensor.ne[3] as u64 {
                 for token in 0..tensor.ne[1] as u64 {
-                    let Response::C4(from, moff, soff, to) =
-                        request(Request::C3(plan.clone(), token, head, batch))?
-                    else {
-                        return Err(InvalidTensor);
-                    };
+                    let reply = request(Request::C3(plan.clone(), token, head, batch))?;
+                    tensor_fields!(Response::C4(from, moff, soff, to) = reply);
                     // SAFETY: the admitted dense row fits the live input. Stage it before the in-place write.
                     unsafe {
                         std::ptr::copy_nonoverlapping(
@@ -2060,6 +2106,7 @@ mod attention {
             Response::C3(p) => ExecutionPlan::Softmax(Box::new(p)),
             Response::C5(p) => ExecutionPlan::SparseMask(Box::new(p)),
             Response::C10(p) => ExecutionPlan::Indexer(Box::new(p)),
+            Response::C12(p) => ExecutionPlan::GatedDelta(Box::new(p)),
             _ => return Err(InvalidTensor),
         }))
     }
@@ -2147,11 +2194,7 @@ mod attention {
     }
 
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
-        let [Some(q), Some(k), Some(v), mask, sink, indices] =
-            tensor.map_sources(TensorInput::new)?
-        else {
-            return Err(InvalidTensor);
-        };
+        tensor_fields!([Some(q), Some(k), Some(v), mask, sink, indices] = tensor.inputs()?);
         let shape = q.ne;
         let Plan::C0(.., columns, head_bias, cap) = &plan;
         let columns = usize::try_from(*columns).map_err(BackendError::overflow)?;
@@ -2198,11 +2241,10 @@ mod attention {
                     .as_ref()
                     .map(|v| &v[batch as usize * columns..][..columns]);
                 for token in 0..shape[1] as u64 {
-                    let Response::C2(qoff, koff, voff, moff, soff, dst, ks, vs, dot_type) =
-                        request(Request::C1(plan.clone(), token, head, batch))?
-                    else {
-                        return Err(InvalidTensor);
-                    };
+                    let reply = request(Request::C1(plan.clone(), token, head, batch))?;
+                    tensor_fields!(
+                        Response::C2(qoff, koff, voff, moff, soff, dst, ks, vs, dot_type) = reply
+                    );
                     q.decode(qoff, &mut query)?;
                     // GGML prepares the query in the key's dot-product storage once per head.
                     match (&mut keys, dot_type) {

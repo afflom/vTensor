@@ -78,7 +78,11 @@ structure{
     {name: gate, type: NormPlan::TensorDescriptor},
     {name: gain, type: NormPlan::TensorDescriptor},
     {name: state, type: NormPlan::TensorDescriptor},
-    {name: slots, type: Nat}
+    {name: slots, type: Nat},
+    {name: streams, type: Nat},
+    {name: stateWords, type: Nat},
+    {name: scratchWords, type: Nat},
+    {name: writtenWords, type: Nat}
   ]
 }
 
@@ -606,7 +610,11 @@ definition{
       (let heads : Nat := (project value n1);
       (let tokens : Nat := (project value n2);
       (let batches : Nat := (project value n3);
-      (if (((((((((((((((((((((((0 <? width) && (0 <? heads)) && (0 <? batches)) && (0 <? slots)) && (slots <=? 2147483647)) && (deltaOperand query output)) && (deltaOperand key output)) && (deltaOperand value output)) && (deltaOperand gate output)) && (deltaOperand gain output)) && (deltaOperand state output)) && (deltaChannels query value)) && (deltaChannels key value)) && (((project gate n0) =? 1) || ((project gate n0) =? width))) && (((((project gate n0) =? (project gate n0)) && ((project gate n1) =? heads)) && ((project gate n2) =? tokens)) && ((project gate n3) =? batches))) && (((((project gain n0) =? 1) && ((project gain n1) =? heads)) && ((project gain n2) =? tokens)) && ((project gain n3) =? batches))) && (((((project state n0) =? width) && ((project state n1) =? width)) && ((project state n2) =? heads)) && ((project state n3) =? batches))) && (((((project output n0) =? (prim multiply width heads : Nat)) && ((project output n1) =? ((prim multiply tokens batches : Nat) + (prim multiply (prim multiply slots width : Nat) batches : Nat)))) && ((project output n2) =? 1)) && ((project output n3) =? 1))) && ((project output ty) =? 0)) && (contiguousScalar gate 4)) && (contiguousScalar gain 4)) && (contiguousScalar state 4)) && (contiguousScalar output 4)) then (ctor Response.deltaPlan (record DeltaPlan {query := query, key := key, value := value, gate := gate, gain := gain, state := state, slots := slots})) else (ctor Response.invalid)))))),
+      (if (((((((((((((((((((((((0 <? width) && (0 <? heads)) && (0 <? batches)) && (0 <? slots)) && (slots <=? 2147483647)) && (deltaOperand query output)) && (deltaOperand key output)) && (deltaOperand value output)) && (deltaOperand gate output)) && (deltaOperand gain output)) && (deltaOperand state output)) && (deltaChannels query value)) && (deltaChannels key value)) && (((project gate n0) =? 1) || ((project gate n0) =? width))) && (((((project gate n0) =? (project gate n0)) && ((project gate n1) =? heads)) && ((project gate n2) =? tokens)) && ((project gate n3) =? batches))) && (((((project gain n0) =? 1) && ((project gain n1) =? heads)) && ((project gain n2) =? tokens)) && ((project gain n3) =? batches))) && (((((project state n0) =? width) && ((project state n1) =? width)) && ((project state n2) =? heads)) && ((project state n3) =? batches))) && (((((project output n0) =? (prim multiply width heads : Nat)) && ((project output n1) =? ((prim multiply tokens batches : Nat) + (prim multiply (prim multiply slots width : Nat) batches : Nat)))) && ((project output n2) =? 1)) && ((project output n3) =? 1))) && ((project output ty) =? 0)) && (contiguousScalar gate 4)) && (contiguousScalar gain 4)) && (contiguousScalar state 4)) && (contiguousScalar output 4)) then (let streams : Nat := (prim multiply heads batches : Nat);
+        (let cells : Nat := (prim multiply width width : Nat);
+        (let saved : Nat := (if ((tokens =? 0) && (slots =? 1)) then 1 else (if (slots <? tokens) then slots else tokens));
+        (let written : Nat := (prim multiply streams ((prim multiply tokens width : Nat) + (prim multiply saved cells : Nat)) : Nat);
+        (ctor Response.deltaPlan (record DeltaPlan {query := query, key := key, value := value, gate := gate, gain := gain, state := state, slots := slots, streams := streams, stateWords := cells, scratchWords := ((cells + width) + width), writtenWords := written})))))) else (ctor Response.invalid)))))),
   executable: true
 }
 
