@@ -1,0 +1,182 @@
+{
+  "requirement": "VT-134",
+  "implementation": "b4e7dadf7f8c9714be88e1e5456c197d3c70d4d9",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "d678ef7d5af1d8b0a88fc041b3f1066438d68e0c",
+  "pointwise_source": "dd773eb1a555b8d7b79df652546232e06ee4a3feb18a843a00b1550ab3339e30",
+  "pointwise_attestation": "c5e465a1f179926a222801e57620547346ad2010f05c0057c55764c7a41abb24",
+  "pointwise_lock_sha256": "160a2f02ab53169d7fcb9d0f6c2f7ae8c03ecffab864f73e3661ba8e9cd1fcac",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "provider_sha256": "d9946bf9f2033a451e1c7100f328ebdda05ebc954e19d54c6c632a3121d594fd",
+  "provider_inputs_sha256": "fcec9a725aa944988bfdf621726f30331aee09dbc1c50b97f7c5e59d0332010a",
+  "case_ordinals": {
+    "SOLVE_TRI": [
+      19198,
+      19199,
+      19200,
+      19201,
+      19202,
+      19203,
+      19204,
+      19205,
+      19206,
+      19207,
+      19208,
+      19209,
+      19210,
+      19211,
+      19212,
+      19213,
+      19214,
+      19215,
+      19216,
+      19217,
+      19218,
+      19219,
+      19220,
+      19221,
+      19222,
+      19223
+    ]
+  },
+  "passed": 26,
+  "continuous_regression": {
+    "ordinals": [
+      19198,
+      19199,
+      19222
+    ],
+    "transcript_sha256": "3bdb180608f2c8cf3827b8aed997817cf3ee9e68c8f06b19efd734aedffb44fc"
+  },
+  "additional_batches": [
+    {
+      "ordinals": [
+        19200,
+        19201
+      ],
+      "transcript_sha256": "340232ceffe0132217f627777e3d7cb19a5add78c1a7ce083b6f9845e89acc22"
+    },
+    {
+      "ordinals": [
+        19202,
+        19203
+      ],
+      "transcript_sha256": "87ffadde35d433c54e229e2f58acfc378e5080e2f4a6a24efcb9c9f8105428bc"
+    },
+    {
+      "ordinals": [
+        19204,
+        19205
+      ],
+      "transcript_sha256": "9dc0bbc1e1104628bc753335c0b85127eacf9d63c671371f5fb3226f33053b3b"
+    },
+    {
+      "ordinals": [
+        19206,
+        19207
+      ],
+      "transcript_sha256": "4df2a12ced166e02d894c537896f065eb07445f182a42dddbb4a19e6c7a9b272"
+    },
+    {
+      "ordinals": [
+        19208,
+        19209
+      ],
+      "transcript_sha256": "bbbf0e3907345c9b26e81b672bf45515a28f33c70a764e04c7f4f1d992880617"
+    },
+    {
+      "ordinals": [
+        19210,
+        19211
+      ],
+      "transcript_sha256": "73d54ac28e5fcd365753bc7dcd987183c6b6a5ce13415175b38c0c7728c4b368"
+    },
+    {
+      "ordinals": [
+        19212,
+        19213
+      ],
+      "transcript_sha256": "6364556eac7750faa6a183b38043407901fe3bb79c06b61cb3c72dfc41b92b5f"
+    },
+    {
+      "ordinals": [
+        19214,
+        19215
+      ],
+      "transcript_sha256": "a7049f827d42348b8326c84c96e5dc6351ae25ab009a297f15aebca5b64d4c64"
+    },
+    {
+      "ordinals": [
+        19216,
+        19217
+      ],
+      "transcript_sha256": "5ec269140c20479636d446ce2342f264c82a284e396a85efd2753fee8550ddac"
+    },
+    {
+      "ordinals": [
+        19218,
+        19219
+      ],
+      "transcript_sha256": "3aedccb7dc6463c26ec02e88b8197cb6e35df486f9d60cf91f2987db57ed5451"
+    },
+    {
+      "ordinals": [
+        19220,
+        19221
+      ],
+      "transcript_sha256": "ea82e23987981af2e708e3db45e2143dab9688653502403d0fb2bb5c08e0098e"
+    },
+    {
+      "ordinals": [
+        19223
+      ],
+      "transcript_sha256": "3711065ccd40765ad3f823459a26d1f23f59761e96ba8df341545132255b9962"
+    }
+  ],
+  "baseline_refusal": {
+    "ordinal": 19198,
+    "reason": "not supported"
+  },
+  "mutation": {
+    "change": "Replace the final row division with multiplication.",
+    "ordinal": 19198,
+    "observed_nmse": 4126.775342263,
+    "upstream_limit": 1e-07
+  },
+  "supplemental": {
+    "authority": "Pinned GGML CPU reference plus an independently constructed exact solution.",
+    "shapes": {
+      "order": [
+        1,
+        2,
+        9,
+        17
+      ],
+      "right_hand_columns": [
+        1,
+        5
+      ],
+      "batch2": [
+        2
+      ],
+      "batch3": [
+        1,
+        3
+      ]
+    },
+    "graphs": 16,
+    "exact_output_words": 1392,
+    "construction": "In flattened batch h, A[i,i] alternates between +4 and -2 by parity of i+h. A[i,j] below diagonal is ((i+j+2*h)%7-3)/16. The unused upper triangle and destination start as NaNs. Set X[i,c]=((3*i+5*c+h)%19-9)/4 and B=A*X using the lower triangle. Each vTensor output word equals both CPU and X.",
+    "preallocation_refusals": [
+      "missing right-hand side",
+      "each surplus source slot 2 through 9",
+      "nonsquare matrix",
+      "mismatched batch",
+      "non-F32 right-hand side",
+      "noncontiguous right-hand side for order above one"
+    ],
+    "host_source_sha256": "af455683adaa51d10092f37b9edbcad16083567f9b5ebe5066d4b1af2b074b43",
+    "host_binary_sha256": "c7c25681c25dc759e2652ac5654bb8209dc5ca40848d226d90fa26f76c5acc9f"
+  }
+}

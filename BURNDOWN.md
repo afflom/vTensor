@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,274 passed**, **481 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,300 passed**, **455 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -26,7 +26,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,268 non-Prism lines** (12,817 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,265 non-Prism lines** (12,814 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -167,7 +167,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Compare IM2COL_BACK and POOL_2D_BACK gradients with the pinned GGML CPU using original forward inputs, padding and overlapping windows. [Imported declarations](model/ggml-declarations.toml)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
 - [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).
-- [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5), RWKV_WKV6 (4), RWKV_WKV7 (5), GATED_LINEAR_ATTN (4) and SOLVE_TRI (26).
+- [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5), RWKV_WKV6 (4), RWKV_WKV7 (5) and GATED_LINEAR_ATTN (4).
+- [x] Pass all 26 SOLVE_TRI graphs and 1,392 exact batched solution words. Reject surplus inputs before allocation. [VT-134 comparisons](verification/factory-triangular-solve-vt134.json)
 - [x] Pass all 48 SOFT_MAX_BACK graphs at both scales. The GGML CPU verified 24 zero-bias cases and GGML Vulkan verified 24 positive-bias cases. [Oracle comparisons](verification/factory-softmax-gradients-vt121.json)
 - [x] Pass SILU_BACK and compare 132 gradients on independently padded views with GGML CPU. [VT-124](verification/factory-silu-gradient-vt124.json)
 - [x] Pass all four cross-entropy loss and gradient cases. Compare 174 additional outputs and check 21 logit gradients by finite differences. [VT-132](verification/factory-cross-entropy-vt132.json)
