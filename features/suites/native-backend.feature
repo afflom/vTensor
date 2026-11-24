@@ -518,3 +518,9 @@ Feature: native-backend
     Given keys values queries gates and the initial state for each GGML sequence
     When vTensor executes gated linear attention
     Then both the token outputs and updated sequence states match the pinned CPU backend
+
+  @VT-143 @build
+  Scenario: Prism models RWKV6 and RWKV7 recurrent state and output accumulation through Verdant against the imported GGML CPU
+    Given token channels and an initial state matrix for each sequence
+    When vTensor evaluates a recurrent weighted key-value graph
+    Then its token outputs and final states agree with GGML CPU

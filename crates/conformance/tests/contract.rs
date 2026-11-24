@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn recurrent_weighted_keys_vt_143() { "upstream-RWKV_BOUNDARIES", 2, ["pointwise"] }
     fn gated_linear_attention_vt_142() { "upstream-GATED_LINEAR_ATTN_BOUNDARIES", 1, ["pointwise"] }
     fn timestep_embeddings_vt_141() { "upstream-TIMESTEP_EMBEDDING_BOUNDARIES", 5, ["pointwise"] }
     fn pool_gradients_vt_140() { "pool-gradients", 37, ["pointwise"] }
@@ -372,6 +373,8 @@ fn verify_row_graphs() {
             parameters,
             empty.clone(),
             empty,
+            None,
+            None,
             None,
             None,
             None,
@@ -996,26 +999,22 @@ mod ggml_storage_oracle {
         let fixture = &super::native_backend_oracle::ORACLE_BINDINGS["storage_probe"];
         let expected: [[u64; 3]; 6] =
             serde_json::from_value(fixture["span_block_bytes"].clone()).unwrap();
-        assert_eq!(
-            ggml_oracle::rows("storage", fixture["request"].as_str().unwrap()),
-            expected
-        );
+        let modified = || std::fs::metadata(&executable).unwrap().modified().unwrap();
+        let built_at = modified();
+        // Send the fixed probes and a duplex batch larger than the pipe capacity through one oracle process.
+        let mut request = fixture["request"].as_str().unwrap().to_owned();
+        request.push_str(&"0 1 1 1 1 4 4 4 4\n".repeat(8192));
+        let rows = ggml_oracle::rows("storage", &request);
+        let reference = expected
+            .into_iter()
+            .chain(std::iter::repeat_n([4, 1, 4], 8192));
+        assert!(rows.into_iter().eq(reference));
         let malformed =
             ggml_oracle::pipe_input(&mut std::process::Command::new(&executable), b"malformed\n");
         assert_eq!(malformed.status.code(), Some(2));
 
-        // Exercise enough input and output to exceed pipe capacity in both
-        // directions without starting a separate oracle process for every case.
-        let batch = ggml_oracle::rows("storage", &"0 1 1 1 1 4 4 4 4\n".repeat(8192));
-        assert!(batch.into_iter().eq(std::iter::repeat_n([4, 1, 4], 8192)));
-        let modified = || std::fs::metadata(&executable).unwrap().modified().unwrap();
-        let built_at = modified();
         assert_eq!(ggml_oracle::storage_oracle(&super::root()), executable);
-        assert_eq!(
-            modified(),
-            built_at,
-            "unchanged oracle was unnecessarily rebuilt"
-        );
+        assert_eq!(modified(), built_at, "warm storage oracle was rebuilt");
     }
 }
 
@@ -1295,7 +1294,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "df0235643285fc56b6026307db561d597c8b0d72708263da5f810458d650c6b4",
+            "2202d2576bdf88ae70edb5272263301924fbcc9a172c4e661a79cecbc9c3a15c",
         )
     });
 

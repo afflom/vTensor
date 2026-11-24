@@ -230,6 +230,7 @@ model does not sanction.
 | `VT-141` | `build` | Prism plans timestep embedding frequencies and destination lanes and Verdant evaluates the circular functions against the imported GGML CPU |
 | `VT-138` | `build` | Prism schedules ELU and parameterized XIELU with cancellation-preserving Verdant exponential increments |
 | `VT-142` | `build` | Prism models gated linear attention state updates and ordered output accumulation through Verdant for the imported GGML CPU |
+| `VT-143` | `build` | Prism models RWKV6 and RWKV7 recurrent state and output accumulation through Verdant against the imported GGML CPU |
 
 ## normalization-graphs
 

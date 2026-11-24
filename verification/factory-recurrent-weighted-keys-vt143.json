@@ -1,0 +1,62 @@
+{
+  "requirement": "VT-143",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "case_ordinals": {
+    "RWKV_WKV6": [
+      10482,
+      10483,
+      10484,
+      10485
+    ],
+    "RWKV_WKV7": [
+      10486,
+      10487,
+      10488,
+      10489,
+      10490
+    ]
+  },
+  "passed": 9,
+  "factory_transcript_sha256": "6a362445e7db00dfb18940a3ddc2925e4d3c1ad360993b15c510bfe29466686d",
+  "factory_build": {
+    "pointwise_result": "cc818ae35fbc02f22f1080850acb7256417be8e0ea4462b83f4b85c2cf8303b8",
+    "verdant_patch": "25e117ad0ed70f95cc98fdfec1af7442059023e4",
+    "provider_sha256": "d74b644526c8032a7297a6d68f9c454a0d1354d14e3af379835fd51d10dd589a",
+    "provider_inputs_sha256": "7c3530ef30d70c22d8495ffd5773c68c06037f2f1388cf1e3f4279c9e144539a",
+    "oracle_sha256": "7a4cfd181ae04ae01c170c5fa8f1a9660774009e49a7e3dc1fcfe2008c102bbb",
+    "continuous_factory_ordinals": [
+      10482,
+      10486
+    ]
+  },
+  "supplemental": {
+    "graphs": 96,
+    "identical_output_and_state_words": 7056,
+    "cpu_and_provider_transcript_sha256": "e94491ba7abaf38981bdf063243a96e08178a60006279c57394691e04156c376",
+    "oracle": "Pinned portable GGML CPU, reference mode and one thread.",
+    "head_widths": [
+      1,
+      3,
+      8
+    ],
+    "heads": [
+      1,
+      2
+    ],
+    "sequences": [
+      1,
+      2
+    ],
+    "tokens_per_sequence": [
+      1,
+      3
+    ],
+    "source_view_offset_words": [
+      0,
+      1
+    ],
+    "inputs": "For source slot s and linear index i use (((i*(3+s)+7*s)%19)-9)/16. Initialize the token and state output to 13.",
+    "refusals": "Remove each source, add a source in each surplus slot, or alter the result shape before allocation. A rejected graph execution preserves every output byte."
+  },
+  "mutation": "Reading source 1 in place of source 0 failed the first WKV6 GGML comparison (0.738125890 error, 0.000000100 limit)."
+}

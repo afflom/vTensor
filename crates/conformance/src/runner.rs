@@ -684,8 +684,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     }
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
-    let [primary, secondary, base, fourth, fifth] = tensor.map_sources(tensor_metadata)?;
-    let trailing = tensor.src[5..].iter().any(|source| !source.is_null());
+    let [primary, secondary, base, fourth, fifth, sixth, seventh] =
+        tensor.map_sources(tensor_metadata)?;
+    let has_source_from = |slot: usize| tensor.src[slot..].iter().any(|source| !source.is_null());
     if matches!(operation, 45 | 46) {
         return rotary::plan(
             tensor,
@@ -697,7 +698,6 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         )
         .map(|plan| plan.map(ExecutionPlan::Rotary));
     }
-    let extra = fourth.is_some() || fifth.is_some() || trailing;
     let weight = tensor.source(0);
     let response = pointwise(GraphRequest::C0(
         operation,
@@ -707,7 +707,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         base.clone(),
         fourth,
         fifth,
-        trailing,
+        sixth,
+        seventh,
+        has_source_from(7),
         weight.map_or(0, |t| u64::from(t.flags as u32)),
         weight.is_some_and(|t| tensor.views_start_of(t)),
         output.clone(),
@@ -733,19 +735,14 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             let descriptor = |TensorDescriptor::C0(ty, a, b, c, d, e, f, g, h, _, _)| {
                 vtensor_matrix_q8::Adt1::C0(ty, a, b, c, d, e, f, g, h)
             };
+            let extra = has_source_from(3);
             let w = primary.ok_or(InvalidTensor)?;
             // MUL_MAT owns the ordinary row-product route. Other two-input fallbacks use the typed planner.
             if base.is_none() && operation != 28 {
+                let [left, out] = [w, output].map(metadata);
+                let right = secondary.map(metadata);
                 return typed_plan(vtensor_typed::Adt0::C3(
-                    operation,
-                    p0,
-                    p1,
-                    p2,
-                    p3,
-                    extra,
-                    metadata(w),
-                    secondary.map(metadata),
-                    metadata(output),
+                    operation, p0, p1, p2, p3, extra, left, right, out,
                 ));
             }
             let a = secondary.ok_or(InvalidTensor)?;
