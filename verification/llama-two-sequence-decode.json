@@ -1,0 +1,194 @@
+{
+  "implementation": "c1f6ad40d56a0201a6967692af2d94e337f739d0",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "c8f9619e00a37d28ac8b3fa13c5d8cfa334d3b66865266d40371d890a3139f4e",
+  "provider_inputs_sha256": "67e4146cddb57128d7703cd09239ed6237d1b06497e6dacc0b753949e8cfae43",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "model": "stories15M.gguf",
+  "model_sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+  "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
+  "runner_source_sha256": "90d296c1fc33954b33cc3a526f46829e49dd027c1095c508be163d542822ca10",
+  "runner_sha256": "241bd74072be12094234bd4a0a73d8be0a822dada336280c8ab0dea6e2ce9125",
+  "cpu_placement_observation": "Only GGML CPU was loaded in the reference process. Its host buffer exposes no owner device to the node callback.",
+  "settings": {
+    "api": "llama_process(LLAMA_PROCESS_TYPE_DECODE) with llama_batch_ext, llama_get_logits_ith and ggml_backend_tensor_get",
+    "sequence_0": [
+      1,
+      22172,
+      29892,
+      278
+    ],
+    "sequence_1": [
+      1,
+      1917,
+      373,
+      263
+    ],
+    "prefill_positions": [
+      0,
+      1
+    ],
+    "decode_positions": [
+      2,
+      3
+    ],
+    "ctx": 256,
+    "n_seq_max": 2,
+    "batch": 32,
+    "ubatch": 32,
+    "threads": 1,
+    "flash_attention": true
+  },
+  "runs": [
+    {
+      "kv_unified": false,
+      "placements_vtensor": 621,
+      "placements_per_step": {
+        "0": 207,
+        "1": 207,
+        "2": 207
+      },
+      "logits": [
+        {
+          "step": 0,
+          "sequence": 0,
+          "top": 29892,
+          "words": 32000,
+          "max_abs": 0.0016164779663085938,
+          "nmse": 9.16190946957722e-10
+        },
+        {
+          "step": 0,
+          "sequence": 1,
+          "top": 471,
+          "words": 32000,
+          "max_abs": 0.0004863739013671875,
+          "nmse": 2.9859088447388e-10
+        },
+        {
+          "step": 1,
+          "sequence": 0,
+          "top": 278,
+          "words": 32000,
+          "max_abs": 0.0010585784912109375,
+          "nmse": 1.292692875751107e-09
+        },
+        {
+          "step": 1,
+          "sequence": 1,
+          "top": 278,
+          "words": 32000,
+          "max_abs": 0.00037384033203125,
+          "nmse": 1.8937246919150703e-10
+        },
+        {
+          "step": 2,
+          "sequence": 0,
+          "top": 6575,
+          "words": 32000,
+          "max_abs": 0.0006384849548339844,
+          "nmse": 3.7344061635957846e-10
+        },
+        {
+          "step": 2,
+          "sequence": 1,
+          "top": 6575,
+          "words": 32000,
+          "max_abs": 0.0006556510925292969,
+          "nmse": 3.4022995897166354e-10
+        }
+      ],
+      "cache_row_writes": 96,
+      "compared_cache": {
+        "words": 27648,
+        "max_abs": 0.001953125,
+        "nmse": 2.15254851804127e-09
+      },
+      "outputs_sha256": {
+        "cpu": {
+          "logits": "c2d2681b1bbb1e75bddb3f5a13aa21800551af37da07c9dfc44f709d0c0ba9bb",
+          "cache_writes": "d679adc01c914e6e4201c16352d4184f63290d95917a4e40dec4ae3fe919267a"
+        },
+        "vtensor": {
+          "logits": "99c5236a458f4c96bb44f0841b6b295263f22aedffa69ad8eebad097fb9559df",
+          "cache_writes": "c9f2df10a7ba2c287f664040ed579e388f5219d5ca0c6dd142b717dce212cd7d"
+        }
+      }
+    },
+    {
+      "kv_unified": true,
+      "placements_vtensor": 585,
+      "placements_per_step": {
+        "0": 195,
+        "1": 195,
+        "2": 195
+      },
+      "logits": [
+        {
+          "step": 0,
+          "sequence": 0,
+          "top": 29892,
+          "words": 32000,
+          "max_abs": 0.0016164779663085938,
+          "nmse": 9.16190946957722e-10
+        },
+        {
+          "step": 0,
+          "sequence": 1,
+          "top": 471,
+          "words": 32000,
+          "max_abs": 0.0004863739013671875,
+          "nmse": 2.9859088447388e-10
+        },
+        {
+          "step": 1,
+          "sequence": 0,
+          "top": 278,
+          "words": 32000,
+          "max_abs": 0.0010585784912109375,
+          "nmse": 1.292692875751107e-09
+        },
+        {
+          "step": 1,
+          "sequence": 1,
+          "top": 278,
+          "words": 32000,
+          "max_abs": 0.00037384033203125,
+          "nmse": 1.8937246919150703e-10
+        },
+        {
+          "step": 2,
+          "sequence": 0,
+          "top": 6575,
+          "words": 32000,
+          "max_abs": 0.0006384849548339844,
+          "nmse": 3.7344061635957846e-10
+        },
+        {
+          "step": 2,
+          "sequence": 1,
+          "top": 6575,
+          "words": 32000,
+          "max_abs": 0.0006556510925292969,
+          "nmse": 3.4022995897166354e-10
+        }
+      ],
+      "cache_row_writes": 96,
+      "compared_cache": {
+        "words": 27648,
+        "max_abs": 0.001953125,
+        "nmse": 2.15254851804127e-09
+      },
+      "outputs_sha256": {
+        "cpu": {
+          "logits": "c2d2681b1bbb1e75bddb3f5a13aa21800551af37da07c9dfc44f709d0c0ba9bb",
+          "cache_writes": "27f8bcf9c7ba5ae500286ac2cdf6189832ce65da49a6329c56ef2ce7dec3cc29"
+        },
+        "vtensor": {
+          "logits": "99c5236a458f4c96bb44f0841b6b295263f22aedffa69ad8eebad097fb9559df",
+          "cache_writes": "696f71321323e584e2f5364d5f9a9341f8ff178d3fb501b2fbd3f0da126b1ec3"
+        }
+      }
+    }
+  ]
+}
