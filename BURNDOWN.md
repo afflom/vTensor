@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,236 passed**, **519 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,266 passed**, **489 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -70,7 +70,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 24 Q6_K indexed writes and six copies. [GGML comparisons](verification/factory-grouped-six-writes-vt119.json)
 - [x] Pass 72 grouped affine indexed writes and 18 copies to Q2_K, Q4_K and Q5_K. [Oracle comparisons](verification/factory-grouped-affine-writes-vt122.json)
 - [x] Submit the Verdant Q3_K encoder. All 33,660 bytes from 306 blocks matched the GGML reference. [Verdant PR #51](https://github.com/afflom/verdant-engine/pull/51)
-- [x] Pin Verdant’s Q3_K encoder. VT-133 passes 24 indexed writes and six copies against GGML CPU. [Patch pin](model/verdant-development.json)
+- [x] Pin Verdant’s Q3_K encoder. VT-133 passes 24 indexed writes and six copies against GGML CPU. [VT-133 comparisons](verification/factory-grouped-three-writes-vt133.json)
 - [ ] Implement IQ4_NL and IQ4_XS encoders. Pass 48 SET_ROWS and 12 CPY cases against the CPU backend. [CPU encoder registration](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.c#L387-L397)
 - [ ] Verify the seven CPU-refused IQ encoders against the upstream quantizers. Cover 168 SET_ROWS and 42 CPY cases. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
 - [x] Pass F32-to-I32 copies 8708 and 8709, including strided storage and atomic refusal. [VT-126](verification/factory-signed-copy-vt126.json)

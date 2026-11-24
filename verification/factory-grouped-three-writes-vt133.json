@@ -1,0 +1,142 @@
+{
+  "requirement": "VT-133",
+  "implementation": "8de5b8eba6ba12f414d4185e98197ec501b72df8",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "d678ef7d5af1d8b0a88fc041b3f1066438d68e0c",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/51",
+  "typed_attestation": "12724ad45e373e53f56e36700bb29051f86aff31dcef1064faa70945beb9c28b",
+  "typed_lock_sha256": "17c1712c9782c002a240e03ddc919efcbb06ac956ebc998c42366ada82b2edba",
+  "provider_sha256": "39947bfd1d51767f22e09dbef0d7c81b1f9ca04bb5863c8b5390ab3a387c3558",
+  "provider_inputs_sha256": "914c8ae5184845d8bbee1c289786e1a146e6e87c4e015864a94a4f8474fdfbe5",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "case_ordinals": {
+    "SET_ROWS": [
+      1328,
+      1329,
+      1330,
+      1331,
+      1332,
+      1333,
+      1334,
+      1335,
+      1336,
+      1337,
+      1338,
+      1339,
+      1708,
+      1709,
+      1710,
+      1711,
+      1712,
+      1713,
+      1714,
+      1715,
+      1716,
+      1717,
+      1718,
+      1719
+    ],
+    "CPY": [
+      8477,
+      8478,
+      8535,
+      8536,
+      8593,
+      8594
+    ]
+  },
+  "passed": 30,
+  "continuous_regression": {
+    "ordinals": [
+      1328,
+      8594
+    ],
+    "transcript_sha256": "d7db608041543ba68de6294f359308fe466d984d2ec70f5c2250a085d7944597"
+  },
+  "additional_batches": [
+    {
+      "ordinals": [
+        1329,
+        1330,
+        1331,
+        1332
+      ],
+      "transcript_sha256": "4108c397bc472996dbec804184ead67348cbea814b4aaf721aa4c87ab76bbbe0"
+    },
+    {
+      "ordinals": [
+        1333,
+        1334,
+        1335,
+        1336
+      ],
+      "transcript_sha256": "377200dbccd4a215c025e40d2ff4b053773880309eb55dfc64fb3bf5bbe2f34a"
+    },
+    {
+      "ordinals": [
+        1337,
+        1338,
+        1339,
+        1708
+      ],
+      "transcript_sha256": "6e0cf318cc2b0653e69ff4c1ed7e5565e869393098018a774cea465ce0028a8e"
+    },
+    {
+      "ordinals": [
+        1709,
+        1710,
+        1711,
+        1712
+      ],
+      "transcript_sha256": "e116a77b34369d301bac733d1d52a0342a1e849b39fd36a3077e8f87847dabc5"
+    },
+    {
+      "ordinals": [
+        1713,
+        1714,
+        1715,
+        1716
+      ],
+      "transcript_sha256": "d422b7b2a86eac274b00327ca2be049e54459a766cf7b3f6b93a064794736045"
+    },
+    {
+      "ordinals": [
+        1717,
+        1718,
+        1719,
+        8477
+      ],
+      "transcript_sha256": "6baa69cc4fe8c193bb1e0d746f9615382d384a7da8fc740cba5aac73cebb4472"
+    },
+    {
+      "ordinals": [
+        8478,
+        8535,
+        8536,
+        8593
+      ],
+      "transcript_sha256": "bcad5b9753c05bfc1b6f4e37d234940f058bc3ca21168b2074b98a00ecd9ce54"
+    }
+  ],
+  "baseline_refusal": {
+    "ordinal": 1328,
+    "reason": "not supported"
+  },
+  "mutation": {
+    "change": "Route Q3_K stores through the Q6_K encoder.",
+    "ordinal": 1328,
+    "observed_nmse": 0.394794149,
+    "upstream_limit": 1e-07
+  },
+  "imported_quotient": {
+    "sdk": "ghcr.io/uor-foundation/lexlean@sha256:d391bfedd4eb97dc25c218628f94cd081436589c348797ebf13c47ab13d4ef30",
+    "verified_sources": [
+      "F64Quotient",
+      "FloatWord64",
+      "ScalarF64"
+    ],
+    "verified_outputs": 6,
+    "result": "blake3:6c0def7f67519ede8ec3f7aa71d16dd4a85b3804b52dae93d7b9a511ca6d8a0b"
+  }
+}
