@@ -1,0 +1,228 @@
+{
+  "requirement": "VT-135",
+  "implementation": "9e359e1fafcae418936e7aee945ac257d8bf9940",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "ce0a64c49aa333e1b3b7b51b4dff8c9246e152f7",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/52",
+  "upstream_verification": "https://github.com/afflom/verdant-engine/blob/ce0a64c49aa333e1b3b7b51b4dff8c9246e152f7/ENGINE-VERIFICATION.md#vtk-53-nonlinear-four-bit-weight-encoding",
+  "typed_attestation": "badfd46902f2ca448dc9697935c00d0732076b707c296865dfdb1e3f3c9ab6b7",
+  "typed_lock_sha256": "336c16741877ae87ac65e7150a89b26184f68a39fb0519a281b3b9f54b2b9ae1",
+  "provider_sha256": "09a2eaad1b4b685857e0682d48dd1c7ca2fbb03098a3120eae3c6777787d0bab",
+  "provider_inputs_sha256": "e3a9d82c7da3d6138cb7cd82dd376cba3d6a532cfb2c8cc52e81c3cbe1e0d93c",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "case_ordinals": {
+    "SET_ROWS": [
+      1472,
+      1473,
+      1474,
+      1475,
+      1476,
+      1477,
+      1478,
+      1479,
+      1480,
+      1481,
+      1482,
+      1483,
+      1496,
+      1497,
+      1498,
+      1499,
+      1500,
+      1501,
+      1502,
+      1503,
+      1504,
+      1505,
+      1506,
+      1507,
+      1852,
+      1853,
+      1854,
+      1855,
+      1856,
+      1857,
+      1858,
+      1859,
+      1860,
+      1861,
+      1862,
+      1863,
+      1876,
+      1877,
+      1878,
+      1879,
+      1880,
+      1881,
+      1882,
+      1883,
+      1884,
+      1885,
+      1886,
+      1887
+    ],
+    "CPY": [
+      8501,
+      8502,
+      8505,
+      8506,
+      8559,
+      8560,
+      8563,
+      8564,
+      8617,
+      8618,
+      8621,
+      8622
+    ]
+  },
+  "passed": 60,
+  "continuous_regression": {
+    "ordinals": [
+      1472,
+      1496,
+      8501,
+      8505
+    ],
+    "transcript_sha256": "4c6bdcb79f1789f8e37becbd2aaffce7dc35c5f87e2354349485dcfce8c219ab"
+  },
+  "additional_batches": [
+    {
+      "ordinals": [
+        1473,
+        1474,
+        1475,
+        1476
+      ],
+      "transcript_sha256": "f50190105b8d08609d41aa71d4ebcc08b7a985c41af04caf26908b82f2a4e54f"
+    },
+    {
+      "ordinals": [
+        1477,
+        1478,
+        1479,
+        1480
+      ],
+      "transcript_sha256": "908c3f1cb7608f0b0afe82a16a7710ba4c47c6d422f2605f6700827886ef6710"
+    },
+    {
+      "ordinals": [
+        1481,
+        1482,
+        1483,
+        1497
+      ],
+      "transcript_sha256": "5ee5257a6df7462bfd656fe8e8fe42c8dbc0f55ebf8241b44569f01f4ae62a73"
+    },
+    {
+      "ordinals": [
+        1498,
+        1499,
+        1500,
+        1501
+      ],
+      "transcript_sha256": "ed820add1a30405f0d0beebd85567b8d7052486115ff6ec9e6cfc16e2c647a6a"
+    },
+    {
+      "ordinals": [
+        1502,
+        1503,
+        1504,
+        1505
+      ],
+      "transcript_sha256": "c1db852e79dba4ebf750823c8189943b390665c67444a99076b9ca3a12e4b6a6"
+    },
+    {
+      "ordinals": [
+        1506,
+        1507,
+        1852,
+        1853
+      ],
+      "transcript_sha256": "7c0f16a9e0d6d613c8d161695752256166ab4e725689ef333a534c78da3ff3df"
+    },
+    {
+      "ordinals": [
+        1854,
+        1855,
+        1856,
+        1857
+      ],
+      "transcript_sha256": "044b27b9bcbca03b9bb32f8d0a8914499246784fe30f392048a5980a921378f3"
+    },
+    {
+      "ordinals": [
+        1858,
+        1859,
+        1860,
+        1861
+      ],
+      "transcript_sha256": "6dded3fea754ae390ee4577680b6e799813908daec2cae66c99c83b7217ec848"
+    },
+    {
+      "ordinals": [
+        1862,
+        1863,
+        1876,
+        1877
+      ],
+      "transcript_sha256": "67189e16dfb853006fbd750a1389525f2258e9cbfc7fe3444b795aa32a593a81"
+    },
+    {
+      "ordinals": [
+        1878,
+        1879,
+        1880,
+        1881
+      ],
+      "transcript_sha256": "3deade1d823ec680c2c0db127a5edbc33c44809ce03c541312f9bb4029cbc391"
+    },
+    {
+      "ordinals": [
+        1882,
+        1883,
+        1884,
+        1885
+      ],
+      "transcript_sha256": "f85a57886f16891f027ae59f5808af90ccad447677cc50f402f0641dc08ae942"
+    },
+    {
+      "ordinals": [
+        1886,
+        1887,
+        8502,
+        8506
+      ],
+      "transcript_sha256": "6058a03ba871caaa3602639a356bcc35a016905e88f170357be22b21aa6f66c8"
+    },
+    {
+      "ordinals": [
+        8559,
+        8560,
+        8563,
+        8564
+      ],
+      "transcript_sha256": "93875befcbf554fa72a54c543fd0fd842e81f2154e3c16299a76bc02dcca6961"
+    },
+    {
+      "ordinals": [
+        8617,
+        8618,
+        8621,
+        8622
+      ],
+      "transcript_sha256": "d4974a9320cb3cc405004e37b505acc6704f2cc0c0566033a0c29d3502a70c10"
+    }
+  ],
+  "baseline_refusal": {
+    "ordinal": 1472,
+    "reason": "not supported"
+  },
+  "mutation": {
+    "change": "Select the centered linear four-bit encoder for IQ4_NL destinations.",
+    "ordinal": 1472,
+    "observed_nmse": 0.851713177,
+    "upstream_limit": 0.001302083
+  }
+}

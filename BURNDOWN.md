@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,300 passed**, **455 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,360 passed**, **395 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -23,7 +23,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Merge the portable MXFP4 oracle correction into Verdant main. All 5,100 MXFP4 reference bytes agree across x86-64 and AArch64. [Verdant PR #50](https://github.com/afflom/verdant-engine/pull/50)
 - [x] Confirm Verdant v2.21.0 includes VTK-43 through VTK-51 and PR #51 merged VTK-52 for v2.21.1. [Published release](https://github.com/afflom/verdant-engine/releases/tag/v2.21.0) · [VTK-52 merge](https://github.com/afflom/verdant-engine/commit/9712ac5f168a87508ff37f786294060487e8fed2)
 - [x] Bind all 93 resolved Verdant v2.21.0 archives to the release manifest. Match its six quotient packages to the producing certificate and reject a changed checksum. [Release comparison](verification/verdant-registry-closure.json)
-- [ ] Switch the VTK-52 patch pin to published Verdant crates. Verify archive checksums and run VT-02. [Exact patch pin](model/verdant-development.json)
+- [ ] Switch the VTK-53 patch pin to published Verdant crates. Verify archive checksums and run VT-02. [Exact patch pin](model/verdant-development.json)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
@@ -75,7 +75,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Submit the Verdant Q3_K encoder. All 33,660 bytes from 306 blocks matched the GGML reference. [Verdant PR #51](https://github.com/afflom/verdant-engine/pull/51)
 - [x] Pin Verdant’s Q3_K encoder. VT-133 passes 24 indexed writes and six copies against GGML CPU. [VT-133 comparisons](verification/factory-grouped-three-writes-vt133.json)
 - [x] Submit Verdant’s IQ4_NL and IQ4_XS encoders. Verify 768 blocks against the imported GGML quantizers and decoder. [Verdant PR #52](https://github.com/afflom/verdant-engine/pull/52)
-- [ ] Pin the nonlinear encoders and pass 48 SET_ROWS and 12 CPY cases against the CPU backend. [CPU encoder registration](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.c#L387-L397)
+- [x] Pin Verdant PR #52 and pass all 48 IQ4_NL/IQ4_XS indexed writes and 12 copies against GGML CPU. [VT-135 comparisons](verification/factory-nonlinear-storage-vt135.json)
 - [ ] Verify the seven CPU-refused IQ encoders against the upstream quantizers. Cover 168 SET_ROWS and 42 CPY cases. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
 - [x] Pass F32-to-I32 copies 8708 and 8709, including strided storage and atomic refusal. [VT-126](verification/factory-signed-copy-vt126.json)
 - [x] Verify embedding and KV operand placement and all 129 default-precision F32 projections in llama.cpp prefill and decode. [Placement and intermediate outputs](verification/llama-projection-placement-vt126.json)
