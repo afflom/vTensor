@@ -226,7 +226,8 @@
     "upstream-OPTIMIZER_UPDATES": "25021 25022",
     "upstream-CROSS_ENTROPY_TRAINING": "25017 25018 25019 25020",
     "upstream-GROUPED_THREE_WRITES": "1328 8594",
-    "upstream-SOLVE_TRI_BOUNDARIES": "19198 19199 19222"
+    "upstream-SOLVE_TRI_BOUNDARIES": "19198 19199 19222",
+    "upstream-NONLINEAR_STORAGE": "1472 1496 8501 8505"
   },
   "factory_transcripts": {
     "upstream-AFFINE_WEIGHT_ROWS": "68508ede9e210dbd20d9b8f0aded72c6293510e32ccba50dded95ad82434c5a6",
@@ -306,7 +307,8 @@
     "upstream-OPTIMIZER_UPDATES": "13ca8582bd6196b71400e5a8ad879e8c69a2b7d15c0f0abd43e3ca592bf69b00",
     "upstream-CROSS_ENTROPY_TRAINING": "2166fce6eab717ce16e258b70e7c53902d6a51621ccefebb849ef2f84095ca6d",
     "upstream-GROUPED_THREE_WRITES": "d7db608041543ba68de6294f359308fe466d984d2ec70f5c2250a085d7944597",
-    "upstream-SOLVE_TRI_BOUNDARIES": "3bdb180608f2c8cf3827b8aed997817cf3ee9e68c8f06b19efd734aedffb44fc"
+    "upstream-SOLVE_TRI_BOUNDARIES": "3bdb180608f2c8cf3827b8aed997817cf3ee9e68c8f06b19efd734aedffb44fc",
+    "upstream-NONLINEAR_STORAGE": "4c6bdcb79f1789f8e37becbd2aaffce7dc35c5f87e2354349485dcfce8c219ab"
   },
   "fixed_matrix": {
     "columns": [

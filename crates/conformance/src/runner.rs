@@ -1249,7 +1249,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
     let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
-    use linear::PackedWeightEncoding::*;
+    use linear::{PackedWeightEncoding::*, RowRankingF32};
     let kind = match tensor.ty {
         2 => Some(CenteredFour),
         3 => Some(AffineFour),
@@ -1261,6 +1261,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         12 => Some(GroupedAffineFour),
         13 => Some(GroupedAffineFive),
         14 => Some(GroupedSignedSix),
+        20 => Some(NonlinearFour),
+        23 => Some(GroupedNonlinearFour),
         34 => Some(PackedTrits),
         35 => Some(TwoBitTernary),
         39 => Some(ExponentOnlyFour),
@@ -1298,15 +1300,11 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 offsets.push(to);
             }
             Rank(from, to, width, count, descending) => {
-                let width = width as usize;
-                let rank = match &mut ranker {
-                    Some(rank) => rank,
-                    None => ranker.insert(linear::RowRankingF32::new(
-                        width,
-                        count as usize,
-                        descending,
-                    )?),
-                };
+                let (width, count) = (width as usize, count as usize);
+                let rank = ranker
+                    .get_or_insert_with(|| RowRankingF32::new(width, count, descending))
+                    .as_mut()
+                    .map_err(|_| InvalidTensor)?;
                 // SAFETY: Prism admits aligned binary32 lanes, disjoint output storage and the full row spans.
                 let input =
                     unsafe { std::slice::from_raw_parts(primary.add(from as usize).cast(), width) };

@@ -876,3 +876,9 @@ id = "VT-134"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules batched lower triangular solves and Verdant performs forward substitution against GGML CPU"
+
+[[id]]
+id = "VT-135"
+level = "build"
+suite = "native-backend"
+statement = "Prism routes nonlinear four-bit row writes and copies through Verdant encoders against GGML CPU"

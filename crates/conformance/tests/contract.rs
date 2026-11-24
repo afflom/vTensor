@@ -338,6 +338,8 @@ ggml_batches! {
     #[test]
     fn grouped_affine_writes_vt_122() { "upstream-GROUPED_AFFINE_WRITES", 6, ["typed"] }
     #[test]
+    fn nonlinear_storage_vt_135() { "upstream-NONLINEAR_STORAGE", 4, ["typed"] }
+    #[test]
     fn triangular_solve_vt_134() { "upstream-SOLVE_TRI_BOUNDARIES", 3, ["pointwise"] }
     #[test]
     fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
@@ -1523,7 +1525,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "af66743358803970ae2f5791ec5af581aa416fe066c8016530dae8dfb322576e",
+            "b2d461e9b135bd4d4e04c658b55a679e0511feaf12e2c13b4ad110caf184d5ea",
         )
     });
 
