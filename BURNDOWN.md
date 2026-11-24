@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,224 passed**, **531 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,228 passed**, **527 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -25,7 +25,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,270 non-Prism lines** (12,819 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,269 non-Prism lines** (12,818 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -167,7 +167,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5), RWKV_WKV6 (4), RWKV_WKV7 (5), GATED_LINEAR_ATTN (4) and SOLVE_TRI (26).
 - [x] Pass all 48 SOFT_MAX_BACK graphs at both scales. The GGML CPU verified 24 zero-bias cases and GGML Vulkan verified 24 positive-bias cases. [Oracle comparisons](verification/factory-softmax-gradients-vt121.json)
 - [x] Pass SILU_BACK and compare 132 gradients on independently padded views with GGML CPU. [VT-124](verification/factory-silu-gradient-vt124.json)
-- [ ] Pass both cross-entropy forward cases and both backward cases. Verify the logit gradients.
+- [x] Pass all four cross-entropy loss and gradient cases. Compare 174 additional outputs and check 21 logit gradients by finite differences. [VT-132](verification/factory-cross-entropy-vt132.json)
 - [x] Pass SGD and AdamW. Compare 3,264 weights, moments, gradients and padding words through three repeated updates. [VT-131](verification/factory-optimizer-updates-vt131.json)
 - [x] Import the pinned llama.cpp scheduler-delay oracle. Its four CPU controls passed timing, buffer aliasing and byte identity, including a chain of four delays. [Upstream timing test](vendor/llama.cpp-oracle/tests/test-sleep.cpp)
 - [x] Verify all three SLEEP factory cases and chained scheduler timing, aliasing and byte preservation. [VT-123](verification/factory-scheduler-delay-vt123.json)

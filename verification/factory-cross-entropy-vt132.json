@@ -1,0 +1,193 @@
+{
+  "requirement": "VT-132",
+  "implementation": "ea7e9a2928c644f5592d9e5bdf131b143bebca5b",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "prism_attestation": "e62f7792f26f4d9e26169e5e48218d50c5e8154aea1ac0989bd71b0ebdf0c223",
+  "pointwise_lock_sha256": "ac537cfb64a24cd1df09d3a069829577a17d9d0b57a2ddb90f2086180371e69e",
+  "provider_sha256": "745ff7d677417173a21b87136fc3aa748dc5b095beb77c99a73553f1f4b79506",
+  "provider_inputs_sha256": "99f967071377f58af92c5e11620bbcc46ced6bbd7f27999fb45fefff70c1a261",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "case_ordinals": {
+    "CROSS_ENTROPY_LOSS": [
+      25017,
+      25018
+    ],
+    "CROSS_ENTROPY_LOSS_BACK": [
+      25019,
+      25020
+    ]
+  },
+  "factory_passed": 4,
+  "transcript_sha256": "2166fce6eab717ce16e258b70e7c53902d6a51621ccefebb849ef2f84095ca6d",
+  "supplemental": {
+    "reference": "Pinned ggml_cross_entropy_loss and ggml_cross_entropy_loss_back on GGML CPU in reference mode",
+    "fixture": "3 rows of soft labels, incoming gradient -0.75, per-row logit offsets up to 94. Extreme cases multiply centered integer logits by 24. Padded forward cases use independent row strides and one-float offsets.",
+    "admission_refusals": [
+      "missing targets",
+      "unexpected source",
+      "wrong target extent",
+      "non-F32 targets",
+      "non-scalar incoming gradient"
+    ],
+    "runner_sha256": "29f6296d317ec2a8800d6fa93fa4a148a987eaa24787dfbe3d708161e05f6b66",
+    "results": [
+      {
+        "backward": false,
+        "classes": 1,
+        "extreme": false,
+        "row_padding": 0,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 1,
+        "extreme": false,
+        "row_padding": 3,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": true,
+        "classes": 1,
+        "extreme": false,
+        "row_padding": 0,
+        "words": 3,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 1,
+        "extreme": true,
+        "row_padding": 0,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 1,
+        "extreme": true,
+        "row_padding": 3,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": true,
+        "classes": 1,
+        "extreme": true,
+        "row_padding": 0,
+        "words": 3,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 7,
+        "extreme": false,
+        "row_padding": 0,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 7,
+        "extreme": false,
+        "row_padding": 3,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": true,
+        "classes": 7,
+        "extreme": false,
+        "row_padding": 0,
+        "words": 21,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 7,
+        "extreme": true,
+        "row_padding": 0,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 7,
+        "extreme": true,
+        "row_padding": 3,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": true,
+        "classes": 7,
+        "extreme": true,
+        "row_padding": 0,
+        "words": 21,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 19,
+        "extreme": false,
+        "row_padding": 0,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 19,
+        "extreme": false,
+        "row_padding": 3,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": true,
+        "classes": 19,
+        "extreme": false,
+        "row_padding": 0,
+        "words": 57,
+        "max_abs": 3.7252903e-09
+      },
+      {
+        "backward": false,
+        "classes": 19,
+        "extreme": true,
+        "row_padding": 0,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": false,
+        "classes": 19,
+        "extreme": true,
+        "row_padding": 3,
+        "words": 1,
+        "max_abs": 0.0
+      },
+      {
+        "backward": true,
+        "classes": 19,
+        "extreme": true,
+        "row_padding": 0,
+        "words": 57,
+        "max_abs": 0.0
+      }
+    ],
+    "finite_difference": {
+      "lanes": 21,
+      "reference": "Central difference of GGML CPU forward loss, perturbation 1/64",
+      "max_abs": 1.23921782e-05
+    }
+  },
+  "mutation": {
+    "change": "Return normalization mass in place of its natural logarithm.",
+    "ordinal": 25017,
+    "observed_nmse": 0.000142355,
+    "upstream_limit": 1e-07
+  }
+}
