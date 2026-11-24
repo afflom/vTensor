@@ -1,0 +1,35 @@
+{
+  "upstream_revision": "66e4c005982ecb161de689149ee43b82660d9571",
+  "integration_commit": "0947f506a2bceac33248baabeee8a0ff32c60242",
+  "current_provider_pin": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "pin_is_ancestor": true,
+  "merged_pull_requests": [
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49
+  ],
+  "verification": {
+    "fidelity_command": "just fidelity",
+    "tested_rust_toolchain": "1.97.1",
+    "lexlean_image": "ghcr.io/uor-foundation/lexlean@sha256:d391bfedd4eb97dc25c218628f94cd081436589c348797ebf13c47ab13d4ef30",
+    "reported_residue": 1150,
+    "reported_uncertified": 1302,
+    "registered_records": 945,
+    "measured_records": 11,
+    "fidelity_sha256": "927c2b5f3d2047a4b162409bddf00fa225d73368860570d6127038aecdae4a63",
+    "oracle_command": "cargo test --locked -p verdant-tensor --lib -- grouped_affine_encoding_vtk_50 binary32_signed_truncation_vtk_51",
+    "passed": [
+      "grouped_affine_encoding_vtk_50",
+      "binary32_signed_truncation_vtk_51"
+    ],
+    "oracle_source_sha256": "4eec816a907885c31932e0ab4fa1ee2278af43000dc19d514929cd03cb4ff8a0",
+    "oracle_log_sha256": "ddb052c739e1e1b90d8ca89ab8f2bddebb4b438d7e434b567594fbc53e71629d"
+  },
+  "latest_published_release_at_check": "v2.20.1"
+}
