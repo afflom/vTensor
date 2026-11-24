@@ -343,7 +343,8 @@ inductive{
     {
       name: executionStep,
       fields: [Nat, IndexContext, IndexContext, CopyMode, Nat, Nat, Nat, Nat, Nat, Nat, Nat]
-    }
+    },
+    {name: emptyRow, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -3503,11 +3504,10 @@ definition{
 }
 
 definition{
-  name: evaluate,
-  parameters: [request : GraphRequest],
+  name: planGraph,
+  parameters: [operation : Nat, options : OperationParameters, input0 : (Option TensorDescriptor), input1 : (Option TensorDescriptor), input2 : (Option TensorDescriptor), input3 : (Option TensorDescriptor), input4 : (Option TensorDescriptor), input5 : (Option TensorDescriptor), input6 : (Option TensorDescriptor), tailPresent : Bool, flags : Nat, view : Bool, output : TensorDescriptor],
   result: GraphResponse,
-  body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 tailPresent flags view output => (if (operation =? 60) then (ctor GraphResponse.planned (match input0 | Option.none => (ctor PointwiseDecision.invalidShape) | Option.some input => (if ((suppliedTensor input1) || ((suppliedTensor input2) || ((suppliedTensor input3) || ((suppliedTensor input4) || ((suppliedTensor input5) || ((suppliedTensor input6) || tailPresent)))))) then (ctor PointwiseDecision.invalidShape) else (planResampling options input output)))) else (if ((operation =? 79) || (operation =? 81)) then (ctor GraphResponse.planned (planWeightedKeys (operation =? 81) input0 input1 input2 input3 input4 input5 input6 tailPresent output)) else (let trailingInputs : Bool := (((suppliedTensor input5) || (suppliedTensor input6)) || tailPresent); (if (operation =? 80) then (ctor GraphResponse.planned (planGatedLinear (project options p0) input0 input1 input2 input3 input4 trailingInputs output)) else (if (((((operation =? 82) || (operation =? 50)) || (operation =? 59)) || (operation =? 65)) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || trailingInputs)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
+  body: (if (operation =? 60) then (ctor GraphResponse.planned (match input0 | Option.none => (ctor PointwiseDecision.invalidShape) | Option.some input => (if ((suppliedTensor input1) || ((suppliedTensor input2) || ((suppliedTensor input3) || ((suppliedTensor input4) || ((suppliedTensor input5) || ((suppliedTensor input6) || tailPresent)))))) then (ctor PointwiseDecision.invalidShape) else (planResampling options input output)))) else (if ((operation =? 79) || (operation =? 81)) then (ctor GraphResponse.planned (planWeightedKeys (operation =? 81) input0 input1 input2 input3 input4 input5 input6 tailPresent output)) else (let trailingInputs : Bool := (((suppliedTensor input5) || (suppliedTensor input6)) || tailPresent); (if (operation =? 80) then (ctor GraphResponse.planned (planGatedLinear (project options p0) input0 input1 input2 input3 input4 trailingInputs output)) else (if (((((operation =? 82) || (operation =? 50)) || (operation =? 59)) || (operation =? 65)) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || trailingInputs)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
       | Option.some descriptor => true
       | Option.none => (match input4
         | Option.some descriptor => true
@@ -3517,7 +3517,18 @@ definition{
       | Option.none => trailing
       | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))))))))))))
+      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output)))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: evaluate,
+  parameters: [request : GraphRequest],
+  result: GraphResponse,
+  body: (match request
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 tailPresent flags view output => (planGraph operation options input0 input1 input2 input3 input4 input5 input6 tailPresent flags view output)
+    | GraphRequest.emptyRow operation kind dest extent => (let input : (Option TensorDescriptor) := (ctor Option.some [TensorDescriptor] (record TensorDescriptor {ty := kind, n0 := 0, n1 := extent, n2 := extent, n3 := extent, s0 := 4, s1 := 0, s2 := 0, s3 := 0, span := 0, address := 0}));
+    (planGraph operation (record OperationParameters {p0 := 0, p1 := 0, p2 := 0, p3 := 0, p4 := 0, p5 := 0, p6 := 0, p7 := 0, p8 := 0, p9 := 0, p10 := 0, p11 := 0}) input input (ctor Option.none [TensorDescriptor]) (ctor Option.none [TensorDescriptor]) (ctor Option.none [TensorDescriptor]) (ctor Option.none [TensorDescriptor]) (ctor Option.none [TensorDescriptor]) false 0 false (record TensorDescriptor {ty := dest, n0 := 1, n1 := 1, n2 := 1, n3 := 1, s0 := 8, s1 := 8, s2 := 8, s3 := 8, span := 8, address := 0})))
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)

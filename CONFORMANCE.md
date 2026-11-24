@@ -235,6 +235,7 @@ model does not sanction.
 | `VT-145` | `build` | Prism models GGML bilinear interpolation on strided tensors with Verdant binary32 pixel weights |
 | `VT-146` | `build` | Prism models GGML bicubic convolution weights and strided sampling through Verdant against the pinned CPU |
 | `VT-147` | `build` | Prism models GGML antialiased bilinear filtering across bounded source windows through Verdant against the pinned CPU |
+| `VT-148` | `build` | Prism routes IQ3 row writes and copies through Verdant encoders against the GGML quantizer |
 
 ## normalization-graphs
 

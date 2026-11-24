@@ -1032,38 +1032,46 @@ enum PackedWeight {
     Affine(BlockDot<linear::AffineQ8Block<32>>),
 }
 
-fn packed_weight(kind: u64) -> Option<PackedWeight> {
-    use linear::{AffineWeightEncoding::*, BlockFloatEncoding::*, SymmetricWeightEncoding::*};
-    use linear::{CodebookEncoding::*, GroupedWeightEncoding as GroupedFormat};
-    use PackedWeight::{Affine, Grouped, Symmetric};
-    Some(match kind {
-        2 => Symmetric(linear::dot_symmetric_q4_row),
-        3 => Affine(|w, a| linear::dot_affine_weight_row(w, a, FourBit)),
-        6 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, SignedFive)),
-        7 => Affine(|w, a| linear::dot_affine_weight_row(w, a, FiveBit)),
-        8 => Symmetric(linear::dot_symmetric_q8_row),
-        10 => Grouped(GroupedFormat::AffineTwo),
-        11 => Grouped(GroupedFormat::SignedThree),
-        12 => Grouped(GroupedFormat::AffineFour),
-        13 => Grouped(GroupedFormat::AffineFive),
-        14 => Grouped(GroupedFormat::SignedSix),
-        16 => Grouped(GroupedFormat::Codebook(IndexedSigns)),
-        17 => Grouped(GroupedFormat::Codebook(ExtendedIndex)),
-        18 => Grouped(GroupedFormat::Codebook(FourLaneIndexedSigns)),
-        19 => Grouped(GroupedFormat::Codebook(ShiftedGrid)),
-        21 => Grouped(GroupedFormat::Codebook(FourLaneExplicitSigns)),
-        22 => Grouped(GroupedFormat::Codebook(ExplicitSigns)),
-        20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)),
-        23 => Grouped(GroupedFormat::NonlinearFour),
-        29 => Grouped(GroupedFormat::Codebook(DistributedScale)),
-        34 => Grouped(GroupedFormat::PackedTrits),
-        35 => Grouped(GroupedFormat::TwoBitTernary),
-        39 => Symmetric(|w, a| linear::dot_block_float_row(w, a, ExponentOnly)),
-        40 => Symmetric(|w, a| linear::dot_block_float_row(w, a, GroupedE4M3)),
-        41 => Symmetric(linear::dot_binary_sign_row),
-        42 => Symmetric(linear::dot_two_bit_row),
-        _ => return None,
-    })
+// A packed GGML format can have a Verdant dot product before it gains an encoder.
+macro_rules! packed_formats {
+    ($( $id:literal => $dot:expr $(, $store:ident)?; )+) => {
+        fn packed_weight(kind: u64) -> Option<PackedWeight> {
+            use linear::{AffineWeightEncoding::*, BlockFloatEncoding::*, SymmetricWeightEncoding::*};
+            use linear::{CodebookEncoding::*, GroupedWeightEncoding as GroupedFormat};
+            use PackedWeight::{Affine, Grouped, Symmetric};
+            match kind { $($id => Some($dot),)+ _ => None }
+        }
+        fn weight_encoder(kind: c_int) -> Option<linear::PackedWeightEncoding> {
+            match kind { $($( $id => Some(linear::PackedWeightEncoding::$store), )?)+ _ => None }
+        }
+    };
+}
+packed_formats! {
+    2 => Symmetric(linear::dot_symmetric_q4_row), CenteredFour;
+    3 => Affine(|w, a| linear::dot_affine_weight_row(w, a, FourBit)), AffineFour;
+    6 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, SignedFive)), CenteredFive;
+    7 => Affine(|w, a| linear::dot_affine_weight_row(w, a, FiveBit)), AffineFive;
+    8 => Symmetric(linear::dot_symmetric_q8_row), SymmetricEight;
+    10 => Grouped(GroupedFormat::AffineTwo), GroupedAffineTwo;
+    11 => Grouped(GroupedFormat::SignedThree), GroupedSignedThree;
+    12 => Grouped(GroupedFormat::AffineFour), GroupedAffineFour;
+    13 => Grouped(GroupedFormat::AffineFive), GroupedAffineFive;
+    14 => Grouped(GroupedFormat::SignedSix), GroupedSignedSix;
+    16 => Grouped(GroupedFormat::Codebook(IndexedSigns));
+    17 => Grouped(GroupedFormat::Codebook(ExtendedIndex));
+    18 => Grouped(GroupedFormat::Codebook(FourLaneIndexedSigns)), ImportanceThreeCompact;
+    19 => Grouped(GroupedFormat::Codebook(ShiftedGrid));
+    20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)), NonlinearFour;
+    21 => Grouped(GroupedFormat::Codebook(FourLaneExplicitSigns)), ImportanceThree;
+    22 => Grouped(GroupedFormat::Codebook(ExplicitSigns));
+    23 => Grouped(GroupedFormat::NonlinearFour), GroupedNonlinearFour;
+    29 => Grouped(GroupedFormat::Codebook(DistributedScale));
+    34 => Grouped(GroupedFormat::PackedTrits), PackedTrits;
+    35 => Grouped(GroupedFormat::TwoBitTernary), TwoBitTernary;
+    39 => Symmetric(|w, a| linear::dot_block_float_row(w, a, ExponentOnly)), ExponentOnlyFour;
+    40 => Symmetric(|w, a| linear::dot_block_float_row(w, a, GroupedE4M3)), UnsignedScaleFour;
+    41 => Symmetric(linear::dot_binary_sign_row), BinarySign;
+    42 => Symmetric(linear::dot_two_bit_row), CenteredTwo;
 }
 
 fn execute_row_products(
@@ -1360,28 +1368,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
     let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
-    use linear::{PackedWeightEncoding::*, RowRankingF32};
-    let kind = match tensor.ty {
-        2 => Some(CenteredFour),
-        3 => Some(AffineFour),
-        6 => Some(CenteredFive),
-        7 => Some(AffineFive),
-        8 => Some(SymmetricEight),
-        10 => Some(GroupedAffineTwo),
-        11 => Some(GroupedSignedThree),
-        12 => Some(GroupedAffineFour),
-        13 => Some(GroupedAffineFive),
-        14 => Some(GroupedSignedSix),
-        20 => Some(NonlinearFour),
-        23 => Some(GroupedNonlinearFour),
-        34 => Some(PackedTrits),
-        35 => Some(TwoBitTernary),
-        39 => Some(ExponentOnlyFour),
-        40 => Some(UnsignedScaleFour),
-        41 => Some(BinarySign),
-        42 => Some(CenteredTwo),
-        _ => None,
-    };
+    use linear::RowRankingF32;
+    let kind = weight_encoder(tensor.ty);
     // Word instructions can update their input in place. Only staged block encoding
     // retains an immutable input slice throughout the instruction loop.
     let source = kind.map(|_| TensorInput::new(left)).transpose()?;

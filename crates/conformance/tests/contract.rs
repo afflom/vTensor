@@ -243,6 +243,7 @@ ggml_batches! {
     /// Contract and overlap all original two-dimensional transposed convolutions.
     fn transpose_plane_vt_107() { "upstream-TRANSPOSE_CONV_2D", 8, ["pointwise"] }
     fn grouped_affine_writes_vt_122() { "upstream-GROUPED_AFFINE_WRITES", 6, ["typed"] }
+    fn importance_storage_vt_148() { "upstream-IMPORTANCE_THREE_STORAGE", 4, ["typed"] }
     fn nonlinear_storage_vt_135() { "upstream-NONLINEAR_STORAGE", 4, ["typed"] }
     fn triangular_solve_vt_134() { "upstream-SOLVE_TRI_BOUNDARIES", 3, ["pointwise"] }
     fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
@@ -362,33 +363,13 @@ fn buffer_allocation_vt_10() {
 }
 
 fn verify_row_graphs() {
-    use vtensor_pointwise::{
-        Adt0::C0 as plan, Adt1::C0 as params, Adt10, Adt2::C0 as tensor, Adt9,
-    };
+    use vtensor_pointwise::{run, Adt0, Adt10, Adt9};
     for probe in probes(30, 2, 0, 0) {
-        let vtensor_probes::Adt0::C7(op, ty, dest, extent) = probe else {
+        let vtensor_probes::Adt0::C7(op, kind, dest, extent) = probe else {
             panic!("missing empty row")
         };
-        let empty = Some(tensor(ty, 0, extent, extent, extent, 4, 0, 0, 0, 0, 0));
-        let output = tensor(dest, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
-        let parameters = params(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        let request = plan(
-            op,
-            parameters,
-            empty.clone(),
-            empty,
-            None,
-            None,
-            None,
-            None,
-            None,
-            false,
-            0,
-            false,
-            output,
-        );
         assert!(matches!(
-            vtensor_pointwise::run(request),
+            run(Adt0::C7(op, kind, dest, extent)),
             Ok(Adt9::C0(Adt10::C4(2, ..)))
         ));
     }
@@ -399,13 +380,6 @@ fn verify_row_graphs() {
 fn fixture_generation_vt_35() {
     native_backend_oracle::fixture_input(0);
     assert!(probes(35, 6, 0, 0).all(|probe| matches!(probe, vtensor_probes::Adt0::C6(true))));
-}
-
-/// `VT-36`: Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle
-#[test]
-fn arithmetic_fixture_generation_vt_36() {
-    native_backend_oracle::fixture_input(1);
-    fixture_queries(36, 5);
 }
 
 /// `VT-40`: Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
@@ -503,13 +477,15 @@ fn boundary_rows<const N: usize, const M: usize>(
 }
 
 macro_rules! fixture_query_tests {
-    ($( $(#[$meta:meta])* fn $name:ident() { $suite:literal, $count:literal } )+) => {
+    ($( $(#[$meta:meta])* fn $name:ident() { $suite:literal, $count:literal $(=> $prepare:expr)? } )+) => {
         const FIXTURE_TEST_NAMES: &[&str] = &[$(stringify!($name)),+];
-        $( $(#[$meta])* #[test] fn $name() { fixture_queries($suite, $count); } )+
+        $( $(#[$meta])* #[test] fn $name() { $($prepare;)? fixture_queries($suite, $count); } )+
     };
 }
 
 fixture_query_tests! {
+    /// `VT-36`: Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle
+    fn arithmetic_fixture_generation_vt_36() { 36, 5 => native_backend_oracle::fixture_input(1) }
     /// `VT-41`: Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results
     fn copy_fixture_generation_vt_41() { 41, 11 }
     /// `VT-42`: Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results
@@ -639,9 +615,12 @@ host:
         checked_output(command, output)
     }
 
-    pub(super) fn tool_json(root: &Path, tool: &str, args: &[&str]) -> serde_json::Value {
-        let output = run(Command::new(tool).current_dir(root).args(args));
-        serde_json::from_slice(&output).expect("tool JSON response")
+    pub(super) fn tool(root: &Path, name: &str, args: &[&str]) -> Vec<u8> {
+        run(Command::new(name).current_dir(root).args(args))
+    }
+
+    pub(super) fn tool_json(root: &Path, name: &str, args: &[&str]) -> serde_json::Value {
+        serde_json::from_slice(&tool(root, name, args)).expect("tool JSON response")
     }
 
     fn checked_output(command: &Command, output: Output) -> Vec<u8> {
@@ -672,10 +651,8 @@ host:
 
     /// Build the oracle once per source, compiler, SDK and build-recipe identity.
     /// A cache hit still verifies the executable digest and executes the oracle.
-    pub fn storage_oracle(root: &Path) -> PathBuf {
-        static ORACLE: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
-        ORACLE.get_or_init(|| build_storage_oracle(root)).clone()
-    }
+    pub(super) static STORAGE_ORACLE: std::sync::LazyLock<PathBuf> =
+        std::sync::LazyLock::new(|| build_storage_oracle(&super::root()));
 
 
     fn build_storage_oracle(root: &Path) -> PathBuf {
@@ -772,8 +749,8 @@ host:
     }
 
     pub(super) fn query(mode: &str, input: &str) -> String {
-        let executable = storage_oracle(&super::root());
-        verify_file(&executable);
+        let executable = &*STORAGE_ORACLE;
+        verify_file(executable);
         batch(Command::new(executable).arg(mode), input)
     }
 
@@ -854,20 +831,16 @@ static int allocation() {
 static int storage() {
     for (;;) {
         int type;
-        int64_t ne[4];
-        size_t nb[4];
+        ggml_tensor tensor = {};
+        auto &ne=tensor.ne;
+        auto &nb=tensor.nb;
         const int fields = scanf("%d %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNd64
                                 " %zu %zu %zu %zu",
                                 &type, &ne[0], &ne[1], &ne[2], &ne[3],
                                 &nb[0], &nb[1], &nb[2], &nb[3]);
         if (fields == EOF) { return 0; }
         if (fields != 9 || type < 0 || type >= GGML_TYPE_COUNT) { return 2; }
-        ggml_tensor tensor = {};
-        tensor.type = (enum ggml_type) type;
-        for (int i = 0; i < GGML_MAX_DIMS; ++i) {
-            tensor.ne[i] = ne[i];
-            tensor.nb[i] = nb[i];
-        }
+        tensor.type = static_cast<ggml_type>(type);
         printf("%zu %" PRId64 " %zu\n", ggml_nbytes(&tensor),
                ggml_blck_size(tensor.type), ggml_type_size(tensor.type));
     }
@@ -999,11 +972,11 @@ mod ggml_storage_oracle {
     /// `VT-05`: The pinned GGML storage oracle executes upstream byte-span semantics for scalar and block-encoded tensors
     #[test]
     fn ggml_storage_oracle_vt_05() {
-        let executable = ggml_oracle::storage_oracle(&super::root());
+        let executable = &*ggml_oracle::STORAGE_ORACLE;
         let fixture = &super::native_backend_oracle::ORACLE_BINDINGS["storage_probe"];
         let expected: [[u64; 3]; 6] =
             serde_json::from_value(fixture["span_block_bytes"].clone()).unwrap();
-        let modified = || std::fs::metadata(&executable).unwrap().modified().unwrap();
+        let modified = || std::fs::metadata(executable).unwrap().modified().unwrap();
         let built_at = modified();
         // Send the fixed probes and a duplex batch larger than the pipe capacity through one oracle process.
         let mut request = fixture["request"].as_str().unwrap().to_owned();
@@ -1014,10 +987,10 @@ mod ggml_storage_oracle {
             .chain(std::iter::repeat_n([4, 1, 4], 8192));
         assert!(rows.into_iter().eq(reference));
         let malformed =
-            ggml_oracle::pipe_input(&mut std::process::Command::new(&executable), b"malformed\n");
+            ggml_oracle::pipe_input(&mut std::process::Command::new(executable), b"malformed\n");
         assert_eq!(malformed.status.code(), Some(2));
 
-        assert_eq!(ggml_oracle::storage_oracle(&super::root()), executable);
+        assert_eq!(&*ggml_oracle::STORAGE_ORACLE, executable);
         assert_eq!(modified(), built_at, "warm storage oracle was rebuilt");
     }
 }
@@ -1095,11 +1068,7 @@ mod tensor_layout {
         );
         let lock = ggml_oracle::read_json(root.join(format!("{name}-kernel.lock")));
         assert_eq!(lock, expected, "stale {name} kernel lock");
-        ggml_oracle::run(
-            std::process::Command::new("lexlean")
-                .current_dir(root)
-                .args(["production", "verify-artifact", &bundle]),
-        );
+        ggml_oracle::tool(root, "lexlean", &["production", "verify-artifact", &bundle]);
     }
 
     static STORAGE_METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
@@ -1280,7 +1249,7 @@ fn buffer_transfer_vt_09() {
 }
 
 mod native_backend_oracle {
-    use super::ggml_oracle::{build, digest, publish_file, run, storage_oracle, verify_file};
+    use super::ggml_oracle::{build, digest, publish_file, run, verify_file, STORAGE_ORACLE};
     use repo_model::artifact::sha256_hex;
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
@@ -1298,7 +1267,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a7425e942c8e3b6c348a5956afff6e85ccfdda2dfbd4b4fa12cc42ad5ae2472d",
+            "ab146bc400c60a8d573b97b43dee4d7f6f720a12dd8ea214f922ba714b509763",
         )
     });
 
@@ -1373,27 +1342,20 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             identity.update(FIXTURE_BRIDGE);
             identity.update(FIXTURE_RECIPE);
             identity.update(OBJECT_RECIPE);
-            identity.update(run(Command::new("rustc").args(["--version", "--verbose"])));
+            static COMPILER: LazyLock<Vec<u8>> = LazyLock::new(|| run(Command::new("rustc").args(["--version", "--verbose"])));
+            identity.update(&*COMPILER);
             let cache = common
                 .join("fixture-model")
                 .join(digest(&identity.finalize()));
             let library = cache.join("libfixtures.so");
             checked_build(&library, |pending| {
                 let input = cache.join("bridge.rs");
-                let bridge =
-                    format!("#[path = {source:?}] mod vtensor_fixture_model;\n{FIXTURE_BRIDGE}");
+                let bridge = format!("#[path = {source:?}] mod vtensor_fixture_model;\n{FIXTURE_BRIDGE}");
                 std::fs::write(&input, bridge).unwrap();
-                run(Command::new("rustc")
-                    .args([
-                        "--edition=2021",
-                        "-Copt-level=2",
-                        "-Cdebug-assertions=on",
-                        "-Coverflow-checks=on",
-                        "--crate-type=cdylib",
-                    ])
-                    .arg(input)
-                    .arg("-o")
-                    .arg(pending));
+                let mut rustc = Command::new("rustc");
+                rustc.args(["--edition=2021", "--crate-type=cdylib", "-Copt-level=2"]);
+                rustc.args(["-Cdebug-assertions=on", "-Coverflow-checks=on"]);
+                run(rustc.arg(input).arg("-o").arg(pending));
             });
             library
         });
@@ -1470,8 +1432,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
     pub(super) fn verify(root: &Path, mode: &str, expected_cases: usize) {
         static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
         let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
-        let oracle = storage_oracle(root);
-        let common = oracle.parent().unwrap();
+        let common = STORAGE_ORACLE.parent().unwrap();
         let library = super::provider_library();
         static HOSTS: [std::sync::OnceLock<std::path::PathBuf>; 2] =
             [const { std::sync::OnceLock::new() }; 2];
@@ -1572,10 +1533,36 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         std::fs::remove_file(expected_snapshot).unwrap();
     }
 
-    const UPSTREAM_SUITE: &str = r##"#define main vtensor_unused_upstream_main
+    macro_rules! graph_fixture_source { () => { r##"
+static std::vector<unsigned char> tensor_bytes(const ggml_tensor *tensor) {
+    std::vector<unsigned char> bytes(tensor ? ggml_nbytes(tensor) : 0);
+    if (!bytes.empty()) ggml_backend_tensor_get(tensor,bytes.data(),0,bytes.size());
+    return bytes;
+}
+struct graph_fixture {
+    ggml_context_ptr arena;
+    ggml_backend_buffer_ptr storage;
+    explicit graph_fixture(size_t tensors, size_t graphs=1) : arena(ggml_init({graphs*ggml_graph_overhead()+tensors*ggml_tensor_overhead(),nullptr,true})) {}
+    operator ggml_context *() const { return arena.get(); }
+    ggml_cgraph *allocate(ggml_tensor *out, ggml_backend_t backend) {
+        auto graph=ggml_new_graph(arena.get());
+        ggml_build_forward_expand(graph,out);
+        storage.reset(ggml_backend_alloc_ctx_tensors(arena.get(),backend));
+        return storage ? graph : nullptr;
+    }
+};
+"## }; }
+
+    const UPSTREAM_SUITE: &str = concat!(
+        r##"#define main vtensor_unused_upstream_main
 #include "ggml-cpu.h"
 #include "tests/test-backend-ops.cpp"
 #undef main
+"##,
+        graph_fixture_source!(),
+        r##"
+size_t block_address(const ggml_tensor *, size_t);
+bool compare_result(ggml_tensor *, ggml_tensor *, std::vector<unsigned char>, int);
 struct vtensor_observation : printer {
   size_t records=0; bool bad=false; std::string label;
   void print_test_result(const test_result &result) override {
@@ -1587,52 +1574,85 @@ struct vtensor_observation : printer {
 };
 // Both references run the original graph on the provider. The CPU either decodes
 // the operand types or independently materializes their strided views.
-static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_backend_t cpu, ggml_op op) {
-    const ggml_init_params init{ggml_tensor_overhead()*128+ggml_graph_overhead(), nullptr, true};
-    ggml_context_ptr target(ggml_init(init)), reference(ggml_init(init));
+static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_backend_t cpu, ggml_op &op) {
+    graph_fixture target(128), reference(128);
     if (!target || !reference) return false;
-    ggml_tensor * out=test.build_graph(target.get());
-    if (out->op!=op || ggml_backend_dev_supports_op(ggml_backend_get_device(cpu),out)) return false;
-    auto original=op==GGML_OP_OUT_PROD ? nullptr : test.build_graph(reference.get());
+    auto out=test.build_graph(target);
+    if (!out) return false;
+    if (op==GGML_OP_NONE && (out->op==GGML_OP_CPY || out->op==GGML_OP_SET_ROWS)) op=out->op;
+    if (out->op!=op || ggml_backend_supports_op(cpu,out) || !ggml_backend_supports_op(backend,out)) return false;
+    auto original_graph=target.allocate(out,backend);
+    if (!original_graph || !ggml_backend_supports_op(backend,out)) return false;
+    test.initialize_tensors(target);
+    auto original=op==GGML_OP_OUT_PROD || op==GGML_OP_CPY ? nullptr : test.build_graph(reference);
+    if (op==GGML_OP_CPY || op==GGML_OP_SET_ROWS) {
+        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S) return false;
+        auto src=out->src[0];
+        int64_t width=out->ne[0], rows=ggml_nrows(out);
+        if (width<=0 || width%ggml_blck_size(out->type) || !ggml_is_contiguous_rows(out)) return false;
+        auto values=tensor_to_float(src);
+        std::vector<float> mapping(rows,-1.f);
+        if (op==GGML_OP_CPY) {
+            if (uint64_t(rows)*width!=values.size()) return false;
+            std::iota(mapping.begin(),mapping.end(),0.f);
+        } else {
+            auto dest=ggml_new_tensor_4d(reference,GGML_TYPE_F32,1,out->ne[1],out->ne[2],out->ne[3]);
+            auto ids=ggml_new_tensor_4d(reference,GGML_TYPE_F32,1,src->ne[1],src->ne[2],src->ne[3]);
+            if (src->ne[0]!=width || ggml_nelements(ids)>=1<<24) return false;
+            auto mapped=ggml_set_rows(reference,dest,ids,original->src[1]);
+            auto scatter=reference.allocate(mapped,cpu);
+            if (!scatter || !ggml_backend_supports_op(cpu,mapped)) return false;
+            ggml_backend_tensor_copy(out->src[1],original->src[1]);
+            if (auto count=ggml_nelements(ids)) std::iota((float *)ids->data,(float *)ids->data+count,0.f);
+            ggml_set_f32(dest,-1.f);
+            if (ggml_backend_graph_compute(cpu,scatter)!=GGML_STATUS_SUCCESS) return false;
+            mapping=tensor_to_float(mapped);
+        }
+        auto expected=tensor_bytes(out);
+        size_t bytes=ggml_row_size(out->type,width);
+        for (int64_t row=0;row<rows;++row) {
+            if (mapping[row]==-1.f) continue;
+            int64_t source=int64_t(mapping[row]);
+            if (source<0 || float(source)!=mapping[row] || uint64_t(source+1)>values.size()/width) return false;
+            size_t offset=block_address(out,row*(width/ggml_blck_size(out->type)));
+            if (offset>expected.size() || bytes>expected.size()-offset ||
+                ggml_quantize_chunk(out->type,values.data()+source*width,expected.data()+offset,0,1,width,nullptr)!=bytes) return false;
+        }
+        if (ggml_backend_graph_compute(backend,original_graph)!=GGML_STATUS_SUCCESS) return false;
+        return compare_result(out,nullptr,std::move(expected),0);
+    }
     ggml_tensor * expected;
+    auto decoded=[&](int slot){return ggml_new_tensor(reference,GGML_TYPE_F32,4,out->src[slot]->ne);};
     if (op==GGML_OP_OUT_PROD) {
-        auto a=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
-        auto b=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[1]->ne);
-        expected=ggml_out_prod(reference.get(),a,b);
+        expected=ggml_out_prod(reference,decoded(0),decoded(1));
     } else if (op==GGML_OP_GET_ROWS_BACK) {
-        auto decoded=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
-        expected=ggml_get_rows_back(reference.get(),decoded,original->src[1],original);
+        expected=ggml_get_rows_back(reference,decoded(0),original->src[1],original);
     } else if (op==GGML_OP_MUL_MAT) {
         if (original->src[1]->type!=GGML_TYPE_F16) return false;
-        auto activation=ggml_cast(reference.get(),original->src[1],GGML_TYPE_F32);
+        auto activation=ggml_cast(reference,original->src[1],GGML_TYPE_F32);
         if (!ggml_backend_supports_op(cpu,activation)) return false;
-        expected=ggml_mul_mat(reference.get(),original->src[0],activation);
+        expected=ggml_mul_mat(reference,original->src[0],activation);
         memcpy(expected->op_params,original->op_params,sizeof(expected->op_params));
     } else {
-        auto kernel=ggml_cont(reference.get(),original->src[0]);
-        auto image=ggml_cont(reference.get(),original->src[1]);
+        auto kernel=ggml_cont(reference,original->src[0]);
+        auto image=ggml_cont(reference,original->src[1]);
         auto p=original->op_params;
-        expected=ggml_conv_2d_direct(reference.get(),kernel,image,p[0],p[1],p[2],p[3],p[4],p[5]);
+        expected=ggml_conv_2d_direct(reference,kernel,image,p[0],p[1],p[2],p[3],p[4],p[5]);
     }
     if (!ggml_are_same_shape(out,expected) || !ggml_backend_supports_op(cpu,expected)) return false;
-    ggml_cgraph * original_graph=ggml_new_graph(target.get()), * reference_graph=ggml_new_graph(reference.get());
-    ggml_build_forward_expand(original_graph,out);
-    ggml_build_forward_expand(reference_graph,expected);
-    ggml_backend_buffer_ptr actual_buffer(ggml_backend_alloc_ctx_tensors(target.get(),backend));
-    ggml_backend_buffer_ptr reference_buffer(ggml_backend_alloc_ctx_tensors(reference.get(),cpu));
-    if (!actual_buffer || !reference_buffer || !ggml_backend_dev_supports_op(ggml_backend_get_device(backend),out)) return false;
-    test.initialize_tensors(target.get());
+    auto reference_graph=reference.allocate(expected,cpu);
+    if (!reference_graph) return false;
     const int decoded_sources=op==GGML_OP_OUT_PROD ? 2 : (op==GGML_OP_GET_ROWS_BACK ? 1 : 0);
     for (int k=0;k<decoded_sources;++k) {
         auto values=tensor_to_float(out->src[k]);
         ggml_backend_tensor_set(expected->src[k],values.data(),0,ggml_nbytes(expected->src[k]));
     }
     if (op!=GGML_OP_OUT_PROD) {
-        auto copy=ggml_get_first_tensor(reference.get());
-        for (auto src=ggml_get_first_tensor(target.get());src;src=ggml_get_next_tensor(target.get(),src)) {
+        auto copy=ggml_get_first_tensor(reference);
+        for (auto src=ggml_get_first_tensor(target);src;src=ggml_get_next_tensor(target,src)) {
             if (!copy || src->op!=copy->op || src->type!=copy->type || !ggml_are_same_shape(src,copy) || !ggml_are_same_stride(src,copy)) return false;
             if (src->op==GGML_OP_NONE && !src->view_src) ggml_backend_tensor_copy(src,copy);
-            copy=ggml_get_next_tensor(reference.get(),copy);
+            copy=ggml_get_next_tensor(reference,copy);
         }
     }
     if (ggml_backend_graph_compute(backend,original_graph)!=GGML_STATUS_SUCCESS ||
@@ -1683,8 +1703,9 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
       const size_t i=selected.empty()?pos:selected[pos];
       auto &test=tests[i];
-      if (!strcmp(op,"GET_ROWS_BACK_DECODED") || !strcmp(op,"OUT_PROD_DECODED") || !strcmp(op,"CONV_2D_CONTIGUOUS") || !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS")) {
-        const ggml_op operation=!strcmp(op,"GET_ROWS_BACK_DECODED") ? GGML_OP_GET_ROWS_BACK : !strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : GGML_OP_CONV_2D;
+      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE");
+      auto operation= !strcmp(op,"GET_ROWS_BACK_DECODED") ? GGML_OP_GET_ROWS_BACK : !strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : !strcmp(op,"CONV_2D_CONTIGUOUS") ? GGML_OP_CONV_2D : GGML_OP_NONE;
+      if (importance || operation!=GGML_OP_NONE) {
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {
           fprintf(stderr,"CPU reference rejected ordinal %zu: %s\n",i,test->vars().c_str());
           return SIZE_MAX;
@@ -1742,7 +1763,8 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
     vtensor_observation observed;
     return test.eval(backend,reference,op,&observed)==test_status_t::OK && !observed.bad && observed.records==1;
 }
-"##;
+"##
+    );
 
     const HEADER: &str = concat!(
         r##"#include "ggml-cpp.h"
@@ -1812,34 +1834,24 @@ static void recipe_state(uint64_t phase) {
     }
 }
 static void unexpected_abort(const char *message) { fprintf(stderr, "upstream abort at type %d layout %d: %s\n", current_kind, current_layout, message); _exit(99); }
-struct graph_fixture {
-    ggml_context_ptr arena;
-    ggml_backend_buffer_ptr storage;
-    explicit graph_fixture(size_t tensors, size_t graphs=1) : arena(ggml_init({graphs*ggml_graph_overhead()+tensors*ggml_tensor_overhead(),nullptr,true})) {}
-    operator ggml_context *() const { return arena.get(); }
-    ggml_cgraph *allocate(ggml_tensor *out, ggml_backend_t backend) {
-        auto graph=ggml_new_graph(arena.get());
-        ggml_build_forward_expand(graph,out);
-        storage.reset(ggml_backend_alloc_ctx_tensors(arena.get(),backend));
-        return storage ? graph : nullptr;
-    }
-};
+"##,
+        graph_fixture_source!(),
+        r##"
 template<class T, class U>
 static bool refuses_change(ggml_backend_t backend, ggml_backend_dev_t dev, ggml_cgraph *graph, ggml_tensor *result, T &field, U bad, bool capability=true) {
     ++refusal_probes;
-    std::vector<unsigned char> before(ggml_nbytes(result)),after(before.size());
-    ggml_backend_tensor_get(result,before.data(),0,before.size());
+    auto before=tensor_bytes(result);
     const T saved=field;field=bad;recipe_state(1);
     const bool refused=(!capability || !ggml_backend_dev_supports_op(dev,result)) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED;
-    field=saved;ggml_backend_tensor_get(result,after.data(),0,after.size());
-    return refused && before==after;
+    field=saved;
+    return refused && before==tensor_bytes(result);
 }
 static ggml_tensor * canonical_copy(ggml_context *ctx, ggml_tensor *input) {
     const int64_t block=ggml_blck_size(input->type), count=ggml_nelements(input)/block;
     ggml_tensor *target=ggml_new_tensor_2d(ctx,input->type,block,count); target->nb[1]*=2; target->nb[2]=target->nb[1]*count; target->nb[3]=target->nb[2];
     return ggml_reshape_4d(ctx,ggml_cont(ctx,ggml_cpy(ctx,input,target)),input->ne[0],input->ne[1],input->ne[2],input->ne[3]);
 }
-static size_t block_address(const ggml_tensor *tensor, size_t ordinal) {
+size_t block_address(const ggml_tensor *tensor, size_t ordinal) {
     int64_t i0,i1,i2,i3;const int64_t block=ggml_blck_size(tensor->type);
     ggml_unravel_index(tensor,ordinal*block,&i0,&i1,&i2,&i3);
     return (i0/block)*tensor->nb[0]+i1*tensor->nb[1]+i2*tensor->nb[2]+i3*tensor->nb[3];
@@ -1864,10 +1876,8 @@ static void observe_fixture(std::ofstream &trace, const uint64_t (&fields)[24], 
     for(auto value:fields)emit(value);
     for(auto operand:{left,right}) {emit(operand?ggml_nelements(operand):0);emit(4);if(operand) for(int64_t i=0;i<ggml_nelements(operand);i++) {uint32_t word;memcpy(&word,(char *)operand->data+block_address(operand,i),4);emit(word);}}
 }
-static bool compare_result(ggml_tensor *result, ggml_tensor *reference, std::vector<unsigned char> expected, int nan_mode) {
-    std::vector<unsigned char> actual(ggml_nbytes(result)), raw(reference?ggml_nbytes(reference):0);
-    if(!actual.empty()) ggml_backend_tensor_get(result,actual.data(),0,actual.size());
-    if(!raw.empty()) ggml_backend_tensor_get(reference,raw.data(),0,raw.size());
+bool compare_result(ggml_tensor *result, ggml_tensor *reference, std::vector<unsigned char> expected, int nan_mode) {
+    auto actual=tensor_bytes(result), raw=tensor_bytes(reference);
     const size_t bytes=ggml_type_size(result->type), block=ggml_blck_size(result->type);
     ggml_tensor physical=*result, physical_reference=reference?*reference:ggml_tensor{};
     if(nan_mode==4 && reference) {expected=raw;physical.nb[0]=physical_reference.nb[0]=bytes;result=&physical;reference=&physical_reference;}
@@ -2289,6 +2299,7 @@ int main(int argc, char **argv) {
       }
       static const struct { const char *batch; std::initializer_list<ggml_type> kinds; } stores[] = {
         {"SET_ROWS_SCALAR", {GGML_TYPE_F16}}, {"Q8_STORAGE_WRITES", {GGML_TYPE_Q8_0}},
+        {"IMPORTANCE_THREE_STORAGE", {GGML_TYPE_IQ3_XXS,GGML_TYPE_IQ3_S}},
         {"SIGN_WEIGHT_WRITES", {GGML_TYPE_Q1_0,GGML_TYPE_Q2_0}},
         {"LOW_BIT_WRITES", {GGML_TYPE_Q4_0,GGML_TYPE_Q4_1,GGML_TYPE_Q5_0,GGML_TYPE_Q5_1}},
         {"GROUPED_AFFINE_WRITES", {GGML_TYPE_Q2_K,GGML_TYPE_Q4_K,GGML_TYPE_Q5_K}},
@@ -2469,7 +2480,7 @@ int main(int argc, char **argv) {
           CHECK(refuses_change(backend,dev,inplace_graph,inplace,inplace->data,static_cast<char *>(left->data)+4));
           CHECK(refuses_change(backend,dev,inplace_graph,inplace,inplace->nb[0],inplace->nb[0]+4));
           for(auto node:{result,inplace}) {
-            std::vector<unsigned char> before(ggml_nbytes(node));ggml_backend_tensor_get(node,before.data(),0,before.size());
+            auto before=tensor_bytes(node);
             node->ne[0]=0;node->op_params[0]=int32_t(0x7fc00001u);auto active=node==result?graph:inplace_graph;
             CHECK(ggml_backend_graph_compute(reference,active)==GGML_STATUS_SUCCESS);
             CHECK(ggml_backend_graph_compute(backend,active)==GGML_STATUS_SUCCESS);
@@ -2848,7 +2859,7 @@ int main(int argc, char **argv) {
         if(((normalizing) && fixture_plan[8]) || (spatial && operation==0 && pattern%2 && ggml_is_empty(input) && !ggml_is_empty(result)) || (triangular && pattern==4) || (windowing && operation==1 && window_case==9)) {
           CHECK(ggml_backend_dev_supports_op(dev,result)==((normalizing) && fixture_plan[8]==1)); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
           if(triangular) {input->ne[1]--;result->ne[1]--;}
-          std::vector<unsigned char> unchanged(output.size()); ggml_backend_tensor_get(result,unchanged.data(),0,unchanged.size()); CHECK(unchanged==output);
+          CHECK(tensor_bytes(result)==output);
           recipe_word(5);recipe_word(0);recipe_context=nullptr;ggml_backend_buffer_free(buffer); ggml_free(ctx); cases++;refused++;return 0;
         }
         if((grouping || backward || typing) && !output.empty())ggml_backend_tensor_set(expected_tensor,output.data(),0,output.size());

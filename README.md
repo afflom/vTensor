@@ -16,8 +16,7 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 The completion checklist tracks remaining GGML operations, scheduler callbacks
 and consumer checks. [Provider burndown](BURNDOWN.md)
 
-Cargo resolves Verdant Tensor v2.21.4 from its immutable upstream release index.
-Each locked registry archive is checked against the published manifest. [Release pin](model/verdant-development.json) · [Registry checks](verification/verdant-versioned-registry.json)
+Cargo pins Verdant’s IQ3 encoders at `3fb9d8f3` until they ship in the registry. [Verdant PR #56](https://github.com/afflom/verdant-engine/pull/56) · [Dependency record](model/verdant-development.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940
@@ -332,7 +331,7 @@ artifacts fit stricter M20 ceilings; no budget was raised. Exact evidence is in
 Verdant's native packager now includes the certified production dependency
 closure (36 crates), with exact registry versions and preserved SDK provenance.
 Its registry check requires a successful real Cargo consumer build and rejects
-missing or unresolvable dependencies. vTensor consumes the published v2.21.4
+missing or unresolvable dependencies. VT-147 verified the published v2.21.4
 release. Its resolved archives match the [release manifest](vendor/verdant-crates-manifest.json).
 
 The earlier Verdant extension added certified packed-scale and F8 word primitives

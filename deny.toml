@@ -36,6 +36,7 @@ deny = []
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+allow-git = ["https://github.com/afflom/verdant-engine", "https://github.com/UOR-Foundation/uor-matmul"]
 allow-registry = ["https://github.com/rust-lang/crates.io-index", "https://raw.githubusercontent.com/afflom/verdant-engine/9c67d952eb86adbe8dcd33eb0d296b0952c06817/v2.21.4/crates/index/"]
 
 # The certified renderer omits package licensing metadata. The repository
@@ -107,7 +108,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xbc5fa07b }]
+license-files = [{ path = "src/lib.rs", hash = 0x4869822e }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -364,7 +365,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x959b0d61 }]
+license-files = [{ path = "src/lib.rs", hash = 0xdc9dc374 }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"
@@ -813,3 +814,33 @@ name = "verdant_unary_dispatch"
 version = "=2.48.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x1b8b8323 }]
+
+[[licenses.clarify]]
+name = "verdant_importance_grid"
+version = "=2.49.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xf90c353c }]
+
+[[licenses.clarify]]
+name = "verdant_iq3_fit"
+version = "=2.49.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x30fb5e30 }]
+
+[[licenses.clarify]]
+name = "verdant_iq3_level"
+version = "=2.49.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x3489b02a }]
+
+[[licenses.clarify]]
+name = "verdant_iq3_scale"
+version = "=2.49.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x7c859196 }]
+
+[[licenses.clarify]]
+name = "verdant_iq3_score"
+version = "=2.49.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x87b02e56 }]

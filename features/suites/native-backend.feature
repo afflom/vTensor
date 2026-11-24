@@ -548,3 +548,9 @@ Feature: native-backend
     Given a strided four-dimensional GGML input
     When GGML selects antialiased bilinear interpolation with either corner convention
     Then vTensor matches the normalized CPU filter at each output sample
+
+  @VT-148 @build
+  Scenario: Prism routes IQ3 row writes and copies through Verdant encoders against the GGML quantizer
+    Given floating-point source rows and IQ3_XXS or IQ3_S destination storage
+    When a GGML graph copies the tensor or updates indexed rows
+    Then output bytes match the imported GGML quantizer and untouched bytes are preserved
