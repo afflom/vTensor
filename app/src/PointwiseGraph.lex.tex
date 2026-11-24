@@ -3,6 +3,7 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{TensorIndex}
 \importmodule{MatrixGraph}
+\importmodule{ProjectionPrecision}
 \importmodule{TensorTypes}
 \importmodule{RowGather}
 \importmodule{RelativePosition}
@@ -191,7 +192,9 @@ inductive{
     {name: product, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: copyBlocks, fields: [Nat, Nat, IndexContext, IndexContext, CopyMode]},
     {name: delegated, fields: [Nat]},
-    {name: convolution, fields: [ConvolutionGeometry]}
+    {name: convolution, fields: [ConvolutionGeometry]},
+    {name: fullPrecisionProduct, fields: []},
+    {name: invalidPrecision, fields: []}
   ]
 }
 
@@ -995,6 +998,8 @@ definition{
   ],
   result: PointwiseDecision,
   body: (match (numericDecision operation variant left right output)
+    | PointwiseDecision.fullPrecisionProduct => (ctor PointwiseDecision.fullPrecisionProduct)
+    | PointwiseDecision.invalidPrecision => (ctor PointwiseDecision.invalidPrecision)
     | PointwiseDecision.unsupported => (ctor PointwiseDecision.unsupported)
     | PointwiseDecision.convolution geometry => (ctor PointwiseDecision.convolution geometry)
     | PointwiseDecision.delegated kernel => (ctor PointwiseDecision.delegated kernel)
@@ -2451,13 +2456,29 @@ definition{
 }
 
 definition{
+  name: planProjectionOrTwoSources,
+  parameters: [
+    operation : Nat,
+    options : OperationParameters,
+    left : TensorDescriptor,
+    right : (Option TensorDescriptor),
+    output : TensorDescriptor
+  ],
+  result: GraphResponse,
+  body: (if (((operation =? 28) || (operation =? 29)) && ((0 <? (project options p0)) || (0 <? (project options p3)))) then (match (ProjectionPrecision::projectionPrecision (project left ty) (project options p0) (project options p3))
+    | Option.some full => (if full then (ctor GraphResponse.planned (ctor PointwiseDecision.fullPrecisionProduct)) else (planTwoSources operation options left right output))
+    | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidPrecision))) else (planTwoSources operation options left right output)),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
     | GraphRequest.plan operation options input0 input1 input2 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planTwoSources operation options left input1 output))))))))))
+      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)

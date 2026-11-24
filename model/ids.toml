@@ -828,3 +828,9 @@ id = "VT-127"
 level = "build"
 suite = "native-backend"
 statement = "Prism contracts hyperconnection channels through Verdant with optional per-element sigmoid gates"
+
+[[id]]
+id = "VT-128"
+level = "build"
+suite = "native-backend"
+statement = "Dense and indexed projections preserve explicit GGML accumulator and activation precision across stored weight formats"

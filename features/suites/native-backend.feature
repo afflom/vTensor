@@ -422,3 +422,9 @@ Feature: native-backend
     Given the imported weighted and sigmoid-gated hyperconnection reductions
     When the backend reduces the channels for each embedding coordinate and token, then applies the output scale
     Then the outputs match the pinned GGML CPU for all channel counts
+
+  @VT-128 @build
+  Scenario: Dense and indexed projections preserve explicit GGML accumulator and activation precision across stored weight formats
+    Given GGML projections with an explicit minimum activation and accumulation precision
+    When their weights have scalar or packed storage
+    Then Prism selects a Verdant product meeting both requested precisions

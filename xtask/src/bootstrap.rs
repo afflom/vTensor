@@ -1187,30 +1187,26 @@ mod tests {
         );
     }
 
-    #[test]
-    fn initial_standards_binding_refuses_project_drift() {
+    fn run_node_suite(suite: &str) {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .unwrap();
         let result = std::process::Command::new("node")
-            .args(["--test", "bootstrap/standards-lock.test.mjs"])
+            .args(["--test", suite])
             .current_dir(root)
             .status()
             .expect("the locked SDK supplies Node");
-        assert!(result.success(), "standards binding negative tests failed");
+        assert!(result.success(), "{suite} failed");
+    }
+
+    #[test]
+    fn initial_standards_binding_refuses_project_drift() {
+        run_node_suite("bootstrap/standards-lock.test.mjs");
     }
 
     #[test]
     fn holo_cache_refuses_every_unbound_holo() {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap();
-        let result = std::process::Command::new("node")
-            .args(["--test", "ci/kappa-cache.test.mjs"])
-            .current_dir(root)
-            .status()
-            .expect("the locked SDK supplies Node");
-        assert!(result.success(), "holo cache negative tests failed");
+        run_node_suite("ci/kappa-cache.test.mjs");
     }
 
     #[test]

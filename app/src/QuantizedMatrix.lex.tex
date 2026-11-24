@@ -69,10 +69,10 @@ inductive{
   type_parameters: [],
   parameters: [],
   constructors: [
-    {name: graph, fields: [Nat, Bool, Tensor, Tensor, Tensor]},
+    {name: graph, fields: [Nat, Bool, Tensor, Tensor, Tensor, Bool]},
     {name: column, fields: [Plan, Nat]},
     {name: row, fields: [Plan, Nat, Nat]},
-    {name: indexedGraph, fields: [Nat, Bool, Tensor, Tensor, Tensor, Tensor]},
+    {name: indexedGraph, fields: [Nat, Bool, Tensor, Tensor, Tensor, Tensor, Bool]},
     {name: expertColumn, fields: [Plan, Nat, Nat]}
   ]
 }
@@ -137,35 +137,36 @@ definition{
     b3 : Nat,
     ratio2 : Nat,
     ratio3 : Nat,
-    expert : (Option ExpertLayout)
+    expert : (Option ExpertLayout),
+    full : Bool
   ],
   result: Plan,
-  body: (record Plan {blocks := (prim quotient (project w n0) (activationLanes (project w kind) lanes) 0 : Nat), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply rows (prim multiply columns (prim multiply b2 b3 : Nat) : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), expert := expert, scalarPrecision := (if ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)) then (ctor Option.some [Nat] (ScalarDotStorage::activationType (project w kind))) else (ctor Option.none [Nat])), weightType := (project w kind)}),
+  body: (record Plan {blocks := (if full then (project w n0) else (prim quotient (project w n0) (activationLanes (project w kind) lanes) 0 : Nat)), weightBytes := (prim multiply (prim quotient (project w n0) lanes 0 : Nat) width : Nat), rows := rows, columns := columns, batches := b2, visits := (prim multiply columns (prim multiply b2 b3 : Nat) : Nat), outputs := (prim multiply rows (prim multiply columns (prim multiply b2 b3 : Nat) : Nat) : Nat), ratio2 := ratio2, ratio3 := ratio3, w1 := (project w s1), w2 := (project w s2), w3 := (project w s3), a1 := (project a s1), a2 := (project a s2), a3 := (project a s3), o1 := (project o s1), o2 := (project o s2), o3 := (project o s3), expert := expert, scalarPrecision := (if full then (ctor Option.some [Nat] 0) else (if ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)) then (ctor Option.some [Nat] (ScalarDotStorage::activationType (project w kind))) else (ctor Option.none [Nat]))), weightType := (project w kind)}),
   executable: true
 }
 
 definition{
   name: activationStride,
-  parameters: [kind : Nat, stride : Nat],
+  parameters: [kind : Nat, stride : Nat, full : Bool],
   result: Bool,
-  body: (((kind =? 0) && (stride =? 4)) || ((kind =? 1) && (stride =? 2))),
+  body: (((kind =? 0) && (stride =? 4)) || (((kind =? 1) || (full && (kind =? 30))) && (stride =? 2))),
   executable: true
 }
 
 definition{
   name: productStorage,
-  parameters: [w : Tensor, a : Tensor, o : Tensor, indexed : Bool, lanes : Nat, width : Nat],
+  parameters: [w : Tensor, a : Tensor, o : Tensor, scalarWeight : Bool, full : Bool, lanes : Nat, width : Nat],
   result: Bool,
-  body: (((((((((rowProductType (project w kind)) || (indexed && ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)))) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && (activationStride (project a kind) (project a s0))) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))),
+  body: (((((((((rowProductType (project w kind)) || (scalarWeight && ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)))) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && (activationStride (project a kind) (project a s0) full)) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))),
   executable: true
 }
 
 definition{
   name: planStorage,
-  parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor, lanes : Nat, width : Nat],
+  parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor, lanes : Nat, width : Nat, full : Bool],
   result: Response,
-  body: (if (productStorage w a o false lanes width) then (match (MatrixGraph::planMatrix op 0 0 (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
-    | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor Response.planned (makePlan w a o lanes width rows columns b2 b3 ratio2 ratio3 (ctor Option.none [ExpertLayout])))
+  body: (if (productStorage w a o full full lanes width) then (match (MatrixGraph::planMatrix op 0 0 (project o kind) (project w n0) (project w n1) (project w n2) (project w n3) (project a n0) (project a n1) (project a n2) (project a n3) (project o n0) (project o n1) (project o n2) (project o n3))
+    | MatrixGraph::MatrixDecision.product rows inner columns b2 b3 ratio2 ratio3 leftCount rightCount outputCount => (ctor Response.planned (makePlan w a o lanes width rows columns b2 b3 ratio2 ratio3 (ctor Option.none [ExpertLayout]) full))
     | MatrixGraph::MatrixDecision.unsupported => (ctor Response.refused)
     | MatrixGraph::MatrixDecision.invalidShape => (ctor Response.refused)) else (ctor Response.refused)),
   executable: true
@@ -173,21 +174,29 @@ definition{
 
 definition{
   name: graphPlan,
-  parameters: [op : Nat, extra : Bool, w : Tensor, a : Tensor, o : Tensor],
+  parameters: [op : Nat, extra : Bool, w : Tensor, a : Tensor, o : Tensor, full : Bool],
   result: Response,
   body: (if extra then (ctor Response.refused) else (match (TensorTypes::tensorTypeStorage (project w kind))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor Response.refused)
-    | TensorTypes::TypeStorageDecision.knownType storage => (planStorage op w a o (project storage blockSize) (project storage typeSize)))),
+    | TensorTypes::TypeStorageDecision.knownType storage => (planStorage op w a o (project storage blockSize) (project storage typeSize) full))),
   executable: true
 }
 
 definition{
   name: indexedPlan,
-  parameters: [op : Nat, extra : Bool, w : Tensor, a : Tensor, ids : Tensor, o : Tensor],
+  parameters: [
+    op : Nat,
+    extra : Bool,
+    w : Tensor,
+    a : Tensor,
+    ids : Tensor,
+    o : Tensor,
+    full : Bool
+  ],
   result: Response,
-  body: (if ((((((((((((((((((((op =? 29) && (if extra then false else true)) && ((project ids kind) =? 26)) && ((project a kind) =? 0)) && ((project o kind) =? 0)) && ((project w n3) =? 1)) && ((project a n3) =? 1)) && ((project ids n3) =? 1)) && ((project o n3) =? 1)) && ((project ids n2) =? 1)) && ((project ids n1) =? (project a n2))) && ((project w n0) =? (project a n0))) && (0 <? (project a n1))) && ((prim remainder (project ids n0) (project a n1) 0 : Nat) =? 0)) && ((project o n0) =? (project w n1))) && ((project o n1) =? (project ids n0))) && ((project o n2) =? (project a n2))) && ((project w s0) <=? (project w s1))) && ((prim multiply (project o n0) 4 : Nat) <=? (project o s1))) && ((prim multiply (project o n1) (project o s1) : Nat) <=? (project o s2))) then (match (TensorTypes::tensorTypeStorage (project w kind))
+  body: (if ((((((((((((((((((((op =? 29) && (if extra then false else true)) && ((project ids kind) =? 26)) && (((project a kind) =? 0) || (full && (MatrixGraph::floatWord (project a kind))))) && ((project o kind) =? 0)) && ((project w n3) =? 1)) && ((project a n3) =? 1)) && ((project ids n3) =? 1)) && ((project o n3) =? 1)) && ((project ids n2) =? 1)) && ((project ids n1) =? (project a n2))) && ((project w n0) =? (project a n0))) && (0 <? (project a n1))) && ((prim remainder (project ids n0) (project a n1) 0 : Nat) =? 0)) && ((project o n0) =? (project w n1))) && ((project o n1) =? (project ids n0))) && ((project o n2) =? (project a n2))) && ((project w s0) <=? (project w s1))) && ((prim multiply (project o n0) 4 : Nat) <=? (project o s1))) && ((prim multiply (project o n1) (project o s1) : Nat) <=? (project o s2))) then (match (TensorTypes::tensorTypeStorage (project w kind))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor Response.refused)
-    | TensorTypes::TypeStorageDecision.knownType storage => (if (productStorage w a o true (project storage blockSize) (project storage typeSize)) then (ctor Response.planned (makePlan w a o (project storage blockSize) (project storage typeSize) (project w n1) (project ids n0) (project ids n1) 1 1 1 (ctor Option.some [ExpertLayout] (record ExpertLayout {experts := (project w n2), activationRows := (project a n1), indexLane := (project ids s0), indexToken := (project ids s1)})))) else (ctor Response.refused))) else (ctor Response.refused)),
+    | TensorTypes::TypeStorageDecision.knownType storage => (if (productStorage w a o true full (project storage blockSize) (project storage typeSize)) then (ctor Response.planned (makePlan w a o (project storage blockSize) (project storage typeSize) (project w n1) (project ids n0) (project ids n1) 1 1 1 (ctor Option.some [ExpertLayout] (record ExpertLayout {experts := (project w n2), activationRows := (project a n1), indexLane := (project ids s0), indexToken := (project ids s1)})) full)) else (ctor Response.refused))) else (ctor Response.refused)),
   executable: true
 }
 
@@ -214,11 +223,11 @@ definition{
   parameters: [request : Request],
   result: Response,
   body: (match request
-    | Request.graph op extra w a o => (graphPlan op extra w a o)
+    | Request.graph op extra w a o full => (graphPlan op extra w a o full)
     | Request.column plan ordinal => (match (project plan expert)
       | Option.none => (ordinaryColumn plan ordinal)
       | Option.some layout => (if (ordinal <? (project plan visits)) then (ctor Response.readExpert ((prim multiply (prim remainder ordinal (project plan columns) 0 : Nat) (project layout indexLane) : Nat) + (prim multiply (prim quotient ordinal (project plan columns) 0 : Nat) (project layout indexToken) : Nat))) else (ctor Response.refused)))
-    | Request.indexedGraph op extra w a ids o => (indexedPlan op extra w a ids o)
+    | Request.indexedGraph op extra w a ids o full => (indexedPlan op extra w a ids o full)
     | Request.expertColumn plan ordinal expert => (resolveExpert plan ordinal expert)
     | Request.row plan base row => (if (row <? (project plan rows)) then (ctor Response.weightOffset (base + (prim multiply row (project plan w1) : Nat))) else (ctor Response.refused))),
   executable: true,
@@ -235,7 +244,7 @@ theorem{
 theorem{
   name: refusesExtraSource,
   parameters: [op : Nat, w : Tensor, a : Tensor, o : Tensor],
-  statement: ((graphPlan op true w a o) = (ctor Response.refused)),
+  statement: ((graphPlan op true w a o false) = (ctor Response.refused)),
   proof: reflexivity{}
 }
 
@@ -256,14 +265,14 @@ theorem{
 theorem{
   name: binary16ActivationsUseTwoByteRows,
   parameters: [],
-  statement: ((activationStride 1 2) = true),
+  statement: ((activationStride 1 2 false) = true),
   proof: reflexivity{}
 }
 
 theorem{
   name: binary16RejectsBinary32Stride,
   parameters: [],
-  statement: ((activationStride 1 4) = false),
+  statement: ((activationStride 1 4 false) = false),
   proof: reflexivity{}
 }
 

@@ -214,6 +214,7 @@ model does not sanction.
 | `VT-125` | `build` | Prism schedules depthwise spatial convolution in both GGML channel layouts using Verdant products and sums |
 | `VT-126` | `build` | Prism stages binary32 to signed integer copies through the Verdant truncation operation |
 | `VT-127` | `build` | Prism contracts hyperconnection channels through Verdant with optional per-element sigmoid gates |
+| `VT-128` | `build` | Dense and indexed projections preserve explicit GGML accumulator and activation precision across stored weight formats |
 
 ## normalization-graphs
 

@@ -1,0 +1,39 @@
+\begin{lexlean}{ProjectionPrecision}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TensorTypes}
+\title{Natural number}
+\begin{semanticmodule}
+definition{
+  name: packedWeights,
+  parameters: [weight : Nat],
+  result: Bool,
+  body: (match (TensorTypes::tensorTypeStorage weight)
+    | TensorTypes::TypeStorageDecision.unknownType => false
+    | TensorTypes::TypeStorageDecision.knownType storage => (1 <? (project storage blockSize))),
+  executable: true
+}
+
+definition{
+  name: projectionPrecision,
+  parameters: [weight : Nat, accumulation : Nat, activation : Nat],
+  result: (Option Bool),
+  body: (let accumulationAllowed : Bool := ((((accumulation =? 0) || (accumulation =? 10)) || (accumulation =? 15)) || (accumulation =? 20)); (let activationAllowed : Bool := ((((((activation =? 0) || (activation =? 10)) || (activation =? 15)) || (activation =? 20)) || (activation =? 30)) || (activation =? 40)); (if (accumulationAllowed && activationAllowed) then (ctor Option.some [Bool] (((weight =? 30) && (activation =? 10)) || ((packedWeights weight) && (((activation =? 10) || (activation =? 15)) || (activation =? 20))))) else (ctor Option.none [Bool])))),
+  executable: true
+}
+
+theorem{
+  name: fullPrecisionPreservesActivationsForFourBitWeights,
+  parameters: [],
+  statement: ((projectionPrecision 2 10 10) = (ctor Option.some [Bool] true)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: quantizedAccumulatorIsRefused,
+  parameters: [],
+  statement: ((projectionPrecision 0 30 0) = (ctor Option.none [Bool])),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

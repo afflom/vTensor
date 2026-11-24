@@ -591,7 +591,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan))),
             _ => Err(InvalidTensor),
         };
+    let full = matches!(response, GraphResponse::C0(GraphPlan::C7));
     match response {
+        GraphResponse::C0(GraphPlan::C8) => Err(InvalidTensor),
         GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..) | GraphPlan::C6(..))) => {
             Ok(Some(ExecutionPlan::Standard(plan)))
         }
@@ -630,10 +632,10 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                     ));
                 }
                 let [w, a, ids, out] = [w, a, third, output].map(descriptor);
-                Product::C3(operation, extra, w, a, ids, out)
+                Product::C3(operation, extra, w, a, ids, out, full)
             } else {
                 let [w, a, out] = [w, a, output].map(descriptor);
-                Product::C0(operation, extra, w, a, out)
+                Product::C0(operation, extra, w, a, out, full)
             };
             match vtensor_matrix_q8::run(request).map_err(|_| BackendError::Overflow)? {
                 vtensor_matrix_q8::Adt4::C1(plan) => Ok(Some(ExecutionPlan::RowProduct(plan))),

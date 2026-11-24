@@ -363,6 +363,8 @@ ggml_batches! {
     #[test]
     fn depthwise_spatial_vt_125() { "upstream-DEPTHWISE_SPATIAL", 8, ["pointwise"] }
     #[test]
+    fn projection_precision_vt_128() { "upstream-PROJECTION_PRECISION", 36, ["matrix", "pointwise"] }
+    #[test]
     fn signed_copy_vt_126() { "upstream-SIGNED_COPY", 2, ["pointwise"] }
     #[test]
     fn hyperconnection_pre_vt_127() { "upstream-HYPERCONNECTION_PRE", 18, ["pointwise"] }
@@ -1506,7 +1508,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a87001e2b027331ff3122d3eca14b4b0988670b9b2988d6fcf0576a6a855256b",
+            "1771d86f099135922f6a81370a6b4cc3a2396e3c129645a199bc5a2ab5632ddf",
         )
     });
 
