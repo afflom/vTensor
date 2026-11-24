@@ -46,6 +46,11 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
     digest_hex(&Sha256::digest(bytes))
 }
 
+/// Hash a disk file, retaining its path on I/O errors.
+pub fn file_sha256(path: &Path) -> Result<String, ModelError> {
+    Ok(sha256_hex(&std::fs::read(path).map_err(|e| io(path, e))?))
+}
+
 fn io(path: &Path, e: std::io::Error) -> ModelError {
     ModelError::Io(path.to_path_buf(), e)
 }
@@ -93,8 +98,7 @@ pub fn artifact_checksum(root: &Path, id: &str, artifact: &str) -> Result<String
         Err(e) => return Err(io(&path, e)),
     };
     if meta.is_file() {
-        let bytes = std::fs::read(&path).map_err(|e| io(&path, e))?;
-        return Ok(sha256_hex(&bytes));
+        return file_sha256(&path);
     }
     if !meta.is_dir() {
         return Err(ModelError::Inconsistent(format!(
@@ -111,9 +115,7 @@ pub fn artifact_checksum(root: &Path, id: &str, artifact: &str) -> Result<String
     names.sort();
     let mut manifest = Sha256::new();
     for name in names {
-        let file = path.join(&name);
-        let bytes = std::fs::read(&file).map_err(|e| io(&file, e))?;
-        manifest.update(format!("{}  {name}\n", sha256_hex(&bytes)));
+        manifest.update(format!("{}  {name}\n", file_sha256(&path.join(&name))?));
     }
     Ok(digest_hex(&manifest.finalize()))
 }

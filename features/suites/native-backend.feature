@@ -410,3 +410,9 @@ Feature: native-backend
     Given the imported depthwise convolution graphs with F32 and F16 filters
     When the backend contracts each filter with its own channel at the requested stride, padding and dilation
     Then the outputs match the pinned GGML CPU in WHCN and CWHN storage
+
+  @VT-126 @build
+  Scenario: Prism stages binary32 to signed integer copies through the Verdant truncation operation
+    Given the imported F32 to I32 copies with contiguous and permuted source storage
+    When the backend converts all source elements before committing the destination
+    Then the destination words match the pinned GGML CPU

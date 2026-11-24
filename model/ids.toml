@@ -816,3 +816,9 @@ id = "VT-125"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules depthwise spatial convolution in both GGML channel layouts using Verdant products and sums"
+
+[[id]]
+id = "VT-126"
+level = "build"
+suite = "native-backend"
+statement = "Prism stages binary32 to signed integer copies through the Verdant truncation operation"

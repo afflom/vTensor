@@ -212,6 +212,7 @@ model does not sanction.
 | `VT-123` | `build` | Prism admits GGML scheduler delays that preserve their input view and complete before graph return |
 | `VT-124` | `build` | Prism schedules the binary32 SiLU derivative with Verdant arithmetic |
 | `VT-125` | `build` | Prism schedules depthwise spatial convolution in both GGML channel layouts using Verdant products and sums |
+| `VT-126` | `build` | Prism stages binary32 to signed integer copies through the Verdant truncation operation |
 
 ## normalization-graphs
 

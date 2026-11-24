@@ -1194,6 +1194,7 @@ fn execute_word(
         WordOperation::C8(kind) => {
             linear::evaluate_small_float(kind, a).map_err(|_| InvalidTensor)?
         }
+        WordOperation::C9 => linear::truncate_signed_word_f32(a).map_err(|_| InvalidTensor)?,
         WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
             let input = decode_float(source, a)?;
@@ -1367,7 +1368,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let mut block = workspace(bytes, 0_u8)?;
     let mut fixed = [0; 3];
     let mut dynamic = match &mode {
-        CopyMode::C26(_, _, _, size) if *size > fixed.len() as u64 => {
+        CopyMode::C26(_, _, _, size) | CopyMode::C35(size) if *size > fixed.len() as u64 => {
             Some(workspace(*size, 0_u64)?)
         }
         _ => None,

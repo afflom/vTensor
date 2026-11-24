@@ -363,6 +363,8 @@ ggml_batches! {
     #[test]
     fn depthwise_spatial_vt_125() { "upstream-DEPTHWISE_SPATIAL", 8, ["pointwise"] }
     #[test]
+    fn signed_copy_vt_126() { "upstream-SIGNED_COPY", 2, ["pointwise"] }
+    #[test]
     fn silu_gradient_vt_124() { "upstream-SILU_GRADIENT", 1, ["pointwise"] }
     #[test]
     fn small_float_add_vt_120() { "upstream-SMALL_FLOAT_ADD", 6, ["typed", "pointwise"] }
@@ -669,7 +671,7 @@ mod ggml_oracle {
     }
 
     pub(super) fn file_digest(path: impl AsRef<Path>) -> String {
-        repo_model::artifact::sha256_hex(&read_bytes(path.as_ref()))
+        repo_model::artifact::file_sha256(path.as_ref()).unwrap()
     }
 
     pub(super) use repo_model::artifact::digest_hex as digest;
@@ -1502,7 +1504,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "e3e07ac995939a65207fdff7ef863e1aa89b616f51c5708f12b813373adac8a4",
+            "25cdae53ea48c63994157a288b0b1e25cee912fe41537b0e918f91b7ba595c81",
         )
     });
 

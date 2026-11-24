@@ -45,7 +45,8 @@ struct Observed {
     workspace: Vec<(String, String)>,
 }
 
-use repo_model::artifact::sha256_hex as hex;
+use repo_model::artifact::{file_sha256, sha256_hex as hex};
+use std::fmt::Write as _;
 
 fn text<'a>(value: &'a Value, pointer: &str) -> Result<&'a str, String> {
     value
@@ -197,8 +198,7 @@ fn inputs(root: &Path) -> Result<String, Fail> {
     args.extend(INPUT_PATHS.split(' '));
     let files = run(root, ".", "git", &args)?;
     for path in files.split('\0').filter(|path| !path.is_empty()) {
-        let bytes = std::fs::read(root.join(path)).map_err(|error| format!("{path}: {error}"))?;
-        out.push_str(&format!("{}  {path}\n", hex(&bytes)));
+        writeln!(out, "{}  {path}", file_sha256(&root.join(path))?)?;
     }
     let mut args = vec!["status", "--porcelain=v1", "--untracked-files=all", "--"];
     args.extend(INPUT_PATHS.split(' '));
@@ -218,23 +218,18 @@ fn observe(root: &Path, lexlean: &Value) -> Result<Observed, Fail> {
     }
     let prefix = run(root, "app", "lean", &["--print-prefix"])?;
     let bin = Path::new(prefix.trim()).join("bin");
-    let file = |path: &Path| -> Result<String, Fail> {
-        Ok(hex(
-            &std::fs::read(path).map_err(|error| format!("{}: {error}", path.display()))?
-        ))
-    };
     let mut workspace = Vec::new();
     for row in workspace_rows(lexlean)? {
         let path = workspace_path(row)?;
-        let sha256 = file(&root.join("app").join(path))?;
+        let sha256 = file_sha256(&root.join("app").join(path))?;
         workspace.push((path.to_owned(), sha256));
     }
     Ok(Observed {
         inputs: inputs(root)?,
         source_id: text(&check, "/source_id")?.to_owned(),
         semantic_id: text(&check, "/semantic_id")?.to_owned(),
-        lean_sha256: file(&bin.join("lean"))?,
-        lake_sha256: file(&bin.join("lake"))?,
+        lean_sha256: file_sha256(&bin.join("lean"))?,
+        lake_sha256: file_sha256(&bin.join("lake"))?,
         arch: std::env::consts::ARCH.to_owned(),
         workspace,
     })
