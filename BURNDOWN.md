@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,465 passed**, **290 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,469 passed**, **286 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -186,7 +186,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all four nearest-neighbor UPSCALE cases. Match 2,972 raw output words on 28 additional GGML CPU graphs. [VT-144](verification/factory-nearest-resampling-vt144.json)
 - [x] Pass all eight plain bilinear UPSCALE cases. Compare 5,804 output words on 52 additional GGML CPU graphs. [VT-145](verification/factory-bilinear-resampling-vt145.json)
 - [x] Pass all eight bicubic UPSCALE cases. Compare 5,804 output words on 52 additional GGML CPU graphs. [VT-146](verification/factory-bicubic-resampling-vt146.json)
-- [ ] Pass the four antialiased bilinear UPSCALE cases. [Case inventory](verification/ggml-factory-inventory.json)
+- [x] Pass all four antialiased bilinear UPSCALE cases. Compare 10,256 output words on 68 additional GGML CPU graphs. [VT-147](verification/factory-antialias-resampling-vt147.json)
 - [x] Match all 11,088 frozen words for IM2COL_BACK and POOL_2D_BACK, including padding and overlapping windows. [CPU and provider transcripts](verification/ggml-spatial-gradient-oracle.json)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
 - [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).

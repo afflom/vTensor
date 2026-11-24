@@ -1474,14 +1474,10 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     if mask >> pointers.len() != 0 {
         return Err(InvalidTensor);
     }
-    let mut secondary_strides = [0; 4];
     for (slot, pointer) in pointers.iter_mut().enumerate() {
         if mask & (1 << slot) != 0 {
             let source = tensor.source(slot).ok_or(InvalidTensor)?;
             *pointer = graph_tensor_data(source)?;
-            if slot == 1 && matches!(mode, CopyMode::C26(66, ..)) {
-                secondary_strides = source.nb.map(|stride| stride as u64);
-            }
         }
     }
     // SAFETY: both decoder instructions carry a complete source block bounded by Prism.
@@ -1491,20 +1487,23 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let destination_data = graph_tensor_data(tensor)?;
     let mut block = workspace(bytes, 0_u8)?;
     let mut fixed = [0; 3];
-    let mut dynamic = if capacity > fixed.len() as u64 {
-        Some(workspace(capacity, 0_u64)?)
-    } else {
-        None
-    };
+    let mut dynamic = (capacity > fixed.len() as u64)
+        .then(|| workspace(capacity, 0_u64))
+        .transpose()?;
     let words = dynamic.as_deref_mut().unwrap_or(&mut fixed);
-    for index in 0..count {
-        let [x0, x1, x2, x3] = secondary_strides;
+    let [x0, x1, x2, x3] = match mode {
+        CopyMode::C26(66, ..) => tensor.source(1).ok_or(InvalidTensor)?.nb.map(|v| v as u64),
+        _ => [0; 4],
+    };
+    let mut steps = 0..count;
+    while let Some(index) = steps.next() {
         let response = pointwise(GraphRequest::C6(
             index,
             source.clone(),
             destination.clone(),
             mode.clone(),
             words[2],
+            words[1],
             bytes,
             x0,
             x1,
@@ -1512,6 +1511,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
             x3,
         ))?;
         match response {
+            GraphResponse::C11(next) if (steps.start..=count).contains(&next) => steps.start = next,
             GraphResponse::C7(..) => execute_word(response, &pointers, destination_data, words)?,
             // SAFETY: Prism preflights every index and bounds the complete block and output lanes.
             GraphResponse::C10(kind, from, width, to, lanes, stride) => unsafe {

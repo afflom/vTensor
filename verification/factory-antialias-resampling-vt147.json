@@ -1,0 +1,154 @@
+{
+  "requirement": "VT-147",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "case_ordinals": {
+    "UPSCALE": [
+      19034,
+      19035,
+      19036,
+      19037
+    ]
+  },
+  "passed": 4,
+  "factory_transcript_sha256": "caa307d2ea9ea36e6ebb623d6b43275f9fb1c5aa84078d7971c8974a00ec3f7b",
+  "factory_build": {
+    "pointwise_result": "181de17555a20776be166ca7a2dec053a85becc9820aeddf79699aa16c41fe4d",
+    "verdant_patch": "2586327cadf8fa57ab8e2df5b4347f1a2b0e891f",
+    "provider_sha256": "ab47cb6105b43969090c7f454bef266924d42266ab860af1b64d93a66eeb283d",
+    "provider_inputs_sha256": "c88737193de01dc86f9648698426ffa5cf4c72b0bc0b092128bdbf3449674399",
+    "oracle_sha256": "357c22aee929c58257826f04694199f5a54d6f5988e5d17c48eff6608c824e3b",
+    "continuous_factory_ordinals": [
+      19036,
+      19037
+    ]
+  },
+  "supplemental": {
+    "graphs": 68,
+    "compared_output_words": 10256,
+    "bit_identical_non_nan_words": 9934,
+    "matching_nan_classifications": 322,
+    "cpu_transcript_sha256": "a383f2d397abdf149c8c477717dc594fd0f179315f8a8221d40e187baa2e22bb",
+    "oracle": "Pinned GGML CPU objects from the imported portable oracle with contraction disabled.",
+    "oracle_sha256": "127f0fd0387eb1662f074f972086f74bcf86061a2348098efe1c8865a0bd9a92",
+    "source_and_target_shapes": [
+      [
+        [
+          14,
+          5,
+          3,
+          2
+        ],
+        [
+          2,
+          7,
+          2,
+          3
+        ]
+      ],
+      [
+        [
+          2,
+          7,
+          2,
+          3
+        ],
+        [
+          14,
+          5,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          1,
+          4,
+          3,
+          2
+        ],
+        [
+          2,
+          8,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          4,
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          1,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          5,
+          4,
+          14,
+          3
+        ],
+        [
+          7,
+          1,
+          2,
+          5
+        ]
+      ],
+      [
+        [
+          3,
+          5,
+          1,
+          14
+        ],
+        [
+          4,
+          2,
+          2,
+          2
+        ]
+      ],
+      [
+        [
+          65,
+          37,
+          2,
+          1
+        ],
+        [
+          2,
+          3,
+          2,
+          1
+        ]
+      ],
+      [
+        [
+          2,
+          2,
+          1,
+          1
+        ],
+        [
+          31,
+          17,
+          1,
+          1
+        ]
+      ]
+    ],
+    "views": "Run all eight shapes on ordinary and transposed one-word offset views with half-pixel or aligned corners, each with two input distributions.",
+    "input": "For backing index i use (((13*i+11)%41)-20)/2^(i%6). In the exceptional distribution replace i%37=0 with negative infinity, otherwise i%31=0 with negative zero, otherwise i%29=0 with a quiet NaN.",
+    "broadcast": "Four inputs [3,1,(1<<k)+14,1] for k in {31,40,49,56} use zero depth stride and source words [0x80000000,0x40400000,0x3f200000]. The output shape is [7,2,5,1].",
+    "refusals": "Surplus source and invalid flag words 255, 514 and 770 refuse admission and execution and preserve all output bytes.",
+    "interpolation": "GGML antialiased bilinear interpolation with clamped source windows, ordered binary32 triangle weights and normalization."
+  },
+  "mutation": "Terminating the graph at its first forward filter skip fails the continuous upstream antialiased comparison: [UPSCALE] ERR = 1.211315206 > 0.000000100."
+}

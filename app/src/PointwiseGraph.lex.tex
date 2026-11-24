@@ -168,7 +168,8 @@ inductive{
     {name: weightedKeys, fields: [Bool, Nat]},
     {name: nearest, fields: [Bool, Nat, Nat]},
     {name: bilinear, fields: [Bool, Nat, Nat]},
-    {name: bicubic, fields: [Bool, Nat, Nat]}
+    {name: bicubic, fields: [Bool, Nat, Nat]},
+    {name: antialias, fields: [Bool, Nat, Nat]}
   ]
 }
 
@@ -341,7 +342,7 @@ inductive{
     {name: gaussianF32Table, fields: [Nat]},
     {
       name: executionStep,
-      fields: [Nat, IndexContext, IndexContext, CopyMode, Nat, Nat, Nat, Nat, Nat, Nat]
+      fields: [Nat, IndexContext, IndexContext, CopyMode, Nat, Nat, Nat, Nat, Nat, Nat, Nat]
     }
   ]
 }
@@ -404,7 +405,8 @@ inductive{
     {name: instruction, fields: [WordOperation, WordOperand, WordOperand, WordTarget, Nat, Nat]},
     {name: sample, fields: [(Option Nat)]},
     {name: tableResult, fields: [(Option Nat)]},
-    {name: accumulateBlock, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: accumulateBlock, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: nextIndex, fields: [Nat]}
   ]
 }
 
@@ -2087,6 +2089,96 @@ definition{
 }
 
 definition{
+  name: filterWindowBound,
+  parameters: [size : Nat, target : Nat, align : Bool],
+  result: Nat,
+  body: (let numerator : Nat := (if (if ((1 <? size) && (1 <? target)) then align else false) then (prim subtract size 1 : Nat) else size);
+      (let denominator : Nat := (if (if ((1 <? size) && (1 <? target)) then align else false) then (prim subtract target 1 : Nat) else target);
+      (let ratio : Nat := (1 + (prim quotient (prim subtract numerator 1 : Nat) denominator 0 : Nat));
+      (let padding : Nat := (if (size <? 1048576) then 2 else (8 + (prim quotient size 1048576 0 : Nat)));
+      (if ((size <=? target) && (size <? 1048576)) then (if (size <? 3) then size else 3) else (if ((prim quotient size 2 0 : Nat) <? ratio) then size else (if (size <? ((prim multiply 2 ratio : Nat) + padding)) then size else ((prim multiply 2 ratio : Nat) + padding)))))))),
+  executable: true
+}
+
+definition{
+  name: filterFloorSize,
+  parameters: [size : Nat],
+  result: Nat,
+  body: (if (size <? 4611686018427387904) then (prim multiply 2 size : Nat) else 18446744073709551615),
+  executable: true
+}
+
+definition{
+  name: filterCoordinateSteps,
+  parameters: [size : Nat],
+  result: Nat,
+  body: (15 + (prim multiply 2 (prim subtract (bilinearCoordinateSteps (filterFloorSize size)) 11 : Nat) : Nat)),
+  executable: true
+}
+
+definition{
+  name: filterAxisSteps,
+  parameters: [size : Nat, target : Nat],
+  result: Nat,
+  body: (6 + (prim multiply target (filterCoordinateSteps size) : Nat)),
+  executable: true
+}
+
+definition{
+  name: filterAxisStep,
+  parameters: [index : Nat, start : Nat, size : Nat, target : Nat, align : Bool, inverseSlot : Nat, flag : Nat, auxiliary : Nat],
+  result: GraphResponse,
+  body: (if (index <? 3) then (resampleScaleStep index size target align) else (if (index =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 2) 4 4) else (if (index =? 4) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (if (flag <? 1065353216) then 1065353216 else flag)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 10) 4 4) else (if (index =? 5) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 10) (ctor WordTarget.scratch inverseSlot) 4 4) else (let pixel : Nat := (if align then 0 else 1056964608);
+      (let inner : Nat := (filterCoordinateSteps size);
+      (let relative : Nat := (prim subtract index 6 : Nat);
+      (let coordinate : Nat := (prim quotient relative inner 0 : Nat);
+      (let phase : Nat := (prim remainder relative inner 0 : Nat);
+      (let base : Nat := (start + (prim multiply 3 coordinate : Nat));
+      (let floorCount : Nat := (prim subtract (bilinearCoordinateSteps (filterFloorSize size)) 11 : Nat);
+      (if (phase <? 7) then (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.wide 3) (ctor WordOperand.immediate coordinate) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate pixel) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 4) 4 4) else (if (phase =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 4) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch base) 4 4) else (if (phase =? 4) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 4) (ctor WordOperand.scratch 10) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? 5) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate pixel) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (if (2147483648 <? flag) then 0 else (if (flag <? 1593835520) then flag else 1593835520))) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 5) 4 4))))))) else (if (phase <? (7 + floorCount)) then (bilinearFloorStep (prim subtract phase 7 : Nat) (filterFloorSize size) flag) else (if (phase <? (13 + floorCount)) then (if ((prim subtract phase (7 + floorCount) : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 6) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (if ((prim subtract phase (7 + floorCount) : Nat) =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (if (flag <? size) then flag else size)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4) else (if ((prim subtract phase (7 + floorCount) : Nat) =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch (base + 1)) 4 4) else (if ((prim subtract phase (7 + floorCount) : Nat) =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 4) (ctor WordOperand.scratch 10) (ctor WordTarget.scratch 0) 4 4) else (if ((prim subtract phase (7 + floorCount) : Nat) =? 4) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate pixel) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (if (2147483648 <? flag) then 0 else (if (flag <? 1593835520) then flag else 1593835520))) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 5) 4 4)))))) else (if (phase <? (13 + (prim multiply 2 floorCount : Nat))) then (bilinearFloorStep (prim subtract phase (13 + floorCount) : Nat) (filterFloorSize size) flag) else (if ((prim subtract phase (13 + (prim multiply 2 floorCount : Nat)) : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 6) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (prim subtract (if (flag <? size) then flag else size) auxiliary : Nat)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch (base + 2)) 4 4))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: antialiasStep,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, align : Bool, setup : Nat, flag : Nat, auxiliary : Nat],
+  result: GraphResponse,
+  body: (if (index <? setup) then (let axis0 : Nat := (filterAxisSteps (project source u0) (project destination u0));
+      (if (index <? axis0) then (filterAxisStep index 20 (project source u0) (project destination u0) align 14 flag auxiliary) else (let i1 : Nat := (prim subtract index axis0 : Nat);
+      (let axis1 : Nat := (filterAxisSteps (project source n1) (project destination n1));
+      (if (i1 <? axis1) then (filterAxisStep i1 (20 + (prim multiply 3 (project destination u0) : Nat)) (project source n1) (project destination n1) align 15 flag auxiliary) else (let i2 : Nat := (prim subtract i1 axis1 : Nat);
+      (let axis2 : Nat := (nearestAxisSteps (project source n2) (project destination n2));
+      (if (i2 <? axis2) then (nearestAxisStep i2 ((20 + (prim multiply 3 (project destination u0) : Nat)) + (prim multiply 3 (project destination n1) : Nat)) (project source n2) (project destination n2) (project source s2) false flag) else (let i3 : Nat := (prim subtract i2 axis2 : Nat);
+      (nearestAxisStep i3 (((20 + (prim multiply 3 (project destination u0) : Nat)) + (prim multiply 3 (project destination n1) : Nat)) + (project destination n2)) (project source n3) (project destination n3) (project source s3) false flag)))))))))) else (let maxX : Nat := (filterWindowBound (project source u0) (project destination u0) align);
+      (let maxY : Nat := (filterWindowBound (project source n1) (project destination n1) align);
+      (let perY : Nat := (9 + (prim multiply 14 maxX : Nat));
+      (let taps : Nat := (prim multiply maxY perY : Nat);
+      (let perX : Nat := (4 + taps);
+      (let perRow : Nat := (1 + (prim multiply perX (project destination u0) : Nat));
+      (let relative : Nat := (prim subtract index setup : Nat);
+      (let row : Nat := (prim quotient relative perRow 0 : Nat);
+      (let rowPhase : Nat := (prim remainder relative perRow 0 : Nat);
+      (let plane : Nat := (prim quotient row (project destination n1) 0 : Nat);
+      (let pixel : Nat := (if align then 0 else 1056964608);
+      (let vertical : Nat := ((20 + (prim multiply 3 (project destination u0) : Nat)) + (prim multiply 3 (prim remainder row (project destination n1) 0 : Nat) : Nat));
+      (let z : Nat := (((20 + (prim multiply 3 (project destination u0) : Nat)) + (prim multiply 3 (project destination n1) : Nat)) + (prim remainder plane (project destination n2) 0 : Nat));
+      (let w : Nat := ((((20 + (prim multiply 3 (project destination u0) : Nat)) + (prim multiply 3 (project destination n1) : Nat)) + (project destination n2)) + (prim quotient plane (project destination n2) 0 : Nat));
+      (if (rowPhase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch z) (ctor WordOperand.scratch w) (ctor WordTarget.scratch 7) 4 4) else (let at : Nat := (prim subtract rowPhase 1 : Nat);
+      (let x : Nat := (prim quotient at perX 0 : Nat);
+      (let phase : Nat := (prim remainder at perX 0 : Nat);
+      (let horizontal : Nat := (20 + (prim multiply 3 x : Nat));
+      (let packed : Nat := ((prim multiply row (project destination u0) : Nat) + x);
+      (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 11) 4 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 12) 4 4) else (if (phase <? (2 + taps)) then (let tapPhase : Nat := (prim subtract phase 2 : Nat);
+      (let sy : Nat := (prim quotient tapPhase perY 0 : Nat);
+      (let yPhase : Nat := (prim remainder tapPhase perY 0 : Nat);
+      (if (yPhase <? 9) then (if (yPhase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch (vertical + 2)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (if (yPhase =? 1) then (if (sy <? flag) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch (vertical + 1)) (ctor WordOperand.immediate sy) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.nextIndex (index + (prim subtract taps tapPhase : Nat)))) else (if (yPhase =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch 7) (ctor WordOperand.immediate (prim multiply flag (project source s1) : Nat)) (ctor WordTarget.scratch 16) 4 4) else (if (yPhase =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.wide 3) (ctor WordOperand.immediate flag) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (yPhase =? 4) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch vertical) (ctor WordTarget.scratch 0) 4 4) else (if (yPhase =? 5) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate pixel) (ctor WordTarget.scratch 0) 4 4) else (if (yPhase =? 6) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 15) (ctor WordTarget.scratch 2) 4 4) else (if (yPhase =? 7) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.immediate (prim remainder flag 2147483648 0 : Nat)) (ctor WordTarget.scratch 2) 4 4) else (if ((if (flag <? 2147483648) then flag else 0) =? 0) then (ctor GraphResponse.nextIndex (index + (prim subtract perY yPhase : Nat))) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (if (flag <? 2147483648) then flag else 0)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 13) 4 4)))))))))) else (let inner : Nat := (prim subtract yPhase 9 : Nat);
+      (let sx : Nat := (prim quotient inner 14 0 : Nat);
+      (let xPhase : Nat := (prim remainder inner 14 0 : Nat);
+      (if (xPhase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch (horizontal + 2)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (if (xPhase =? 1) then (if (sx <? flag) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch (horizontal + 1)) (ctor WordOperand.immediate sx) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.nextIndex (index + (prim subtract perY yPhase : Nat)))) else (if (xPhase =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch 16) (ctor WordOperand.immediate (prim multiply flag (project source s0) : Nat)) (ctor WordTarget.scratch 17) 4 4) else (if (xPhase =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.wide 3) (ctor WordOperand.immediate flag) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (xPhase =? 4) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch horizontal) (ctor WordTarget.scratch 0) 4 4) else (if (xPhase =? 5) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate pixel) (ctor WordTarget.scratch 0) 4 4) else (if (xPhase =? 6) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 14) (ctor WordTarget.scratch 2) 4 4) else (if (xPhase =? 7) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.immediate (prim remainder flag 2147483648 0 : Nat)) (ctor WordTarget.scratch 2) 4 4) else (if (xPhase =? 8) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.immediate (if (flag <? 2147483648) then flag else 0)) (ctor WordOperand.scratch 13) (ctor WordTarget.scratch 2) 4 4) else (if (xPhase =? 9) then (if (flag =? 0) then (ctor GraphResponse.nextIndex (index + (prim subtract 14 xPhase : Nat))) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate flag) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 18) 4 4)) else (if (xPhase =? 10) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 17) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (if (xPhase =? 11) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 flag) (ctor WordOperand.scratch 18) (ctor WordTarget.scratch 0) 4 4) else (if (xPhase =? 12) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 11) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 11) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 12) (ctor WordOperand.scratch 18) (ctor WordTarget.scratch 12) 4 4))))))))))))))))))))) else (if (phase =? (2 + taps)) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 12) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (if (flag =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 11) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset packed destination)) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 11) (ctor WordOperand.scratch 12) (ctor WordTarget.output (blockOffset packed destination)) 4 4))))))))))))))))))))))))))),
+  executable: true
+}
+
+definition{
   name: bicubicStep,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, align : Bool, setup : Nat, flag : Nat],
   result: GraphResponse,
@@ -2190,6 +2282,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.optimizer adam => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.antialias align slots setup => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.bicubic align slots setup => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.bilinear align slots setup => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.nearest align slots setup => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
@@ -2664,13 +2757,25 @@ definition{
 }
 
 definition{
+  name: filterRowSteps,
+  parameters: [input : TensorDescriptor, out : TensorDescriptor, align : Bool],
+  result: Nat,
+  body: (let maxX : Nat := (filterWindowBound (project input n0) (project out n0) align);
+      (let maxY : Nat := (filterWindowBound (project input n1) (project out n1) align);
+      (let perY : Nat := (9 + (prim multiply 14 maxX : Nat));
+      (let taps : Nat := (prim multiply maxY perY : Nat);
+      (1 + (prim multiply (4 + taps) (project out n0) : Nat)))))),
+  executable: true
+}
+
+definition{
   name: planResampling,
   parameters: [options : OperationParameters, input : TensorDescriptor, out : TensorDescriptor],
   result: PointwiseDecision,
   body: (let flags : Nat := (project options p0);
-      (let bicubic : Bool := ((prim remainder flags 256 0 : Nat) =? 2); (let bilinear : Bool := ((prim remainder flags 256 0 : Nat) =? 1); (let slots : Nat := (if bicubic then ((((prim multiply 8 (project out n0) : Nat) + (prim multiply 8 (project out n1) : Nat)) + (project out n2)) + (project out n3)) else (if bilinear then ((((prim multiply 4 (project out n0) : Nat) + (prim multiply 4 (project out n1) : Nat)) + (project out n2)) + (project out n3)) else ((((project out n0) + (project out n1)) + (project out n2)) + (project out n3))));
-      (let setup : Nat := (if bicubic then ((((cubicAxisSteps (project input n0) (project out n0)) + (cubicAxisSteps (project input n1) (project out n1))) + (nearestAxisSteps (project input n2) (project out n2))) + (nearestAxisSteps (project input n3) (project out n3))) else (if bilinear then ((((bilinearAxisSteps (project input n0) (project out n0)) + (bilinearAxisSteps (project input n1) (project out n1))) + (nearestAxisSteps (project input n2) (project out n2))) + (nearestAxisSteps (project input n3) (project out n3))) else ((((nearestAxisSteps (project input n0) (project out n0)) + (nearestAxisSteps (project input n1) (project out n1))) + (nearestAxisSteps (project input n2) (project out n2))) + (nearestAxisSteps (project input n3) (project out n3)))));
-      (if (((((((((project input ty) =? 0) && ((project out ty) =? 0)) && (0 <? (blockCount input 1))) && (0 <? (blockCount out 1))) && (signedCopySpan input (blockCount input 1))) && (signedCopySpan out (blockCount out 1))) && (separateTensors input out)) && (((prim remainder flags 256 0 : Nat) <? 3) && (flags <? 512))) then (ctor PointwiseDecision.copyBlocks (setup + (prim multiply (prim quotient (blockCount out 1) (project out n0) 0 : Nat) (if bicubic then (5 + (prim multiply 51 (project out n0) : Nat)) else (if bilinear then (3 + (prim multiply 15 (project out n0) : Nat)) else (2 + (prim multiply 2 (project out n0) : Nat)))) : Nat)) 4 (indexContext input 1) (indexContext out 1) (if bicubic then (ctor CopyMode.bicubic ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1) slots setup) else (if bilinear then (ctor CopyMode.bilinear ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1) slots setup) else (ctor CopyMode.nearest ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1) slots setup)))) else (ctor PointwiseDecision.invalidShape))))))),
+      (let antialias : Bool := ((flags =? 513) || (flags =? 769)); (let bicubic : Bool := ((prim remainder flags 256 0 : Nat) =? 2); (let bilinear : Bool := ((prim remainder flags 256 0 : Nat) =? 1); (let slots : Nat := (if antialias then ((((prim multiply 3 (project out n0) : Nat) + (prim multiply 3 (project out n1) : Nat)) + (project out n2)) + (project out n3)) else (if bicubic then ((((prim multiply 8 (project out n0) : Nat) + (prim multiply 8 (project out n1) : Nat)) + (project out n2)) + (project out n3)) else (if bilinear then ((((prim multiply 4 (project out n0) : Nat) + (prim multiply 4 (project out n1) : Nat)) + (project out n2)) + (project out n3)) else ((((project out n0) + (project out n1)) + (project out n2)) + (project out n3)))));
+      (let setup : Nat := (if antialias then ((((filterAxisSteps (project input n0) (project out n0)) + (filterAxisSteps (project input n1) (project out n1))) + (nearestAxisSteps (project input n2) (project out n2))) + (nearestAxisSteps (project input n3) (project out n3))) else (if bicubic then ((((cubicAxisSteps (project input n0) (project out n0)) + (cubicAxisSteps (project input n1) (project out n1))) + (nearestAxisSteps (project input n2) (project out n2))) + (nearestAxisSteps (project input n3) (project out n3))) else (if bilinear then ((((bilinearAxisSteps (project input n0) (project out n0)) + (bilinearAxisSteps (project input n1) (project out n1))) + (nearestAxisSteps (project input n2) (project out n2))) + (nearestAxisSteps (project input n3) (project out n3))) else ((((nearestAxisSteps (project input n0) (project out n0)) + (nearestAxisSteps (project input n1) (project out n1))) + (nearestAxisSteps (project input n2) (project out n2))) + (nearestAxisSteps (project input n3) (project out n3))))));
+      (if (((((((((project input ty) =? 0) && ((project out ty) =? 0)) && (0 <? (blockCount input 1))) && (0 <? (blockCount out 1))) && (signedCopySpan input (blockCount input 1))) && (signedCopySpan out (blockCount out 1))) && (separateTensors input out)) && ((((prim remainder flags 256 0 : Nat) <? 3) && (flags <? 512)) || antialias)) then (ctor PointwiseDecision.copyBlocks (setup + (prim multiply (prim quotient (blockCount out 1) (project out n0) 0 : Nat) (if antialias then (filterRowSteps input out ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1)) else (if bicubic then (5 + (prim multiply 51 (project out n0) : Nat)) else (if bilinear then (3 + (prim multiply 15 (project out n0) : Nat)) else (2 + (prim multiply 2 (project out n0) : Nat))))) : Nat)) 4 (indexContext input 1) (indexContext out 1) (if antialias then (ctor CopyMode.antialias ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1) slots setup) else (if bicubic then (ctor CopyMode.bicubic ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1) slots setup) else (if bilinear then (ctor CopyMode.bilinear ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1) slots setup) else (ctor CopyMode.nearest ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1) slots setup))))) else (ctor PointwiseDecision.invalidShape)))))))),
   executable: true
 }
 
@@ -2750,6 +2855,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.bindings 7 0 0 false 3)
     | CopyMode.optimizer adam => (ctor GraphResponse.bindings (if adam then 31 else 7) 0 0 false 12)
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.bindings (if backward then 7 else 3) 0 0 false 7)
+    | CopyMode.antialias align slots setup => (ctor GraphResponse.bindings 1 0 0 false (20 + slots))
     | CopyMode.bicubic align slots setup => (ctor GraphResponse.bindings 1 0 0 false (12 + slots))
     | CopyMode.bilinear align slots setup => (ctor GraphResponse.bindings 1 0 0 false (8 + slots))
     | CopyMode.nearest align slots setup => (ctor GraphResponse.bindings 1 0 0 false (4 + slots))
@@ -2809,6 +2915,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.antialias align slots setup => 0
     | CopyMode.bicubic align slots setup => 0
     | CopyMode.bilinear align slots setup => 0
     | CopyMode.nearest align slots setup => 0
@@ -2892,6 +2999,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor WordOperation.invalid)
     | CopyMode.optimizer adam => (ctor WordOperation.invalid)
     | CopyMode.crossEntropy backward labelStride rows => (ctor WordOperation.invalid)
+    | CopyMode.antialias align slots setup => (ctor WordOperation.invalid)
     | CopyMode.bicubic align slots setup => (ctor WordOperation.invalid)
     | CopyMode.bilinear align slots setup => (ctor WordOperation.invalid)
     | CopyMode.nearest align slots setup => (ctor WordOperation.invalid)
@@ -2951,6 +3059,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.antialias align slots setup => 0
     | CopyMode.bicubic align slots setup => 0
     | CopyMode.bilinear align slots setup => 0
     | CopyMode.nearest align slots setup => 0
@@ -3011,6 +3120,7 @@ definition{
   body: (match response
     | GraphResponse.sample address => (ctor GraphResponse.sample address)
     | GraphResponse.tableResult word => (ctor GraphResponse.tableResult word)
+    | GraphResponse.nextIndex target => (ctor GraphResponse.nextIndex target)
     | GraphResponse.accumulateBlock kind from bytes to lanes stride => (ctor GraphResponse.accumulateBlock kind from bytes to lanes stride)
     | GraphResponse.planned decision => (ctor GraphResponse.planned decision)
     | GraphResponse.offsets choosingRight from to => (ctor GraphResponse.offsets choosingRight from to)
@@ -3289,6 +3399,7 @@ definition{
     destination : IndexContext,
     mode : CopyMode,
     flag : Nat,
+    auxiliary : Nat,
     modeled : Bool,
     bytes : Nat,
     x0 : Nat,
@@ -3317,6 +3428,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (hyperconnectionCombinationStep index source scale base destination eps iterations flag)
     | CopyMode.optimizer adam => (optimizerStep index source adam)
     | CopyMode.crossEntropy backward labelStride rows => (crossEntropyStep index source destination backward labelStride rows flag)
+    | CopyMode.antialias align slots setup => (antialiasStep index source destination align setup flag auxiliary)
     | CopyMode.bicubic align slots setup => (bicubicStep index source destination align setup flag)
     | CopyMode.bilinear align slots setup => (bilinearStep index source destination align setup flag)
     | CopyMode.nearest align slots setup => (nearestStep index source destination align setup flag)
@@ -3362,7 +3474,7 @@ definition{
     flag : Nat
   ],
   result: GraphResponse,
-  body: (executionStep index source destination mode flag false 0 0 0 0 0),
+  body: (executionStep index source destination mode flag 0 false 0 0 0 0 0),
   executable: true
 }
 
@@ -3409,7 +3521,7 @@ definition{
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
-    | GraphRequest.executionStep index source destination mode flag bytes x0 x1 x2 x3 => (executionStep index source destination mode flag true bytes x0 x1 x2 x3)
+    | GraphRequest.executionStep index source destination mode flag auxiliary bytes x0 x1 x2 x3 => (executionStep index source destination mode flag auxiliary true bytes x0 x1 x2 x3)
     | GraphRequest.bindings mode => (sourceBindings mode)
     | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),
   executable: true,

@@ -234,6 +234,7 @@ model does not sanction.
 | `VT-144` | `build` | Prism models GGML nearest-neighbor resampling on four strided axes with Verdant binary32 coordinates |
 | `VT-145` | `build` | Prism models GGML bilinear interpolation on strided tensors with Verdant binary32 pixel weights |
 | `VT-146` | `build` | Prism models GGML bicubic convolution weights and strided sampling through Verdant against the pinned CPU |
+| `VT-147` | `build` | Prism models GGML antialiased bilinear filtering across bounded source windows through Verdant against the pinned CPU |
 
 ## normalization-graphs
 

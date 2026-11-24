@@ -948,3 +948,9 @@ id = "VT-146"
 level = "build"
 suite = "native-backend"
 statement = "Prism models GGML bicubic convolution weights and strided sampling through Verdant against the pinned CPU"
+
+[[id]]
+id = "VT-147"
+level = "build"
+suite = "native-backend"
+statement = "Prism models GGML antialiased bilinear filtering across bounded source windows through Verdant against the pinned CPU"

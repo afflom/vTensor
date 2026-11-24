@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn antialiased_resampling_vt_147() { "upstream-UPSCALE_ANTIALIAS", 2, ["pointwise"] }
     fn bicubic_resampling_vt_146() { "upstream-UPSCALE_BICUBIC", 5, ["pointwise"] }
     fn bilinear_resampling_vt_145() { "upstream-UPSCALE_BILINEAR", 5, ["pointwise"] }
     fn nearest_resampling_vt_144() { "upstream-UPSCALE_NEAREST", 2, ["pointwise"] }
@@ -1297,7 +1298,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "99c2c97781be3f0ea06b2b14f3bf859cbf8edf855121a9c1413221eab224edfd",
+            "a7425e942c8e3b6c348a5956afff6e85ccfdda2dfbd4b4fa12cc42ad5ae2472d",
         )
     });
 
@@ -1647,14 +1648,6 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
 }
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     vtensor_observation observed;size_t cases=0;
-    for (auto [label,mode] : {std::pair{"UPSCALE_NEAREST",GGML_SCALE_MODE_NEAREST},
-                              std::pair{"UPSCALE_BILINEAR",GGML_SCALE_MODE_BILINEAR},
-                              std::pair{"UPSCALE_BICUBIC",GGML_SCALE_MODE_BICUBIC}}) {
-      if (strcmp(op,label)) continue;
-      test_interpolate rounding(GGML_TYPE_F32,{14,5,3,2},{2,7,2,3},mode);
-      vtensor_observation control;
-      if (rounding.eval(backend,reference,nullptr,&control)!=test_status_t::OK || control.bad || control.records!=1) return SIZE_MAX;
-    }
     decltype(make_test_cases_eval()) tests;
     if (!strcmp(op,"POOL_HALF_INPUT")) {
       for (ggml_op_pool kind : {GGML_OP_POOL_AVG, GGML_OP_POOL_MAX}) {
@@ -1679,6 +1672,13 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for (size_t i:selected) {
       if (i>=tests.size() || seen[i]) return SIZE_MAX;
       seen[i]=true;
+    }
+    if (!strncmp(op,"UPSCALE_",8)) {
+      auto first=selected.empty() ? nullptr : dynamic_cast<test_interpolate *>(tests[selected.front()].get());
+      if (!first) return SIZE_MAX;
+      test_interpolate rounding(GGML_TYPE_F32,{14,5,3,2},{2,7,2,3},first->mode);
+      vtensor_observation control;
+      if (rounding.eval(backend,reference,nullptr,&control)!=test_status_t::OK || control.bad || control.records!=1) return SIZE_MAX;
     }
     for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
       const size_t i=selected.empty()?pos:selected[pos];

@@ -542,3 +542,9 @@ Feature: native-backend
     Given a strided four-dimensional GGML input
     When GGML selects bicubic interpolation with either corner convention
     Then vTensor matches the four-by-four CPU convolution at each output sample
+
+  @VT-147 @build
+  Scenario: Prism models GGML antialiased bilinear filtering across bounded source windows through Verdant against the pinned CPU
+    Given a strided four-dimensional GGML input
+    When GGML selects antialiased bilinear interpolation with either corner convention
+    Then vTensor matches the normalized CPU filter at each output sample
