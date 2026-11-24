@@ -1433,7 +1433,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     };
     let mut values = workspace(width, 0.0)?;
     let addend = if adding { tensor.input(1)? } else { None };
-    let mut addends = workspace(if adding { width } else { 0 }, 0.0)?;
+    let mut addends = workspace(addend.as_ref().map_or(0, |input| input.ne[0] as u64), 0.0)?;
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
@@ -1449,7 +1449,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                         .as_ref()
                         .ok_or(InvalidTensor)?
                         .decode(offset, &mut addends)?;
-                    for (value, add) in values.iter_mut().zip(&addends) {
+                    for (value, add) in values.iter_mut().zip(addends.iter().cycle()) {
                         *value = linear::evaluate_f32_scalar(0, *value, *add)?;
                     }
                 }

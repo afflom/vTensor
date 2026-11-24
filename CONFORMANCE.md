@@ -261,6 +261,7 @@ model does not sanction.
 | `VT-171` | `build` | Stored Q8 activations retain their original GGML row products across all documented accumulation and activation precision settings |
 | `VT-172` | `build` | Ordinary F16 and indexed BF16 matrix products consume BF16 activation rows at their stored precision |
 | `VT-173` | `build` | Packed addition broadcasts repeated rows along three GGML axes before encoding or updating the destination |
+| `VT-174` | `build` | Copied and in-place packed GGML addition repeats scalar and partial-width addends across all four axes |
 
 ## normalization-graphs
 

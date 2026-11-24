@@ -704,3 +704,9 @@ Feature: native-backend
     Given two encoded source rows and four distinct F32 addend rows tiled along three axes
     When GGML schedules copied and in-place packed additions on vTensor
     Then all stored bytes agree with an original CPU REPEAT followed by the original packed addition
+
+  @VT-174 @build
+  Scenario: Copied and in-place packed GGML addition repeats scalar and partial-width addends across all four axes
+    Given 18 CPU-encodable packed GGML weight formats and finite F32 addends of one or half a row
+    When the unmodified scheduler places each copied and in-place four-axis broadcast on vTensor
+    Then every stored byte in 72 graphs matches the original CPU repeat and addition kernels

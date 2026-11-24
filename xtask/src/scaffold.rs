@@ -18,7 +18,7 @@ use crate::Fail;
 const LEVELS: [&str; 3] = ["some-true", "build", "open"];
 
 /// What one invocation writes.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, serde::Serialize)]
 pub struct Capability {
     /// The conformance ID, such as `CX-01`.
     pub id: String,
@@ -94,14 +94,9 @@ fn id_is_well_formed(id: &str) -> bool {
         && number.bytes().all(|b| b.is_ascii_digit())
 }
 
-/// A TOML basic string.
-fn toml_string(value: &str) -> String {
-    toml::Value::String(value.to_owned()).to_string()
-}
-
 /// `model/ids.toml` with the row appended. The empty register is written as
 /// `id = []`, which cannot coexist with an `[[id]]` table, so that line goes.
-fn register_with(ids: &str, c: &Capability) -> String {
+fn register_with(ids: &str, c: &Capability) -> Result<String, toml::ser::Error> {
     let mut out: String = ids
         .lines()
         .filter(|line| line.trim() != "id = []")
@@ -110,14 +105,9 @@ fn register_with(ids: &str, c: &Capability) -> String {
     while out.ends_with("\n\n") {
         out.pop();
     }
-    out.push_str(&format!(
-        "\n[[id]]\nid = {}\nlevel = {}\nsuite = {}\nstatement = {}\n",
-        toml_string(&c.id),
-        toml_string(&c.level),
-        toml_string(&c.suite),
-        toml_string(&c.statement),
-    ));
-    out
+    out.push_str("\n[[id]]\n");
+    out.push_str(&toml::to_string(c)?);
+    Ok(out)
 }
 
 fn scenario(c: &Capability) -> String {
@@ -161,7 +151,7 @@ pub fn new_capability(root: &Path, args: &[String]) -> Result<(), Fail> {
 
     let (ids_path, feature_path, test_path) = paths(root, &c);
     let ids_before = std::fs::read_to_string(&ids_path)?;
-    std::fs::write(&ids_path, register_with(&ids_before, &c))?;
+    std::fs::write(&ids_path, register_with(&ids_before, &c)?)?;
     let model = match Model::load(&root.join("model")).and_then(|m| m.check().map(|()| m)) {
         Ok(model) => model,
         Err(error) => {
@@ -273,7 +263,8 @@ mod tests {
     fn malformed_or_duplicate_capabilities_write_nothing() {
         let fixture = scratch("bad");
         let root = &fixture.root;
-        let ids = std::fs::read_to_string(root.join("model/ids.toml")).unwrap();
+        let register = || std::fs::read_to_string(root.join("model/ids.toml")).unwrap();
+        let ids = register();
         let invalid: [Vec<String>; 9] = pinned_fixture!(
             "scaffold-invalid-arguments",
             "fc93df63dedd481e217c462b7ccf7b46cdfca33829ca1dd06b87a6a1268882bf"
@@ -284,26 +275,20 @@ mod tests {
                 "{arguments:?} was accepted"
             );
         }
-        assert_eq!(
-            std::fs::read_to_string(root.join("model/ids.toml")).unwrap(),
-            ids
-        );
+        assert_eq!(register(), ids);
         assert!(!root.join("features/suites/parsing.feature").exists());
 
         new_capability(root, &args(["CX-01", "build", "parsing", "first"])).unwrap();
-        let once = std::fs::read_to_string(root.join("model/ids.toml")).unwrap();
+        let once = register();
         assert!(new_capability(root, &args(["CX-01", "open", "other", "again"])).is_err());
-        assert_eq!(
-            std::fs::read_to_string(root.join("model/ids.toml")).unwrap(),
-            once
-        );
+        assert_eq!(register(), once);
         assert!(!root.join("features/suites/other.feature").exists());
     }
 
     #[test]
     fn the_empty_register_becomes_a_table() {
         let c = Capability::parse(&args(["CX-01", "build", "s", "x"])).unwrap();
-        let out = register_with("spec = \"template/1\"\n\nid = []\n", &c);
+        let out = register_with("spec = \"template/1\"\n\nid = []\n", &c).unwrap();
         assert!(!out.contains("id = []"));
         assert!(out.ends_with(
             "[[id]]\nid = \"CX-01\"\nlevel = \"build\"\nsuite = \"s\"\nstatement = \"x\"\n"

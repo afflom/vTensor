@@ -1110,3 +1110,9 @@ id = "VT-173"
 level = "build"
 suite = "native-backend"
 statement = "Packed addition broadcasts repeated rows along three GGML axes before encoding or updating the destination"
+
+[[id]]
+id = "VT-174"
+level = "build"
+suite = "native-backend"
+statement = "Copied and in-place packed GGML addition repeats scalar and partial-width addends across all four axes"

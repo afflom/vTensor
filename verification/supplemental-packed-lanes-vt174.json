@@ -1,0 +1,31 @@
+{
+  "requirement": "VT-174",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "semantic_id": "f0f6f698cda5e95556eee2e22ab652c27eeb1990645db29e813b8d75ddd07fe9",
+  "attestation": "eaba92b6a8453fd2c2c8f71248c56450cf38e4463649e36d7b3a6d8c9376dcf1",
+  "provider_sha256": "1b19ddb1110ee65b3f31df1bec3153335683152f4dc7e7944de7765b00705821",
+  "oracle": "GGML CPU REPEAT followed by equal-shaped ADD",
+  "types": 18,
+  "rhs_widths": [
+    "one",
+    "half the left width"
+  ],
+  "left_shape": [
+    "width",
+    4,
+    4,
+    2
+  ],
+  "rhs_shape": [
+    "period",
+    2,
+    2,
+    1
+  ],
+  "copied_graphs": 36,
+  "inplace_graphs": 36,
+  "comparison": "Every stored output byte in every graph",
+  "fixtures": "ggml-packed-add",
+  "negative_control": "Forcing type 42 to reuse only the first addend failed on a half-width period. The restored provider passed all 72 graphs.",
+  "source_lines": 12639
+}
