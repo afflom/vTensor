@@ -1,0 +1,136 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "authority_files": [
+    "src/models/mamba.cpp",
+    "src/models/mamba-base.cpp",
+    "examples/simple/simple.cpp"
+  ],
+  "implementation": "VT-150 candidate",
+  "prism_attention_result": "82a5231fa2c36c5db3444fd6dcd9c4097340f8b5cdf9cb008b656e7b845cc447",
+  "verdant_revision": "793ea05996c4e48dd3a221fb59480c9382901412",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/58",
+  "provider_sha256": "12f77ebd85bfb08e0d2eab1c4001c28f94e4282ac9c355fcd434cedc99f9baed",
+  "provider_inputs_sha256": "37a0634322394f836be3ec00ef5ecee9113f4bdc9d55ef2206e5803e2fc9ca25",
+  "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
+  "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "model": {
+    "architecture": "mamba",
+    "label": "Deterministic synthetic GGUF for the original llama.cpp Mamba model loader and graph builder.",
+    "sha256": "211046273dd3a19d4e1ad4b5a58621b88a093e56e6258eae7070e8966e570a6a",
+    "bytes": 2800640,
+    "tokenizer": {
+      "source": "stories15M.gguf",
+      "sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+      "fields": "All tokenizer.* metadata copied in source order."
+    },
+    "geometry": {
+      "embedding": 16,
+      "blocks": 2,
+      "inner": 32,
+      "state": 16,
+      "conv_kernel": 4,
+      "time_step_rank": 2,
+      "context": 256,
+      "vocabulary": 32000
+    },
+    "weights": "F32 in upstream dimension order. Start u32 seed=97. For every lane advance seed=(1664525*seed+1013904223) mod 2^32 and use v=((seed>>20)-2048)/8192. Norm weights use v+1 and ssm_a uses -abs(v)-0.125. The output projection is tied to the input embedding.",
+    "tensor_order": [
+      "token_embd.weight",
+      "output_norm.weight"
+    ],
+    "per_layer_order": [
+      "attn_norm.weight",
+      "ssm_in.weight",
+      "ssm_conv1d.weight",
+      "ssm_conv1d.bias",
+      "ssm_x.weight",
+      "ssm_dt.weight",
+      "ssm_dt.bias",
+      "ssm_a",
+      "ssm_d",
+      "ssm_out.weight"
+    ],
+    "rms_epsilon": 1e-05
+  },
+  "multi_sequence": {
+    "prompt_ids": [
+      [
+        17,
+        29,
+        41,
+        53
+      ],
+      [
+        13,
+        37,
+        59,
+        71
+      ]
+    ],
+    "settings": "Two sequences, one thread, two-token prefill followed by two single-token decodes. Compare all logits, each SSM_SCAN and SSM_CONV result, and every executed copy to a recurrent cache.",
+    "harness_source_sha256": "74528f1954531c45d8ab1afdba136a5bff3b30a1fc9a018897c4ddc78606121a",
+    "runner_sha256": "425ae5029c3f3d451e49dfa46a89e23de5265b2ad228e0eb16f658d7d1bfacc4",
+    "top_ids": [
+      27163,
+      37,
+      26484,
+      59,
+      13811,
+      71
+    ],
+    "comparisons": {
+      "logits": {
+        "words": 192000,
+        "nmse": 4.2767042840641075e-15,
+        "max_absolute_error": 2.384185791015625e-07
+      },
+      "scan": {
+        "words": 6656,
+        "nmse": 2.096004141916116e-14,
+        "max_absolute_error": 1.1175870895385742e-08
+      },
+      "conv": {
+        "words": 512,
+        "nmse": 8.30434707390922e-15,
+        "max_absolute_error": 8.940696716308594e-08
+      },
+      "cache": {
+        "words": 7296,
+        "nmse": 4.298964825088955e-15,
+        "max_absolute_error": 1.6391277313232422e-07
+      }
+    }
+  },
+  "simple": {
+    "command": "llama-simple -m tiny-mamba-f32.gguf -n 8 -ngl 0 \"The small model\"",
+    "tokens": 8,
+    "executable_sha256": "18ca7f55aeaedb6e32bb223ef4d4e2c0c6fb63c3b12690abfd4ccea8ec0f8b57",
+    "stdout_sha256": "14b3fe28432d1eb4e2284362ac7d6c7f2c20ef784d75fe9cfad2bba3e06d5d0a"
+  },
+  "runs": {
+    "cpu": {
+      "placements": 339,
+      "active_placements": 330,
+      "snapshots": {
+        "cache": 24,
+        "conv": 6,
+        "scan": 6
+      },
+      "placement_transcript_sha256": "460830b6d78173cc27ca558598334fc297fe3542ca656d7abd335a2d1507f3c4",
+      "logits_sha256": "bfc3102930b30086f376f8cb8d44e4bdd73a71220dec8b24c736b1aee9df37b5",
+      "state_transcript_sha256": "ca59986cba47c44e5ab8583f6278389c3c27df5423bdf6ce8b0d1e304c14749f"
+    },
+    "vtensor": {
+      "placements": 339,
+      "active_placements": 330,
+      "snapshots": {
+        "cache": 24,
+        "conv": 6,
+        "scan": 6
+      },
+      "placement_transcript_sha256": "95a05bb8fde1e4e5280d0c7a75b856b1cc68c3e70d5aa62a8baff172202a8ef3",
+      "logits_sha256": "db387f39c726a713bd0b871a008b92017e5251e69b303c0f5993bec3beac52af",
+      "state_transcript_sha256": "88a49857421c4bdb4e7732dec2c04daa26d63be8ac8eea08e22dc6345c82f87e"
+    }
+  }
+}
