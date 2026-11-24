@@ -464,3 +464,9 @@ Feature: native-backend
     Given floating point values and a grouped three-bit destination
     When GGML copies values or updates indexed rows
     Then the resulting tensor matches the imported CPU encoder
+
+  @VT-134 @build
+  Scenario: Prism schedules batched lower triangular solves and Verdant performs forward substitution against GGML CPU
+    Given a lower triangular matrix and one or more right-hand columns in each batch
+    When vTensor solves each row from the previously computed solution
+    Then all solution words match the pinned GGML CPU evaluator

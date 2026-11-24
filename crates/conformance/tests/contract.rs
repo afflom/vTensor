@@ -37,7 +37,7 @@ macro_rules! ggml_batches {
             $(#[$doc])*
             fn $name() {
                 let root = root();
-                $(tensor_layout::certified_current_model(&root, $model);)*
+                $(tensor_layout::certified_current_model($model);)*
                 $($probe;)?
                 native_backend_oracle::verify(&root, $mode, $cases);
             }
@@ -338,6 +338,8 @@ ggml_batches! {
     #[test]
     fn grouped_affine_writes_vt_122() { "upstream-GROUPED_AFFINE_WRITES", 6, ["typed"] }
     #[test]
+    fn triangular_solve_vt_134() { "upstream-SOLVE_TRI_BOUNDARIES", 3, ["pointwise"] }
+    #[test]
     fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
     #[test]
     fn grouped_six_writes_vt_119() { "upstream-GROUPED_SIX_WRITES", 2, ["typed"] }
@@ -577,7 +579,7 @@ fn probes(
     block: u64,
     bytes: u64,
 ) -> impl Iterator<Item = vtensor_probes::Adt0> {
-    tensor_layout::certified_current_model(&root(), "probes");
+    tensor_layout::certified_current_model("probes");
     let query = move |index| vtensor_probes::run(suite, index, block, bytes).unwrap();
     assert!(matches!(query(count), vtensor_probes::Adt0::C0));
     (0..count).map(query)
@@ -585,7 +587,7 @@ fn probes(
 
 fn fixture_queries(suite: u64, count: u64) {
     let spatial = suite == 47;
-    tensor_layout::certified_current_model(&root(), if spatial { "spatial" } else { "arithmetic" });
+    tensor_layout::certified_current_model(if spatial { "spatial" } else { "arithmetic" });
     for probe in probes(suite, count, 0, 0) {
         let vtensor_probes::Adt0::C1(query, case, source, item, expected) = probe else {
             panic!("missing fixture probe");
@@ -606,7 +608,7 @@ fn boundary_rows<const N: usize, const M: usize>(
     unpack: impl Fn(vtensor_probes::Adt0) -> [u64; N],
 ) -> impl Iterator<Item = ([u64; N], [u64; M])> {
     use std::fmt::Write;
-    tensor_layout::certified_current_model(&root(), "layout");
+    tensor_layout::certified_current_model("layout");
     let rows: Vec<_> = probes(suite, count, 0, 0).map(unpack).collect();
     let mut input = String::new();
     for row in &rows {
@@ -653,6 +655,12 @@ fn normalization_arithmetic_vt_45() {
     let mean = divide(widen(16777217), widen(5));
     assert_eq!(evaluate_wide(2, mean, 0).unwrap(), Some(0x4a4cccce));
     assert_eq!(evaluate_wide(6, 0, 0).unwrap(), None);
+}
+
+fn assert_model_identity(name: &str, model: &serde_json::Value, source: &serde_json::Value) {
+    for key in ["source_id", "semantic_id"] {
+        assert_eq!(model[key], source[key], "stale {name} model: {key}");
+    }
 }
 
 // Hash the compiler's own recipe tokens. A change to either the cached
@@ -1245,38 +1253,34 @@ mod oracle_import {
 mod tensor_layout {
 
     use super::ggml_oracle;
-    use std::{collections::BTreeSet, path::PathBuf, sync::Mutex};
+    use std::{
+        collections::BTreeMap,
+        sync::{Arc, Mutex, OnceLock},
+    };
 
     use vtensor_layout::{run, Adt0, Adt1, Overflow};
 
-    pub(super) fn certified_current_model(root: &std::path::Path, name: &str) {
-        static VERIFIED: Mutex<BTreeSet<(PathBuf, String)>> = Mutex::new(BTreeSet::new());
-        let mut verified = VERIFIED
-            .lock()
-            .expect("a failed certificate poisons the cache");
-        if !verified.insert((root.canonicalize().unwrap(), name.to_owned())) {
-            return;
-        }
-        let primary = if name == "native" {
-            "vtensor_native_config".into()
+    pub(super) fn certified_current_model(name: &'static str) {
+        static SCOPES: Mutex<BTreeMap<&str, Arc<OnceLock<()>>>> = Mutex::new(BTreeMap::new());
+        let scope = SCOPES.lock().unwrap().entry(name).or_default().clone();
+        scope.get_or_init(|| verify_scope(&super::root(), name));
+    }
+
+    fn verify_scope(root: &std::path::Path, name: &str) {
+        let package = if name == "native" {
+            "native_config"
         } else {
-            format!("vtensor_{name}")
+            name
         };
-        let project = if name == "layout" {
-            "app/lexlean.toml".to_owned()
-        } else {
-            format!("app/{name}.lexlean.toml")
+        let project = match name {
+            "layout" => "app/lexlean.toml".to_owned(),
+            _ => format!("app/{name}.lexlean.toml"),
         };
         let bundle = format!("generated/{name}");
         let result = ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
         let flags = ["--project", &project, "--diagnostic-format=json", "check"];
         let current = ggml_oracle::tool_json(root, "lexlean", &flags);
-        for key in ["source_id", "semantic_id"] {
-            assert_eq!(
-                current[key], result["source"][key],
-                "stale {name} model: {key}"
-            );
-        }
+        super::assert_model_identity(name, &current, &result["source"]);
         let lock_digest = ggml_oracle::file_digest(root.join(project).with_extension("lock"));
         assert_eq!(result["source"]["lock_sha256"], lock_digest);
         let request = ggml_oracle::read_json(root.join(format!("app/{name}-production.json")));
@@ -1298,7 +1302,7 @@ mod tensor_layout {
             kernel_lock["source"]["attestation"],
             result["verification"]["attestation_id"]
         );
-        let output = format!("{bundle}/packages/rust-core/{primary}/src/lib.rs");
+        let output = format!("{bundle}/packages/rust-core/vtensor_{package}/src/lib.rs");
         let certified_files: Vec<_> = exported.iter()
         .flat_map(|root| root["outputs"].as_array().expect("outputs"))
         .flat_map(|output| output["package"]["files"].as_array().expect("files").iter().filter(|file| file["path"].as_str().expect("path").ends_with(".rs")).chain(std::iter::once(&output["crate"])))
@@ -1319,7 +1323,7 @@ mod tensor_layout {
     }
 
     static STORAGE_METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
-        certified_current_model(&super::root(), "layout");
+        certified_current_model("layout");
         let kinds = &*super::ggml_inventory::STORAGE_TYPES;
         let input: String = kinds
             .iter()
@@ -1448,12 +1452,7 @@ mod verdant_api {
         let args = ["verdant-quotient-check", root.to_str().unwrap(), image];
         let check = tool_json(&super::root(), "just", &args);
         let result = read_json(root.join("generated/tensor-quotient/result.json"));
-        for key in ["source_id", "semantic_id"] {
-            assert_eq!(
-                check[key], result["source"][key],
-                "stale Verdant quotient {key}"
-            );
-        }
+        super::assert_model_identity("Verdant quotient", &check, &result["source"]);
     }
 
     /// `VT-02`: The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services
@@ -1554,7 +1553,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "8455ac988795c2528d5e33c67ad180570ebd27b0799af589df56c2b0baa6c47c",
+            "94462cfcd4ba4b93935f06d376010e52fee45c174e156412b29f8eda3885d411",
         )
     });
 
@@ -1577,7 +1576,7 @@ mod native_backend_oracle {
             use vtensor_fixture_stream::{Adt0 as Cursor, Adt1 as Step};
             let record =
                 ["matrix-fixture-baseline", "arithmetic-fixture-baseline"][family as usize];
-            super::tensor_layout::certified_current_model(&super::root(), "fixtures");
+            super::tensor_layout::certified_current_model("fixtures");
             let baseline = fixture_record(record);
             let mut input = Vec::new();
             let mut cursor = Cursor::C0;
@@ -1623,7 +1622,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         static LIBRARIES: Mutex<BTreeMap<&str, PathBuf>> = Mutex::new(BTreeMap::new());
         let mut libraries = LIBRARIES.lock().expect("fixture library cache");
         let library = libraries.entry(model).or_insert_with(|| {
-            super::tensor_layout::certified_current_model(&super::root(), model);
+            super::tensor_layout::certified_current_model(model);
             let source = super::root().join(format!(
                 "generated/{model}/packages/rust-core/vtensor_{model}/src/lib.rs"
             ));

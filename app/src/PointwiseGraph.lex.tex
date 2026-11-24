@@ -158,7 +158,8 @@ inductive{
     {name: hyperconnectionPost, fields: [IndexContext, IndexContext, (Option IndexContext)]},
     {name: hyperconnectionCombination, fields: [IndexContext, IndexContext, Nat, Nat]},
     {name: optimizer, fields: [Bool]},
-    {name: crossEntropy, fields: [Bool, Nat, Nat]}
+    {name: crossEntropy, fields: [Bool, Nat, Nat]},
+    {name: triangularSolve, fields: []}
   ]
 }
 
@@ -1835,6 +1836,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.optimizer adam => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.triangularSolve => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.signedCopy count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
@@ -2036,6 +2038,22 @@ definition{
 }
 
 definition{
+  name: substitutionPrefix,
+  parameters: [row : Nat],
+  result: Nat,
+  body: (prim multiply row (row + 2) : Nat),
+  executable: true
+}
+
+definition{
+  name: planTriangularSolve,
+  parameters: [lower : TensorDescriptor, rhs : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if (((((((((((((project lower ty) =? 0) && (contiguousWords lower)) && (signedCopySpan lower (blockCount lower 1))) && ((((project rhs ty) =? 0) && (contiguousWords rhs)) && (signedCopySpan rhs (blockCount rhs 1)))) && ((((project output ty) =? 0) && (contiguousWords output)) && (signedCopySpan output (blockCount output 1)))) && ((project lower n0) =? (project lower n1))) && ((project lower n1) =? (project rhs n1))) && ((project lower n2) =? (project rhs n2))) && ((project lower n3) =? (project rhs n3))) && (sameShape rhs output)) && (separateTensors lower output)) && (separateTensors rhs output)) then (ctor PointwiseDecision.copyBlocks (prim multiply (prim multiply (prim multiply (project rhs n2) (project rhs n3) : Nat) (project rhs n0) : Nat) (substitutionPrefix (project lower n0)) : Nat) 4 (indexContext lower 1) (indexContext output 1) (ctor CopyMode.triangularSolve)) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
   name: planTwoSources,
   parameters: [
     operation : Nat,
@@ -2045,7 +2063,9 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 86) then (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 82) then (match right
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some rhs => (planTriangularSolve left rhs output)) else (if (operation =? 86) then (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
     | Option.some weights => (planHyperconnectionPre options left weights output)) else (if (operation =? 55) then (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
@@ -2059,7 +2079,7 @@ definition{
     | Option.none => false
     | Option.some value => true) output))) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -2103,6 +2123,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.bindings 7 0 0 false 3)
     | CopyMode.optimizer adam => (ctor GraphResponse.bindings (if adam then 31 else 7) 0 0 false 12)
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.bindings (if backward then 7 else 3) 0 0 false 7)
+    | CopyMode.triangularSolve => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.signedCopy count => (ctor GraphResponse.bindings 1 0 0 false count)
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false 3)
@@ -2152,6 +2173,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.triangularSolve => 0
     | CopyMode.signedCopy count => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
@@ -2225,6 +2247,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor WordOperation.invalid)
     | CopyMode.optimizer adam => (ctor WordOperation.invalid)
     | CopyMode.crossEntropy backward labelStride rows => (ctor WordOperation.invalid)
+    | CopyMode.triangularSolve => (ctor WordOperation.invalid)
     | CopyMode.signedCopy count => (ctor WordOperation.invalid)
     | CopyMode.depthwise image x y storage => (ctor WordOperation.invalid)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -2274,6 +2297,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.triangularSolve => 0
     | CopyMode.signedCopy count => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
@@ -2483,6 +2507,14 @@ definition{
 }
 
 definition{
+  name: triangularSolveStep,
+  parameters: [index : Nat, lower : IndexContext, destination : IndexContext, flag : Nat],
+  result: GraphResponse,
+  body: (let size : Nat := (project lower u0); (let columns : Nat := (project destination u0); (let chain : Nat := (substitutionPrefix size); (let task : Nat := (prim quotient index chain 0 : Nat); (let batch : Nat := (prim quotient task columns 0 : Nat); (let column : Nat := (prim remainder task columns 0 : Nat); (let row : Nat := (prim remainder flag size 0 : Nat); (let matrixBase : Nat := (prim multiply 4 (prim multiply batch (prim multiply size size : Nat) : Nat) : Nat); (let rhsBase : Nat := (prim multiply 4 (prim multiply batch (prim multiply size columns : Nat) : Nat) : Nat); (let phase : Nat := (prim subtract (prim remainder index chain 0 : Nat) (substitutionPrefix row) : Nat); (if (phase <? (prim multiply row 2 : Nat)) then (let previous : Nat := (prim quotient phase 2 0 : Nat); (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 (matrixBase + (prim multiply 4 ((prim multiply row size : Nat) + previous) : Nat))) (ctor WordOperand.output (rhsBase + (prim multiply 4 ((prim multiply previous columns : Nat) + column) : Nat))) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (if (previous =? 0) then (ctor WordOperand.immediate 0) else (ctor WordOperand.scratch 0)) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 0) 4 4))) else (if (phase =? (prim multiply row 2 : Nat)) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.source 1 (rhsBase + (prim multiply 4 ((prim multiply row columns : Nat) + column) : Nat))) (if (row =? 0) then (ctor WordOperand.immediate 0) else (ctor WordOperand.scratch 0)) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? ((prim multiply row 2 : Nat) + 1)) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 0) (ctor WordOperand.source 0 (matrixBase + (prim multiply 4 ((prim multiply row size : Nat) + row) : Nat))) (ctor WordTarget.output (rhsBase + (prim multiply 4 ((prim multiply row columns : Nat) + column) : Nat))) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (if ((row + 1) =? size) then 0 else (row + 1))) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4)))))))))))))),
+  executable: true
+}
+
+definition{
   name: crossEntropyStep,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, backward : Bool, labelStride : Nat, rows : Nat, flag : Nat],
   result: GraphResponse,
@@ -2586,6 +2618,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (hyperconnectionCombinationStep index source scale base destination eps iterations flag)
     | CopyMode.optimizer adam => (optimizerStep index source adam)
     | CopyMode.crossEntropy backward labelStride rows => (crossEntropyStep index source destination backward labelStride rows flag)
+    | CopyMode.triangularSolve => (triangularSolveStep index source destination flag)
     | CopyMode.signedCopy count => (signedCopyStep index count source destination)
     | CopyMode.depthwise image x y storage => (depthwiseStep index source image destination x y storage)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
@@ -2642,13 +2675,23 @@ definition{
 }
 
 definition{
+  name: suppliedTensor,
+  parameters: [input : (Option TensorDescriptor)],
+  result: Bool,
+  body: (match input
+    | Option.none => false
+    | Option.some tensor => true),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3 | Option.some descriptor => true | Option.none => (match input4 | Option.some descriptor => true | Option.none => tailPresent)) output)) else (if ((operation =? 96) || (operation =? 97)) then (ctor GraphResponse.planned (planOptimizer (operation =? 96) flags view input0 input1 input2 input3 input4 tailPresent output)) else (let trailing : Bool := (match input4 | Option.none => tailPresent | Option.some supplied => true); (if (operation =? 85) then (ctor GraphResponse.planned (planHyperconnectionCombination options input0 input1 input2 (match input3 | Option.none => trailing | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if ((operation =? 82) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || tailPresent)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3 | Option.some descriptor => true | Option.none => (match input4 | Option.some descriptor => true | Option.none => tailPresent)) output)) else (if ((operation =? 96) || (operation =? 97)) then (ctor GraphResponse.planned (planOptimizer (operation =? 96) flags view input0 input1 input2 input3 input4 tailPresent output)) else (let trailing : Bool := (match input4 | Option.none => tailPresent | Option.some supplied => true); (if (operation =? 85) then (ctor GraphResponse.planned (planHyperconnectionCombination options input0 input1 input2 (match input3 | Option.none => trailing | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output)))))))))))))))
+      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
@@ -3167,6 +3210,20 @@ theorem{
   name: gatherShortPackedStrideRefused,
   parameters: [],
   statement: ((planGather (record TensorDescriptor {ty := 2, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 17, s1 := 40, s2 := 160, s3 := 400, span := 676, address := 1000}) (ctor Option.some [TensorDescriptor] (record TensorDescriptor {ty := 26, n0 := 3, n1 := 2, n2 := 2, n3 := 1, s0 := 8, s1 := 32, s2 := 96, s3 := 192, span := 148, address := 5000})) (record TensorDescriptor {ty := 0, n0 := 64, n1 := 3, n2 := 2, n3 := 2, s0 := 8, s1 := 520, s2 := 1600, s3 := 4000, span := 7148, address := 10000})) = (ctor PointwiseDecision.invalidShape)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: firstSubstitutionRowHasNoProduct,
+  parameters: [],
+  statement: ((substitutionPrefix 1) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: fourthSubstitutionRowStartsAfterFifteenSteps,
+  parameters: [],
+  statement: ((substitutionPrefix 3) = 15),
   proof: reflexivity{}
 }
 
