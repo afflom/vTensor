@@ -1,0 +1,21 @@
+{
+  "constructors": 9,
+  "descriptors": 47952,
+  "standard_and_inplace": 10368,
+  "casts": 37584,
+  "direct_cpu_descriptors_placed": 709,
+  "composed_codebook_descriptors_placed": 189,
+  "all_provider_placements": 898,
+  "compared_scalar_graphs": 48,
+  "compared_scalar_words": 24576,
+  "reused_packed_results": 661,
+  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results. Unclassified denotes no identified direct or composed oracle in this survey.",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "496e3405373a949695106437a1b6c0040743ffac5d3da9b205e9bfda7ddbe877",
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "table": "ggml-binary-type-descriptors.tsv.gz",
+  "table_sha256": "f49ab56f867f48ff05b0d1ffdf7d296212ab7ebb87ab6bb423828f5110b3b972",
+  "uncompressed_sha256": "8c9e3e8d25ff153ae5be7e498e5e46164c08cd1178d8ac66267037c8a56d5b25",
+  "constructor_source_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2"
+}

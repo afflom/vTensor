@@ -1,0 +1,18 @@
+{
+  "descriptors": 1296,
+  "direct_cpu_graphs": 841,
+  "direct_cpu_graphs_placed": 144,
+  "unplaced_cpu_graphs": 697,
+  "compared_words": 73728,
+  "max_nmse": 2.40216266866e-14,
+  "upstream_test_flash_attn_ext_max_nmse": 0.0005,
+  "probe": "Use all 36 key types and 36 value types in the original unmasked default-precision FLASH_ATTN_EXT constructor, with two 256-lane F32 queries and three KV rows, one head and one batch. Confirm admission before allocation and check stock scheduler placement for every admission. Run every CPU kernel with a registered key vector product, corresponding query converter and F32 or decodable value type. Require all 512 original outputs to be finite with positive energy. Compare admitted provider graphs against those outputs after poisoning the output buffer.",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "ac413dfe84e898f9e72c2fca6512263044057a5646eac3d6bede1ca3fad13f0c",
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "table": "ggml-attention-type-descriptors.tsv.gz",
+  "table_sha256": "03e2516f5a4d0ccd861bf250b5f8ff0c9cf7966d2ef2b877bab3fe5096fa8707",
+  "uncompressed_sha256": "2d374776808b35a59720d266fd64fdf4ef241ddcde79f7af32e4db3c3e1e261a",
+  "constructor_source_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2"
+}

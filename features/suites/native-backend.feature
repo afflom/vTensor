@@ -716,3 +716,9 @@ Feature: native-backend
     Given finite E4M3 rows and F32 addends of one, eight or sixteen lanes in dense or padded views
     When the GGML scheduler places copied and in-place additions on vTensor
     Then every stored byte in 12 graphs matches the original CPU repeat and addition kernels
+
+  @VT-176 @build
+  Scenario: Packed GGML addition reaches all seven codebook destination encodings through Verdant
+    Given 25 stored weight encodings and seven codebook destinations with original GGML quantizers
+    When GGML places packed addition casts and matching in-place graphs on vTensor
+    Then every stored output byte matches GGML CPU F32 addition followed by the original GGML codebook quantizer

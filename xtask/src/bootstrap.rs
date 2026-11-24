@@ -768,29 +768,15 @@ mod tests {
     #[test]
     fn upstream_pinned_dependency_is_ignored_and_nothing_else() {
         let source = include_str!("../../.github/dependabot.yml");
-        let original: serde_json::Value = serde_json::from_str(source).unwrap();
-        let with_ignore = |names: &[&str]| {
-            let mut changed = original.clone();
-            changed["updates"][1]["ignore"] = names
-                .iter()
-                .map(|name| serde_json::json!({"dependency-name": name}))
-                .collect();
-            policy_json(&changed)
-        };
+        let policy: serde_json::Value = pinned_fixture!("dependency-update-pinned");
+        let pinned = policy_json(&policy);
         let pins = vec!["unicode-normalization".to_string()];
-        let pinned_policy = with_ignore(&["unicode-normalization"]);
-        assert!(dependency_updates_are_confined(&pinned_policy, &pins));
-        assert!(!dependency_updates_are_confined(&pinned_policy, &[]));
+        assert!(dependency_updates_are_confined(&pinned, &pins));
+        assert!(!dependency_updates_are_confined(&pinned, &[]));
         assert!(!dependency_updates_are_confined(source, &pins));
-        let undeclared_ignore = with_ignore(&["serde", "unicode-normalization"]);
-        assert!(!dependency_updates_are_confined(&undeclared_ignore, &pins));
-
-        let mut changed: serde_json::Value = serde_json::from_str(&pinned_policy).unwrap();
-        changed["updates"][1]["schedule"]["interval"] = serde_json::json!("never");
-        assert!(!dependency_updates_are_confined(
-            &policy_json(&changed),
-            &pins
-        ));
+        check_workflow_controls("dependency_pin", 2, &pinned, |changed| {
+            dependency_updates_are_confined(changed, &pins)
+        });
     }
 
     #[test]

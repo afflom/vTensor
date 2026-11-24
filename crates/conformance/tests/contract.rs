@@ -70,6 +70,7 @@ ggml_batches! {
     fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
+    fn codebook_addition_vt_176() { "codebook-add", 189, ["typed"] }
     fn e4m3_add_repeats_vt_175() { "e4m3-repeat", 12, ["typed"] }
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
@@ -1283,7 +1284,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "68d5914434cb690db0623fe7960fc7abc35ddb1d88b8addd7729c81fde550b52",
+            "0c5284e45b44fe44636ea58b8597f7e3a94ee60a77ed64d98013ab9d7750c23d",
         )
     });
 
@@ -2195,7 +2196,8 @@ int main(int argc, char **argv) {
     }
     const bool lane_repeat=!strcmp(argv[3],"packed-lanes");
     const bool broadcast_add=lane_repeat || !strcmp(argv[3],"packed-broadcast");
-    if (broadcast_add || !strcmp(argv[3],"packed-add")) {
+    const bool codebook_add=!strcmp(argv[3],"codebook-add");
+    if (codebook_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
         int n=0; CHECK(scanf("%d",&n)==1 && n>0);
         for (int i=0;i<n;++i) {
@@ -2203,7 +2205,7 @@ int main(int argc, char **argv) {
             auto &bytes=sources[{type,width}]; CHECK(bytes.empty());
             bytes=read_hex_bytes(2*ggml_row_size(ggml_type(type),width)); CHECK(!bytes.empty());
         }
-        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==625);
+        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==(codebook_add?175:625));
         size_t cases=0;
         for (int p=0;p<pairs;++p) {
             int from,to,width; CHECK(scanf("%d%d%d",&from,&to,&width)==3);

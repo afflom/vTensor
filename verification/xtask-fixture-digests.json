@@ -1,6 +1,7 @@
 {
   "authority-pin-controls": "c584ef665bea4bdc6a3e2c159d700791259656e80e35bfddd944ce6fa2dd241e",
-  "native-workflow-controls": "d7901e2ebf9354e15b8be41f29e781b4996ca635f7f49870f7352d43d56785fb",
+  "dependency-update-pinned": "b838a51eda03ca6ce9c47e1e74fc42d4d90176a3d6b6e258f8056acd8ccc0550",
+  "native-workflow-controls": "d444f9dc6af1168fcd0ef2a74a30b62c78dc4870e176a0114740c124719ccfb5",
   "proof-reuse-documents": "838d9933dbd95cb9b8a89c26f6e52ae2f6fe6ab4b8dd2786c3550a7ed9235499",
   "proof-reuse-observations": "3e9ef5b1daecc5dae3ed9e692ae9449f4c72b61ce6f4acb6df58976e73ddbfcb",
   "repository-gate-fixtures": "c72231192e8d2e034efef570ddd3f719d54a0562815a58b924e202f5034ba8d5",

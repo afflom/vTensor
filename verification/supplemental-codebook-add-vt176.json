@@ -1,0 +1,16 @@
+{
+  "requirement": "VT-176",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "semantic_id": "80890027e73e3dbed1d1f8b40cc61f55b3cc30e34c3301c2fec0144000ebb303",
+  "attestation": "2a2f494c8f6153b795524e9d5b9d293637713e49cdec748d98f2cec5eb56808f",
+  "provider_sha256": "496e3405373a949695106437a1b6c0040743ffac5d3da9b205e9bfda7ddbe877",
+  "reference": "ggml-codebook-add-oracle.json",
+  "source_formats": 25,
+  "destination_formats": 7,
+  "cast_graphs": 175,
+  "inplace_graphs": 7,
+  "equivalent_standard_constructors": 7,
+  "comparison": "GGML CPU ADD_CAST to F32 followed by ggml_quantize_chunk with its declared importance requirement. Compare every stored byte of 182 scheduled graphs and verify the descriptors of seven equivalent standard ADD constructors.",
+  "negative_control": "Omitting the F32 summation for Q2_0 to IQ1_M failed the 42 -> 29 byte comparison. Restoring the provider passed.",
+  "source_lines": 12618
+}

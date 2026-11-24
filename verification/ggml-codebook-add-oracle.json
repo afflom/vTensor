@@ -1,0 +1,21 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "inputs": "The 25 width-256 original GGML source buffers from ggml-packed-add-words.tsv, each containing two rows. The F32 addend is ((13*i+7) mod 29 - 14)/32.",
+  "sources": 25,
+  "destinations": [
+    16,
+    17,
+    18,
+    19,
+    21,
+    22,
+    29
+  ],
+  "cpu_float_graphs": 25,
+  "original_quantizer_calls": 175,
+  "oracle": "Execute original GGML CPU ggml_add_cast with F32 output once per source. Pass each summed two-row buffer to ggml_quantize_chunk for each of the seven destinations. Supply a width-256 vector of ones exactly when ggml_quantize_requires_imatrix returns true. Each destination lacks a CPU from_float row callback.",
+  "words_sha256": "da9056894a2ce60e736ede0d652165064a64325c1450b86f8e4209b147e935ef"
+}

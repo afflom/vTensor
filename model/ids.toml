@@ -1122,3 +1122,9 @@ id = "VT-175"
 level = "build"
 suite = "native-backend"
 statement = "F8_E4M3 addition repeats dense and offset padded F32 addends across all four axes"
+
+[[id]]
+id = "VT-176"
+level = "build"
+suite = "native-backend"
+statement = "Packed GGML addition reaches all seven codebook destination encodings through Verdant"

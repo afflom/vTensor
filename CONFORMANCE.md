@@ -263,6 +263,7 @@ model does not sanction.
 | `VT-173` | `build` | Packed addition broadcasts repeated rows along three GGML axes before encoding or updating the destination |
 | `VT-174` | `build` | Copied and in-place packed GGML addition repeats scalar and partial-width addends across all four axes |
 | `VT-175` | `build` | F8_E4M3 addition repeats dense and offset padded F32 addends across all four axes |
+| `VT-176` | `build` | Packed GGML addition reaches all seven codebook destination encodings through Verdant |
 
 ## normalization-graphs
 
