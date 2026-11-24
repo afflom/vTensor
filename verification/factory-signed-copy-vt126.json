@@ -1,0 +1,99 @@
+{
+  "requirement": "VT-126",
+  "implementation": "22179ba23e329f4307b61c8d66077a7a8be631ba",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "provider_sha256": "d3c7b64a20d06d36c8495bef6df871a8c72a23cfde6393936ac84e807747b409",
+  "provider_inputs_sha256": "7b3659a2eea7423ad58e81787a89be26382854d1ad1fce346da3e36c7e25fd01",
+  "pointwise_attestation": "6da434e2224f3cfad798132a323558096c1b7061e1362cfc3ba667e9152d00f4",
+  "pointwise_lock_sha256": "df85dc1c54c77e9f31ef7a0da9eaf1a73631be92d0d5d1224b66da9decc21bdb",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "case_ordinals": {
+    "CPY": [
+      8708,
+      8709
+    ]
+  },
+  "factory_passed": 2,
+  "contract_transcript_sha256": "4d8b6f3cbd7093c8656d67299ecf25f080ff5a5fd37e8f141f3a6e136398bfb1",
+  "conversion_primitive": "https://github.com/afflom/verdant-engine/pull/49",
+  "supplemental": {
+    "reference": "ggml_cpy on GGML reference CPU",
+    "input_bits": "00000000 80000000 00000001 80000001 3fe00000 bfe00000 4effffff cf000000 4b800001 cb800001 3f7fffff bf7fffff",
+    "source_shape": [
+      3,
+      4
+    ],
+    "destination_shape": [
+      2,
+      6
+    ],
+    "padded_storage_shape": [
+      5,
+      6
+    ],
+    "padded_view_offset_bytes": 4,
+    "sentinel": "5a7be19d",
+    "layouts": [
+      {
+        "source_transposed": false,
+        "destination_padded": false,
+        "identical_words": 12
+      },
+      {
+        "source_transposed": false,
+        "destination_padded": true,
+        "identical_words": 12
+      },
+      {
+        "source_transposed": true,
+        "destination_padded": false,
+        "identical_words": 12
+      },
+      {
+        "source_transposed": true,
+        "destination_padded": true,
+        "identical_words": 12
+      }
+    ],
+    "last_source_refusals": [
+      {
+        "input_bits": "7fc00001",
+        "unchanged_storage_words": 30
+      },
+      {
+        "input_bits": "7f800000",
+        "unchanged_storage_words": 30
+      },
+      {
+        "input_bits": "ff800000",
+        "unchanged_storage_words": 30
+      },
+      {
+        "input_bits": "4f000000",
+        "unchanged_storage_words": 30
+      },
+      {
+        "input_bits": "cf000001",
+        "unchanged_storage_words": 30
+      }
+    ],
+    "runner_source_sha256": "ca6657fac30c2f51a8150a5aa25b4a608153fbebd0a6156c228ff14c6af401d3"
+  },
+  "mutation": {
+    "change": "Return the binary32 source bits as the signed result.",
+    "observed_error": 0.999999863,
+    "upstream_limit": 1e-06
+  },
+  "dependency_regression": {
+    "grouped_affine_cases_replayed": 90,
+    "original_case_source": "verification/factory-grouped-affine-writes-vt122.json",
+    "transcripts_sha256": [
+      "0cf9c0bc364fb8400d850a0c68a8ee2c78ca13ea97feb64d610c33085c4bb7c5",
+      "e0aa5ed3367e0191da76f141c01df2d20dd4fa6caf755746501a128108234fe7",
+      "22c64599a7c3ab4bcd93bd6e831033bb7d42f0f9e8976b8b7e355e889f4ce244",
+      "d708c79c706f877c0cf8fd6411c3710bba3fef0cee02a0bd8ad1fc7ed7c4d91b"
+    ]
+  }
+}
