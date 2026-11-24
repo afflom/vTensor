@@ -1,0 +1,3271 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "implementation": "ggml/src/ggml.c",
+  "implementation_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "header": "ggml/include/ggml.h",
+  "header_sha256": "7a95dc0abc3360481c07732bfcd534a3e59228127331898b1d0926b87b018498",
+  "scope": "All 249 public ggml.h functions returning a ggml_tensor pointer. The table maps the 236 tensor or operation constructors to source definitions, local assertion/abort sites and opcode families. A wrapper that constructs a graph maps to each primitive family it calls. An explicit assignment identifies the resulting operation. The other 13 entries retrieve or modify existing tensors.",
+  "validation_scope": "Source inventory. Execution evidence is recorded independently in the factory and supplemental verdicts. FLASH_ATTN_BACK aborts before graph construction.",
+  "public_tensor_returns": 249,
+  "constructors": 236,
+  "declared_operations": 100,
+  "existing_tensor_functions": {
+    "ggml_build_forward_select": {
+      "header_line": 2667,
+      "implementation_line": 7294
+    },
+    "ggml_format_name": {
+      "header_line": 716,
+      "implementation_line": 1984
+    },
+    "ggml_get_first_tensor": {
+      "header_line": 700,
+      "implementation_line": 2001
+    },
+    "ggml_get_next_tensor": {
+      "header_line": 701,
+      "implementation_line": 2017
+    },
+    "ggml_get_tensor": {
+      "header_line": 702,
+      "implementation_line": 2034
+    },
+    "ggml_graph_get_grad": {
+      "header_line": 2707,
+      "implementation_line": 7671
+    },
+    "ggml_graph_get_grad_acc": {
+      "header_line": 2708,
+      "implementation_line": 7676
+    },
+    "ggml_graph_get_tensor": {
+      "header_line": 2706,
+      "implementation_line": 7651
+    },
+    "ggml_graph_node": {
+      "header_line": 2697,
+      "implementation_line": 7627
+    },
+    "ggml_rope_set_offset": {
+      "header_line": 1824,
+      "implementation_line": 4438
+    },
+    "ggml_rope_set_truncate": {
+      "header_line": 1829,
+      "implementation_line": 4451
+    },
+    "ggml_set_name": {
+      "header_line": 714,
+      "implementation_line": 1975
+    },
+    "ggml_set_zero": {
+      "header_line": 2724,
+      "implementation_line": 7568
+    }
+  },
+  "operations": {
+    "GGML_OP_NONE": {
+      "definitions": [
+        "ggml_new_tensor_impl"
+      ],
+      "public_entries": [
+        "ggml_dup_tensor",
+        "ggml_new_tensor",
+        "ggml_new_tensor_1d",
+        "ggml_new_tensor_2d",
+        "ggml_new_tensor_3d",
+        "ggml_new_tensor_4d",
+        "ggml_view_tensor"
+      ]
+    },
+    "GGML_OP_DUP": {
+      "definitions": [
+        "ggml_dup_impl"
+      ],
+      "public_entries": [
+        "ggml_dup",
+        "ggml_dup_inplace"
+      ]
+    },
+    "GGML_OP_ADD": {
+      "definitions": [
+        "ggml_add_cast_impl",
+        "ggml_add_impl"
+      ],
+      "public_entries": [
+        "ggml_add",
+        "ggml_add_cast",
+        "ggml_add_inplace"
+      ]
+    },
+    "GGML_OP_ADD_ID": {
+      "definitions": [
+        "ggml_add_id"
+      ],
+      "public_entries": [
+        "ggml_add_id"
+      ]
+    },
+    "GGML_OP_ACC": {
+      "definitions": [
+        "ggml_acc_impl"
+      ],
+      "public_entries": [
+        "ggml_acc",
+        "ggml_acc_inplace"
+      ]
+    },
+    "GGML_OP_SUB": {
+      "definitions": [
+        "ggml_sub_impl"
+      ],
+      "public_entries": [
+        "ggml_sub",
+        "ggml_sub_inplace"
+      ]
+    },
+    "GGML_OP_MUL": {
+      "definitions": [
+        "ggml_mul_impl"
+      ],
+      "public_entries": [
+        "ggml_mul",
+        "ggml_mul_inplace"
+      ]
+    },
+    "GGML_OP_DIV": {
+      "definitions": [
+        "ggml_div_impl"
+      ],
+      "public_entries": [
+        "ggml_div",
+        "ggml_div_inplace"
+      ]
+    },
+    "GGML_OP_SQR": {
+      "definitions": [
+        "ggml_sqr_impl"
+      ],
+      "public_entries": [
+        "ggml_sqr",
+        "ggml_sqr_inplace"
+      ]
+    },
+    "GGML_OP_SQRT": {
+      "definitions": [
+        "ggml_sqrt_impl"
+      ],
+      "public_entries": [
+        "ggml_sqrt",
+        "ggml_sqrt_inplace"
+      ]
+    },
+    "GGML_OP_LOG": {
+      "definitions": [
+        "ggml_log_impl"
+      ],
+      "public_entries": [
+        "ggml_log",
+        "ggml_log_inplace"
+      ]
+    },
+    "GGML_OP_SIN": {
+      "definitions": [
+        "ggml_sin_impl"
+      ],
+      "public_entries": [
+        "ggml_sin",
+        "ggml_sin_inplace"
+      ]
+    },
+    "GGML_OP_COS": {
+      "definitions": [
+        "ggml_cos_impl"
+      ],
+      "public_entries": [
+        "ggml_cos",
+        "ggml_cos_inplace"
+      ]
+    },
+    "GGML_OP_SUM": {
+      "definitions": [
+        "ggml_sum"
+      ],
+      "public_entries": [
+        "ggml_sum"
+      ]
+    },
+    "GGML_OP_SUM_ROWS": {
+      "definitions": [
+        "ggml_sum_rows"
+      ],
+      "public_entries": [
+        "ggml_sum_rows"
+      ]
+    },
+    "GGML_OP_CUMSUM": {
+      "definitions": [
+        "ggml_cumsum"
+      ],
+      "public_entries": [
+        "ggml_cumsum"
+      ]
+    },
+    "GGML_OP_MEAN": {
+      "definitions": [
+        "ggml_mean"
+      ],
+      "public_entries": [
+        "ggml_mean"
+      ]
+    },
+    "GGML_OP_ARGMAX": {
+      "definitions": [
+        "ggml_argmax"
+      ],
+      "public_entries": [
+        "ggml_argmax"
+      ]
+    },
+    "GGML_OP_COUNT_EQUAL": {
+      "definitions": [
+        "ggml_count_equal"
+      ],
+      "public_entries": [
+        "ggml_count_equal"
+      ]
+    },
+    "GGML_OP_REPEAT": {
+      "definitions": [
+        "ggml_repeat",
+        "ggml_repeat_4d"
+      ],
+      "public_entries": [
+        "ggml_repeat",
+        "ggml_repeat_4d"
+      ]
+    },
+    "GGML_OP_REPEAT_BACK": {
+      "definitions": [
+        "ggml_repeat_back"
+      ],
+      "public_entries": [
+        "ggml_repeat_back"
+      ]
+    },
+    "GGML_OP_CONCAT": {
+      "definitions": [
+        "ggml_concat"
+      ],
+      "public_entries": [
+        "ggml_concat"
+      ]
+    },
+    "GGML_OP_SILU_BACK": {
+      "definitions": [
+        "ggml_silu_back"
+      ],
+      "public_entries": [
+        "ggml_silu_back"
+      ]
+    },
+    "GGML_OP_NORM": {
+      "definitions": [
+        "ggml_norm_impl"
+      ],
+      "public_entries": [
+        "ggml_norm",
+        "ggml_norm_inplace"
+      ]
+    },
+    "GGML_OP_RMS_NORM": {
+      "definitions": [
+        "ggml_rms_norm_impl"
+      ],
+      "public_entries": [
+        "ggml_rms_norm",
+        "ggml_rms_norm_inplace"
+      ]
+    },
+    "GGML_OP_RMS_NORM_BACK": {
+      "definitions": [
+        "ggml_rms_norm_back"
+      ],
+      "public_entries": [
+        "ggml_rms_norm_back"
+      ]
+    },
+    "GGML_OP_GROUP_NORM": {
+      "definitions": [
+        "ggml_group_norm_impl"
+      ],
+      "public_entries": [
+        "ggml_group_norm",
+        "ggml_group_norm_inplace"
+      ]
+    },
+    "GGML_OP_L2_NORM": {
+      "definitions": [
+        "ggml_l2_norm_impl"
+      ],
+      "public_entries": [
+        "ggml_l2_norm",
+        "ggml_l2_norm_inplace"
+      ]
+    },
+    "GGML_OP_MUL_MAT": {
+      "definitions": [
+        "ggml_mul_mat"
+      ],
+      "public_entries": [
+        "ggml_conv_1d",
+        "ggml_conv_1d_dw",
+        "ggml_conv_1d_dw_ph",
+        "ggml_conv_1d_ph",
+        "ggml_conv_2d",
+        "ggml_conv_2d_dw",
+        "ggml_conv_2d_s1_ph",
+        "ggml_conv_2d_sk_p0",
+        "ggml_conv_3d",
+        "ggml_mul_mat"
+      ]
+    },
+    "GGML_OP_MUL_MAT_ID": {
+      "definitions": [
+        "ggml_mul_mat_id"
+      ],
+      "public_entries": [
+        "ggml_mul_mat_id"
+      ]
+    },
+    "GGML_OP_OUT_PROD": {
+      "definitions": [
+        "ggml_out_prod"
+      ],
+      "public_entries": [
+        "ggml_out_prod"
+      ]
+    },
+    "GGML_OP_SCALE": {
+      "definitions": [
+        "ggml_scale_impl"
+      ],
+      "public_entries": [
+        "ggml_scale",
+        "ggml_scale_bias",
+        "ggml_scale_bias_inplace",
+        "ggml_scale_inplace"
+      ]
+    },
+    "GGML_OP_SET": {
+      "definitions": [
+        "ggml_set_impl"
+      ],
+      "public_entries": [
+        "ggml_set",
+        "ggml_set_1d",
+        "ggml_set_1d_inplace",
+        "ggml_set_2d",
+        "ggml_set_2d_inplace",
+        "ggml_set_inplace"
+      ]
+    },
+    "GGML_OP_CPY": {
+      "definitions": [
+        "ggml_cast",
+        "ggml_cpy_impl"
+      ],
+      "public_entries": [
+        "ggml_cast",
+        "ggml_cpy"
+      ]
+    },
+    "GGML_OP_CONT": {
+      "definitions": [
+        "ggml_cont_4d",
+        "ggml_cont_impl"
+      ],
+      "public_entries": [
+        "ggml_cont",
+        "ggml_cont_1d",
+        "ggml_cont_2d",
+        "ggml_cont_3d",
+        "ggml_cont_4d",
+        "ggml_conv_1d",
+        "ggml_conv_1d_ph",
+        "ggml_conv_2d",
+        "ggml_conv_2d_s1_ph",
+        "ggml_conv_2d_sk_p0",
+        "ggml_conv_3d"
+      ]
+    },
+    "GGML_OP_RESHAPE": {
+      "definitions": [
+        "ggml_reshape",
+        "ggml_reshape_1d",
+        "ggml_reshape_2d",
+        "ggml_reshape_3d",
+        "ggml_reshape_4d"
+      ],
+      "public_entries": [
+        "ggml_conv_1d",
+        "ggml_conv_1d_dw",
+        "ggml_conv_1d_dw_ph",
+        "ggml_conv_1d_ph",
+        "ggml_conv_2d",
+        "ggml_conv_2d_dw",
+        "ggml_conv_2d_s1_ph",
+        "ggml_conv_2d_sk_p0",
+        "ggml_conv_3d",
+        "ggml_reshape",
+        "ggml_reshape_1d",
+        "ggml_reshape_2d",
+        "ggml_reshape_3d",
+        "ggml_reshape_4d"
+      ]
+    },
+    "GGML_OP_VIEW": {
+      "definitions": [
+        "ggml_view_impl"
+      ],
+      "public_entries": [
+        "ggml_argsort_top_k",
+        "ggml_view_1d",
+        "ggml_view_2d",
+        "ggml_view_3d",
+        "ggml_view_4d"
+      ]
+    },
+    "GGML_OP_PERMUTE": {
+      "definitions": [
+        "ggml_permute"
+      ],
+      "public_entries": [
+        "ggml_conv_1d",
+        "ggml_conv_1d_ph",
+        "ggml_conv_2d",
+        "ggml_conv_2d_s1_ph",
+        "ggml_conv_2d_sk_p0",
+        "ggml_conv_3d",
+        "ggml_permute"
+      ]
+    },
+    "GGML_OP_TRANSPOSE": {
+      "definitions": [
+        "ggml_transpose"
+      ],
+      "public_entries": [
+        "ggml_transpose"
+      ]
+    },
+    "GGML_OP_GET_ROWS": {
+      "definitions": [
+        "ggml_get_rows"
+      ],
+      "public_entries": [
+        "ggml_get_rows"
+      ]
+    },
+    "GGML_OP_GET_ROWS_BACK": {
+      "definitions": [
+        "ggml_get_rows_back"
+      ],
+      "public_entries": [
+        "ggml_get_rows_back"
+      ]
+    },
+    "GGML_OP_SET_ROWS": {
+      "definitions": [
+        "ggml_set_rows"
+      ],
+      "public_entries": [
+        "ggml_set_rows"
+      ]
+    },
+    "GGML_OP_DIAG": {
+      "definitions": [
+        "ggml_diag"
+      ],
+      "public_entries": [
+        "ggml_diag"
+      ]
+    },
+    "GGML_OP_SOFT_MAX": {
+      "definitions": [
+        "ggml_soft_max_impl"
+      ],
+      "public_entries": [
+        "ggml_soft_max",
+        "ggml_soft_max_ext",
+        "ggml_soft_max_ext_inplace",
+        "ggml_soft_max_inplace"
+      ]
+    },
+    "GGML_OP_SOFT_MAX_BACK": {
+      "definitions": [
+        "ggml_soft_max_ext_back_impl"
+      ],
+      "public_entries": [
+        "ggml_soft_max_ext_back",
+        "ggml_soft_max_ext_back_inplace"
+      ]
+    },
+    "GGML_OP_ROPE": {
+      "definitions": [
+        "ggml_rope_impl"
+      ],
+      "public_entries": [
+        "ggml_rope",
+        "ggml_rope_ext",
+        "ggml_rope_ext_inplace",
+        "ggml_rope_inplace",
+        "ggml_rope_multi",
+        "ggml_rope_multi_inplace"
+      ]
+    },
+    "GGML_OP_ROPE_BACK": {
+      "definitions": [
+        "ggml_rope_ext_back",
+        "ggml_rope_multi_back"
+      ],
+      "public_entries": [
+        "ggml_rope_ext_back",
+        "ggml_rope_multi_back"
+      ]
+    },
+    "GGML_OP_CLAMP": {
+      "definitions": [
+        "ggml_clamp_impl"
+      ],
+      "public_entries": [
+        "ggml_clamp",
+        "ggml_clamp_inplace"
+      ]
+    },
+    "GGML_OP_CONV_TRANSPOSE_1D": {
+      "definitions": [
+        "ggml_conv_transpose_1d"
+      ],
+      "public_entries": [
+        "ggml_conv_transpose_1d"
+      ]
+    },
+    "GGML_OP_IM2COL": {
+      "definitions": [
+        "ggml_im2col"
+      ],
+      "public_entries": [
+        "ggml_conv_1d",
+        "ggml_conv_1d_dw",
+        "ggml_conv_1d_dw_ph",
+        "ggml_conv_1d_ph",
+        "ggml_conv_2d",
+        "ggml_conv_2d_dw",
+        "ggml_conv_2d_s1_ph",
+        "ggml_conv_2d_sk_p0",
+        "ggml_im2col"
+      ]
+    },
+    "GGML_OP_IM2COL_BACK": {
+      "definitions": [
+        "ggml_im2col_back"
+      ],
+      "public_entries": [
+        "ggml_im2col_back"
+      ]
+    },
+    "GGML_OP_IM2COL_3D": {
+      "definitions": [
+        "ggml_im2col_3d"
+      ],
+      "public_entries": [
+        "ggml_conv_3d",
+        "ggml_im2col_3d"
+      ]
+    },
+    "GGML_OP_COL2IM_1D": {
+      "definitions": [
+        "ggml_col2im_1d"
+      ],
+      "public_entries": [
+        "ggml_col2im_1d"
+      ]
+    },
+    "GGML_OP_CONV_2D": {
+      "definitions": [
+        "ggml_conv_2d_direct"
+      ],
+      "public_entries": [
+        "ggml_conv_2d_direct"
+      ]
+    },
+    "GGML_OP_CONV_3D": {
+      "definitions": [
+        "ggml_conv_3d_direct"
+      ],
+      "public_entries": [
+        "ggml_conv_3d_direct"
+      ]
+    },
+    "GGML_OP_CONV_2D_DW": {
+      "definitions": [
+        "ggml_conv_2d_dw_direct"
+      ],
+      "public_entries": [
+        "ggml_conv_2d_dw_direct"
+      ]
+    },
+    "GGML_OP_CONV_TRANSPOSE_2D": {
+      "definitions": [
+        "ggml_conv_transpose_2d_p0"
+      ],
+      "public_entries": [
+        "ggml_conv_transpose_2d_p0"
+      ]
+    },
+    "GGML_OP_POOL_1D": {
+      "definitions": [
+        "ggml_pool_1d"
+      ],
+      "public_entries": [
+        "ggml_pool_1d"
+      ]
+    },
+    "GGML_OP_POOL_2D": {
+      "definitions": [
+        "ggml_pool_2d"
+      ],
+      "public_entries": [
+        "ggml_pool_2d"
+      ]
+    },
+    "GGML_OP_POOL_2D_BACK": {
+      "definitions": [
+        "ggml_pool_2d_back"
+      ],
+      "public_entries": [
+        "ggml_pool_2d_back"
+      ]
+    },
+    "GGML_OP_UPSCALE": {
+      "definitions": [
+        "ggml_interpolate_impl"
+      ],
+      "public_entries": [
+        "ggml_interpolate",
+        "ggml_upscale"
+      ]
+    },
+    "GGML_OP_PAD": {
+      "definitions": [
+        "ggml_pad_ext"
+      ],
+      "public_entries": [
+        "ggml_pad",
+        "ggml_pad_circular",
+        "ggml_pad_ext",
+        "ggml_pad_ext_circular"
+      ]
+    },
+    "GGML_OP_PAD_REFLECT_1D": {
+      "definitions": [
+        "ggml_pad_reflect_1d"
+      ],
+      "public_entries": [
+        "ggml_pad_reflect_1d"
+      ]
+    },
+    "GGML_OP_ROLL": {
+      "definitions": [
+        "ggml_roll"
+      ],
+      "public_entries": [
+        "ggml_roll"
+      ]
+    },
+    "GGML_OP_ARANGE": {
+      "definitions": [
+        "ggml_arange"
+      ],
+      "public_entries": [
+        "ggml_arange"
+      ]
+    },
+    "GGML_OP_TIMESTEP_EMBEDDING": {
+      "definitions": [
+        "ggml_timestep_embedding"
+      ],
+      "public_entries": [
+        "ggml_timestep_embedding"
+      ]
+    },
+    "GGML_OP_ARGSORT": {
+      "definitions": [
+        "ggml_argsort"
+      ],
+      "public_entries": [
+        "ggml_argsort",
+        "ggml_argsort_top_k"
+      ]
+    },
+    "GGML_OP_TOP_K": {
+      "definitions": [
+        "ggml_top_k"
+      ],
+      "public_entries": [
+        "ggml_top_k"
+      ]
+    },
+    "GGML_OP_LEAKY_RELU": {
+      "definitions": [
+        "ggml_leaky_relu"
+      ],
+      "public_entries": [
+        "ggml_leaky_relu"
+      ]
+    },
+    "GGML_OP_TRI": {
+      "definitions": [
+        "ggml_tri"
+      ],
+      "public_entries": [
+        "ggml_tri"
+      ]
+    },
+    "GGML_OP_FILL": {
+      "definitions": [
+        "ggml_fill_impl"
+      ],
+      "public_entries": [
+        "ggml_fill",
+        "ggml_fill_inplace"
+      ]
+    },
+    "GGML_OP_FLASH_ATTN_EXT": {
+      "definitions": [
+        "ggml_flash_attn_ext_impl"
+      ],
+      "public_entries": [
+        "ggml_flash_attn_ext",
+        "ggml_flash_attn_ext_rows"
+      ]
+    },
+    "GGML_OP_FLASH_ATTN_BACK": {
+      "definitions": [
+        "ggml_flash_attn_back"
+      ],
+      "public_entries": [
+        "ggml_flash_attn_back"
+      ]
+    },
+    "GGML_OP_SSM_CONV": {
+      "definitions": [
+        "ggml_ssm_conv"
+      ],
+      "public_entries": [
+        "ggml_ssm_conv"
+      ]
+    },
+    "GGML_OP_SSM_SCAN": {
+      "definitions": [
+        "ggml_ssm_scan"
+      ],
+      "public_entries": [
+        "ggml_ssm_scan"
+      ]
+    },
+    "GGML_OP_WIN_PART": {
+      "definitions": [
+        "ggml_win_part"
+      ],
+      "public_entries": [
+        "ggml_win_part"
+      ]
+    },
+    "GGML_OP_WIN_UNPART": {
+      "definitions": [
+        "ggml_win_unpart"
+      ],
+      "public_entries": [
+        "ggml_win_unpart"
+      ]
+    },
+    "GGML_OP_GET_REL_POS": {
+      "definitions": [
+        "ggml_get_rel_pos"
+      ],
+      "public_entries": [
+        "ggml_get_rel_pos"
+      ]
+    },
+    "GGML_OP_ADD_REL_POS": {
+      "definitions": [
+        "ggml_add_rel_pos_impl"
+      ],
+      "public_entries": [
+        "ggml_add_rel_pos",
+        "ggml_add_rel_pos_inplace"
+      ]
+    },
+    "GGML_OP_RWKV_WKV6": {
+      "definitions": [
+        "ggml_rwkv_wkv6"
+      ],
+      "public_entries": [
+        "ggml_rwkv_wkv6"
+      ]
+    },
+    "GGML_OP_GATED_LINEAR_ATTN": {
+      "definitions": [
+        "ggml_gated_linear_attn"
+      ],
+      "public_entries": [
+        "ggml_gated_linear_attn"
+      ]
+    },
+    "GGML_OP_RWKV_WKV7": {
+      "definitions": [
+        "ggml_rwkv_wkv7"
+      ],
+      "public_entries": [
+        "ggml_rwkv_wkv7"
+      ]
+    },
+    "GGML_OP_SOLVE_TRI": {
+      "definitions": [
+        "ggml_solve_tri"
+      ],
+      "public_entries": [
+        "ggml_solve_tri"
+      ]
+    },
+    "GGML_OP_GATED_DELTA_NET": {
+      "definitions": [
+        "ggml_gated_delta_net"
+      ],
+      "public_entries": [
+        "ggml_gated_delta_net"
+      ]
+    },
+    "GGML_OP_LIGHTNING_INDEXER": {
+      "definitions": [
+        "ggml_lightning_indexer"
+      ],
+      "public_entries": [
+        "ggml_lightning_indexer"
+      ]
+    },
+    "GGML_OP_DSV4_HC_COMB": {
+      "definitions": [
+        "ggml_dsv4_hc_comb"
+      ],
+      "public_entries": [
+        "ggml_dsv4_hc_comb"
+      ]
+    },
+    "GGML_OP_DSV4_HC_PRE": {
+      "definitions": [
+        "ggml_dsv4_hc_pre_impl"
+      ],
+      "public_entries": [
+        "ggml_dsv4_hc_pre",
+        "ggml_dsv4_hc_pre_gated"
+      ]
+    },
+    "GGML_OP_DSV4_HC_POST": {
+      "definitions": [
+        "ggml_dsv4_hc_post"
+      ],
+      "public_entries": [
+        "ggml_dsv4_hc_post"
+      ]
+    },
+    "GGML_OP_TOP_K_MASK": {
+      "definitions": [
+        "ggml_top_k_mask"
+      ],
+      "public_entries": [
+        "ggml_top_k_mask"
+      ]
+    },
+    "GGML_OP_UNARY": {
+      "definitions": [
+        "ggml_unary_impl",
+        "ggml_xielu"
+      ],
+      "public_entries": [
+        "ggml_abs",
+        "ggml_abs_inplace",
+        "ggml_ceil",
+        "ggml_ceil_inplace",
+        "ggml_elu",
+        "ggml_elu_inplace",
+        "ggml_exp",
+        "ggml_exp_inplace",
+        "ggml_expm1",
+        "ggml_expm1_inplace",
+        "ggml_floor",
+        "ggml_floor_inplace",
+        "ggml_gelu",
+        "ggml_gelu_erf",
+        "ggml_gelu_erf_inplace",
+        "ggml_gelu_inplace",
+        "ggml_gelu_quick",
+        "ggml_gelu_quick_inplace",
+        "ggml_hardsigmoid",
+        "ggml_hardswish",
+        "ggml_neg",
+        "ggml_neg_inplace",
+        "ggml_relu",
+        "ggml_relu_inplace",
+        "ggml_round",
+        "ggml_round_inplace",
+        "ggml_sgn",
+        "ggml_sgn_inplace",
+        "ggml_sigmoid",
+        "ggml_sigmoid_inplace",
+        "ggml_silu",
+        "ggml_silu_inplace",
+        "ggml_softplus",
+        "ggml_softplus_inplace",
+        "ggml_step",
+        "ggml_step_inplace",
+        "ggml_tanh",
+        "ggml_tanh_inplace",
+        "ggml_trunc",
+        "ggml_trunc_inplace",
+        "ggml_unary",
+        "ggml_unary_inplace",
+        "ggml_xielu"
+      ]
+    },
+    "GGML_OP_MAP_CUSTOM1": {
+      "definitions": [
+        "ggml_map_custom1_impl"
+      ],
+      "public_entries": [
+        "ggml_map_custom1",
+        "ggml_map_custom1_inplace"
+      ]
+    },
+    "GGML_OP_MAP_CUSTOM2": {
+      "definitions": [
+        "ggml_map_custom2_impl"
+      ],
+      "public_entries": [
+        "ggml_map_custom2",
+        "ggml_map_custom2_inplace"
+      ]
+    },
+    "GGML_OP_MAP_CUSTOM3": {
+      "definitions": [
+        "ggml_map_custom3_impl"
+      ],
+      "public_entries": [
+        "ggml_map_custom3",
+        "ggml_map_custom3_inplace"
+      ]
+    },
+    "GGML_OP_CUSTOM": {
+      "definitions": [
+        "ggml_custom_4d",
+        "ggml_custom_inplace"
+      ],
+      "public_entries": [
+        "ggml_custom_4d",
+        "ggml_custom_inplace"
+      ]
+    },
+    "GGML_OP_CROSS_ENTROPY_LOSS": {
+      "definitions": [
+        "ggml_cross_entropy_loss"
+      ],
+      "public_entries": [
+        "ggml_cross_entropy_loss"
+      ]
+    },
+    "GGML_OP_CROSS_ENTROPY_LOSS_BACK": {
+      "definitions": [
+        "ggml_cross_entropy_loss_back"
+      ],
+      "public_entries": [
+        "ggml_cross_entropy_loss_back"
+      ]
+    },
+    "GGML_OP_OPT_STEP_ADAMW": {
+      "definitions": [
+        "ggml_opt_step_adamw"
+      ],
+      "public_entries": [
+        "ggml_opt_step_adamw"
+      ]
+    },
+    "GGML_OP_OPT_STEP_SGD": {
+      "definitions": [
+        "ggml_opt_step_sgd"
+      ],
+      "public_entries": [
+        "ggml_opt_step_sgd"
+      ]
+    },
+    "GGML_OP_GLU": {
+      "definitions": [
+        "ggml_glu_impl"
+      ],
+      "public_entries": [
+        "ggml_geglu",
+        "ggml_geglu_erf",
+        "ggml_geglu_erf_split",
+        "ggml_geglu_erf_swapped",
+        "ggml_geglu_quick",
+        "ggml_geglu_quick_split",
+        "ggml_geglu_quick_swapped",
+        "ggml_geglu_split",
+        "ggml_geglu_swapped",
+        "ggml_glu",
+        "ggml_glu_split",
+        "ggml_reglu",
+        "ggml_reglu_split",
+        "ggml_reglu_swapped",
+        "ggml_swiglu",
+        "ggml_swiglu_clamp",
+        "ggml_swiglu_oai",
+        "ggml_swiglu_split",
+        "ggml_swiglu_swapped"
+      ]
+    },
+    "GGML_OP_SLEEP": {
+      "definitions": [
+        "ggml_sleep"
+      ],
+      "public_entries": [
+        "ggml_sleep"
+      ]
+    }
+  },
+  "definitions": {
+    "ggml_abs": {
+      "implementation_line": 2646,
+      "header_line": 928,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_abs_inplace": {
+      "implementation_line": 2652,
+      "header_line": 932,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_acc": {
+      "implementation_line": 2196,
+      "header_line": 764,
+      "calls": [
+        "ggml_acc_impl"
+      ]
+    },
+    "ggml_acc_impl": {
+      "implementation_line": 2169,
+      "opcode": "GGML_OP_ACC",
+      "guard_lines": [
+        2178,
+        2179,
+        2180,
+        2181,
+        2185
+      ]
+    },
+    "ggml_acc_inplace": {
+      "implementation_line": 2207,
+      "header_line": 773,
+      "calls": [
+        "ggml_acc_impl"
+      ]
+    },
+    "ggml_add": {
+      "implementation_line": 2099,
+      "header_line": 737,
+      "calls": [
+        "ggml_add_impl"
+      ]
+    },
+    "ggml_add_cast": {
+      "implementation_line": 2138,
+      "header_line": 747,
+      "calls": [
+        "ggml_add_cast_impl"
+      ]
+    },
+    "ggml_add_cast_impl": {
+      "implementation_line": 2115,
+      "opcode": "GGML_OP_ADD",
+      "guard_lines": [
+        2122,
+        2125
+      ]
+    },
+    "ggml_add_id": {
+      "implementation_line": 2146,
+      "header_line": 755,
+      "opcode": "GGML_OP_ADD_ID",
+      "guard_lines": [
+        2152,
+        2153,
+        2154,
+        2155
+      ]
+    },
+    "ggml_add_impl": {
+      "implementation_line": 2083,
+      "opcode": "GGML_OP_ADD",
+      "guard_lines": [
+        2088
+      ]
+    },
+    "ggml_add_inplace": {
+      "implementation_line": 2106,
+      "header_line": 742,
+      "calls": [
+        "ggml_add_impl"
+      ]
+    },
+    "ggml_add_rel_pos": {
+      "implementation_line": 5796,
+      "header_line": 2351,
+      "calls": [
+        "ggml_add_rel_pos_impl"
+      ]
+    },
+    "ggml_add_rel_pos_impl": {
+      "implementation_line": 5769,
+      "opcode": "GGML_OP_ADD_REL_POS",
+      "guard_lines": [
+        5775,
+        5776,
+        5777,
+        5778,
+        5779,
+        5780,
+        5781,
+        5782,
+        5783
+      ]
+    },
+    "ggml_add_rel_pos_inplace": {
+      "implementation_line": 5804,
+      "header_line": 2357,
+      "calls": [
+        "ggml_add_rel_pos_impl"
+      ]
+    },
+    "ggml_arange": {
+      "implementation_line": 5390,
+      "header_line": 2230,
+      "opcode": "GGML_OP_ARANGE",
+      "guard_lines": [
+        5395
+      ]
+    },
+    "ggml_argmax": {
+      "implementation_line": 2530,
+      "header_line": 888,
+      "opcode": "GGML_OP_ARGMAX",
+      "guard_lines": [
+        2533,
+        2534
+      ]
+    },
+    "ggml_argsort": {
+      "implementation_line": 5338,
+      "header_line": 2212,
+      "opcode": "GGML_OP_ARGSORT",
+      "guard_lines": [
+        5342
+      ]
+    },
+    "ggml_argsort_top_k": {
+      "implementation_line": 5356,
+      "header_line": 2218,
+      "calls": [
+        "ggml_argsort",
+        "ggml_view_4d"
+      ],
+      "guard_lines": [
+        5360
+      ]
+    },
+    "ggml_cast": {
+      "implementation_line": 3625,
+      "header_line": 1422,
+      "opcode": "GGML_OP_CPY"
+    },
+    "ggml_ceil": {
+      "implementation_line": 2942,
+      "header_line": 1063,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_ceil_inplace": {
+      "implementation_line": 2948,
+      "header_line": 1067,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_clamp": {
+      "implementation_line": 4073,
+      "header_line": 1583,
+      "calls": [
+        "ggml_clamp_impl"
+      ]
+    },
+    "ggml_clamp_impl": {
+      "implementation_line": 4056,
+      "opcode": "GGML_OP_CLAMP"
+    },
+    "ggml_clamp_inplace": {
+      "implementation_line": 4081,
+      "header_line": 1590,
+      "calls": [
+        "ggml_clamp_impl"
+      ]
+    },
+    "ggml_col2im_1d": {
+      "implementation_line": 4605,
+      "header_line": 1864,
+      "opcode": "GGML_OP_COL2IM_1D",
+      "guard_lines": [
+        4611,
+        4612,
+        4613,
+        4614,
+        4615,
+        4616,
+        4623,
+        4624
+      ]
+    },
+    "ggml_concat": {
+      "implementation_line": 2615,
+      "header_line": 922,
+      "opcode": "GGML_OP_CONCAT",
+      "guard_lines": [
+        2620,
+        2621,
+        2629
+      ]
+    },
+    "ggml_cont": {
+      "implementation_line": 3654,
+      "header_line": 1428,
+      "calls": [
+        "ggml_cont_impl"
+      ]
+    },
+    "ggml_cont_1d": {
+      "implementation_line": 3661,
+      "header_line": 1433,
+      "calls": [
+        "ggml_cont_4d"
+      ]
+    },
+    "ggml_cont_2d": {
+      "implementation_line": 3668,
+      "header_line": 1438,
+      "calls": [
+        "ggml_cont_4d"
+      ]
+    },
+    "ggml_cont_3d": {
+      "implementation_line": 3676,
+      "header_line": 1444,
+      "calls": [
+        "ggml_cont_4d"
+      ]
+    },
+    "ggml_cont_4d": {
+      "implementation_line": 3685,
+      "header_line": 1451,
+      "opcode": "GGML_OP_CONT",
+      "guard_lines": [
+        3692
+      ]
+    },
+    "ggml_cont_impl": {
+      "implementation_line": 3642,
+      "opcode": "GGML_OP_CONT"
+    },
+    "ggml_conv_1d": {
+      "implementation_line": 4541,
+      "header_line": 1871,
+      "calls": [
+        "ggml_cont",
+        "ggml_im2col",
+        "ggml_mul_mat",
+        "ggml_permute",
+        "ggml_reshape_2d",
+        "ggml_reshape_3d"
+      ]
+    },
+    "ggml_conv_1d_dw": {
+      "implementation_line": 4574,
+      "header_line": 1890,
+      "calls": [
+        "ggml_im2col",
+        "ggml_mul_mat",
+        "ggml_reshape_3d",
+        "ggml_reshape_4d"
+      ]
+    },
+    "ggml_conv_1d_dw_ph": {
+      "implementation_line": 4594,
+      "header_line": 1898,
+      "calls": [
+        "ggml_conv_1d_dw"
+      ]
+    },
+    "ggml_conv_1d_ph": {
+      "implementation_line": 4563,
+      "header_line": 1881,
+      "calls": [
+        "ggml_conv_1d"
+      ]
+    },
+    "ggml_conv_2d": {
+      "implementation_line": 4679,
+      "header_line": 1913,
+      "calls": [
+        "ggml_cont",
+        "ggml_im2col",
+        "ggml_mul_mat",
+        "ggml_permute",
+        "ggml_reshape_2d",
+        "ggml_reshape_4d"
+      ]
+    },
+    "ggml_conv_2d_direct": {
+      "implementation_line": 4873,
+      "header_line": 2019,
+      "opcode": "GGML_OP_CONV_2D",
+      "guard_lines": [
+        4884
+      ]
+    },
+    "ggml_conv_2d_dw": {
+      "implementation_line": 4808,
+      "header_line": 1986,
+      "calls": [
+        "ggml_im2col",
+        "ggml_mul_mat",
+        "ggml_reshape_4d"
+      ]
+    },
+    "ggml_conv_2d_dw_direct": {
+      "implementation_line": 4833,
+      "header_line": 2002,
+      "opcode": "GGML_OP_CONV_2D_DW",
+      "guard_lines": [
+        4843,
+        4844,
+        4856
+      ]
+    },
+    "ggml_conv_2d_s1_ph": {
+      "implementation_line": 4799,
+      "header_line": 1980,
+      "calls": [
+        "ggml_conv_2d"
+      ]
+    },
+    "ggml_conv_2d_sk_p0": {
+      "implementation_line": 4790,
+      "header_line": 1967,
+      "calls": [
+        "ggml_conv_2d"
+      ]
+    },
+    "ggml_conv_3d": {
+      "implementation_line": 4756,
+      "header_line": 1943,
+      "calls": [
+        "ggml_cont",
+        "ggml_im2col_3d",
+        "ggml_mul_mat",
+        "ggml_permute",
+        "ggml_reshape_2d",
+        "ggml_reshape_4d"
+      ]
+    },
+    "ggml_conv_3d_direct": {
+      "implementation_line": 4911,
+      "header_line": 2030,
+      "opcode": "GGML_OP_CONV_3D",
+      "guard_lines": [
+        4928,
+        4929
+      ]
+    },
+    "ggml_conv_transpose_1d": {
+      "implementation_line": 4644,
+      "header_line": 1905,
+      "opcode": "GGML_OP_CONV_TRANSPOSE_1D",
+      "guard_lines": [
+        4651,
+        4652,
+        4653,
+        4655,
+        4656
+      ]
+    },
+    "ggml_conv_transpose_2d_p0": {
+      "implementation_line": 4965,
+      "header_line": 2013,
+      "opcode": "GGML_OP_CONV_TRANSPOSE_2D",
+      "guard_lines": [
+        4970
+      ]
+    },
+    "ggml_cos": {
+      "implementation_line": 2456,
+      "header_line": 860,
+      "calls": [
+        "ggml_cos_impl"
+      ]
+    },
+    "ggml_cos_impl": {
+      "implementation_line": 2444,
+      "opcode": "GGML_OP_COS"
+    },
+    "ggml_cos_inplace": {
+      "implementation_line": 2462,
+      "header_line": 864,
+      "calls": [
+        "ggml_cos_impl"
+      ]
+    },
+    "ggml_count_equal": {
+      "implementation_line": 2546,
+      "header_line": 893,
+      "opcode": "GGML_OP_COUNT_EQUAL",
+      "guard_lines": [
+        2550
+      ]
+    },
+    "ggml_cpy": {
+      "implementation_line": 3618,
+      "header_line": 1416,
+      "calls": [
+        "ggml_cpy_impl"
+      ]
+    },
+    "ggml_cpy_impl": {
+      "implementation_line": 3597,
+      "opcode": "GGML_OP_CPY",
+      "guard_lines": [
+        3601
+      ]
+    },
+    "ggml_cross_entropy_loss": {
+      "implementation_line": 6206,
+      "header_line": 2612,
+      "opcode": "GGML_OP_CROSS_ENTROPY_LOSS",
+      "guard_lines": [
+        6210
+      ]
+    },
+    "ggml_cross_entropy_loss_back": {
+      "implementation_line": 6223,
+      "header_line": 2617,
+      "opcode": "GGML_OP_CROSS_ENTROPY_LOSS_BACK",
+      "guard_lines": [
+        6228,
+        6229
+      ]
+    },
+    "ggml_cumsum": {
+      "implementation_line": 2501,
+      "header_line": 878,
+      "opcode": "GGML_OP_CUMSUM",
+      "guard_lines": [
+        2504
+      ]
+    },
+    "ggml_custom_4d": {
+      "implementation_line": 6123,
+      "header_line": 2582,
+      "opcode": "GGML_OP_CUSTOM",
+      "guard_lines": [
+        6136
+      ]
+    },
+    "ggml_custom_inplace": {
+      "implementation_line": 6155,
+      "header_line": 2595,
+      "opcode": "GGML_OP_CUSTOM",
+      "guard_lines": [
+        6164
+      ]
+    },
+    "ggml_diag": {
+      "implementation_line": 4040,
+      "header_line": 1579,
+      "opcode": "GGML_OP_DIAG",
+      "guard_lines": [
+        4043
+      ]
+    },
+    "ggml_div": {
+      "implementation_line": 2300,
+      "header_line": 802,
+      "calls": [
+        "ggml_div_impl"
+      ]
+    },
+    "ggml_div_impl": {
+      "implementation_line": 2284,
+      "opcode": "GGML_OP_DIV",
+      "guard_lines": [
+        2289
+      ]
+    },
+    "ggml_div_inplace": {
+      "implementation_line": 2307,
+      "header_line": 807,
+      "calls": [
+        "ggml_div_impl"
+      ]
+    },
+    "ggml_dsv4_hc_comb": {
+      "implementation_line": 6421,
+      "header_line": 2464,
+      "opcode": "GGML_OP_DSV4_HC_COMB",
+      "guard_lines": [
+        6428,
+        6429,
+        6430,
+        6431,
+        6444,
+        6445,
+        6446,
+        6447,
+        6448,
+        6449,
+        6450,
+        6451,
+        6452,
+        6453,
+        6454,
+        6455
+      ]
+    },
+    "ggml_dsv4_hc_post": {
+      "implementation_line": 6527,
+      "header_line": 2496,
+      "opcode": "GGML_OP_DSV4_HC_POST",
+      "guard_lines": [
+        6533,
+        6534,
+        6535,
+        6541,
+        6542,
+        6543,
+        6545,
+        6546,
+        6547,
+        6549,
+        6550,
+        6551,
+        6552,
+        6555,
+        6556,
+        6557,
+        6558,
+        6559
+      ]
+    },
+    "ggml_dsv4_hc_pre": {
+      "implementation_line": 6510,
+      "header_line": 2475,
+      "calls": [
+        "ggml_dsv4_hc_pre_impl"
+      ]
+    },
+    "ggml_dsv4_hc_pre_gated": {
+      "implementation_line": 6517,
+      "header_line": 2483,
+      "calls": [
+        "ggml_dsv4_hc_pre_impl"
+      ]
+    },
+    "ggml_dsv4_hc_pre_impl": {
+      "implementation_line": 6472,
+      "opcode": "GGML_OP_DSV4_HC_PRE",
+      "guard_lines": [
+        6478,
+        6479,
+        6485,
+        6486,
+        6488,
+        6489,
+        6490,
+        6492,
+        6493,
+        6494,
+        6496
+      ]
+    },
+    "ggml_dup": {
+      "implementation_line": 2069,
+      "header_line": 728,
+      "calls": [
+        "ggml_dup_impl"
+      ]
+    },
+    "ggml_dup_impl": {
+      "implementation_line": 2057,
+      "opcode": "GGML_OP_DUP"
+    },
+    "ggml_dup_inplace": {
+      "implementation_line": 2075,
+      "header_line": 733,
+      "calls": [
+        "ggml_dup_impl"
+      ]
+    },
+    "ggml_dup_tensor": {
+      "implementation_line": 1924,
+      "header_line": 696,
+      "calls": [
+        "ggml_new_tensor"
+      ]
+    },
+    "ggml_elu": {
+      "implementation_line": 2716,
+      "header_line": 968,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_elu_inplace": {
+      "implementation_line": 2722,
+      "header_line": 972,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_exp": {
+      "implementation_line": 2885,
+      "header_line": 1047,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_exp_inplace": {
+      "implementation_line": 2891,
+      "header_line": 1051,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_expm1": {
+      "implementation_line": 2392,
+      "header_line": 836,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_expm1_inplace": {
+      "implementation_line": 2398,
+      "header_line": 840,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_fill": {
+      "implementation_line": 5322,
+      "header_line": 2187,
+      "calls": [
+        "ggml_fill_impl"
+      ]
+    },
+    "ggml_fill_impl": {
+      "implementation_line": 5304,
+      "opcode": "GGML_OP_FILL",
+      "guard_lines": [
+        5309,
+        5310
+      ]
+    },
+    "ggml_fill_inplace": {
+      "implementation_line": 5329,
+      "header_line": 2192,
+      "calls": [
+        "ggml_fill_impl"
+      ]
+    },
+    "ggml_flash_attn_back": {
+      "implementation_line": 5529,
+      "header_line": 2289,
+      "opcode": "GGML_OP_FLASH_ATTN_BACK",
+      "guard_lines": [
+        5536,
+        5538,
+        5553,
+        5554,
+        5555,
+        5556,
+        5557,
+        5558,
+        5559,
+        5560,
+        5561,
+        5562,
+        5563,
+        5565,
+        5574
+      ]
+    },
+    "ggml_flash_attn_ext": {
+      "implementation_line": 5467,
+      "header_line": 2247,
+      "calls": [
+        "ggml_flash_attn_ext_impl"
+      ]
+    },
+    "ggml_flash_attn_ext_impl": {
+      "implementation_line": 5412,
+      "opcode": "GGML_OP_FLASH_ATTN_EXT",
+      "guard_lines": [
+        5422,
+        5427,
+        5428,
+        5429,
+        5430,
+        5431,
+        5433,
+        5434,
+        5438,
+        5439,
+        5442,
+        5443,
+        5447
+      ]
+    },
+    "ggml_flash_attn_ext_rows": {
+      "implementation_line": 5479,
+      "header_line": 2264,
+      "calls": [
+        "ggml_flash_attn_ext_impl"
+      ]
+    },
+    "ggml_floor": {
+      "implementation_line": 2928,
+      "header_line": 1055,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_floor_inplace": {
+      "implementation_line": 2934,
+      "header_line": 1059,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_gated_delta_net": {
+      "implementation_line": 6328,
+      "header_line": 2426,
+      "opcode": "GGML_OP_GATED_DELTA_NET",
+      "guard_lines": [
+        6337,
+        6338,
+        6339,
+        6340,
+        6341,
+        6342,
+        6344,
+        6345,
+        6346,
+        6347,
+        6348,
+        6349,
+        6357,
+        6358,
+        6361,
+        6362,
+        6363,
+        6364,
+        6365
+      ]
+    },
+    "ggml_gated_linear_attn": {
+      "implementation_line": 5857,
+      "header_line": 2372,
+      "opcode": "GGML_OP_GATED_LINEAR_ATTN",
+      "guard_lines": [
+        5865,
+        5866,
+        5867,
+        5868,
+        5869,
+        5876,
+        5877,
+        5878,
+        5879
+      ]
+    },
+    "ggml_geglu": {
+      "implementation_line": 3021,
+      "header_line": 1125,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_geglu_erf": {
+      "implementation_line": 3063,
+      "header_line": 1141,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_geglu_erf_split": {
+      "implementation_line": 3075,
+      "header_line": 1180,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_geglu_erf_swapped": {
+      "implementation_line": 3069,
+      "header_line": 1145,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_geglu_quick": {
+      "implementation_line": 3084,
+      "header_line": 1149,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_geglu_quick_split": {
+      "implementation_line": 3096,
+      "header_line": 1185,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_geglu_quick_swapped": {
+      "implementation_line": 3090,
+      "header_line": 1153,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_geglu_split": {
+      "implementation_line": 3033,
+      "header_line": 1170,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_geglu_swapped": {
+      "implementation_line": 3027,
+      "header_line": 1129,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_gelu": {
+      "implementation_line": 2775,
+      "header_line": 996,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_gelu_erf": {
+      "implementation_line": 2789,
+      "header_line": 1006,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_gelu_erf_inplace": {
+      "implementation_line": 2795,
+      "header_line": 1010,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_gelu_inplace": {
+      "implementation_line": 2781,
+      "header_line": 1000,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_gelu_quick": {
+      "implementation_line": 2803,
+      "header_line": 1014,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_gelu_quick_inplace": {
+      "implementation_line": 2809,
+      "header_line": 1018,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_get_rel_pos": {
+      "implementation_line": 5750,
+      "header_line": 2344,
+      "opcode": "GGML_OP_GET_REL_POS",
+      "guard_lines": [
+        5755,
+        5756
+      ]
+    },
+    "ggml_get_rows": {
+      "implementation_line": 3964,
+      "header_line": 1551,
+      "opcode": "GGML_OP_GET_ROWS",
+      "guard_lines": [
+        3968,
+        3969,
+        3970,
+        3971
+      ]
+    },
+    "ggml_get_rows_back": {
+      "implementation_line": 3989,
+      "header_line": 1556,
+      "opcode": "GGML_OP_GET_ROWS_BACK",
+      "guard_lines": [
+        3994,
+        3995
+      ]
+    },
+    "ggml_glu": {
+      "implementation_line": 2982,
+      "header_line": 1111,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_glu_impl": {
+      "implementation_line": 2899,
+      "opcode": "GGML_OP_GLU",
+      "guard_lines": [
+        2905,
+        2908,
+        2909,
+        2910
+      ]
+    },
+    "ggml_glu_split": {
+      "implementation_line": 2990,
+      "header_line": 1159,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_group_norm": {
+      "implementation_line": 3226,
+      "header_line": 1226,
+      "calls": [
+        "ggml_group_norm_impl"
+      ]
+    },
+    "ggml_group_norm_impl": {
+      "implementation_line": 3209,
+      "opcode": "GGML_OP_GROUP_NORM"
+    },
+    "ggml_group_norm_inplace": {
+      "implementation_line": 3234,
+      "header_line": 1232,
+      "calls": [
+        "ggml_group_norm_impl"
+      ]
+    },
+    "ggml_hardsigmoid": {
+      "implementation_line": 2877,
+      "header_line": 1043,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_hardswish": {
+      "implementation_line": 2869,
+      "header_line": 1038,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_im2col": {
+      "implementation_line": 4472,
+      "header_line": 1835,
+      "opcode": "GGML_OP_IM2COL",
+      "guard_lines": [
+        4485,
+        4488,
+        4489,
+        4495,
+        4496
+      ]
+    },
+    "ggml_im2col_3d": {
+      "implementation_line": 4706,
+      "header_line": 1924,
+      "opcode": "GGML_OP_IM2COL_3D",
+      "guard_lines": [
+        4735,
+        4736,
+        4737
+      ]
+    },
+    "ggml_im2col_back": {
+      "implementation_line": 4516,
+      "header_line": 1848,
+      "opcode": "GGML_OP_IM2COL_BACK"
+    },
+    "ggml_interpolate": {
+      "implementation_line": 5114,
+      "header_line": 2109,
+      "calls": [
+        "ggml_interpolate_impl"
+      ]
+    },
+    "ggml_interpolate_impl": {
+      "implementation_line": 5082,
+      "opcode": "GGML_OP_UPSCALE",
+      "guard_lines": [
+        5090,
+        5092,
+        5093
+      ]
+    },
+    "ggml_l2_norm": {
+      "implementation_line": 3259,
+      "header_line": 1240,
+      "calls": [
+        "ggml_l2_norm_impl"
+      ]
+    },
+    "ggml_l2_norm_impl": {
+      "implementation_line": 3244,
+      "opcode": "GGML_OP_L2_NORM"
+    },
+    "ggml_l2_norm_inplace": {
+      "implementation_line": 3266,
+      "header_line": 1245,
+      "calls": [
+        "ggml_l2_norm_impl"
+      ]
+    },
+    "ggml_leaky_relu": {
+      "implementation_line": 2744,
+      "header_line": 980,
+      "opcode": "GGML_OP_LEAKY_RELU"
+    },
+    "ggml_lightning_indexer": {
+      "implementation_line": 6385,
+      "header_line": 2447,
+      "opcode": "GGML_OP_LIGHTNING_INDEXER",
+      "guard_lines": [
+        6392,
+        6393,
+        6394,
+        6395,
+        6396,
+        6397,
+        6398,
+        6399,
+        6400,
+        6401,
+        6402,
+        6403,
+        6404,
+        6405
+      ]
+    },
+    "ggml_log": {
+      "implementation_line": 2380,
+      "header_line": 828,
+      "calls": [
+        "ggml_log_impl"
+      ]
+    },
+    "ggml_log_impl": {
+      "implementation_line": 2368,
+      "opcode": "GGML_OP_LOG"
+    },
+    "ggml_log_inplace": {
+      "implementation_line": 2386,
+      "header_line": 832,
+      "calls": [
+        "ggml_log_impl"
+      ]
+    },
+    "ggml_map_custom1": {
+      "implementation_line": 6005,
+      "header_line": 2532,
+      "calls": [
+        "ggml_map_custom1_impl"
+      ]
+    },
+    "ggml_map_custom1_impl": {
+      "implementation_line": 5981,
+      "opcode": "GGML_OP_MAP_CUSTOM1",
+      "guard_lines": [
+        5988
+      ]
+    },
+    "ggml_map_custom1_inplace": {
+      "implementation_line": 6014,
+      "header_line": 2539,
+      "calls": [
+        "ggml_map_custom1_impl"
+      ]
+    },
+    "ggml_map_custom2": {
+      "implementation_line": 6051,
+      "header_line": 2546,
+      "calls": [
+        "ggml_map_custom2_impl"
+      ]
+    },
+    "ggml_map_custom2_impl": {
+      "implementation_line": 6025,
+      "opcode": "GGML_OP_MAP_CUSTOM2",
+      "guard_lines": [
+        6033
+      ]
+    },
+    "ggml_map_custom2_inplace": {
+      "implementation_line": 6061,
+      "header_line": 2554,
+      "calls": [
+        "ggml_map_custom2_impl"
+      ]
+    },
+    "ggml_map_custom3": {
+      "implementation_line": 6101,
+      "header_line": 2562,
+      "calls": [
+        "ggml_map_custom3_impl"
+      ]
+    },
+    "ggml_map_custom3_impl": {
+      "implementation_line": 6073,
+      "opcode": "GGML_OP_MAP_CUSTOM3",
+      "guard_lines": [
+        6082
+      ]
+    },
+    "ggml_map_custom3_inplace": {
+      "implementation_line": 6112,
+      "header_line": 2571,
+      "calls": [
+        "ggml_map_custom3_impl"
+      ]
+    },
+    "ggml_mean": {
+      "implementation_line": 2516,
+      "header_line": 883,
+      "opcode": "GGML_OP_MEAN"
+    },
+    "ggml_mul": {
+      "implementation_line": 2268,
+      "header_line": 792,
+      "calls": [
+        "ggml_mul_impl"
+      ]
+    },
+    "ggml_mul_impl": {
+      "implementation_line": 2252,
+      "opcode": "GGML_OP_MUL",
+      "guard_lines": [
+        2257
+      ]
+    },
+    "ggml_mul_inplace": {
+      "implementation_line": 2275,
+      "header_line": 797,
+      "calls": [
+        "ggml_mul_impl"
+      ]
+    },
+    "ggml_mul_mat": {
+      "implementation_line": 3364,
+      "header_line": 1307,
+      "opcode": "GGML_OP_MUL_MAT",
+      "guard_lines": [
+        3368,
+        3369
+      ]
+    },
+    "ggml_mul_mat_id": {
+      "implementation_line": 3407,
+      "header_line": 1325,
+      "opcode": "GGML_OP_MUL_MAT_ID",
+      "guard_lines": [
+        3412,
+        3413,
+        3415,
+        3416,
+        3417,
+        3418,
+        3419,
+        3420
+      ]
+    },
+    "ggml_neg": {
+      "implementation_line": 2674,
+      "header_line": 944,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_neg_inplace": {
+      "implementation_line": 2680,
+      "header_line": 948,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_new_tensor": {
+      "implementation_line": 1873,
+      "header_line": 662,
+      "calls": [
+        "ggml_new_tensor_impl"
+      ]
+    },
+    "ggml_new_tensor_1d": {
+      "implementation_line": 1881,
+      "header_line": 668,
+      "calls": [
+        "ggml_new_tensor"
+      ]
+    },
+    "ggml_new_tensor_2d": {
+      "implementation_line": 1888,
+      "header_line": 673,
+      "calls": [
+        "ggml_new_tensor"
+      ]
+    },
+    "ggml_new_tensor_3d": {
+      "implementation_line": 1897,
+      "header_line": 679,
+      "calls": [
+        "ggml_new_tensor"
+      ]
+    },
+    "ggml_new_tensor_4d": {
+      "implementation_line": 1907,
+      "header_line": 686,
+      "calls": [
+        "ggml_new_tensor"
+      ]
+    },
+    "ggml_new_tensor_impl": {
+      "implementation_line": 1776,
+      "opcode": "GGML_OP_NONE",
+      "guard_lines": [
+        1785,
+        1786,
+        1798,
+        1820,
+        1823,
+        1866
+      ]
+    },
+    "ggml_norm": {
+      "implementation_line": 3144,
+      "header_line": 1204,
+      "calls": [
+        "ggml_norm_impl"
+      ]
+    },
+    "ggml_norm_impl": {
+      "implementation_line": 3129,
+      "opcode": "GGML_OP_NORM"
+    },
+    "ggml_norm_inplace": {
+      "implementation_line": 3151,
+      "header_line": 1209,
+      "calls": [
+        "ggml_norm_impl"
+      ]
+    },
+    "ggml_opt_step_adamw": {
+      "implementation_line": 6243,
+      "header_line": 2626,
+      "opcode": "GGML_OP_OPT_STEP_ADAMW",
+      "guard_lines": [
+        6250,
+        6251,
+        6252,
+        6253,
+        6254,
+        6255
+      ]
+    },
+    "ggml_opt_step_sgd": {
+      "implementation_line": 6271,
+      "header_line": 2635,
+      "opcode": "GGML_OP_OPT_STEP_SGD",
+      "guard_lines": [
+        6276,
+        6277,
+        6278,
+        6279
+      ]
+    },
+    "ggml_out_prod": {
+      "implementation_line": 3443,
+      "header_line": 1334,
+      "opcode": "GGML_OP_OUT_PROD",
+      "guard_lines": [
+        3447,
+        3448
+      ]
+    },
+    "ggml_pad": {
+      "implementation_line": 5127,
+      "header_line": 2119,
+      "calls": [
+        "ggml_pad_ext"
+      ]
+    },
+    "ggml_pad_circular": {
+      "implementation_line": 5139,
+      "header_line": 2128,
+      "calls": [
+        "ggml_pad_ext_circular"
+      ]
+    },
+    "ggml_pad_ext": {
+      "implementation_line": 5149,
+      "header_line": 2136,
+      "opcode": "GGML_OP_PAD"
+    },
+    "ggml_pad_ext_circular": {
+      "implementation_line": 5186,
+      "header_line": 2150,
+      "calls": [
+        "ggml_pad_ext"
+      ]
+    },
+    "ggml_pad_reflect_1d": {
+      "implementation_line": 5205,
+      "header_line": 2163,
+      "opcode": "GGML_OP_PAD_REFLECT_1D",
+      "guard_lines": [
+        5210,
+        5211,
+        5213,
+        5214,
+        5216,
+        5217
+      ]
+    },
+    "ggml_permute": {
+      "implementation_line": 3888,
+      "header_line": 1533,
+      "opcode": "GGML_OP_PERMUTE",
+      "guard_lines": [
+        3895,
+        3896,
+        3897,
+        3898,
+        3900,
+        3901,
+        3902,
+        3903,
+        3904,
+        3905
+      ]
+    },
+    "ggml_pool_1d": {
+      "implementation_line": 4997,
+      "header_line": 2053,
+      "opcode": "GGML_OP_POOL_1D",
+      "guard_lines": [
+        5010
+      ]
+    },
+    "ggml_pool_2d": {
+      "implementation_line": 5025,
+      "header_line": 2063,
+      "opcode": "GGML_OP_POOL_2D",
+      "guard_lines": [
+        5042,
+        5043
+      ]
+    },
+    "ggml_pool_2d_back": {
+      "implementation_line": 5056,
+      "header_line": 2074,
+      "opcode": "GGML_OP_POOL_2D_BACK"
+    },
+    "ggml_reglu": {
+      "implementation_line": 3000,
+      "header_line": 1117,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_reglu_split": {
+      "implementation_line": 3012,
+      "header_line": 1165,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_reglu_swapped": {
+      "implementation_line": 3006,
+      "header_line": 1121,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_relu": {
+      "implementation_line": 2730,
+      "header_line": 976,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_relu_inplace": {
+      "implementation_line": 2736,
+      "header_line": 984,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_repeat": {
+      "implementation_line": 2563,
+      "header_line": 900,
+      "opcode": "GGML_OP_REPEAT",
+      "guard_lines": [
+        2567
+      ]
+    },
+    "ggml_repeat_4d": {
+      "implementation_line": 2577,
+      "header_line": 906,
+      "opcode": "GGML_OP_REPEAT",
+      "guard_lines": [
+        2587
+      ]
+    },
+    "ggml_repeat_back": {
+      "implementation_line": 2599,
+      "header_line": 915,
+      "opcode": "GGML_OP_REPEAT_BACK",
+      "guard_lines": [
+        2603
+      ]
+    },
+    "ggml_reshape": {
+      "implementation_line": 3705,
+      "header_line": 1461,
+      "opcode": "GGML_OP_RESHAPE",
+      "guard_lines": [
+        3709,
+        3711
+      ]
+    },
+    "ggml_reshape_1d": {
+      "implementation_line": 3722,
+      "header_line": 1468,
+      "opcode": "GGML_OP_RESHAPE",
+      "guard_lines": [
+        3726,
+        3727
+      ]
+    },
+    "ggml_reshape_2d": {
+      "implementation_line": 3739,
+      "header_line": 1473,
+      "opcode": "GGML_OP_RESHAPE",
+      "guard_lines": [
+        3744,
+        3745
+      ]
+    },
+    "ggml_reshape_3d": {
+      "implementation_line": 3757,
+      "header_line": 1481,
+      "opcode": "GGML_OP_RESHAPE",
+      "guard_lines": [
+        3763,
+        3764
+      ]
+    },
+    "ggml_reshape_4d": {
+      "implementation_line": 3776,
+      "header_line": 1488,
+      "opcode": "GGML_OP_RESHAPE",
+      "guard_lines": [
+        3783,
+        3784
+      ]
+    },
+    "ggml_rms_norm": {
+      "implementation_line": 3175,
+      "header_line": 1214,
+      "calls": [
+        "ggml_rms_norm_impl"
+      ]
+    },
+    "ggml_rms_norm_back": {
+      "implementation_line": 3191,
+      "header_line": 1252,
+      "opcode": "GGML_OP_RMS_NORM_BACK"
+    },
+    "ggml_rms_norm_impl": {
+      "implementation_line": 3160,
+      "opcode": "GGML_OP_RMS_NORM"
+    },
+    "ggml_rms_norm_inplace": {
+      "implementation_line": 3182,
+      "header_line": 1219,
+      "calls": [
+        "ggml_rms_norm_impl"
+      ]
+    },
+    "ggml_roll": {
+      "implementation_line": 5236,
+      "header_line": 2171,
+      "opcode": "GGML_OP_ROLL",
+      "guard_lines": [
+        5243,
+        5244,
+        5245,
+        5246,
+        5247
+      ]
+    },
+    "ggml_rope": {
+      "implementation_line": 4271,
+      "header_line": 1652,
+      "calls": [
+        "ggml_rope_impl"
+      ]
+    },
+    "ggml_rope_ext": {
+      "implementation_line": 4335,
+      "header_line": 1693,
+      "calls": [
+        "ggml_rope_impl"
+      ]
+    },
+    "ggml_rope_ext_back": {
+      "implementation_line": 4397,
+      "header_line": 1788,
+      "opcode": "GGML_OP_ROPE_BACK"
+    },
+    "ggml_rope_ext_inplace": {
+      "implementation_line": 4355,
+      "header_line": 1755,
+      "calls": [
+        "ggml_rope_impl"
+      ]
+    },
+    "ggml_rope_impl": {
+      "implementation_line": 4212,
+      "opcode": "GGML_OP_ROPE",
+      "guard_lines": [
+        4228,
+        4230,
+        4231,
+        4235,
+        4237,
+        4241,
+        4242
+      ]
+    },
+    "ggml_rope_inplace": {
+      "implementation_line": 4324,
+      "header_line": 1660,
+      "calls": [
+        "ggml_rope_impl"
+      ]
+    },
+    "ggml_rope_multi": {
+      "implementation_line": 4282,
+      "header_line": 1738,
+      "calls": [
+        "ggml_rope_impl"
+      ]
+    },
+    "ggml_rope_multi_back": {
+      "implementation_line": 4417,
+      "header_line": 1803,
+      "opcode": "GGML_OP_ROPE_BACK"
+    },
+    "ggml_rope_multi_inplace": {
+      "implementation_line": 4303,
+      "header_line": 1770,
+      "calls": [
+        "ggml_rope_impl"
+      ]
+    },
+    "ggml_round": {
+      "implementation_line": 2956,
+      "header_line": 1071,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_round_inplace": {
+      "implementation_line": 2962,
+      "header_line": 1075,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_rwkv_wkv6": {
+      "implementation_line": 5814,
+      "header_line": 2363,
+      "opcode": "GGML_OP_RWKV_WKV6",
+      "guard_lines": [
+        5822,
+        5823,
+        5824,
+        5825,
+        5826,
+        5827,
+        5834,
+        5835,
+        5836,
+        5837
+      ]
+    },
+    "ggml_rwkv_wkv7": {
+      "implementation_line": 5900,
+      "header_line": 2381,
+      "opcode": "GGML_OP_RWKV_WKV7",
+      "guard_lines": [
+        5909,
+        5910,
+        5911,
+        5912,
+        5913,
+        5914,
+        5915,
+        5922,
+        5923,
+        5924,
+        5925,
+        5926,
+        5927
+      ]
+    },
+    "ggml_scale": {
+      "implementation_line": 3482,
+      "header_line": 1343,
+      "calls": [
+        "ggml_scale_impl"
+      ]
+    },
+    "ggml_scale_bias": {
+      "implementation_line": 3496,
+      "header_line": 1355,
+      "calls": [
+        "ggml_scale_impl"
+      ]
+    },
+    "ggml_scale_bias_inplace": {
+      "implementation_line": 3504,
+      "header_line": 1361,
+      "calls": [
+        "ggml_scale_impl"
+      ]
+    },
+    "ggml_scale_impl": {
+      "implementation_line": 3463,
+      "opcode": "GGML_OP_SCALE",
+      "guard_lines": [
+        3469
+      ]
+    },
+    "ggml_scale_inplace": {
+      "implementation_line": 3489,
+      "header_line": 1349,
+      "calls": [
+        "ggml_scale_impl"
+      ]
+    },
+    "ggml_set": {
+      "implementation_line": 3539,
+      "header_line": 1368,
+      "calls": [
+        "ggml_set_impl"
+      ]
+    },
+    "ggml_set_1d": {
+      "implementation_line": 3561,
+      "header_line": 1387,
+      "calls": [
+        "ggml_set_impl"
+      ]
+    },
+    "ggml_set_1d_inplace": {
+      "implementation_line": 3569,
+      "header_line": 1393,
+      "calls": [
+        "ggml_set_impl"
+      ]
+    },
+    "ggml_set_2d": {
+      "implementation_line": 3577,
+      "header_line": 1400,
+      "calls": [
+        "ggml_set_impl"
+      ]
+    },
+    "ggml_set_2d_inplace": {
+      "implementation_line": 3586,
+      "header_line": 1408,
+      "calls": [
+        "ggml_set_impl"
+      ]
+    },
+    "ggml_set_impl": {
+      "implementation_line": 3514,
+      "opcode": "GGML_OP_SET",
+      "guard_lines": [
+        3523,
+        3528
+      ]
+    },
+    "ggml_set_inplace": {
+      "implementation_line": 3550,
+      "header_line": 1378,
+      "calls": [
+        "ggml_set_impl"
+      ]
+    },
+    "ggml_set_rows": {
+      "implementation_line": 4010,
+      "header_line": 1573,
+      "opcode": "GGML_OP_SET_ROWS",
+      "guard_lines": [
+        4015,
+        4016,
+        4017,
+        4018,
+        4019,
+        4020,
+        4021,
+        4022,
+        4023,
+        4025,
+        4026
+      ]
+    },
+    "ggml_sgn": {
+      "implementation_line": 2660,
+      "header_line": 936,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_sgn_inplace": {
+      "implementation_line": 2666,
+      "header_line": 940,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_sigmoid": {
+      "implementation_line": 2761,
+      "header_line": 988,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_sigmoid_inplace": {
+      "implementation_line": 2767,
+      "header_line": 992,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_silu": {
+      "implementation_line": 2817,
+      "header_line": 1022,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_silu_back": {
+      "implementation_line": 2854,
+      "header_line": 1032,
+      "opcode": "GGML_OP_SILU_BACK"
+    },
+    "ggml_silu_inplace": {
+      "implementation_line": 2823,
+      "header_line": 1026,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_sin": {
+      "implementation_line": 2430,
+      "header_line": 852,
+      "calls": [
+        "ggml_sin_impl"
+      ]
+    },
+    "ggml_sin_impl": {
+      "implementation_line": 2418,
+      "opcode": "GGML_OP_SIN"
+    },
+    "ggml_sin_inplace": {
+      "implementation_line": 2436,
+      "header_line": 856,
+      "calls": [
+        "ggml_sin_impl"
+      ]
+    },
+    "ggml_sleep": {
+      "implementation_line": 6187,
+      "header_line": 2605,
+      "opcode": "GGML_OP_SLEEP",
+      "guard_lines": [
+        6191
+      ]
+    },
+    "ggml_soft_max": {
+      "implementation_line": 4125,
+      "header_line": 1596,
+      "calls": [
+        "ggml_soft_max_impl"
+      ]
+    },
+    "ggml_soft_max_ext": {
+      "implementation_line": 4137,
+      "header_line": 1614,
+      "calls": [
+        "ggml_soft_max_impl"
+      ]
+    },
+    "ggml_soft_max_ext_back": {
+      "implementation_line": 4192,
+      "header_line": 1632,
+      "calls": [
+        "ggml_soft_max_ext_back_impl"
+      ]
+    },
+    "ggml_soft_max_ext_back_impl": {
+      "implementation_line": 4173,
+      "opcode": "GGML_OP_SOFT_MAX_BACK"
+    },
+    "ggml_soft_max_ext_back_inplace": {
+      "implementation_line": 4201,
+      "header_line": 1640,
+      "calls": [
+        "ggml_soft_max_ext_back_impl"
+      ]
+    },
+    "ggml_soft_max_ext_inplace": {
+      "implementation_line": 4146,
+      "header_line": 1621,
+      "calls": [
+        "ggml_soft_max_impl"
+      ]
+    },
+    "ggml_soft_max_impl": {
+      "implementation_line": 4091,
+      "opcode": "GGML_OP_SOFT_MAX",
+      "guard_lines": [
+        4098,
+        4101,
+        4102,
+        4103,
+        4104,
+        4105,
+        4106,
+        4110
+      ]
+    },
+    "ggml_soft_max_inplace": {
+      "implementation_line": 4131,
+      "header_line": 1601,
+      "calls": [
+        "ggml_soft_max_impl"
+      ]
+    },
+    "ggml_softplus": {
+      "implementation_line": 2404,
+      "header_line": 844,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_softplus_inplace": {
+      "implementation_line": 2410,
+      "header_line": 848,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_solve_tri": {
+      "implementation_line": 6293,
+      "header_line": 2404,
+      "opcode": "GGML_OP_SOLVE_TRI",
+      "guard_lines": [
+        6300,
+        6301,
+        6304,
+        6306,
+        6309,
+        6310,
+        6312,
+        6313,
+        6315
+      ]
+    },
+    "ggml_sqr": {
+      "implementation_line": 2328,
+      "header_line": 812,
+      "calls": [
+        "ggml_sqr_impl"
+      ]
+    },
+    "ggml_sqr_impl": {
+      "implementation_line": 2316,
+      "opcode": "GGML_OP_SQR"
+    },
+    "ggml_sqr_inplace": {
+      "implementation_line": 2334,
+      "header_line": 816,
+      "calls": [
+        "ggml_sqr_impl"
+      ]
+    },
+    "ggml_sqrt": {
+      "implementation_line": 2354,
+      "header_line": 820,
+      "calls": [
+        "ggml_sqrt_impl"
+      ]
+    },
+    "ggml_sqrt_impl": {
+      "implementation_line": 2342,
+      "opcode": "GGML_OP_SQRT"
+    },
+    "ggml_sqrt_inplace": {
+      "implementation_line": 2360,
+      "header_line": 824,
+      "calls": [
+        "ggml_sqrt_impl"
+      ]
+    },
+    "ggml_ssm_conv": {
+      "implementation_line": 5600,
+      "header_line": 2297,
+      "opcode": "GGML_OP_SSM_CONV",
+      "guard_lines": [
+        5604,
+        5605,
+        5613,
+        5614,
+        5615
+      ]
+    },
+    "ggml_ssm_scan": {
+      "implementation_line": 5628,
+      "header_line": 2302,
+      "opcode": "GGML_OP_SSM_SCAN",
+      "guard_lines": [
+        5638,
+        5639,
+        5640,
+        5641,
+        5642,
+        5643,
+        5644,
+        5645,
+        5646,
+        5647,
+        5648,
+        5649,
+        5650,
+        5659,
+        5660,
+        5661,
+        5662,
+        5663,
+        5664,
+        5665,
+        5666,
+        5667,
+        5668,
+        5669,
+        5670,
+        5671,
+        5675,
+        5676
+      ]
+    },
+    "ggml_step": {
+      "implementation_line": 2688,
+      "header_line": 952,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_step_inplace": {
+      "implementation_line": 2694,
+      "header_line": 956,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_sub": {
+      "implementation_line": 2236,
+      "header_line": 782,
+      "calls": [
+        "ggml_sub_impl"
+      ]
+    },
+    "ggml_sub_impl": {
+      "implementation_line": 2220,
+      "opcode": "GGML_OP_SUB",
+      "guard_lines": [
+        2225
+      ]
+    },
+    "ggml_sub_inplace": {
+      "implementation_line": 2243,
+      "header_line": 787,
+      "calls": [
+        "ggml_sub_impl"
+      ]
+    },
+    "ggml_sum": {
+      "implementation_line": 2470,
+      "header_line": 869,
+      "opcode": "GGML_OP_SUM"
+    },
+    "ggml_sum_rows": {
+      "implementation_line": 2483,
+      "header_line": 874,
+      "opcode": "GGML_OP_SUM_ROWS"
+    },
+    "ggml_swiglu": {
+      "implementation_line": 3042,
+      "header_line": 1133,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_swiglu_clamp": {
+      "implementation_line": 3116,
+      "header_line": 1197,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_swiglu_oai": {
+      "implementation_line": 3103,
+      "header_line": 1190,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_swiglu_split": {
+      "implementation_line": 3054,
+      "header_line": 1175,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_swiglu_swapped": {
+      "implementation_line": 3048,
+      "header_line": 1137,
+      "calls": [
+        "ggml_glu_impl"
+      ]
+    },
+    "ggml_tanh": {
+      "implementation_line": 2702,
+      "header_line": 960,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_tanh_inplace": {
+      "implementation_line": 2708,
+      "header_line": 964,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_timestep_embedding": {
+      "implementation_line": 5264,
+      "header_line": 2200,
+      "opcode": "GGML_OP_TIMESTEP_EMBEDDING"
+    },
+    "ggml_top_k": {
+      "implementation_line": 5374,
+      "header_line": 2225,
+      "opcode": "GGML_OP_TOP_K",
+      "guard_lines": [
+        5378
+      ]
+    },
+    "ggml_top_k_mask": {
+      "implementation_line": 6575,
+      "header_line": 2515,
+      "opcode": "GGML_OP_TOP_K_MASK",
+      "guard_lines": [
+        6582,
+        6583,
+        6584,
+        6585,
+        6588,
+        6589,
+        6593,
+        6594,
+        6595,
+        6599,
+        6600
+      ]
+    },
+    "ggml_transpose": {
+      "implementation_line": 3944,
+      "header_line": 1542,
+      "opcode": "GGML_OP_TRANSPOSE"
+    },
+    "ggml_tri": {
+      "implementation_line": 5283,
+      "header_line": 2181,
+      "opcode": "GGML_OP_TRI",
+      "guard_lines": [
+        5287,
+        5289,
+        5290
+      ]
+    },
+    "ggml_trunc": {
+      "implementation_line": 2970,
+      "header_line": 1085,
+      "calls": [
+        "ggml_unary"
+      ]
+    },
+    "ggml_trunc_inplace": {
+      "implementation_line": 2976,
+      "header_line": 1089,
+      "calls": [
+        "ggml_unary_inplace"
+      ]
+    },
+    "ggml_unary": {
+      "implementation_line": 5965,
+      "header_line": 2333,
+      "calls": [
+        "ggml_unary_impl"
+      ]
+    },
+    "ggml_unary_impl": {
+      "implementation_line": 5948,
+      "opcode": "GGML_OP_UNARY",
+      "guard_lines": [
+        5953
+      ]
+    },
+    "ggml_unary_inplace": {
+      "implementation_line": 5972,
+      "header_line": 2338,
+      "calls": [
+        "ggml_unary_impl"
+      ]
+    },
+    "ggml_upscale": {
+      "implementation_line": 5105,
+      "header_line": 2101,
+      "calls": [
+        "ggml_interpolate_impl"
+      ],
+      "guard_lines": [
+        5110
+      ]
+    },
+    "ggml_view_1d": {
+      "implementation_line": 3819,
+      "header_line": 1497,
+      "calls": [
+        "ggml_view_impl"
+      ]
+    },
+    "ggml_view_2d": {
+      "implementation_line": 3831,
+      "header_line": 1503,
+      "calls": [
+        "ggml_view_impl"
+      ]
+    },
+    "ggml_view_3d": {
+      "implementation_line": 3848,
+      "header_line": 1511,
+      "calls": [
+        "ggml_view_impl"
+      ]
+    },
+    "ggml_view_4d": {
+      "implementation_line": 3867,
+      "header_line": 1521,
+      "calls": [
+        "ggml_view_impl"
+      ]
+    },
+    "ggml_view_impl": {
+      "implementation_line": 3796,
+      "opcode": "GGML_OP_VIEW",
+      "guard_lines": [
+        3804
+      ]
+    },
+    "ggml_view_tensor": {
+      "implementation_line": 1992,
+      "header_line": 697,
+      "calls": [
+        "ggml_new_tensor_impl"
+      ]
+    },
+    "ggml_win_part": {
+      "implementation_line": 5699,
+      "header_line": 2319,
+      "opcode": "GGML_OP_WIN_PART",
+      "guard_lines": [
+        5703,
+        5704
+      ]
+    },
+    "ggml_win_unpart": {
+      "implementation_line": 5728,
+      "header_line": 2326,
+      "opcode": "GGML_OP_WIN_UNPART",
+      "guard_lines": [
+        5734
+      ]
+    },
+    "ggml_xielu": {
+      "implementation_line": 2831,
+      "header_line": 1099,
+      "opcode": "GGML_OP_UNARY"
+    }
+  }
+}

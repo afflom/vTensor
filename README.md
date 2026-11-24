@@ -13,8 +13,7 @@ Verdant for that computation. VT-02 checks the plugin’s imported GGML symbols
 against its host-service allowlist. The test suite runs the imported GGML CPU
 backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION.md#provider-linkage) · [Oracle source](vendor/llama.cpp-oracle/README.md)
 
-The completion checklist tracks remaining GGML operations, scheduler callbacks
-and consumer checks. [Provider burndown](BURNDOWN.md)
+At llama.cpp `9a080f44`, vTensor passes all 27,755 GGML factory cases. The stock scheduler assigns all 86,647 factory nodes to vTensor when it is the sole provider. The checklist tracks legal variants outside the factory and final release acceptance. [Factory verdicts](verification/ggml-factory-inventory.json) · [Scheduler evidence](verification/shared-host-storage-vt156.json) · [Provider burndown](BURNDOWN.md)
 
 Cargo pins Verdant’s low-bit encoders and recurrent projections at `931139cb` until release. GGML supplies no importance operand on CPY or SET_ROWS. For IQ2_XXS, IQ2_XS and IQ1_S, the vTensor plan supplies unit weights and the original GGML oracle receives the same weights. IQ1_M uses the unweighted GGML encoding. [Verdant PR #62](https://github.com/afflom/verdant-engine/pull/62) · [Dependency record](model/verdant-development.json)
 

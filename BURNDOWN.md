@@ -5,6 +5,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 ## Establish coverage and unblock release
 
 - [x] Index the graph signatures of all 27,755 upstream constructors. The 2,293 observed signatures cover 89 of 100 opcodes, all 22 unary and seven GLU variants and 33 of 36 storage types. [Declaration gaps](verification/ggml-factory-signatures.json) · [Ordinal map](verification/ggml-factory-signatures.tsv.gz)
+- [x] Trace 236 public tensor constructors to all 100 GGML operation declarations and their source guards. Index the 13 public calls that retrieve or modify an existing tensor. [Constructor map](verification/ggml-constructor-contracts.json)
 - [ ] Map legal type tuples, flags, views, in-place forms and backend callbacks to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [x] Map all 288 same-type DUP, CONT and CPY comparisons for Q8_1, Q8_K and F64 to their Prism roots, Verdant byte transfer and GGML CPU oracle. [Supplemental ordinal map](verification/supplemental-copy-storage-map.json)
 - [x] Admit and repeat all 36 live storage types before allocation. Compare each axis and the four-axis combination with independent GGML CPU concatenation. [180 supplemental cases](verification/supplemental-storage-repeat-vt155.json)
