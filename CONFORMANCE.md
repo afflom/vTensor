@@ -211,6 +211,7 @@ model does not sanction.
 | `VT-122` | `build` | Prism schedules grouped affine two-, four- and five-bit copies and indexed writes through the Verdant encoders |
 | `VT-123` | `build` | Prism admits GGML scheduler delays that preserve their input view and complete before graph return |
 | `VT-124` | `build` | Prism schedules the binary32 SiLU derivative with Verdant arithmetic |
+| `VT-125` | `build` | Prism schedules depthwise spatial convolution in both GGML channel layouts using Verdant products and sums |
 
 ## normalization-graphs
 

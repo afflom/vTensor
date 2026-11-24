@@ -150,7 +150,8 @@ inductive{
     {name: columnOverlap, fields: [ColumnAxis, Nat]},
     {name: smallFloatCast, fields: [Nat, Nat]},
     {name: softmaxGradient, fields: [Nat]},
-    {name: siluGradient, fields: [IndexContext]}
+    {name: siluGradient, fields: [IndexContext]},
+    {name: depthwise, fields: [IndexContext, ColumnAxis, ColumnAxis, Nat]}
   ]
 }
 
@@ -1795,6 +1796,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.siluGradient activation => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.depthwise image x y storage => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
@@ -1856,6 +1858,27 @@ definition{
 }
 
 definition{
+  name: depthwiseLayout,
+  parameters: [tensor : TensorDescriptor, bytes : Nat, channelsFirst : Bool, filter : Bool],
+  result: Bool,
+  body: (if channelsFirst then (if filter then (((((((project tensor n3) <=? 1) || ((project tensor s3) =? bytes)) && (((project tensor n0) <=? 1) || ((project tensor s0) =? (prim multiply bytes (project tensor n3) : Nat)))) && (((project tensor n1) <=? 1) || ((project tensor s1) =? (prim multiply (prim multiply bytes (project tensor n3) : Nat) (project tensor n0) : Nat)))) && (((project tensor n2) <=? 1) || ((project tensor s2) =? (prim multiply (prim multiply (prim multiply bytes (project tensor n3) : Nat) (project tensor n0) : Nat) (project tensor n1) : Nat)))) && ((prim multiply (prim multiply (prim multiply (prim multiply bytes (project tensor n3) : Nat) (project tensor n0) : Nat) (project tensor n1) : Nat) (project tensor n2) : Nat) <=? (project tensor span))) else (((((((project tensor n2) <=? 1) || ((project tensor s2) =? bytes)) && (((project tensor n0) <=? 1) || ((project tensor s0) =? (prim multiply bytes (project tensor n2) : Nat)))) && (((project tensor n1) <=? 1) || ((project tensor s1) =? (prim multiply (prim multiply bytes (project tensor n2) : Nat) (project tensor n0) : Nat)))) && (((project tensor n3) <=? 1) || ((project tensor s3) =? (prim multiply (prim multiply (prim multiply bytes (project tensor n2) : Nat) (project tensor n0) : Nat) (project tensor n1) : Nat)))) && ((prim multiply (prim multiply (prim multiply (prim multiply bytes (project tensor n2) : Nat) (project tensor n0) : Nat) (project tensor n1) : Nat) (project tensor n3) : Nat) <=? (project tensor span)))) else (((((((project tensor n0) <=? 1) || ((project tensor s0) =? bytes)) && (((project tensor n1) <=? 1) || ((project tensor s1) =? (prim multiply bytes (project tensor n0) : Nat)))) && (((project tensor n2) <=? 1) || ((project tensor s2) =? (prim multiply (prim multiply bytes (project tensor n0) : Nat) (project tensor n1) : Nat)))) && (((project tensor n3) <=? 1) || ((project tensor s3) =? (prim multiply (prim multiply (prim multiply bytes (project tensor n0) : Nat) (project tensor n1) : Nat) (project tensor n2) : Nat)))) && ((prim multiply (prim multiply (prim multiply (prim multiply bytes (project tensor n0) : Nat) (project tensor n1) : Nat) (project tensor n2) : Nat) (project tensor n3) : Nat) <=? (project tensor span)))),
+  executable: true
+}
+
+definition{
+  name: planDepthwise,
+  parameters: [
+    options : OperationParameters,
+    kernel : TensorDescriptor,
+    image : TensorDescriptor,
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p2), dilation := (project options p4)}); (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p3), dilation := (project options p5)}); (let storage : Nat := (project kernel ty); (let channelsFirst : Bool := ((project image s2) <? (project image s0)); (if (((((((((((((((storage =? 0) || (storage =? 1)) && ((project image ty) =? 0)) && ((project output ty) =? 0)) && ((project kernel n2) =? 1)) && ((project kernel n3) =? (project image n2))) && ((project output n2) =? (project image n2))) && ((project output n3) =? (project image n3))) && ((((((0 <? (project x kernel)) && (0 <? (project x stride))) && ((project x stride) <? 2147483648)) && (0 <? (project x dilation))) && ((project x dilation) <? 2147483648)) && ((project output n0) =? (columnExtent x (project image n0))))) && ((((((0 <? (project y kernel)) && (0 <? (project y stride))) && ((project y stride) <? 2147483648)) && (0 <? (project y dilation))) && ((project y dilation) <? 2147483648)) && ((project output n1) =? (columnExtent y (project image n1))))) && (depthwiseLayout image 4 channelsFirst false)) && (depthwiseLayout output 4 channelsFirst false)) && (depthwiseLayout kernel (if (storage =? 0) then 4 else 2) channelsFirst true)) && (separateTensors kernel output)) && (separateTensors image output)) then (ctor PointwiseDecision.copyBlocks (prim multiply ((prim multiply 3 (prim multiply (project x kernel) (project y kernel) : Nat) : Nat) + 2) (blockCount output 1) : Nat) 4 (indexContext kernel 1) (indexContext output 1) (ctor CopyMode.depthwise (indexContext image 1) x y storage)) else (ctor PointwiseDecision.invalidShape)))))),
+  executable: true
+}
+
+definition{
   name: planSiluGradient,
   parameters: [dy : TensorDescriptor, x : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
@@ -1873,7 +1896,9 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 22) then (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 55) then (match right
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some image => (planDepthwise options left image output)) else (if (operation =? 22) then (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
     | Option.some x => (planSiluGradient left x output)) else (if (operation =? 44) then (planSoftmaxGradient options left right output) else (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right
     | Option.none => (planPool (operation =? 58) options left output)
@@ -1881,7 +1906,7 @@ definition{
     | Option.none => false
     | Option.some value => true) output)) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -1920,6 +1945,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.siluGradient activation => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.depthwise image x y storage => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.windowed reverse size nx => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false)
@@ -1962,6 +1988,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => 0
     | CopyMode.softmaxGradient scale => 0
     | CopyMode.siluGradient activation => 0
+    | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
     | CopyMode.transformed kind storage a b => 0
@@ -2028,6 +2055,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.softmaxGradient scale => (ctor WordOperation.invalid)
     | CopyMode.siluGradient activation => (ctor WordOperation.invalid)
+    | CopyMode.depthwise image x y storage => (ctor WordOperation.invalid)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.windowed reverse size nx => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.transformed kind storage a b => (ctor WordOperation.transformed kind storage a b)
@@ -2070,6 +2098,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => 0
     | CopyMode.softmaxGradient scale => 0
     | CopyMode.siluGradient activation => 0
+    | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
     | CopyMode.transformed kind storage a b => 0
@@ -2233,8 +2262,33 @@ definition{
 }
 
 definition{
+  name: depthwiseStep,
+  parameters: [
+    index : Nat,
+    kernel : IndexContext,
+    image : IndexContext,
+    destination : IndexContext,
+    x : ColumnAxis,
+    y : ColumnAxis,
+    storage : Nat
+  ],
+  result: GraphResponse,
+  body: (let phases : Nat := ((prim multiply 3 (prim multiply (project x kernel) (project y kernel) : Nat) : Nat) + 2); (let element : Nat := (prim quotient index phases 0 : Nat); (let phase : Nat := (prim remainder index phases 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.storage 0 0 false) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if ((phase + 1) =? phases) then (ctor GraphResponse.instruction (ctor WordOperation.storage 0 0 false) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset element destination)) 4 4) else (let relative : Nat := (prim subtract phase 1 : Nat); (let lane : Nat := (prim quotient relative 3 0 : Nat); (let kx : Nat := (prim remainder lane (project x kernel) 0 : Nat); (let ky : Nat := (prim quotient lane (project x kernel) 0 : Nat); (let part : Nat := (prim remainder relative 3 0 : Nat); (let channel : Nat := (decodedCoordinate element destination 2); (match (columnCoordinate x (project image u0) (decodedCoordinate element destination 0) kx)
+    | Option.none => (ctor GraphResponse.instruction (ctor WordOperation.storage 0 0 false) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4)
+    | Option.some sx => (match (columnCoordinate y (project image n1) (decodedCoordinate element destination 1) ky)
+      | Option.none => (ctor GraphResponse.instruction (ctor WordOperation.storage 0 0 false) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4)
+      | Option.some sy => (if (part =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.storage storage 0 false) (ctor WordOperand.source 0 (offsetCoordinates kernel kx ky 0 channel)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) (wordBytes storage) 4) else (if (part =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 1) (ctor WordOperand.source 1 (offsetCoordinates image sx sy channel (decodedCoordinate element destination 3))) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 0) 4 4)))))))))))))))),
+  executable: true
+}
+
+definition{
   name: siluGradientStep,
-  parameters: [index : Nat, gradient : IndexContext, activation : IndexContext, destination : IndexContext],
+  parameters: [
+    index : Nat,
+    gradient : IndexContext,
+    activation : IndexContext,
+    destination : IndexContext
+  ],
   result: GraphResponse,
   body: (let element : Nat := (prim quotient index 6 0 : Nat); (let phase : Nat := (prim remainder index 6 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.elementary 17 0 0) (ctor WordOperand.source 1 (blockOffset element activation)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 1) 4 4) else (if (phase =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 (blockOffset element activation)) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 1) 4 4) else (if (phase =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 1) 4 4) else (if (phase =? 4) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 (blockOffset element gradient)) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 0) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (ctor WordTarget.output (blockOffset element destination)) 4 4)))))))),
   executable: true
@@ -2279,6 +2333,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => (smallFloatCastStep index source destination sourceType destinationType)
     | CopyMode.softmaxGradient scale => (softmaxGradientStep index (project source u0) scale)
     | CopyMode.siluGradient activation => (siluGradientStep index source activation destination)
+    | CopyMode.depthwise image x y storage => (depthwiseStep index source image destination x y storage)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
     | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)
     | CopyMode.transformed kind storage a b => (copyOffsets index source destination mode)

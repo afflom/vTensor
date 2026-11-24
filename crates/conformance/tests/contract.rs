@@ -361,6 +361,8 @@ ggml_batches! {
     #[test]
     fn softmax_gradient_vt_121() { "upstream-SOFTMAX_GRADIENT", 2, ["pointwise"] }
     #[test]
+    fn depthwise_spatial_vt_125() { "upstream-DEPTHWISE_SPATIAL", 8, ["pointwise"] }
+    #[test]
     fn silu_gradient_vt_124() { "upstream-SILU_GRADIENT", 1, ["pointwise"] }
     #[test]
     fn small_float_add_vt_120() { "upstream-SMALL_FLOAT_ADD", 6, ["typed", "pointwise"] }
@@ -1500,7 +1502,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "fc2c4475bdb252287ea87e009c06a428bf41fbefa216431b15be8bb8b10bd2a7",
+            "e3e07ac995939a65207fdff7ef863e1aa89b616f51c5708f12b813373adac8a4",
         )
     });
 

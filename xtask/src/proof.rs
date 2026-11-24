@@ -71,20 +71,14 @@ fn workspace_rows(lexlean: &Value) -> Result<&Vec<Value>, String> {
         .ok_or_else(|| "the attestation names no Lake workspace".into())
 }
 
-fn workspace_paths(lexlean: &Value) -> Result<Vec<String>, String> {
-    workspace_rows(lexlean)?
-        .iter()
-        .map(|row| {
-            let path = text(row, "/path")?;
-            if path.is_empty() || path.starts_with('/') || path.split('/').any(|part| part == "..")
-            {
-                return Err(format!(
-                    "the attestation names a Lake file outside app/: {path}"
-                ));
-            }
-            Ok(path.to_owned())
-        })
-        .collect()
+fn workspace_path(row: &Value) -> Result<&str, String> {
+    let path = text(row, "/path")?;
+    if path.is_empty() || path.starts_with('/') || path.split('/').any(|part| part == "..") {
+        return Err(format!(
+            "the attestation names a Lake file outside app/: {path}"
+        ));
+    }
+    Ok(path)
 }
 
 /// The digest the manifest binds for the acceptance document. PrismPM 0.4.0
@@ -230,9 +224,10 @@ fn observe(root: &Path, lexlean: &Value) -> Result<Observed, Fail> {
         ))
     };
     let mut workspace = Vec::new();
-    for path in workspace_paths(lexlean)? {
-        let sha256 = file(&root.join("app").join(&path))?;
-        workspace.push((path, sha256));
+    for row in workspace_rows(lexlean)? {
+        let path = workspace_path(row)?;
+        let sha256 = file(&root.join("app").join(path))?;
+        workspace.push((path.to_owned(), sha256));
     }
     Ok(Observed {
         inputs: inputs(root)?,
@@ -481,11 +476,12 @@ mod tests {
 
     #[test]
     fn a_lake_file_outside_the_application_is_never_read() {
-        assert!(super::workspace_paths(&proof().lexlean).is_ok());
+        assert!(super::workspace_path(&proof().lexlean["lake_workspace"][0]).is_ok());
         for path in ["../Justfile", "/etc/passwd", "a/../../b", ""] {
-            let mut escape = proof();
-            escape.lexlean["lake_workspace"][0]["path"] = json!(path);
-            assert!(super::workspace_paths(&escape.lexlean).is_err(), "{path}");
+            assert!(
+                super::workspace_path(&json!({"path":path})).is_err(),
+                "{path}"
+            );
         }
     }
 }

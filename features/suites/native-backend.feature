@@ -404,3 +404,9 @@ Feature: native-backend
     Given upstream binary32 activation values and independent incoming gradients
     When the backend multiplies each incoming gradient by the SiLU derivative
     Then the result agrees with the original GGML CPU graph
+
+  @VT-125 @build
+  Scenario: Prism schedules depthwise spatial convolution in both GGML channel layouts using Verdant products and sums
+    Given the imported depthwise convolution graphs with F32 and F16 filters
+    When the backend contracts each filter with its own channel at the requested stride, padding and dilation
+    Then the outputs match the pinned GGML CPU in WHCN and CWHN storage
