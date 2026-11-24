@@ -1,0 +1,377 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "factory_cases": 27755,
+  "graph_nodes": 86647,
+  "distinct_graph_and_source_signatures": 33115,
+  "distinct_dispatched_node_signatures": 29060,
+  "observed_node_opcodes": 89,
+  "coarse_signatures_checked": 2293,
+  "uncompressed_map_sha256": "de97516cd115d54d1fe688b79f91c7c822dbe697c67f8f8cc3548d51390833d2",
+  "upstream_stdout_sha256": "db8b9234837dfdc351bb2d928aff707c4e473fffa562379445a555e003fc4cae",
+  "by_node_opcode": {
+    "GGML_OP_NONE": {
+      "nodes": 8029,
+      "signatures": 1289
+    },
+    "GGML_OP_DUP": {
+      "nodes": 10,
+      "signatures": 10
+    },
+    "GGML_OP_ADD": {
+      "nodes": 2883,
+      "signatures": 549
+    },
+    "GGML_OP_ADD_ID": {
+      "nodes": 1220,
+      "signatures": 40
+    },
+    "GGML_OP_ACC": {
+      "nodes": 6,
+      "signatures": 6
+    },
+    "GGML_OP_SUB": {
+      "nodes": 163,
+      "signatures": 149
+    },
+    "GGML_OP_MUL": {
+      "nodes": 2455,
+      "signatures": 364
+    },
+    "GGML_OP_DIV": {
+      "nodes": 513,
+      "signatures": 157
+    },
+    "GGML_OP_SQR": {
+      "nodes": 43,
+      "signatures": 39
+    },
+    "GGML_OP_SQRT": {
+      "nodes": 185,
+      "signatures": 27
+    },
+    "GGML_OP_LOG": {
+      "nodes": 9,
+      "signatures": 9
+    },
+    "GGML_OP_SIN": {
+      "nodes": 33,
+      "signatures": 33
+    },
+    "GGML_OP_COS": {
+      "nodes": 9,
+      "signatures": 9
+    },
+    "GGML_OP_SUM": {
+      "nodes": 32,
+      "signatures": 23
+    },
+    "GGML_OP_SUM_ROWS": {
+      "nodes": 527,
+      "signatures": 30
+    },
+    "GGML_OP_CUMSUM": {
+      "nodes": 15,
+      "signatures": 15
+    },
+    "GGML_OP_MEAN": {
+      "nodes": 17,
+      "signatures": 17
+    },
+    "GGML_OP_ARGMAX": {
+      "nodes": 13,
+      "signatures": 9
+    },
+    "GGML_OP_COUNT_EQUAL": {
+      "nodes": 4,
+      "signatures": 2
+    },
+    "GGML_OP_REPEAT": {
+      "nodes": 298,
+      "signatures": 26
+    },
+    "GGML_OP_REPEAT_BACK": {
+      "nodes": 10,
+      "signatures": 9
+    },
+    "GGML_OP_CONCAT": {
+      "nodes": 236,
+      "signatures": 236
+    },
+    "GGML_OP_SILU_BACK": {
+      "nodes": 1,
+      "signatures": 1
+    },
+    "GGML_OP_NORM": {
+      "nodes": 99,
+      "signatures": 86
+    },
+    "GGML_OP_RMS_NORM": {
+      "nodes": 551,
+      "signatures": 250
+    },
+    "GGML_OP_RMS_NORM_BACK": {
+      "nodes": 10,
+      "signatures": 10
+    },
+    "GGML_OP_GROUP_NORM": {
+      "nodes": 5,
+      "signatures": 5
+    },
+    "GGML_OP_L2_NORM": {
+      "nodes": 237,
+      "signatures": 131
+    },
+    "GGML_OP_MUL_MAT": {
+      "nodes": 4682,
+      "signatures": 3354
+    },
+    "GGML_OP_MUL_MAT_ID": {
+      "nodes": 3456,
+      "signatures": 1097
+    },
+    "GGML_OP_OUT_PROD": {
+      "nodes": 1543,
+      "signatures": 1542
+    },
+    "GGML_OP_SCALE": {
+      "nodes": 410,
+      "signatures": 54
+    },
+    "GGML_OP_SET": {
+      "nodes": 12,
+      "signatures": 12
+    },
+    "GGML_OP_CPY": {
+      "nodes": 660,
+      "signatures": 653
+    },
+    "GGML_OP_CONT": {
+      "nodes": 3280,
+      "signatures": 261
+    },
+    "GGML_OP_RESHAPE": {
+      "nodes": 2855,
+      "signatures": 126
+    },
+    "GGML_OP_VIEW": {
+      "nodes": 19074,
+      "signatures": 1029
+    },
+    "GGML_OP_PERMUTE": {
+      "nodes": 10754,
+      "signatures": 1192
+    },
+    "GGML_OP_TRANSPOSE": {
+      "nodes": 74,
+      "signatures": 70
+    },
+    "GGML_OP_GET_ROWS": {
+      "nodes": 1546,
+      "signatures": 302
+    },
+    "GGML_OP_GET_ROWS_BACK": {
+      "nodes": 62,
+      "signatures": 62
+    },
+    "GGML_OP_SET_ROWS": {
+      "nodes": 1150,
+      "signatures": 809
+    },
+    "GGML_OP_DIAG": {
+      "nodes": 9,
+      "signatures": 9
+    },
+    "GGML_OP_SOFT_MAX": {
+      "nodes": 562,
+      "signatures": 246
+    },
+    "GGML_OP_SOFT_MAX_BACK": {
+      "nodes": 48,
+      "signatures": 48
+    },
+    "GGML_OP_ROPE": {
+      "nodes": 847,
+      "signatures": 576
+    },
+    "GGML_OP_ROPE_BACK": {
+      "nodes": 424,
+      "signatures": 424
+    },
+    "GGML_OP_CLAMP": {
+      "nodes": 348,
+      "signatures": 20
+    },
+    "GGML_OP_CONV_TRANSPOSE_1D": {
+      "nodes": 116,
+      "signatures": 115
+    },
+    "GGML_OP_IM2COL": {
+      "nodes": 122,
+      "signatures": 122
+    },
+    "GGML_OP_IM2COL_3D": {
+      "nodes": 2051,
+      "signatures": 2051
+    },
+    "GGML_OP_COL2IM_1D": {
+      "nodes": 33,
+      "signatures": 33
+    },
+    "GGML_OP_CONV_2D": {
+      "nodes": 3144,
+      "signatures": 3144
+    },
+    "GGML_OP_CONV_3D": {
+      "nodes": 292,
+      "signatures": 180
+    },
+    "GGML_OP_CONV_2D_DW": {
+      "nodes": 8,
+      "signatures": 8
+    },
+    "GGML_OP_CONV_TRANSPOSE_2D": {
+      "nodes": 8,
+      "signatures": 8
+    },
+    "GGML_OP_POOL_1D": {
+      "nodes": 240,
+      "signatures": 240
+    },
+    "GGML_OP_POOL_2D": {
+      "nodes": 144,
+      "signatures": 144
+    },
+    "GGML_OP_UPSCALE": {
+      "nodes": 24,
+      "signatures": 24
+    },
+    "GGML_OP_PAD": {
+      "nodes": 37,
+      "signatures": 36
+    },
+    "GGML_OP_PAD_REFLECT_1D": {
+      "nodes": 7,
+      "signatures": 7
+    },
+    "GGML_OP_ROLL": {
+      "nodes": 2,
+      "signatures": 2
+    },
+    "GGML_OP_ARANGE": {
+      "nodes": 10,
+      "signatures": 10
+    },
+    "GGML_OP_TIMESTEP_EMBEDDING": {
+      "nodes": 6,
+      "signatures": 6
+    },
+    "GGML_OP_ARGSORT": {
+      "nodes": 1110,
+      "signatures": 105
+    },
+    "GGML_OP_TOP_K": {
+      "nodes": 538,
+      "signatures": 377
+    },
+    "GGML_OP_LEAKY_RELU": {
+      "nodes": 10,
+      "signatures": 9
+    },
+    "GGML_OP_TRI": {
+      "nodes": 16,
+      "signatures": 16
+    },
+    "GGML_OP_FILL": {
+      "nodes": 167,
+      "signatures": 12
+    },
+    "GGML_OP_FLASH_ATTN_EXT": {
+      "nodes": 5775,
+      "signatures": 5773
+    },
+    "GGML_OP_SSM_CONV": {
+      "nodes": 195,
+      "signatures": 75
+    },
+    "GGML_OP_SSM_SCAN": {
+      "nodes": 34,
+      "signatures": 32
+    },
+    "GGML_OP_RWKV_WKV6": {
+      "nodes": 4,
+      "signatures": 4
+    },
+    "GGML_OP_GATED_LINEAR_ATTN": {
+      "nodes": 4,
+      "signatures": 4
+    },
+    "GGML_OP_RWKV_WKV7": {
+      "nodes": 5,
+      "signatures": 5
+    },
+    "GGML_OP_SOLVE_TRI": {
+      "nodes": 26,
+      "signatures": 25
+    },
+    "GGML_OP_GATED_DELTA_NET": {
+      "nodes": 48,
+      "signatures": 47
+    },
+    "GGML_OP_LIGHTNING_INDEXER": {
+      "nodes": 210,
+      "signatures": 210
+    },
+    "GGML_OP_DSV4_HC_COMB": {
+      "nodes": 11,
+      "signatures": 11
+    },
+    "GGML_OP_DSV4_HC_PRE": {
+      "nodes": 18,
+      "signatures": 18
+    },
+    "GGML_OP_DSV4_HC_POST": {
+      "nodes": 11,
+      "signatures": 11
+    },
+    "GGML_OP_TOP_K_MASK": {
+      "nodes": 38,
+      "signatures": 38
+    },
+    "GGML_OP_UNARY": {
+      "nodes": 997,
+      "signatures": 452
+    },
+    "GGML_OP_CROSS_ENTROPY_LOSS": {
+      "nodes": 2,
+      "signatures": 2
+    },
+    "GGML_OP_CROSS_ENTROPY_LOSS_BACK": {
+      "nodes": 2,
+      "signatures": 2
+    },
+    "GGML_OP_OPT_STEP_ADAMW": {
+      "nodes": 1,
+      "signatures": 1
+    },
+    "GGML_OP_OPT_STEP_SGD": {
+      "nodes": 1,
+      "signatures": 1
+    },
+    "GGML_OP_GLU": {
+      "nodes": 1768,
+      "signatures": 280
+    },
+    "GGML_OP_SLEEP": {
+      "nodes": 3,
+      "signatures": 3
+    }
+  },
+  "reader": "ggml-factory-signatures.cpp --layouts",
+  "reader_sha256": "c2abb4669df48b6124228fc4e68668de49054712b2abde0205a6313efeb1c312",
+  "format": "Original GGML graph metadata. Each S record has its signature ID, opcode, suboperation followed by the sixteen uint32 operator parameter words, output descriptor, and occupied source slots. A descriptor extends the compact type/flags/layout fields with four extents, four byte strides and the byte offset from the view source. An input may carry a same-storage relationship to its output. Each C record lists the returned tensor signature, then each scheduled graph node signature followed by its occupied source signatures, in GGML order.",
+  "relation_to_verdict": "Join C rows on factory ordinal to just factory-remaining evidence. Every detailed signature projects onto the original compact signature; each case reproduces its complete original compact signature set. A graph-level verdict covers the graph as constructed.",
+  "preallocation": "For each ordinal, the parsed graph-node count equals both the admitted-node count and the vTensor-only placement count in ggml-factory-placement.tsv.gz.",
+  "upstream_inputs": "ggml-factory-cases.tsv.gz",
+  "map": "ggml-factory-layouts.tsv.gz",
+  "reproduction": "Build the existing GGML signature reader and run with --layouts. Keep S records unchanged; retain the first two and final columns of each C record. Two independent executions produced the same upstream stdout digest. The default reader still reproduces the original compact transcript byte-for-byte."
+}

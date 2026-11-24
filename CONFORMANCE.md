@@ -250,6 +250,7 @@ model does not sanction.
 | `VT-160` | `build` | Prism converts between GGML signed I8 I16 I32 and F32 F16 BF16 storage through released Verdant scalar operations |
 | `VT-161` | `build` | Prism and Verdant convert between binary32 and binary64 against imported Berkeley SoftFloat words |
 | `VT-162` | `build` | Prism composes E4M3 and signed integer conversions against the original GGML E4M3 quantizer and dequantizer |
+| `VT-163` | `build` | Prism and Verdant convert between I64 and each narrower signed GGML storage width against the imported Lean signed word conversions |
 
 ## normalization-graphs
 
@@ -376,6 +377,7 @@ An authority is cited, never re-derived, and never gated on: what it states is n
 | `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/releases/tag/v2.21.7 | `VT-02` |
 | `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
 | `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161` |
+| `LEAN-SIGNED-MACHINE-INTEGERS` | https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/Init/Data/SInt/Basic.lean | `VT-163` |
 
 ## Claims that are not conformance IDs
 

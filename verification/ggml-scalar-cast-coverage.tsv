@@ -22,7 +22,7 @@ I8	F16	verified	supplemental-integer-float-casts-vt160.json
 I8	I8	verified	ggml-scalar-cast-matrix.tsv
 I8	I16	verified	supplemental-integer-casts-vt159.json
 I8	I32	verified	supplemental-integer-casts-vt159.json
-I8	I64	open	
+I8	I64	verified	supplemental-signed64-widths-vt163.json
 I8	F64	open	
 I8	BF16	verified	supplemental-integer-float-casts-vt160.json
 I8	F8_E4M3	verified	supplemental-scalar-casts-vt161-vt162.json
@@ -31,7 +31,7 @@ I16	F16	verified	supplemental-integer-float-casts-vt160.json
 I16	I8	verified	supplemental-integer-casts-vt159.json
 I16	I16	verified	ggml-scalar-cast-matrix.tsv
 I16	I32	verified	supplemental-integer-casts-vt159.json
-I16	I64	open	
+I16	I64	verified	supplemental-signed64-widths-vt163.json
 I16	F64	open	
 I16	BF16	verified	supplemental-integer-float-casts-vt160.json
 I16	F8_E4M3	verified	supplemental-scalar-casts-vt161-vt162.json
@@ -40,15 +40,15 @@ I32	F16	verified	supplemental-integer-float-casts-vt160.json
 I32	I8	verified	supplemental-integer-casts-vt159.json
 I32	I16	verified	supplemental-integer-casts-vt159.json
 I32	I32	verified	ggml-scalar-cast-matrix.tsv
-I32	I64	open	
+I32	I64	verified	supplemental-signed64-widths-vt163.json
 I32	F64	open	
 I32	BF16	verified	supplemental-integer-float-casts-vt160.json
 I32	F8_E4M3	verified	supplemental-scalar-casts-vt161-vt162.json
 I64	F32	open	
 I64	F16	open	
-I64	I8	open	
-I64	I16	open	
-I64	I32	open	
+I64	I8	verified	supplemental-signed64-widths-vt163.json
+I64	I16	verified	supplemental-signed64-widths-vt163.json
+I64	I32	verified	supplemental-signed64-widths-vt163.json
 I64	I64	verified	ggml-scalar-cast-matrix.tsv
 I64	F64	open	
 I64	BF16	open	

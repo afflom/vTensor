@@ -40,7 +40,7 @@
       ]
     }
   },
-  "reader_sha256": "b61174267bb645f7fde84ca057cecd592be143387c5aa467efc351c213a3f354",
+  "reader_sha256": "c2abb4669df48b6124228fc4e68668de49054712b2abde0205a6313efeb1c312",
   "uncompressed_map_sha256": "35c1e0798fb13d1873fad85f1312098e3d0e30738f809f3fd762dd0e3a69824d",
   "supplemental_operations": [
     {
@@ -142,5 +142,6 @@
         "verification/ggml-flash-back-constructor.json"
       ]
     }
-  ]
+  ],
+  "exact_factory_descriptors": "ggml-factory-layouts.json"
 }

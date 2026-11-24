@@ -101,10 +101,6 @@ fn effective_lines(text: &str) -> Vec<(usize, &str)> {
 /// exists. The sanctioned set is read off the register rather than listed here:
 /// a list in the gate would be a second source for what the model says (R1), and
 /// the error types of one repository are not the error types of the next.
-pub fn audit_limits(root: &Path) -> Result<(), Fail> {
-    check_limits(root, &Model::load(&root.join("model"))?)
-}
-
 pub fn check_limits(root: &Path, model: &Model) -> Result<(), Fail> {
     let declared = model.ids.declared_failures()?;
     let tests = workspace_test_names(root);
@@ -367,7 +363,7 @@ mod tests {
         }
 
         fn audit(&self) -> Result<(), String> {
-            audit_limits(&self.root).map_err(|e| e.to_string())
+            crate::with_model(&self.root, check_limits).map_err(|e| e.to_string())
         }
     }
 
@@ -529,7 +525,8 @@ mod tests {
 
     #[test]
     fn the_template_itself_passes() {
-        audit_limits(&repo_model::repo_root()).expect("the template ships no failure");
+        crate::with_model(&repo_model::repo_root(), check_limits)
+            .expect("the template ships no failure");
     }
 }
 

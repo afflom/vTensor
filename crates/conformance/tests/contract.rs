@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn signed64_widths_vt_163() { "signed64-widths", 768, ["pointwise"] }
     fn octet_integer_casts_vt_162() { "octet-integers", 12, ["pointwise"] }
     fn binary_widths_vt_161() { "binary-widths", 128, ["pointwise"] }
     fn signed_float_storage_vt_160() { "integer-floats", 36, ["pointwise"] }
@@ -1270,7 +1271,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "bd81ac45124b2cb42f8210c5e7f8a883f33b002cca6be372ec5a7c45ff3cc9a3",
+            "933bbb1da1cda556cb94e8b14479e356e08063a7e8324990a572124b9bfa6db5",
         )
     });
 
@@ -1443,12 +1444,19 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         });
         let input: &[u8] = match mode {
             "matrix" | "elementwise" => fixture_input(u64::from(mode == "elementwise")),
-            "binary-widths" => {
-                let words = include_bytes!("../../../verification/ggml-binary-width-words.tsv");
-                assert_eq!(
-                    sha256_hex(words),
-                    fixture_record("ggml-binary-width-oracle")["words_sha256"]
-                );
+            "binary-widths" | "signed64-widths" => {
+                let (words, record): (&[u8], _) = if mode == "binary-widths" {
+                    (
+                        include_bytes!("../../../verification/ggml-binary-width-words.tsv"),
+                        "ggml-binary-width-oracle",
+                    )
+                } else {
+                    (
+                        include_bytes!("../../../verification/ggml-signed64-width-words.tsv"),
+                        "ggml-signed64-width-oracle",
+                    )
+                };
+                assert_eq!(sha256_hex(words), fixture_record(record)["words_sha256"]);
                 words
             }
             "update" => &[],
@@ -2084,29 +2092,46 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
-    if (!strcmp(argv[3],"binary-widths")) {
-        for (bool wide : {true,false}) {
-            graph_fixture target(4); CHECK(target);
-            auto input=ggml_new_tensor_2d(target,wide?GGML_TYPE_F32:GGML_TYPE_F64,8,8);
-            auto result=ggml_cast(target,input,wide?GGML_TYPE_F64:GGML_TYPE_F32);
-            CHECK(ggml_backend_supports_op(backend,result));
-            auto graph=target.allocate(result,backend); CHECK(graph && ggml_backend_supports_op(backend,result));
-            std::array<uint64_t,64> expected{};
-            for (size_t i=0;i<expected.size();++i) {
-                uint64_t word; CHECK(scanf("%" SCNx64 " %" SCNx64,&word,&expected[i])==2);
-                if (wide) { uint32_t bits=uint32_t(word); ggml_backend_tensor_set(input,&bits,4*i,4); }
-                else ggml_backend_tensor_set(input,&word,8*i,8);
-            }
-            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-            for (size_t i=0;i<expected.size();++i) {
-                uint64_t word;
-                if (wide) ggml_backend_tensor_get(result,&word,8*i,8);
-                else { uint32_t bits; ggml_backend_tensor_get(result,&bits,4*i,4); word=bits; }
-                const auto nan=[&](uint64_t x){return wide ? (x&0x7fffffffffffffffULL)>0x7ff0000000000000ULL : (x&0x7fffffff)>0x7f800000;};
-                CHECK(word==expected[i] || (nan(word) && nan(expected[i])));
+    const bool binary_widths=!strcmp(argv[3],"binary-widths");
+    if (binary_widths || !strcmp(argv[3],"signed64-widths")) {
+        size_t compared=0;
+        for (int pair=0;pair<(binary_widths?2:6);++pair) {
+            int from=pair==0?GGML_TYPE_F32:GGML_TYPE_F64, to=pair==0?GGML_TYPE_F64:GGML_TYPE_F32;
+            if (!binary_widths) CHECK(scanf("%d %d",&from,&to)==2);
+            std::array<uint64_t,64> inputs{}, expected{};
+            for (size_t i=0;i<inputs.size();++i) CHECK(scanf("%" SCNx64 " %" SCNx64,&inputs[i],&expected[i])==2);
+            for (bool padded : {false,true}) {
+                if (binary_widths && padded) continue;
+                graph_fixture target(8); CHECK(target);
+                auto backing=ggml_new_tensor_2d(target,ggml_type(from),padded?10:8,8);
+                auto input=padded?ggml_view_2d(target,backing,8,8,backing->nb[1],ggml_type_size(ggml_type(from))):backing;
+                auto out=ggml_new_tensor_2d(target,ggml_type(to),6,16);
+                auto view=ggml_view_2d(target,out,4,16,out->nb[1],ggml_type_size(ggml_type(to)));
+                auto result=padded?ggml_cpy(target,input,view):ggml_cast(target,input,ggml_type(to));
+                CHECK(ggml_backend_supports_op(backend,result));
+                auto graph=target.allocate(result,backend); CHECK(graph && ggml_backend_supports_op(backend,result));
+                ggml_backend_buffer_clear(target.storage.get(),0xa5);
+                for (size_t i=0;i<inputs.size();++i) {
+                    uint8_t bytes[8];
+                    for (size_t j=0;j<input->nb[0];++j) bytes[j]=uint8_t(inputs[i]>>(8*j));
+                    ggml_backend_tensor_set(input,bytes,block_address(input,i),input->nb[0]);
+                }
+                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+                auto actual=tensor_bytes(padded?out:result);
+                std::vector<uint8_t> oracle(actual.size(),0xa5);
+                for (size_t i=0;i<expected.size();++i) {
+                    size_t offset=(padded?view->view_offs:0)+block_address(result,i);
+                    uint64_t word=0;
+                    for (size_t j=0;j<result->nb[0];++j) word|=uint64_t(actual.at(offset+j))<<(8*j);
+                    const auto nan=[&](uint64_t x){return to==GGML_TYPE_F64 ? (x&0x7fffffffffffffffULL)>0x7ff0000000000000ULL : (x&0x7fffffff)>0x7f800000;};
+                    CHECK(word==expected[i] || (binary_widths && nan(word) && nan(expected[i])));
+                    for (size_t j=0;j<result->nb[0];++j) oracle.at(offset+j)=actual.at(offset+j);
+                    ++compared;
+                }
+                CHECK(oracle==actual);
             }
         }
-        return finish(128);
+        return finish(compared);
     }
     const bool integer_floats=!strcmp(argv[3],"integer-floats");
     const bool octet_integers=!strcmp(argv[3],"octet-integers");

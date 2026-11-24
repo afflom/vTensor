@@ -15,6 +15,10 @@ mod bootstrap;
 mod proof;
 mod scaffold;
 
+fn with_model(root: &Path, gate: fn(&Path, &Model) -> Result<(), Fail>) -> Result<(), Fail> {
+    gate(root, &Model::load(&root.join("model"))?)
+}
+
 fn main() -> ExitCode {
     let task = std::env::args()
         .nth(1)
@@ -24,10 +28,10 @@ fn main() -> ExitCode {
 
     let result = match task.as_str() {
         "check-model" => check_model(&root, write).map(drop),
-        "audit-limits" => audit::audit_limits(&root),
+        "audit-limits" => with_model(&root, audit::check_limits),
         "audit-deferral" => audit::audit_deferral(&root),
-        "audit-bootstrap" => bootstrap::audit(&root),
-        "audit-dependency-updates" => bootstrap::audit_dependency_updates(&root),
+        "audit-bootstrap" => with_model(&root, bootstrap::audit),
+        "audit-dependency-updates" => with_model(&root, bootstrap::audit_dependency_updates),
         "audit-prism" => audit::prism::audit(&root),
         "validate" => validate(&root),
         "proof-reuse" => proof::reuse(&root),
@@ -113,7 +117,7 @@ fn validate(root: &Path) -> Result<(), Fail> {
     let model = check_model(root, false)?;
     audit::check_limits(root, &model)?;
     audit::audit_deferral(root)?;
-    bootstrap::audit(root)?;
+    bootstrap::audit(root, &model)?;
     audit::prism::audit(root)?;
     println!("validate: every gate passed");
     Ok(())

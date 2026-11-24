@@ -426,6 +426,7 @@
     "reference": "llama.cpp 9a080f44 ggml_cpu, ggml_mul_mat(F32). Transpose left columns into GGML rows. All products and partial sums are small exact integers in F32 and F64."
   },
   "fixture_digests": {
+    "ggml-signed64-width-oracle": "eb388493418f946f2d445b102866a55dfb3aeeb8423e8fb206dc845bef640882",
     "ggml-binary-width-oracle": "44542ad5f3ea542451c749327f0811a6359840ad16d694aef286cdfd626281b1",
     "arithmetic-fixture-baseline": "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4",
     "matrix-fixture-baseline": "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",

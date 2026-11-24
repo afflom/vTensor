@@ -1811,7 +1811,8 @@ definition{
   name: signedCopyPair,
   parameters: [source : Nat, destination : Nat],
   result: Bool,
-  body: ((((source =? 0) && (destination =? 28)) || ((source =? 28) && (destination =? 0))) || (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((copyFloatType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((copyFloatType source) && (castSignedInteger destination)))),
+  body: (if (source =? 27) then (castSignedInteger destination) else
+    (if (destination =? 27) then (castSignedInteger source) else ((((source =? 0) && (destination =? 28)) || ((source =? 28) && (destination =? 0))) || (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((copyFloatType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((copyFloatType source) && (castSignedInteger destination)))))),
   executable: true
 }
 
@@ -3293,10 +3294,21 @@ definition{
 }
 
 definition{
+  name: signed64WidthOperation,
+  parameters: [source : Nat, destination : Nat],
+  result: WordOperation,
+  body: (if (source =? 27) then (ctor WordOperation.signedField 1 0 (signedFieldModulus destination)) else
+    (let modulus : Nat := (signedFieldModulus source);
+      (let extension : Nat := (prim subtract 18446744073709551615 (prim subtract modulus 1 : Nat) : Nat);
+        (ctor WordOperation.signedField (prim quotient modulus 2 0 : Nat) extension 18446744073709551615)))),
+  executable: true
+}
+
+definition{
   name: signedCopyOperation,
   parameters: [source : Nat, destination : Nat],
   result: WordOperation,
-  body: (if (source =? 28) then (ctor WordOperation.wide 2) else (if (destination =? 28) then (ctor WordOperation.wide 1) else (if ((source =? 0) && (destination =? 26)) then (ctor WordOperation.signedTruncation) else (if (copyFloatType source) then (ctor WordOperation.floatToSigned source (signedFieldModulus destination)) else (let sourceLimit : Nat := (signedFieldModulus source); (let signBit : Nat := (prim quotient sourceLimit 2 0 : Nat); (if (copyFloatType destination) then (ctor WordOperation.signedToFloat signBit (prim subtract 4294967296 sourceLimit : Nat) destination) else (let destinationLimit : Nat := (signedFieldModulus destination); (ctor WordOperation.signedField signBit (prim subtract destinationLimit sourceLimit : Nat) destinationLimit))))))))),
+  body: (if ((source =? 27) || (destination =? 27)) then (signed64WidthOperation source destination) else (if (source =? 28) then (ctor WordOperation.wide 2) else (if (destination =? 28) then (ctor WordOperation.wide 1) else (if ((source =? 0) && (destination =? 26)) then (ctor WordOperation.signedTruncation) else (if (copyFloatType source) then (ctor WordOperation.floatToSigned source (signedFieldModulus destination)) else (let sourceLimit : Nat := (signedFieldModulus source); (let signBit : Nat := (prim quotient sourceLimit 2 0 : Nat); (if (copyFloatType destination) then (ctor WordOperation.signedToFloat signBit (prim subtract 4294967296 sourceLimit : Nat) destination) else (let destinationLimit : Nat := (signedFieldModulus destination); (ctor WordOperation.signedField signBit (prim subtract destinationLimit sourceLimit : Nat) destinationLimit)))))))))),
   executable: true
 }
 

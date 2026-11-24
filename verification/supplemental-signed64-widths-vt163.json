@@ -1,0 +1,33 @@
+{
+  "requirement": "VT-163",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "test": "signed64_widths_vt_163",
+  "oracle": "ggml-signed64-width-oracle.json",
+  "inputs": "ggml-signed64-width-words.tsv",
+  "pairs": [
+    "I8 -> I64",
+    "I16 -> I64",
+    "I32 -> I64",
+    "I64 -> I8",
+    "I64 -> I16",
+    "I64 -> I32"
+  ],
+  "shapes": [
+    "Contiguous 8 by 8 GGML CAST",
+    "8 by 8 offset view of a 10 by 8 source copied into a 4 by 16 offset view of a 6 by 16 destination"
+  ],
+  "graphs": 12,
+  "reference_words": 384,
+  "compared_result_words": 768,
+  "compared_destination_bytes": 4960,
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "semantic_id": "95c6481b90b4250583e8fbc3e28196a479d45918d825104acae2bb64ec05581a",
+  "attestation_id": "6113db11c80a5c865e2510f107e47c3f28852792a27b41cdaaca0f77289d002a",
+  "numerics": [
+    "Verdant v2.21.7 extract_packed_field",
+    "Verdant v2.21.7 evaluate_encoded_word"
+  ],
+  "plant": "Zeroing the sign extension for 64-bit destinations failed the independent Lean comparison; restoring the Verdant operation passed.",
+  "admission": "Queried original GGML descriptors before and after allocation. Compared every result word and every padding byte.",
+  "handwritten_lines": 12703
+}

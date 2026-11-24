@@ -1,0 +1,21 @@
+{
+  "oracle": "Lean 4 signed machine integers from the pinned Prism SDK",
+  "revision": "f054605aea4b840552cca2e725580bffd1e1b704",
+  "source": "https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/Init/Data/SInt/Basic.lean",
+  "version": "4.32.1",
+  "source_sha256": "f1a7d06f35055666a9b7ac3df56376a8ff1979ecc1c463dc4c9ce809e9fbd99e",
+  "archive_sha256": "07020cfead4950eee5967b37eb785a345d12c65319fba3545dbe85884a86a58e",
+  "external_check": "The source at the release commit and the file shipped in the SDK have identical bytes.",
+  "generation": "Interpret each input as UIntN, call toIntN.toIntM.toUIntM.toNat with the original Lean module. The driver runs through lean --run in the locked SDK. The expected column is the resulting unsigned storage word.",
+  "pairs": [
+    "I8 -> I64",
+    "I16 -> I64",
+    "I32 -> I64",
+    "I64 -> I8",
+    "I64 -> I16",
+    "I64 -> I32"
+  ],
+  "vectors_per_pair": 64,
+  "words_sha256": "e94276494cb9888db7322cf8fe883013bd08c354468979b84cc76d7b8b72e974",
+  "table": "Six sections, each headed by GGML source and destination type numbers followed by 64 raw hex word pairs. Covers sign changes, low-bit truncation, signed limits and deterministic samples."
+}

@@ -638,3 +638,9 @@ Feature: native-backend
     Given F8_E4M3 words and signed integer limits in ordinary and strided storage
     When the graph casts each direction or copies into a differently shaped view
     Then every output matches the original quantizer or dequantizer and an invalid source preserves the destination
+
+  @VT-163 @build
+  Scenario: Prism and Verdant convert between I64 and each narrower signed GGML storage width against the imported Lean signed word conversions
+    Given signed integer words near representation boundaries and seeded raw words
+    When GGML constructs a cast or a copy between offset views
+    Then the complete destination matches the signed conversion from the pinned Lean runtime

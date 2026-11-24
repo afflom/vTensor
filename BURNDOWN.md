@@ -4,7 +4,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Resolve the 28 remaining scalar CAST pairs involving I64 or F64. [Pair-by-pair status](verification/ggml-scalar-cast-coverage.tsv)
+- [ ] Resolve the 22 remaining scalar CAST pairs involving I64 or F64. [Pair-by-pair status](verification/ggml-scalar-cast-coverage.tsv)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -13,11 +13,13 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Establish coverage and unblock release
 
+- [x] Trace all 86,647 factory nodes to 29,060 exact node signatures. Join shapes, strides, view offsets, flags and operator parameters to existing GGML verdicts and preallocation placement. [Factory layouts](verification/ggml-factory-layouts.json)
 - [x] Index the graph signatures of all 27,755 upstream constructors. The 2,293 observed signatures cover 89 of 100 opcodes, all 22 unary and seven GLU variants and 33 of 36 storage types. [Declaration gaps](verification/ggml-factory-signatures.json) · [Ordinal map](verification/ggml-factory-signatures.tsv.gz)
 - [x] Trace 236 public tensor constructors to all 100 GGML operation declarations and their source guards. Index the 13 public calls that retrieve or modify an existing tensor. [Constructor map](verification/ggml-constructor-contracts.json)
 - [x] Attribute all 27,755 factory verdicts to their evidence groups. Use `just factory-remaining evidence` to join any ordinal to its receipt and graph signatures. [Index](verification/ggml-factory-evidence-index.json)
 - [x] Map 31,264 supplemental copy, repeat, concat, fill and cast cases by type pair, variant, extent and stride. All 36 storage types have same-type DUP/CONT/CPY and four-axis CONCAT coverage. [Ordinal map](verification/ggml-storage-variant-map.json)
 - [x] Implement all six width conversions among I8, I16 and I32. Compare 192 results and padding bytes in contiguous casts and reshaped offset copies. [VT-159](verification/supplemental-integer-casts-vt159.json)
+- [x] Compare I64 ↔ I8/I16/I32 in 12 contiguous and padded graphs against 384 signed-width oracle words. Check all 768 results and destination padding. [VT-163](verification/supplemental-signed64-widths-vt163.json)
 - [x] Compare F32 ↔ F64 against 128 Berkeley SoftFloat words and all six E4M3 ↔ signed-width conversions against GGML. Check 192 E4M3 results and six atomic refusals. [VT-161 and VT-162](verification/supplemental-scalar-casts-vt161-vt162.json)
 - [x] Cover all 18 conversions between I8/I16/I32 and F16/BF16/F32. Compare 576 results and verify 66 invalid casts preserve every destination byte. [VT-160](verification/supplemental-integer-float-casts-vt160.json)
 - [x] Map all 288 same-type DUP, CONT and CPY comparisons for Q8_1, Q8_K and F64 to their Prism roots, Verdant byte transfer and GGML CPU oracle. [Supplemental ordinal map](verification/supplemental-copy-storage-map.json)

@@ -60,3 +60,12 @@ checksum = "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34"
 artifact = "vendor/berkeley-softfloat-3e.tar.gz"
 statement = "SoftFloat Release 3e supplies the reference binary32-to-binary64 and binary64-to-binary32 conversions at round-to-nearest-even."
 realized_by = ["VT-161"]
+
+[[authority]]
+id = "LEAN-SIGNED-MACHINE-INTEGERS"
+name = "Lean 4 signed fixed-width integer conversions"
+citation = "https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/Init/Data/SInt/Basic.lean"
+checksum = "07020cfead4950eee5967b37eb785a345d12c65319fba3545dbe85884a86a58e"
+artifact = "vendor/lean-sint-basic.lean.gz"
+statement = "Lean 4.32.1 defines sign extension and truncation for Int8, Int16, Int32 and Int64 through the signed machine integer interface."
+realized_by = ["VT-163"]

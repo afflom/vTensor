@@ -40,10 +40,14 @@ fn immutable_image(value: &str) -> bool {
     })
 }
 
-fn sdk_image(lock: &str) -> Option<&str> {
-    let prefix = "\"sdk_image\":\"";
-    let rest = lock.split_once(prefix)?.1;
-    rest.split_once('"').map(|(value, _)| value)
+fn canonical_json(root: &Path, path: &str) -> Result<(serde_json::Value, Vec<u8>), Fail> {
+    let bytes =
+        std::fs::read(root.join(path)).map_err(|error| format!("{path} is required: {error}"))?;
+    let parsed = serde_json::from_slice(&bytes)?;
+    if serde_json::to_vec(&parsed)? != bytes {
+        return Err(format!("{path} is not canonical JSON").into());
+    }
+    Ok((parsed, bytes))
 }
 
 fn sha256(bytes: &[u8]) -> String {
@@ -280,92 +284,69 @@ fn update_preserves_project_content(source: &str) -> bool {
         && !source.contains(".github/actions/prismpm")
 }
 
-fn audit_policy_files(root: &Path, lock: &serde_json::Value) -> Result<(), Fail> {
-    let contract_bytes = std::fs::read(root.join("template-contract.json"))?;
-    let contract: serde_json::Value = serde_json::from_slice(&contract_bytes)?;
-    if serde_json::to_vec(&contract)? != contract_bytes {
-        return Err("template-contract.json is not canonical JSON".into());
-    }
-    let expected_keys = [
-        "project_content_paths",
-        "required_paths",
-        "schema",
-        "universal_policy_paths",
-        "version",
-    ];
-    if contract
-        .as_object()
-        .is_none_or(|object| object.keys().map(String::as_str).ne(expected_keys))
+fn audit_policy_files(root: &Path, lock: &serde_json::Value, sdk_lock: &[u8]) -> Result<(), Fail> {
+    let (contract, contract_bytes) = canonical_json(root, "template-contract.json")?;
+    // The two identity fields and three path arrays below account for every allowed key.
+    if contract.as_object().is_none_or(|object| object.len() != 5)
         || contract["schema"] != "uor/template-contract/1"
         || contract["version"] != "1.0.0"
     {
         return Err("template contract schema or version is unsupported".into());
     }
-    let universal = contract["universal_policy_paths"]
-        .as_array()
-        .ok_or("template contract has no universal_policy_paths")?
-        .iter()
-        .map(|value| {
-            value
-                .as_str()
-                .ok_or("universal policy path is not a string")
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let project = contract["project_content_paths"]
-        .as_array()
-        .ok_or("template contract has no project_content_paths")?
-        .iter()
-        .map(|value| value.as_str().ok_or("project content path is not a string"))
-        .collect::<Result<Vec<_>, _>>()?;
-    let required = contract["required_paths"]
-        .as_array()
-        .ok_or("template contract has no required_paths")?
-        .iter()
-        .map(|value| value.as_str().ok_or("required path is not a string"))
-        .collect::<Result<Vec<_>, _>>()?;
+    let paths = |key: &str| -> Result<Vec<&str>, Fail> {
+        contract[key]
+            .as_array()
+            .ok_or_else(|| format!("template contract has no {key}"))?
+            .iter()
+            .map(|value| {
+                value
+                    .as_str()
+                    .ok_or_else(|| format!("{key} path is not a string").into())
+            })
+            .collect()
+    };
+    let universal = paths("universal_policy_paths")?;
+    let project = paths("project_content_paths")?;
+    let required = paths("required_paths")?;
     if !policy_boundary_is_canonical(&universal, &project, &required) {
         return Err("template contract path boundary is not canonical or disjoint".into());
     }
     if lock["contract_digest"] != sha256(&contract_bytes) {
         return Err("template.lock contract digest is stale".into());
     }
-    let mut expected = universal
-        .iter()
-        .filter(|path| **path != "template.lock")
-        .map(|path| (*path).to_owned())
-        .collect::<Vec<_>>();
-    expected.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
-    expected.dedup();
-
+    // The registered universal paths are already in the canonical byte order.
+    let expected = universal
+        .into_iter()
+        .filter(|&path| path != "template.lock");
     let policy_files = lock["policy_files"]
         .as_array()
         .ok_or("template.lock has no policy_files")?;
-    let observed = policy_files
-        .iter()
-        .map(|row| -> Result<String, Fail> {
-            let object = row.as_object().ok_or("policy_files row is not an object")?;
-            if object.len() != 2 || !object.contains_key("path") || !object.contains_key("sha256") {
-                return Err("policy_files row is not closed".into());
-            }
-            let path = row["path"]
-                .as_str()
-                .ok_or("policy_files path is not a string")?;
-            let digest = row["sha256"]
-                .as_str()
-                .ok_or("policy_files sha256 is not a string")?;
-            let bytes = std::fs::read(root.join(path))?;
-            if !content_matches(&bytes, digest) {
-                return Err(format!("universal policy drift: {path}").into());
-            }
-            Ok(path.to_owned())
-        })
-        .collect::<Result<Vec<_>, Fail>>()?;
-    if observed != expected {
-        return Err("template.lock policy_files does not close the universal policy paths".into());
+    if policy_files.len() != UNIVERSAL_POLICY_PATHS.len() - 1 {
+        return Err("template.lock policy file set differs from the contract".into());
     }
-    let tree_bytes = serde_json::to_vec(policy_files)?;
-    let expected_tree = sha256(&tree_bytes);
-    if lock["policy_tree_sha256"].as_str() != Some(expected_tree.as_str()) {
+    for (row, path) in policy_files.iter().zip(expected) {
+        if row.as_object().is_none_or(|object| object.len() != 2)
+            || row["path"].as_str() != Some(path)
+        {
+            return Err("template.lock policy file set differs from the contract".into());
+        }
+        let digest = row["sha256"]
+            .as_str()
+            .ok_or("policy_files sha256 is not a string")?;
+        let on_disk;
+        let bytes = match path {
+            "template-contract.json" => &contract_bytes[..],
+            "prismpm.lock" => sdk_lock,
+            _ => {
+                on_disk = std::fs::read(root.join(path))?;
+                &on_disk
+            }
+        };
+        if !content_matches(bytes, digest) {
+            return Err(format!("universal policy drift: {path}").into());
+        }
+    }
+    if lock["policy_tree_sha256"] != sha256(&serde_json::to_vec(policy_files)?) {
         return Err("template.lock policy tree digest is stale".into());
     }
     Ok(())
@@ -548,8 +529,7 @@ fn dependency_updates_are_confined(source: &str, pins: &[String]) -> bool {
 }
 
 /// Keep SDK/template updates owned by their release flow, without disabling dependency maintenance.
-pub fn audit_dependency_updates(root: &Path) -> Result<(), Fail> {
-    let model = repo_model::Model::load(&root.join("model"))?;
+pub fn audit_dependency_updates(root: &Path, model: &repo_model::Model) -> Result<(), Fail> {
     let Some(pins) = upstream_pins(&model.authorities) else {
         return Err("an authority's pins must name each Cargo dependency once, exactly".into());
     };
@@ -561,30 +541,20 @@ pub fn audit_dependency_updates(root: &Path) -> Result<(), Fail> {
 }
 
 /// Validate immutable SDK selection and the independent workflow trust root.
-pub fn audit(root: &Path) -> Result<(), Fail> {
-    audit_dependency_updates(root)?;
+pub fn audit(root: &Path, model: &repo_model::Model) -> Result<(), Fail> {
+    audit_dependency_updates(root, model)?;
     if root.join(".github/actions/prismpm").exists() {
         return Err(
             "the template must consume the shared PrismPM action, not a copied wrapper".into(),
         );
     }
-    let sdk_lock_bytes = std::fs::read(root.join("prismpm.lock"))
-        .map_err(|error| format!("prismpm.lock is required: {error}"))?;
-    let lock: serde_json::Value = serde_json::from_slice(&sdk_lock_bytes)?;
-    if serde_json::to_vec(&lock)? != sdk_lock_bytes {
-        return Err("prismpm.lock is not canonical JSON".into());
-    }
-    let lock_text = std::str::from_utf8(&sdk_lock_bytes)?;
-    let image = sdk_image(lock_text)
+    let (lock, sdk_lock_bytes) = canonical_json(root, "prismpm.lock")?;
+    let image = lock["sdk_image"]
+        .as_str()
         .filter(|value| immutable_image(value))
         .ok_or("prismpm.lock does not select an immutable lowercase SDK manifest digest")?;
     audit_sdk_inventory(&lock)?;
-    let template_lock_bytes = std::fs::read(root.join("template.lock"))
-        .map_err(|error| format!("template.lock is required: {error}"))?;
-    let template_lock: serde_json::Value = serde_json::from_slice(&template_lock_bytes)?;
-    if serde_json::to_vec(&template_lock)? != template_lock_bytes {
-        return Err("template.lock is not canonical JSON".into());
-    }
+    let (template_lock, _) = canonical_json(root, "template.lock")?;
     if template_lock["schema"] != "uor/template-lock/1"
         || template_lock["sdk_image"] != image
         || template_lock["template_repository"] != "https://github.com/UOR-Foundation/template"
@@ -594,7 +564,7 @@ pub fn audit(root: &Path) -> Result<(), Fail> {
     {
         return Err("template.lock identity is stale or mutable".into());
     }
-    audit_policy_files(root, &template_lock)?;
+    audit_policy_files(root, &template_lock, &sdk_lock_bytes)?;
     let devcontainer = read(root, ".devcontainer/devcontainer.json")?;
     let devcontainer_value: serde_json::Value = serde_json::from_str(&devcontainer)?;
     let mounts = devcontainer_value["mounts"].as_array();
@@ -982,35 +952,27 @@ mod tests {
 
     #[test]
     fn native_platform_inventory_rejects_swaps_missing_platforms_and_legacy_drift() {
-        let bytes = |architecture: &str| {
-            serde_json::to_vec(&serde_json::json!({"artifacts":[{
-            "id":"native-tool", "digest":sha256(architecture.as_bytes()), "kind":"binary", "version":"test"
-        }]})).unwrap()
-        };
-        let amd64 = bytes("amd64");
-        let arm64 = bytes("arm64");
-        let row = |platform: &str, bytes: &[u8]| {
-            serde_json::json!({"platform":platform,
-            "inventory_digest":sha256(bytes), "inventory":serde_json::from_slice::<serde_json::Value>(bytes).unwrap()["artifacts"]})
-        };
-        let lock = serde_json::json!({"schema":"prismpm/sdk-lock/2", "platforms":[
-            row("linux/amd64", &amd64), row("linux/arm64", &arm64)]});
-        for (platform, actual, other) in [
-            ("linux/amd64", &amd64, &arm64),
-            ("linux/arm64", &arm64, &amd64),
-        ] {
-            super::compare_sdk_inventory(&lock, actual, platform).unwrap();
-            assert!(super::compare_sdk_inventory(&lock, other, platform).is_err());
+        let data = include_bytes!("../../verification/sdk-platform-inventory-controls.json");
+        assert_eq!(
+            repo_model::artifact::sha256_hex(data),
+            "78410957e2a7e8e8b2d0ef1d80d658559873788b9752b6d884ce5c29854d4eb2"
+        );
+        let fixture: serde_json::Value = serde_json::from_slice(data).unwrap();
+        let amd64 = fixture["amd64"].as_str().unwrap().as_bytes();
+        let arm64 = fixture["arm64"].as_str().unwrap().as_bytes();
+        let lock = &fixture["lock"];
+        let legacy = &fixture["legacy"];
+        for (platform, actual, other) in
+            [("linux/amd64", amd64, arm64), ("linux/arm64", arm64, amd64)]
+        {
+            super::compare_sdk_inventory(lock, actual, platform).unwrap();
+            assert!(super::compare_sdk_inventory(lock, other, platform).is_err());
         }
         let mut missing = lock.clone();
         missing["platforms"].as_array_mut().unwrap().pop();
-        assert!(super::compare_sdk_inventory(&missing, &amd64, "linux/amd64").is_err());
-        let legacy = serde_json::json!({"schema":"prismpm/sdk-lock/1",
-            "sdk_image":format!("example.invalid/sdk@{}",sha256(b"test")),
-            "inventory":[lock["platforms"][0]["inventory"][0],
-                {"id":"sdk-manifest", "digest":sha256(b"test"), "kind":"image", "version":"test"}]});
-        super::compare_sdk_inventory(&legacy, &amd64, "linux/amd64").unwrap();
-        assert!(super::compare_sdk_inventory(&legacy, &arm64, "linux/arm64").is_err());
+        assert!(super::compare_sdk_inventory(&missing, amd64, "linux/amd64").is_err());
+        super::compare_sdk_inventory(legacy, amd64, "linux/amd64").unwrap();
+        assert!(super::compare_sdk_inventory(legacy, arm64, "linux/arm64").is_err());
     }
 
     #[test]
