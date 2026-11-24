@@ -47,6 +47,13 @@ impl From<TensorComputeError> for BackendError {
     }
 }
 
+// Generated Verdant operations have distinct overflow types and share the GGML refusal.
+macro_rules! checked_word {
+    ($value:expr) => {
+        $value.ok().flatten().ok_or(BackendError::InvalidTensor)
+    };
+}
+
 // A plan interpreter expects a specific Prism reply or a specific set of source slots.
 // Every mismatched constructor has the same public invalid-tensor result.
 macro_rules! tensor_fields {
@@ -1243,11 +1250,8 @@ fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
 fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32, BackendError> {
     let word = u64::from(input.to_bits());
     let activation = match variant {
-        0 => match linear::evaluate_encoded_word(0, word, 0).map_err(BackendError::invalid)? {
-            Some(2) => input,
-            Some(_) => return Ok(0.0),
-            None => return Err(BackendError::InvalidTensor),
-        },
+        0 if checked_word!(linear::evaluate_encoded_word(0, word, 0))? != 2 => return Ok(0.0),
+        0 => input,
         1 if storage == 0 => match gaussian_table(word)? {
             Some(value) => value,
             None => return Ok(0.0),
@@ -1266,20 +1270,16 @@ fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32,
     Ok(linear::evaluate_f32_scalar(2, activation, gate)?)
 }
 
-fn checked_word<E>(value: Result<Option<u64>, E>) -> Result<u64, BackendError> {
-    value.ok().flatten().ok_or(BackendError::InvalidTensor)
-}
-
 fn signed_field(a: u64, sign_bit: u64, extension: u64, limit: u64) -> Result<u64, BackendError> {
     let field = |word, factor, divisor, modulus| {
-        checked_word(linear::extract_packed_field(word, factor, divisor, modulus))
+        checked_word!(linear::extract_packed_field(word, factor, divisor, modulus))
     };
     if extension == 0 {
         field(a, 1, 1, limit)
     } else {
         let sign = field(a, 1, sign_bit, 2)?;
         let high = field(sign, extension, 1, limit)?;
-        checked_word(linear::evaluate_encoded_word(2, a, high))
+        checked_word!(linear::evaluate_encoded_word(2, a, high))
     }
 }
 
@@ -1309,15 +1309,15 @@ fn word_value(operation: WordOperation, a: u64, b: u64) -> Result<u64, BackendEr
             linear::transform_float_storage(kind, storage, a, first, second)
                 .map_err(BackendError::overflow)?
         }
-        WordOperation::C5(kind) => return checked_word(linear::evaluate_encoded_word(kind, a, b)),
-        WordOperation::C8(kind) => return checked_word(linear::evaluate_small_float(kind, a)),
-        WordOperation::C9 => return checked_word(linear::truncate_signed_word_f32(a)),
+        WordOperation::C5(kind) => return checked_word!(linear::evaluate_encoded_word(kind, a, b)),
+        WordOperation::C8(kind) => return checked_word!(linear::evaluate_small_float(kind, a)),
+        WordOperation::C9 => return checked_word!(linear::truncate_signed_word_f32(a)),
         WordOperation::C10(sign_bit, extension, limit) => {
             return signed_field(a, sign_bit, extension, limit)
         }
         WordOperation::C11(source, limit) => {
-            let value = checked_word(linear::truncate_signed_word_f32(convert(source, 0, a)?))?;
-            return checked_word(linear::extract_packed_field(value, 1, 1, limit));
+            let value = checked_word!(linear::truncate_signed_word_f32(convert(source, 0, a)?))?;
+            return checked_word!(linear::extract_packed_field(value, 1, 1, limit));
         }
         WordOperation::C12(sign_bit, extension, destination) => {
             let word = signed_field(a, sign_bit, extension, 1_u64 << 32)?;
@@ -2456,7 +2456,7 @@ mod attention {
                             KeyRows::Scalar(key, [product, widen, add, narrow]) => {
                                 k.decode(key_offset, key)?;
                                 let wide =
-                                    |op, a, b| super::checked_word(linear::evaluate_wide(op, a, b));
+                                    |op, a, b| checked_word!(linear::evaluate_wide(op, a, b));
                                 let mut sum = 0;
                                 for (&weight, &activation) in key.iter().zip(&query) {
                                     let term = scalar(*product, weight, activation)?;
