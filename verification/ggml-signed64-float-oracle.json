@@ -18,6 +18,7 @@
   ],
   "vectors_per_pair": 64,
   "invalid_f64_inputs": 6,
-  "words_sha256": "61a63f7517b59f6d099dd73ca2bd6406d683968c72c6a5d03e6da87f05e3f1a3",
-  "layout": "Three sections beginning with decimal GGML type codes followed by 64 raw hexadecimal input and result words. The F64-to-I64 section ends with six input encodings for which SoftFloat raises invalid."
+  "words_sha256": "b90b1d3192651c3910fd3270d3d431794edec6e15199afe8039b491de58556b3",
+  "layout": "Three sections beginning with decimal GGML type codes followed by 64 raw hexadecimal input and result words. The F64-to-I64 section ends with six input encodings for which SoftFloat raises invalid.",
+  "framing": "Header gives pair count, lanes, layout count and graph-count flag. Each section gives GGML source, destination, invalid count and the permitted NaN infinity magnitude (zero for exact bits). Original input, reference and invalid words follow."
 }

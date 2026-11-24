@@ -1,0 +1,10 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "graphs": 64,
+  "compression": "gzip",
+  "words_sha256": "820bcef6a2ddd3e4ad600801a4e073089f2733f841987a65608ce3b90ccf14a1",
+  "reference": "Replay the original VT-139/140 constructor, input encodings and output initialization from crates/conformance/tests/contract.rs at 79000d8. Capture the inputs and output bytes from the generic GGML CPU. Each provider graph also checks placement before allocation and both original atomic refusal mutations."
+}

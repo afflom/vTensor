@@ -1182,3 +1182,9 @@ id = "VT-185"
 level = "build"
 suite = "native-backend"
 statement = "Scalar flash attention rounds each product to binary32 and accumulates in binary64 order"
+
+[[id]]
+id = "VT-186"
+level = "build"
+suite = "native-backend"
+statement = "Scalar matrix and expert products follow GGML multiplication and accumulation rounding"

@@ -7,5 +7,6 @@
   "lanes_per_pair": 16,
   "invalid_words": 3,
   "reference": "Freeze the original dense scalar conversion inputs, results and refused input encodings from the integer-widths, integer-floats and octet-integers cases in crates/conformance/tests/contract.rs at 0eedb49. Use the pinned original GGML get_i32/set_i32 and get_f32/set_f32 routines and original E4M3 to_float/from_float_ref callbacks. The same words apply to the dense and padded layouts.",
-  "words_sha256": "d946ee86de005113cf949818885829a295f8c447d4c6ffb5c4dfe9617276093c"
+  "words_sha256": "ece9b675415e049250f971ea28b6db23794ea38d45858dfa555afd17e9538f03",
+  "framing": "Header gives pair count, lanes, layout count and graph-count flag. Each section gives GGML source, destination, invalid count and the permitted NaN infinity magnitude (zero for exact bits). Original input, reference and invalid words follow."
 }

@@ -80,6 +80,20 @@
       "top_token_agreement_percent": 100.0
     },
     "scored_positions": 124,
-    "parameters": "Same executable, prompt, four chunks, microbatch, context, threads and stored-weight options as the mixed-codebook run."
+    "parameters": "Same executable, prompt, four chunks, microbatch, context, threads and stored-weight options as the mixed-codebook run.",
+    "scalar_matrix_replay": {
+      "matrix_attestation": "3683a299478da377a98fdd2692b927d24770e8b526755632039d48ee5fec5862",
+      "tested_plugin_sha256": "fe300620b17910604c8406a1dd534b5aad24aa20151cfb44cff68c1da0ce60d1",
+      "scored_positions": 124,
+      "matching_top_tokens": 124,
+      "perplexity": 13.73934,
+      "mean_kl_divergence": 1e-06,
+      "max_kl_divergence": 4.8e-05,
+      "previous_prompt_eval_ms": 686552.77,
+      "prompt_eval_ms": 154687.63,
+      "prompt_tokens": 256,
+      "timing_scope": "One run each of the same stock executable, model and command on this workstation. Machine load was uncontrolled. The replay ran the VT-186 matrix implementation before the equivalent indexer reply adapter cleanup.",
+      "log_sha256": "c0bb2b869e5d4f97744e9d66113a36e2c19222e43a920102f7cf3fb17c357029"
+    }
   }
 }

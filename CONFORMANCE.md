@@ -273,6 +273,7 @@ model does not sanction.
 | `VT-183` | `build` | Four-axis packed binary broadcasts preserve offset views and in-place storage |
 | `VT-184` | `build` | GGML ADD_CAST stores bounded signed integers and binary64 results from decoded rows |
 | `VT-185` | `build` | Scalar flash attention rounds each product to binary32 and accumulates in binary64 order |
+| `VT-186` | `build` | Scalar matrix and expert products follow GGML multiplication and accumulation rounding |
 
 ## normalization-graphs
 

@@ -28,7 +28,8 @@ inductive{
     {name: multiply, fields: []},
     {name: refused, fields: []},
     {name: loadConverted, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: decodeBlock, fields: [Nat, Nat, Nat, Nat, Nat, Nat]}
+    {name: decodeBlock, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
+    {name: roundedProduct, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -117,7 +118,10 @@ definition{
   body: (let lanes : Nat := (if (operation =? 30) then (MatrixGraph::packedOuterLanes leftType) else 0); (let weightStrides : Strides := (if (0 <? lanes) then (record Strides {s0 := (project left s1), s1 := 0, s2 := (project left s2), s3 := (project left s3)}) else (operandStrides operation left)); (match (evaluate index m k n b2 b3 r2 r3 weightStrides (operandStrides operation right) output)
     | Instruction.transfer writing slot at offset => (if writing then (ctor Instruction.transfer true slot at offset) else (if ((slot =? 0) && (0 <? lanes)) then (outerBlockLoad at offset k leftType lanes (project left s0)) else (scalarLoad slot at offset (if (slot =? 0) then leftType else rightType) (ScalarDotStorage::activationType leftType))))
     | Instruction.schedule steps total => (ctor Instruction.schedule steps total)
-    | Instruction.multiply => (ctor Instruction.multiply)
+    | Instruction.multiply => (if (operation =? 28) then (match (ScalarDotStorage::scalarProductArithmetic leftType)
+      | ScalarDotStorage::ProductArithmetic.rounded product widen add narrow => (ctor Instruction.roundedProduct product widen add narrow)
+      | ScalarDotStorage::ProductArithmetic.other => (ctor Instruction.multiply)) else (ctor Instruction.multiply))
+    | Instruction.roundedProduct product widen add narrow => (ctor Instruction.roundedProduct product widen add narrow)
     | Instruction.refused => (ctor Instruction.refused)
     | Instruction.loadConverted slot at offset source dotType width => (ctor Instruction.loadConverted slot at offset source dotType width)
     | Instruction.decodeBlock at offset kind width stride skip => (ctor Instruction.decodeBlock at offset kind width stride skip)))),

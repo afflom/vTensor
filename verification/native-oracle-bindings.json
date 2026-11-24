@@ -426,16 +426,16 @@
     "reference": "llama.cpp 9a080f44 ggml_cpu, ggml_mul_mat(F32). Transpose left columns into GGML rows. All products and partial sums are small exact integers in F32 and F64."
   },
   "fixture_digests": {
-    "ggml-signed64-float-oracle": "17cb088086524db34da783652ebe210b7a4b324957692e5fad689a78e62d7715",
-    "ggml-signed64-width-oracle": "eb388493418f946f2d445b102866a55dfb3aeeb8423e8fb206dc845bef640882",
-    "ggml-binary-width-oracle": "44542ad5f3ea542451c749327f0811a6359840ad16d694aef286cdfd626281b1",
+    "ggml-signed64-float-oracle": "dff13dfe252f57103015ee8446aaa5104797299b2f2bbaf51abe005bda72c674",
+    "ggml-signed64-width-oracle": "5333611be5ddc4369a4b137b4b34e1cc0bfb20ab8bbea4b343f7144ea129c1f6",
+    "ggml-binary-width-oracle": "c793c3dd9f8134b320b777c9356ef48816f81957eff5681ace87c2751c8d00b0",
     "arithmetic-fixture-baseline": "6c505c8357480864f8b35e91ba4287b36601f6b4a7cbe06853208ffbf5fb3bc4",
     "matrix-fixture-baseline": "8519e3873aab928840517505a2a14de2769ec7140d69e85f41588fe988a02ec0",
     "native-fixture-baseline": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
     "native-fixture-source-release": "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
     "typed-binary-fixture-baseline": "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959",
-    "ggml-wide-staged-oracle": "6adb74fa8b28b941c9736191de4f51d586493b8cb494555b749aa94194987d14",
-    "ggml-wide-narrow-oracle": "416576f7ee55143146017e1581eaa7be746c9074db876c95c97994901ec8c5ff",
+    "ggml-wide-staged-oracle": "e40355b80b6adf84ab3f49500871d9ea09bb6397807abb82a63b3b578b96b0b4",
+    "ggml-wide-narrow-oracle": "db1dcf270f3059cd41ba8b2a4e89f39095382187f0d242e54f9349a7a964730e",
     "ggml-packed-add-oracle": "962a1d50b1d2a1cf500b8129471e3d3dc634f9e41168ffe2cdf17e5996b8e5cb",
     "ggml-prepacked-matrix-oracle": "affd084b11aad40137318c93ab240986abb49b038f362914577205ab432f348e",
     "ggml-bfloat-matrix-oracle": "74d5e73f1f814339bbb7b57efacf7ceee4ef6447cc1f280e5f84b686635c5266",
@@ -445,13 +445,17 @@
     "ggml-packed-binary-oracle": "195a2ce3594cf797f5b040ebc7092f4f61d9b04924ebff2d722e687df230ef4a",
     "ggml-mixed-cast-oracle": "0a916009feb8af9e35dd8b219cae5c0ce2d3b8fb3b38aceffadbc96a27a3c88c",
     "ggml-scalar-binary-oracle": "d24b3516f7ad821f18ea4f24f0ffe3741620d4a78e31d96173d02becf958e55c",
-    "ggml-integer-widths-oracle": "fb31f34def57f4180670c5564b8c42fd56b53d5fdf03febea04de7e509b7188c",
-    "ggml-integer-floats-oracle": "5b9fcbae80fec6e6af26732acf219dea9cc79671b21135e0aa9cf7bea5119f74",
-    "ggml-octet-integers-oracle": "57654aca8442d8a0b56580297714a6c06c4e0c889777d937dd0dba93526a31e4",
+    "ggml-integer-widths-oracle": "1e26d4557b3b440356aebb68f9afb5cbd5278ffda3bc44b43e63802eba451f3c",
+    "ggml-integer-floats-oracle": "d35012a5bcdad7676df701e0f29dbfd17ac8c3dd2564f37fcba1f7857aa83549",
+    "ggml-octet-integers-oracle": "f32cb91199cbeb0ad61b7f99f4adf9bd8779df5211408ec38a13996eb2605af8",
     "ggml-row-repeat-oracle": "268e0f5dfce0e755c18696b0047237dae09aaea5d55544d2adbf2f3e8637bf8d",
     "ggml-numeric-results-oracle": "21a9736fb7047c066804f63758617026351e331c49f9f90b458ab033242d7f9c",
     "ggml-scalar-score-oracle": "2c18e068937401b2d8e83bd0c72c89b705b605988a2927561be8349996f610af",
-    "ggml-scalar-diag-oracle": "755c4394ea2402a5da5994492413a1ef319ea6a9f4c32ceb5538eb54a0ac84e2"
+    "ggml-scalar-diag-oracle": "755c4394ea2402a5da5994492413a1ef319ea6a9f4c32ceb5538eb54a0ac84e2",
+    "ggml-matrix-rounding-oracle": "a648dba3aa19a406d087c5a336b2a880da6f6381f120a97a8e38b3434f1125f7",
+    "ggml-pool-gradients-oracle": "d618c480f3bbc04c6ada027470fb7415aabca29c443d15340719b7dbbf93b67e",
+    "ggml-column-gradients-oracle": "da0a12e03f60239144ed1991237561431759a9de579ce1087bbab9a91cc6d2fa",
+    "ggml-e4m3-repeat-oracle": "ee19733d632857b93d6ba1047121b9afa2ce8b6130a9728b26f93db7c026941f"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -653,6 +657,20 @@
     "row-repeat": "ggml-row-repeat",
     "numeric-results": "ggml-numeric-results",
     "flash-rounding": "ggml-scalar-score",
-    "scalar-diagonal": "ggml-scalar-diag"
+    "scalar-diagonal": "ggml-scalar-diag",
+    "matrix-rounding": "ggml-matrix-rounding",
+    "pool-gradients": "ggml-pool-gradients",
+    "column-gradients": "ggml-column-gradients",
+    "e4m3-repeat": "ggml-e4m3-repeat"
+  },
+  "drivers": {
+    "binary-widths": "scalar-casts",
+    "signed64-widths": "scalar-casts",
+    "signed64-floats": "scalar-casts",
+    "wide-narrow": "scalar-casts",
+    "wide-staged": "scalar-casts",
+    "integer-widths": "scalar-casts",
+    "integer-floats": "scalar-casts",
+    "octet-integers": "scalar-casts"
   }
 }

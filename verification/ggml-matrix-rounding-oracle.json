@@ -1,0 +1,12 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "words_sha256": "5efd0d201a0f08335d72bb9df887cd6e74d1ff55a9c744a28e49afac14a1598d",
+  "graphs": 8,
+  "output_words": 48,
+  "method": "The pinned generic GGML CPU executed MUL_MAT and MUL_MAT_ID with F32/F32, F16/F32, BF16/F32 and BF16/BF16 storage. The original ggml_set_f32_1d writes the input rows. Indexed products select experts 1 then 0, with opposite weight signs. Two columns distinguish a rounded F32 product from an exact product and ordered F64 accumulation from an exact reduction. A separate lane yields +4 for expert zero and -4 for expert one.",
+  "comparison": "Bit identity across all six output words in each graph. Check scheduler placement before allocation.",
+  "inner_width": 256,
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker."
+}

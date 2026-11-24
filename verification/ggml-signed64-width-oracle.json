@@ -16,6 +16,7 @@
     "I64 -> I32"
   ],
   "vectors_per_pair": 64,
-  "words_sha256": "e94276494cb9888db7322cf8fe883013bd08c354468979b84cc76d7b8b72e974",
-  "table": "Six sections, each headed by GGML source and destination type numbers followed by 64 raw hex word pairs. Covers sign changes, low-bit truncation, signed limits and deterministic samples."
+  "words_sha256": "f9af8cc840e6a10e825b16f0abb6987699864360dd0828a33a1ef2059d849ee4",
+  "table": "Six sections, each headed by GGML source and destination type numbers followed by 64 raw hex word pairs. Covers sign changes, low-bit truncation, signed limits and deterministic samples.",
+  "framing": "Header gives pair count, lanes, layout count and graph-count flag. Each section gives GGML source, destination, invalid count and the permitted NaN infinity magnitude (zero for exact bits). Original input, reference and invalid words follow."
 }

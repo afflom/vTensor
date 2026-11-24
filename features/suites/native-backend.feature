@@ -776,3 +776,9 @@ Feature: native-backend
     Given F32 queries and F32, F16 or BF16 keys whose products cancel at different precisions
     When the scheduler places and runs the attention graph
     Then every output word matches the original generic GGML CPU kernel
+
+  @VT-186 @build
+  Scenario: Scalar matrix and expert products follow GGML multiplication and accumulation rounding
+    Given scalar matrix rows with cancellation in the product and the running sum
+    When ordinary and indexed graphs are placed and executed
+    Then every F32 word matches the original generic GGML CPU

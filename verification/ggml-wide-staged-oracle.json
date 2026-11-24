@@ -99,5 +99,6 @@
       "invalid_per_layout": 0
     }
   ],
-  "words_sha256": "c3964d05bd0268221fb426cb0fc714bf478ae92249cda040c2c3185f6948b6b3"
+  "words_sha256": "036aacc58acce7414eb28803fe8a583b6c73c8d699e8dbe050ed15e9ccdbf67b",
+  "framing": "Header gives pair count, lanes, layout count and graph-count flag. Each section gives GGML source, destination, invalid count and the permitted NaN infinity magnitude (zero for exact bits). Original input, reference and invalid words follow."
 }

@@ -1,0 +1,23 @@
+{
+  "requirement": "VT-186",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "682e5ca17eff0b10e1a3fc6b5574ee7be695901004378470f141c4d2485e5022",
+  "oracle": "ggml-matrix-rounding-oracle.json",
+  "matrix_attestation": "3683a299478da377a98fdd2692b927d24770e8b526755632039d48ee5fec5862",
+  "attention_attestation": "abf126887b39ea4e7781274925f2b0c73a5ec0979bd2f3194de6817011e06978",
+  "graphs": 8,
+  "exact_output_words": 48,
+  "negative_control": "Falling back to the previous exact whole-vector reduction for F16 row products failed the F16/F32 indexed graph. The unmodified prior provider also failed the ordinary F32/F32 graph. Restoring the certified stages reproduced the original passing plugin digest.",
+  "checked_neighbors": [
+    "VT-12",
+    "VT-108",
+    "VT-139",
+    "VT-140",
+    "VT-159\u2013166",
+    "VT-171",
+    "VT-172",
+    "VT-175",
+    "VT-185"
+  ],
+  "non_prism_lines": 12541
+}

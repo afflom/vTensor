@@ -1,0 +1,10 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "graphs": 12,
+  "compression": "gzip",
+  "words_sha256": "b98b305480f271032e0ad98a3366a6cee875901894357efa4803cedeedb9c5b4",
+  "reference": "Use the VT-175 input pattern from 79000d8 on the pinned CPU. Both ADD and ADD_INPLACE read an explicit GGML REPEAT of an offset or dense F32 operand. The encoded inputs, backing stores and output bytes agree across both constructors for every one of the six layouts."
+}

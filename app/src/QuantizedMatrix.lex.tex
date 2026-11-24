@@ -73,7 +73,8 @@ inductive{
     {name: column, fields: [Plan, Nat]},
     {name: row, fields: [Plan, Nat, Nat]},
     {name: indexedGraph, fields: [Nat, Bool, Tensor, Tensor, Tensor, Tensor, Bool]},
-    {name: expertColumn, fields: [Plan, Nat, Nat]}
+    {name: expertColumn, fields: [Plan, Nat, Nat]},
+    {name: scalarArithmetic, fields: [Nat]}
   ]
 }
 
@@ -87,7 +88,8 @@ inductive{
     {name: columnOffsets, fields: [Nat, Nat, Nat]},
     {name: weightOffset, fields: [Nat]},
     {name: readExpert, fields: [Nat]},
-    {name: skippedColumn, fields: [Nat]}
+    {name: skippedColumn, fields: [Nat]},
+    {name: roundedProduct, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -242,6 +244,9 @@ definition{
   parameters: [request : Request],
   result: Response,
   body: (match request
+    | Request.scalarArithmetic kind => (match (ScalarDotStorage::scalarProductArithmetic kind)
+      | ScalarDotStorage::ProductArithmetic.rounded product widen add narrow => (ctor Response.roundedProduct product widen add narrow)
+      | ScalarDotStorage::ProductArithmetic.other => (ctor Response.refused))
     | Request.graph op extra w a o full => (graphPlan op extra w a o (requiresScalarActivation op w a full))
     | Request.column plan ordinal => (match (project plan expert)
       | Option.none => (ordinaryColumn plan ordinal)

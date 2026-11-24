@@ -17,5 +17,6 @@
     "narrow": 64
   },
   "word_order": "First widen binary32 words, then narrow binary64 words. Both columns are raw hexadecimal words in source and destination precision.",
-  "words_sha256": "9a59f976663dfc4f292280b9d01fba2c277943fe3aa751e5aee310b6a7397a0b"
+  "words_sha256": "cdc51b2a559e6973f8a00386baa6f770621fcb92aaa335a255566efd2238953b",
+  "framing": "Header gives pair count, lanes, layout count and graph-count flag. Each section gives GGML source, destination, invalid count and the permitted NaN infinity magnitude (zero for exact bits). Original input, reference and invalid words follow."
 }

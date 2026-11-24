@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn scalar_matrix_rounding_vt_186() { "matrix-rounding", 8, ["matrix"] }
     fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
@@ -1273,7 +1274,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "324904c54c4c2120ce518c8d2e7d1e49c61cd09baa05af36d67fd2eef63d565c",
+            "a6349f4c55766e0698893cb0f789d14c8f65f4e6e894dedb32f2f8639d257fed",
         )
     });
 
@@ -1499,7 +1500,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             recipes.push((trace("fill-source-release"), &*FILL_RELEASE));
         }
         let mut command = Command::new(program);
-        command.arg(&library).arg(&expected_snapshot).arg(mode);
+        let driver = ORACLE_BINDINGS["drivers"][mode].as_str().unwrap_or(mode);
+        command.arg(&library).arg(&expected_snapshot).arg(driver);
         if let Some(model) = ORACLE_BINDINGS["fixture_libraries"][mode].as_str() {
             command.arg(fixture_library(common, model));
         }
@@ -1895,6 +1897,12 @@ static std::vector<unsigned char> read_hex_bytes(size_t count) {
     }
     return bytes;
 }
+static bool load_tensor_bytes(ggml_tensor *tensor) {
+    auto bytes=read_hex_bytes(ggml_nbytes(tensor));
+    if(bytes.empty()) return false;
+    ggml_backend_tensor_set(tensor,bytes.data(),0,bytes.size());
+    return true;
+}
 static bool finite_f32_matches(const std::vector<unsigned char> &actual, const std::vector<unsigned char> &reference, bool exact, bool require_energy) {
     if (actual.size()!=reference.size() || actual.size()%sizeof(float)) return false;
     double error=0,energy=0;
@@ -1987,41 +1995,27 @@ int main(int argc, char **argv) {
     const bool pooling_gradient=!strcmp(argv[3],"pool-gradients");
     if (pooling_gradient || !strcmp(argv[3],"column-gradients")) {
       size_t cases=0;
-      for (bool second : {false,true}) for (int v=0;v<(pooling_gradient?(second?20:17):32);++v) {
-        bool plane=pooling_gradient || second;
-        auto mode=second?GGML_OP_POOL_MAX:GGML_OP_POOL_AVG;
-        int sx=1+(v&1), sy=plane?3-sx:0, px=(v>>1)&1, py=plane?px:0;
-        int dx=1+((v>>2)&1), dy=plane?1:0, batches=1+((v>>(pooling_gradient?2:3))&1);
-        std::vector<float> expected;
-        for (auto selected : {reference,backend}) {
-          graph_fixture ctx(6); CHECK(ctx);
-          auto input_type=pooling_gradient && !second && v==16 ? GGML_TYPE_F16 : GGML_TYPE_F32;
-          auto x=ggml_new_tensor_4d(ctx,input_type,7,plane?5:3,plane?3:batches,plane?batches:1);
-          auto k=ggml_new_tensor_4d(ctx,(v&16)?GGML_TYPE_F16:GGML_TYPE_F32,3,plane?2:3,plane?3:2,plane?2:1);
-          auto forward=pooling_gradient ? ggml_pool_2d(ctx,x,mode,2,2,sx,sy,px,py) : ggml_im2col(ctx,k,x,sx,sy,px,py,dx,dy,plane,GGML_TYPE_F32);
-          auto grad=ggml_dup_tensor(ctx,forward);
-          auto out=pooling_gradient ? ggml_pool_2d_back(ctx,grad,x,mode,2,2,sx,sy,px,py) : ggml_im2col_back(ctx,grad,k,x->ne,sx,sy,px,py,dx,dy,plane);
-          CHECK(ggml_backend_supports_op(selected,out));
-          auto graph=ctx.allocate(out,selected); CHECK(graph);
-          if(pooling_gradient) for(int i=0;i<ggml_nelements(x);++i) {
-            float value=(v&8)?1.f:float((i*7)%23-11)/4;
-            const float edge[]={-std::numeric_limits<float>::max(), i%3==1?NAN:value, i%3?INFINITY:-INFINITY, i%2?-0.f:0.f};
-            ggml_set_f32_1d(x,i,second && v>=16 ? edge[v-16] : value);
-          }
-          for(int i=0;i<ggml_nelements(grad);++i) ggml_set_f32_1d(grad,i,float((i*5)%17-8)/8);
-          std::vector<float> actual(ggml_nelements(out),13.f);
-          ggml_backend_tensor_set(out,actual.data(),0,ggml_nbytes(out));
-          CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-          ggml_backend_tensor_get(out,actual.data(),0,ggml_nbytes(out));
-          if(selected==reference) expected=actual;
-          else {
-            CHECK(!std::memcmp(expected.data(),actual.data(),ggml_nbytes(out)));
-            CHECK(refuses_change(backend,dev,graph,out,out->src[2],x));
-            CHECK(refuses_change(backend,dev,graph,out,out->op_params[pooling_gradient?3:0],int32_t(0)));
-          }
-        }
+      int plane,mode,sx,sy,px,py,dx,dy,batches,input_type,kernel_type;
+      while(scanf("%d%d%d%d%d%d%d%d%d%d%d",&plane,&mode,&sx,&sy,&px,&py,&dx,&dy,&batches,&input_type,&kernel_type)==11) {
+        graph_fixture ctx(6); CHECK(ctx);
+        auto x=ggml_new_tensor_4d(ctx,ggml_type(input_type),7,plane?5:3,plane?3:batches,plane?batches:1);
+        auto k=ggml_new_tensor_4d(ctx,ggml_type(kernel_type),3,plane?2:3,plane?3:2,plane?2:1);
+        auto pool=ggml_op_pool(mode);
+        auto forward=pooling_gradient ? ggml_pool_2d(ctx,x,pool,2,2,sx,sy,px,py) : ggml_im2col(ctx,k,x,sx,sy,px,py,dx,dy,plane,GGML_TYPE_F32);
+        auto grad=ggml_dup_tensor(ctx,forward);
+        auto out=pooling_gradient ? ggml_pool_2d_back(ctx,grad,x,pool,2,2,sx,sy,px,py) : ggml_im2col_back(ctx,grad,k,x->ne,sx,sy,px,py,dx,dy,plane);
+        auto graph=ctx.allocate(out,backend,true); CHECK(graph && ggml_backend_supports_op(backend,out));
+        if(pooling_gradient) CHECK(load_tensor_bytes(x));
+        CHECK(load_tensor_bytes(grad));
+        auto expected=read_hex_bytes(ggml_nbytes(out)); CHECK(!expected.empty());
+        std::vector<float> initial(ggml_nelements(out),13.f);
+        ggml_backend_tensor_set(out,initial.data(),0,ggml_nbytes(out));
+        CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS && tensor_bytes(out)==expected);
+        CHECK(refuses_change(backend,dev,graph,out,out->src[2],x));
+        CHECK(refuses_change(backend,dev,graph,out,out->op_params[pooling_gradient?3:0],int32_t(0)));
         ++cases;
       }
+      CHECK(feof(stdin));
       return finish(cases);
     }
     if (!strcmp(argv[3],"custom-callbacks")) {
@@ -2144,14 +2138,14 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
-    const bool bfloat_products=!strcmp(argv[3],"bfloat-products");
+    const bool scalar_matrices=!strcmp(argv[3],"bfloat-products") || !strcmp(argv[3],"matrix-rounding");
     const bool explicit_precision=!strcmp(argv[3],"prepacked-precision");
-    if (explicit_precision || bfloat_products || !strcmp(argv[3],"prepacked-products")) {
-        int cases; CHECK(scanf("%d",&cases)==1 && cases==(bfloat_products?8:50));
+    if (explicit_precision || scalar_matrices || !strcmp(argv[3],"prepacked-products")) {
+        int cases; CHECK(scanf("%d",&cases)==1 && cases==(scalar_matrices?8:50));
         size_t compared=0;
         for (int i=0;i<cases;++i) {
             int exact=0,expert,type,activation,width;CHECK(scanf("%d%d%d%d",&expert,&type,&activation,&width)==4);
-            if (bfloat_products) CHECK(scanf("%d",&exact)==1 && (exact==0 || exact==1));
+            if (scalar_matrices) CHECK(scanf("%d",&exact)==1 && (exact==0 || exact==1));
             graph_fixture ctx(8);CHECK(ctx);
             auto x=ggml_new_tensor_3d(ctx,ggml_type(type),width,3,expert?2:1);
             auto y=ggml_new_tensor_3d(ctx,ggml_type(activation),width,expert?1:2,expert?2:1);
@@ -2173,7 +2167,7 @@ int main(int argc, char **argv) {
                         if (!execute) {CHECK(ggml_backend_supports_op(backend,out) && ctx.placed(graph,backend));continue;}
                         ggml_backend_tensor_memset(out,0xff,0,ggml_nbytes(out));
                         CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-                        CHECK(finite_f32_matches(tensor_bytes(out),expected,exact,false));
+                        if (!finite_f32_matches(tensor_bytes(out),expected,exact,false)) {fprintf(stderr,"matrix product differs for %d/%d indexed=%d\n",type,activation,expert);return 2;}
                         ++compared;
                     }
                 }
@@ -2236,26 +2230,21 @@ int main(int argc, char **argv) {
         return finish(cases);
     }
     if (!strcmp(argv[3],"e4m3-repeat")) {
-        size_t cases=0;
-        for (int period : {1,8,16}) for (int padded : {0,1}) for (int inplace : {0,1}) {
-            std::vector<unsigned char> expected;
-            for (auto selected : {reference,backend}) {
+        size_t cases=0; int period,padded;
+        while(scanf("%d%d",&period,&padded)==2) {
+            auto left=read_hex_bytes(512),right=read_hex_bytes((period+2*padded)*4*sizeof(float)),expected=read_hex_bytes(512);
+            CHECK(!left.empty() && !right.empty() && !expected.empty());
+            for (auto add:binary_nodes[0]) {
                 graph_fixture ctx(8); CHECK(ctx);
                 auto x=ggml_new_tensor_4d(ctx,GGML_TYPE_F8_E4M3,16,4,4,2);
                 auto storage=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,period+2*padded,2,2,1);
                 auto y=ggml_view_4d(ctx,storage,period,2,2,1,storage->nb[1],storage->nb[2],storage->nb[3],padded*sizeof(float));
-                auto rhs=selected==reference?ggml_repeat_4d(ctx,y,16,4,4,2):y;
-                auto out=inplace?ggml_add_inplace(ctx,x,rhs):ggml_add(ctx,x,rhs);
-                auto graph=ctx.allocate(out,selected,selected==backend); CHECK(graph);
-                std::vector<unsigned char> bytes(ggml_nbytes(x));
-                for (size_t i=0;i<bytes.size();++i) bytes[i]=uint8_t((i%2?128:0)+(19*i+3)%112);
-                ggml_backend_tensor_set(x,bytes.data(),0,bytes.size());
-                for (int i=0;i<ggml_nelements(storage);++i) ggml_set_f32_1d(storage,i,float((13*i+7)%29-14)/8.f);
-                CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-                if (selected==reference) expected=tensor_bytes(out);
-                else CHECK(tensor_bytes(out)==expected);
+                auto out=add(ctx,x,y); auto graph=ctx.allocate(out,backend,true); CHECK(graph);
+                ggml_backend_tensor_set(x,left.data(),0,left.size());
+                ggml_backend_tensor_set(storage,right.data(),0,right.size());
+                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS && tensor_bytes(out)==expected);
+                ++cases;
             }
-            ++cases;
         }
         return finish(cases);
     }
@@ -2392,25 +2381,18 @@ int main(int argc, char **argv) {
         }
         return finish(cases);
     }
-    const bool binary_widths=!strcmp(argv[3],"binary-widths");
-    const bool signed64_floats=!strcmp(argv[3],"signed64-floats");
-    const bool narrow=!strcmp(argv[3],"wide-narrow");
-    const bool staged=narrow || !strcmp(argv[3],"wide-staged");
-    const bool integer_mixed=!strcmp(argv[3],"integer-floats");
-    const bool small=integer_mixed || !strcmp(argv[3],"integer-widths") || !strcmp(argv[3],"octet-integers");
-    if (small || staged || binary_widths || signed64_floats || !strcmp(argv[3],"signed64-widths")) {
+    if (!strcmp(argv[3],"scalar-casts")) {
+        int pairs,lanes,layouts,per_graph;
+        CHECK(scanf("%d%d%d%d",&pairs,&lanes,&layouts,&per_graph)==4 && pairs>0 && (lanes==16 || lanes==64) && (layouts==1 || layouts==2));
         size_t compared=0;
-        for (int pair=0;pair<(integer_mixed?18:small?6:narrow?7:staged?21:binary_widths?2:signed64_floats?3:6);++pair) {
-            int from=pair==0?GGML_TYPE_F32:GGML_TYPE_F64, to=pair==0?GGML_TYPE_F64:GGML_TYPE_F32;
-            if (!binary_widths) CHECK(scanf("%d %d",&from,&to)==2);
-            int invalid_count=(from==GGML_TYPE_F64 && to==GGML_TYPE_I64)?6:0;
-            if (staged || small) CHECK(scanf("%d",&invalid_count)==1 && invalid_count>=0 && invalid_count<=64);
-            std::vector<uint64_t> inputs(small?16:64), expected(inputs.size());
+        for (int pair=0;pair<pairs;++pair) {
+            int from,to,invalid_count; uint64_t infinity;
+            CHECK(scanf("%d%d%d%" SCNx64,&from,&to,&invalid_count,&infinity)==4 && invalid_count>=0 && invalid_count<=lanes);
+            std::vector<uint64_t> inputs(lanes),expected(lanes);
             for (size_t i=0;i<inputs.size();++i) CHECK(scanf("%" SCNx64 " %" SCNx64,&inputs[i],&expected[i])==2);
             std::vector<uint64_t> invalid(invalid_count);
             for (auto &word:invalid) CHECK(scanf("%" SCNx64,&word)==1);
-            for (bool padded : {false,true}) {
-                if (binary_widths && padded) continue;
+            for (int padded=0;padded<layouts;++padded) {
                 graph_fixture target(8); CHECK(target);
                 auto [input,out,result]=scalar_cast_graph(target,ggml_type(from),ggml_type(to),inputs.size()/8,padded);
                 auto graph=target.allocate(result,backend,true);
@@ -2424,26 +2406,17 @@ int main(int argc, char **argv) {
                     size_t offset=(padded?ggml_type_size(ggml_type(to)):0)+block_address(result,i);
                     uint64_t word=0;
                     for (size_t j=0;j<result->nb[0];++j) word|=uint64_t(actual.at(offset+j))<<(8*j);
-                    const auto nan=[&](uint64_t x) {
-                        switch(to) {
-                            case GGML_TYPE_F64: return (x&0x7fffffffffffffffULL)>0x7ff0000000000000ULL;
-                            case GGML_TYPE_F32: return (x&0x7fffffff)>0x7f800000;
-                            case GGML_TYPE_F16: return (x&0x7fff)>0x7c00;
-                            case GGML_TYPE_BF16: return (x&0x7fff)>0x7f80;
-                            default: return false;
-                        }
-                    };
-                    CHECK(word==expected[i] || ((binary_widths || staged) && nan(word) && nan(expected[i])));
+                    const uint64_t magnitude=UINT64_MAX >> (65-8*result->nb[0]);
+                    const auto nan=[&](uint64_t bits) {return infinity && (bits&magnitude)>infinity;};
+                    CHECK(word==expected[i] || (nan(word) && nan(expected[i])));
                     for (size_t j=0;j<result->nb[0];++j) oracle.at(offset+j)=actual.at(offset+j);
-                    if (!small) ++compared;
                 }
                 CHECK(oracle==actual);
                 for (uint64_t word:invalid) {
                     set_scalar_word(input,inputs.size()-1,word);
                     CHECK(refuses_poisoned_output(backend,graph,out));
-                    if (!small) ++compared;
                 }
-                if (small) ++compared;
+                compared+=per_graph?1:inputs.size()+invalid.size();
             }
         }
         return finish(compared);

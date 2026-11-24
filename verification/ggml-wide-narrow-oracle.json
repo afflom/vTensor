@@ -57,5 +57,6 @@
   ],
   "generation": "Berkeley f64_to_f16 and f64_to_bf16 provide direct single-rounding references. Berkeley f64_to_i32_r_minMag supplies values and the invalid flag for all signed destinations. For I8 and I16, original GGML ggml_set_i32_1d stores that result. For E4M3, Berkeley rounds the binary64 input to odd binary32 and GGML supplies saturating nearest-even conversion. For signed I64 to BF16, Berkeley i64_to_f64 at round-to-odd followed by f64_to_bf16 at nearest-even preserves each rounding midpoint.",
   "cases": "Values immediately below, at and above precision midpoints, normal/subnormal transitions and overflow thresholds. NaN classification is accepted for F16/BF16, as in the earlier binary conversion oracle.",
-  "words_sha256": "40e9baba4cac4fa6d5c3e01c68e9c84abc33ea761e0b8533fc33ecb0080a82d0"
+  "words_sha256": "e569ff312114ce816ec119826ad37c022d3936c9c1a1e13636d4c6a28af66255",
+  "framing": "Header gives pair count, lanes, layout count and graph-count flag. Each section gives GGML source, destination, invalid count and the permitted NaN infinity magnitude (zero for exact bits). Original input, reference and invalid words follow."
 }

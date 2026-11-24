@@ -759,6 +759,20 @@ fn workspace<T: Clone>(size: u64, initial: T) -> Result<Vec<T>, BackendError> {
     Ok(result)
 }
 
+fn rounded_dot<'a>(
+    [product, widen, add, narrow]: [u64; 4],
+    weights: &[f32],
+    activations: impl Iterator<Item = &'a f32>,
+) -> Result<f32, BackendError> {
+    let wide = |op, a, b| checked_word!(linear::evaluate_wide(op, a, b));
+    let mut sum = 0;
+    for (&weight, &activation) in weights.iter().zip(activations) {
+        let term = linear::evaluate_f32_scalar(product, weight, activation)?;
+        sum = wide(add, sum, wide(widen, term.to_bits().into(), 0)?)?;
+    }
+    Ok(f32::from_bits(wide(narrow, sum, 0)? as u32))
+}
+
 fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     use vtensor_matrix_execution::{Adt0 as Strides, Adt1 as Instruction};
     tensor_fields!(GraphPlan::C3(m, k, n, b2, b3, r2, r3, left_count, right_count, _) = plan);
@@ -826,10 +840,22 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
                 decode_block(kind, block, float_bytes(dst), stride as usize)?;
                 index = index.checked_add(skip).ok_or(BackendError::Overflow)?;
             }
-            Instruction::C2 => {
+            Instruction::C2 | Instruction::C6(..) => {
                 let (left, rest) = values.split_at_mut(left_count as usize);
                 let (right, output) = rest.split_at_mut(right_count as usize);
-                linear::multiply_matrix_rows_f32(m, k, n, left, right, output)?;
+                if let Instruction::C6(product, widen, add, narrow) = instruction {
+                    let stages = [product, widen, add, narrow];
+                    for (index, value) in output.iter_mut().enumerate() {
+                        let start = index / n * k;
+                        *value = rounded_dot(
+                            stages,
+                            &left[start..start + k],
+                            right.iter().skip(index % n).step_by(n),
+                        )?;
+                    }
+                } else {
+                    linear::multiply_matrix_rows_f32(m, k, n, left, right, output)?;
+                }
             }
             _ => return Err(BackendError::InvalidTensor),
         }
@@ -1091,17 +1117,27 @@ fn execute_row_products(
         };
     }
     match plan {
-        C0(inner, .., Some(precision), _) => execute_block_rows(
-            execution,
-            inner,
-            tensor,
-            plan,
-            |input, at, lanes: &mut [f32; 1]| {
-                input.decode(at, lanes)?;
-                prepare_float(0, precision, lanes[0].to_bits().into())
-            },
-            |source, at, activations, weights| source.dot(at, activations, weights),
-        ),
+        C0(inner, .., Some(precision), kind) => {
+            use vtensor_matrix_q8::{Adt0 as Request, Adt4 as Response};
+            let stages = match vtensor_matrix_q8::run(Request::C5(kind))
+                .map_err(BackendError::overflow)?
+            {
+                Response::C6(product, widen, add, narrow) => Some([product, widen, add, narrow]),
+                Response::C0 => None,
+                _ => return Err(BackendError::InvalidTensor),
+            };
+            execute_block_rows(
+                execution,
+                inner,
+                tensor,
+                plan,
+                |input, at, lanes: &mut [f32; 1]| {
+                    input.decode(at, lanes)?;
+                    prepare_float(0, precision, lanes[0].to_bits().into())
+                },
+                |source, at, activations, weights| source.dot(at, activations, weights, stages),
+            )
+        }
         C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
             PackedWeight::Grouped(kind) => packed!(
                 linear::encode_grouped_q8_block,
@@ -2015,15 +2051,10 @@ mod attention {
 
     pub(super) fn indexer(tensor: &Tensor, plan: IndexerPlan) -> Result<(), BackendError> {
         tensor_fields!([Some(query), Some(key), Some(weights), Some(mask)] = tensor.inputs()?);
-        let offsets = |token, head, stream, key| match request(Request::C10(
-            plan.clone(),
-            token,
-            head,
-            stream,
-            key,
-        ))? {
-            Response::C11(q, k, w, m, out) => Ok([q, k, w, m, out]),
-            _ => Err(InvalidTensor),
+        let offsets = |token, head, stream, key| {
+            let query = Request::C10(plan.clone(), token, head, stream, key);
+            tensor_fields!(Response::C11(q, k, w, m, out) = request(query)?);
+            Ok([q, k, w, m, out])
         };
         let [width, heads, tokens, streams] = query.ne.map(|n| n as u64);
         let keys = key.ne[2] as u64;
@@ -2276,8 +2307,12 @@ mod attention {
             offset: u64,
             activations: &[f32],
             weights: &mut [f32],
+            stages: Option<[u64; 4]>,
         ) -> Result<f32, BackendError> {
             self.decode(offset, weights)?;
+            if let Some(stages) = stages {
+                return super::rounded_dot(stages, weights, activations.iter());
+            }
             let mut value = [0.0];
             multiply_matrix_rows_f32(1, weights.len(), 1, weights, activations, &mut value)?;
             Ok(value[0])
@@ -2453,17 +2488,8 @@ mod attention {
                             KeyRows::Grouped(kind, blocks) => {
                                 linear::dot_grouped_weight_row(packed()?, blocks, *kind)?
                             }
-                            KeyRows::Scalar(key, [product, widen, add, narrow]) => {
-                                k.decode(key_offset, key)?;
-                                let wide =
-                                    |op, a, b| checked_word!(linear::evaluate_wide(op, a, b));
-                                let mut sum = 0;
-                                for (&weight, &activation) in key.iter().zip(&query) {
-                                    let term = scalar(*product, weight, activation)?;
-                                    let widened = wide(*widen, u64::from(term.to_bits()), 0)?;
-                                    sum = wide(*add, sum, widened)?;
-                                }
-                                f32::from_bits(wide(*narrow, sum, 0)? as u32)
+                            KeyRows::Scalar(key, stages) => {
+                                k.dot(key_offset, &query, key, Some(*stages))?
                             }
                         };
                         v.decode(voff + row * vs, &mut value)?;
