@@ -10,13 +10,14 @@
   "case_ordinals": {
     "TIMESTEP_EMBEDDING": [
       19135,
+      19136,
       19137,
       19138,
       19139,
       19140
     ]
   },
-  "passed": 5,
+  "passed": 6,
   "continuous_factory_transcript_sha256": "e4ba40761f07143aeec6799651be58c30bd4950472fab5938873909c71cea684",
   "supplemental": {
     "graphs": 70,
@@ -55,5 +56,14 @@
     "provider_transcript_sha256": "4ae8264dd07af32771365e4af4a2ce474aff5b719c2df7c8396c673d8de1fa04",
     "checks": "Signed zero and both unit values agree exactly. NaN classification matches. Each extra source and a mismatched dimension are refused before allocation. A rejected graph leaves the initialized output intact."
   },
-  "mutation": "Selecting sine for the cosine half made the pinned factory comparison fail."
+  "mutation": "Selecting sine for the cosine half made the pinned factory comparison fail.",
+  "implementation": "9a1ae5a4f4ede59f51d5656943bf5be75f94a71b",
+  "large_factory_case": {
+    "ordinal": 19136,
+    "timesteps": 32769,
+    "width": 4096,
+    "output_elements": 134221824,
+    "transcript_sha256": "1a71c004d25225f4e7a64f6a41d971b8fb5e915fa8dba2aa1eb77b17f92db48f",
+    "method": "The original make_test_cases_eval graph and CPU comparison ran on the same provider binary as the five continuous cases."
+  }
 }
