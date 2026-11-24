@@ -66,6 +66,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Bring up a real llama.cpp consumer
 
+- [x] Replay the installed VT-168 plugin in stock llama-simple on mixed-quantized Llama, GPT-2 and Mamba. All 13 layer placements select vTensor and all three eight-token outputs match CPU. [Host replay](verification/llama-consumer-vt168.json)
 - [x] Load the plugin via `GGML_BACKEND_PATH` in unmodified llama.cpp. The isolated host selects vTensor for model layers 0–6. [Consumer evidence](VTENSOR-VERIFICATION.md#llamacpp-consumer)
 - [x] Decode two independent sequences together with separate and unified KV caches in llama.cpp. Compare 384,000 logits and every updated cache row with CPU. [Multi-sequence replay](verification/llama-two-sequence-decode.json)
 - [x] Compare 3,456 token and pooled embedding values for two prompts in llama.cpp. All 782 observed placements selected vTensor across NONE, MEAN, CLS and LAST. [Embedding replay](verification/llama-embedding-pooling.json)
