@@ -361,6 +361,8 @@ mod tests {
     /// that this file is not itself read as containing a test.
     const NEGATIVE_TEST: &str = "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n";
 
+    const OVERFLOW_FUNCTION: &str = "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n";
+
     const SHIPPED: &str = "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n";
 
     impl TestRepo {
@@ -384,6 +386,10 @@ mod tests {
 
         fn declared(name: &str, lib: &str) -> Self {
             Self::limits(name, DECLARED, lib, Some(NEGATIVE_TEST))
+        }
+
+        fn overflow_register(name: &str, ids: &str) -> Self {
+            Self::limits(name, ids, OVERFLOW_FUNCTION, Some(NEGATIVE_TEST))
         }
 
         fn audit(&self) -> Result<(), String> {
@@ -468,12 +474,7 @@ mod tests {
 
     #[test]
     fn a_declared_type_without_its_negative_test_fails() {
-        let f = TestRepo::limits(
-            "no-test",
-            DECLARED,
-            "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
-            None,
-        );
+        let f = TestRepo::limits("no-test", DECLARED, OVERFLOW_FUNCTION, None);
         rejected(
             &f,
             &["R5", "`Overflow`", "OV-02", "no test name ends in `ov_02`"],
@@ -483,12 +484,7 @@ mod tests {
     #[test]
     fn a_declared_type_whose_negative_test_is_not_registered_fails() {
         let ids = DECLARED.replace("negative = \"OV-02\"", "negative = \"OV-09\"");
-        let f = TestRepo::limits(
-            "unregistered",
-            &ids,
-            "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
-            Some(NEGATIVE_TEST),
-        );
+        let f = TestRepo::overflow_register("unregistered", &ids);
         rejected(&f, &["OV-01", "`Overflow`", "OV-09", "not a registered ID"]);
     }
 
@@ -500,12 +496,7 @@ mod tests {
             "id = \"OV-02\"\nlevel = \"build\"",
             "id = \"OV-02\"\nlevel = \"open\"",
         );
-        let f = TestRepo::limits(
-            "open-negative",
-            &ids,
-            "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
-            Some(NEGATIVE_TEST),
-        );
+        let f = TestRepo::overflow_register("open-negative", &ids);
         rejected(&f, &["OV-02", "must be a `build` claim"]);
     }
 

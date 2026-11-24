@@ -1,0 +1,85 @@
+{
+  "requirement": "VT-129",
+  "implementation": "926e003af74a7b6d023d257734c6d40fc52156c5",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "prism_attestation": "4b7655e7dad760688cf8f1a5b3e546a1f924cdf751f30abf2006d3edfa33f23d",
+  "pointwise_lock_sha256": "4cf0390eb7b1c9ed042ff5725690b51f1619ad81ce5bb6323ca78fd16c0cfe0c",
+  "provider_sha256": "e0ccd132205bf5e0b54fdbd898682bcd0b76051f040920b6b49a96a44c6bc84e",
+  "provider_inputs_sha256": "1e6ecf1551184b29070c1bee4af34ecafc50aa1a1c8472d51e9f29a0be18a864",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "case_ordinals": {
+    "DSV4_HC_POST": [
+      535,
+      536,
+      537,
+      538,
+      539,
+      540,
+      541,
+      542,
+      543,
+      544,
+      545
+    ]
+  },
+  "factory_passed": 11,
+  "transcript_sha256": "e5df93b48935509555f48cc338f84540580e9e01bbf9d9382f776edc9df6ecdf",
+  "supplemental": {
+    "reference": "Unmodified ggml_dsv4_hc_post on GGML CPU in reference mode. Each operand is independently transposed or permuted.",
+    "input": "embedding width 7, tokens 5; input word (13*i + 7*j + 3*k + salt) mod 31, minus 15, divided by 16; salts 2, 5, 7 and 11 for x, residual, post and combination",
+    "results": [
+      {
+        "channels": 1,
+        "combination": false,
+        "outputs": 35,
+        "max_abs": 0.0
+      },
+      {
+        "channels": 1,
+        "combination": true,
+        "outputs": 35,
+        "max_abs": 0.0
+      },
+      {
+        "channels": 3,
+        "combination": false,
+        "outputs": 105,
+        "max_abs": 0.0
+      },
+      {
+        "channels": 3,
+        "combination": true,
+        "outputs": 105,
+        "max_abs": 0.0
+      },
+      {
+        "channels": 9,
+        "combination": false,
+        "outputs": 315,
+        "max_abs": 0.0
+      },
+      {
+        "channels": 9,
+        "combination": true,
+        "outputs": 315,
+        "max_abs": 0.0
+      }
+    ],
+    "preallocation_refusals": [
+      "missing post tensor",
+      "unexpected trailing operand",
+      "incorrect output token extent",
+      "integer activation",
+      "incorrect combination source extent"
+    ],
+    "runner_source_sha256": "38ab1d9f6f70b10e0f2d31a3b9af32ddf1930cd85cfd97b2d427d2f9da69df2b"
+  },
+  "mutation": {
+    "perturbation": "Replace multiplication with addition in the Verdant instruction dispatcher.",
+    "ordinal": 535,
+    "observed_nmse": 0.486507602,
+    "upstream_limit": 1e-07
+  }
+}
