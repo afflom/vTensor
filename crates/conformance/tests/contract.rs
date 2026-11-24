@@ -55,6 +55,7 @@ ggml_batches! {
     fn iq2_identity_copy_vt_15() { "iq2-identity-copy", 1, [] }
     /// `VT-16`: Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle
     fn repeat_graphs_vt_16() { "repeat", 160, [] }
+    fn storage_repeats_vt_155() { "storage-repeat", 180, ["pointwise"] }
     /// `VT-17`: Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types
     fn concat_graphs_vt_17() { "concat", 10368, [] }
     /// `VT-18`: Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle
@@ -579,7 +580,14 @@ mod ggml_oracle {
         repo_model::artifact::file_sha256(path.as_ref()).unwrap()
     }
 
-    pub(super) use repo_model::artifact::digest_hex as digest;
+    pub(super) fn artifact_cache(common: &Path, family: &str, inputs: &[&[u8]]) -> PathBuf {
+        let mut identity = Sha256::new();
+        for input in inputs {
+            identity.update((input.len() as u64).to_le_bytes());
+            identity.update(input);
+        }
+        common.join(family).join(repo_model::artifact::digest_hex(&identity.finalize()))
+    }
 
     // Build only the requested oracle component. A changed recipe or compiler selects
     // a fresh cache, while all hosts reuse the same verified CPU and core objects.
@@ -665,28 +673,16 @@ host:
         let imported = root.join("vendor/llama.cpp-oracle");
         let lock = &*UPSTREAM;
         let archive_digest = lock["archive"][0]["sha256"].as_str().expect("archive pin");
-        let mut identity = Sha256::new();
-        for input in [
-            archive_digest.as_bytes(),
-            super::STORAGE_RECIPE.as_bytes(),
-            &run(Command::new("make").arg("--version")),
-            &run(Command::new("cc").arg("--version")),
+        let sdk = std::env::var_os("PRISMPM_SDK_INVENTORY")
+            .map(|path| std::fs::read(path).expect("running SDK inventory"))
+            .unwrap_or_else(|| b"host-development-only".to_vec());
+        let target = std::env::var_os("CARGO_TARGET_DIR").map(PathBuf::from)
+            .unwrap_or_else(|| std::env::temp_dir().join("vtensor-native"));
+        let cache = artifact_cache(&target, "ggml-oracle", &[
+            archive_digest.as_bytes(), super::STORAGE_RECIPE.as_bytes(), &sdk, std::env::consts::ARCH.as_bytes(),
+            &run(Command::new("make").arg("--version")), &run(Command::new("cc").arg("--version")),
             &run(Command::new("c++").arg("--version")),
-        ] {
-            identity.update((input.len() as u64).to_le_bytes());
-            identity.update(input);
-        }
-        if let Some(inventory) = std::env::var_os("PRISMPM_SDK_INVENTORY") {
-            identity.update(std::fs::read(inventory).expect("running SDK inventory"));
-        } else {
-            identity.update(b"host-development-only");
-        }
-        identity.update(std::env::consts::ARCH.as_bytes());
-        let cache = std::env::var_os("CARGO_TARGET_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| std::env::temp_dir().join("vtensor-native"))
-            .join("ggml-oracle")
-            .join(digest(&identity.finalize()));
+        ]);
         let executable = cache.join("storage-oracle");
         if executable.exists() {
             verify_file(&executable);
@@ -1250,9 +1246,8 @@ fn buffer_transfer_vt_09() {
 }
 
 mod native_backend_oracle {
-    use super::ggml_oracle::{build, digest, publish_file, run, verify_file, STORAGE_ORACLE};
+    use super::ggml_oracle::{artifact_cache, build, run, verify_file, STORAGE_ORACLE};
     use repo_model::artifact::sha256_hex;
-    use sha2::{Digest, Sha256};
     use std::fmt::Write;
     use std::path::Path;
     use std::process::Command;
@@ -1359,21 +1354,12 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
     }
 
     build_recipe! { OBJECT_RECIPE;
-    fn artifact_cache(common: &Path, family: &str, inputs: &[&[u8]]) -> std::path::PathBuf {
-        let mut identity = Sha256::new();
-        for input in inputs {
-            identity.update((input.len() as u64).to_le_bytes());
-            identity.update(input);
-        }
-        common.join(family).join(digest(&identity.finalize()))
-    }
-
     fn checked_build(output: &Path, build: impl FnOnce(&Path)) {
         if !output.exists() {
             std::fs::create_dir_all(output.parent().unwrap()).unwrap();
             let pending = output.with_extension("new");
             build(&pending);
-            publish_file(&pending, output);
+            super::ggml_oracle::publish_file(&pending, output);
         }
         verify_file(output);
     }
@@ -1414,7 +1400,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             checked_build(&cpu, |out| build(common, "cpu", out, &[]));
             let core = common.join("ggml-oracle-core.o");
             verify_file(&core);
-            let suite = common.join("imported-suite").join(digest(&Sha256::digest(UPSTREAM_SUITE))).join("suite.o");
+            let suite = common.join("imported-suite").join(sha256_hex(UPSTREAM_SUITE.as_bytes())).join("suite.o");
             let mut variables = vec![("VT_INPUT", input.as_path()), ("VT_LIBRARY", library), ("VT_LIBDIR", library.parent().unwrap())];
             if imported {
                 checked_build(&suite, |out| {
@@ -1464,11 +1450,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 assert!(current == compiled, "Rust test library has stale {name}");
             }
         });
-        let expected_snapshot = cache.join(format!(
-            "expected-source-{}-{:?}.snapshot",
-            std::process::id(),
-            std::thread::current().id()
-        ));
+        let unique = super::ggml_oracle::tool(cache, "mktemp", &["-d", "-p", "."]);
+        let scratch = cache.join(std::str::from_utf8(&unique).unwrap().trim_end());
+        let expected_snapshot = scratch.join("inputs.snapshot");
         std::fs::write(&expected_snapshot, vtensor_backend::source_snapshot()).unwrap();
         let recipe = if imported {
             None
@@ -1489,11 +1473,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         }
         if mode == "fill" {
             recipes.push((trace("fill-source-release"), &*FILL_RELEASE));
-        }
-        for (path, _) in &recipes {
-            if path.exists() {
-                std::fs::remove_file(path).unwrap();
-            }
         }
         let mut command = Command::new(program);
         command.arg(&library).arg(&expected_snapshot).arg(mode);
@@ -1520,7 +1499,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             assert_eq!(recipe["bytes"], bytes.len(), "{mode} fixture length");
             let hash = sha256_hex(&bytes);
             assert_eq!(recipe["sha256"], hash, "{mode} fixture digest");
-            std::fs::remove_file(path).unwrap();
         }
         if matches!(mode, "matrix" | "elementwise") {
             let path = trace(&format!("{mode}-fixtures"));
@@ -1529,9 +1507,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 bound == input[32..],
                 "{mode} tensor bindings differ from the frozen fixture input"
             );
-            std::fs::remove_file(path).unwrap();
         }
-        std::fs::remove_file(expected_snapshot).unwrap();
+        std::fs::remove_dir_all(scratch).unwrap();
     }
 
     macro_rules! graph_fixture_source { () => { r##"
@@ -2091,23 +2068,44 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
-    if (!strcmp(argv[3],"iq2-identity-copy")) {
-        for (auto selected : {reference, backend}) {
-            graph_fixture ctx(8); CHECK(ctx);
-            auto src=ggml_new_tensor_4d(ctx,GGML_TYPE_IQ2_XXS,256,2,3,4);
+    const bool identity_copy=!strcmp(argv[3],"iq2-identity-copy");
+    if (identity_copy || !strcmp(argv[3],"storage-repeat")) {
+      size_t cases=0;
+      int kind;
+      while (scanf("%d",&kind)==1) {
+        const auto type=ggml_type(kind);
+        if (identity_copy && type!=GGML_TYPE_IQ2_XXS) continue;
+        for (int axis=0;axis<(identity_copy?1:5);++axis) {
+          std::vector<uint8_t> expected;
+          for (auto selected : {reference,backend}) {
+            graph_fixture ctx(12); CHECK(ctx);
+            auto src=ggml_new_tensor_4d(ctx,type,identity_copy?256:2*ggml_blck_size(type),2,3,4);
             ggml_set_param(src);
-            auto dst=ggml_dup_tensor(ctx,src);
-            auto out=ggml_cpy(ctx,src,dst);
-            auto graph=ctx.allocate(out,selected); CHECK(graph);
+            auto out=src;
+            if (identity_copy) out=ggml_cpy(ctx,src,ggml_dup_tensor(ctx,src));
+            else if (selected==reference) {
+              for (int dim=0;dim<4;++dim) if (axis==dim || axis==4) out=ggml_concat(ctx,out,out,dim);
+            } else {
+              std::array<int64_t,4> shape;
+              for (int dim=0;dim<4;++dim) shape[dim]=src->ne[dim]*(1+(axis==dim || axis==4));
+              out=ggml_repeat_4d(ctx,src,shape[0],shape[1],shape[2],shape[3]);
+            }
+            const bool cpu_identity=identity_copy && selected==reference; // GGML executes this copy despite its device query.
+            CHECK(cpu_identity || ggml_backend_supports_op(selected,out));
+            auto graph=ctx.allocate(out,selected); CHECK(graph && (cpu_identity || ggml_backend_supports_op(selected,out)));
             std::vector<uint8_t> data(ggml_nbytes(src));
             for(size_t i=0;i<data.size();++i) data[i]=uint8_t(i*197+19);
             ggml_backend_tensor_set(src,data.data(),0,data.size());
-            ggml_backend_tensor_memset(dst,0,0,data.size());
+            ggml_backend_tensor_memset(out,0,0,ggml_nbytes(out));
             CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-            CHECK(tensor_bytes(out)==data);
-
+            if (selected==reference) expected=tensor_bytes(out);
+            else CHECK(tensor_bytes(out)==expected);
+            if (identity_copy) CHECK(expected==data);
+          }
+          ++cases;
         }
-        return finish(1);
+      }
+      return finish(cases);
     }
     if (!strcmp(argv[3],"scheduled-flags")) {
         std::array<std::array<float,2>,3> expected{};

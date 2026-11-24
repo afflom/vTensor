@@ -242,6 +242,7 @@ model does not sanction.
 | `VT-152` | `build` | Prism supplies uniform importance for IQ2_XS copies and indexed writes through Verdant against the weighted GGML quantizer |
 | `VT-153` | `build` | Prism supplies uniform importance for IQ2_XXS copies and indexed writes through Verdant against the weighted GGML quantizer |
 | `VT-154` | `build` | Prism dispatches weighted IQ1_S and unweighted IQ1_M row writes and copies through Verdant against the pinned GGML quantizers |
+| `VT-155` | `build` | Prism repeats whole storage blocks on every GGML type against independently concatenated CPU tensors |
 
 ## normalization-graphs
 

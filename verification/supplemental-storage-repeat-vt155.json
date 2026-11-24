@@ -1,0 +1,95 @@
+{
+  "requirement": "VT-155",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "authority": {
+    "constructor": "ggml/src/ggml.c#L2577",
+    "replication": "ggml/src/ggml-cpu/ops.cpp#L1965"
+  },
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "semantic_id": "b2a764c968aab47390199b01d7bdc8d35e2f755dc071ce9fee75bfb0d3e7c2fc",
+  "attestation_id": "6d7ef1e97d9b0f911126e012110b8842e9f8772a4774aa82190b6d9d678dbde3",
+  "transport": "verdant_tensor::memory::copy_storage_block",
+  "verdant_revision": "931139cb13223ac6fd0291ee72aabeb639e6c45b",
+  "source_shape": [
+    "2 * ggml_blck_size(type)",
+    2,
+    3,
+    4
+  ],
+  "repeat_factors": [
+    [
+      2,
+      1,
+      1,
+      1
+    ],
+    [
+      1,
+      2,
+      1,
+      1
+    ],
+    [
+      1,
+      1,
+      2,
+      1
+    ],
+    [
+      1,
+      1,
+      1,
+      2
+    ],
+    [
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "types": [
+    "GGML_TYPE_F32",
+    "GGML_TYPE_F16",
+    "GGML_TYPE_Q4_0",
+    "GGML_TYPE_Q4_1",
+    "GGML_TYPE_Q5_0",
+    "GGML_TYPE_Q5_1",
+    "GGML_TYPE_Q8_0",
+    "GGML_TYPE_Q8_1",
+    "GGML_TYPE_Q2_K",
+    "GGML_TYPE_Q3_K",
+    "GGML_TYPE_Q4_K",
+    "GGML_TYPE_Q5_K",
+    "GGML_TYPE_Q6_K",
+    "GGML_TYPE_Q8_K",
+    "GGML_TYPE_IQ2_XXS",
+    "GGML_TYPE_IQ2_XS",
+    "GGML_TYPE_IQ3_XXS",
+    "GGML_TYPE_IQ1_S",
+    "GGML_TYPE_IQ4_NL",
+    "GGML_TYPE_IQ3_S",
+    "GGML_TYPE_IQ2_S",
+    "GGML_TYPE_IQ4_XS",
+    "GGML_TYPE_I8",
+    "GGML_TYPE_I16",
+    "GGML_TYPE_I32",
+    "GGML_TYPE_I64",
+    "GGML_TYPE_F64",
+    "GGML_TYPE_IQ1_M",
+    "GGML_TYPE_BF16",
+    "GGML_TYPE_TQ1_0",
+    "GGML_TYPE_TQ2_0",
+    "GGML_TYPE_MXFP4",
+    "GGML_TYPE_NVFP4",
+    "GGML_TYPE_Q1_0",
+    "GGML_TYPE_Q2_0",
+    "GGML_TYPE_F8_E4M3"
+  ],
+  "cases": 180,
+  "validation": "The provider executes ggml_repeat_4d. The original CPU independently concatenates the source with itself on each doubled axis. Both consume identical physical bytes. VT-155 checks admission before and after allocation, successful execution, and every output byte.",
+  "continuous_test": "storage_repeats_vt_155",
+  "reference_coverage": "VT-16 separately compares the original CPU REPEAT kernel in 160 strided, empty and nonempty cases for its five supported types.",
+  "negative": "The previous model refused a packed repeat before allocation. Flipping the low bit of each Q4_0 block in the provider failed tensor_bytes(out)==expected. The restored provider passed.",
+  "provider_sha256": "c96fcc9e13f3084b6e0370b73097f0189f1b4c6a739c5a44de2d50f0279b47aa"
+}

@@ -996,3 +996,9 @@ id = "VT-154"
 level = "build"
 suite = "native-backend"
 statement = "Prism dispatches weighted IQ1_S and unweighted IQ1_M row writes and copies through Verdant against the pinned GGML quantizers"
+
+[[id]]
+id = "VT-155"
+level = "build"
+suite = "native-backend"
+statement = "Prism repeats whole storage blocks on every GGML type against independently concatenated CPU tensors"

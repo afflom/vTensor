@@ -590,3 +590,9 @@ Feature: native-backend
     Given floating-point source rows and IQ1_S or IQ1_M destination storage
     When a GGML graph copies the tensor or updates indexed rows
     Then the pinned quantizer agrees on every byte and rejected inputs preserve the destination
+
+  @VT-155 @build
+  Scenario: Prism repeats whole storage blocks on every GGML type against independently concatenated CPU tensors
+    Given an original GGML repeat graph on an admitted scalar or packed tensor
+    When vTensor tiles the tensor along one axis or all four axes
+    Then the entire output matches the pinned GGML CPU concatenation of the same bytes
