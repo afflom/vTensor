@@ -25,6 +25,7 @@ vtensor_buffer_region = { version = "=0.1.0", path = "../../generated/layout/pac
 vtensor_transfer = { version = "0.1.0", path = "../../generated/layout/packages/rust-core/vtensor_transfer" }
 vtensor_native_config = { version = "0.1.0", path = "../../generated/native/packages/rust-core/vtensor_native_config" }
 vtensor_native_predicates = { version = "0.1.0", path = "../../generated/native/packages/rust-core/vtensor_native_predicates" }
+vtensor_native_route = { version = "0.1.0", path = "../../generated/native/packages/rust-core/vtensor_native_route" }
 vtensor_native_memory = { version = "0.1.0", path = "../../generated/native/packages/rust-core/vtensor_native_memory" }
 
 [dev-dependencies]

@@ -595,32 +595,29 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     let output = tensor_metadata(tensor)?;
     let TensorDescriptor::C0(_, _, _, _, _, _, _, _, _, span, _) = &output;
     let operation = u64::try_from(tensor.op).map_err(BackendError::invalid)?;
-    if vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C1(operation, *span)) {
-        return Ok(None);
-    }
-    if (90..=93).contains(&operation) {
-        return CallbackParams::plan(tensor);
-    }
-    if operation == 99 {
-        let source = tensor.source(0).ok_or(InvalidTensor)?;
-        let layout = |t: &Tensor| (t.ty, t.ne, t.nb, t.data);
-        let micros = u64::from(tensor.op_params[0] as u32);
-        let request = vtensor_native_predicates::Adt0::C4(
-            operation,
-            micros,
-            layout(tensor) == layout(source),
-            tensor.views_start_of(source),
-        );
-        let delay = ExecutionPlan::Delay(std::time::Duration::from_micros(micros));
-        return vtensor_native_predicates::run(request)
-            .then_some(Some(delay))
-            .ok_or(InvalidTensor);
-    }
-    if matches!(operation, 43 | 71 | 74 | 83 | 84 | 88) {
-        return attention::plan(tensor, operation, output);
-    }
-    if matches!(operation, 45 | 46) {
-        return rotary::plan(tensor, output);
+    use vtensor_native_route::Adt0 as Route;
+    let route = vtensor_native_route::run(operation, *span);
+    match route {
+        Route::C0 => return Ok(None),
+        Route::C1 => return CallbackParams::plan(tensor),
+        Route::C2 => {
+            let source = tensor.source(0).ok_or(InvalidTensor)?;
+            let layout = |t: &Tensor| (t.ty, t.ne, t.nb, t.data);
+            let micros = u64::from(tensor.op_params[0] as u32);
+            let request = vtensor_native_predicates::Adt0::C4(
+                operation,
+                micros,
+                layout(tensor) == layout(source),
+                tensor.views_start_of(source),
+            );
+            let delay = ExecutionPlan::Delay(std::time::Duration::from_micros(micros));
+            return vtensor_native_predicates::run(request)
+                .then_some(Some(delay))
+                .ok_or(InvalidTensor);
+        }
+        Route::C3 => return attention::plan(tensor, operation, output),
+        Route::C4 => return rotary::plan(tensor, output),
+        Route::C5 | Route::C6 | Route::C7 => {}
     }
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, ..] =
         tensor.op_params.map(|word| u64::from(word as u32));
@@ -667,7 +664,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             let extra = has_source_from(3);
             let w = primary.ok_or(InvalidTensor)?;
             // MUL_MAT owns the ordinary row-product route. Other two-input fallbacks use the typed planner.
-            if base.is_none() && operation != 28 {
+            if base.is_none() && !matches!(route, Route::C5) {
                 let [left, out] = [w, output].map(metadata);
                 let right = secondary.map(metadata);
                 return typed_plan(vtensor_typed::Adt0::C3(
@@ -677,7 +674,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             let a = secondary.ok_or(InvalidTensor)?;
             use vtensor_matrix_q8::Adt0 as Product;
             let request = if let Some(third) = base {
-                if operation != 29 {
+                if !matches!(route, Route::C6) {
                     let [left, right, base, out] = [w, a, third, output].map(metadata);
                     return typed_plan(vtensor_typed::Adt0::C2(
                         operation, extra, left, right, base, out,

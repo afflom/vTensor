@@ -14,7 +14,7 @@
     "unary-ops.cpp": "57a73a81b91473945040054a03bd921f1f77656d217e205cf8fd7f1e0acae7ad"
   },
   "table": "ggml-operation-evidence.tsv",
-  "table_sha256": "e9191289ea31979184bc68693deb3f772777d75e0c868362e3d586aa33d1399f",
+  "table_sha256": "fed1e16147b1d22890e3181f82521c92de266bbe8ca0e4769997d5ee7b819af1",
   "inputs": {
     "ggml-constructor-contracts.json": "514d075f7e4e1cbf9e978ce2c79d5e6db3125705b7765f4fdc33ad330015b620",
     "ggml-factory-signatures.json": "c79d118eca52e070db92ea1cdaa1f8dadaca7fe8d89efb734872dc21792a3d84",
@@ -23,5 +23,35 @@
   },
   "ordinal_groups": "just factory-remaining evidence",
   "scope": "Each row locates an opcode in the original CPU evaluation switch and names its implementation and definition where applicable. Factory columns count distinct containing graphs, exact descriptors and observed operand/output type tuples. Root evidence groups count only the public graph output node. A graph may contribute to several containing opcodes. Evidence groups are the receipts for those whole graphs. The supplemental column identifies the individual record for declarations absent from factory graphs, including the public constructor refusal. Type and layout completeness beyond these graphs is tracked separately.",
-  "empty_field": "-"
+  "empty_field": "-",
+  "native_dispatch": {
+    "root": "PrismTemplateContract.NativeBackend.operationRoute",
+    "semantic_id": "089b3f365103e6fb2410767105a32c5bee82e85aafba5598d22d940065784efc",
+    "attestation": "638aa46c66e5baf541f52e5c233f4553f5c7f3197552adeca372d9aa20cc02e4",
+    "provider_sha256": "8ef14ca0ae8ffc94042dc576acfd39622f71192fa1b6e2c3a837c8176b1e20e6",
+    "oracle": "Read all 100 operation numbers and names from the compiled original GGML declarations. Compare the certified selector at zero and four bytes. The route names are internal to vTensor. The existing GGML suites exercise the resulting public backend behavior.",
+    "empty_metadata_routes": 100,
+    "nonempty_routes": {
+      "metadata": 5,
+      "graph": 80,
+      "matrix": 1,
+      "indexed_matrix": 1,
+      "attention": 6,
+      "rotary": 2,
+      "callback": 4,
+      "delay": 1
+    },
+    "entries": {
+      "metadata": "No execution",
+      "callback": "NativeBackend.decideNative validates the host callback",
+      "delay": "NativeBackend.decideNative validates SLEEP",
+      "attention": "AttentionGraph.evaluate",
+      "rotary": "RotaryGraph.evaluate",
+      "matrix": "PointwiseGraph.evaluate, then QuantizedMatrix.evaluate for a row product",
+      "indexed_matrix": "PointwiseGraph.evaluate, then QuantizedMatrix.evaluate for an indexed row product",
+      "graph": "PointwiseGraph.evaluate"
+    },
+    "negative_control": "Routing the attention family to the rotary planner made the original FLASH_ATTN_EXT factory comparison exceed its 0.0005 limit. Restoring the certified route passed the same graph.",
+    "source_lines": 12602
+  }
 }

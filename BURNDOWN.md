@@ -4,14 +4,16 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Route native graph submissions through the certified Prism operation selector. Verify empty and nonempty routes for every public opcode.
+- [ ] Implement packed ADD, SUB, MUL and DIV with decodable scalar and block operands. Compare each new copied and in-place tuple with GGML decode, F32 arithmetic and row encoding.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,056 non-Prism lines** (12,605 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,053 non-Prism lines** (12,602 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Move native opcode routing into Prism. Check all 100 declarations at empty and nonempty spans and exercise each route with the original GGML backend. [Operation index and verification](verification/ggml-operation-evidence.json)
 
 - [x] Place all 54 F16/BF16 ADD_CAST pairs with F32 addends and packed destinations. All 108 output rows matched the original GGML CPU sum and encoder byte for byte. [VT-179](verification/supplemental-half-add-vt179.json)
 - [x] Probe 3,888 unary and 1,794 GLU descriptors. All 324 and 276 directly executable graphs respectively placed and matched GGML CPU across dense and offset views. [Unary map](verification/ggml-unary-type-descriptors.json) · [GLU map](verification/ggml-glu-type-descriptors.json)

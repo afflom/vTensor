@@ -102,6 +102,44 @@ definition{
   production: {effects: [], targets: [rust-core]}
 }
 
+inductive{
+  name: OperationRoute,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: metadata, fields: []},
+    {name: callback, fields: []},
+    {name: delay, fields: []},
+    {name: attention, fields: []},
+    {name: rotary, fields: []},
+    {name: matrix, fields: []},
+    {name: indexedMatrix, fields: []},
+    {name: graph, fields: []}
+  ]
+}
+
+definition{
+  name: operationRoute,
+  parameters: [operation : Nat, span : Nat],
+  result: OperationRoute,
+  body: (if (decideNative (ctor PredicateRequest.metadataOperation operation span)) then (ctor OperationRoute.metadata)
+    else (if ((90 <=? operation) && (operation <=? 93)) then (ctor OperationRoute.callback)
+    else (if (operation =? 99) then (ctor OperationRoute.delay)
+    else (if (((operation =? 43) || (operation =? 71)) || (((operation =? 74) || (operation =? 83)) || ((operation =? 84) || (operation =? 88)))) then (ctor OperationRoute.attention)
+    else (if ((operation =? 45) || (operation =? 46)) then (ctor OperationRoute.rotary)
+    else (if (operation =? 28) then (ctor OperationRoute.matrix)
+    else (if (operation =? 29) then (ctor OperationRoute.indexedMatrix) else (ctor OperationRoute.graph)))))))),
+  executable: true,
+  production: {effects: [], targets: [rust-core]}
+}
+
+theorem{
+  name: emptyMatrixRequiresNoExecution,
+  parameters: [],
+  statement: ((operationRoute 28 0) = (ctor OperationRoute.metadata)),
+  proof: reflexivity{}
+}
+
 theorem{
   name: ordinaryHostStorageIsAccessible,
   parameters: [],

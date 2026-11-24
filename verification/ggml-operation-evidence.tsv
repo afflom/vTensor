@@ -1,101 +1,101 @@
-opcode	operation	constructor_count	cpu_dispatch_line	cpu_entry	cpu_definition	factory_root_graphs	factory_root_evidence_groups	factory_graphs_containing_op	exact_node_descriptors	observed_type_tuples	factory_evidence_groups	supplement_for_absent_opcode	supplemental_evidence
-0	GGML_OP_NONE	7	2164	metadata	-	0	-	6242	1289	31	VT-101,VT-104,VT-105,VT-108,VT-109,VT-111,VT-113,VT-117,VT-118,VT-119,VT-120,VT-122,VT-126,VT-131,VT-132,VT-133,VT-134,VT-135,VT-137,VT-138,VT-148,VT-15,VT-15-IQ-CPY,VT-151,VT-152,VT-153,VT-154,VT-16,VT-19,VT-23,VT-26,VT-27,VT-28,VT-29,VT-32,VT-46,VT-49,VT-51,VT-56,VT-57,VT-60,VT-61,VT-64,VT-68,VT-70,VT-72,VT-77,VT-79,VT-85,VT-87,VT-89,VT-93,VT-98,standalone	-	-
-1	GGML_OP_DUP	2	1773	ggml_compute_forward_dup	ops.cpp:526	10	VT-15	10	10	4	VT-15	-	-
-2	GGML_OP_ADD	3	1777	ggml_compute_forward_add	ops.cpp:663	1215	VT-103,VT-110,VT-111,VT-112,VT-115,VT-120,VT-150,VT-38,VT-49,VT-51,VT-61,VT-64,VT-64/65/77-fusions,VT-64/67/68-compositions,VT-65,VT-75,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-SHARED,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	1794	549	6	VT-103,VT-110,VT-111,VT-112,VT-115,VT-120,VT-150,VT-38,VT-49,VT-51,VT-57,VT-61,VT-64,VT-64/65/77-fusions,VT-64/67/68-compositions,VT-65,VT-75,VT-81,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-86-compositions,VT-87-compositions,VT-88-SHARED,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	-
-3	GGML_OP_ADD_ID	1	1781	ggml_compute_forward_add_id	ops.cpp:770	72	VT-34	728	40	1	VT-103,VT-34,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-compositions,VT-91-compositions,VT-93,VT-95,VT-99	-	-
-4	GGML_OP_ACC	2	1785	ggml_compute_forward_acc	ops.cpp:1252	6	VT-19	6	6	1	VT-19	-	-
-5	GGML_OP_SUB	2	1789	ggml_compute_forward_sub	binary-ops.cpp:144	142	VT-51	144	149	4	VT-150,VT-51	-	-
-6	GGML_OP_MUL	2	1793	ggml_compute_forward_mul	binary-ops.cpp:148	1533	VT-103,VT-51,VT-57,VT-61,VT-75,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	2075	364	5	VT-103,VT-49,VT-51,VT-57,VT-61,VT-64/67/68-compositions,VT-75,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	-
-7	GGML_OP_DIV	2	1797	ggml_compute_forward_div	binary-ops.cpp:152	142	VT-51	498	157	4	VT-51,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-
-8	GGML_OP_SQR	2	1801	ggml_compute_forward_sqr	unary-ops.cpp:281	13	VT-27,standalone	39	39	3	VT-150,VT-27,VT-64/67/68-compositions,standalone	-	-
-9	GGML_OP_SQRT	2	1805	ggml_compute_forward_sqrt	unary-ops.cpp:285	9	VT-27	185	27	3	VT-27,VT-89-compositions	-	-
-10	GGML_OP_LOG	2	1809	ggml_compute_forward_log	unary-ops.cpp:297	9	VT-60	9	9	3	VT-60	-	-
-11	GGML_OP_SIN	2	1813	ggml_compute_forward_sin	unary-ops.cpp:289	9	VT-60	33	33	3	VT-60,VT-64/67/68-compositions	-	-
-12	GGML_OP_COS	2	1817	ggml_compute_forward_cos	unary-ops.cpp:293	9	VT-60	9	9	3	VT-60	-	-
-13	GGML_OP_SUM	1	1821	ggml_compute_forward_sum	ops.cpp:1412	26	VT-149,VT-150,VT-29	28	23	1	VT-149,VT-150,VT-29	-	-
-14	GGML_OP_SUM_ROWS	1	1825	ggml_compute_forward_sum_rows	ops.cpp:1523	11	VT-29	447	30	1	VT-29,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-
-15	GGML_OP_CUMSUM	1	1829	ggml_compute_forward_cumsum	ops.cpp:1470	15	VT-28	15	15	1	VT-28	-	-
-16	GGML_OP_MEAN	1	1833	ggml_compute_forward_mean	ops.cpp:1580	17	VT-29	17	17	1	VT-29	-	-
-17	GGML_OP_ARGMAX	1	1837	ggml_compute_forward_argmax	ops.cpp:1628	7	VT-30	11	9	1	VT-30	-	-
-18	GGML_OP_COUNT_EQUAL	1	1841	ggml_compute_forward_count_equal	ops.cpp:1708	4	VT-30	4	2	1	VT-30	-	-
-19	GGML_OP_REPEAT	2	1845	ggml_compute_forward_repeat	ops.cpp:1819	18	VT-16	176	26	5	VT-110,VT-115,VT-16,VT-65,VT-85-compositions,VT-88-compositions,VT-93,VT-99,standalone	-	-
-20	GGML_OP_REPEAT_BACK	1	1849	ggml_compute_forward_repeat_back	ops.cpp:1910	10	VT-20	10	9	1	VT-20	-	-
-21	GGML_OP_CONCAT	1	1853	ggml_compute_forward_concat	ops.cpp:1965	236	VT-17	236	236	12	VT-17	-	-
-22	GGML_OP_SILU_BACK	1	1857	ggml_compute_forward_silu_back	ops.cpp:2879	1	VT-124	1	1	1	VT-124	-	-
-23	GGML_OP_NORM	2	1861	ggml_compute_forward_norm	ops.cpp:4090	61	VT-48	99	86	1	VT-48,VT-51	-	-
-24	GGML_OP_RMS_NORM	2	1865	ggml_compute_forward_rms_norm	ops.cpp:4227	146	VT-46,VT-51	551	250	2	VT-46,VT-51,VT-57	-	-
-25	GGML_OP_RMS_NORM_BACK	1	1869	ggml_compute_forward_rms_norm_back	ops.cpp:4430	10	VT-50	10	10	1	VT-50	-	-
-26	GGML_OP_GROUP_NORM	2	1873	ggml_compute_forward_group_norm	ops.cpp:4525	3	VT-49	5	5	1	VT-49	-	-
-27	GGML_OP_L2_NORM	2	1877	ggml_compute_forward_l2_norm	ops.cpp:4593	31	VT-38	114	131	1	VT-143,VT-149,VT-38	-	-
-28	GGML_OP_MUL_MAT	10	1881	ggml_compute_forward_mul_mat	ggml-cpu.c:1264	3288	VT-103,VT-110,VT-112,VT-114,VT-115,VT-116,VT-53,VT-54,VT-64,VT-65,VT-85,VT-88,VT-90,VT-91,VT-91-half-activations,VT-94,VT-95,VT-99,standalone	4103	3354	44	VT-103,VT-110,VT-111,VT-112,VT-114,VT-115,VT-116,VT-53,VT-54,VT-64,VT-64/65/77-fusions,VT-64/67/68-compositions,VT-65,VT-72,VT-83-compositions,VT-85,VT-85-compositions,VT-88,VT-88-SHARED,VT-88-compositions,VT-90,VT-91,VT-91-compositions,VT-91-half-activations,VT-93,VT-94,VT-95,VT-99,standalone	-	-
-29	GGML_OP_MUL_MAT_ID	1	1885	ggml_compute_forward_mul_mat_id	ggml-cpu.c:1566	1259	VT-103,VT-110,VT-112,VT-114,VT-115,VT-116,VT-83,VT-84,VT-85,VT-88,VT-91,VT-94,VT-95,VT-99	2447	1097	29	VT-103,VT-110,VT-112,VT-114,VT-115,VT-116,VT-83,VT-83-compositions,VT-84,VT-84-compositions,VT-85,VT-85-compositions,VT-88,VT-88-SHARED,VT-88-compositions,VT-91,VT-91-compositions,VT-93,VT-94,VT-95,VT-99	-	-
-30	GGML_OP_OUT_PROD	1	1889	ggml_compute_forward_out_prod	ops.cpp:4887	1543	VT-69,VT-71,VT-73	1543	1542	24	VT-69,VT-71,VT-73	-	-
-31	GGML_OP_SCALE	4	1893	ggml_compute_forward_scale	ops.cpp:5037	381	VT-26,VT-51,VT-68,VT-86-compositions,VT-87-compositions,VT-89-compositions	395	54	3	VT-129,VT-26,VT-51,VT-68,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-
-32	GGML_OP_SET	6	1897	ggml_compute_forward_set	ops.cpp:5207	12	VT-19	12	12	2	VT-19	-	-
-33	GGML_OP_CPY	2	1901	ggml_compute_forward_cpy	ops.cpp:5260	642	VT-101,VT-104,VT-105,VT-109,VT-113,VT-117,VT-119,VT-122,VT-126,VT-133,VT-135,VT-148,VT-15-IQ-CPY,VT-151,VT-152,VT-153,VT-154,VT-98,standalone	660	653	144	VT-101,VT-104,VT-105,VT-109,VT-113,VT-117,VT-119,VT-122,VT-126,VT-133,VT-135,VT-148,VT-149,VT-15-IQ-CPY,VT-150,VT-151,VT-152,VT-153,VT-154,VT-86-compositions,VT-98,standalone	-	-
-34	GGML_OP_CONT	11	1905	ggml_compute_forward_cont	ops.cpp:5268	91	VT-15	1680	261	4	VT-125,VT-15,VT-150,VT-74,VT-76,VT-86-compositions	-	-
-35	GGML_OP_RESHAPE	14	2168	metadata	-	229	VT-72,VT-86-compositions,VT-87-compositions,VT-89-compositions	864	126	1	VT-72,VT-83-compositions,VT-85-compositions,VT-86-compositions,VT-87-compositions,VT-88-SHARED,VT-88-compositions,VT-89-compositions,VT-93,VT-99	-	-
-36	GGML_OP_VIEW	5	2176	metadata	-	0	-	12067	1029	33	VT-100,VT-101,VT-102,VT-103,VT-105,VT-109,VT-110,VT-111,VT-112,VT-113,VT-114,VT-115,VT-116,VT-117,VT-118,VT-119,VT-122,VT-133,VT-135,VT-137,VT-138,VT-148,VT-149,VT-15,VT-150,VT-151,VT-152,VT-153,VT-154,VT-17,VT-18,VT-19,VT-20,VT-26,VT-27,VT-29,VT-32,VT-34,VT-38,VT-46,VT-48,VT-51,VT-53,VT-54,VT-55,VT-56,VT-57,VT-58,VT-60,VT-61,VT-62-BF16,VT-63,VT-64,VT-64/67/68-compositions,VT-66,VT-68,VT-70,VT-74,VT-75,VT-77,VT-78,VT-80,VT-83,VT-83-compositions,VT-84,VT-84-compositions,VT-85,VT-85-compositions,VT-86-compositions,VT-87-compositions,VT-88,VT-88-compositions,VT-89,VT-89-compositions,VT-91,VT-91-compositions,VT-93,VT-94,VT-95,VT-96,VT-98,VT-99,standalone	-	-
-37	GGML_OP_PERMUTE	7	2172	metadata	-	0	-	3645	1192	31	VT-101,VT-103,VT-104,VT-105,VT-109,VT-110,VT-113,VT-117,VT-119,VT-122,VT-125,VT-126,VT-133,VT-135,VT-145,VT-146,VT-148,VT-149,VT-15,VT-15-IQ-CPY,VT-151,VT-152,VT-153,VT-154,VT-18,VT-29,VT-38,VT-48,VT-51,VT-53,VT-54,VT-63,VT-64,VT-64/67/68-compositions,VT-66,VT-74,VT-76,VT-78,VT-85,VT-86-compositions,VT-88,VT-90,VT-91,VT-91-half-activations,VT-94,VT-95,VT-97,VT-98,VT-99,standalone	-	-
-38	GGML_OP_TRANSPOSE	1	2180	metadata	-	0	-	74	70	7	VT-144,VT-145,VT-146,VT-147,VT-15,VT-17,standalone	-	-
-39	GGML_OP_GET_ROWS	1	1909	ggml_compute_forward_get_rows	ops.cpp:5443	378	VT-32,VT-86-compositions,VT-87-compositions,VT-89-compositions	1104	302	30	VT-110,VT-115,VT-32,VT-65,VT-85-compositions,VT-86-compositions,VT-87-compositions,VT-88-compositions,VT-89-compositions,VT-93,VT-99,standalone	-	-
-40	GGML_OP_GET_ROWS_BACK	1	1913	ggml_compute_forward_get_rows_back	ops.cpp:5696	62	VT-102,VT-62-BF16,standalone	62	62	30	VT-102,VT-62-BF16,standalone	-	-
-41	GGML_OP_SET_ROWS	1	1917	ggml_compute_forward_set_rows	ops.cpp:5589	990	VT-100,VT-101,VT-105,VT-109,VT-113,VT-117,VT-119,VT-122,VT-133,VT-135,VT-148,VT-151,VT-152,VT-153,VT-154,VT-55,VT-57	1150	809	61	VT-100,VT-101,VT-105,VT-109,VT-113,VT-117,VT-119,VT-122,VT-133,VT-135,VT-148,VT-151,VT-152,VT-153,VT-154,VT-55,VT-57,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-
-42	GGML_OP_DIAG	1	1921	ggml_compute_forward_diag	ops.cpp:5779	9	standalone	9	9	3	standalone	-	-
-43	GGML_OP_SOFT_MAX	4	1925	ggml_compute_forward_soft_max	ops.cpp:5916	214	VT-87	562	246	6	VT-132,VT-87,VT-87-compositions	-	-
-44	GGML_OP_SOFT_MAX_BACK	2	1929	ggml_compute_forward_soft_max_ext_back	ops.cpp:6020	48	VT-121	48	48	1	VT-121	-	-
-45	GGML_OP_ROPE	6	1933	ggml_compute_forward_rope	ops.cpp:6464	628	VT-57	847	576	4	VT-57	-	-
-46	GGML_OP_ROPE_BACK	2	1937	ggml_compute_forward_rope_back	ops.cpp:6488	424	VT-57	424	424	4	VT-57	-	-
-47	GGML_OP_CLAMP	2	1941	ggml_compute_forward_clamp	ops.cpp:6114	12	VT-26	348	20	3	VT-26,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-
-48	GGML_OP_CONV_TRANSPOSE_1D	1	1945	ggml_compute_forward_conv_transpose_1d	ops.cpp:6686	116	VT-106	116	115	1	VT-106	-	-
-49	GGML_OP_IM2COL	9	1949	ggml_compute_forward_im2col	ops.cpp:6868	113	VT-72	122	122	5	VT-72	-	-
-50	GGML_OP_IM2COL_BACK	1	1953	ggml_compute_forward_im2col_back_f32	ops.cpp:6889	0	-	0	0	0	-	VT-139	verification/ggml-spatial-gradient-oracle.json
-51	GGML_OP_IM2COL_3D	2	1957	ggml_compute_forward_im2col_3d	ops.cpp:7165	2051	VT-70,standalone	2051	2051	3	VT-70,standalone	-	-
-52	GGML_OP_COL2IM_1D	1	1961	ggml_compute_forward_col2im_1d	ops.cpp:7293	33	VT-82	33	33	3	VT-82	-	-
-53	GGML_OP_CONV_2D	1	1965	ggml_compute_forward_conv_2d	ops.cpp:7425	3144	VT-74,VT-76	3144	3144	2	VT-74,VT-76	-	-
-54	GGML_OP_CONV_3D	1	1969	ggml_compute_forward_conv_3d	ops.cpp:7562	292	VT-80	292	180	2	VT-80	-	-
-55	GGML_OP_CONV_2D_DW	1	1973	ggml_compute_forward_conv_2d_dw	ops.cpp:7851	8	VT-125	8	8	2	VT-125	-	-
-56	GGML_OP_CONV_TRANSPOSE_2D	1	1977	ggml_compute_forward_conv_transpose_2d	ops.cpp:7677	8	VT-107	8	8	2	VT-107	-	-
-57	GGML_OP_POOL_1D	1	1981	ggml_compute_forward_pool_1d	ops.cpp:7959	240	VT-79	240	240	1	VT-79	-	-
-58	GGML_OP_POOL_2D	1	1985	ggml_compute_forward_pool_2d	ops.cpp:7974	144	VT-79	144	144	1	VT-79	-	-
-59	GGML_OP_POOL_2D_BACK	1	1989	ggml_compute_forward_pool_2d_back	ops.cpp:8061	0	-	0	0	0	-	VT-140	verification/ggml-spatial-gradient-oracle.json
-60	GGML_OP_UPSCALE	2	1993	ggml_compute_forward_upscale	ops.cpp:8379	24	VT-144,VT-145,VT-146,VT-147	24	24	1	VT-144,VT-145,VT-146,VT-147	-	-
-61	GGML_OP_PAD	4	1997	ggml_compute_forward_pad	ops.cpp:8473	37	VT-18	37	36	1	VT-18	-	-
-62	GGML_OP_PAD_REFLECT_1D	1	2001	ggml_compute_forward_pad_reflect_1d	ops.cpp:8496	7	VT-18	7	7	1	VT-18	-	-
-63	GGML_OP_ROLL	1	2005	ggml_compute_forward_roll	ops.cpp:8578	2	VT-18	2	2	1	VT-18	-	-
-64	GGML_OP_ARANGE	1	2009	ggml_compute_forward_arange	ops.cpp:8621	10	VT-37	10	10	1	VT-37	-	-
-65	GGML_OP_TIMESTEP_EMBEDDING	1	2013	ggml_compute_forward_timestep_embedding	ops.cpp:8669	6	VT-141	6	6	1	VT-141	-	-
-66	GGML_OP_ARGSORT	2	2017	ggml_compute_forward_argsort	ops.cpp:8742	98	VT-86	790	105	1	VT-86,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-
-67	GGML_OP_TOP_K	1	2021	ggml_compute_forward_top_k	ops.cpp:8808	538	VT-86,VT-86-compositions	538	377	1	VT-86,VT-86-compositions	-	-
-68	GGML_OP_LEAKY_RELU	1	2025	ggml_compute_forward_leaky_relu	ops.cpp:2764	10	VT-26	10	9	3	VT-26	-	-
-69	GGML_OP_TRI	1	2029	ggml_compute_forward_tri	ops.cpp:2292	16	standalone	16	16	3	standalone	-	-
-70	GGML_OP_FILL	2	2033	ggml_compute_forward_fill	ops.cpp:2222	7	VT-23	167	12	2	VT-23,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-
-71	GGML_OP_FLASH_ATTN_EXT	2	2041	ggml_compute_forward_flash_attn_ext	ops.cpp:9554	5775	VT-58,VT-63,VT-64/67/68-compositions,VT-66,VT-68,VT-78,VT-94,VT-95,VT-96,VT-97,standalone	5775	5773	59	VT-58,VT-63,VT-64/67/68-compositions,VT-66,VT-68,VT-78,VT-94,VT-95,VT-96,VT-97,standalone	-	-
-72	GGML_OP_FLASH_ATTN_BACK	1	2045	ggml_compute_forward_flash_attn_back	ops.cpp:9889	0	-	0	0	0	-	-	verification/ggml-flash-back-constructor.json
-73	GGML_OP_SSM_CONV	1	2052	ggml_compute_forward_ssm_conv	ops.cpp:9963	75	VT-81	195	75	1	VT-81	-	-
-74	GGML_OP_SSM_SCAN	1	2056	ggml_compute_forward_ssm_scan	ops.cpp:10203	17	VT-150	28	32	1	VT-150	-	-
-75	GGML_OP_WIN_PART	1	2060	ggml_compute_forward_win_part	ops.cpp:10263	0	-	0	0	0	-	VT-25	verification/native-fixture-baseline.json
-76	GGML_OP_WIN_UNPART	1	2064	ggml_compute_forward_win_unpart	ops.cpp:10324	0	-	0	0	0	-	VT-25	verification/native-fixture-baseline.json
-77	GGML_OP_GET_REL_POS	1	2076	ggml_compute_forward_get_rel_pos	ops.cpp:10518	0	-	0	0	0	-	VT-33	verification/relative-position-runtime.json
-78	GGML_OP_ADD_REL_POS	2	2080	ggml_compute_forward_add_rel_pos	ops.cpp:10600	0	-	0	0	0	-	VT-39	verification/relative-position-add-runtime.json
-79	GGML_OP_RWKV_WKV6	1	2084	ggml_compute_forward_rwkv_wkv6	ops.cpp:10812	4	VT-143	4	4	1	VT-143	-	-
-80	GGML_OP_GATED_LINEAR_ATTN	1	2088	ggml_compute_forward_gla	ops.cpp:11013	4	VT-142	4	4	1	VT-142	-	-
-81	GGML_OP_RWKV_WKV7	1	2092	ggml_compute_forward_rwkv_wkv7	ops.cpp:11912	5	VT-143	5	5	1	VT-143	-	-
-82	GGML_OP_SOLVE_TRI	1	2096	ggml_compute_forward_solve_tri	ops.cpp:11090	26	VT-134	26	25	1	VT-134	-	-
-83	GGML_OP_GATED_DELTA_NET	1	2100	ggml_compute_forward_gated_delta_net	ops.cpp:11297	43	VT-149	48	47	1	VT-149	-	-
-84	GGML_OP_LIGHTNING_INDEXER	1	2104	ggml_compute_forward_lightning_indexer	ops.cpp:12419	210	VT-108	210	210	9	VT-108	-	-
-85	GGML_OP_DSV4_HC_COMB	1	2108	ggml_compute_forward_dsv4_hc_comb	ops.cpp:11436	11	VT-130	11	11	1	VT-130	-	-
-86	GGML_OP_DSV4_HC_PRE	2	2112	ggml_compute_forward_dsv4_hc_pre	ops.cpp:11516	18	VT-127	18	18	1	VT-127	-	-
-87	GGML_OP_DSV4_HC_POST	1	2116	ggml_compute_forward_dsv4_hc_post	ops.cpp:11610	11	VT-129	11	11	2	VT-129	-	-
-88	GGML_OP_TOP_K_MASK	1	2120	ggml_compute_forward_top_k_mask	ops.cpp:11629	38	VT-92	38	38	16	VT-92	-	-
-89	GGML_OP_UNARY	43	2068	ggml_compute_forward_unary	ops.cpp:10344	414	VT-118,VT-137,VT-138,VT-27,VT-60,VT-61,VT-68,VT-75,VT-81,VT-89	997	452	3	VT-118,VT-129,VT-137,VT-138,VT-27,VT-60,VT-61,VT-68,VT-75,VT-81,VT-86-compositions,VT-89,VT-89-compositions,standalone	-	-
-90	GGML_OP_MAP_CUSTOM1	2	2124	ggml_compute_forward_map_custom1	ops.cpp:11932	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json
-91	GGML_OP_MAP_CUSTOM2	2	2129	ggml_compute_forward_map_custom2	ops.cpp:11946	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json
-92	GGML_OP_MAP_CUSTOM3	2	2134	ggml_compute_forward_map_custom3	ops.cpp:11961	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json
-93	GGML_OP_CUSTOM	2	2139	ggml_compute_forward_custom	ops.cpp:11977	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json
-94	GGML_OP_CROSS_ENTROPY_LOSS	1	2144	ggml_compute_forward_cross_entropy_loss	ops.cpp:12065	2	VT-132	2	2	1	VT-132	-	-
-95	GGML_OP_CROSS_ENTROPY_LOSS_BACK	1	2149	ggml_compute_forward_cross_entropy_loss_back	ops.cpp:12148	2	VT-132	2	2	1	VT-132	-	-
-96	GGML_OP_OPT_STEP_ADAMW	1	2154	ggml_compute_forward_opt_step_adamw	ops.cpp:12233	1	VT-131	1	1	1	VT-131	-	-
-97	GGML_OP_OPT_STEP_SGD	1	2159	ggml_compute_forward_opt_step_sgd	ops.cpp:12295	1	VT-131	1	1	1	VT-131	-	-
-98	GGML_OP_GLU	19	2072	ggml_compute_forward_glu	ops.cpp:10448	216	VT-111,VT-137,VT-56,VT-77,VT-93	1756	280	6	VT-103,VT-110,VT-111,VT-112,VT-137,VT-56,VT-64,VT-64/65/77-fusions,VT-77,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-SHARED,VT-88-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	-
-99	GGML_OP_SLEEP	1	2037	ggml_compute_forward_sleep	ops.cpp:2243	3	VT-123	3	3	2	VT-123	-	-
+opcode	operation	constructor_count	cpu_dispatch_line	cpu_entry	cpu_definition	factory_root_graphs	factory_root_evidence_groups	factory_graphs_containing_op	exact_node_descriptors	observed_type_tuples	factory_evidence_groups	supplement_for_absent_opcode	supplemental_evidence	nonempty_route
+0	GGML_OP_NONE	7	2164	metadata	-	0	-	6242	1289	31	VT-101,VT-104,VT-105,VT-108,VT-109,VT-111,VT-113,VT-117,VT-118,VT-119,VT-120,VT-122,VT-126,VT-131,VT-132,VT-133,VT-134,VT-135,VT-137,VT-138,VT-148,VT-15,VT-15-IQ-CPY,VT-151,VT-152,VT-153,VT-154,VT-16,VT-19,VT-23,VT-26,VT-27,VT-28,VT-29,VT-32,VT-46,VT-49,VT-51,VT-56,VT-57,VT-60,VT-61,VT-64,VT-68,VT-70,VT-72,VT-77,VT-79,VT-85,VT-87,VT-89,VT-93,VT-98,standalone	-	-	metadata
+1	GGML_OP_DUP	2	1773	ggml_compute_forward_dup	ops.cpp:526	10	VT-15	10	10	4	VT-15	-	-	graph
+2	GGML_OP_ADD	3	1777	ggml_compute_forward_add	ops.cpp:663	1215	VT-103,VT-110,VT-111,VT-112,VT-115,VT-120,VT-150,VT-38,VT-49,VT-51,VT-61,VT-64,VT-64/65/77-fusions,VT-64/67/68-compositions,VT-65,VT-75,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-SHARED,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	1794	549	6	VT-103,VT-110,VT-111,VT-112,VT-115,VT-120,VT-150,VT-38,VT-49,VT-51,VT-57,VT-61,VT-64,VT-64/65/77-fusions,VT-64/67/68-compositions,VT-65,VT-75,VT-81,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-86-compositions,VT-87-compositions,VT-88-SHARED,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	-	graph
+3	GGML_OP_ADD_ID	1	1781	ggml_compute_forward_add_id	ops.cpp:770	72	VT-34	728	40	1	VT-103,VT-34,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-compositions,VT-91-compositions,VT-93,VT-95,VT-99	-	-	graph
+4	GGML_OP_ACC	2	1785	ggml_compute_forward_acc	ops.cpp:1252	6	VT-19	6	6	1	VT-19	-	-	graph
+5	GGML_OP_SUB	2	1789	ggml_compute_forward_sub	binary-ops.cpp:144	142	VT-51	144	149	4	VT-150,VT-51	-	-	graph
+6	GGML_OP_MUL	2	1793	ggml_compute_forward_mul	binary-ops.cpp:148	1533	VT-103,VT-51,VT-57,VT-61,VT-75,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	2075	364	5	VT-103,VT-49,VT-51,VT-57,VT-61,VT-64/67/68-compositions,VT-75,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	-	graph
+7	GGML_OP_DIV	2	1797	ggml_compute_forward_div	binary-ops.cpp:152	142	VT-51	498	157	4	VT-51,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
+8	GGML_OP_SQR	2	1801	ggml_compute_forward_sqr	unary-ops.cpp:281	13	VT-27,standalone	39	39	3	VT-150,VT-27,VT-64/67/68-compositions,standalone	-	-	graph
+9	GGML_OP_SQRT	2	1805	ggml_compute_forward_sqrt	unary-ops.cpp:285	9	VT-27	185	27	3	VT-27,VT-89-compositions	-	-	graph
+10	GGML_OP_LOG	2	1809	ggml_compute_forward_log	unary-ops.cpp:297	9	VT-60	9	9	3	VT-60	-	-	graph
+11	GGML_OP_SIN	2	1813	ggml_compute_forward_sin	unary-ops.cpp:289	9	VT-60	33	33	3	VT-60,VT-64/67/68-compositions	-	-	graph
+12	GGML_OP_COS	2	1817	ggml_compute_forward_cos	unary-ops.cpp:293	9	VT-60	9	9	3	VT-60	-	-	graph
+13	GGML_OP_SUM	1	1821	ggml_compute_forward_sum	ops.cpp:1412	26	VT-149,VT-150,VT-29	28	23	1	VT-149,VT-150,VT-29	-	-	graph
+14	GGML_OP_SUM_ROWS	1	1825	ggml_compute_forward_sum_rows	ops.cpp:1523	11	VT-29	447	30	1	VT-29,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
+15	GGML_OP_CUMSUM	1	1829	ggml_compute_forward_cumsum	ops.cpp:1470	15	VT-28	15	15	1	VT-28	-	-	graph
+16	GGML_OP_MEAN	1	1833	ggml_compute_forward_mean	ops.cpp:1580	17	VT-29	17	17	1	VT-29	-	-	graph
+17	GGML_OP_ARGMAX	1	1837	ggml_compute_forward_argmax	ops.cpp:1628	7	VT-30	11	9	1	VT-30	-	-	graph
+18	GGML_OP_COUNT_EQUAL	1	1841	ggml_compute_forward_count_equal	ops.cpp:1708	4	VT-30	4	2	1	VT-30	-	-	graph
+19	GGML_OP_REPEAT	2	1845	ggml_compute_forward_repeat	ops.cpp:1819	18	VT-16	176	26	5	VT-110,VT-115,VT-16,VT-65,VT-85-compositions,VT-88-compositions,VT-93,VT-99,standalone	-	-	graph
+20	GGML_OP_REPEAT_BACK	1	1849	ggml_compute_forward_repeat_back	ops.cpp:1910	10	VT-20	10	9	1	VT-20	-	-	graph
+21	GGML_OP_CONCAT	1	1853	ggml_compute_forward_concat	ops.cpp:1965	236	VT-17	236	236	12	VT-17	-	-	graph
+22	GGML_OP_SILU_BACK	1	1857	ggml_compute_forward_silu_back	ops.cpp:2879	1	VT-124	1	1	1	VT-124	-	-	graph
+23	GGML_OP_NORM	2	1861	ggml_compute_forward_norm	ops.cpp:4090	61	VT-48	99	86	1	VT-48,VT-51	-	-	graph
+24	GGML_OP_RMS_NORM	2	1865	ggml_compute_forward_rms_norm	ops.cpp:4227	146	VT-46,VT-51	551	250	2	VT-46,VT-51,VT-57	-	-	graph
+25	GGML_OP_RMS_NORM_BACK	1	1869	ggml_compute_forward_rms_norm_back	ops.cpp:4430	10	VT-50	10	10	1	VT-50	-	-	graph
+26	GGML_OP_GROUP_NORM	2	1873	ggml_compute_forward_group_norm	ops.cpp:4525	3	VT-49	5	5	1	VT-49	-	-	graph
+27	GGML_OP_L2_NORM	2	1877	ggml_compute_forward_l2_norm	ops.cpp:4593	31	VT-38	114	131	1	VT-143,VT-149,VT-38	-	-	graph
+28	GGML_OP_MUL_MAT	10	1881	ggml_compute_forward_mul_mat	ggml-cpu.c:1264	3288	VT-103,VT-110,VT-112,VT-114,VT-115,VT-116,VT-53,VT-54,VT-64,VT-65,VT-85,VT-88,VT-90,VT-91,VT-91-half-activations,VT-94,VT-95,VT-99,standalone	4103	3354	44	VT-103,VT-110,VT-111,VT-112,VT-114,VT-115,VT-116,VT-53,VT-54,VT-64,VT-64/65/77-fusions,VT-64/67/68-compositions,VT-65,VT-72,VT-83-compositions,VT-85,VT-85-compositions,VT-88,VT-88-SHARED,VT-88-compositions,VT-90,VT-91,VT-91-compositions,VT-91-half-activations,VT-93,VT-94,VT-95,VT-99,standalone	-	-	matrix
+29	GGML_OP_MUL_MAT_ID	1	1885	ggml_compute_forward_mul_mat_id	ggml-cpu.c:1566	1259	VT-103,VT-110,VT-112,VT-114,VT-115,VT-116,VT-83,VT-84,VT-85,VT-88,VT-91,VT-94,VT-95,VT-99	2447	1097	29	VT-103,VT-110,VT-112,VT-114,VT-115,VT-116,VT-83,VT-83-compositions,VT-84,VT-84-compositions,VT-85,VT-85-compositions,VT-88,VT-88-SHARED,VT-88-compositions,VT-91,VT-91-compositions,VT-93,VT-94,VT-95,VT-99	-	-	indexed_matrix
+30	GGML_OP_OUT_PROD	1	1889	ggml_compute_forward_out_prod	ops.cpp:4887	1543	VT-69,VT-71,VT-73	1543	1542	24	VT-69,VT-71,VT-73	-	-	graph
+31	GGML_OP_SCALE	4	1893	ggml_compute_forward_scale	ops.cpp:5037	381	VT-26,VT-51,VT-68,VT-86-compositions,VT-87-compositions,VT-89-compositions	395	54	3	VT-129,VT-26,VT-51,VT-68,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
+32	GGML_OP_SET	6	1897	ggml_compute_forward_set	ops.cpp:5207	12	VT-19	12	12	2	VT-19	-	-	graph
+33	GGML_OP_CPY	2	1901	ggml_compute_forward_cpy	ops.cpp:5260	642	VT-101,VT-104,VT-105,VT-109,VT-113,VT-117,VT-119,VT-122,VT-126,VT-133,VT-135,VT-148,VT-15-IQ-CPY,VT-151,VT-152,VT-153,VT-154,VT-98,standalone	660	653	144	VT-101,VT-104,VT-105,VT-109,VT-113,VT-117,VT-119,VT-122,VT-126,VT-133,VT-135,VT-148,VT-149,VT-15-IQ-CPY,VT-150,VT-151,VT-152,VT-153,VT-154,VT-86-compositions,VT-98,standalone	-	-	graph
+34	GGML_OP_CONT	11	1905	ggml_compute_forward_cont	ops.cpp:5268	91	VT-15	1680	261	4	VT-125,VT-15,VT-150,VT-74,VT-76,VT-86-compositions	-	-	graph
+35	GGML_OP_RESHAPE	14	2168	metadata	-	229	VT-72,VT-86-compositions,VT-87-compositions,VT-89-compositions	864	126	1	VT-72,VT-83-compositions,VT-85-compositions,VT-86-compositions,VT-87-compositions,VT-88-SHARED,VT-88-compositions,VT-89-compositions,VT-93,VT-99	-	-	metadata
+36	GGML_OP_VIEW	5	2176	metadata	-	0	-	12067	1029	33	VT-100,VT-101,VT-102,VT-103,VT-105,VT-109,VT-110,VT-111,VT-112,VT-113,VT-114,VT-115,VT-116,VT-117,VT-118,VT-119,VT-122,VT-133,VT-135,VT-137,VT-138,VT-148,VT-149,VT-15,VT-150,VT-151,VT-152,VT-153,VT-154,VT-17,VT-18,VT-19,VT-20,VT-26,VT-27,VT-29,VT-32,VT-34,VT-38,VT-46,VT-48,VT-51,VT-53,VT-54,VT-55,VT-56,VT-57,VT-58,VT-60,VT-61,VT-62-BF16,VT-63,VT-64,VT-64/67/68-compositions,VT-66,VT-68,VT-70,VT-74,VT-75,VT-77,VT-78,VT-80,VT-83,VT-83-compositions,VT-84,VT-84-compositions,VT-85,VT-85-compositions,VT-86-compositions,VT-87-compositions,VT-88,VT-88-compositions,VT-89,VT-89-compositions,VT-91,VT-91-compositions,VT-93,VT-94,VT-95,VT-96,VT-98,VT-99,standalone	-	-	metadata
+37	GGML_OP_PERMUTE	7	2172	metadata	-	0	-	3645	1192	31	VT-101,VT-103,VT-104,VT-105,VT-109,VT-110,VT-113,VT-117,VT-119,VT-122,VT-125,VT-126,VT-133,VT-135,VT-145,VT-146,VT-148,VT-149,VT-15,VT-15-IQ-CPY,VT-151,VT-152,VT-153,VT-154,VT-18,VT-29,VT-38,VT-48,VT-51,VT-53,VT-54,VT-63,VT-64,VT-64/67/68-compositions,VT-66,VT-74,VT-76,VT-78,VT-85,VT-86-compositions,VT-88,VT-90,VT-91,VT-91-half-activations,VT-94,VT-95,VT-97,VT-98,VT-99,standalone	-	-	metadata
+38	GGML_OP_TRANSPOSE	1	2180	metadata	-	0	-	74	70	7	VT-144,VT-145,VT-146,VT-147,VT-15,VT-17,standalone	-	-	metadata
+39	GGML_OP_GET_ROWS	1	1909	ggml_compute_forward_get_rows	ops.cpp:5443	378	VT-32,VT-86-compositions,VT-87-compositions,VT-89-compositions	1104	302	30	VT-110,VT-115,VT-32,VT-65,VT-85-compositions,VT-86-compositions,VT-87-compositions,VT-88-compositions,VT-89-compositions,VT-93,VT-99,standalone	-	-	graph
+40	GGML_OP_GET_ROWS_BACK	1	1913	ggml_compute_forward_get_rows_back	ops.cpp:5696	62	VT-102,VT-62-BF16,standalone	62	62	30	VT-102,VT-62-BF16,standalone	-	-	graph
+41	GGML_OP_SET_ROWS	1	1917	ggml_compute_forward_set_rows	ops.cpp:5589	990	VT-100,VT-101,VT-105,VT-109,VT-113,VT-117,VT-119,VT-122,VT-133,VT-135,VT-148,VT-151,VT-152,VT-153,VT-154,VT-55,VT-57	1150	809	61	VT-100,VT-101,VT-105,VT-109,VT-113,VT-117,VT-119,VT-122,VT-133,VT-135,VT-148,VT-151,VT-152,VT-153,VT-154,VT-55,VT-57,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
+42	GGML_OP_DIAG	1	1921	ggml_compute_forward_diag	ops.cpp:5779	9	standalone	9	9	3	standalone	-	-	graph
+43	GGML_OP_SOFT_MAX	4	1925	ggml_compute_forward_soft_max	ops.cpp:5916	214	VT-87	562	246	6	VT-132,VT-87,VT-87-compositions	-	-	attention
+44	GGML_OP_SOFT_MAX_BACK	2	1929	ggml_compute_forward_soft_max_ext_back	ops.cpp:6020	48	VT-121	48	48	1	VT-121	-	-	graph
+45	GGML_OP_ROPE	6	1933	ggml_compute_forward_rope	ops.cpp:6464	628	VT-57	847	576	4	VT-57	-	-	rotary
+46	GGML_OP_ROPE_BACK	2	1937	ggml_compute_forward_rope_back	ops.cpp:6488	424	VT-57	424	424	4	VT-57	-	-	rotary
+47	GGML_OP_CLAMP	2	1941	ggml_compute_forward_clamp	ops.cpp:6114	12	VT-26	348	20	3	VT-26,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
+48	GGML_OP_CONV_TRANSPOSE_1D	1	1945	ggml_compute_forward_conv_transpose_1d	ops.cpp:6686	116	VT-106	116	115	1	VT-106	-	-	graph
+49	GGML_OP_IM2COL	9	1949	ggml_compute_forward_im2col	ops.cpp:6868	113	VT-72	122	122	5	VT-72	-	-	graph
+50	GGML_OP_IM2COL_BACK	1	1953	ggml_compute_forward_im2col_back_f32	ops.cpp:6889	0	-	0	0	0	-	VT-139	verification/ggml-spatial-gradient-oracle.json	graph
+51	GGML_OP_IM2COL_3D	2	1957	ggml_compute_forward_im2col_3d	ops.cpp:7165	2051	VT-70,standalone	2051	2051	3	VT-70,standalone	-	-	graph
+52	GGML_OP_COL2IM_1D	1	1961	ggml_compute_forward_col2im_1d	ops.cpp:7293	33	VT-82	33	33	3	VT-82	-	-	graph
+53	GGML_OP_CONV_2D	1	1965	ggml_compute_forward_conv_2d	ops.cpp:7425	3144	VT-74,VT-76	3144	3144	2	VT-74,VT-76	-	-	graph
+54	GGML_OP_CONV_3D	1	1969	ggml_compute_forward_conv_3d	ops.cpp:7562	292	VT-80	292	180	2	VT-80	-	-	graph
+55	GGML_OP_CONV_2D_DW	1	1973	ggml_compute_forward_conv_2d_dw	ops.cpp:7851	8	VT-125	8	8	2	VT-125	-	-	graph
+56	GGML_OP_CONV_TRANSPOSE_2D	1	1977	ggml_compute_forward_conv_transpose_2d	ops.cpp:7677	8	VT-107	8	8	2	VT-107	-	-	graph
+57	GGML_OP_POOL_1D	1	1981	ggml_compute_forward_pool_1d	ops.cpp:7959	240	VT-79	240	240	1	VT-79	-	-	graph
+58	GGML_OP_POOL_2D	1	1985	ggml_compute_forward_pool_2d	ops.cpp:7974	144	VT-79	144	144	1	VT-79	-	-	graph
+59	GGML_OP_POOL_2D_BACK	1	1989	ggml_compute_forward_pool_2d_back	ops.cpp:8061	0	-	0	0	0	-	VT-140	verification/ggml-spatial-gradient-oracle.json	graph
+60	GGML_OP_UPSCALE	2	1993	ggml_compute_forward_upscale	ops.cpp:8379	24	VT-144,VT-145,VT-146,VT-147	24	24	1	VT-144,VT-145,VT-146,VT-147	-	-	graph
+61	GGML_OP_PAD	4	1997	ggml_compute_forward_pad	ops.cpp:8473	37	VT-18	37	36	1	VT-18	-	-	graph
+62	GGML_OP_PAD_REFLECT_1D	1	2001	ggml_compute_forward_pad_reflect_1d	ops.cpp:8496	7	VT-18	7	7	1	VT-18	-	-	graph
+63	GGML_OP_ROLL	1	2005	ggml_compute_forward_roll	ops.cpp:8578	2	VT-18	2	2	1	VT-18	-	-	graph
+64	GGML_OP_ARANGE	1	2009	ggml_compute_forward_arange	ops.cpp:8621	10	VT-37	10	10	1	VT-37	-	-	graph
+65	GGML_OP_TIMESTEP_EMBEDDING	1	2013	ggml_compute_forward_timestep_embedding	ops.cpp:8669	6	VT-141	6	6	1	VT-141	-	-	graph
+66	GGML_OP_ARGSORT	2	2017	ggml_compute_forward_argsort	ops.cpp:8742	98	VT-86	790	105	1	VT-86,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
+67	GGML_OP_TOP_K	1	2021	ggml_compute_forward_top_k	ops.cpp:8808	538	VT-86,VT-86-compositions	538	377	1	VT-86,VT-86-compositions	-	-	graph
+68	GGML_OP_LEAKY_RELU	1	2025	ggml_compute_forward_leaky_relu	ops.cpp:2764	10	VT-26	10	9	3	VT-26	-	-	graph
+69	GGML_OP_TRI	1	2029	ggml_compute_forward_tri	ops.cpp:2292	16	standalone	16	16	3	standalone	-	-	graph
+70	GGML_OP_FILL	2	2033	ggml_compute_forward_fill	ops.cpp:2222	7	VT-23	167	12	2	VT-23,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
+71	GGML_OP_FLASH_ATTN_EXT	2	2041	ggml_compute_forward_flash_attn_ext	ops.cpp:9554	5775	VT-58,VT-63,VT-64/67/68-compositions,VT-66,VT-68,VT-78,VT-94,VT-95,VT-96,VT-97,standalone	5775	5773	59	VT-58,VT-63,VT-64/67/68-compositions,VT-66,VT-68,VT-78,VT-94,VT-95,VT-96,VT-97,standalone	-	-	attention
+72	GGML_OP_FLASH_ATTN_BACK	1	2045	ggml_compute_forward_flash_attn_back	ops.cpp:9889	0	-	0	0	0	-	-	verification/ggml-flash-back-constructor.json	graph
+73	GGML_OP_SSM_CONV	1	2052	ggml_compute_forward_ssm_conv	ops.cpp:9963	75	VT-81	195	75	1	VT-81	-	-	graph
+74	GGML_OP_SSM_SCAN	1	2056	ggml_compute_forward_ssm_scan	ops.cpp:10203	17	VT-150	28	32	1	VT-150	-	-	attention
+75	GGML_OP_WIN_PART	1	2060	ggml_compute_forward_win_part	ops.cpp:10263	0	-	0	0	0	-	VT-25	verification/native-fixture-baseline.json	graph
+76	GGML_OP_WIN_UNPART	1	2064	ggml_compute_forward_win_unpart	ops.cpp:10324	0	-	0	0	0	-	VT-25	verification/native-fixture-baseline.json	graph
+77	GGML_OP_GET_REL_POS	1	2076	ggml_compute_forward_get_rel_pos	ops.cpp:10518	0	-	0	0	0	-	VT-33	verification/relative-position-runtime.json	graph
+78	GGML_OP_ADD_REL_POS	2	2080	ggml_compute_forward_add_rel_pos	ops.cpp:10600	0	-	0	0	0	-	VT-39	verification/relative-position-add-runtime.json	graph
+79	GGML_OP_RWKV_WKV6	1	2084	ggml_compute_forward_rwkv_wkv6	ops.cpp:10812	4	VT-143	4	4	1	VT-143	-	-	graph
+80	GGML_OP_GATED_LINEAR_ATTN	1	2088	ggml_compute_forward_gla	ops.cpp:11013	4	VT-142	4	4	1	VT-142	-	-	graph
+81	GGML_OP_RWKV_WKV7	1	2092	ggml_compute_forward_rwkv_wkv7	ops.cpp:11912	5	VT-143	5	5	1	VT-143	-	-	graph
+82	GGML_OP_SOLVE_TRI	1	2096	ggml_compute_forward_solve_tri	ops.cpp:11090	26	VT-134	26	25	1	VT-134	-	-	graph
+83	GGML_OP_GATED_DELTA_NET	1	2100	ggml_compute_forward_gated_delta_net	ops.cpp:11297	43	VT-149	48	47	1	VT-149	-	-	attention
+84	GGML_OP_LIGHTNING_INDEXER	1	2104	ggml_compute_forward_lightning_indexer	ops.cpp:12419	210	VT-108	210	210	9	VT-108	-	-	attention
+85	GGML_OP_DSV4_HC_COMB	1	2108	ggml_compute_forward_dsv4_hc_comb	ops.cpp:11436	11	VT-130	11	11	1	VT-130	-	-	graph
+86	GGML_OP_DSV4_HC_PRE	2	2112	ggml_compute_forward_dsv4_hc_pre	ops.cpp:11516	18	VT-127	18	18	1	VT-127	-	-	graph
+87	GGML_OP_DSV4_HC_POST	1	2116	ggml_compute_forward_dsv4_hc_post	ops.cpp:11610	11	VT-129	11	11	2	VT-129	-	-	graph
+88	GGML_OP_TOP_K_MASK	1	2120	ggml_compute_forward_top_k_mask	ops.cpp:11629	38	VT-92	38	38	16	VT-92	-	-	attention
+89	GGML_OP_UNARY	43	2068	ggml_compute_forward_unary	ops.cpp:10344	414	VT-118,VT-137,VT-138,VT-27,VT-60,VT-61,VT-68,VT-75,VT-81,VT-89	997	452	3	VT-118,VT-129,VT-137,VT-138,VT-27,VT-60,VT-61,VT-68,VT-75,VT-81,VT-86-compositions,VT-89,VT-89-compositions,standalone	-	-	graph
+90	GGML_OP_MAP_CUSTOM1	2	2124	ggml_compute_forward_map_custom1	ops.cpp:11932	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json	callback
+91	GGML_OP_MAP_CUSTOM2	2	2129	ggml_compute_forward_map_custom2	ops.cpp:11946	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json	callback
+92	GGML_OP_MAP_CUSTOM3	2	2134	ggml_compute_forward_map_custom3	ops.cpp:11961	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json	callback
+93	GGML_OP_CUSTOM	2	2139	ggml_compute_forward_custom	ops.cpp:11977	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json	callback
+94	GGML_OP_CROSS_ENTROPY_LOSS	1	2144	ggml_compute_forward_cross_entropy_loss	ops.cpp:12065	2	VT-132	2	2	1	VT-132	-	-	graph
+95	GGML_OP_CROSS_ENTROPY_LOSS_BACK	1	2149	ggml_compute_forward_cross_entropy_loss_back	ops.cpp:12148	2	VT-132	2	2	1	VT-132	-	-	graph
+96	GGML_OP_OPT_STEP_ADAMW	1	2154	ggml_compute_forward_opt_step_adamw	ops.cpp:12233	1	VT-131	1	1	1	VT-131	-	-	graph
+97	GGML_OP_OPT_STEP_SGD	1	2159	ggml_compute_forward_opt_step_sgd	ops.cpp:12295	1	VT-131	1	1	1	VT-131	-	-	graph
+98	GGML_OP_GLU	19	2072	ggml_compute_forward_glu	ops.cpp:10448	216	VT-111,VT-137,VT-56,VT-77,VT-93	1756	280	6	VT-103,VT-110,VT-111,VT-112,VT-137,VT-56,VT-64,VT-64/65/77-fusions,VT-77,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-SHARED,VT-88-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	-	graph
+99	GGML_OP_SLEEP	1	2037	ggml_compute_forward_sleep	ops.cpp:2243	3	VT-123	3	3	2	VT-123	-	-	delay
