@@ -15,7 +15,7 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 
 At llama.cpp `9a080f44`, vTensor passes all 27,755 GGML factory cases. The stock scheduler assigns all 86,647 factory nodes to vTensor when it is the sole provider. The checklist tracks legal variants outside the factory and final release acceptance. [Factory verdicts](verification/ggml-factory-inventory.json) · [Scheduler evidence](verification/shared-host-storage-vt156.json) · [Provider burndown](BURNDOWN.md)
 
-Cargo pins Verdant’s low-bit encoders and recurrent projections at `931139cb` until release. GGML supplies no importance operand on CPY or SET_ROWS. For IQ2_XXS, IQ2_XS and IQ1_S, the vTensor plan supplies unit weights and the original GGML oracle receives the same weights. IQ1_M uses the unweighted GGML encoding. [Verdant PR #62](https://github.com/afflom/verdant-engine/pull/62) · [Dependency record](model/verdant-development.json)
+Cargo resolves Verdant v2.21.7 from its immutable upstream registry. The release includes the IQ2_XS, IQ2_XXS, IQ1_S and IQ1_M encoders. GGML supplies no importance operand on CPY or SET_ROWS. For IQ2_XXS, IQ2_XS and IQ1_S, the vTensor plan supplies unit weights and the original GGML oracle receives the same weights. IQ1_M uses the unweighted GGML encoding. [Verdant release](https://github.com/afflom/verdant-engine/releases/tag/v2.21.7) · [Dependency record](model/verdant-development.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940

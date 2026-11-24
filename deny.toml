@@ -36,8 +36,7 @@ deny = []
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-allow-git = ["https://github.com/afflom/verdant-engine", "https://github.com/UOR-Foundation/uor-matmul"]
-allow-registry = ["https://github.com/rust-lang/crates.io-index", "https://raw.githubusercontent.com/afflom/verdant-engine/39ce03b3165c08ca48378aac97df5d8cd83adddb/v2.21.5/crates/index/"]
+allow-registry = ["https://github.com/rust-lang/crates.io-index", "https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"]
 
 # The certified renderer omits package licensing metadata. The repository
 # LICENSE-MIT and LICENSE-APACHE apply to this generated code. Bind the
