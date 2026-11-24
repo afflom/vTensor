@@ -108,6 +108,12 @@
       "VT-45 independently replayed quotient certificate",
       "VT-152, VT-153 and VT-154 original GGML parity and shifted storage controls",
       "cargo deny"
-    ]
+    ],
+    "registered_authority": {
+      "id": "VERDANT-ENGINE-TENSOR",
+      "artifact": "vendor/verdant-crates-manifest.json",
+      "checksum": "a1c9aa33d2106eaeffc042a12fd0ed4ed9e35dbee78813678edfd653b5151228",
+      "negative": "The VT-02 source check rejected the older PR #12 citation. The release citation and checksum are checked during the existing dependency pass."
+    }
   }
 }

@@ -37,11 +37,11 @@ realized_by = []
 [[authority]]
 id = "VERDANT-ENGINE-TENSOR"
 name = "Verdant Engine tensor API"
-citation = "https://github.com/afflom/verdant-engine/tree/4654da8724f142a248b32739f1d930066e281bd5"
-checksum = "none"
-checksum_reason = "Cargo.lock pins the upstream Git commit from Verdant Engine PR 12 pending release."
-statement = "The pinned Verdant Engine revision contains the verdant-tensor crate and its unified tensor-kernel inventory."
-realized_by = []
+citation = "https://github.com/afflom/verdant-engine/releases/tag/v2.21.7"
+checksum = "a1c9aa33d2106eaeffc042a12fd0ed4ed9e35dbee78813678edfd653b5151228"
+artifact = "vendor/verdant-crates-manifest.json"
+statement = "The published Verdant release manifest identifies the numerical crates consumed by vTensor and binds their package digests."
+realized_by = ["VT-02"]
 
 [[authority]]
 id = "PRISM-TEMPLATE-FRAME"

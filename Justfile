@@ -38,6 +38,9 @@ verdant-source-check:
     metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--locked", "--offline", "--format-version=1"]))
     packages = {p["name"]: p for p in metadata["packages"] if p["name"].startswith("verdant")}
     engine = packages["verdant-tensor"]
+    upstream = "https://github.com/afflom/verdant-engine"
+    authorities = tomllib.loads(Path("model/authorities.toml").read_text())["authority"]
+    authority, = (row for row in authorities if row["id"] == "VERDANT-ENGINE-TENSOR")
     if pin["spec"] == "vtensor/verdant-release/1":
         mirror = pin["index_commit"]
         if not re.fullmatch("[0-9a-f]{40}", mirror):
@@ -45,7 +48,12 @@ verdant-source-check:
         registry = f"sparse+https://raw.githubusercontent.com/afflom/verdant-engine/{mirror}/v{pin['version']}/crates/index/"
         require(engine["source"], registry, "Verdant registry")
         require(engine["version"], pin["version"], "Verdant release")
-        manifest = Path("vendor/verdant-crates-manifest.json").read_bytes()
+        citation = f"{upstream}/releases/tag/v{pin['version']}"
+        require(pin["release"], citation, "Verdant release citation")
+        require(authority["citation"], citation, "registered Verdant authority")
+        require(authority.get("artifact"), "vendor/verdant-crates-manifest.json", "registered Verdant manifest")
+        require(authority["checksum"], pin["manifest_sha256"], "registered Verdant checksum")
+        manifest = Path(authority["artifact"]).read_bytes()
         require(digest(manifest), pin["manifest_sha256"], "release manifest")
         records = json.loads(manifest)
         checksums = {(row["name"], row["version"]): row["sha256"] for row in records["crates"] + records["dependencies"]}
@@ -62,6 +70,7 @@ verdant-source-check:
     else:
         require(pin["spec"], "vtensor/verdant-patch/1", "Verdant dependency kind")
         rev = pin["commit"]
+        require(authority["citation"], f"{upstream}/tree/{rev}", "registered Verdant patch authority")
         require(engine["source"], f"git+https://github.com/afflom/verdant-engine?rev={rev}#{rev}", "Verdant patch")
     binding = json.loads(Path("verification/native-oracle-bindings.json").read_bytes())["verdant_quotient"]
     archive = Path("vendor/verdant-quotient.tar.gz")
