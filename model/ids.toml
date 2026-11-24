@@ -1092,3 +1092,9 @@ id = "VT-170"
 level = "build"
 suite = "native-backend"
 statement = "Prism and Verdant consume stored Q8 activation blocks in ordinary and indexed GGML matrix products across 25 weight formats"
+
+[[id]]
+id = "VT-171"
+level = "build"
+suite = "native-backend"
+statement = "Stored Q8 activations retain their original GGML row products across all documented accumulation and activation precision settings"

@@ -686,3 +686,9 @@ Feature: native-backend
     Given original GGML weight and Q8 activation bytes for two activation columns
     When the public scheduler places ordinary products and reversed expert selections on vTensor
     Then all six outputs per graph agree with the pinned GGML CPU dot kernel
+
+  @VT-171 @build
+  Scenario: Stored Q8 activations retain their original GGML row products across all documented accumulation and activation precision settings
+    Given the original GGML precision setters and stored activations for 25 weight formats
+    When ordinary and indexed products use each nondefault pair of documented precision settings
+    Then all 1150 preallocation placements and scheduled results agree with the original GGML CPU

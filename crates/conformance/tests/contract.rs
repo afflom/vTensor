@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn signed_indexed_rows_vt_168() { "integer-rows", 8, ["typed"] }
@@ -1278,7 +1279,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "95eab1cb33043cfac9faa1bfbec4f087614997c9ddd69c1746cd959944f0cda0",
+            "9bdd620d2cc2fe47ec9dd4ced63d2cef79e2e9794b5d5ba0a53667ecddd6b6f8",
         )
     });
 
@@ -2119,8 +2120,10 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
-    if (!strcmp(argv[3],"prepacked-products")) {
+    const bool explicit_precision=!strcmp(argv[3],"prepacked-precision");
+    if (explicit_precision || !strcmp(argv[3],"prepacked-products")) {
         int cases; CHECK(scanf("%d",&cases)==1 && cases==50);
+        size_t compared=0;
         for (int i=0;i<cases;++i) {
             int expert,type,activation,width;CHECK(scanf("%d%d%d%d",&expert,&type,&activation,&width)==4);
             graph_fixture ctx(8);CHECK(ctx);
@@ -2128,23 +2131,34 @@ int main(int argc, char **argv) {
             auto y=ggml_new_tensor_3d(ctx,ggml_type(activation),width,expert?1:2,expert?2:1);
             auto ids=ggml_new_tensor_2d(ctx,GGML_TYPE_I32,1,2);
             auto out=expert?ggml_mul_mat_id(ctx,x,y,ids):ggml_mul_mat(ctx,x,y);
-            CHECK(ggml_backend_supports_op(backend,out));auto graph=ctx.build(out);CHECK(ctx.placed(graph,backend));
-            ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend));CHECK(ctx.storage);
-            for (auto input : {x,y}) {
-                auto bytes=read_hex_bytes(ggml_nbytes(input));CHECK(!bytes.empty());
-                ggml_backend_tensor_set(input,bytes.data(),0,bytes.size());
+            auto graph=ctx.build(out);
+            auto weights=read_hex_bytes(ggml_nbytes(x)),inputs=read_hex_bytes(ggml_nbytes(y)),expected=read_hex_bytes(ggml_nbytes(out));
+            CHECK(!weights.empty() && !inputs.empty() && expected.size()==6*sizeof(float));
+            for (bool execute : {false,true}) {
+                if (execute) {
+                    ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend));CHECK(ctx.storage);
+                    ggml_backend_tensor_set(x,weights.data(),0,weights.size());ggml_backend_tensor_set(y,inputs.data(),0,inputs.size());
+                    set_scalar_word(ids,0,1);set_scalar_word(ids,1,0);
+                }
+                for (auto acc : {GGML_PREC_UNDEFINED,GGML_PREC_F32,GGML_PREC_BF16,GGML_PREC_F16}) {
+                    for (auto src : {GGML_PREC_UNDEFINED,GGML_PREC_F32,GGML_PREC_BF16,GGML_PREC_F16,GGML_PREC_Q8,GGML_PREC_Q4}) {
+                        if ((acc!=GGML_PREC_UNDEFINED || src!=GGML_PREC_UNDEFINED)!=explicit_precision) continue;
+                        CHECK(ggml_prec_set_acc(out,acc) && ggml_prec_set_src(out,src,1));
+                        if (!execute) {CHECK(ggml_backend_supports_op(backend,out) && ctx.placed(graph,backend));continue;}
+                        ggml_backend_tensor_memset(out,0xff,0,ggml_nbytes(out));
+                        CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+                        auto actual=tensor_bytes(out); double error=0,energy=0;
+                        for (int j=0;j<6;++j) {
+                            float value,ref;memcpy(&value,actual.data()+4*j,4);memcpy(&ref,expected.data()+4*j,4);
+                            CHECK(std::isfinite(value));double delta=double(value)-ref;error+=delta*delta;energy+=double(ref)*ref;
+                        }
+                        CHECK(error<=5e-4*energy);
+                        ++compared;
+                    }
+                }
             }
-            const auto expected=read_hex_bytes(ggml_nbytes(out));CHECK(expected.size()==6*sizeof(float));
-            set_scalar_word(ids,0,1);set_scalar_word(ids,1,0);
-            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-            auto actual=tensor_bytes(out); double error=0,energy=0;
-            for (int j=0;j<6;++j) {
-                float value,ref;memcpy(&value,actual.data()+4*j,4);memcpy(&ref,expected.data()+4*j,4);
-                CHECK(std::isfinite(value));double delta=double(value)-ref;error+=delta*delta;energy+=double(ref)*ref;
-            }
-            CHECK(error<=5e-4*energy);
         }
-        return finish(cases);
+        return finish(compared);
     }
     if (!strcmp(argv[3],"packed-add")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;

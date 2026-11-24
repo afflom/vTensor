@@ -1,0 +1,35 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "4966a76",
+  "provider_sha256": "04176f8b5046aceccd3a9c5f6a4bead3836ef5b45f574fb29ac2b068e32df7b7",
+  "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "constructor_source_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "cpu_dispatch_sha256": "1f090b6a61b2304b2ca607f826661ef455013aeeed617ddcf5bcee3eaee9613d",
+  "cpu_support_source_sha256": "546c66cfd06bd989c48a11afd0571a237bb19237a6e3f2e71a8b8be74cf046e2",
+  "table": "ggml-matrix-type-descriptors.tsv.gz",
+  "table_sha256": "047b99c83b880111c56cb5e6fc72ae6e42c41ab579b0ee99291af8d8b56834fe",
+  "uncompressed_sha256": "39c6a10c4aefa2ebdf5ddea834464e6eadf208ac20f105ba788075602e32b9ba",
+  "tuples": 2592,
+  "ordinary": 1296,
+  "expert": 1296,
+  "direct_cpu_tuples": 116,
+  "existing_prepacked_comparisons": 50,
+  "new_cpu_graphs_executed": 66,
+  "provider_placements": 139,
+  "direct_cpu_tuples_placed": 114,
+  "unplaced_cpu_tuples": [
+    {
+      "operation": "MUL_MAT",
+      "weights": "f16",
+      "activation": "bf16"
+    },
+    {
+      "operation": "MUL_MAT_ID",
+      "weights": "bf16",
+      "activation": "bf16"
+    }
+  ],
+  "scope": "Enumerate both public matrix constructors at default precision over 36 \u00d7 36 storage types. Use three output rows, two columns, two reverse-selected experts for indexed products and width twice the least common multiple of operand block sizes. Query the stock CPU support report and vTensor before allocation. Ask the sole-provider stock scheduler to place each admitted graph.",
+  "cpu_kernel": "Require a registered weight vector product and either its native activation type, an available F32-to-activation conversion, or the ordinary MUL_MAT widening path for F16/BF16 into F32. The indexed CPU widening branch accepts F32 input only. Reuse the 50 matching VT-170 CPU runs. All other marked paths ran the original CPU graph with quantized finite data and produced six finite outputs. The CPU support callback alone overreports executable types.",
+  "overflow_note": "The two refused CPU paths also ran at widths 8 and 66 with BF16 activations of magnitude 131072."
+}

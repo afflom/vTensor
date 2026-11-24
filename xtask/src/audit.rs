@@ -377,30 +377,6 @@ pub mod prism {
 
     use crate::Fail;
 
-    /// Non-Prism implementation, by extension, with the comment syntax its lines are counted under.
-    const LANGUAGES: [(&str, Comments); 20] = [
-        ("rs", Comments::C),
-        ("ts", Comments::C),
-        ("tsx", Comments::C),
-        ("mts", Comments::C),
-        ("cts", Comments::C),
-        ("js", Comments::C),
-        ("mjs", Comments::C),
-        ("cjs", Comments::C),
-        ("jsx", Comments::C),
-        ("css", Comments::C),
-        ("scss", Comments::C),
-        ("c", Comments::C),
-        ("h", Comments::C),
-        ("cpp", Comments::C),
-        ("html", Comments::Html),
-        ("py", Comments::Hash),
-        ("sh", Comments::Hash),
-        ("bash", Comments::Hash),
-        ("awk", Comments::Hash),
-        ("lean", Comments::Lean),
-    ];
-
     #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     enum Comments {
         /// `//` lines and `/* */` blocks.
@@ -416,10 +392,14 @@ pub mod prism {
     fn language(path: &str) -> Option<Comments> {
         let name = path.rsplit('/').next().unwrap_or(path);
         let (_, extension) = name.rsplit_once('.')?;
-        LANGUAGES
-            .iter()
-            .find(|(e, _)| *e == extension)
-            .map(|(_, c)| *c)
+        match extension {
+            "rs" | "ts" | "tsx" | "mts" | "cts" | "js" | "mjs" | "cjs" | "jsx" | "css" | "scss"
+            | "c" | "h" | "cpp" => Some(Comments::C),
+            "html" => Some(Comments::Html),
+            "py" | "sh" | "bash" | "awk" => Some(Comments::Hash),
+            "lean" => Some(Comments::Lean),
+            _ => None,
+        }
     }
 
     /// Non-blank lines outside comments. A line that starts inside a block comment and ends it

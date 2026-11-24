@@ -1,0 +1,24 @@
+{
+  "requirement": "VT-171",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "prism_root": "PrismTemplateContract.QuantizedMatrix.evaluate",
+  "semantic_id": "ace53f3ce88a454b19e67ab886fdefbc7a28bb47cfbd9a62f7049e587e6ba041",
+  "attestation": "241d439c6e18c6b92fd16c3884c7a881b9547f4bb704caa7a3a450a6c6b249f0",
+  "provider_sha256": "13dc4ccd6f23b76f5faf2087507d3c7935f99f75f9d0bf33d24e0481191f9df7",
+  "verdant_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560",
+  "reference": "ggml-prepacked-precision-reference.json",
+  "cpu_graphs": 1200,
+  "default_cases_reused_from_vt170": 50,
+  "additional_scheduled_graphs": 1150,
+  "additional_values_compared": 6900,
+  "previously_refused": 600,
+  "activation_formats": [
+    "Q8_0",
+    "Q8_1",
+    "Q8_K"
+  ],
+  "weight_formats": 25,
+  "comparison": "The CPU produced identical words across all 24 precision pairs per base graph. The provider preflighted and placed each of the 23 additional settings before allocation, poisoned output before each dispatch and compared all six F32 values with GGML. The original 50 default settings retain their VT-170 replay.",
+  "negative_control": "Reusing the first Q8_0 activation for the last Q2_0 expert only when both precision setters requested F16 failed the numerical comparator. The restored runner passed all 1150 settings.",
+  "source_lines": 12657
+}

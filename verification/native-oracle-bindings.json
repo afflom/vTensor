@@ -621,6 +621,7 @@
     "wide-staged": "ggml-wide-staged",
     "wide-narrow": "ggml-wide-narrow",
     "packed-add": "ggml-packed-add",
-    "prepacked-products": "ggml-prepacked-matrix"
+    "prepacked-products": "ggml-prepacked-matrix",
+    "prepacked-precision": "ggml-prepacked-matrix"
   }
 }
