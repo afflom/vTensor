@@ -2,15 +2,23 @@
 
 Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,755 passed**, **0 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
+## Remaining work
+
+- [ ] Resolve the 36 remaining scalar CAST pairs involving F8_E4M3, I64 or F64. [Pair-by-pair status](verification/ggml-scalar-cast-coverage.tsv)
+- [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
+- [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
+- [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
+- [ ] Recover **2,165 non-Prism lines** (12,714 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
+
 ## Establish coverage and unblock release
 
 - [x] Index the graph signatures of all 27,755 upstream constructors. The 2,293 observed signatures cover 89 of 100 opcodes, all 22 unary and seven GLU variants and 33 of 36 storage types. [Declaration gaps](verification/ggml-factory-signatures.json) · [Ordinal map](verification/ggml-factory-signatures.tsv.gz)
 - [x] Trace 236 public tensor constructors to all 100 GGML operation declarations and their source guards. Index the 13 public calls that retrieve or modify an existing tensor. [Constructor map](verification/ggml-constructor-contracts.json)
-- [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [x] Attribute all 27,755 factory verdicts to their evidence groups. Use `just factory-remaining evidence` to join any ordinal to its receipt and graph signatures. [Index](verification/ggml-factory-evidence-index.json)
 - [x] Map 31,264 supplemental copy, repeat, concat, fill and cast cases by type pair, variant, extent and stride. All 36 storage types have same-type DUP/CONT/CPY and four-axis CONCAT coverage. [Ordinal map](verification/ggml-storage-variant-map.json)
 - [x] Implement all six width conversions among I8, I16 and I32. Compare 192 results and padding bytes in contiguous casts and reshaped offset copies. [VT-159](verification/supplemental-integer-casts-vt159.json)
-- [ ] Resolve the remaining 52 scalar CAST pairs outside the direct CPU results. Cover conversions between I8/I16/I32 and F16/BF16/F32 next. [Initial 81-pair survey](verification/ggml-scalar-cast-matrix.tsv)
+- [x] Cover all 18 conversions between I8/I16/I32 and F16/BF16/F32. Compare 576 results and verify 66 invalid casts preserve every destination byte. [VT-160](verification/supplemental-integer-float-casts-vt160.json)
 - [x] Map all 288 same-type DUP, CONT and CPY comparisons for Q8_1, Q8_K and F64 to their Prism roots, Verdant byte transfer and GGML CPU oracle. [Supplemental ordinal map](verification/supplemental-copy-storage-map.json)
 - [x] Admit and repeat all 36 live storage types before allocation. Compare each axis and the four-axis combination with independent GGML CPU concatenation. [180 supplemental cases](verification/supplemental-storage-repeat-vt155.json)
 - [x] Cover DIAG on all nine scalar types. Compare six additional types, including F64 and F8_E4M3, against the original CPU diagonal kernel across contiguous and offset views. [36 supplemental cases](verification/supplemental-scalar-diag-vt157.json)
@@ -20,7 +28,6 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Freeze the pinned CPU gradients for 96 IM2COL_BACK and POOL_2D_BACK graphs. All 11,088 output words have a reference. [Gradient oracle](verification/ggml-spatial-gradient-oracle.json)
 - [x] Pass all 64 IM2COL_BACK graphs. All 6,048 gradient words match GGML CPU, including padded, strided and dilated 1D and 2D kernels. [VT-139](verification/ggml-spatial-gradient-oracle.json)
 - [x] Match all 5,040 GGML CPU words across 32 POOL_2D_BACK graphs. Five additional comparisons cover F16 average pooling and exceptional max inputs. [VT-140](verification/ggml-spatial-gradient-oracle.json)
-- [ ] Cover legal variants outside the factory with the imported CPU or another pinned authoritative oracle. Track the aborting `ggml_flash_attn_back` constructor until an authoritative verdict exists. [Pinned constructor](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L5529)
 - [x] Submit Verdant's IQ2_XXS, IQ2_XS and IQ2_S row products. All 294 rows matched the imported GGML CPU vector products bit-for-bit. [Verdant PR #36](https://github.com/afflom/verdant-engine/pull/36)
 - [x] Pin Verdant PR #36 at `f9ff0862` and pass VT-02. All 437 IQ2_XXS, IQ2_XS and IQ2_S matrix cases pass across ordinary, expert and fused graphs. [Factory comparisons](verification/factory-codebook-products-vt103.json) · [Patch record](model/verdant-development.json)
 - [x] Pass all six previously failing suites on AArch64. The cross-built provider passed 33,905 comparisons under QEMU, including the original four frozen graph traces. [ARM replay](VTENSOR-VERIFICATION.md#portable-ggml-reference-build)
@@ -45,7 +52,6 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,172 non-Prism lines** (12,721 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -59,7 +65,6 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Implement public graph plan creation, repeated compute and release. Verify changed inputs, compute flags, cleared builders, empty plans and atomic refusal. [VT-158](verification/ggml-reusable-plans-vt158.json)
 - [x] Inventory all 57 compiled backend callbacks. Compare two-way CPU/vTensor graph splits, views, batched transfers and synchronization with public GGML. [Host replay](verification/ggml-backend-callbacks.json)
 - [x] Admit all 86,647 factory nodes before allocation and place each through stock GGML with vTensor as the sole provider. Verify standard CPU buffers and mixed-backend placement. [VT-156](verification/shared-host-storage-vt156.json)
-- [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
 - [x] Encode Q8_0 activation blocks in Verdant. All 271 blocks match the imported reference byte for byte. [Engine oracle and certificate](https://github.com/afflom/verdant-engine/blob/32cbf30db6d3e0f708aebb7d2adb55f38c9d381a/ENGINE-VERIFICATION.md#vtk-16-symmetric-block-encoding)
 - [x] Place `output.weight` in llama.cpp. Run all 122 Q8_0 × F32 MUL_MAT cases through the Verdant row product (VT-53). [Factory and consumer evidence](VTENSOR-VERIFICATION.md#quantized-matrix-execution)
 - [x] Load the quantized GGUF into 17.50 MiB of vTensor model storage. Run all 122 Q4_0 × F32 MUL_MAT factory cases through Verdant (VT-54). [Factory and consumer evidence](VTENSOR-VERIFICATION.md#packed-matrix-execution-and-kv-cache-placement)
@@ -228,7 +233,6 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Measure callback task width on the pinned CPU across 416 graphs, including default threads, mixed graphs and all eight constructors. [Oracle record](verification/ggml-custom-callback-oracle.json)
 - [x] Export the Prism roots for callback admission and graph-wide task selection. [Certified native model](generated/native/result.json)
 - [x] Implement MAP_CUSTOM1/2/3 and CUSTOM. All eight constructors matched GGML CPU across 624 graphs and 10,608 output words. [VT-136 comparisons](verification/native-custom-callbacks-vt136.json)
-- [ ] Close every residual legal variant in the ledger, including partial families from VT-01–51. Cover strides, empty axes, broadcasting, overlapping views, precision and typed failures where applicable.
 
 ## Accept and ship
 
@@ -260,6 +264,5 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass the complete IQ3 storage gate at VT-148 on x86-64 and Arm64. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45407868018)
 - [x] Install the release-profile plugin and run the unmodified llama-simple binary with GPT-2, Mamba and six-format quantized Llama on Linux x86-64. Verify every layer placement and compare all three eight-token outputs with the original CPU. [Build, invocation and artifact hashes](verification/llama-installed-provider.json)
 - [x] Verify the installed v2.21.7-based plugin against the clean production checkout on x86-64 and Arm64. All 166 backend tests passed on each. [Application attestations, build, oracle and llama.cpp invocations](verification/llama-installed-provider.json) · [Hosted gate](https://github.com/afflom/vTensor/actions/runs/45451754406)
-- [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 For each implementation batch, register the scenario and failing case first. Export only changed Prism roots, reuse hash-checked oracle objects, and run the affected cases together. Check a representative planted defect before closing the batch. [Repository workflow](AGENTS.md) · [Oracle cache](verification/native-oracle-cache.json)

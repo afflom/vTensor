@@ -363,7 +363,9 @@ inductive{
     {name: elementary, fields: [Nat, Nat, Nat]},
     {name: smallFloat, fields: [Nat]},
     {name: signedTruncation, fields: []},
-    {name: signedField, fields: [Nat, Nat, Nat]}
+    {name: signedField, fields: [Nat, Nat, Nat]},
+    {name: floatToSigned, fields: [Nat, Nat]},
+    {name: signedToFloat, fields: [Nat, Nat, Nat]}
   ]
 }
 
@@ -1798,10 +1800,18 @@ definition{
 }
 
 definition{
+  name: castSignedInteger,
+  parameters: [storage : Nat],
+  result: Bool,
+  body: ((24 <=? storage) && (storage <=? 26)),
+  executable: true
+}
+
+definition{
   name: signedCopyPair,
   parameters: [source : Nat, destination : Nat],
   result: Bool,
-  body: (((source =? 0) && (destination =? 26)) || (((((24 <=? source) && (source <=? 26)) && (24 <=? destination)) && (destination <=? 26)) && (if (source =? destination) then false else true))),
+  body: (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((floatStorageType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((floatStorageType source) && (castSignedInteger destination))),
   executable: true
 }
 
@@ -3286,7 +3296,7 @@ definition{
   name: signedCopyOperation,
   parameters: [source : Nat, destination : Nat],
   result: WordOperation,
-  body: (if (source =? 0) then (ctor WordOperation.signedTruncation) else (let sourceLimit : Nat := (signedFieldModulus source); (let destinationLimit : Nat := (signedFieldModulus destination); (ctor WordOperation.signedField (prim quotient sourceLimit 2 0 : Nat) (prim subtract destinationLimit sourceLimit : Nat) destinationLimit)))),
+  body: (if ((source =? 0) && (destination =? 26)) then (ctor WordOperation.signedTruncation) else (if (floatStorageType source) then (ctor WordOperation.floatToSigned source (signedFieldModulus destination)) else (let sourceLimit : Nat := (signedFieldModulus source); (let signBit : Nat := (prim quotient sourceLimit 2 0 : Nat); (if (floatStorageType destination) then (ctor WordOperation.signedToFloat signBit (prim subtract 4294967296 sourceLimit : Nat) destination) else (let destinationLimit : Nat := (signedFieldModulus destination); (ctor WordOperation.signedField signBit (prim subtract destinationLimit sourceLimit : Nat) destinationLimit))))))),
   executable: true
 }
 

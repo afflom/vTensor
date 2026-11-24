@@ -1,0 +1,103 @@
+{
+  "authority": "ggml-org/llama.cpp",
+  "revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "constructors": [
+    "ggml/src/ggml.c#L3598-L3623",
+    "ggml/src/ggml.c#L3625-L3636"
+  ],
+  "numeric_reference": [
+    "ggml/src/ggml-cpu/ggml-cpu.c#L896",
+    "ggml/src/ggml-cpu/ggml-cpu.c#L940"
+  ],
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "verdant_release": "v2.21.7",
+  "shapes": [
+    "ggml_cast on a contiguous 8 by 2 tensor",
+    "ggml_cpy from an 8 by 2 offset view with row pitch 10 to a 4 by 4 offset view with row pitch 6"
+  ],
+  "requirement": "VT-160",
+  "semantic_id": "79f0c4e0696f7356c57b4b6c27bca4dd1177ebcf9a9706a833c5ebfe57aaf2df",
+  "attestation_id": "cf89536f997de7d6cf22b7fdc2cfaddd93d457d855518b8cfde6bc7c8421bbd2",
+  "test": "signed_float_storage_vt_160",
+  "verdant_numerics": [
+    "extract_packed_field",
+    "evaluate_encoded_word",
+    "signed_word_f32",
+    "convert_float_storage",
+    "truncate_signed_word_f32"
+  ],
+  "pairs": [
+    "I8 -> F32",
+    "I8 -> F16",
+    "I8 -> BF16",
+    "I16 -> F32",
+    "I16 -> F16",
+    "I16 -> BF16",
+    "I32 -> F32",
+    "I32 -> F16",
+    "I32 -> BF16",
+    "F32 -> I8",
+    "F32 -> I16",
+    "F32 -> I32",
+    "F16 -> I8",
+    "F16 -> I16",
+    "F16 -> I32",
+    "BF16 -> I8",
+    "BF16 -> I16",
+    "BF16 -> I32"
+  ],
+  "cases": 36,
+  "result_scalars": 576,
+  "total_compared_bytes": 1800,
+  "refusal_graphs": 66,
+  "integer_inputs": [
+    -2147483648,
+    2147483647,
+    -32769,
+    -32768,
+    32767,
+    32768,
+    -129,
+    -128,
+    127,
+    128,
+    -1,
+    0,
+    1,
+    255,
+    65535,
+    305419896
+  ],
+  "floating_inputs": [
+    -127.875,
+    127.75,
+    -0.25,
+    0.25,
+    -1.875,
+    1.875,
+    -7.5,
+    7.5,
+    3.5,
+    -3.5,
+    15.75,
+    -15.75,
+    0,
+    "-0",
+    "-65504 for F16, otherwise -2^31",
+    "65504 for F16, otherwise 0x1.fcp30"
+  ],
+  "oracle": "The pinned GGML setters store source words, ggml_get_i32_1d reads each source as an integer, and ggml_set_i32_1d writes each oracle result to the same logical destination layout. Compare complete destination allocations. The two direct F32/I32 pairs retain their earlier original CPU graph comparisons.",
+  "refusals": "Place positive infinity, negative infinity, a quiet NaN or positive 2^31 at the final input. F16 already represents positive 2^31 as infinity and uses three distinct probes. Check every destination byte stays 0x33.",
+  "negative_controls": [
+    "The former provider refused a newly covered integer-to-float conversion before allocation.",
+    "Replacing negative integer operands by zero failed the original typed accessor comparison. Restoring Verdant conversion passed."
+  ],
+  "provider_sha256": "ce25510d82d5ebcac7fd7233f071e9e03ff19674dce68aaada690867c7af2b41",
+  "native_lines": 12714,
+  "legacy_cast_descriptors": {
+    "total": 20,
+    "refused_without_writes": 16,
+    "positive_accessor_comparisons": 4,
+    "reference": "VT-24 retags an F32 source as same-width I32. The original four descriptors now produce valid F16 or BF16 results. The original 1,920 fixtures, including the retagged descriptors and initial bytes, retain their frozen digest."
+  }
+}

@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn signed_float_storage_vt_160() { "integer-floats", 36, ["pointwise"] }
     fn signed_integer_widths_vt_159() { "integer-widths", 12, ["pointwise"] }
     fn scalar_diagonals_vt_157() { "scalar-diagonal", 36, ["pointwise"] }
     /// `VT-22`: Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle
@@ -2072,12 +2073,16 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
-    if (!strcmp(argv[3],"integer-widths")) {
+    const bool integer_floats=!strcmp(argv[3],"integer-floats");
+    if (integer_floats || !strcmp(argv[3],"integer-widths")) {
         size_t cases=0;
         const int32_t values[]={INT32_MIN,INT32_MAX,-32769,-32768,32767,32768,-129,-128,127,128,-1,0,1,255,65535,0x12345678};
-        for (auto from : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32})
-        for (auto to : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32}) if (from!=to)
-        for (bool padded : {false,true}) {
+        const float fractions[]={-127.875f,127.75f,-0.25f,0.25f,-1.875f,1.875f,-7.5f,7.5f,3.5f,-3.5f,15.75f,-15.75f,0.f,-0.f,-63.25f,63.25f};
+        for (auto from : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32,GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16})
+        for (auto to : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32,GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16}) {
+          const auto integer=[](ggml_type t){return t>=GGML_TYPE_I8 && t<=GGML_TYPE_I32;};
+          if (integer_floats ? integer(from)==integer(to) : from==to || !integer(from) || !integer(to)) continue;
+          for (bool padded : {false,true}) {
             graph_fixture target(9), cpu(4); CHECK(target && cpu);
             auto backing=ggml_new_tensor_2d(target,from,padded?10:8,2);
             auto input=padded?ggml_view_2d(target,backing,8,2,backing->nb[1],ggml_type_size(from)):backing;
@@ -2091,12 +2096,26 @@ int main(int argc, char **argv) {
             CHECK(ggml_backend_supports_op(backend,result));
             ggml_backend_buffer_clear(target.storage.get(),0xa5); ggml_backend_buffer_clear(cpu.storage.get(),0xa5);
             for (int i=0;i<16;++i) {
-                ggml_set_i32_1d(input,i,values[i]);
+                if (integer(from)) ggml_set_i32_1d(input,i,values[i]);
+                else {
+                    float value=fractions[i];
+                    if (i==14) value=from==GGML_TYPE_F16 ? -65504.f : -0x1p31f;
+                    if (i==15) value=from==GGML_TYPE_F16 ? 65504.f : 0x1.fcp30f;
+                    ggml_set_f32_1d(input,i,value);
+                }
                 ggml_set_i32_1d(logical,i,ggml_get_i32_1d(input,i));
             }
             CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
             CHECK(tensor_bytes(padded?destination:result)==tensor_bytes(expected));
+            if (!integer(from)) for (float invalid : {INFINITY,-INFINITY,NAN,0x1p31f}) {
+                if (from==GGML_TYPE_F16 && invalid==0x1p31f) continue;
+                ggml_set_f32_1d(input,15,invalid);
+                ggml_backend_tensor_memset(padded?destination:result,0x33,0,ggml_nbytes(padded?destination:result));
+                auto before=tensor_bytes(padded?destination:result);
+                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(padded?destination:result)==before);
+            }
             ++cases;
+          }
         }
         return finish(cases);
     }
@@ -2770,7 +2789,7 @@ int main(int argc, char **argv) {
       std::ofstream released;
       if(filling) {released.open(std::string(argv[2])+".fill-source-release",std::ios::binary);CHECK(released);recipe_trace=&released;recipe_word(1);recipe_trace=&trace;}
 
-      size_t cases=0, refused=0, source_releases=0; int kind;
+      size_t cases=0, refused=0, source_releases=0, converted_descriptors=0; int kind;
       const bool copying=!strcmp(argv[3],"copy");
       const bool modeled=copying || repeating || concatenating || filling || casting || normalizing;
       const uint64_t fixture_base=copying?5:repeating?11:concatenating?17:filling?24:casting?31:(physical_norm || typing)?0:38;
@@ -2956,7 +2975,18 @@ int main(int argc, char **argv) {
           if(unarying) {CHECK(refuses_change(backend,dev,graph,result,result->type,type==GGML_TYPE_F32?GGML_TYPE_F16:type==GGML_TYPE_F16?GGML_TYPE_BF16:GGML_TYPE_F16));if(result->op==GGML_OP_UNARY) {CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(GGML_UNARY_OP_COUNT)));CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(-1)));}}
           if(wordwise) {CHECK(refuses_change(backend,dev,graph,result,input->type,selecting && operation?GGML_TYPE_F32:GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,result->type,selecting?GGML_TYPE_F32:GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,input->data,nullptr,false));}
           if(selecting) {CHECK(refuses_change(backend,dev,graph,result,input->ne[2],int64_t(3)));if(operation) {CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));CHECK(refuses_change(backend,dev,graph,result,right->type,GGML_TYPE_F32));}else {CHECK(refuses_change(backend,dev,graph,result,input->ne[3],int64_t(2)));CHECK(refuses_change(backend,dev,graph,result,input->ne[0],int64_t(INT32_MAX)+1));}}
-          if(casting) {CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_I32));}
+          if (casting) {
+            CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
+            auto before=tensor_bytes(result);
+            CHECK(input->type==GGML_TYPE_F32);
+            input->type=GGML_TYPE_I32; recipe_state(1);
+            auto expected=before; auto oracle=*result; oracle.data=expected.data();
+            for (int i=0;i<ggml_nelements(input);++i) ggml_set_i32_1d(&oracle,i,ggml_get_i32_1d(input,i));
+            CHECK(ggml_backend_dev_supports_op(dev,result) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+            CHECK(tensor_bytes(result)==expected); ++converted_descriptors;
+            input->type=GGML_TYPE_F32; ggml_backend_tensor_set(result,before.data(),0,before.size());
+            CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_I32));
+          }
           if(filling) {
             auto saved=input->type; input->type=GGML_TYPE_BF16;
             CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_BF16));
@@ -2987,7 +3017,8 @@ int main(int argc, char **argv) {
         }
       }
       CHECK(refused==((normalizing)?fixture(0,0,0,5):spatial?200:triangular?384:windowing?216:0));
-      recipe_word(4);recipe_word(cases);recipe_word(refusal_probes);recipe_word(refused);
+      if (casting) CHECK(converted_descriptors==4 && refusal_probes==16);
+      recipe_word(4);recipe_word(cases);recipe_word(refusal_probes+converted_descriptors);recipe_word(refused);
       if(filling) {recipe_trace=&released;recipe_word(UINT64_MAX);recipe_word(source_releases);recipe_trace=&trace;}
       return finish(cases);
     }

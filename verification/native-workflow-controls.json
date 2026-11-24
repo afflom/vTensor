@@ -164,5 +164,157 @@
         "\n          rm -f .github/workflows/honesty.yml\n"
       ]
     ]
+  ],
+  "dependency_updates": [
+    [
+      [
+        "  \"updates\": [\n    {\n      \"commit-message\": {\n        \"prefix\": \"chore(deps)\"\n      },\n      \"directory\": \"/\",\n",
+        "  \"updates\": [\n    {\n      \"commit-message\": {\n        \"prefix\": \"chore(deps)\"\n      },\n      \"directory\": \"/other\",\n"
+      ]
+    ],
+    [
+      [
+        "      \"directory\": \"/\",\n      \"exclude-paths\": [\n        \".github/workflows/bootstrap.yml\"\n      ],\n",
+        "      \"directory\": \"/\",\n      \"exclude-paths\": [],\n"
+      ]
+    ],
+    [
+      [
+        "      \"exclude-paths\": [\n        \".github/workflows/bootstrap.yml\"\n",
+        "      \"exclude-paths\": [\n        \".github/workflows/bootstrap.yml\",\n        \".github/workflows/prismpm.yml\"\n"
+      ]
+    ],
+    [
+      [
+        "      \"exclude-paths\": [\n        \".github/workflows/bootstrap.yml\"\n",
+        "      \"exclude-paths\": [\n        \".github/workflows/**\"\n"
+      ]
+    ],
+    [
+      [
+        "      \"exclude-paths\": [\n        \".github/workflows/bootstrap.yml\"\n",
+        "      \"exclude-paths\": [\n        \"bootstrap.yml\"\n"
+      ]
+    ],
+    [
+      [
+        "      },\n      \"ignore\": [\n        {\n          \"dependency-name\": \"UOR-Foundation/PrismPM/action\"\n        }\n      ],\n",
+        "      },\n      \"ignore\": [],\n"
+      ]
+    ],
+    [
+      [
+        "          \"dependency-name\": \"UOR-Foundation/PrismPM/action\"\n",
+        "          \"dependency-name\": \"UOR-Foundation/PrismPM/action\"\n        },\n        {\n          \"dependency-name\": \"actions/checkout\"\n"
+      ]
+    ],
+    [
+      [
+        "        {\n          \"dependency-name\": \"UOR-Foundation/PrismPM/action\"\n",
+        "        {\n          \"dependency-name\": \"*\"\n"
+      ]
+    ],
+    [
+      [
+        "        {\n          \"dependency-name\": \"UOR-Foundation/PrismPM/action\"\n",
+        "        {\n          \"dependency-name\": \"UOR-Foundation/PrismPM\"\n"
+      ]
+    ],
+    [
+      [
+        "        {\n          \"dependency-name\": \"UOR-Foundation/PrismPM/action\"\n",
+        "        {\n          \"dependency-name\": \"actions/checkout\"\n"
+      ]
+    ],
+    [
+      [
+        "      \"package-ecosystem\": \"github-actions\",\n      \"schedule\": {\n        \"interval\": \"weekly\"\n",
+        "      \"package-ecosystem\": \"github-actions\",\n      \"schedule\": {\n        \"interval\": \"never\"\n"
+      ]
+    ],
+    [
+      [
+        "    },\n    {\n      \"commit-message\": {\n        \"prefix\": \"chore(deps)\"\n",
+        "    },\n    {\n      \"commit-message\": {\n        \"prefix\": \"Bump\"\n"
+      ]
+    ],
+    [
+      [
+        "        \"build-policy\": {\n          \"patterns\": [\n            \"*\"\n          ]\n",
+        "        \"build-policy\": {\n          \"patterns\": []\n"
+      ]
+    ],
+    [
+      [
+        "      },\n      \"package-ecosystem\": \"cargo\",\n",
+        "      },\n      \"package-ecosystem\": \"github-actions\",\n"
+      ]
+    ],
+    [
+      [
+        "        }\n      ],\n",
+        "        }\n      ],\n      \"open-pull-requests-limit\": 0,\n"
+      ]
+    ],
+    [
+      [
+        "        \"build-policy\": {\n          \"patterns\": [\n            \"*\"\n          ]\n        }\n      },\n",
+        "        \"build-policy\": {\n          \"patterns\": [\n            \"*\"\n          ]\n        }\n      },\n      \"open-pull-requests-limit\": 0,\n"
+      ]
+    ],
+    [
+      [
+        "      \"package-ecosystem\": \"github-actions\",\n      \"schedule\": {\n        \"interval\": \"weekly\"\n      }\n",
+        "      \"package-ecosystem\": \"github-actions\",\n      \"schedule\": {\n        \"interval\": \"weekly\"\n      },\n      \"target-branch\": \"unused\"\n"
+      ]
+    ],
+    [
+      [
+        "      \"package-ecosystem\": \"cargo\",\n      \"schedule\": {\n        \"interval\": \"weekly\"\n      }\n",
+        "      \"package-ecosystem\": \"cargo\",\n      \"schedule\": {\n        \"interval\": \"weekly\"\n      },\n      \"target-branch\": \"unused\"\n"
+      ]
+    ],
+    [
+      [
+        "  \"updates\": [\n    {\n",
+        "  \"updates\": [\n    {\n      \"allow\": [],\n"
+      ]
+    ],
+    [
+      [
+        "    },\n    {\n",
+        "    },\n    {\n      \"allow\": [],\n"
+      ]
+    ],
+    [
+      [
+        "      },\n      \"ignore\": [\n        {\n          \"dependency-name\": \"UOR-Foundation/PrismPM/action\"\n        }\n      ],\n",
+        "      },\n"
+      ]
+    ],
+    [
+      [
+        "      \"directory\": \"/\",\n      \"exclude-paths\": [\n        \".github/workflows/bootstrap.yml\"\n      ],\n",
+        "      \"directory\": \"/\",\n"
+      ]
+    ],
+    [
+      [
+        "      }\n    },\n    {\n      \"commit-message\": {\n        \"prefix\": \"chore(deps)\"\n      },\n      \"directory\": \"/\",\n      \"groups\": {\n        \"build-policy\": {\n          \"patterns\": [\n            \"*\"\n          ]\n        }\n      },\n      \"package-ecosystem\": \"cargo\",\n      \"schedule\": {\n        \"interval\": \"weekly\"\n      }\n",
+        "      }\n"
+      ]
+    ],
+    [
+      [
+        "\"version\": 2",
+        "\"version\": 2, \"version\": 2"
+      ]
+    ],
+    [
+      [
+        ".github/workflows/bootstrap.yml",
+        ".github/workflows/bootstrap.yml\", \"another.yml"
+      ]
+    ]
   ]
 }

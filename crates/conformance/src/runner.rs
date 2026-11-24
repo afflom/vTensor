@@ -1207,6 +1207,25 @@ fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32,
     Ok(linear::evaluate_f32_scalar(2, activation, gate)?)
 }
 
+fn signed_field(
+    a: u64,
+    sign_bit: u64,
+    extension: u64,
+    limit: u64,
+) -> Result<Option<u64>, BackendError> {
+    use BackendError::InvalidTensor;
+    let field = |word, factor, divisor, modulus| {
+        linear::extract_packed_field(word, factor, divisor, modulus).map_err(BackendError::invalid)
+    };
+    if extension == 0 {
+        field(a, 1, 1, limit)
+    } else {
+        let sign = field(a, 1, sign_bit, 2)?.ok_or(InvalidTensor)?;
+        let high = field(sign, extension, 1, limit)?.ok_or(InvalidTensor)?;
+        linear::evaluate_encoded_word(2, a, high).map_err(BackendError::invalid)
+    }
+}
+
 fn execute_word(
     response: GraphResponse,
     pointers: &[*mut u8],
@@ -1264,17 +1283,18 @@ fn execute_word(
         }
         WordOperation::C9 => linear::truncate_signed_word_f32(a).map_err(BackendError::invalid)?,
         WordOperation::C10(sign_bit, extension, limit) => {
-            let field = |word, factor, divisor, modulus| {
-                linear::extract_packed_field(word, factor, divisor, modulus)
-                    .map_err(BackendError::invalid)
-            };
-            if extension == 0 {
-                field(a, 1, 1, limit)?
-            } else {
-                let sign = field(a, 1, sign_bit, 2)?.ok_or(InvalidTensor)?;
-                let high = field(sign, extension, 1, limit)?.ok_or(InvalidTensor)?;
-                linear::evaluate_encoded_word(2, a, high).map_err(BackendError::invalid)?
-            }
+            signed_field(a, sign_bit, extension, limit)?
+        }
+        WordOperation::C11(source, limit) => {
+            let value = linear::truncate_signed_word_f32(convert(source, 0, a)?)
+                .map_err(BackendError::invalid)?
+                .ok_or(InvalidTensor)?;
+            linear::extract_packed_field(value, 1, 1, limit).map_err(BackendError::invalid)?
+        }
+        WordOperation::C12(sign_bit, extension, destination) => {
+            let word = signed_field(a, sign_bit, extension, 1_u64 << 32)?.ok_or(InvalidTensor)?;
+            let value = linear::signed_word_f32(word as i32)?;
+            Some(convert(0, destination, u64::from(value.to_bits()))?)
         }
         WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {

@@ -1026,3 +1026,9 @@ id = "VT-159"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans signed integer width conversions and Verdant reproduces the upstream GGML typed accessor bytes"
+
+[[id]]
+id = "VT-160"
+level = "build"
+suite = "native-backend"
+statement = "Prism converts between GGML signed I8 I16 I32 and F32 F16 BF16 storage through released Verdant scalar operations"

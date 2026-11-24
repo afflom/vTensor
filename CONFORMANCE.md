@@ -247,6 +247,7 @@ model does not sanction.
 | `VT-157` | `build` | Prism constructs diagonals for every scalar storage type with Verdant byte transfers against the GGML CPU diagonal kernel |
 | `VT-158` | `build` | Reusable GGML graph plans preserve the planned topology and execute current tensor data and compute flags through the certified graph planner |
 | `VT-159` | `build` | Prism plans signed integer width conversions and Verdant reproduces the upstream GGML typed accessor bytes |
+| `VT-160` | `build` | Prism converts between GGML signed I8 I16 I32 and F32 F16 BF16 storage through released Verdant scalar operations |
 
 ## normalization-graphs
 

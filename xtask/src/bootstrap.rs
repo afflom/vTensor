@@ -830,7 +830,7 @@ mod tests {
             let bytes = include_bytes!("../../verification/native-workflow-controls.json");
             assert_eq!(
                 repo_model::artifact::sha256_hex(bytes),
-                "24a0d8b477091dbd442ae4462a261e7ef6620da0fd65b37772a35f7a0cda59f8"
+                "95bbdf1e49beb41117c7d1077ac63b5070bb6dd7eb6218872b7ade91a9c50eff"
             );
             serde_json::from_slice(bytes).unwrap()
         });
@@ -920,69 +920,11 @@ mod tests {
     fn dependency_updates_preserve_sdk_ownership_and_ordinary_maintenance() {
         let source = include_str!("../../.github/dependabot.yml");
         assert!(dependency_updates_are_confined(source, &[]));
-        let original: serde_json::Value = serde_json::from_str(source).unwrap();
-        // Group rejected replacements by field so each case starts from the same valid policy.
-        let mutations = serde_json::json!({
-            "/updates/0/ignore": [[], [
-                {"dependency-name": "UOR-Foundation/PrismPM/action"}, {"dependency-name": "actions/checkout"}
-            ]],
-            "/updates/0/ignore/0/dependency-name": ["*", "UOR-Foundation/PrismPM", "actions/checkout"],
-            "/updates/0/exclude-paths": [[], [".github/workflows/bootstrap.yml", ".github/workflows/prismpm.yml"]],
-            "/updates/0/exclude-paths/0": [".github/workflows/**", "bootstrap.yml"],
-            "/updates/0/directory": ["/other"],
-            "/updates/0/schedule/interval": ["never"],
-            "/updates/1/package-ecosystem": ["github-actions"],
-            "/updates/1/groups/build-policy/patterns": [[]],
-            "/updates/1/commit-message/prefix": ["Bump"]
+        check_workflow_controls("dependency_updates", 25, source, |changed| {
+            dependency_updates_are_confined(changed, &[])
         });
-        for (pointer, replacements) in mutations.as_object().unwrap() {
-            for replacement in replacements.as_array().unwrap() {
-                let mut changed = original.clone();
-                *changed.pointer_mut(pointer).unwrap() = replacement.clone();
-                assert!(
-                    !dependency_updates_are_confined(&policy_json(&changed), &[]),
-                    "{pointer} = {replacement}"
-                );
-            }
-        }
-        for (key, value) in [
-            ("open-pull-requests-limit", serde_json::json!(0)),
-            ("target-branch", serde_json::json!("unused")),
-            ("allow", serde_json::json!([])),
-        ] {
-            for index in [0, 1] {
-                let mut changed = original.clone();
-                changed["updates"][index][key] = value.clone();
-                assert!(
-                    !dependency_updates_are_confined(&policy_json(&changed), &[]),
-                    "{index}/{key}"
-                );
-            }
-        }
-        for field in ["ignore", "exclude-paths"] {
-            let mut changed = original.clone();
-            changed["updates"][0].as_object_mut().unwrap().remove(field);
-            assert!(!dependency_updates_are_confined(
-                &policy_json(&changed),
-                &[]
-            ));
-        }
-        let mut changed = original.clone();
-        changed["updates"].as_array_mut().unwrap().pop();
-        assert!(!dependency_updates_are_confined(
-            &policy_json(&changed),
-            &[]
-        ));
-        for malformed in [
-            source.replacen("\"version\": 2", "\"version\": 2, \"version\": 2", 1),
-            source.replace(
-                ".github/workflows/bootstrap.yml",
-                ".github/workflows/bootstrap.yml\", \"another.yml",
-            ),
-            "{}\n".to_string(),
-            "version: 2\n".to_string(),
-        ] {
-            assert!(!dependency_updates_are_confined(&malformed, &[]));
+        for malformed in ["{}\n", "version: 2\n"] {
+            assert!(!dependency_updates_are_confined(malformed, &[]));
         }
     }
 

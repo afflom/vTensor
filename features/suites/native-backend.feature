@@ -620,3 +620,9 @@ Feature: native-backend
     Given signed I8, I16 and I32 tensors with extrema and discarded high bits
     When an application casts or copies each pair of different widths into a reshaped offset view
     Then each output and padding byte matches values written through the original GGML integer accessors
+
+  @VT-160 @build
+  Scenario: Prism converts between GGML signed I8 I16 I32 and F32 F16 BF16 storage through released Verdant scalar operations
+    Given signed integers or finite floats with fractional parts in contiguous and offset tensors
+    When a graph converts them between floating and integer storage in either direction
+    Then all results and padding match the upstream typed accessors and an out-of-range final value preserves the destination

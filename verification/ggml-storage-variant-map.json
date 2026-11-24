@@ -263,5 +263,6 @@
     "pairs": 81,
     "direct_cpu_results_equal": 23,
     "cpu_without_result_and_provider_refused_without_mutation": 58
-  }
+  },
+  "current_cast_descriptor_evidence": "verification/supplemental-integer-float-casts-vt160.json"
 }
