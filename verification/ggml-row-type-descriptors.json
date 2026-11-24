@@ -1,0 +1,93 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "838cbcb1fa59b5a64066501c624f883a68607635",
+  "provider_sha256": "37d673c270c85b7083defc2eb7951e0cc5bed3c4704133603904866b02b480b8",
+  "original_cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "scope": "All public GET_ROWS and SET_ROWS type tuples over the 36 declared storage types, at two selected rows and one batch. Source and destination row width is max(2, block size). Queried null-data descriptors before allocation and asked the stock sole-provider scheduler to place each admitted graph.",
+  "constructors": "ggml_get_rows and ggml_set_rows in ggml/src/ggml.c",
+  "constructor_source_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "dispatch_sources": {
+    "ggml/src/ggml-cpu/ops.cpp": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+    "ggml/src/ggml-cpu/ggml-cpu.c": "1f090b6a61b2304b2ca607f826661ef455013aeeed617ddcf5bcee3eaee9613d"
+  },
+  "dispatch_classification": "GET_ROWS requires an original switch branch and, for block sources, a to_float callback. SET_ROWS requires the destination CPU from_float callback or the F16-to-F16 byte copy. A CPU capability response alone does not establish an executable numerical path.",
+  "totals": {
+    "GET_ROWS": {
+      "candidate_tuples": 36,
+      "direct_cpu_paths": 30,
+      "provider_admitted": 30,
+      "admitted_and_placed_direct_cpu_paths": 30,
+      "direct_cpu_gaps": []
+    },
+    "SET_ROWS": {
+      "candidate_tuples": 144,
+      "direct_cpu_paths": 100,
+      "provider_admitted": 116,
+      "admitted_and_placed_direct_cpu_paths": 88,
+      "direct_cpu_gaps": [
+        [
+          "f32",
+          "i32",
+          "q8_1"
+        ],
+        [
+          "f32",
+          "i64",
+          "q8_1"
+        ],
+        [
+          "f16",
+          "i32",
+          "q8_1"
+        ],
+        [
+          "f16",
+          "i64",
+          "q8_1"
+        ],
+        [
+          "f32",
+          "i32",
+          "q8_K"
+        ],
+        [
+          "f32",
+          "i64",
+          "q8_K"
+        ],
+        [
+          "f16",
+          "i32",
+          "q8_K"
+        ],
+        [
+          "f16",
+          "i64",
+          "q8_K"
+        ],
+        [
+          "f32",
+          "i32",
+          "i32"
+        ],
+        [
+          "f32",
+          "i64",
+          "i32"
+        ],
+        [
+          "f16",
+          "i32",
+          "i32"
+        ],
+        [
+          "f16",
+          "i64",
+          "i32"
+        ]
+      ]
+    }
+  },
+  "table": "ggml-row-type-descriptors.tsv",
+  "table_sha256": "20356574c6f7efdb2d4fa96762f1c52ddb462017a9c7b5896853859c87e1b93f"
+}

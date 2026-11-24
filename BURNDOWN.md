@@ -6,6 +6,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Resolve the seven remaining scalar CAST pairs involving I64 or F64. [Pair-by-pair status](verification/ggml-scalar-cast-coverage.tsv)
 - [ ] Implement F32/F16/BF16 → Q8_1/Q8_K copies. The pinned GGML CPU produced all six reference buffers. [Block CAST descriptors](verification/ggml-block-cast-descriptors.json)
+- [ ] Implement F32/F16 SET_ROWS into I32, Q8_1 and Q8_K with both index widths. [Twelve executable row-store gaps](verification/ggml-row-type-descriptors.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -15,6 +16,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Establish coverage and unblock release
 
+- [x] Probe all 36 GET_ROWS and 144 SET_ROWS type tuples. Verify preallocation placement for all 146 admitted descriptors and identify twelve direct CPU gaps. [Row descriptor map](verification/ggml-row-type-descriptors.json)
 - [x] Probe all 1,215 CAST type pairs containing a block type before allocation. Match the CPU dispatcher and its row callbacks to the six executable gaps. [Descriptor map](verification/ggml-block-cast-descriptors.json)
 - [x] Trace all 86,647 factory nodes to 29,060 exact node signatures. Join shapes, strides, view offsets, flags and operator parameters to existing GGML verdicts and preallocation placement. [Factory layouts](verification/ggml-factory-layouts.json)
 - [x] Index the graph signatures of all 27,755 upstream constructors. The 2,293 observed signatures cover 89 of 100 opcodes, all 22 unary and seven GLU variants and 33 of 36 storage types. [Declaration gaps](verification/ggml-factory-signatures.json) · [Ordinal map](verification/ggml-factory-signatures.tsv.gz)
