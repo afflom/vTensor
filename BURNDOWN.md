@@ -24,7 +24,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,287 non-Prism lines** (12,836 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,286 non-Prism lines** (12,835 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -70,7 +70,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Verify the seven CPU-refused IQ encoders against the upstream quantizers. Cover 168 SET_ROWS and 42 CPY cases. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
 - [x] Pass F32-to-I32 copies 8708 and 8709, including strided storage and atomic refusal. [VT-126](verification/factory-signed-copy-vt126.json)
 - [x] Verify embedding and KV operand placement and all 129 default-precision F32 projections in llama.cpp prefill and decode. [Placement and intermediate outputs](verification/llama-projection-placement-vt126.json)
-- [ ] Verify explicit accumulator and source precision requests on dense and indexed projections. [GGML precision contract](vendor/llama.cpp-oracle/ggml/include/ggml.h)
+- [x] Verify dense and indexed projection precision across all 24 accumulator/source mode pairs, 26 weight formats at F32 precision, and F16/BF16 activation inputs. [VT-128](verification/projection-precision-vt128.json)
 - [x] Pass all 230 Q4_0, Q8_0 and Q2_K MUL_MAT_ID graphs, including skipped experts and offset index views. [VT-83 results](verification/factory-indexed-products-vt83.json)
 - [x] Pass the 130 newly admitted packed expert compositions, including six shared-expert graphs and 124 matrix fusions. [Original full-graph comparisons](verification/factory-indexed-expert-compositions.json)
 - [x] Execute all 251 F32, F16 and BF16 MUL_MAT_ID cases, including invalid expert IDs and strided index views. [VT-84 results](verification/factory-scalar-experts-vt84.json)

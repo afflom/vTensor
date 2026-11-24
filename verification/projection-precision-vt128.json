@@ -1,0 +1,240 @@
+{
+  "requirement": "VT-128",
+  "implementation": "3a50f777de7bbde3463e7e15afeb84c8e66b6246",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "authority_contract": "ggml/include/ggml.h [TAG_GGML_PREC]",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "prism": {
+    "matrix": {
+      "attestation": "c2988a124277abcaa8d18eec36238e25ba522a2e31f6c22aa57fcc064d2fcaa6",
+      "lock_sha256": "3dbe21cb61d4b63b7e309f03138f2bf078141b98218a5280f85df3529ee72c97"
+    },
+    "pointwise": {
+      "attestation": "ee1265ab6cf098069f9297944b6a26793c5864557841aaf6b5dac054532f2699",
+      "lock_sha256": "51ef4c135f7930c9fd432920209efb75381cce3ba926f861a1d63b3098d6ed40"
+    }
+  },
+  "provider_sha256": "2909fe234f02d804cb333d8d92181d4c943a47d9b3fe4207de52ab216517675d",
+  "provider_inputs_sha256": "1c566dee96f48c428ea235f4159e8b09b5d4124f62e424175ad20d843eae5854",
+  "upstream_ggml_libraries": {
+    "libggml.so": "38afd9f20c33879492df893e74d4269e80c96259addc7b3ef9960f40943ccddc",
+    "libggml-base.so": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+    "libggml-cpu.so": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c"
+  },
+  "factory": {
+    "ordinals": [
+      10527,
+      10528,
+      10529,
+      10530,
+      10531,
+      10532,
+      10533,
+      10534,
+      10535,
+      10536,
+      10537,
+      10538,
+      10539,
+      10540,
+      10541,
+      10542,
+      10543,
+      10544,
+      10545,
+      10546,
+      10547,
+      10548,
+      10549,
+      10550,
+      10551,
+      10552,
+      10553,
+      10554,
+      10555,
+      10556,
+      10557,
+      10558,
+      10559,
+      10560,
+      10561,
+      10562
+    ],
+    "passed": 36,
+    "transcript_sha256": "8526b73f4f6b35687ff2da65e5b9b2d92938dfc26b114626e485e1f212aad652",
+    "already_in_passed_inventory": true
+  },
+  "reference": "Imported GGML setters, quantize_chunk and type-trait row decoders. When the source precision forbids the native CPU dot conversion, materialize decoded weights as F32 and run the original dense or expert operator on GGML CPU in reference mode. For half-width inputs, round-trip activations through the upstream conversion before comparing.",
+  "geometry": {
+    "inner_modes": 64,
+    "inner_format_sweep": 256,
+    "weight_rows": 3,
+    "tokens": 2,
+    "expert_selection": [
+      2,
+      0,
+      1,
+      2
+    ],
+    "experts": 3
+  },
+  "modes": {
+    "weights": [
+      "bf16",
+      "f16",
+      "f32",
+      "q4_0"
+    ],
+    "accumulator_codes": [
+      0,
+      10,
+      15,
+      20
+    ],
+    "activation_codes": [
+      0,
+      10,
+      15,
+      20,
+      30,
+      40
+    ],
+    "dense_and_indexed_cases": 192,
+    "compared_outputs": 1728,
+    "maximum_nmse": 9.21925634e-15,
+    "maximum_absolute_error": 9.53674316e-07,
+    "refused": [
+      "indexed=0 acc=30",
+      "indexed=0 acc=40",
+      "indexed=0 acc=11",
+      "indexed=0 rhs=19",
+      "indexed=1 acc=30",
+      "indexed=1 acc=40",
+      "indexed=1 acc=11",
+      "indexed=1 rhs=19"
+    ],
+    "runner": {
+      "source_sha256": "c768179e7a661a96a4847f71c18a0a316919bbe68213d81880480e6c18a1675d",
+      "binary_sha256": "e0d26deaea4074bd4db99d06be0f9e4b0e8fc5e7e15adc1ebebb30e8b06fc266"
+    }
+  },
+  "half_width_inputs": {
+    "results": [
+      {
+        "weight": "bf16",
+        "activation": "f16",
+        "indexed": false,
+        "outputs": 6,
+        "max_absolute_error": 4.76837158e-07
+      },
+      {
+        "weight": "bf16",
+        "activation": "bf16",
+        "indexed": false,
+        "outputs": 6,
+        "max_absolute_error": 0.0
+      },
+      {
+        "weight": "bf16",
+        "activation": "f16",
+        "indexed": true,
+        "outputs": 12,
+        "max_absolute_error": 9.53674316e-07
+      },
+      {
+        "weight": "bf16",
+        "activation": "bf16",
+        "indexed": true,
+        "outputs": 12,
+        "max_absolute_error": 9.53674316e-07
+      },
+      {
+        "weight": "q4_0",
+        "activation": "f16",
+        "indexed": false,
+        "outputs": 6,
+        "max_absolute_error": 4.76837158e-07
+      },
+      {
+        "weight": "q4_0",
+        "activation": "bf16",
+        "indexed": false,
+        "outputs": 6,
+        "max_absolute_error": 4.76837158e-07
+      },
+      {
+        "weight": "q4_0",
+        "activation": "f16",
+        "indexed": true,
+        "outputs": 12,
+        "max_absolute_error": 4.76837158e-07
+      },
+      {
+        "weight": "q4_0",
+        "activation": "bf16",
+        "indexed": true,
+        "outputs": 12,
+        "max_absolute_error": 4.76837158e-07
+      }
+    ],
+    "runner": {
+      "source_sha256": "018f5466f7237f1e164809ea6e25622e913d0874e299a62c4e5774035d9f61c5",
+      "binary_sha256": "81e7e99f7f831a9da534e3f71f5bd98653a9ef3b66df765c18632cad59578426"
+    }
+  },
+  "full_precision_weight_formats": {
+    "formats": [
+      "f8_e4m3",
+      "iq1_m",
+      "iq1_s",
+      "iq2_s",
+      "iq2_xs",
+      "iq2_xxs",
+      "iq3_s",
+      "iq3_xxs",
+      "iq4_nl",
+      "iq4_xs",
+      "mxfp4",
+      "nvfp4",
+      "q1_0",
+      "q2_0",
+      "q2_K",
+      "q3_K",
+      "q4_0",
+      "q4_1",
+      "q4_K",
+      "q5_0",
+      "q5_1",
+      "q5_K",
+      "q6_K",
+      "q8_0",
+      "tq1_0",
+      "tq2_0"
+    ],
+    "dense_and_indexed_cases": 52,
+    "compared_outputs": 468,
+    "maximum_absolute_error": 1.43051147e-06,
+    "maximum_nmse": 3.48938663e-14,
+    "importance_weights": "256 ones",
+    "runner": {
+      "source_sha256": "78119e0fb45ba3bd6a5a803544da7f3c4b4568b0871a1a698f6d95aa91d7a180",
+      "binary_sha256": "d0243cc866a686c1975c3f9f9386bb111437ef9ddfca035eb21c108f6f65f620"
+    }
+  },
+  "regressions": {
+    "before_precision_fix": {
+      "f32_dense": 2.38418579e-07,
+      "f32_indexed": 9.53674316e-07,
+      "f16_dense": 4.76837158e-07,
+      "f16_indexed": 4.76837158e-07,
+      "bf16_dense": 0.0143446922,
+      "bf16_indexed": 0.0158588886,
+      "q4_0_dense": 0.0352945328,
+      "q4_0_indexed": 0.0352945328
+    },
+    "half_width_cases_refused_before_fix": 6,
+    "planted_defect": "Disable the Prism-selected full-precision row product. The BF16 strict F32 graph fails admission before allocation.",
+    "restored": "All full-precision, mode and physical-input comparisons passed."
+  }
+}
