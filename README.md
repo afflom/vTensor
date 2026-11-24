@@ -15,7 +15,7 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 
 At llama.cpp `9a080f44`, vTensor passes all 27,755 GGML factory cases. The stock scheduler assigns all 86,647 factory nodes to vTensor when it is the sole provider. The checklist tracks legal variants outside the factory and final release acceptance. [Factory verdicts](verification/ggml-factory-inventory.json) · [Scheduler evidence](verification/shared-host-storage-vt156.json) · [Provider burndown](BURNDOWN.md)
 
-Cargo pins Verdant at `042d18eab386` for signed 64-bit conversions and precision-preserving narrowing pending an upstream release. VT-02 checks the resolved packages against the certified upstream output. [Verdant patch](https://github.com/afflom/verdant-engine/pull/64) · [Pinned revision](model/verdant-development.json)
+Cargo pins Verdant v2.22.0 from its immutable release index. VT-02 verifies the numerical dependencies against the upstream manifest and certified output. [Published release](https://github.com/afflom/verdant-engine/releases/tag/v2.22.0) · [Registry pin](model/verdant-development.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940
@@ -308,7 +308,7 @@ Full acceptance remains open.
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:
 
-Cargo resolves the patch directly. Use `just verdant-prepare` to prefetch
+Cargo resolves the published crates from the pinned Verdant registry. Use `just verdant-prepare` to prefetch
 locked dependencies for offline work.
 
 ```sh
@@ -320,8 +320,7 @@ The machine-readable oracle pin is
 [`vendor/llama.cpp-oracle/upstream.toml`](vendor/llama.cpp-oracle/upstream.toml).
 The source snapshot retains llama.cpp's MIT license.
 
-The workspace manifest pins the submitted Verdant patch until its release. The graph also contains Verdant's pinned `uor-matmul` upstream;
-`deny.toml` permits only those two Git origins.
+The workspace manifest pins the exact Verdant release. The release supplies the uor-matmul crates from the same registry.
 
 ## Historical typed unary checkpoint
 

@@ -9,11 +9,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
 - [ ] Recover **2,067 non-Prism lines** (12,616 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
-- [ ] Switch the signed-conversion and narrowing patches to the Verdant registry when released. [PR #63](https://github.com/afflom/verdant-engine/pull/63) · [PR #64](https://github.com/afflom/verdant-engine/pull/64)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
 
+- [x] Replace both Verdant conversion patch pins with v2.22.0. Verify all 106 registry archives, zero Git packages and the independent conversion and quotient oracles. [Registry verification](verification/verdant-versioned-registry.json)
+- [x] Pass the full hosted SDK gate on x86-64 and AArch64 after the swapped-GLU repair. [Acceptance at 877aae8](https://github.com/afflom/vTensor/actions/runs/45485151157)
 - [x] Place all 841 directly executable flash-attention key/value pairs at default precision. Compare all 430,592 output values with GGML CPU. [VT-177](verification/supplemental-flash-storage-vt177.json)
 - [x] Execute 175 packed ADD_CAST pairs with seven codebook destinations and verify 14 matching copied or in-place forms. [VT-176](verification/supplemental-codebook-add-vt176.json)
 - [x] Probe 47,952 public binary constructor descriptors. All 709 direct CPU forms and 189 codebook forms pass sole-provider placement. [Binary operator map](verification/ggml-binary-type-descriptors.json)
