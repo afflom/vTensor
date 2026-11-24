@@ -440,3 +440,9 @@ Feature: native-backend
     Given an activation, channel residuals, post weights and an optional combination tensor
     When vTensor evaluates identity or mixed residual channels
     Then each output matches the pinned GGML CPU graph
+
+  @VT-130 @build
+  Scenario: Prism schedules four-channel hyperconnection normalization and Verdant evaluates each word against the GGML CPU combination oracle
+    Given four-channel mixture logits, a scale, base offsets, epsilon and a positive iteration count
+    When vTensor performs row softmax and iterative column and row normalization
+    Then each output matches the pinned GGML CPU graph

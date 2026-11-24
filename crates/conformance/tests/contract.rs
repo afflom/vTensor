@@ -372,6 +372,8 @@ ggml_batches! {
     #[test]
     fn hyperconnection_post_vt_129() { "upstream-HYPERCONNECTION_POST", 11, ["pointwise"] }
     #[test]
+    fn hyperconnection_combination_vt_130() { "upstream-HYPERCONNECTION_COMB", 11, ["pointwise"] }
+    #[test]
     fn hyperconnection_pre_vt_127() { "upstream-HYPERCONNECTION_PRE", 18, ["pointwise"] }
     #[test]
     fn silu_gradient_vt_124() { "upstream-SILU_GRADIENT", 1, ["pointwise"] }
@@ -1522,7 +1524,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "6786f3f0f560e6d7111573823581ca1a3773ec3c83ded5ca2306bb9a7900f37a",
+            "9b13beba7a57e7d931df1bc4341c7dc4302c723dd65d54ca045d18e8444be2a0",
         )
     });
 

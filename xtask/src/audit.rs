@@ -368,14 +368,7 @@ mod tests {
     impl TestRepo {
         fn limits(name: &str, ids: &str, lib: &str, test: Option<&str>) -> Self {
             let fixture = Self::new(name);
-            fixture.registers(
-                if ids.trim().is_empty() {
-                    "id = []"
-                } else {
-                    ids
-                },
-                "authority = []",
-            );
+            fixture.registers(ids, "authority = []");
             fixture.write("crates/shipped/Cargo.toml", SHIPPED);
             fixture.write("crates/shipped/src/lib.rs", lib);
             if let Some(test) = test {
@@ -439,7 +432,7 @@ mod tests {
         for name in ["NotAProduct", "ObservedBound", "KappaError"] {
             let f = TestRepo::limits(
                 &format!("fixed-{name}"),
-                "",
+                "id = []",
                 &format!("pub fn f() -> Result<u8, {name}> {{ Ok(0) }}\n"),
                 None,
             );
@@ -526,7 +519,7 @@ mod tests {
     fn a_crate_that_does_not_ship_is_not_audited() {
         let f = TestRepo::limits(
             "unshipped",
-            "",
+            "id = []",
             "pub fn f() -> Result<u8, Other> { Ok(0) }\n",
             None,
         );
@@ -543,7 +536,7 @@ mod tests {
     fn a_result_in_a_comment_or_a_test_module_is_not_audited() {
         let f = TestRepo::limits(
             "comments",
-            "",
+            "id = []",
             "// fn f() -> Result<u8, Other>\n\
              pub fn g() {}\n\
              #[cfg(test)]\n\

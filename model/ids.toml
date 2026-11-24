@@ -846,3 +846,9 @@ id = "VT-129"
 level = "build"
 suite = "native-backend"
 statement = "Prism models residual hyperconnection mixing and Verdant contracts optional channel combinations against the GGML CPU evaluator"
+
+[[id]]
+id = "VT-130"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules four-channel hyperconnection normalization and Verdant evaluates each word against the GGML CPU combination oracle"
