@@ -1,0 +1,128 @@
+{
+  "requirement": "VT-124",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "implementation": "1404aeb2913e6c0e33b8835ce70bc45364690aca",
+  "verdant_revision": "ec3e4b6c2f6c9c5e908e23fe8d597f6b22540ba4",
+  "prism_attestation": "36cfa63331769b9d9005edf368adbdcd517d42dee4ac7e557fb384590fce9217",
+  "pointwise_lock_sha256": "c73d72fb1764655fb1f2eb4ef3368e4ea117d01f4069a814f2d8c882db3a6263",
+  "provider_sha256": "738c1edc149f6fbe1afaf6444d515114c850159694513ba1615a566281638208",
+  "provider_inputs_sha256": "da57fff70f8e8733afad53087a47474400bbaad97f62ea9a9521f385483c64a6",
+  "oracle_sha256": "90755f5fef49291b5c7171577638c236b15221743e14c6e0afb353a0ad1d9b40",
+  "case_ordinals": {
+    "SILU_BACK": [
+      9525
+    ]
+  },
+  "contract_transcript_sha256": "715c41a1d4aa61b6fee61556bfe3b1e2a35c6474733921dd28dd10bc95d43635",
+  "factory_result": "passed",
+  "supplemental": {
+    "reference": "ggml_backend_cpu_set_use_ref(cpu, true)",
+    "graph": "ggml_silu_back(ctx, dy, x)",
+    "type": "F32",
+    "fixtures": {
+      "source_view": "ggml_view_3d with byte offset 4 into a 1D buffer of 1 + pitch * rows * planes words",
+      "dy_row_pitch_words": "width + 3",
+      "x_row_pitch_words": "width + 7",
+      "output_row_pitch_words": "width + output_padding_words",
+      "plane_pitch_words": "rows * row_pitch_words",
+      "activation_cycle": [
+        "-100",
+        "-20",
+        "-8",
+        "-2",
+        "-1",
+        "-0.125",
+        "-0",
+        "+0",
+        "0.125",
+        "1",
+        "8",
+        "100"
+      ],
+      "activation_index": "(row * width + i) % 12",
+      "gradient": "(((row * 3 + i * 5) % 17) - 8) * 0.375",
+      "traversal": "row = plane * rows + row_in_plane"
+    },
+    "runner_source_sha256": "f710c8f4106680e250585eb12b9c968829f037bec2f816ac940ea2e799a5ad4e",
+    "runner_sha256": "a33e278ae66ca14585876e4c1b5e6568e9349419ead243d563f048591a08814a",
+    "reference_libraries": {
+      "libggml-base.so": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+      "libggml-cpu.so": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+      "libggml.so": "38afd9f20c33879492df893e74d4269e80c96259addc7b3ef9960f40943ccddc"
+    },
+    "results": [
+      {
+        "shape": [
+          7,
+          3,
+          2
+        ],
+        "output_padding_words": 0,
+        "values": 42,
+        "max_absolute_error": 0.0
+      },
+      {
+        "shape": [
+          7,
+          3,
+          2
+        ],
+        "output_padding_words": 5,
+        "values": 42,
+        "max_absolute_error": 0.0
+      },
+      {
+        "shape": [
+          1,
+          4,
+          3
+        ],
+        "output_padding_words": 0,
+        "values": 12,
+        "max_absolute_error": 0.0
+      },
+      {
+        "shape": [
+          1,
+          4,
+          3
+        ],
+        "output_padding_words": 5,
+        "values": 12,
+        "max_absolute_error": 0.0
+      },
+      {
+        "shape": [
+          12,
+          1,
+          1
+        ],
+        "output_padding_words": 0,
+        "values": 12,
+        "max_absolute_error": 0.0
+      },
+      {
+        "shape": [
+          12,
+          1,
+          1
+        ],
+        "output_padding_words": 5,
+        "values": 12,
+        "max_absolute_error": 0.0
+      }
+    ]
+  },
+  "preallocation_refusals": [
+    "mismatched source shape",
+    "nonunit F32 inner stride (8 bytes for width 4)",
+    "F16 source pair"
+  ],
+  "mutation": {
+    "change": "Compute SiLU in place of sigmoid in the Verdant instruction dispatcher.",
+    "factory": "SILU_BACK",
+    "observed_error": 0.846605295,
+    "upstream_limit": 1e-07
+  }
+}

@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,977 passed**, **778 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,978 passed**, **777 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -19,11 +19,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Confirm Verdant main includes VTK-36 through VTK-40 and the provider’s pinned block encoders. [Upstream integration](https://github.com/afflom/verdant-engine/commit/a51262d2008b030b290f70cd0b39a080f72cb4e9)
 - [x] Verify the Verdant release dependency closure and confirm it landed on upstream main. A clean consumer executes the encoder, and a missing archive fails the release verifier. [Upstream integration](https://github.com/afflom/verdant-engine/commit/2c6ff1c) · [Verdant PR #38](https://github.com/afflom/verdant-engine/pull/38)
 - [x] Verify published Verdant v2.20.1 in a clean Cargo consumer. VTK-41 and VTK-42 execute, and all 85 resolved Verdant-registry archives match the release manifest and Cargo lock. [Release and manifest](https://github.com/afflom/verdant-engine/releases/tag/v2.20.1)
+- [ ] Lift the remaining four native functions in the affine encoder and pass Verdant’s fidelity gate. [Verdant PR #48](https://github.com/afflom/verdant-engine/pull/48)
 - [ ] Switch the provider to published crates once the registry includes VTK-43 through VTK-50. Verify the release checksums and VT-02. [IQ4_XS product](https://github.com/afflom/verdant-engine/pull/41) · [Ternary block encoders](https://github.com/afflom/verdant-engine/pull/42) · [Ternary row products](https://github.com/afflom/verdant-engine/pull/43) · [Four-lane codebooks](https://github.com/afflom/verdant-engine/pull/44) · [Shifted codebooks](https://github.com/afflom/verdant-engine/pull/45) · [Compact four-bit encoders](https://github.com/afflom/verdant-engine/pull/46) · [Grouped six-bit encoder](https://github.com/afflom/verdant-engine/pull/47) · [Grouped affine encoders](https://github.com/afflom/verdant-engine/pull/48) · [Current upstream pin](model/verdant-development.json)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,293 non-Prism lines** (12,842 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,291 non-Prism lines** (12,840 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -155,7 +156,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).
 - [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5), RWKV_WKV6 (4), RWKV_WKV7 (5), GATED_LINEAR_ATTN (4) and SOLVE_TRI (26).
 - [x] Pass all 48 SOFT_MAX_BACK graphs at both scales. The GGML CPU verified 24 zero-bias cases and GGML Vulkan verified 24 positive-bias cases. [Oracle comparisons](verification/factory-softmax-gradients-vt121.json)
-- [ ] Pass SILU_BACK (1).
+- [x] Pass SILU_BACK and compare 132 gradients on independently padded views with GGML CPU. [VT-124](verification/factory-silu-gradient-vt124.json)
 - [ ] Pass cross-entropy forward (2) and backward (2), SGD (1) and AdamW (1). Verify gradients and parameter updates.
 - [x] Import the pinned llama.cpp scheduler-delay oracle. Its four CPU controls passed timing, buffer aliasing and byte identity, including a chain of four delays. [Upstream timing test](vendor/llama.cpp-oracle/tests/test-sleep.cpp)
 - [x] Verify all three SLEEP factory cases and chained scheduler timing, aliasing and byte preservation. [VT-123](verification/factory-scheduler-delay-vt123.json)
