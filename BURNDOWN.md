@@ -191,10 +191,11 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all four antialiased bilinear UPSCALE cases. Compare 10,256 output words on 68 additional GGML CPU graphs. [VT-147](verification/factory-antialias-resampling-vt147.json)
 - [x] Match all 11,088 frozen words for IM2COL_BACK and POOL_2D_BACK, including padding and overlapping windows. [CPU and provider transcripts](verification/ggml-spatial-gradient-oracle.json)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
+- [x] Freeze 123,264 GGML CPU words across 440 Mamba-1 and Mamba-2 scan graphs, including duplicate sequence IDs, padded inputs and empty scans. [SSM oracle](verification/ggml-state-space-scan-oracle.json)
 - [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).
 - [x] Pass all four GATED_LINEAR_ATTN factory graphs and match 7,056 token and state words across 96 additional GGML CPU graphs. [VT-142](verification/factory-gated-linear-attention-vt142.json)
 - [x] Pass all four RWKV_WKV6 and five RWKV_WKV7 factory graphs. Match 7,056 token and state words on 96 additional GGML CPU graphs. [VT-143](verification/factory-recurrent-weighted-keys-vt143.json)
-- [x] Freeze 37,760 GGML CPU output words for 72 gated delta graphs, including 11,840 untouched snapshot words. [Oracle corpus](verification/ggml-gated-delta-oracle.json)
+- [x] Freeze 37,760 GGML CPU output words for 72 gated delta graphs, including 11,840 untouched snapshot words. Add 18 zero-token CPU graphs. [Oracle corpus](verification/ggml-gated-delta-oracle.json)
 - [x] Certify gated delta operand admission, token addressing and newest-first snapshot placement. [Prism export](generated/attention/result.json)
 - [x] Submit the Verdant delta rule. Match 34,218 scores and state values against GGML CPU. [Verdant PR #57](https://github.com/afflom/verdant-engine/pull/57)
 - [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5).
@@ -237,6 +238,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass full x86-64 and Arm64 acceptance at the merged Verdant patch pin, including RWKV6 and RWKV7. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45390398202)
 - [x] Pass the complete VT-140 gate on Ubuntu x86-64 and Arm64 with released Verdant v2.21.3. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45376031600)
 - [x] Pass the full locked-SDK gate on Ubuntu x86-64 and Arm64 for ELU, XIELU and gated linear attention. [VT-138](https://github.com/afflom/vTensor/actions/runs/45382087025) · [VT-142](https://github.com/afflom/vTensor/actions/runs/45384171793)
+- [x] Pass the complete IQ3 storage gate at VT-148 on x86-64 and Arm64. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45407868018)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 
 For each implementation batch, register the scenario and failing case first. Export only changed Prism roots, reuse hash-checked oracle objects, and run the affected cases together. Check a representative planted defect before closing the batch. [Repository workflow](AGENTS.md) · [Oracle cache](verification/native-oracle-cache.json)

@@ -1,0 +1,29 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "authority_files": [
+    "ggml/src/ggml.c",
+    "ggml/src/ggml-cpu/ops.cpp"
+  ],
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "object_sha256": {
+    "ggml-oracle-core.o": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+    "ggml-oracle-cpu.o": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f"
+  },
+  "entry_point": "ggml_ssm_scan",
+  "oracle": "Pinned GGML generic CPU object, single-threaded, with contraction disabled.",
+  "graphs": 440,
+  "f32_words": 123264,
+  "untouched_snapshot_words": 50560,
+  "independent_host_cpu": {
+    "graphs": 440,
+    "exact_words": 110352,
+    "max_absolute_error": 7.152557373046875e-07,
+    "max_error_divided_by_one_plus_abs_reference": 2.457277768713153e-07
+  },
+  "transcript": "ggml-state-space-scan-oracle.tsv.gz",
+  "transcript_sha256": "716623f3b91c8d22a0089425d0d855c3d3617e062d3b10e4c7bf66c1bdd208fd",
+  "columns": "state width, scalar-decay flag, head width, tokens, slots, groups, padded-view flag, repeated-ID flag, followed by hexadecimal binary32 output words",
+  "geometry": "Four heads, two sequences, three initial state rows. Sequence IDs are [2,0] or [1,1]. X has head width lanes and four heads. B and C have state width lanes and one or two groups. Padded X/B/C use a base with one extra head or group and one extra token, retain the base strides, and start at its second row. All other tensors are contiguous.",
+  "inputs": "For slot s in [initial state,X,dt,A,B,C], set n=i0+7*i1+11*i2+13*i3+5*s. A=-(1+n%13)/16. dt=21 when n%5==0 and n%17-8 otherwise. Remaining inputs=(n%19-9)/16. Initialize the complete result to 13.25.",
+  "baseline": "The pre-SSM provider refused the first graph. For zero tokens the upstream CPU preserves all snapshot slots."
+}

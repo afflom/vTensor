@@ -21,5 +21,18 @@
   "views": "For strided Q/K/V allocate [width+2,tokens,heads,sequences]. Use a one-word offset, swap strides 1 and 2 and keep stride 3. Other inputs and output are contiguous.",
   "inputs": "For input slot s and logical index [i0,i1,i2,i3] let n=i0+7*i1+11*i2+13*i3+5*s. Gate = -(n%7)/16, beta = (n%8)/8, all other inputs = (n%19-9)/16. Initialize the entire output to 13.25.",
   "baseline": "The vTensor provider refused upstream factory ordinal 27498 before allocation. The GPU-free CPU reference completed all 72 supplemental graphs.",
-  "independent_native_cpu_max_abs_difference": 5.960464477539063e-08
+  "independent_native_cpu_max_abs_difference": 5.960464477539063e-08,
+  "empty_tokens": {
+    "graphs": 18,
+    "f32_words": 8288,
+    "slots": [
+      1,
+      2,
+      4
+    ],
+    "views": "Contiguous Q/K/V, other input construction and initialization as above.",
+    "cpu_result": "One requested slot copies the initial state. Two or four slots preserve the entire destination.",
+    "transcript": "ggml-gated-delta-empty-oracle.tsv.gz",
+    "transcript_sha256": "6570e59e96afc8b0bfa5b05b8cd140886b597207138c02dd8ff89249c24c11c5"
+  }
 }
