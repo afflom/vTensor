@@ -248,3 +248,82 @@ certified-install name artifact:
 # Prefetch the same immutable dependencies used by normal Cargo builds.
 verdant-prepare:
     cargo fetch --locked
+
+# Reconcile the existing GGML transcripts without executing cases again. Print
+# unresolved ordinals on stdout and the measured totals on stderr.
+factory-remaining:
+    #!/usr/bin/env python3
+    import csv, gzip, hashlib, io, json, sys
+    from collections import Counter
+    from pathlib import Path
+
+    def read(path):
+        return json.loads(Path(path).read_bytes())
+
+    def transcript(path, digest):
+        raw = gzip.decompress(path.read_bytes())
+        if hashlib.sha256(raw).hexdigest() != digest:
+            raise ValueError(f"transcript digest mismatch: {path}")
+        return io.StringIO(raw.decode())
+
+    directory = Path("verification")
+    inventory = read(directory / "ggml-factory-inventory.json")
+    ledger = inventory["factory_verdicts"]
+    rows = transcript(directory / inventory["case_transcript"], inventory["case_transcript_sha256"])
+    cases = {}
+    for tag, ordinal, label, parameters in csv.reader(rows, delimiter="\t"):
+        if tag != "CASE" or int(ordinal) != len(cases):
+            raise ValueError(f"unexpected factory row: {ordinal}")
+        cases[int(ordinal)] = (label, parameters)
+    if len(cases) != inventory["cases"]:
+        raise ValueError("factory count changed")
+
+    verdicts = {}
+    def record(ordinal, verdict):
+        if ordinal not in cases or ordinal in verdicts:
+            raise ValueError(f"invalid or duplicate original verdict: {ordinal}")
+        verdicts[ordinal] = verdict
+
+    def receipt(entry):
+        path = entry if isinstance(entry, str) else entry["evidence"]
+        data = read(path)
+        if data["authority_revision"] != inventory["authority_revision"]:
+            raise ValueError(f"GGML revision mismatch: {path}")
+        return data
+
+    standalone = receipt(ledger["standalone_evidence"])
+    rows = transcript(directory / standalone["verdict_table"], standalone["uncompressed_verdicts_sha256"])
+    for row in csv.DictReader(rows, delimiter="\t"):
+        record(int(row["ordinal"]), row["verdict"])
+
+    updates = {**ledger["superseded_standalone_verdicts"], **ledger["superseded_factory_verdicts"]}
+    labels = {label for req, group in ledger["passed_by_requirement"].items() if req not in updates for label in group}
+    for ordinal, (label, parameters) in cases.items():
+        matched = label in labels
+        for group in ledger["passed_parameter_groups"].values():
+            if group["label"] == label:
+                prefixes = group.get("parameters_prefixes", [])
+                if "parameters_prefix" in group:
+                    prefixes = [group["parameters_prefix"]]
+                matched |= ordinal in group.get("ordinals", []) or parameters.startswith(tuple(prefixes))
+        if matched:
+            record(ordinal, "passed")
+    for ordinal in ledger["refused_ordinals"]:
+        record(int(ordinal), "refused")
+
+    for entry in updates.values():
+        for label, ordinals in receipt(entry)["case_ordinals"].items():
+            for ordinal in ordinals:
+                if ordinal not in verdicts or cases[ordinal][0] != label:
+                    raise ValueError(f"receipt disagrees with original verdict: {label} {ordinal}")
+                verdicts[ordinal] = "passed"
+
+    counts = Counter(verdicts.values())
+    counts["untested"] += len(cases) - len(verdicts)
+    if counts != Counter({name: ledger[name] for name in ("passed", "refused", "failed", "untested")}):
+        raise ValueError(f"factory totals disagree with the receipts: {counts}")
+    print(f'{counts["passed"]} passed, {counts["refused"]} refused, {counts["failed"]} failed, {counts["untested"]} untested', file=sys.stderr)
+    for ordinal, (label, parameters) in cases.items():
+        verdict = verdicts.get(ordinal, "untested")
+        if verdict != "passed":
+            print(ordinal, verdict, label, parameters, sep="\t")

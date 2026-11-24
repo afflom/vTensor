@@ -177,7 +177,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Accept and ship
 
-- [ ] Reconcile all 27,755 factory records to individual verdicts. Require every applicable case to execute and pass on the actual library. Resolve omissions, unsupported required cases and missing-oracle rows. Link supplemental evidence for constructor and ABI behavior outside the factory.
+- [x] Reconcile all 27,755 ordinals with the original transcripts and supplemental receipts. Run `just factory-remaining` to list every unresolved case.
+- [ ] Pass every applicable remaining factory case on the plugin. Link supplemental evidence for missing-oracle rows, constructors and ABI behavior.
 - [x] Pass the complete locked-SDK `just vv` for the VT-52 checkpoint on the Verdant PR #12 pin. All 57 backend contract tests passed. [Verification](VTENSOR-VERIFICATION.md#verdant-q8-dependency)
 - [x] Pass the complete locked-SDK `just vv` at the VT-55 checkpoint on the Verdant PR #15 pin. All 60 backend contract tests passed. [Verification](VTENSOR-VERIFICATION.md#vt-55-complete-checkpoint)
 - [x] Pass the full locked-SDK gate at VT-56. All 61 backend contract tests passed on the SwiGLU implementation. [Checkpoint](VTENSOR-VERIFICATION.md#vt-56-complete-checkpoint)
