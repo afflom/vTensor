@@ -1,0 +1,59 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "upstream_files": [
+    "ggml/src/ggml.c",
+    "ggml/src/ggml-cpu/ops.cpp"
+  ],
+  "oracle": "GGML CPU with ggml_backend_cpu_set_use_ref enabled",
+  "profile": {
+    "families": [
+      {
+        "id": 0,
+        "operation": "IM2COL_BACK 1D",
+        "graphs": 32,
+        "output_words": 1008
+      },
+      {
+        "id": 1,
+        "operation": "IM2COL_BACK 2D",
+        "graphs": 32,
+        "output_words": 5040
+      },
+      {
+        "id": 2,
+        "operation": "POOL_2D_BACK AVG",
+        "graphs": 16,
+        "output_words": 2520
+      },
+      {
+        "id": 3,
+        "operation": "POOL_2D_BACK MAX",
+        "graphs": 16,
+        "output_words": 2520
+      }
+    ],
+    "input": "width 7, height 5 for 2D, 3 channels. One or two batches. GGML dimension 0 varies fastest.",
+    "variant_bits": "Bit 0 selects x stride 1 or 2. In 2D y stride equals 3 minus x stride. Bit 1 selects zero or one cell of padding on each active axis.",
+    "im2col": "Width 3, height 2 in 2D. Bit 2 selects x dilation 1 or 2, y dilation 1. Bit 3 selects batch count. Bit 4 selects kernel metadata F32 or F16. Call ggml_im2col_back with gradient first and kernel second, as in upstream autodiff.",
+    "pool": "2 by 2 kernel. Bit 2 selects batch count. Bit 3 makes all original inputs equal to 1 to exercise max ties.",
+    "values": "Original F32 input at i = ((7*i)%23-11)/4 except for the pooling tie case. Incoming gradient at i = ((5*i)%17-8)/8. Prefill every output with 13."
+  },
+  "checks": {
+    "graphs": 96,
+    "output_words": 11088,
+    "exact_forward_backward_inner_products": 96,
+    "method": "For every case, run the public forward and backward graph on the pinned CPU. Compare dot(forward(input), incoming_gradient) to dot(input, backward(incoming_gradient)) exactly in binary64."
+  },
+  "transcript": {
+    "path": "ggml-spatial-gradient-words.txt.gz",
+    "uncompressed_sha256": "8e5e404d8476794a9c87f7531caaf73bc3d121934cf255f950cfa8e4c97d5bb6",
+    "columns": "family variant followed by every output binary32 word in hexadecimal"
+  },
+  "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "initial_provider": {
+    "commit": "cd67ab84104436315cc1fdd763189e3410502667",
+    "sha256": "1cd08bb9d022dda6e67eaa7e9ba556ca59432f71edf0a8d4025cdb7a93228de9",
+    "preallocation_refusals": 96,
+    "uncompressed_transcript_sha256": "5c3014b9bf2312897a395bc0a4b979e83435eca81933bdddf6c27c035e5f44c4"
+  }
+}
