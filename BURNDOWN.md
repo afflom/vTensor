@@ -13,6 +13,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Establish coverage and unblock release
 
+- [x] Run unmodified llama-simple with the certified opcode selector. All 13 layer assignments and three eight-token outputs matched the previous verified run. [Consumer replay](verification/llama-consumer-operation-route.json)
 - [x] Move native opcode routing into Prism. Check all 100 declarations at empty and nonempty spans and exercise each route with the original GGML backend. [Operation index and verification](verification/ggml-operation-evidence.json)
 
 - [x] Place all 54 F16/BF16 ADD_CAST pairs with F32 addends and packed destinations. All 108 output rows matched the original GGML CPU sum and encoder byte for byte. [VT-179](verification/supplemental-half-add-vt179.json)
