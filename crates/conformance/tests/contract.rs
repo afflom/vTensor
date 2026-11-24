@@ -370,6 +370,8 @@ ggml_batches! {
     #[test]
     fn signed_copy_vt_126() { "upstream-SIGNED_COPY", 2, ["pointwise"] }
     #[test]
+    fn hyperconnection_post_vt_129() { "upstream-HYPERCONNECTION_POST", 11, ["pointwise"] }
+    #[test]
     fn hyperconnection_pre_vt_127() { "upstream-HYPERCONNECTION_PRE", 18, ["pointwise"] }
     #[test]
     fn silu_gradient_vt_124() { "upstream-SILU_GRADIENT", 1, ["pointwise"] }
@@ -494,7 +496,16 @@ fn verify_row_graphs() {
         let empty = Some(tensor(ty, 0, extent, extent, extent, 4, 0, 0, 0, 0, 0));
         let output = tensor(dest, 1, 1, 1, 1, 8, 8, 8, 8, 8, 0);
         let parameters = params(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        let request = plan(op, parameters, empty.clone(), empty, None, output);
+        let request = plan(
+            op,
+            parameters,
+            empty.clone(),
+            empty,
+            None,
+            None,
+            false,
+            output,
+        );
         assert!(matches!(
             vtensor_pointwise::run(request),
             Ok(Adt9::C0(Adt10::C4(2, ..)))
@@ -1511,7 +1522,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "4ec5da97ba28b259275d40dafce9cf953312872548203ac2e6da7604580f3687",
+            "6786f3f0f560e6d7111573823581ca1a3773ec3c83ded5ca2306bb9a7900f37a",
         )
     });
 

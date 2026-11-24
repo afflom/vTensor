@@ -840,3 +840,9 @@ id = "VT-108"
 level = "build"
 suite = "native-backend"
 statement = "Prism selects query heads and key rows and Verdant computes masked weighted rectified attention scores"
+
+[[id]]
+id = "VT-129"
+level = "build"
+suite = "native-backend"
+statement = "Prism models residual hyperconnection mixing and Verdant contracts optional channel combinations against the GGML CPU evaluator"

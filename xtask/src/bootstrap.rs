@@ -1317,34 +1317,16 @@ mod tests {
     }
 
     #[test]
-    fn host_docker_plugin_plant_is_rejected() {
+    fn docker_credentials_and_buildx_state_are_confined() {
         let devcontainer = include_str!("../../.devcontainer/devcontainer.json");
-        let bootstrap = r#"--volume "$docker_config:/tmp/prismpm-home/.docker:ro"
-scratch=$(mktemp -d)
-trap 'rm -rf "$docker_config" "$scratch"' EXIT
---env BUILDX_CONFIG=/tmp/prismpm-buildx \
---volume "$scratch:/tmp" \
-"$image" bash -c '
-umask 077
-docker buildx version
-'"#;
+        let bootstrap = include_str!("../../.github/workflows/bootstrap.yml");
         assert!(docker_credentials_are_confined(devcontainer, bootstrap));
         assert!(!docker_credentials_are_confined(
             &devcontainer.replace("/.docker/config.json,target", "/.docker,target"),
             bootstrap,
         ));
-        assert!(!docker_credentials_are_confined(
-            devcontainer,
-            &bootstrap.replace("$docker_config", "$HOME/.docker"),
-        ));
-    }
-
-    #[test]
-    fn missing_or_credential_nested_buildx_state_is_rejected() {
-        let devcontainer = include_str!("../../.devcontainer/devcontainer.json");
-        let bootstrap = include_str!("../../.github/workflows/bootstrap.yml");
-        assert!(docker_credentials_are_confined(devcontainer, bootstrap));
         for changed in [
+            bootstrap.replace("$docker_config", "$HOME/.docker"),
             bootstrap.replace(
                 "docker buildx version",
                 "umask 022\n              docker buildx version",

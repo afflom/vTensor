@@ -12,6 +12,7 @@ pub(crate) type Graph = *mut c_void;
 pub(crate) type Plan = *mut c_void;
 pub(crate) type Event = *mut c_void;
 
+pub(crate) const GGML_MAX_SRC: usize = 10;
 pub(crate) const GGML_STATUS_SUCCESS: c_int = 0;
 pub(crate) const GGML_STATUS_FAILED: c_int = -1;
 
@@ -58,7 +59,7 @@ record! { Tensor "ggml_tensor" {
     op: c_int,
     op_params: [i32; 16],
     flags: i32,
-    src: [TensorPtr; 10],
+    src: [TensorPtr; GGML_MAX_SRC],
     view_src: TensorPtr,
     view_offs: usize,
     data: *mut c_void,

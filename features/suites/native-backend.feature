@@ -434,3 +434,9 @@ Feature: native-backend
     Given queries, keys, head weights and a batch-broadcast half precision mask
     When vTensor decodes keys, contracts query heads and adds the masked scores
     Then the scores match the pinned GGML CPU evaluator
+
+  @VT-129 @build
+  Scenario: Prism models residual hyperconnection mixing and Verdant contracts optional channel combinations against the GGML CPU evaluator
+    Given an activation, channel residuals, post weights and an optional combination tensor
+    When vTensor evaluates identity or mixed residual channels
+    Then each output matches the pinned GGML CPU graph

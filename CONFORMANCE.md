@@ -216,6 +216,7 @@ model does not sanction.
 | `VT-127` | `build` | Prism contracts hyperconnection channels through Verdant with optional per-element sigmoid gates |
 | `VT-128` | `build` | Dense and indexed projections preserve explicit GGML accumulator and activation precision across stored weight formats |
 | `VT-108` | `build` | Prism selects query heads and key rows and Verdant computes masked weighted rectified attention scores |
+| `VT-129` | `build` | Prism models residual hyperconnection mixing and Verdant contracts optional channel combinations against the GGML CPU evaluator |
 
 ## normalization-graphs
 

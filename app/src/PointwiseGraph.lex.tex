@@ -154,7 +154,8 @@ inductive{
     {name: siluGradient, fields: [IndexContext]},
     {name: depthwise, fields: [IndexContext, ColumnAxis, ColumnAxis, Nat]},
     {name: signedCopy, fields: [Nat]},
-    {name: hyperconnectionPre, fields: [IndexContext, Bool, Nat]}
+    {name: hyperconnectionPre, fields: [IndexContext, Bool, Nat]},
+    {name: hyperconnectionPost, fields: [IndexContext, IndexContext, (Option IndexContext)]}
   ]
 }
 
@@ -310,6 +311,8 @@ inductive{
         (Option TensorDescriptor),
         (Option TensorDescriptor),
         (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        Bool,
         TensorDescriptor
       ]
     },
@@ -1821,6 +1824,7 @@ definition{
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.siluGradient activation => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.hyperconnectionPre weights gated scale => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.hyperconnectionPost residual post combination => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.signedCopy count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
@@ -1901,6 +1905,22 @@ definition{
   ],
   result: PointwiseDecision,
   body: (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p2), dilation := (project options p4)}); (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p3), dilation := (project options p5)}); (let storage : Nat := (project kernel ty); (let channelsFirst : Bool := ((project image s2) <? (project image s0)); (if (((((((((((((((storage =? 0) || (storage =? 1)) && ((project image ty) =? 0)) && ((project output ty) =? 0)) && ((project kernel n2) =? 1)) && ((project kernel n3) =? (project image n2))) && ((project output n2) =? (project image n2))) && ((project output n3) =? (project image n3))) && ((((((0 <? (project x kernel)) && (0 <? (project x stride))) && ((project x stride) <? 2147483648)) && (0 <? (project x dilation))) && ((project x dilation) <? 2147483648)) && ((project output n0) =? (columnExtent x (project image n0))))) && ((((((0 <? (project y kernel)) && (0 <? (project y stride))) && ((project y stride) <? 2147483648)) && (0 <? (project y dilation))) && ((project y dilation) <? 2147483648)) && ((project output n1) =? (columnExtent y (project image n1))))) && (depthwiseLayout image 4 channelsFirst false)) && (depthwiseLayout output 4 channelsFirst false)) && (depthwiseLayout kernel (if (storage =? 0) then 4 else 2) channelsFirst true)) && (separateTensors kernel output)) && (separateTensors image output)) then (ctor PointwiseDecision.copyBlocks (prim multiply ((prim multiply 3 (prim multiply (project x kernel) (project y kernel) : Nat) : Nat) + 2) (blockCount output 1) : Nat) 4 (indexContext kernel 1) (indexContext output 1) (ctor CopyMode.depthwise (indexContext image 1) x y storage)) else (ctor PointwiseDecision.invalidShape)))))),
+  executable: true
+}
+
+definition{
+  name: hyperconnectionPostPhases,
+  parameters: [channels : Nat, combination : (Option IndexContext)],
+  result: Nat,
+  body: (match combination | Option.none => 2 | Option.some mix => (1 + (prim multiply 2 channels : Nat))),
+  executable: true
+}
+
+definition{
+  name: planHyperconnectionPost,
+  parameters: [input : (Option TensorDescriptor), channels : (Option TensorDescriptor), weights : (Option TensorDescriptor), combination : (Option TensorDescriptor), trailing : Bool, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let x : TensorDescriptor := (match input | Option.none => output | Option.some value => value); (let residual : TensorDescriptor := (match channels | Option.none => output | Option.some value => value); (let post : TensorDescriptor := (match weights | Option.none => output | Option.some value => value); (if ((if trailing then false else (match input | Option.none => false | Option.some supplied => (match channels | Option.none => false | Option.some physical => (match weights | Option.none => false | Option.some suppliedPost => true)))) && ((((((((((((((((project x ty) =? 0) && ((project x n3) =? 1)) && (signedCopySpan x (blockCount x 1))) && (separateTensors x output)) && (((((project residual ty) =? 0) && ((project residual n3) =? 1)) && (signedCopySpan residual (blockCount residual 1))) && (separateTensors residual output))) && (((((project post ty) =? 0) && ((project post n3) =? 1)) && (signedCopySpan post (blockCount post 1))) && (separateTensors post output))) && ((project x n2) =? 1)) && ((project post n2) =? 1)) && ((project residual n0) =? (project x n0))) && ((project residual n2) =? (project x n1))) && ((project post n0) =? (project residual n1))) && ((project post n1) =? (project x n1))) && ((0 <? (project residual n1)) && (sameShape residual output))) && (siluGradientLayout output)) && (match combination | Option.none => true | Option.some mix => ((((((((project mix ty) =? 0) && ((project mix n3) =? 1)) && (signedCopySpan mix (blockCount mix 1))) && (separateTensors mix output)) && ((project mix n0) =? (project residual n1))) && ((project mix n1) =? (project residual n1))) && ((project mix n2) =? (project x n1)))))) then (let mix : (Option IndexContext) := (match combination | Option.none => (ctor Option.none [IndexContext]) | Option.some mix => (ctor Option.some [IndexContext] (indexContext mix 1))); (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (hyperconnectionPostPhases (project residual n1) mix) : Nat) 4 (indexContext x 1) (indexContext output 1) (ctor CopyMode.hyperconnectionPost (indexContext residual 1) (indexContext post 1) mix))) else (ctor PointwiseDecision.invalidShape))))),
   executable: true
 }
 
@@ -1997,6 +2017,7 @@ definition{
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.siluGradient activation => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.hyperconnectionPre weights gated scale => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.hyperconnectionPost residual post combination => (ctor GraphResponse.bindings (match combination | Option.none => 7 | Option.some mix => 15) 0 0 false)
     | CopyMode.signedCopy count => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
@@ -2042,6 +2063,7 @@ definition{
     | CopyMode.softmaxGradient scale => 0
     | CopyMode.siluGradient activation => 0
     | CopyMode.hyperconnectionPre weights gated scale => 0
+    | CopyMode.hyperconnectionPost residual post combination => 0
     | CopyMode.signedCopy count => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
@@ -2111,6 +2133,7 @@ definition{
     | CopyMode.softmaxGradient scale => (ctor WordOperation.invalid)
     | CopyMode.siluGradient activation => (ctor WordOperation.invalid)
     | CopyMode.hyperconnectionPre weights gated scale => (ctor WordOperation.invalid)
+    | CopyMode.hyperconnectionPost residual post combination => (ctor WordOperation.invalid)
     | CopyMode.signedCopy count => (ctor WordOperation.invalid)
     | CopyMode.depthwise image x y storage => (ctor WordOperation.invalid)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -2156,6 +2179,7 @@ definition{
     | CopyMode.softmaxGradient scale => 0
     | CopyMode.siluGradient activation => 0
     | CopyMode.hyperconnectionPre weights gated scale => 0
+    | CopyMode.hyperconnectionPost residual post combination => 0
     | CopyMode.signedCopy count => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
@@ -2349,6 +2373,14 @@ definition{
 }
 
 definition{
+  name: hyperconnectionPostStep,
+  parameters: [index : Nat, x : IndexContext, residual : IndexContext, post : IndexContext, combination : (Option IndexContext), destination : IndexContext],
+  result: GraphResponse,
+  body: (let phases : Nat := (hyperconnectionPostPhases (project residual n1) combination); (let phase : Nat := (prim remainder index phases 0 : Nat); (let element : Nat := (prim quotient index phases 0 : Nat); (let coordinate : Nat := (prim remainder element (project destination u0) 0 : Nat); (let row : Nat := (prim quotient element (project destination u0) 0 : Nat); (let destChannel : Nat := (prim remainder row (project residual n1) 0 : Nat); (let token : Nat := (prim quotient row (project residual n1) 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 ((prim multiply (project x s0) coordinate : Nat) + (prim multiply (project x s1) token : Nat))) (ctor WordOperand.source 2 ((prim multiply (project post s0) destChannel : Nat) + (prim multiply (project post s1) token : Nat))) (ctor WordTarget.scratch 0) 4 4) else (match combination | Option.none => (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.source 1 (((prim multiply (project residual s0) coordinate : Nat) + (prim multiply (project residual s1) destChannel : Nat)) + (prim multiply (project residual s2) token : Nat))) (ctor WordTarget.output (blockOffset element destination)) 4 4) | Option.some mix => (let lane : Nat := (prim subtract phase 1 : Nat); (let channel : Nat := (prim quotient lane 2 0 : Nat); (if ((prim remainder lane 2 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 (((prim multiply (project residual s0) coordinate : Nat) + (prim multiply (project residual s1) channel : Nat)) + (prim multiply (project residual s2) token : Nat))) (ctor WordOperand.source 3 (((prim multiply (project mix s0) destChannel : Nat) + (prim multiply (project mix s1) channel : Nat)) + (prim multiply (project mix s2) token : Nat))) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (if ((phase + 1) =? phases) then (ctor WordTarget.output (blockOffset element destination)) else (ctor WordTarget.scratch 0)) 4 4))))))))))))),
+  executable: true
+}
+
+definition{
   name: hyperconnectionPreStep,
   parameters: [
     index : Nat,
@@ -2416,6 +2448,7 @@ definition{
     | CopyMode.softmaxGradient scale => (softmaxGradientStep index (project source u0) scale)
     | CopyMode.siluGradient activation => (siluGradientStep index source activation destination)
     | CopyMode.hyperconnectionPre weights gated scale => (hyperconnectionPreStep index source weights destination gated scale)
+    | CopyMode.hyperconnectionPost residual post combination => (hyperconnectionPostStep index source residual post combination destination)
     | CopyMode.signedCopy count => (signedCopyStep index count source destination)
     | CopyMode.depthwise image x y storage => (depthwiseStep index source image destination x y storage)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
@@ -2476,9 +2509,9 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 output => (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
+    | GraphRequest.plan operation options input0 input1 input2 input3 trailing output => (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))
+      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output)))))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)

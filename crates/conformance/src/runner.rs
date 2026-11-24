@@ -514,14 +514,13 @@ impl Tensor {
         unsafe { self.src[slot].as_ref() }
     }
 
-    fn source_metadata(&self, slot: usize) -> Result<Option<TensorDescriptor>, BackendError> {
-        self.source(slot).map(tensor_metadata).transpose()
-    }
-
-    fn inputs<const N: usize>(&self) -> Result<[Option<TensorInput<'_>>; N], BackendError> {
+    fn map_sources<'a, T, const N: usize>(
+        &'a self,
+        bind: impl Fn(&'a Tensor) -> Result<T, BackendError>,
+    ) -> Result<[Option<T>; N], BackendError> {
         let mut inputs = [const { None }; N];
         for (slot, input) in inputs.iter_mut().enumerate() {
-            *input = self.input(slot)?;
+            *input = self.source(slot).map(&bind).transpose()?;
         }
         Ok(inputs)
     }
@@ -560,9 +559,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     }
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
-    let primary = tensor.source_metadata(0)?;
-    let secondary = tensor.source_metadata(1)?;
-    let base = tensor.source_metadata(2)?;
+    let [primary, secondary, base, fourth, trailing @ ..] =
+        tensor.map_sources::<_, GGML_MAX_SRC>(tensor_metadata)?;
+    let trailing = trailing.iter().any(Option::is_some);
     if matches!(operation, 45 | 46) {
         return rotary::plan(
             tensor,
@@ -574,17 +573,15 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         )
         .map(|plan| plan.map(ExecutionPlan::Rotary));
     }
-    // Extra ABI sources still have to be valid descriptors. The pointwise model consumes three.
-    let mut extra = false;
-    for slot in 3..tensor.src.len() {
-        extra |= tensor.source_metadata(slot)?.is_some();
-    }
+    let extra = fourth.is_some() || trailing;
     let response = pointwise(GraphRequest::C0(
         operation,
         Parameters::C0(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11),
         primary.clone(),
         secondary.clone(),
         base.clone(),
+        fourth,
+        trailing,
         output.clone(),
     ))?;
     let metadata = descriptor_for!(vtensor_typed::Adt1::C0);
@@ -774,7 +771,7 @@ fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result
         overlap_cells,
         ..,
     ) = geometry;
-    let [Some(kernel), Some(image)] = tensor.inputs()? else {
+    let [Some(kernel), Some(image)] = tensor.map_sources(TensorInput::new)? else {
         return Err(InvalidTensor);
     };
     let destination = graph_tensor_data(tensor)?;
@@ -998,7 +995,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
     use BackendError::{InvalidTensor, Overflow};
     let Plan::C0(blocks, _, rows, _, _, visits, outputs, ..) = plan;
-    let [Some(weights), Some(activations), indices] = tensor.inputs()? else {
+    let [Some(weights), Some(activations), indices] = tensor.map_sources(TensorInput::new)? else {
         return Err(InvalidTensor);
     };
     let request = |query| run(query).map_err(|_| Overflow);
@@ -1662,7 +1659,9 @@ mod attention {
     }
 
     pub(super) fn indexer(tensor: &Tensor, plan: IndexerPlan) -> Result<(), BackendError> {
-        let [Some(query), Some(key), Some(weights), Some(mask)] = tensor.inputs()? else {
+        let [Some(query), Some(key), Some(weights), Some(mask)] =
+            tensor.map_sources(TensorInput::new)?
+        else {
             return Err(InvalidTensor);
         };
         let offsets = |token, head, stream, key| match request(Request::C10(
@@ -1739,7 +1738,8 @@ mod attention {
     pub(super) fn sparse_mask(tensor: &Tensor, plan: SparsePlan) -> Result<(), BackendError> {
         use verdant_tensor::memory::copy_storage_block;
         let SparsePlan::C0(_, _, _, _, _, _, width, excluded, _) = plan;
-        let [Some(mask), Some(top), score, blocks, extra] = tensor.inputs()? else {
+        let [Some(mask), Some(top), score, blocks, extra] = tensor.map_sources(TensorInput::new)?
+        else {
             return Err(InvalidTensor);
         };
         let output = graph_tensor_data(tensor)?;
@@ -1905,10 +1905,12 @@ mod attention {
     ) -> Result<Option<super::ExecutionPlan>, BackendError> {
         use super::ExecutionPlan;
         let descriptor = descriptor_for!(Descriptor::C0);
-        let [a, b, c, d, e, rows] =
-            [0, 1, 2, 3, 4, 5].map(|slot| tensor.source_metadata(slot).map(|v| v.map(descriptor)));
+        let [a, b, c, d, e, rows, trailing @ ..] = tensor
+            .map_sources::<_, { super::GGML_MAX_SRC }>(|t| {
+                super::tensor_metadata(t).map(descriptor)
+            })?;
+        let trailing = trailing.iter().any(Option::is_some);
         let [p0, p1, p2, p3, ..] = tensor.op_params.map(|w| u64::from(w as u32));
-        let trailing = tensor.src[6..].iter().any(|p| !p.is_null());
         let query = Request::C8(
             op,
             trailing,
@@ -1916,12 +1918,12 @@ mod attention {
             p1,
             p2,
             p3,
-            a?,
-            b?,
-            c?,
-            d?,
-            e?,
-            rows?,
+            a,
+            b,
+            c,
+            d,
+            e,
+            rows,
             descriptor(output),
         );
         Ok(Some(match request(query)? {
@@ -2016,7 +2018,9 @@ mod attention {
     }
 
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
-        let [Some(q), Some(k), Some(v), mask, sink, indices] = tensor.inputs()? else {
+        let [Some(q), Some(k), Some(v), mask, sink, indices] =
+            tensor.map_sources(TensorInput::new)?
+        else {
             return Err(InvalidTensor);
         };
         let shape = q.ne;
