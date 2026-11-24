@@ -96,5 +96,53 @@
   "comparison": "Run the same stock llama-simple executable, GGUF, prompt and arguments twice. GGML_BACKEND_PATH selects exactly one plugin per process. Check the loaded registry, all assigned layers, the decode count and every byte of stdout.",
   "verdant_release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.7",
   "verdant_registry_index_commit": "242db3614a39ee66d7280f804d86a3032b645ab9",
-  "verdant_manifest_sha256": "a1c9aa33d2106eaeffc042a12fd0ed4ed9e35dbee78813678edfd653b5151228"
+  "verdant_manifest_sha256": "a1c9aa33d2106eaeffc042a12fd0ed4ed9e35dbee78813678edfd653b5151228",
+  "clean_sdk_acceptance": {
+    "revision": "c616590c64e4fedcb81b24de4473971d31e20356",
+    "run": "https://github.com/afflom/vTensor/actions/runs/45451754406",
+    "release_binary_revision": "f18c4800c03c79eb3994fa2beeb2cd0aeeaa1ec9",
+    "changed_files_since_build": [
+      "BURNDOWN.md",
+      "verification/ggml-scalar-cast-matrix.tsv",
+      "verification/ggml-storage-variant-map.json",
+      "verification/ggml-storage-variant-ordinals.tsv.gz",
+      "verification/llama-installed-provider.json"
+    ],
+    "build_input_comparison": "git diff --name-only between the release build and the clean checkout shows only the listed evidence files and checklist. All sources, generated bundles, dependencies, SDK settings and recipes are identical.",
+    "jobs": [
+      {
+        "runner": "ubuntu-24.04-arm",
+        "job": "https://github.com/afflom/vTensor/actions/runs/45451754406/job/138650427278",
+        "application_attestation": "fe066faea0377238d01cb947d7d2deb645a6c033cc609bc10fe5482a7e104889",
+        "backend_tests_passed": 166,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "gate": "just vv"
+      },
+      {
+        "runner": "ubuntu-24.04",
+        "job": "https://github.com/afflom/vTensor/actions/runs/45451754406/job/138650427981",
+        "application_attestation": "59cf47f7ee46cb3839cceea6a840f3c1b2f816c30063086b12ce54a9c93213c1",
+        "backend_tests_passed": 166,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "gate": "just vv"
+      }
+    ],
+    "root_locks": {
+      "pointwise": {
+        "repository": "afflom/vTensor",
+        "attestation": "0fc8224fd60e02dc3abaf35703d30239b7f04cfda62773ab8c6c9ac1b618c8d8",
+        "result": "2ab683f46948871c9a54648d58911a30e68208ce92a0d56e82fe2fcd785c9d01"
+      },
+      "native": {
+        "repository": "afflom/vTensor",
+        "attestation": "6f1152a44379179565f479eda812be0008fbf73308a1065a6f461eb801acc008",
+        "result": "bb29653801c253339ba783777f7afc10000b25ba5dd6c734ebca7d395f8e8688"
+      }
+    },
+    "oracle": "verification/ggml-factory-inventory.json"
+  }
 }
