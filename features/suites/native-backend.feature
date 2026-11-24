@@ -458,3 +458,9 @@ Feature: native-backend
     Given rows of logits and target probabilities with an incoming loss gradient
     When vTensor computes the mean loss and its gradient across classes
     Then both results match the imported GGML CPU evaluator
+
+  @VT-133 @build
+  Scenario: Prism admits Q3_K copies and indexed writes and Verdant encodes each selected block against the GGML CPU reference
+    Given floating point values and a grouped three-bit destination
+    When GGML copies values or updates indexed rows
+    Then the resulting tensor matches the imported CPU encoder

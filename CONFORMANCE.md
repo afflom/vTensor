@@ -220,6 +220,7 @@ model does not sanction.
 | `VT-130` | `build` | Prism schedules four-channel hyperconnection normalization and Verdant evaluates each word against the GGML CPU combination oracle |
 | `VT-131` | `build` | Prism schedules in-place SGD and AdamW updates and Verdant evaluates parameters and Adam moments against GGML CPU |
 | `VT-132` | `build` | Prism models cross-entropy loss and its logit gradient through Verdant reductions against GGML |
+| `VT-133` | `build` | Prism admits Q3_K copies and indexed writes and Verdant encodes each selected block against the GGML CPU reference |
 
 ## normalization-graphs
 

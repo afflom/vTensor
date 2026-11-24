@@ -338,6 +338,8 @@ ggml_batches! {
     #[test]
     fn grouped_affine_writes_vt_122() { "upstream-GROUPED_AFFINE_WRITES", 6, ["typed"] }
     #[test]
+    fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
+    #[test]
     fn grouped_six_writes_vt_119() { "upstream-GROUPED_SIX_WRITES", 2, ["typed"] }
 
     #[test]
@@ -643,7 +645,7 @@ fixture_query_tests! {
 #[test]
 fn normalization_arithmetic_vt_45() {
     use verdant_tensor::linear::evaluate_wide;
-    tensor_layout::certified_current_model(&verdant_api::ENGINE_ROOT, "quotient");
+    verdant_api::verify_quotient();
     let divide = |a, b| evaluate_wide(4, a, b).unwrap().unwrap();
     let widen = |a| evaluate_wide(5, a, 0).unwrap().unwrap();
     assert_eq!(divide(1.0f64.to_bits(), 2.0f64.to_bits()), 0.5f64.to_bits());
@@ -1255,17 +1257,17 @@ mod tensor_layout {
         if !verified.insert((root.canonicalize().unwrap(), name.to_owned())) {
             return;
         }
-        let (primary, directory) = match name {
-            "quotient" => ("verdant_quotient_f64".to_owned(), "tensor-quotient"),
-            "native" => ("vtensor_native_config".to_owned(), "native"),
-            _ => (format!("vtensor_{name}"), name),
+        let primary = if name == "native" {
+            "vtensor_native_config".into()
+        } else {
+            format!("vtensor_{name}")
         };
         let project = if name == "layout" {
             "app/lexlean.toml".to_owned()
         } else {
             format!("app/{name}.lexlean.toml")
         };
-        let bundle = format!("generated/{directory}");
+        let bundle = format!("generated/{name}");
         let result = ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
         let flags = ["--project", &project, "--diagnostic-format=json", "check"];
         let current = ggml_oracle::tool_json(root, "lexlean", &flags);
@@ -1427,6 +1429,33 @@ mod verdant_api {
             .to_owned()
     });
 
+    pub(super) fn verify_quotient() {
+        use super::ggml_oracle::{file_digest, read_json, tool_json};
+        let root = &*ENGINE_ROOT;
+        let binding = &super::native_backend_oracle::ORACLE_BINDINGS["verdant_quotient"];
+        for (path, digest) in binding["sha256"].as_object().unwrap() {
+            assert_eq!(
+                file_digest(root.join(path)),
+                digest.as_str().unwrap(),
+                "{path}"
+            );
+        }
+        let image = binding["sdk"].as_str().expect("pinned Verdant compiler");
+        assert_eq!(
+            read_json(root.join(".devcontainer/devcontainer.json"))["image"],
+            image
+        );
+        let args = ["verdant-quotient-check", root.to_str().unwrap(), image];
+        let check = tool_json(&super::root(), "just", &args);
+        let result = read_json(root.join("generated/tensor-quotient/result.json"));
+        for key in ["source_id", "semantic_id"] {
+            assert_eq!(
+                check[key], result["source"][key],
+                "stale Verdant quotient {key}"
+            );
+        }
+    }
+
     /// `VT-02`: The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services
     #[test]
     fn verdant_api_vt_02() {
@@ -1525,7 +1554,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "29b24117c0e77884eaccf6302cafb88602bff02cef09c5c5d88185e3fad3a8ad",
+            "8455ac988795c2528d5e33c67ad180570ebd27b0799af589df56c2b0baa6c47c",
         )
     });
 

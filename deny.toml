@@ -368,7 +368,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x4591d3a7 }]
+license-files = [{ path = "src/lib.rs", hash = 0x68ecfbaa }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"
@@ -714,9 +714,9 @@ license-files = [{ path = "src/lib.rs", hash = 0xa3b940ff }]
 
 [[licenses.clarify]]
 name = "verdant_grouped_six_encoding"
-version = "=2.42.0"
+version = "=2.45.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x0d3aebf4 }]
+license-files = [{ path = "src/lib.rs", hash = 0x7236b3b5 }]
 
 [[licenses.clarify]]
 name = "verdant_affine_finite"
@@ -740,7 +740,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xe2b3b275 }]
 name = "verdant_affine_fit"
 version = "=2.43.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xce5236f8 }]
+license-files = [{ path = "src/lib.rs", hash = 0x6376de8b }]
 
 [[licenses.clarify]]
 name = "verdant_affine_weight_fields"
@@ -777,3 +777,9 @@ name = "verdant_signed_truncation"
 version = "=2.44.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x4ca32179 }]
+
+[[licenses.clarify]]
+name = "verdant_affine_quantized"
+version = "=2.43.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xb11fef40 }]

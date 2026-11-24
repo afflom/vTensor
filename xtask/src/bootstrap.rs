@@ -998,72 +998,38 @@ mod tests {
         ));
     }
 
+    fn policy_json(value: &serde_json::Value) -> String {
+        format!("{}\n", serde_json::to_string_pretty(value).unwrap())
+    }
+
     #[test]
     fn dependency_updates_preserve_sdk_ownership_and_ordinary_maintenance() {
         let source = include_str!("../../.github/dependabot.yml");
         assert!(dependency_updates_are_confined(source, &[]));
         let original: serde_json::Value = serde_json::from_str(source).unwrap();
-        let encode = |value: &serde_json::Value| {
-            format!("{}\n", serde_json::to_string_pretty(value).unwrap())
-        };
-        for (pointer, value) in [
-            ("/updates/0/ignore", serde_json::json!([])),
-            (
-                "/updates/0/ignore",
-                serde_json::json!([
-                    {"dependency-name": "UOR-Foundation/PrismPM/action"},
-                    {"dependency-name": "actions/checkout"}
-                ]),
-            ),
-            (
-                "/updates/0/ignore/0/dependency-name",
-                serde_json::json!("*"),
-            ),
-            (
-                "/updates/0/ignore/0/dependency-name",
-                serde_json::json!("UOR-Foundation/PrismPM"),
-            ),
-            (
-                "/updates/0/ignore/0/dependency-name",
-                serde_json::json!("actions/checkout"),
-            ),
-            ("/updates/0/exclude-paths", serde_json::json!([])),
-            (
-                "/updates/0/exclude-paths",
-                serde_json::json!([
-                    ".github/workflows/bootstrap.yml",
-                    ".github/workflows/prismpm.yml"
-                ]),
-            ),
-            (
-                "/updates/0/exclude-paths/0",
-                serde_json::json!(".github/workflows/**"),
-            ),
-            (
-                "/updates/0/exclude-paths/0",
-                serde_json::json!("bootstrap.yml"),
-            ),
-            ("/updates/0/directory", serde_json::json!("/other")),
-            ("/updates/0/schedule/interval", serde_json::json!("never")),
-            (
-                "/updates/1/package-ecosystem",
-                serde_json::json!("github-actions"),
-            ),
-            (
-                "/updates/1/groups/build-policy/patterns",
-                serde_json::json!([]),
-            ),
-            (
-                "/updates/1/commit-message/prefix",
-                serde_json::json!("Bump"),
-            ),
-        ] {
-            let mut changed = original.clone();
-            *changed.pointer_mut(pointer).unwrap() = value;
-            assert!(
-                !dependency_updates_are_confined(&encode(&changed), &[]),
-                "{pointer}"
-            );
+        // Group rejected replacements by field so each case starts from the same valid policy.
+        let mutations = serde_json::json!({
+            "/updates/0/ignore": [[], [
+                {"dependency-name": "UOR-Foundation/PrismPM/action"}, {"dependency-name": "actions/checkout"}
+            ]],
+            "/updates/0/ignore/0/dependency-name": ["*", "UOR-Foundation/PrismPM", "actions/checkout"],
+            "/updates/0/exclude-paths": [[], [".github/workflows/bootstrap.yml", ".github/workflows/prismpm.yml"]],
+            "/updates/0/exclude-paths/0": [".github/workflows/**", "bootstrap.yml"],
+            "/updates/0/directory": ["/other"],
+            "/updates/0/schedule/interval": ["never"],
+            "/updates/1/package-ecosystem": ["github-actions"],
+            "/updates/1/groups/build-policy/patterns": [[]],
+            "/updates/1/commit-message/prefix": ["Bump"]
+        });
+        for (pointer, replacements) in mutations.as_object().unwrap() {
+            for replacement in replacements.as_array().unwrap() {
+                let mut changed = original.clone();
+                *changed.pointer_mut(pointer).unwrap() = replacement.clone();
+                assert!(
+                    !dependency_updates_are_confined(&policy_json(&changed), &[]),
+                    "{pointer} = {replacement}"
+                );
+            }
         }
         for (key, value) in [
             ("open-pull-requests-limit", serde_json::json!(0)),
@@ -1074,7 +1040,7 @@ mod tests {
                 let mut changed = original.clone();
                 changed["updates"][index][key] = value.clone();
                 assert!(
-                    !dependency_updates_are_confined(&encode(&changed), &[]),
+                    !dependency_updates_are_confined(&policy_json(&changed), &[]),
                     "{index}/{key}"
                 );
             }
@@ -1082,11 +1048,17 @@ mod tests {
         for field in ["ignore", "exclude-paths"] {
             let mut changed = original.clone();
             changed["updates"][0].as_object_mut().unwrap().remove(field);
-            assert!(!dependency_updates_are_confined(&encode(&changed), &[]));
+            assert!(!dependency_updates_are_confined(
+                &policy_json(&changed),
+                &[]
+            ));
         }
         let mut changed = original.clone();
         changed["updates"].as_array_mut().unwrap().pop();
-        assert!(!dependency_updates_are_confined(&encode(&changed), &[]));
+        assert!(!dependency_updates_are_confined(
+            &policy_json(&changed),
+            &[]
+        ));
         for malformed in [
             source.replacen("\"version\": 2", "\"version\": 2, \"version\": 2", 1),
             source.replace(
@@ -1106,16 +1078,13 @@ mod tests {
     fn upstream_pinned_dependency_is_ignored_and_nothing_else() {
         let source = include_str!("../../.github/dependabot.yml");
         let original: serde_json::Value = serde_json::from_str(source).unwrap();
-        let encode = |value: &serde_json::Value| {
-            format!("{}\n", serde_json::to_string_pretty(value).unwrap())
-        };
         let with_ignore = |names: &[&str]| {
             let mut changed = original.clone();
             changed["updates"][1]["ignore"] = names
                 .iter()
                 .map(|name| serde_json::json!({"dependency-name": name}))
                 .collect();
-            encode(&changed)
+            policy_json(&changed)
         };
         let pins = vec!["unicode-normalization".to_string()];
         let pinned_policy = with_ignore(&["unicode-normalization"]);
@@ -1127,7 +1096,10 @@ mod tests {
 
         let mut changed: serde_json::Value = serde_json::from_str(&pinned_policy).unwrap();
         changed["updates"][1]["schedule"]["interval"] = serde_json::json!("never");
-        assert!(!dependency_updates_are_confined(&encode(&changed), &pins));
+        assert!(!dependency_updates_are_confined(
+            &policy_json(&changed),
+            &pins
+        ));
     }
 
     #[test]

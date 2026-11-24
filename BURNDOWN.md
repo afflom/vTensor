@@ -21,11 +21,11 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Verify published Verdant v2.20.1 in a clean Cargo consumer. VTK-41 and VTK-42 execute, and all 85 resolved Verdant-registry archives match the release manifest and Cargo lock. [Release and manifest](https://github.com/afflom/verdant-engine/releases/tag/v2.20.1)
 - [x] Verify Verdant main contains VTK-43 through VTK-51. Its affine encoder passes fidelity and the VTK-50 and VTK-51 GGML comparisons. [Upstream verification](verification/verdant-vtk51-upstream-integration.json)
 - [x] Merge the portable MXFP4 oracle correction into Verdant main. All 5,100 MXFP4 reference bytes agree across x86-64 and AArch64. [Verdant PR #50](https://github.com/afflom/verdant-engine/pull/50)
-- [ ] Switch to the published Verdant crates containing VTK-43 through VTK-51. Verify the release checksums and rerun VT-02. [Exact patch pin](model/verdant-development.json)
+- [ ] Switch to the published Verdant crates containing VTK-43 through VTK-52. Verify the release checksums and rerun VT-02. [Exact patch pin](model/verdant-development.json)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,269 non-Prism lines** (12,818 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,268 non-Prism lines** (12,817 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -70,7 +70,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 24 Q6_K indexed writes and six copies. [GGML comparisons](verification/factory-grouped-six-writes-vt119.json)
 - [x] Pass 72 grouped affine indexed writes and 18 copies to Q2_K, Q4_K and Q5_K. [Oracle comparisons](verification/factory-grouped-affine-writes-vt122.json)
 - [x] Submit the Verdant Q3_K encoder. All 33,660 bytes from 306 blocks matched the GGML reference. [Verdant PR #51](https://github.com/afflom/verdant-engine/pull/51)
-- [ ] Pin Verdant’s Q3_K encoder and pass 24 indexed writes and six copies.
+- [x] Pin Verdant’s Q3_K encoder. VT-133 passes 24 indexed writes and six copies against GGML CPU. [Patch pin](model/verdant-development.json)
 - [ ] Implement IQ4_NL and IQ4_XS encoders. Pass 48 SET_ROWS and 12 CPY cases against the CPU backend. [CPU encoder registration](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.c#L387-L397)
 - [ ] Verify the seven CPU-refused IQ encoders against the upstream quantizers. Cover 168 SET_ROWS and 42 CPY cases. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
 - [x] Pass F32-to-I32 copies 8708 and 8709, including strided storage and atomic refusal. [VT-126](verification/factory-signed-copy-vt126.json)

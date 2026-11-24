@@ -20,6 +20,20 @@ model:
     cargo run -q --locked -p xtask -- validate
     node bootstrap/frame-sync.mjs --check
 
+# VT-45 replays the imported quotient with its producing compiler. Stream the
+# Cargo checkout because the outer Docker daemon need not share its paths.
+verdant-quotient-check checkout image:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tar -C {{quote(checkout)}} -cf - app/src app/lean-toolchain app/lakefile.toml app/lake-manifest.json \
+        app/quotient.lexlean.toml app/quotient.lexlean.lock generated/tensor-quotient | \
+      docker run --rm -i --network none --entrypoint sh --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp -w /tmp {{quote(image)}} -ec '
+        tar -xf -
+        lexlean --project app/quotient.lexlean.toml lock --check >&2
+        lexlean --project app/quotient.lexlean.toml --diagnostic-format json check
+        lexlean production verify-artifact generated/tensor-quotient >&2
+      '
+
 # The SDK's own checks of the contract and both locks. `template check` also
 # regenerates `CONFORMANCE.md` in an isolated copy through `model-write`.
 template-check:

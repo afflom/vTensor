@@ -864,3 +864,9 @@ id = "VT-132"
 level = "build"
 suite = "native-backend"
 statement = "Prism models cross-entropy loss and its logit gradient through Verdant reductions against GGML"
+
+[[id]]
+id = "VT-133"
+level = "build"
+suite = "native-backend"
+statement = "Prism admits Q3_K copies and indexed writes and Verdant encodes each selected block against the GGML CPU reference"
