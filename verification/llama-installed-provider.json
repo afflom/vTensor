@@ -1,12 +1,11 @@
 {
-  "vtensor_revision": "e7b5960fa0a5787ef1a2843b8dbcfd4c1ad8c18b",
+  "vtensor_revision": "f18c4800c03c79eb3994fa2beeb2cd0aeeaa1ec9",
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "verdant_revision": "931139cb13223ac6fd0291ee72aabeb639e6c45b",
   "architecture": "x86_64-unknown-linux-gnu",
   "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
   "provider_build": "cargo build --locked --release -p vtensor-backend",
-  "plugin_sha256": "df019a10eed232e4494ef3a4f354ba5bb123c6def123a4abd8b80a2bc93e7f90",
-  "provider_inputs_sha256": "509eb59d3e3757af9e9c126f65429efada1b83ec2957c97041cb9201338307f3",
+  "plugin_sha256": "03ce631638f1c0457a7751ff92ba254d0e7ab548f219790f891812d014440a98",
+  "provider_inputs_sha256": "7dccc12c1a7e157a096e0118a59dcd7df264acc2dd091dbd0a136acf97e53749",
   "host_build": "CMake llama-simple target with BUILD_SHARED_LIBS=ON, GGML_NATIVE=OFF, GGML_BACKEND_DL=ON and an empty GGML_BACKEND_DIR",
   "llama_simple_sha256": "61490f94e299eb54267151b8ed828d933ef83a8c3aeca472e593dcf26bbf2b41",
   "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
@@ -94,5 +93,8 @@
     }
   ],
   "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
-  "comparison": "Run the same stock llama-simple executable, GGUF, prompt and arguments twice. GGML_BACKEND_PATH selects exactly one plugin per process. Check the loaded registry, all assigned layers, the decode count and every byte of stdout."
+  "comparison": "Run the same stock llama-simple executable, GGUF, prompt and arguments twice. GGML_BACKEND_PATH selects exactly one plugin per process. Check the loaded registry, all assigned layers, the decode count and every byte of stdout.",
+  "verdant_release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.7",
+  "verdant_registry_index_commit": "242db3614a39ee66d7280f804d86a3032b645ab9",
+  "verdant_manifest_sha256": "a1c9aa33d2106eaeffc042a12fd0ed4ed9e35dbee78813678edfd653b5151228"
 }

@@ -1,0 +1,267 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cases": 31264,
+  "ledger": "verification/ggml-storage-variant-ordinals.tsv.gz",
+  "ledger_sha256": "ec8d5d952b21ef1b48467ebfe76d073970673a0c992f5d0b87d4ec4b6fa0e0ce",
+  "fixture_root": "PrismTemplateContract.ArithmeticFixtures.evaluate",
+  "fixture_semantic_id": "a4df6c4178928c4eee9bd9fd110ef0371f268d1998b55d32437367e26d02697d",
+  "fixture_lock_sha256": "9d30e5564f7b18f8fc307ba65ff735ac8e279dfbfc97bd9b8938a1ed902a5f55",
+  "prism_execution_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "scope": "Five existing supplemental suites. Each row identifies one previously executed input and its original CPU comparison. Ordinals are local to each suite. Counts are independent of the factory total.",
+  "columns": "Type values refer to model/ggml-declarations.toml. ne0\u2013ne3 and nb0\u2013nb3 are the source extents and byte strides. Variant, pattern, layout and geometry are the original certified fixture parameters.",
+  "queries": "At base query q, item 0 gives the total. At q+1 read items 0\u20136 (type, variant, pattern, layout, units, rows, batches), and item 9 for cast destination. At q+2, slot 0 items 0\u20137 give source extents and strides. The native GGML driver binds the same queries to each graph and verifies the entire frozen transcript.",
+  "evidence": {
+    "baseline": "verification/native-fixture-baseline.json",
+    "baseline_sha256": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
+    "additional_repeat_types": "verification/supplemental-storage-repeat-vt155.json"
+  },
+  "suites": {
+    "copy": {
+      "requirements": [
+        "VT-15",
+        "VT-41"
+      ],
+      "cases": 3456,
+      "source_types": 36,
+      "type_pairs": {
+        "GGML_TYPE_BF16/GGML_TYPE_BF16": 96,
+        "GGML_TYPE_F16/GGML_TYPE_F16": 96,
+        "GGML_TYPE_F32/GGML_TYPE_F32": 96,
+        "GGML_TYPE_F64/GGML_TYPE_F64": 96,
+        "GGML_TYPE_F8_E4M3/GGML_TYPE_F8_E4M3": 96,
+        "GGML_TYPE_I16/GGML_TYPE_I16": 96,
+        "GGML_TYPE_I32/GGML_TYPE_I32": 96,
+        "GGML_TYPE_I64/GGML_TYPE_I64": 96,
+        "GGML_TYPE_I8/GGML_TYPE_I8": 96,
+        "GGML_TYPE_IQ1_M/GGML_TYPE_IQ1_M": 96,
+        "GGML_TYPE_IQ1_S/GGML_TYPE_IQ1_S": 96,
+        "GGML_TYPE_IQ2_S/GGML_TYPE_IQ2_S": 96,
+        "GGML_TYPE_IQ2_XS/GGML_TYPE_IQ2_XS": 96,
+        "GGML_TYPE_IQ2_XXS/GGML_TYPE_IQ2_XXS": 96,
+        "GGML_TYPE_IQ3_S/GGML_TYPE_IQ3_S": 96,
+        "GGML_TYPE_IQ3_XXS/GGML_TYPE_IQ3_XXS": 96,
+        "GGML_TYPE_IQ4_NL/GGML_TYPE_IQ4_NL": 96,
+        "GGML_TYPE_IQ4_XS/GGML_TYPE_IQ4_XS": 96,
+        "GGML_TYPE_MXFP4/GGML_TYPE_MXFP4": 96,
+        "GGML_TYPE_NVFP4/GGML_TYPE_NVFP4": 96,
+        "GGML_TYPE_Q1_0/GGML_TYPE_Q1_0": 96,
+        "GGML_TYPE_Q2_0/GGML_TYPE_Q2_0": 96,
+        "GGML_TYPE_Q2_K/GGML_TYPE_Q2_K": 96,
+        "GGML_TYPE_Q3_K/GGML_TYPE_Q3_K": 96,
+        "GGML_TYPE_Q4_0/GGML_TYPE_Q4_0": 96,
+        "GGML_TYPE_Q4_1/GGML_TYPE_Q4_1": 96,
+        "GGML_TYPE_Q4_K/GGML_TYPE_Q4_K": 96,
+        "GGML_TYPE_Q5_0/GGML_TYPE_Q5_0": 96,
+        "GGML_TYPE_Q5_1/GGML_TYPE_Q5_1": 96,
+        "GGML_TYPE_Q5_K/GGML_TYPE_Q5_K": 96,
+        "GGML_TYPE_Q6_K/GGML_TYPE_Q6_K": 96,
+        "GGML_TYPE_Q8_0/GGML_TYPE_Q8_0": 96,
+        "GGML_TYPE_Q8_1/GGML_TYPE_Q8_1": 96,
+        "GGML_TYPE_Q8_K/GGML_TYPE_Q8_K": 96,
+        "GGML_TYPE_TQ1_0/GGML_TYPE_TQ1_0": 96,
+        "GGML_TYPE_TQ2_0/GGML_TYPE_TQ2_0": 96
+      },
+      "layout_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_variants": "DUP, CONT/CONT_1D or same-type CPY.",
+      "variant_counts": {
+        "0": 1152,
+        "1": 1152,
+        "2": 1152
+      },
+      "fixture_config_query": 5,
+      "verdant_entry_point": "verdant_tensor::memory::copy_storage_block",
+      "cpu_fixture_transcript_sha256": "c34cb4b1c81bede0fbd1ad91e0a3ded372f4819af0756ef98f47354269fb6521",
+      "atomic_descriptor_refusal_probes": 6
+    },
+    "repeat": {
+      "requirements": [
+        "VT-16",
+        "VT-42"
+      ],
+      "cases": 160,
+      "source_types": 5,
+      "type_pairs": {
+        "GGML_TYPE_BF16/GGML_TYPE_BF16": 32,
+        "GGML_TYPE_F16/GGML_TYPE_F16": 32,
+        "GGML_TYPE_F32/GGML_TYPE_F32": 32,
+        "GGML_TYPE_I16/GGML_TYPE_I16": 32,
+        "GGML_TYPE_I32/GGML_TYPE_I32": 32
+      },
+      "layout_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_variants": "REPEAT with the imported CPU element kernel.",
+      "variant_counts": {
+        "0": 160
+      },
+      "fixture_config_query": 11,
+      "verdant_entry_point": "verdant_tensor::memory::copy_storage_block",
+      "cpu_fixture_transcript_sha256": "7ad5bdaebdbcefddc69edebd2970747093620abfdad0c15419bf15396ef51a02",
+      "atomic_descriptor_refusal_probes": 2
+    },
+    "concat": {
+      "requirements": [
+        "VT-17",
+        "VT-43"
+      ],
+      "cases": 10368,
+      "source_types": 36,
+      "type_pairs": {
+        "GGML_TYPE_BF16/GGML_TYPE_BF16": 288,
+        "GGML_TYPE_F16/GGML_TYPE_F16": 288,
+        "GGML_TYPE_F32/GGML_TYPE_F32": 288,
+        "GGML_TYPE_F64/GGML_TYPE_F64": 288,
+        "GGML_TYPE_F8_E4M3/GGML_TYPE_F8_E4M3": 288,
+        "GGML_TYPE_I16/GGML_TYPE_I16": 288,
+        "GGML_TYPE_I32/GGML_TYPE_I32": 288,
+        "GGML_TYPE_I64/GGML_TYPE_I64": 288,
+        "GGML_TYPE_I8/GGML_TYPE_I8": 288,
+        "GGML_TYPE_IQ1_M/GGML_TYPE_IQ1_M": 288,
+        "GGML_TYPE_IQ1_S/GGML_TYPE_IQ1_S": 288,
+        "GGML_TYPE_IQ2_S/GGML_TYPE_IQ2_S": 288,
+        "GGML_TYPE_IQ2_XS/GGML_TYPE_IQ2_XS": 288,
+        "GGML_TYPE_IQ2_XXS/GGML_TYPE_IQ2_XXS": 288,
+        "GGML_TYPE_IQ3_S/GGML_TYPE_IQ3_S": 288,
+        "GGML_TYPE_IQ3_XXS/GGML_TYPE_IQ3_XXS": 288,
+        "GGML_TYPE_IQ4_NL/GGML_TYPE_IQ4_NL": 288,
+        "GGML_TYPE_IQ4_XS/GGML_TYPE_IQ4_XS": 288,
+        "GGML_TYPE_MXFP4/GGML_TYPE_MXFP4": 288,
+        "GGML_TYPE_NVFP4/GGML_TYPE_NVFP4": 288,
+        "GGML_TYPE_Q1_0/GGML_TYPE_Q1_0": 288,
+        "GGML_TYPE_Q2_0/GGML_TYPE_Q2_0": 288,
+        "GGML_TYPE_Q2_K/GGML_TYPE_Q2_K": 288,
+        "GGML_TYPE_Q3_K/GGML_TYPE_Q3_K": 288,
+        "GGML_TYPE_Q4_0/GGML_TYPE_Q4_0": 288,
+        "GGML_TYPE_Q4_1/GGML_TYPE_Q4_1": 288,
+        "GGML_TYPE_Q4_K/GGML_TYPE_Q4_K": 288,
+        "GGML_TYPE_Q5_0/GGML_TYPE_Q5_0": 288,
+        "GGML_TYPE_Q5_1/GGML_TYPE_Q5_1": 288,
+        "GGML_TYPE_Q5_K/GGML_TYPE_Q5_K": 288,
+        "GGML_TYPE_Q6_K/GGML_TYPE_Q6_K": 288,
+        "GGML_TYPE_Q8_0/GGML_TYPE_Q8_0": 288,
+        "GGML_TYPE_Q8_1/GGML_TYPE_Q8_1": 288,
+        "GGML_TYPE_Q8_K/GGML_TYPE_Q8_K": 288,
+        "GGML_TYPE_TQ1_0/GGML_TYPE_TQ1_0": 288,
+        "GGML_TYPE_TQ2_0/GGML_TYPE_TQ2_0": 288
+      },
+      "layout_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_variants": "CONCAT on axis equal to variant.",
+      "variant_counts": {
+        "0": 2592,
+        "1": 2592,
+        "2": 2592,
+        "3": 2592
+      },
+      "fixture_config_query": 17,
+      "verdant_entry_point": "verdant_tensor::memory::copy_storage_block",
+      "cpu_fixture_transcript_sha256": "aecba0dec6da7f6573c7ddeb0ee8842041275f4497cc53d4e4e0d674036067a0",
+      "atomic_descriptor_refusal_probes": 20
+    },
+    "fill": {
+      "requirements": [
+        "VT-23",
+        "VT-44"
+      ],
+      "cases": 15360,
+      "source_types": 2,
+      "type_pairs": {
+        "GGML_TYPE_F16/GGML_TYPE_F16": 7680,
+        "GGML_TYPE_F32/GGML_TYPE_F32": 7680
+      },
+      "layout_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_variants": "0 = FILL, 1 = FILL_INPLACE.",
+      "variant_counts": {
+        "0": 7680,
+        "1": 7680
+      },
+      "fixture_config_query": 24,
+      "verdant_entry_point": "verdant_tensor::linear::convert_float_storage; verdant_tensor::memory::copy_storage_block",
+      "cpu_fixture_transcript_sha256": "d6723b95d277372d01fc6a838f0ae61904e35d3be4a2bd339a037b9803da4279",
+      "atomic_descriptor_refusal_probes": 6
+    },
+    "cast": {
+      "requirements": [
+        "VT-24",
+        "VT-44"
+      ],
+      "cases": 1920,
+      "source_types": 3,
+      "type_pairs": {
+        "GGML_TYPE_BF16/GGML_TYPE_F16": 320,
+        "GGML_TYPE_BF16/GGML_TYPE_F32": 320,
+        "GGML_TYPE_F16/GGML_TYPE_BF16": 320,
+        "GGML_TYPE_F16/GGML_TYPE_F32": 320,
+        "GGML_TYPE_F32/GGML_TYPE_BF16": 320,
+        "GGML_TYPE_F32/GGML_TYPE_F16": 320
+      },
+      "layout_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_variants": "Variants 0\u20132 call ggml_cast, 3\u20135 call ggml_cpy. Each pair has an explicit destination type.",
+      "variant_counts": {
+        "0": 320,
+        "1": 320,
+        "2": 320,
+        "3": 320,
+        "4": 320,
+        "5": 320
+      },
+      "fixture_config_query": 31,
+      "verdant_entry_point": "verdant_tensor::linear::convert_float_storage",
+      "cpu_fixture_transcript_sha256": "48e9f8f0d5af3601fe1c4dd8e00378c7c9470feda73c6d0454e2c9df70acee75",
+      "atomic_descriptor_refusal_probes": 20
+    }
+  },
+  "scalar_cast_survey": {
+    "provider_revision": "f18c4800c03c79eb3994fa2beeb2cd0aeeaa1ec9",
+    "provider_sha256": "03ce631638f1c0457a7751ff92ba254d0e7ab548f219790f891812d014440a98",
+    "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+    "ggml_cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+    "constructor": "ggml_cast",
+    "source_extents": [
+      8,
+      2,
+      1,
+      1
+    ],
+    "layout": "contiguous",
+    "input": [
+      0,
+      1,
+      2,
+      -1,
+      -2,
+      4,
+      8,
+      -4
+    ],
+    "second_row_rotation": 3,
+    "admission": "before and after backend buffer allocation",
+    "destination_initial_byte": 165,
+    "matrix": "verification/ggml-scalar-cast-matrix.tsv",
+    "pairs": 81,
+    "direct_cpu_results_equal": 23,
+    "cpu_without_result_and_provider_refused_without_mutation": 58
+  }
+}
