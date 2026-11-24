@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn signed_indexed_rows_vt_168() { "integer-rows", 8, ["typed"] }
     fn activation_q8_stores_vt_167() { "activation-q8", 20, ["typed"] }
     fn narrow_wide_casts_vt_166() { "wide-narrow", 944, ["pointwise"] }
     fn staged_wide_casts_vt_165() { "wide-staged", 2740, ["pointwise"] }
@@ -2106,25 +2107,32 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
-    if (!strcmp(argv[3],"activation-q8")) {
+    const bool integer_rows=!strcmp(argv[3],"integer-rows");
+    if (integer_rows || !strcmp(argv[3],"activation-q8")) {
         size_t cases=0;
-        for (auto to : {GGML_TYPE_Q8_1,GGML_TYPE_Q8_K}) for (auto from : {GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16}) {
-            const auto width=ggml_blck_size(to);
-            for (int variant=0;variant<(from==GGML_TYPE_BF16?2:4);++variant) {
+        for (auto to : {GGML_TYPE_Q8_1,GGML_TYPE_Q8_K,GGML_TYPE_I32}) for (auto from : {GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16}) {
+            if (integer_rows!=(to==GGML_TYPE_I32) || (integer_rows && from==GGML_TYPE_BF16)) continue;
+            const auto width=integer_rows?8:ggml_blck_size(to);
+            for (int variant=integer_rows?2:0;variant<(integer_rows?6:from==GGML_TYPE_BF16?2:4);++variant) {
+                const bool padded=variant==1 || variant>=4;
                 std::vector<unsigned char> expected;
                 for (auto selected : {reference,backend}) {
                     graph_fixture ctx(12); CHECK(ctx);
                     auto src=ggml_new_tensor_2d(ctx,from,width,2);
-                    auto dst=ggml_new_tensor_2d(ctx,to,variant==1?2*width:width,3);
-                    auto view=ggml_view_2d(ctx,dst,width,2,dst->nb[1],variant==1?ggml_type_size(to):0);
-                    auto idx=ggml_new_tensor_1d(ctx,variant==3?GGML_TYPE_I64:GGML_TYPE_I32,2);
-                    auto out=variant>=2?ggml_set_rows(ctx,dst,src,idx):variant==1 && selected==backend?ggml_cpy(ctx,src,view):ggml_cast(ctx,src,to);
+                    auto dst=ggml_new_tensor_2d(ctx,to,padded?2*width:width,3);
+                    auto view=ggml_view_2d(ctx,dst,width,variant>=4?3:2,dst->nb[1],padded?ggml_type_size(to):0);
+                    auto idx=ggml_new_tensor_1d(ctx,variant%2?GGML_TYPE_I64:GGML_TYPE_I32,2);
+                    auto out=variant>=2?ggml_set_rows(ctx,variant>=4?view:dst,src,idx):variant==1 && selected==backend?ggml_cpy(ctx,src,view):ggml_cast(ctx,src,to);
                     if (selected==backend) CHECK(ggml_backend_supports_op(backend,out));
                     auto graph=ctx.build(out);
                     if (selected==backend) CHECK(ctx.placed(graph,backend));
                     ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,selected)); CHECK(ctx.storage);
                     ggml_backend_buffer_clear(ctx.storage.get(),0xa5);
                     for (int i=0;i<2*width;++i) ggml_set_f32_1d(src,i,float((i*13)%31-15)/8);
+                    if (integer_rows) {
+                        ggml_set_f32_1d(src,0,from==GGML_TYPE_F16?65504.f:2147483520.f);
+                        ggml_set_f32_1d(src,1,from==GGML_TYPE_F16?-65504.f:-2147483648.f);
+                    }
                     set_scalar_word(idx,0,2); set_scalar_word(idx,1,0);
                     CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
                     auto storage=variant==0?out:dst;
@@ -2135,6 +2143,11 @@ int main(int argc, char **argv) {
                     }
                     else {
                         CHECK(tensor_bytes(storage)==expected);
+                        if (integer_rows) {
+                            set_scalar_word(idx,1,3);
+                            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(storage)==expected);
+                            set_scalar_word(idx,1,0);
+                        }
                         ggml_set_f32_1d(src,2*width-1,NAN);
                         ggml_backend_tensor_memset(storage,0x33,0,ggml_nbytes(storage));
                         CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);

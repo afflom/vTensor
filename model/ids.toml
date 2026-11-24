@@ -1074,3 +1074,9 @@ id = "VT-167"
 level = "build"
 suite = "native-backend"
 statement = "Prism and Verdant encode Q8_1 and Q8_K copies and indexed row stores against the original GGML CPU bytes"
+
+[[id]]
+id = "VT-168"
+level = "build"
+suite = "native-backend"
+statement = "Prism and Verdant scatter F32 and F16 rows into signed I32 storage against original GGML CPU output"

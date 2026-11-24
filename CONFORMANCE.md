@@ -255,6 +255,7 @@ model does not sanction.
 | `VT-165` | `build` | Prism composes twelve wide GGML scalar conversions through Verdant and preserves the whole destination on invalid truncation |
 | `VT-166` | `build` | Prism and Verdant narrow wide GGML words at the original precision boundaries and preserve destination state for invalid signed conversions |
 | `VT-167` | `build` | Prism and Verdant encode Q8_1 and Q8_K copies and indexed row stores against the original GGML CPU bytes |
+| `VT-168` | `build` | Prism and Verdant scatter F32 and F16 rows into signed I32 storage against original GGML CPU output |
 
 ## normalization-graphs
 

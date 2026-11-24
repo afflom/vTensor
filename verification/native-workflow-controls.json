@@ -316,5 +316,135 @@
         ".github/workflows/bootstrap.yml\", \"another.yml"
       ]
     ]
+  ],
+  "proof_workflow": [
+    [
+      [
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}",
+        "prism-proof-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}"
+      ]
+    ],
+    [
+      [
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}",
+        "prism-proof-${{ runner.os }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}"
+      ]
+    ],
+    [
+      [
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}",
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}"
+      ]
+    ],
+    [
+      [
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}",
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}"
+      ]
+    ],
+    [
+      [
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}",
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}"
+      ]
+    ],
+    [
+      [
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}",
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'Justfile', 'rust-toolchain.toml') }}"
+      ]
+    ],
+    [
+      [
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}",
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'rust-toolchain.toml') }}"
+      ]
+    ],
+    [
+      [
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}",
+        "prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile') }}"
+      ]
+    ],
+    [
+      [
+        "sdk=$(sed -n 's/.*\"sdk_image\":\"[^\"@]*@sha256:\\([0-9a-f]\\{64\\}\\)\".*/\\1/p' prismpm.lock)",
+        "sdk=pinned"
+      ]
+    ],
+    [
+      [
+        "app/lean-toolchain)",
+        "rust-toolchain.toml)"
+      ]
+    ],
+    [
+      [
+        "--env PRISM_PROOF_EVENT \\",
+        "--env PRISM_PROOF_EVENT=${{ github.event_name }}:${{ github.ref }} \\"
+      ]
+    ],
+    [
+      [
+        "PRISM_PROOF_EVENT: ${{ github.event_name }}:${{ github.ref }}",
+        "PRISM_PROOF_EVENT: ${{ github.event_name }}:refs/heads/main"
+      ]
+    ],
+    [
+      [
+        "            --env PRISM_PROOF_EVENT \\\n",
+        ""
+      ]
+    ]
+  ],
+  "proof_recipe": [
+    [
+      [
+        "push:refs/heads/main)",
+        "push:*)"
+      ]
+    ],
+    [
+      [
+        "pull_request:*|merge_group:*|push:refs/heads/main)",
+        "*)"
+      ]
+    ],
+    [
+      [
+        "if cargo run -q --locked -p xtask -- proof-reuse; then",
+        "if [[ -s .prism-proof/attestation ]]; then"
+      ]
+    ],
+    [
+      [
+        "    rm -rf .prism-proof\n",
+        ""
+      ]
+    ],
+    [
+      [
+        "prismpm --project app verify | tee",
+        "true | tee"
+      ]
+    ],
+    [
+      [
+        "cargo run -q --locked -p xtask -- proof-keep \"$attestation\"",
+        "mkdir -p .prism-proof"
+      ]
+    ],
+    [
+      [
+        "    rm -rf .prism-proof\n",
+        "    [[ $PRISM_PROOF_EVENT == push* ]] && exit 0\n    rm -rf .prism-proof\n"
+      ]
+    ],
+    [
+      [
+        "    case \"${PRISM_PROOF_EVENT:-}\" in\n",
+        "    [[ -d .prism-proof ]] && exit 0\n    case \"${PRISM_PROOF_EVENT:-}\" in\n"
+      ]
+    ]
   ]
 }

@@ -668,3 +668,9 @@ Feature: native-backend
     Given F32, F16 and BF16 values spanning signed block scales and partial row views
     When GGML copies or replaces a row in auxiliary Q8 storage
     Then output bytes, scale fields and auxiliary sums match the original CPU and late invalid input preserves the destination
+
+  @VT-168 @build
+  Scenario: Prism and Verdant scatter F32 and F16 rows into signed I32 storage against original GGML CPU output
+    Given fractional and signed rows in both source formats with I32 or I64 indices
+    When GGML scatters into dense storage or an offset view with padded strides
+    Then every destination and guard byte matches the pinned CPU and a late invalid index or truncation preserves the destination

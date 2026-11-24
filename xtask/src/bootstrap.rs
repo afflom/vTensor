@@ -681,7 +681,7 @@ mod tests {
         docker_credentials_are_confined, immutable_image, native_coverage_is_complete,
         pipeline_lifecycle_is_complete, policy_boundary_is_canonical, policy_json,
         proof_reuse_is_confined, sha256, update_preserves_project_content, upstream_pins,
-        workflow_history_is_complete, PROJECT_CONTENT_PATHS, PROOF_KEY, UNIVERSAL_POLICY_PATHS,
+        workflow_history_is_complete, PROJECT_CONTENT_PATHS, UNIVERSAL_POLICY_PATHS,
     };
 
     #[test]
@@ -738,7 +738,7 @@ mod tests {
             let bytes = include_bytes!("../../verification/native-workflow-controls.json");
             assert_eq!(
                 repo_model::artifact::sha256_hex(bytes),
-                "95bbdf1e49beb41117c7d1077ac63b5070bb6dd7eb6218872b7ade91a9c50eff"
+                "c427f8db974258b20a376235cec50c18f9e66a891d35332f2dcacbd23c2f7392"
             );
             serde_json::from_slice(bytes).unwrap()
         });
@@ -785,35 +785,12 @@ mod tests {
         let bootstrap = include_str!("../../.github/workflows/bootstrap.yml");
         let justfile = include_str!("../../Justfile");
         assert!(proof_reuse_is_confined(bootstrap, justfile));
-        // Replay each frozen input mutation immediately so the gate retains only the changed file.
-        let corpus = include_bytes!("../../verification/proof-reuse-controls.json");
-        assert_eq!(
-            repo_model::artifact::sha256_hex(corpus),
-            "e5209c6578b979b215dd7cc6d9bfed25658d646b8a1fbf0f15fd3c4435b19549"
-        );
-        let controls: Vec<[String; 4]> =
-            serde_json::from_slice(corpus).expect("proof reuse controls");
-        assert_eq!(controls.len(), 21);
-        for [target, defect, from, to] in &controls {
-            let target = target.as_str();
-            let source = match target {
-                "key" => PROOF_KEY.trim_start_matches("key: "),
-                "bootstrap" => bootstrap,
-                "justfile" => justfile,
-                _ => panic!("unknown proof control target {target}"),
-            };
-            assert!(source.contains(from), "{defect}: {from}");
-            let changed = source.replacen(from, to, 1);
-            assert_ne!(changed, source, "{defect}: unchanged input");
-            let accepted = match target {
-                "key" => {
-                    proof_reuse_is_confined(&bootstrap.replacen(source, &changed, 1), justfile)
-                }
-                "bootstrap" => proof_reuse_is_confined(&changed, justfile),
-                _ => proof_reuse_is_confined(bootstrap, &changed),
-            };
-            assert!(!accepted, "{defect} was accepted");
-        }
+        check_workflow_controls("proof_workflow", 13, bootstrap, |changed| {
+            proof_reuse_is_confined(changed, justfile)
+        });
+        check_workflow_controls("proof_recipe", 8, justfile, |changed| {
+            proof_reuse_is_confined(bootstrap, changed)
+        });
         // The merge queue trigger is part of the fixed trigger block: dropping it is refused.
         assert!(!native_coverage_is_complete(
             &bootstrap.replace("  merge_group:\n", "")

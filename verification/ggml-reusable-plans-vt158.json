@@ -14,7 +14,7 @@
   "host_replay": "Freshly observed 57 ABI slots from the compiled plugin. Both directions of a mixed scheduler split matched 42 output words. Strided and batched transfer controls passed.",
   "callback_map": "verification/ggml-backend-callback-map.json",
   "verification_efficiency": {
-    "data": "verification/proof-reuse-controls.json",
+    "data": "https://github.com/afflom/vTensor/blob/7da14b3838fc7e3aeb6ef87f88864f421fb4c249/verification/proof-reuse-controls.json",
     "proof_reuse_mutations": 21,
     "check": "All 21 original pairs of mutated workflow and recipe bytes were identical when replayed individually. Changing a corpus entry failed the digest check.",
     "source_lines": 12726

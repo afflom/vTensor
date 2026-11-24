@@ -1337,16 +1337,17 @@ fn execute_word(
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
     use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode};
     use BackendError::InvalidTensor;
-    let vtensor_typed::Adt2::C0(count, capacity, importance, ..) = &plan;
+    let vtensor_typed::Adt2::C0(count, capacity, importance, operation, ..) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
     let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
     use linear::RowRankingF32;
     let kind = weight_encoder(tensor.ty);
-    let packed = kind.is_some() || matches!(tensor.ty, 9 | 15);
-    // Word instructions can update their input in place. Only staged block encoding
+    let staged =
+        kind.is_some() || matches!(tensor.ty, 9 | 15) || (*operation == 41 && tensor.ty == 26);
+    // Word instructions can update their input in place. Only staged row conversion
     // retains an immutable input slice throughout the instruction loop.
-    let source = packed.then(|| TensorInput::new(left)).transpose()?;
+    let source = staged.then(|| TensorInput::new(left)).transpose()?;
     let primary = match &source {
         Some(input) => input.bytes.as_ptr().cast_mut(),
         None => graph_tensor_data(left)?,
@@ -1359,7 +1360,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         .map(|word| workspace(lanes as u64, f32::from_bits(word as u32)))
         .transpose()?;
     let output = graph_tensor_region(tensor, span as usize)?;
-    let mut values = workspace(if packed { lanes as u64 } else { 0 }, 0.0)?;
+    let mut values = workspace(if staged { lanes as u64 } else { 0 }, 0.0)?;
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
@@ -1388,6 +1389,12 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                         encoded.extend(row.scale.to_ne_bytes());
                         encoded.extend(row.codes.map(|code| code as u8));
                         encoded.extend(row.sums.into_iter().flat_map(i16::to_ne_bytes));
+                    }
+                    26 => {
+                        let word = linear::truncate_signed_word_f32(u64::from(values[0].to_bits()))
+                            .map_err(BackendError::invalid)?
+                            .ok_or(InvalidTensor)?;
+                        encoded.extend((word as u32).to_ne_bytes());
                     }
                     _ => {
                         let kind = kind.ok_or(InvalidTensor)?;

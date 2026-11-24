@@ -1,0 +1,15 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sources": 25,
+  "destinations": 25,
+  "source_buffers": 51,
+  "type_pairs": 625,
+  "constructors": 661,
+  "computed_reference_graphs": 661,
+  "distinct_result_buffers_by_pair": 625,
+  "input_bytes": "The original ggml_quantize_chunk encoded two rows with exact source values ((17*i+5) mod 51 - 25)/16 and uniform importance when required. The F32 addend is ((13*i+7) mod 29 - 14)/32. Row width is the least common multiple of source and destination block sizes.",
+  "oracle": "Original CPU ggml_add_cast, ggml_add, ggml_add_inplace with one worker. Source has a compiled packed-add branch and decoder, destination has a from_float CPU callback. Equal-storage standard, cast and in-place graphs were independently executed and returned the same bytes.",
+  "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "upstream_dispatch_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "words_sha256": "8b03f90e6ac9e0df4093d8aa60fcab6f5279571b20f9ce0e821d80e124e0c276"
+}

@@ -1,0 +1,37 @@
+{
+  "requirement": "VT-168",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "prism_root": "PrismTemplateContract.TypedArithmetic.evaluate",
+  "semantic_id": "b280a78470c1b090132b511ed8759380ed9d915fbf14e5ba1b3d6eb44514330d",
+  "attestation": "322a74bb7b4c857904c134f2c320f4df6ce4781e92bc1d09284c70c9e55e8a17",
+  "verdant_entry_point": "truncate_signed_word_f32",
+  "verdant_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560",
+  "source": [
+    "F32",
+    "F16"
+  ],
+  "indices": [
+    "I32",
+    "I64"
+  ],
+  "destination": "I32",
+  "dense_graphs": 4,
+  "offset_view_graphs": 4,
+  "sole_provider_scheduler": 8,
+  "valid_bytes_compared": 1152,
+  "late_index_refusals": 8,
+  "late_invalid_truncations": 8,
+  "oracle": "Original GGML CPU ggml_set_rows, including signed fractions, largest representable test values in each source, untouched rows, view offsets and guard columns.",
+  "mutation": "The old plugin refused before allocation. Flipping the low bit of the truncated word failed the byte comparison. Restoring Verdant conversion passed.",
+  "survey": {
+    "descriptors": 180,
+    "available_original_cpu_paths": 130,
+    "admitted_and_placed_cpu_paths": 130,
+    "total_admitted_and_placed": 158,
+    "table": "ggml-row-type-verified.tsv",
+    "sha256": "c8abf5d165bd43855bc52eff3aa54d1f72872834d9d4f31a57eed58d31ae1720",
+    "compiled_source_inputs": 19,
+    "provider_sha256": "929d476a68490b9d40c21bb7794b62eae77e1ad0e2e02ae36b114653fd98847d"
+  },
+  "source_lines": 12679
+}
