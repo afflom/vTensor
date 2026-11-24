@@ -578,3 +578,9 @@ Feature: native-backend
     Given floating-point source rows and IQ2_XS destination storage
     When a GGML graph copies the tensor or updates indexed rows
     Then output bytes match the imported GGML quantizer and untouched bytes are preserved
+
+  @VT-153 @build
+  Scenario: Prism supplies uniform importance for IQ2_XXS copies and indexed writes through Verdant against the weighted GGML quantizer
+    Given floating-point source rows and IQ2_XXS destination storage
+    When a GGML graph copies the tensor or updates indexed rows
+    Then output bytes match the imported GGML quantizer and untouched bytes are preserved

@@ -984,3 +984,9 @@ id = "VT-152"
 level = "build"
 suite = "native-backend"
 statement = "Prism supplies uniform importance for IQ2_XS copies and indexed writes through Verdant against the weighted GGML quantizer"
+
+[[id]]
+id = "VT-153"
+level = "build"
+suite = "native-backend"
+statement = "Prism supplies uniform importance for IQ2_XXS copies and indexed writes through Verdant against the weighted GGML quantizer"

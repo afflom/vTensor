@@ -240,6 +240,7 @@ model does not sanction.
 | `VT-150` | `build` | Prism models grouped selective state scans and cache rollback through Verdant against GGML CPU |
 | `VT-151` | `build` | Prism routes IQ2_S row writes and copies through Verdant encoders against the GGML quantizer |
 | `VT-152` | `build` | Prism supplies uniform importance for IQ2_XS copies and indexed writes through Verdant against the weighted GGML quantizer |
+| `VT-153` | `build` | Prism supplies uniform importance for IQ2_XXS copies and indexed writes through Verdant against the weighted GGML quantizer |
 
 ## normalization-graphs
 

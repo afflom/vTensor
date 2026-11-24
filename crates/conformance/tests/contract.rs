@@ -248,6 +248,7 @@ ggml_batches! {
     fn importance_storage_vt_148() { "upstream-IMPORTANCE_THREE_STORAGE", 4, ["typed"] }
     fn importance_two_storage_vt_151() { "upstream-IMPORTANCE_TWO_STORAGE", 2, ["typed"] }
     fn parity_storage_vt_152() { "upstream-PARITY_GRID_STORAGE", 2, ["typed"] }
+    fn grouped_parity_storage_vt_153() { "upstream-GROUPED_PARITY_STORAGE", 2, ["typed"] }
     fn nonlinear_storage_vt_135() { "upstream-NONLINEAR_STORAGE", 4, ["typed"] }
     fn triangular_solve_vt_134() { "upstream-SOLVE_TRI_BOUNDARIES", 3, ["pointwise"] }
     fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
@@ -1266,7 +1267,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "2e3a32a54e69a79aa2639d38872e9e208a9fe2e383edffb92a92a03d747b026f",
+            "3df918a70298da5b228be6449ece797dba6fb0c4f569055f92b0974dacd83eb3",
         )
     });
 
@@ -1337,8 +1338,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 "generated/{model}/packages/rust-core/vtensor_{model}/src/lib.rs"
             ));
             static COMPILER: LazyLock<Vec<u8>> = LazyLock::new(|| run(Command::new("rustc").args(["--version", "--verbose"])));
-            let source_bytes=std::fs::read(&source).unwrap();
-            let cache = artifact_cache(common, "fixture-model", &[&source_bytes, FIXTURE_BRIDGE.as_bytes(), FIXTURE_RECIPE.as_bytes(), OBJECT_RECIPE.as_bytes(), &COMPILER]);
+            let cache = artifact_cache(common, "fixture-model", &[&std::fs::read(&source).unwrap(), FIXTURE_BRIDGE.as_bytes(), FIXTURE_RECIPE.as_bytes(), OBJECT_RECIPE.as_bytes(), &COMPILER]);
             let library = cache.join("libfixtures.so");
             checked_build(&library, |pending| {
                 let input = cache.join("bridge.rs");
@@ -1586,7 +1586,7 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
     test.initialize_tensors(target);
     auto original=op==GGML_OP_OUT_PROD || op==GGML_OP_CPY ? nullptr : test.build_graph(reference);
     if (op==GGML_OP_CPY || op==GGML_OP_SET_ROWS) {
-        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S && out->type!=GGML_TYPE_IQ2_S && out->type!=GGML_TYPE_IQ2_XS) return false;
+        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S && out->type!=GGML_TYPE_IQ2_S && out->type!=GGML_TYPE_IQ2_XS && out->type!=GGML_TYPE_IQ2_XXS) return false;
         auto src=out->src[0];
         int64_t width=out->ne[0], rows=ggml_nrows(out);
         if (width<=0 || width%ggml_blck_size(out->type) || !ggml_is_contiguous_rows(out)) return false;
@@ -1704,7 +1704,7 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
       const size_t i=selected.empty()?pos:selected[pos];
       auto &test=tests[i];
-      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE") || !strcmp(op,"IMPORTANCE_TWO_STORAGE") || !strcmp(op,"PARITY_GRID_STORAGE");
+      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE") || !strcmp(op,"IMPORTANCE_TWO_STORAGE") || !strcmp(op,"PARITY_GRID_STORAGE") || !strcmp(op,"GROUPED_PARITY_STORAGE");
       auto operation= !strcmp(op,"GET_ROWS_BACK_DECODED") ? GGML_OP_GET_ROWS_BACK : !strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : !strcmp(op,"CONV_2D_CONTIGUOUS") ? GGML_OP_CONV_2D : GGML_OP_NONE;
       if (importance || operation!=GGML_OP_NONE) {
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {

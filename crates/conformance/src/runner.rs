@@ -1039,7 +1039,7 @@ packed_formats! {
     12 => Grouped(GroupedFormat::AffineFour), GroupedAffineFour;
     13 => Grouped(GroupedFormat::AffineFive), GroupedAffineFive;
     14 => Grouped(GroupedFormat::SignedSix), GroupedSignedSix;
-    16 => Grouped(GroupedFormat::Codebook(IndexedSigns));
+    16 => Grouped(GroupedFormat::Codebook(IndexedSigns)), ImportanceTwoGroupedParity;
     17 => Grouped(GroupedFormat::Codebook(ExtendedIndex)), ImportanceTwoParity;
     18 => Grouped(GroupedFormat::Codebook(FourLaneIndexedSigns)), ImportanceThreeCompact;
     19 => Grouped(GroupedFormat::Codebook(ShiftedGrid));
