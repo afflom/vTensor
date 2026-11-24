@@ -82,5 +82,17 @@
       "VT-138 all 18 upstream ELU and XIELU graphs",
       "cargo deny"
     ]
+  },
+  "published_v2_21_5": {
+    "release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.5",
+    "registry": "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/39ce03b3165c08ca48378aac97df5d8cd83adddb/v2.21.5/crates/index/",
+    "manifest_sha256": "ee735b08d6af088c0a785aae0252793205507ce5df06129be0323d3e81366dca",
+    "resolved_registry_archives": 103,
+    "verification": "Every archive in the selected registry cache matched the released size, Cargo.lock checksum and upstream manifest digest.",
+    "provider_checks": [
+      "VT-02 dependency and GGML imports",
+      "VT-148 IQ3 indexed writes, copies and atomic refusals",
+      "cargo deny"
+    ]
   }
 }
