@@ -97,40 +97,16 @@ fn state() -> &'static State {
         let mut owner = Box::new(State {
             reg: UnsafeCell::new(Registry {
                 api_version: api as c_int,
-                iface: RegistryInterface {
-                    get_name: Some(reg_name),
-                    get_device_count: Some(device_count),
-                    get_device: Some(device_at),
-                    get_proc_address: Some(threadpool::lookup),
-                },
+                iface: registry_interface!(),
                 context: null_mut(),
             }),
             dev: UnsafeCell::new(Device {
-                iface: DeviceInterface {
-                    get_name: Some(device_name),
-                    get_description: Some(description_name),
-                    get_memory: Some(memory),
-                    get_type: Some(device_type),
-                    get_props: Some(properties),
-                    init_backend: Some(backend_new),
-                    get_buffer_type: Some(buffer_type),
-                    buffer_from_host_ptr: Some(from_host),
-                    supports_op: Some(supports_operation),
-                    supports_buft: Some(supports_buffer_type),
-                    ..Default::default()
-                },
+                iface: device_interface!(),
                 reg: null_mut(),
                 context: null_mut(),
             }),
             buft: UnsafeCell::new(BufferType {
-                iface: BufferTypeInterface {
-                    get_name: Some(buft_name),
-                    alloc_buffer: Some(buffer_allocate),
-                    get_alignment: Some(alignment_of),
-                    get_alloc_size: Some(allocation_size),
-                    is_host: Some(is_host),
-                    ..Default::default()
-                },
+                iface: buffer_type_interface!(),
                 device: null_mut(),
                 context: null_mut(),
             }),
@@ -318,20 +294,6 @@ unsafe extern "C" fn allocation_size(_: Buft, tensor: *const Tensor) -> usize {
     require(tensor_span(unsafe { &*tensor }))
 }
 
-fn buffer_interface() -> BufferInterface {
-    BufferInterface {
-        free_buffer: Some(buffer_free),
-        get_base: Some(buffer_base),
-        init_tensor: Some(tensor_init),
-        memset_tensor: Some(tensor_memset),
-        set_tensor: Some(tensor_set),
-        get_tensor: Some(tensor_get),
-        cpy_tensor: Some(tensor_copy),
-        clear: Some(buffer_clear),
-        ..Default::default()
-    }
-}
-
 fn wrap_buffer(buft: Buft, context: Result<BufferContext, BackendError>) -> Buf {
     let Ok(context) = context else {
         return null_mut();
@@ -342,7 +304,7 @@ fn wrap_buffer(buft: Buft, context: Result<BufferContext, BackendError>) -> Buf 
     unsafe {
         ggml_backend_buffer_init(
             buft,
-            buffer_interface(),
+            buffer_interface!(),
             Box::into_raw(Box::new(context)).cast(),
             size,
         )
@@ -448,12 +410,7 @@ unsafe extern "C" fn tensor_copy(
 unsafe extern "C" fn backend_new(device: Dev, _: *const c_char) -> BackendPtr {
     Box::into_raw(Box::new(Backend {
         guid: state().guid.get(),
-        iface: BackendInterface {
-            get_name: Some(backend_name),
-            free: Some(backend_free),
-            graph_compute: Some(graph_compute),
-            ..Default::default()
-        },
+        iface: backend_interface!(),
         device,
         context: threadpool::new_context(),
     }))

@@ -1,0 +1,43 @@
+{
+  "requirement": "VT-157",
+  "authority": "ggml-org/llama.cpp",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "constructor": "ggml/src/ggml.c#L4040",
+  "oracle": "ggml/src/ggml-cpu/ops.cpp#L5739-L5801",
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "semantic_id": "99425bbba66e78ef56046e761eb40f0dbe2bdaaabec433ee02e2f50aec470544",
+  "attestation_id": "0fc8224fd60e02dc3abaf35703d30239b7f04cfda62773ab8c6c9ac1b618c8d8",
+  "verdant": "verdant_tensor::memory::copy_storage_block",
+  "types": [
+    "I8",
+    "I16",
+    "I32",
+    "I64",
+    "F64",
+    "F8_E4M3"
+  ],
+  "source_widths": [
+    1,
+    4,
+    7
+  ],
+  "batches": [
+    2,
+    3
+  ],
+  "layouts": [
+    "contiguous",
+    "one scalar offset into a row with two extra scalars"
+  ],
+  "cases": 36,
+  "output_bytes": 19008,
+  "test": "scalar_diagonals_vt_157",
+  "reference": "Run the original CPU F16 DIAG independently on each raw input byte plane. Its uint16_t implementation preserves bits on the diagonal and writes zero off it. Reassemble in scalar byte order and compare every byte of the provider result. Probe admission before and after graph allocation.",
+  "existing_scalar_evidence": "VT-21 compares the three scalar types implemented directly in the original CPU switch in 384 cases.",
+  "negative_controls": [
+    "The previous model rejected a valid scalar before allocation.",
+    "Flipping byte seven of each F64 output scalar failed the byte-plane comparison. Restoring the provider passed.",
+    "Removing get_proc_address from the ABI callback table caused the imported threadpool registration check to fail. Restoring the slot passed."
+  ],
+  "provider_sha256": "4b5df64024a7a2a95cb9cfbc6d0940623725b7a6e6fa0acd0b3ca934a51e61b5"
+}

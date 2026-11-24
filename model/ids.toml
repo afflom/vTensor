@@ -1008,3 +1008,9 @@ id = "VT-156"
 level = "build"
 suite = "native-backend"
 statement = "Prism admits ordinary GGML host buffers for graph execution and bounds foreign tensor views before Verdant accesses their contents"
+
+[[id]]
+id = "VT-157"
+level = "build"
+suite = "native-backend"
+statement = "Prism constructs diagonals for every scalar storage type with Verdant byte transfers against the GGML CPU diagonal kernel"

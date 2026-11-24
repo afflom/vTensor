@@ -935,9 +935,9 @@ definition{
   name: planSelection,
   parameters: [kind : Nat, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (if ((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) then (if ((((((project left ty) =? (project output ty)) && ((project left n0) =? (project output n0))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && (if (kind =? 4) then (((project left n1) =? 1) && ((project left n0) =? (project output n1))) else (((kind <? 4) && ((project left n0) =? (project left n1))) && ((project left n1) =? (project output n1))))) then (match (TensorTypes::tensorTypeStorage (project left ty))
+  body: (match (TensorTypes::tensorTypeStorage (project left ty))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
-    | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.selected kind))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
+    | TensorTypes::TypeStorageDecision.knownType spec => (if (if (kind =? 4) then ((project spec blockSize) =? 1) else ((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30))) then (if ((((((project left ty) =? (project output ty)) && ((project left n0) =? (project output n0))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && (if (kind =? 4) then (((project left n1) =? 1) && ((project left n0) =? (project output n1))) else (((kind <? 4) && ((project left n0) =? (project left n1))) && ((project left n1) =? (project output n1))))) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.selected kind)) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported))),
   executable: true
 }
 

@@ -34,17 +34,22 @@ macro_rules! record {
         }
     };
 }
+// The native provider and the header layout check use the same ordered callback slots.
 macro_rules! interface {
-    ($name:ident $ctype:literal { $($field:ident($($arg:ty),* $(,)?) -> $out:ty;)* }) => {
-        record! { #[derive(Default)] $name $ctype {
+    ($name:ident => $factory:ident $ctype:literal { $($field:ident($($arg:ty),* $(,)?) -> $out:ty => $binding:expr;)* }) => {
+        record! { $name $ctype {
             $($field: Option<unsafe extern "C" fn($($arg),*) -> $out>,)*
         } }
+        macro_rules! $factory {
+            () => { $name { $($field: $binding,)* } };
+        }
+        pub(crate) use $factory;
     };
 }
 
 macro_rules! layouts {
-    ($( $declare:ident! { $(#[$attr:meta])* $name:ident $ctype:literal { $($fields:tt)* } } )+) => {
-        $($declare! { $(#[$attr])* $name $ctype { $($fields)* } })+
+    ($( $declare:ident! { $(#[$attr:meta])* $name:ident $(=> $factory:ident)? $ctype:literal { $($fields:tt)* } } )+) => {
+        $($declare! { $(#[$attr])* $name $(=> $factory)? $ctype { $($fields)* } })+
         /// Observed native layouts for independent comparison with the imported C headers.
         pub fn abi_layout() -> Vec<(&'static str, usize)> { [$($name::LAYOUT),+].concat() }
     };
@@ -68,15 +73,15 @@ record! { Tensor "ggml_tensor" {
     padding: [c_char; 8],
 } }
 
-interface! { BufferTypeInterface "ggml_backend_buffer_type_i" {
-    get_name(Buft) -> *const c_char;
-    alloc_buffer(Buft, usize) -> Buf;
-    alloc_buffer_n(Buft, *mut TensorPtr, c_int) -> Buf;
-    get_alignment(Buft) -> usize;
-    get_max_size(Buft) -> usize;
-    get_alloc_size(Buft, *const Tensor) -> usize;
-    get_alloc_size_n(Buft, *mut TensorPtr, c_int) -> usize;
-    is_host(Buft) -> bool;
+interface! { BufferTypeInterface => buffer_type_interface "ggml_backend_buffer_type_i" {
+    get_name(Buft) -> *const c_char => Some(buft_name);
+    alloc_buffer(Buft, usize) -> Buf => Some(buffer_allocate);
+    alloc_buffer_n(Buft, *mut TensorPtr, c_int) -> Buf => None;
+    get_alignment(Buft) -> usize => Some(alignment_of);
+    get_max_size(Buft) -> usize => None;
+    get_alloc_size(Buft, *const Tensor) -> usize => Some(allocation_size);
+    get_alloc_size_n(Buft, *mut TensorPtr, c_int) -> usize => None;
+    is_host(Buft) -> bool => Some(is_host);
 } }
 
 record! { BufferType "ggml_backend_buffer_type" {
@@ -85,21 +90,21 @@ record! { BufferType "ggml_backend_buffer_type" {
     context: *mut c_void,
 } }
 
-interface! { BufferInterface "ggml_backend_buffer_i" {
-    free_buffer(Buf) -> ();
-    get_base(Buf) -> *mut c_void;
-    init_tensor(Buf, TensorPtr) -> c_int;
-    memset_tensor(Buf, TensorPtr, u8, usize, usize) -> ();
-    set_tensor(Buf, TensorPtr, *const c_void, usize, usize) -> ();
-    get_tensor(Buf, *const Tensor, *mut c_void, usize, usize) -> ();
-    set_tensor_2d(Buf, TensorPtr, *const c_void, usize, usize, usize, usize, usize) -> ();
-    get_tensor_2d(Buf, *const Tensor, *mut c_void, usize, usize, usize, usize, usize) -> ();
-    cpy_tensor(Buf, *const Tensor, TensorPtr) -> bool;
-    clear(Buf, u8) -> ();
-    reset(Buf) -> ();
-    set_tensor_n(Buf, *const TensorPtr, *const *const c_void, *const usize, *const usize, usize) -> ();
-    get_tensor_n(Buf, *const *const Tensor, *const *mut c_void, *const usize, *const usize, usize) -> ();
-    cpy_tensor_n(Buf, *const *const Tensor, *const TensorPtr, usize) -> bool;
+interface! { BufferInterface => buffer_interface "ggml_backend_buffer_i" {
+    free_buffer(Buf) -> () => Some(buffer_free);
+    get_base(Buf) -> *mut c_void => Some(buffer_base);
+    init_tensor(Buf, TensorPtr) -> c_int => Some(tensor_init);
+    memset_tensor(Buf, TensorPtr, u8, usize, usize) -> () => Some(tensor_memset);
+    set_tensor(Buf, TensorPtr, *const c_void, usize, usize) -> () => Some(tensor_set);
+    get_tensor(Buf, *const Tensor, *mut c_void, usize, usize) -> () => Some(tensor_get);
+    set_tensor_2d(Buf, TensorPtr, *const c_void, usize, usize, usize, usize, usize) -> () => None;
+    get_tensor_2d(Buf, *const Tensor, *mut c_void, usize, usize, usize, usize, usize) -> () => None;
+    cpy_tensor(Buf, *const Tensor, TensorPtr) -> bool => Some(tensor_copy);
+    clear(Buf, u8) -> () => Some(buffer_clear);
+    reset(Buf) -> () => None;
+    set_tensor_n(Buf, *const TensorPtr, *const *const c_void, *const usize, *const usize, usize) -> () => None;
+    get_tensor_n(Buf, *const *const Tensor, *const *mut c_void, *const usize, *const usize, usize) -> () => None;
+    cpy_tensor_n(Buf, *const *const Tensor, *const TensorPtr, usize) -> bool => None;
 } }
 
 record! { Buffer "ggml_backend_buffer" {
@@ -110,23 +115,23 @@ record! { Buffer "ggml_backend_buffer" {
     usage: c_int,
 } }
 
-interface! { BackendInterface "ggml_backend_i" {
-    get_name(BackendPtr) -> *const c_char;
-    free(BackendPtr) -> ();
-    set_tensor_async(BackendPtr, TensorPtr, *const c_void, usize, usize) -> ();
-    get_tensor_async(BackendPtr, *const Tensor, *mut c_void, usize, usize) -> ();
-    set_tensor_2d_async(BackendPtr, TensorPtr, *const c_void, usize, usize, usize, usize, usize) -> ();
-    get_tensor_2d_async(BackendPtr, *const Tensor, *mut c_void, usize, usize, usize, usize, usize) -> ();
-    cpy_tensor_async(BackendPtr, BackendPtr, *const Tensor, TensorPtr) -> bool;
-    synchronize(BackendPtr) -> ();
-    graph_plan_create(BackendPtr, *const c_void) -> Plan;
-    graph_plan_free(BackendPtr, Plan) -> ();
-    graph_plan_update(BackendPtr, Plan, *const c_void) -> ();
-    graph_plan_compute(BackendPtr, Plan) -> c_int;
-    graph_compute(BackendPtr, Graph) -> c_int;
-    event_record(BackendPtr, Event) -> ();
-    event_wait(BackendPtr, Event) -> ();
-    graph_optimize(BackendPtr, Graph, *mut c_void) -> ();
+interface! { BackendInterface => backend_interface "ggml_backend_i" {
+    get_name(BackendPtr) -> *const c_char => Some(backend_name);
+    free(BackendPtr) -> () => Some(backend_free);
+    set_tensor_async(BackendPtr, TensorPtr, *const c_void, usize, usize) -> () => None;
+    get_tensor_async(BackendPtr, *const Tensor, *mut c_void, usize, usize) -> () => None;
+    set_tensor_2d_async(BackendPtr, TensorPtr, *const c_void, usize, usize, usize, usize, usize) -> () => None;
+    get_tensor_2d_async(BackendPtr, *const Tensor, *mut c_void, usize, usize, usize, usize, usize) -> () => None;
+    cpy_tensor_async(BackendPtr, BackendPtr, *const Tensor, TensorPtr) -> bool => None;
+    synchronize(BackendPtr) -> () => None;
+    graph_plan_create(BackendPtr, *const c_void) -> Plan => None;
+    graph_plan_free(BackendPtr, Plan) -> () => None;
+    graph_plan_update(BackendPtr, Plan, *const c_void) -> () => None;
+    graph_plan_compute(BackendPtr, Plan) -> c_int => None;
+    graph_compute(BackendPtr, Graph) -> c_int => Some(graph_compute);
+    event_record(BackendPtr, Event) -> () => None;
+    event_wait(BackendPtr, Event) -> () => None;
+    graph_optimize(BackendPtr, Graph, *mut c_void) -> () => None;
 } }
 
 record! { Backend "ggml_backend" {
@@ -154,22 +159,22 @@ record! { DeviceProperties "ggml_backend_dev_props" {
     caps: DeviceCapabilities,
 } }
 
-interface! { DeviceInterface "ggml_backend_device_i" {
-    get_name(Dev) -> *const c_char;
-    get_description(Dev) -> *const c_char;
-    get_memory(Dev, *mut usize, *mut usize) -> ();
-    get_type(Dev) -> c_int;
-    get_props(Dev, *mut DeviceProperties) -> ();
-    init_backend(Dev, *const c_char) -> BackendPtr;
-    get_buffer_type(Dev) -> Buft;
-    get_host_buffer_type(Dev) -> Buft;
-    buffer_from_host_ptr(Dev, *mut c_void, usize, usize) -> Buf;
-    supports_op(Dev, *const Tensor) -> bool;
-    supports_buft(Dev, Buft) -> bool;
-    offload_op(Dev, *const Tensor) -> bool;
-    event_new(Dev) -> Event;
-    event_free(Dev, Event) -> ();
-    event_synchronize(Dev, Event) -> ();
+interface! { DeviceInterface => device_interface "ggml_backend_device_i" {
+    get_name(Dev) -> *const c_char => Some(device_name);
+    get_description(Dev) -> *const c_char => Some(description_name);
+    get_memory(Dev, *mut usize, *mut usize) -> () => Some(memory);
+    get_type(Dev) -> c_int => Some(device_type);
+    get_props(Dev, *mut DeviceProperties) -> () => Some(properties);
+    init_backend(Dev, *const c_char) -> BackendPtr => Some(backend_new);
+    get_buffer_type(Dev) -> Buft => Some(buffer_type);
+    get_host_buffer_type(Dev) -> Buft => None;
+    buffer_from_host_ptr(Dev, *mut c_void, usize, usize) -> Buf => Some(from_host);
+    supports_op(Dev, *const Tensor) -> bool => Some(supports_operation);
+    supports_buft(Dev, Buft) -> bool => Some(supports_buffer_type);
+    offload_op(Dev, *const Tensor) -> bool => None;
+    event_new(Dev) -> Event => None;
+    event_free(Dev, Event) -> () => None;
+    event_synchronize(Dev, Event) -> () => None;
 } }
 
 record! { Device "ggml_backend_device" {
@@ -187,11 +192,11 @@ record! { #[derive(Clone)] ThreadpoolParams "ggml_threadpool_params" {
     paused: bool,
 } }
 
-interface! { RegistryInterface "ggml_backend_reg_i" {
-    get_name(Reg) -> *const c_char;
-    get_device_count(Reg) -> usize;
-    get_device(Reg, usize) -> Dev;
-    get_proc_address(Reg, *const c_char) -> *mut c_void;
+interface! { RegistryInterface => registry_interface "ggml_backend_reg_i" {
+    get_name(Reg) -> *const c_char => Some(reg_name);
+    get_device_count(Reg) -> usize => Some(device_count);
+    get_device(Reg, usize) -> Dev => Some(device_at);
+    get_proc_address(Reg, *const c_char) -> *mut c_void => Some(threadpool::lookup);
 } }
 
 record! { Registry "ggml_backend_reg" {

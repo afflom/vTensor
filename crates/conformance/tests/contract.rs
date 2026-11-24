@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn scalar_diagonals_vt_157() { "scalar-diagonal", 36, ["pointwise"] }
     /// `VT-22`: Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle
     fn triangular_graphs_vt_22() { "triangular", 1920, [] }
     /// `VT-23`: Prism plans copied and in-place FILL and Verdant converts and transfers F32 and F16 constants with upstream-equivalent encodings and preserved padding
@@ -2068,6 +2069,40 @@ int main(int argc, char **argv) {
 
         }
         return finish(expected.size());
+    }
+    if (!strcmp(argv[3],"scalar-diagonal")) {
+        size_t cases=0;
+        int kind;
+        while (scanf("%d",&kind)==1) {
+            const auto type=ggml_type(kind);
+            if (ggml_blck_size(type)!=1 || type==GGML_TYPE_F32 || type==GGML_TYPE_F16 || type==GGML_TYPE_BF16) continue;
+            const auto bytes=ggml_type_size(type);
+            for (int width : {1,4,7}) for (int pad : {0,2}) {
+                graph_fixture target(8), cpu(4); CHECK(target && cpu);
+                auto backing=ggml_new_tensor_4d(target,type,width+pad,1,2,3);
+                auto src=pad ? ggml_view_4d(target,backing,width,1,2,3,backing->nb[1],backing->nb[2],backing->nb[3],bytes) : backing;
+                auto out=ggml_diag(target,src);
+                auto lanes=ggml_new_tensor_4d(cpu,GGML_TYPE_F16,width,1,2,3*bytes);
+                auto oracle=ggml_diag(cpu,lanes);
+                CHECK(ggml_backend_supports_op(backend,out));
+                auto graph=target.allocate(out,backend), reference_graph=cpu.allocate(oracle,reference);
+                CHECK(graph && reference_graph && ggml_backend_supports_op(backend,out));
+                const size_t inputs=ggml_nelements(src), outputs=ggml_nelements(out);
+                std::vector<uint16_t> planes(inputs*bytes);
+                std::vector<uint8_t> input(inputs*bytes);
+                for (size_t i=0;i<inputs;++i) for (size_t b=0;b<bytes;++b)
+                    planes[b*inputs+i]=input[i*bytes+b]=uint8_t(1+((i*37+b*71)%255));
+                for (int row=0;row<6;++row) ggml_backend_tensor_set(src,input.data()+row*width*bytes,row*src->nb[2],width*bytes);
+                ggml_backend_tensor_set(lanes,planes.data(),0,ggml_nbytes(lanes));
+                CHECK(ggml_backend_graph_compute(reference,reference_graph)==GGML_STATUS_SUCCESS);
+                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+                planes.resize(outputs*bytes); ggml_backend_tensor_get(oracle,planes.data(),0,ggml_nbytes(oracle));
+                const auto actual=tensor_bytes(out);
+                for (size_t i=0;i<outputs;++i) for (size_t b=0;b<bytes;++b) CHECK(actual[i*bytes+b]==planes[b*outputs+i]);
+                ++cases;
+            }
+        }
+        return finish(cases);
     }
     const bool shared_host=!strcmp(argv[3],"shared-host-storage");
     const bool identity_copy=shared_host || !strcmp(argv[3],"iq2-identity-copy");

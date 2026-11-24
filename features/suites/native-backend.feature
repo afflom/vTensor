@@ -602,3 +602,9 @@ Feature: native-backend
     Given an original GGML CPU host buffer with a complete or truncated tensor extent
     When a vTensor graph uses that buffer
     Then complete host tensors execute against the GGML CPU reference and invalid ranges preserve the destination
+
+  @VT-157 @build
+  Scenario: Prism constructs diagonals for every scalar storage type with Verdant byte transfers against the GGML CPU diagonal kernel
+    Given a batched integer, binary64 or F8_E4M3 scalar vector in ordinary or offset storage
+    When GGML constructs its diagonal matrix
+    Then each output byte matches the upstream diagonal of the corresponding input byte plane

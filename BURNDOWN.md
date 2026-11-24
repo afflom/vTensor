@@ -9,6 +9,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Map legal type tuples, flags, views, in-place forms and backend callbacks to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [x] Map all 288 same-type DUP, CONT and CPY comparisons for Q8_1, Q8_K and F64 to their Prism roots, Verdant byte transfer and GGML CPU oracle. [Supplemental ordinal map](verification/supplemental-copy-storage-map.json)
 - [x] Admit and repeat all 36 live storage types before allocation. Compare each axis and the four-axis combination with independent GGML CPU concatenation. [180 supplemental cases](verification/supplemental-storage-repeat-vt155.json)
+- [x] Cover DIAG on all nine scalar types. Compare six additional types, including F64 and F8_E4M3, against the original CPU diagonal kernel across contiguous and offset views. [36 supplemental cases](verification/supplemental-scalar-diag-vt157.json)
 - [x] Index all 27,755 factory ordinals and constructor parameters. Match completed runs by label and parameter group. Count each ordinal once. [Case transcript](verification/ggml-factory-cases.tsv.gz) · [Verdict mapping](verification/ggml-factory-inventory.json)
 - [x] Map all 11 opcodes absent from factory graphs. Ten have supplemental execution evidence. FLASH_ATTN_BACK has a constructor-abort record. [Contracts, Prism roots and GGML evidence](verification/ggml-factory-signatures.json)
 - [x] Replay masked and unmasked FLASH_ATTN_BACK construction. The pinned GGML public API aborts both calls before backend dispatch. [Constructor evidence](verification/ggml-flash-back-constructor.json)
@@ -39,7 +40,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,215 non-Prism lines** (12,764 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,212 non-Prism lines** (12,761 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
