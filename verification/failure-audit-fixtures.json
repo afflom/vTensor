@@ -1,0 +1,218 @@
+{
+  "a_crate_that_does_not_ship_is_not_audited": [
+    {
+      "expect": [],
+      "ids": "id = []",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\npublish = false\n",
+      "source": "pub fn f() -> Result<u8, Other> { Ok(0) }\n",
+      "test": null
+    }
+  ],
+  "a_declaration_is_a_pair_and_is_made_once": [
+    {
+      "expect": [
+        "OV-01",
+        "names no negative test"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    },
+    {
+      "expect": [
+        "OV-01",
+        "declares no failure type"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    },
+    {
+      "expect": [
+        "Overflow",
+        "OV-01",
+        "OV-03",
+        "declared twice"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n[[id]]\nid = \"OV-03\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"Declared again.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    }
+  ],
+  "a_declared_failure_type_passes": [
+    {
+      "expect": [],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub type R<T> = Result<T, Overflow>;\npub struct Overflow;\npub fn f(x: u8) -> Result<u8, crate::Overflow> { Ok(x) }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    }
+  ],
+  "a_declared_type_whose_negative_test_is_not_registered_fails": [
+    {
+      "expect": [
+        "OV-01",
+        "`Overflow`",
+        "OV-09",
+        "not a registered ID"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-09\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    }
+  ],
+  "a_declared_type_without_its_negative_test_fails": [
+    {
+      "expect": [
+        "R5",
+        "`Overflow`",
+        "OV-02",
+        "no test name ends in `ov_02`"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
+      "test": null
+    }
+  ],
+  "a_negative_test_is_a_build_claim": [
+    {
+      "expect": [
+        "OV-02",
+        "must be a `build` claim"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"open\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    }
+  ],
+  "a_result_broken_across_lines_is_read_whole": [
+    {
+      "expect": [],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Overflow,\n> { body() }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    },
+    {
+      "expect": [
+        "src/lib.rs:1",
+        "`Other`",
+        "not declared"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Other,\n> { body() }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    }
+  ],
+  "a_result_in_a_comment_or_a_test_module_is_not_audited": [
+    {
+      "expect": [],
+      "ids": "id = []",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "// fn f() -> Result<u8, Other>\npub fn g() {}\n#[cfg(test)]\nmod tests {\n    fn h() -> Result<u8, Other> { Ok(0) }\n}\n",
+      "test": null
+    }
+  ],
+  "an_alias_that_hides_the_error_type_fails": [
+    {
+      "expect": [
+        "R5",
+        "names no error type"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> std::io::Result<u8> { Ok(0) }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    },
+    {
+      "expect": [
+        "R5",
+        "names no error type"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8> { Ok(0) }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    }
+  ],
+  "an_undeclared_failure_type_fails": [
+    {
+      "expect": [
+        "R5",
+        "src/lib.rs:1",
+        "`Other`",
+        "not declared"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8, Other> { Ok(0) }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    }
+  ],
+  "no_error_type_is_sanctioned_without_a_declaration": [
+    {
+      "expect": [
+        "R5",
+        "`NotAProduct`",
+        "not declared"
+      ],
+      "ids": "id = []",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8, NotAProduct> { Ok(0) }\n",
+      "test": null
+    },
+    {
+      "expect": [
+        "R5",
+        "`ObservedBound`",
+        "not declared"
+      ],
+      "ids": "id = []",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8, ObservedBound> { Ok(0) }\n",
+      "test": null
+    },
+    {
+      "expect": [
+        "R5",
+        "`KappaError`",
+        "not declared"
+      ],
+      "ids": "id = []",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8, KappaError> { Ok(0) }\n",
+      "test": null
+    }
+  ],
+  "only_a_bare_type_name_is_a_declared_name": [
+    {
+      "expect": [
+        "R5",
+        "`Box<dyn Overflow>`",
+        "not declared"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<u8, Box<dyn Overflow>> { Ok(0) }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    },
+    {
+      "expect": [
+        "R5",
+        "`Other`",
+        "not declared"
+      ],
+      "ids": "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n",
+      "manifest": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+      "source": "pub fn f() -> Result<fn(u8) -> u8, Other> { Ok(id) }\n",
+      "test": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+    }
+  ]
+}

@@ -67,6 +67,8 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn activation_q8_stores_vt_167() { "activation-q8", 20, ["typed"] }
+    fn narrow_wide_casts_vt_166() { "wide-narrow", 944, ["pointwise"] }
     fn staged_wide_casts_vt_165() { "wide-staged", 2740, ["pointwise"] }
     fn signed64_floats_vt_164() { "signed64-floats", 396, ["pointwise"] }
     fn signed64_widths_vt_163() { "signed64-widths", 768, ["pointwise"] }
@@ -1273,7 +1275,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "2f9cb16ddc3d8b70c67938fc323901be8c4c81c917dc04c543d052dceb040a16",
+            "d2c1a272324c85fd5b3c54c0e41e537f0bbab04543c80746fdebb8bb4a56c5f9",
         )
     });
 
@@ -1544,6 +1546,14 @@ struct graph_fixture {
         auto graph=ggml_new_graph(arena.get());
         ggml_build_forward_expand(graph,out);
         return graph;
+    }
+    bool placed(ggml_cgraph *graph, ggml_backend_t backend) {
+        ggml_backend_sched_ptr sched(ggml_backend_sched_new(&backend,nullptr,1,GGML_DEFAULT_GRAPH_SIZE,false,true));
+        if (!sched) return false;
+        ggml_backend_sched_split_graph(sched.get(),graph);
+        for (int n=0;n<ggml_graph_n_nodes(graph);++n)
+            if (ggml_backend_sched_get_tensor_backend(sched.get(),ggml_graph_node(graph,n))!=backend) return false;
+        return true;
     }
     ggml_cgraph *allocate(ggml_tensor *out, ggml_backend_t backend) {
         auto graph=build(out);
@@ -2096,12 +2106,53 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
+    if (!strcmp(argv[3],"activation-q8")) {
+        size_t cases=0;
+        for (auto to : {GGML_TYPE_Q8_1,GGML_TYPE_Q8_K}) for (auto from : {GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16}) {
+            const auto width=ggml_blck_size(to);
+            for (int variant=0;variant<(from==GGML_TYPE_BF16?2:4);++variant) {
+                std::vector<unsigned char> expected;
+                for (auto selected : {reference,backend}) {
+                    graph_fixture ctx(12); CHECK(ctx);
+                    auto src=ggml_new_tensor_2d(ctx,from,width,2);
+                    auto dst=ggml_new_tensor_2d(ctx,to,variant==1?2*width:width,3);
+                    auto view=ggml_view_2d(ctx,dst,width,2,dst->nb[1],variant==1?ggml_type_size(to):0);
+                    auto idx=ggml_new_tensor_1d(ctx,variant==3?GGML_TYPE_I64:GGML_TYPE_I32,2);
+                    auto out=variant>=2?ggml_set_rows(ctx,dst,src,idx):variant==1 && selected==backend?ggml_cpy(ctx,src,view):ggml_cast(ctx,src,to);
+                    if (selected==backend) CHECK(ggml_backend_supports_op(backend,out));
+                    auto graph=ctx.build(out);
+                    if (selected==backend) CHECK(ctx.placed(graph,backend));
+                    ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,selected)); CHECK(ctx.storage);
+                    ggml_backend_buffer_clear(ctx.storage.get(),0xa5);
+                    for (int i=0;i<2*width;++i) ggml_set_f32_1d(src,i,float((i*13)%31-15)/8);
+                    set_scalar_word(idx,0,2); set_scalar_word(idx,1,0);
+                    CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+                    auto storage=variant==0?out:dst;
+                    if (selected==reference) {
+                        expected=tensor_bytes(storage);
+                        if (variant==1) for (int row=0;row<2;++row)
+                            ggml_backend_tensor_get(out,expected.data()+view->view_offs+row*view->nb[1],row*out->nb[1],out->nb[1]);
+                    }
+                    else {
+                        CHECK(tensor_bytes(storage)==expected);
+                        ggml_set_f32_1d(src,2*width-1,NAN);
+                        ggml_backend_tensor_memset(storage,0x33,0,ggml_nbytes(storage));
+                        CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
+                        CHECK(tensor_bytes(storage)==std::vector<unsigned char>(expected.size(),0x33));
+                    }
+                }
+                ++cases;
+            }
+        }
+        return finish(cases);
+    }
     const bool binary_widths=!strcmp(argv[3],"binary-widths");
     const bool signed64_floats=!strcmp(argv[3],"signed64-floats");
-    const bool staged=!strcmp(argv[3],"wide-staged");
+    const bool narrow=!strcmp(argv[3],"wide-narrow");
+    const bool staged=narrow || !strcmp(argv[3],"wide-staged");
     if (staged || binary_widths || signed64_floats || !strcmp(argv[3],"signed64-widths")) {
         size_t compared=0;
-        for (int pair=0;pair<(staged?21:binary_widths?2:signed64_floats?3:6);++pair) {
+        for (int pair=0;pair<(narrow?7:staged?21:binary_widths?2:signed64_floats?3:6);++pair) {
             int from=pair==0?GGML_TYPE_F32:GGML_TYPE_F64, to=pair==0?GGML_TYPE_F64:GGML_TYPE_F32;
             if (!binary_widths) CHECK(scanf("%d %d",&from,&to)==2);
             int invalid_count=(from==GGML_TYPE_F64 && to==GGML_TYPE_I64)?6:0;
@@ -2120,9 +2171,7 @@ int main(int argc, char **argv) {
                 auto result=padded?ggml_cpy(target,input,view):ggml_cast(target,input,ggml_type(to));
                 CHECK(ggml_backend_supports_op(backend,result));
                 auto graph=target.build(result);
-                ggml_backend_sched_ptr sched(ggml_backend_sched_new(&backend,nullptr,1,GGML_DEFAULT_GRAPH_SIZE,false,true)); CHECK(sched);
-                ggml_backend_sched_split_graph(sched.get(),graph);
-                for (int n=0;n<ggml_graph_n_nodes(graph);++n) CHECK(ggml_backend_sched_get_tensor_backend(sched.get(),ggml_graph_node(graph,n))==backend);
+                CHECK(target.placed(graph,backend));
                 target.storage.reset(ggml_backend_alloc_ctx_tensors(target,backend));
                 CHECK(target.storage && ggml_backend_supports_op(backend,result));
                 ggml_backend_buffer_clear(target.storage.get(),0xa5);
@@ -2134,8 +2183,16 @@ int main(int argc, char **argv) {
                     size_t offset=(padded?view->view_offs:0)+block_address(result,i);
                     uint64_t word=0;
                     for (size_t j=0;j<result->nb[0];++j) word|=uint64_t(actual.at(offset+j))<<(8*j);
-                    const auto nan=[&](uint64_t x){return to==GGML_TYPE_F64 ? (x&0x7fffffffffffffffULL)>0x7ff0000000000000ULL : (x&0x7fffffff)>0x7f800000;};
-                    CHECK(word==expected[i] || ((binary_widths || (staged && to==GGML_TYPE_F64)) && nan(word) && nan(expected[i])));
+                    const auto nan=[&](uint64_t x) {
+                        switch(to) {
+                            case GGML_TYPE_F64: return (x&0x7fffffffffffffffULL)>0x7ff0000000000000ULL;
+                            case GGML_TYPE_F32: return (x&0x7fffffff)>0x7f800000;
+                            case GGML_TYPE_F16: return (x&0x7fff)>0x7c00;
+                            case GGML_TYPE_BF16: return (x&0x7fff)>0x7f80;
+                            default: return false;
+                        }
+                    };
+                    CHECK(word==expected[i] || ((binary_widths || staged) && nan(word) && nan(expected[i])));
                     for (size_t j=0;j<result->nb[0];++j) oracle.at(offset+j)=actual.at(offset+j);
                     ++compared;
                 }

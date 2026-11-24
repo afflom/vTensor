@@ -1808,13 +1808,22 @@ definition{
 }
 
 definition{
+  name: narrowWidePair,
+  parameters: [source : Nat, destination : Nat],
+  result: Bool,
+  body: (((source =? 27) && (destination =? 30)) ||
+    ((source =? 28) && ((castSignedInteger destination) || (((destination =? 1) || (destination =? 30)) || (destination =? 43))))),
+  executable: true
+}
+
+definition{
   name: wideCastStages,
   parameters: [source : Nat, destination : Nat],
   result: Nat,
-  body: (if (destination =? 28) then
+  body: (if (narrowWidePair source destination) then (if (destination =? 26) then 1 else 2) else (if (destination =? 28) then
       (if ((castSignedInteger source) || ((copyFloatType source) && (if (source =? 0) then false else true))) then 2 else 1)
     else (if ((destination =? 27) && (copyFloatType source)) then (if (source =? 0) then 2 else 3)
-    else (if ((source =? 27) && ((destination =? 1) || (destination =? 43))) then 2 else 1))),
+    else (if ((source =? 27) && ((destination =? 1) || (destination =? 43))) then 2 else 1)))),
   executable: true
 }
 
@@ -1822,8 +1831,8 @@ definition{
   name: signedCopyPair,
   parameters: [source : Nat, destination : Nat],
   result: Bool,
-  body: ((1 <? (wideCastStages source destination)) || (if (source =? 27) then (((destination =? 0) || (destination =? 28)) || (castSignedInteger destination)) else
-    (if (destination =? 27) then ((source =? 28) || (castSignedInteger source)) else ((((source =? 0) && (destination =? 28)) || ((source =? 28) && (destination =? 0))) || (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((copyFloatType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((copyFloatType source) && (castSignedInteger destination))))))),
+  body: ((narrowWidePair source destination) || ((1 <? (wideCastStages source destination)) || (if (source =? 27) then (((destination =? 0) || (destination =? 28)) || (castSignedInteger destination)) else
+    (if (destination =? 27) then ((source =? 28) || (castSignedInteger source)) else ((((source =? 0) && (destination =? 28)) || ((source =? 28) && (destination =? 0))) || (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((copyFloatType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((copyFloatType source) && (castSignedInteger destination)))))))),
   executable: true
 }
 
@@ -3330,14 +3339,17 @@ definition{
   name: wideCastStep,
   parameters: [source : Nat, destination : Nat, stage : Nat, stages : Nat],
   result: WordOperation,
-  body: (if (stages =? 1) then (signedCopyOperation source destination) else
+  body: (if (narrowWidePair source destination) then
+    (if (stage =? 0) then (ctor WordOperation.wide (if (castSignedInteger destination) then 13 else (if (source =? 27) then 12 else 11)))
+     else (if (castSignedInteger destination) then (signed64WidthOperation 27 destination) else (castWord 0 destination)))
+    else (if (stages =? 1) then (signedCopyOperation source destination) else
     (if (destination =? 28) then
       (if (castSignedInteger source) then (if (stage =? 0) then (signed64WidthOperation source 27) else (ctor WordOperation.wide 7))
       else (if (stage =? 0) then (castWord source 0) else (ctor WordOperation.wide 1)))
     else (if (destination =? 27) then
       (if ((stage + 1) =? stages) then (ctor WordOperation.wide 8) else
       (if ((stage + 2) =? stages) then (ctor WordOperation.wide 1) else (castWord source 0)))
-    else (if (stage =? 0) then (ctor WordOperation.wide 9) else (castWord 0 destination))))),
+    else (if (stage =? 0) then (ctor WordOperation.wide 9) else (castWord 0 destination)))))),
   executable: true
 }
 

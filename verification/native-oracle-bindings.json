@@ -434,7 +434,8 @@
     "native-fixture-baseline": "15abd73afdd5e14194995fe009d44f03a7e078a173b130b08219a62f4cd7c6f6",
     "native-fixture-source-release": "ae4fe8d35b0b747ece31b5ee7ae3fe553122993aa947e87f27a7828706b36a14",
     "typed-binary-fixture-baseline": "c5e502b49ff492d3593696b2b88beadc7269907db684ddc765fb69c465ca2959",
-    "ggml-wide-staged-oracle": "6adb74fa8b28b941c9736191de4f51d586493b8cb494555b749aa94194987d14"
+    "ggml-wide-staged-oracle": "6adb74fa8b28b941c9736191de4f51d586493b8cb494555b749aa94194987d14",
+    "ggml-wide-narrow-oracle": "416576f7ee55143146017e1581eaa7be746c9074db876c95c97994901ec8c5ff"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -550,15 +551,15 @@
     ]
   ],
   "verdant_quotient": {
-    "archive_sha256": "bf4a3d4a0c20b914c4f48661f3413d168628443d255c13435b08174435502bf2",
+    "archive_sha256": "084511a7acad578fa846bb4949ee9d49e92b72176e4fcd1919734ba732dfb16a",
     "sdk": "ghcr.io/uor-foundation/lexlean@sha256:d391bfedd4eb97dc25c218628f94cd081436589c348797ebf13c47ab13d4ef30",
     "sha256": {
-      "app/quotient-production.json": "8f61b02fd4e3783892a63ab2c0e9e3f94fd128a4c063a8743f48f0685e1e049c",
+      "app/quotient-production.json": "f194b6774bc0e6e8464bfb79ec42ca7407d23e309bbe47cd03a1362c5a99aa9b",
       "app/quotient.lexlean.lock": "e75936c9fe696c45b03cff856aa44ff321dc2a449051f5550dbb6710f6cead2f",
-      "generated/tensor-quotient/result.json": "f95e643479ea129e744b7e5bab1980c975cb24c0a10f1bd6204d59532ac70beb",
-      "quotient-kernel.lock": "7b37df66223012bb4b8267a3cd3a1ab51a64a537a5d881e74191807870e87882"
+      "generated/tensor-quotient/result.json": "100db522f1b6eb52c26c43de3fc22410e91263d53e94498a2c3aa3f0c4678d41",
+      "quotient-kernel.lock": "ded72cd53f6bef81daf4eda2219c8424f0bc5bb2b15fbab3edab94c3cac43a43"
     },
-    "upstream_revision": "f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
+    "upstream_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560"
   },
   "atomic_store_types": {
     "SET_ROWS_SCALAR": [
@@ -615,6 +616,7 @@
     "binary-widths": "ggml-binary-width",
     "signed64-widths": "ggml-signed64-width",
     "signed64-floats": "ggml-signed64-float",
-    "wide-staged": "ggml-wide-staged"
+    "wide-staged": "ggml-wide-staged",
+    "wide-narrow": "ggml-wide-narrow"
   }
 }

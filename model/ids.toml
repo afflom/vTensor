@@ -1062,3 +1062,15 @@ id = "VT-165"
 level = "build"
 suite = "native-backend"
 statement = "Prism composes twelve wide GGML scalar conversions through Verdant and preserves the whole destination on invalid truncation"
+
+[[id]]
+id = "VT-166"
+level = "build"
+suite = "native-backend"
+statement = "Prism and Verdant narrow wide GGML words at the original precision boundaries and preserve destination state for invalid signed conversions"
+
+[[id]]
+id = "VT-167"
+level = "build"
+suite = "native-backend"
+statement = "Prism and Verdant encode Q8_1 and Q8_K copies and indexed row stores against the original GGML CPU bytes"

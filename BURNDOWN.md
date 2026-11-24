@@ -4,18 +4,18 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Resolve the seven remaining scalar CAST pairs involving I64 or F64. [Pair-by-pair status](verification/ggml-scalar-cast-coverage.tsv)
-- [ ] Implement F32/F16/BF16 → Q8_1/Q8_K copies. The pinned GGML CPU produced all six reference buffers. [Block CAST descriptors](verification/ggml-block-cast-descriptors.json)
-- [ ] Implement F32/F16 SET_ROWS into I32, Q8_1 and Q8_K with both index widths. [Twelve executable row-store gaps](verification/ggml-row-type-descriptors.json)
+- [ ] Implement F32/F16 SET_ROWS into I32 with both index widths. [Row descriptor map](verification/ggml-row-type-descriptors.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,151 non-Prism lines** (12,700 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
-- [ ] Replace the signed I64 Verdant patch with its published registry release. [Upstream PR #63](https://github.com/afflom/verdant-engine/pull/63)
+- [ ] Recover **2,132 non-Prism lines** (12,681 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Switch the signed-conversion and narrowing patches to the Verdant registry when released. [PR #63](https://github.com/afflom/verdant-engine/pull/63) · [PR #64](https://github.com/afflom/verdant-engine/pull/64)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
 
+- [x] Verify all 81 scalar CAST pairs. The last seven passed 896 value comparisons and 48 invalid conversions across 14 scheduled graphs. [Pair ledger](verification/ggml-scalar-cast-coverage.tsv) · [VT-166](verification/supplemental-wide-narrow-vt166.json)
+- [x] Encode the six remaining CPU-backed block CAST pairs and eight Q8 indexed-store tuples. Compare 20 scheduled graphs byte for byte. [VT-167](verification/supplemental-activation-q8-vt167.json)
 - [x] Probe all 36 GET_ROWS and 144 SET_ROWS type tuples. Verify preallocation placement for all 146 admitted descriptors and identify twelve direct CPU gaps. [Row descriptor map](verification/ggml-row-type-descriptors.json)
 - [x] Probe all 1,215 CAST type pairs containing a block type before allocation. Match the CPU dispatcher and its row callbacks to the six executable gaps. [Descriptor map](verification/ggml-block-cast-descriptors.json)
 - [x] Trace all 86,647 factory nodes to 29,060 exact node signatures. Join shapes, strides, view offsets, flags and operator parameters to existing GGML verdicts and preallocation placement. [Factory layouts](verification/ggml-factory-layouts.json)

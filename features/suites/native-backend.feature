@@ -656,3 +656,15 @@ Feature: native-backend
     Given original GGML octet encodings and SoftFloat conversion words
     When stock GGML schedules contiguous casts and reshaped copies into offset views
     Then each word and padding byte matches its oracle and invalid results preserve the destination
+
+  @VT-166 @build
+  Scenario: Prism and Verdant narrow wide GGML words at the original precision boundaries and preserve destination state for invalid signed conversions
+    Given exact and adjacent midpoints, subnormals, overflow thresholds and signed extrema
+    When GGML schedules a cast or an offset view copy
+    Then output words match the independent references and invalid truncations preserve the entire destination
+
+  @VT-167 @build
+  Scenario: Prism and Verdant encode Q8_1 and Q8_K copies and indexed row stores against the original GGML CPU bytes
+    Given F32, F16 and BF16 values spanning signed block scales and partial row views
+    When GGML copies or replaces a row in auxiliary Q8 storage
+    Then output bytes, scale fields and auxiliary sums match the original CPU and late invalid input preserves the destination

@@ -108,7 +108,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x990fad78 }]
+license-files = [{ path = "src/lib.rs", hash = 0xfbc83a08 }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -365,7 +365,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x066675a9 }]
+license-files = [{ path = "src/lib.rs", hash = 0xe808f602 }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"
@@ -856,3 +856,9 @@ name = "verdant_signed64_conversion"
 version = "=2.21.8"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x4e2a2aaf }]
+
+[[licenses.clarify]]
+name = "verdant_wide_narrowing"
+version = "=2.21.8"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x17934949 }]

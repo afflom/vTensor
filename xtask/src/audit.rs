@@ -327,200 +327,65 @@ mod tests {
 
     use crate::test_repo::TestRepo;
 
-    /// A declared failure type, and the row whose test is its negative test.
-    const DECLARED: &str = "\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\n\
-        statement = \"A value past the bound is refused as Overflow.\"\n\
-        failure = \"Overflow\"\nnegative = \"OV-02\"\n\
-        \n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\n\
-        statement = \"The refusal of a value past the bound is observed.\"\n";
-
-    /// The negative test, as a file of the shipped crate. One source line, so
-    /// that this file is not itself read as containing a test.
-    const NEGATIVE_TEST: &str = "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n";
-
-    const OVERFLOW_FUNCTION: &str = "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n";
-
-    const SHIPPED: &str = "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n";
-
-    impl TestRepo {
-        fn limits(name: &str, ids: &str, lib: &str, test: Option<&str>) -> Self {
-            let fixture = Self::new(name);
-            fixture.registers(ids, "authority = []");
-            fixture.write("crates/shipped/Cargo.toml", SHIPPED);
-            fixture.write("crates/shipped/src/lib.rs", lib);
-            if let Some(test) = test {
-                fixture.write("crates/shipped/tests/negative.rs", test);
-            }
-            fixture
-        }
-
-        fn declared(name: &str, lib: &str) -> Self {
-            Self::limits(name, DECLARED, lib, Some(NEGATIVE_TEST))
-        }
-
-        fn overflow_register(name: &str, ids: &str) -> Self {
-            Self::limits(name, ids, OVERFLOW_FUNCTION, Some(NEGATIVE_TEST))
-        }
-
-        fn audit(&self) -> Result<(), String> {
-            crate::with_model(&self.root, check_limits).map_err(|e| e.to_string())
-        }
+    #[derive(serde::Deserialize)]
+    struct LimitFixture {
+        ids: String,
+        manifest: String,
+        source: String,
+        test: Option<String>,
+        expect: Vec<String>,
     }
 
-    fn rejected(fixture: &TestRepo, needles: &[&str]) {
-        crate::test_repo::rejected(fixture.audit(), needles);
-    }
-
-    #[test]
-    fn a_declared_failure_type_passes() {
-        let f = TestRepo::declared(
-            "declared",
-            "pub type R<T> = Result<T, Overflow>;\n\
-             pub struct Overflow;\n\
-             pub fn f(x: u8) -> Result<u8, crate::Overflow> { Ok(x) }\n",
-        );
-        f.audit().expect("a declared type with its test passes");
-    }
-
-    #[test]
-    fn a_result_broken_across_lines_is_read_whole() {
-        let ok = TestRepo::declared(
-            "multiline-ok",
-            "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Overflow,\n> { body() }\n",
-        );
-        ok.audit().expect("the error type is on a later line");
-        let bad = TestRepo::declared(
-            "multiline-bad",
-            "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Other,\n> { body() }\n",
-        );
-        rejected(&bad, &["src/lib.rs:1", "`Other`", "not declared"]);
-    }
-
-    #[test]
-    fn an_undeclared_failure_type_fails() {
-        let f = TestRepo::declared("undeclared", "pub fn f() -> Result<u8, Other> { Ok(0) }\n");
-        rejected(&f, &["R5", "src/lib.rs:1", "`Other`", "not declared"]);
-    }
-
-    #[test]
-    fn no_error_type_is_sanctioned_without_a_declaration() {
-        // The three names the audit once carried are errors of one library; a
-        // register that does not declare them does not sanction them.
-        for name in ["NotAProduct", "ObservedBound", "KappaError"] {
-            let f = TestRepo::limits(
-                &format!("fixed-{name}"),
-                "id = []",
-                &format!("pub fn f() -> Result<u8, {name}> {{ Ok(0) }}\n"),
-                None,
+    fn check_limits_cases(name: &str, count: usize) {
+        type Fixtures = std::collections::BTreeMap<String, Vec<LimitFixture>>;
+        static CASES: std::sync::LazyLock<Fixtures> = std::sync::LazyLock::new(|| {
+            let bytes = include_bytes!("../../verification/failure-audit-fixtures.json");
+            assert_eq!(
+                repo_model::artifact::sha256_hex(bytes),
+                "a68b9c1f9804bed54e3917f5a4ee74a0d3684925f59772be8903229634d3e0d5"
             );
-            rejected(&f, &["R5", &format!("`{name}`"), "not declared"]);
+            serde_json::from_slice(bytes).unwrap()
+        });
+        let cases = &CASES[name];
+        assert_eq!(cases.len(), count);
+        for case in cases {
+            let repo = TestRepo::new(name);
+            repo.registers(&case.ids, "authority = []");
+            repo.write("crates/shipped/Cargo.toml", &case.manifest);
+            repo.write("crates/shipped/src/lib.rs", &case.source);
+            if let Some(test) = &case.test {
+                repo.write("crates/shipped/tests/negative.rs", test);
+            }
+            let observed = crate::with_model(&repo.root, check_limits).map_err(|e| e.to_string());
+            if case.expect.is_empty() {
+                observed.unwrap();
+            } else {
+                let errors: Vec<_> = case.expect.iter().map(String::as_str).collect();
+                crate::test_repo::rejected(observed, &errors);
+            }
         }
     }
 
-    #[test]
-    fn an_alias_that_hides_the_error_type_fails() {
-        for ret in ["std::io::Result<u8>", "Result<u8>"] {
-            let f = TestRepo::declared("alias", &format!("pub fn f() -> {ret} {{ Ok(0) }}\n"));
-            rejected(&f, &["R5", "names no error type"]);
-        }
+    macro_rules! limit_fixtures {
+        ($( $name:ident => $count:literal ),+ $(,)?) => { $(
+            #[test]
+            fn $name() { check_limits_cases(stringify!($name), $count); }
+        )+ };
     }
 
-    #[test]
-    fn only_a_bare_type_name_is_a_declared_name() {
-        // `Box<dyn Error>` is not the declared type merely because it begins
-        // with a name; and the arrow of a function type does not end the
-        // argument list early.
-        let boxed = TestRepo::declared(
-            "boxed",
-            "pub fn f() -> Result<u8, Box<dyn Overflow>> { Ok(0) }\n",
-        );
-        rejected(&boxed, &["R5", "`Box<dyn Overflow>`", "not declared"]);
-        let arrow = TestRepo::declared(
-            "arrow",
-            "pub fn f() -> Result<fn(u8) -> u8, Other> { Ok(id) }\n",
-        );
-        rejected(&arrow, &["R5", "`Other`", "not declared"]);
-    }
-
-    #[test]
-    fn a_declared_type_without_its_negative_test_fails() {
-        let f = TestRepo::limits("no-test", DECLARED, OVERFLOW_FUNCTION, None);
-        rejected(
-            &f,
-            &["R5", "`Overflow`", "OV-02", "no test name ends in `ov_02`"],
-        );
-    }
-
-    #[test]
-    fn a_declared_type_whose_negative_test_is_not_registered_fails() {
-        let ids = DECLARED.replace("negative = \"OV-02\"", "negative = \"OV-09\"");
-        let f = TestRepo::overflow_register("unregistered", &ids);
-        rejected(&f, &["OV-01", "`Overflow`", "OV-09", "not a registered ID"]);
-    }
-
-    #[test]
-    fn a_negative_test_is_a_build_claim() {
-        // An `open` claim is measured and never asserted, so it cannot be the
-        // row whose test asserts a refusal.
-        let ids = DECLARED.replace(
-            "id = \"OV-02\"\nlevel = \"build\"",
-            "id = \"OV-02\"\nlevel = \"open\"",
-        );
-        let f = TestRepo::overflow_register("open-negative", &ids);
-        rejected(&f, &["OV-02", "must be a `build` claim"]);
-    }
-
-    #[test]
-    fn a_declaration_is_a_pair_and_is_made_once() {
-        let no_negative = DECLARED.replace("negative = \"OV-02\"\n", "");
-        rejected(
-            &TestRepo::limits("no-negative", &no_negative, "", Some(NEGATIVE_TEST)),
-            &["OV-01", "names no negative test"],
-        );
-        let no_failure = DECLARED.replace("failure = \"Overflow\"\n", "");
-        rejected(
-            &TestRepo::limits("no-failure", &no_failure, "", Some(NEGATIVE_TEST)),
-            &["OV-01", "declares no failure type"],
-        );
-        let twice = format!(
-            "{DECLARED}\n[[id]]\nid = \"OV-03\"\nlevel = \"build\"\nsuite = \"fixture\"\n\
-             statement = \"Declared again.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n"
-        );
-        rejected(
-            &TestRepo::limits("twice", &twice, "", Some(NEGATIVE_TEST)),
-            &["Overflow", "OV-01", "OV-03", "declared twice"],
-        );
-    }
-
-    #[test]
-    fn a_crate_that_does_not_ship_is_not_audited() {
-        let f = TestRepo::limits(
-            "unshipped",
-            "id = []",
-            "pub fn f() -> Result<u8, Other> { Ok(0) }\n",
-            None,
-        );
-        std::fs::write(
-            f.root.join("crates/shipped/Cargo.toml"),
-            format!("{SHIPPED}publish = false\n"),
-        )
-        .expect("write");
-        f.audit()
-            .expect("a publish = false crate may return anything");
-    }
-
-    #[test]
-    fn a_result_in_a_comment_or_a_test_module_is_not_audited() {
-        let f = TestRepo::limits(
-            "comments",
-            "id = []",
-            "// fn f() -> Result<u8, Other>\n\
-             pub fn g() {}\n\
-             #[cfg(test)]\n\
-             mod tests {\n    fn h() -> Result<u8, Other> { Ok(0) }\n}\n",
-            None,
-        );
-        f.audit().expect("neither is behavior");
+    limit_fixtures! {
+        a_crate_that_does_not_ship_is_not_audited => 1,
+        a_declaration_is_a_pair_and_is_made_once => 3,
+        a_declared_failure_type_passes => 1,
+        a_declared_type_whose_negative_test_is_not_registered_fails => 1,
+        a_declared_type_without_its_negative_test_fails => 1,
+        a_negative_test_is_a_build_claim => 1,
+        a_result_broken_across_lines_is_read_whole => 2,
+        a_result_in_a_comment_or_a_test_module_is_not_audited => 1,
+        an_alias_that_hides_the_error_type_fails => 2,
+        an_undeclared_failure_type_fails => 1,
+        no_error_type_is_sanctioned_without_a_declaration => 3,
+        only_a_bare_type_name_is_a_declared_name => 2,
     }
 
     #[test]

@@ -1,0 +1,28 @@
+{
+  "requirement": "VT-166",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "pairs": [
+    "F64 -> F16",
+    "F64 -> BF16",
+    "F64 -> F8_E4M3",
+    "F64 -> I8",
+    "F64 -> I16",
+    "F64 -> I32",
+    "I64 -> BF16"
+  ],
+  "reference": "ggml-wide-narrow-oracle.json",
+  "inputs": "ggml-wide-narrow-words.tsv",
+  "contiguous_casts": 7,
+  "reshaped_offset_copies": 7,
+  "compared_words": 896,
+  "late_invalid_truncations_preserving_destination": 48,
+  "scheduler": "All 14 graphs admitted before allocation, placed on the sole provider by stock GGML, then executed with full backing-buffer comparisons.",
+  "negative": "The original descriptor was refused. Replacing binary64 round-to-odd with nearest-even in the provider failed an independent rounding-boundary comparison. Restored the binding and replayed.",
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "semantic_id": "62eb5908c203fe31f64c8fcb5bdc47c17b9c94cdfecd21eb4e148a17b22adfd1",
+  "attestation": "9347cfa1ed34a8fbb179d918d8bd1d6f2b74f2fa04736a70c0254c7fe6814fc9",
+  "verdant_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560",
+  "upstream_patch": "https://github.com/afflom/verdant-engine/pull/64",
+  "resolved_upstream_verdant_packages": 101,
+  "source_lines": 12681
+}

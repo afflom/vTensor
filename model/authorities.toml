@@ -37,8 +37,8 @@ realized_by = []
 [[authority]]
 id = "VERDANT-ENGINE-TENSOR"
 name = "Verdant Engine tensor API"
-citation = "https://github.com/afflom/verdant-engine/tree/f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
-checksum = "691541503458e8fbb37596c59fb72acd1a7784bbb8642274aa0f3dd81fef7b9a"
+citation = "https://github.com/afflom/verdant-engine/tree/042d18eab3862b44d4d9de0817e33d888a4d6560"
+checksum = "23b71ae24d75a39ecd24b37878e5f748312508a4dafd36278acb934453d2860b"
 artifact = "model/verdant-development.json"
 statement = "The upstream Verdant patch at the locked commit supplies the numerical API and certified signed conversion plan."
 realized_by = ["VT-02"]
@@ -59,7 +59,7 @@ citation = "https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55
 checksum = "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34"
 artifact = "vendor/berkeley-softfloat-3e.tar.gz"
 statement = "SoftFloat Release 3e supplies the reference binary32-to-binary64 and binary64-to-binary32 conversions at round-to-nearest-even, signed I64 to binary32 and binary64, and binary64 truncation to signed I64 with the invalid exception flag."
-realized_by = ["VT-161", "VT-164", "VT-165"]
+realized_by = ["VT-161", "VT-164", "VT-165", "VT-166"]
 
 [[authority]]
 id = "LEAN-SIGNED-MACHINE-INTEGERS"

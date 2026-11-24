@@ -1,0 +1,38 @@
+{
+  "requirement": "VT-167",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "source_storage": [
+    "F32",
+    "F16",
+    "BF16"
+  ],
+  "destinations": [
+    "Q8_1",
+    "Q8_K"
+  ],
+  "contiguous_casts": 6,
+  "offset_padded_copies": 6,
+  "indexed_stores": 8,
+  "index_types": [
+    "I32",
+    "I64"
+  ],
+  "indexed_sources": [
+    "F32",
+    "F16"
+  ],
+  "scheduler_placed_graphs": 20,
+  "whole_destination_bytes_compared": 11808,
+  "late_invalid_inputs_preserving_destination": 20,
+  "oracle": "Original GGML CPU CAST and SET_ROWS. For padded CPY, the CPU encodes compact rows and its exact bytes are placed in the offset view of a sentinel-filled reference buffer. Each provider run compares the complete backing allocation, including unused rows, scales and sums.",
+  "negative": "The original plugin refused the first descriptor before allocation. Flipping one bit of the Q8_1 auxiliary sum failed the whole-buffer comparison. Restored and replayed.",
+  "prism_root": "PrismTemplateContract.TypedArithmetic.evaluate",
+  "semantic_id": "b640448bc13ad5bd0cf7c3d8c25971e8fc853b2434776413681f2024a4dc6951",
+  "attestation": "3aa28f12e166a12e113a01b15083698975a836647ab9ec2df413a5edfe91eb8c",
+  "verdant_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560",
+  "verdant_functions": [
+    "encode_affine_q8_block",
+    "encode_grouped_q8_block"
+  ],
+  "source_lines": 12681
+}
