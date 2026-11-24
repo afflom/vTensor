@@ -32,6 +32,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Load the plugin via `GGML_BACKEND_PATH` in unmodified llama.cpp. The isolated host selects vTensor for model layers 0–6. [Consumer evidence](VTENSOR-VERIFICATION.md#llamacpp-consumer)
 - [x] Decode two independent sequences together with separate and unified KV caches in llama.cpp. Compare 384,000 logits and every updated cache row with CPU. [Multi-sequence replay](verification/llama-two-sequence-decode.json)
 - [x] Compare 3,456 token and pooled embedding values for two prompts in llama.cpp. All 782 observed placements selected vTensor across NONE, MEAN, CLS and LAST. [Embedding replay](verification/llama-embedding-pooling.json)
+- [x] Run mixed-quantized GPT-2 in unmodified llama-simple. Match eight greedy tokens, 301,542 two-sequence logits and 4,096 cache values against CPU. [Host comparison](verification/llama-gpt2-decode.json)
 - [x] Match the upstream scheduler's compute-bit selection and reuse an allocated two-operation graph across active, inactive and reactivated runs (VT-52). [Oracle evidence](VTENSOR-VERIFICATION.md#scheduled-graph-selection)
 - [x] Inventory all 57 compiled backend callbacks. Compare two-way CPU/vTensor graph splits, views, batched transfers and synchronization with public GGML. [Host replay](verification/ggml-backend-callbacks.json)
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)

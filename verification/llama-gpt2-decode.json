@@ -1,0 +1,116 @@
+{
+  "implementation": "8de5b8eba6ba12f414d4185e98197ec501b72df8",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "39947bfd1d51767f22e09dbef0d7c81b1f9ca04bb5863c8b5390ab3a387c3558",
+  "provider_inputs_sha256": "914c8ae5184845d8bbee1c289786e1a146e6e87c4e015864a94a4f8474fdfbe5",
+  "verdant_revision": "d678ef7d5af1d8b0a88fc041b3f1066438d68e0c",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "model": {
+    "repository": "tensorblock/tiny-random-gpt2-GGUF",
+    "commit": "7d078a5dca1e6cec7f402072a7a184a495eec70f",
+    "url": "https://huggingface.co/tensorblock/tiny-random-gpt2-GGUF/resolve/7d078a5dca1e6cec7f402072a7a184a495eec70f/tiny-random-gpt2-Q2_K.gguf",
+    "sha256": "8393b803d7b11df6f8618e89938ad6a1fc26e06a79e6ca154634116df3eeed94",
+    "bytes": 12964480
+  },
+  "architecture": "gpt2",
+  "blocks": 2,
+  "embedding_width": 128,
+  "vocabulary": 50257,
+  "quantization_inventory": {
+    "f32": 19,
+    "q8_0": 1,
+    "q3_K": 2,
+    "iq4_nl": 7
+  },
+  "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
+  "reference_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "multi_sequence": {
+    "prompt_ids": [
+      [
+        17,
+        29,
+        41,
+        53
+      ],
+      [
+        13,
+        37,
+        59,
+        71
+      ]
+    ],
+    "settings": "Unified KV, two independent sequences, two-token prefill followed by two single-token decodes. Compare the last prefill position and both subsequent logits per sequence.",
+    "harness_sha256": "0d37704276859d79c0b9c25149ce95ebc4308192f4aaa2b84b3cbc2e5d8d7274",
+    "runner_sha256": "a73319448337689ed59bfd7a48a783ed2fdd423cc6a62ebf0e687dce2efbcb28",
+    "logits": {
+      "words": 301542,
+      "nmse": 6.029045303486186e-15,
+      "max_abs": 1.1920928955078125e-07
+    },
+    "top_token_ids": [
+      29,
+      14893,
+      41,
+      20824,
+      53,
+      71
+    ],
+    "cache_rows": 32,
+    "cache": {
+      "words": 4096,
+      "nmse": 0.0,
+      "max_abs": 0.0
+    },
+    "vtensor_placements": 228
+  },
+  "simple": {
+    "authority_source": "examples/simple/simple.cpp",
+    "source_sha256": "5f3160b48b5c0adff984dfdc6ad39cf9ee113b4d63600596f2127f9a0b9a869e",
+    "executable_sha256": "18ca7f55aeaedb6e32bb223ef4d4e2c0c6fb63c3b12690abfd4ccea8ec0f8b57",
+    "command": "llama-simple -m tiny-random-gpt2-Q2_K.gguf -n 8 -ngl 0 \"The small model\"",
+    "backend_selection": "Run with GGML_BACKEND_PATH naming just the selected plugin and the executable in a directory containing no other GGML backend.",
+    "tokens_decoded": 8
+  },
+  "runs": {
+    "cpu": {
+      "placement_transcript_sha256": "f84d5bbdabb5632194db7bb146470e89d83372e86cdc8f64e29ab285a18c6e78",
+      "placements": {
+        "ADD": 54,
+        "DUP": 3,
+        "FLASH_ATTN_EXT": 6,
+        "GET_ROWS": 15,
+        "MUL": 15,
+        "MUL_MAT": 27,
+        "NORM": 15,
+        "PERMUTE": 18,
+        "RESHAPE": 6,
+        "SET_ROWS": 15,
+        "UNARY": 6,
+        "VIEW": 48
+      },
+      "logits_sha256": "e99c5407a7535e9c9c4de4cf34c65ab2d5d54416ef152bf7900daa3345f58ecf",
+      "kv_transcript_sha256": "453018beb9e502b128f7e877fe2f9cba8cfb9bae39cfaacad743ee15819c9e09",
+      "stdout_sha256": "cada01ef028a6d00cf37ff693ddf8368cd7b1ba4ba2bf7c82d613ae69ae49618"
+    },
+    "vtensor": {
+      "placement_transcript_sha256": "e277f0c839334d14709c9af5e938d0831f803370f37b1664f514362359032bd6",
+      "placements": {
+        "ADD": 54,
+        "DUP": 3,
+        "FLASH_ATTN_EXT": 6,
+        "GET_ROWS": 15,
+        "MUL": 15,
+        "MUL_MAT": 27,
+        "NORM": 15,
+        "PERMUTE": 18,
+        "RESHAPE": 6,
+        "SET_ROWS": 15,
+        "UNARY": 6,
+        "VIEW": 48
+      },
+      "logits_sha256": "55fa8d61a52283e17cc57f5e1d0bf6bbfa4ca6b7ec8403cc502e73cf6f4b9c59",
+      "kv_transcript_sha256": "453018beb9e502b128f7e877fe2f9cba8cfb9bae39cfaacad743ee15819c9e09",
+      "stdout_sha256": "cada01ef028a6d00cf37ff693ddf8368cd7b1ba4ba2bf7c82d613ae69ae49618"
+    }
+  }
+}
