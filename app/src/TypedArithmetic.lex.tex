@@ -506,10 +506,19 @@ definition{
 }
 
 definition{
+  name: addRowStorage,
+  parameters: [source : Nat, destination : Nat],
+  result: Bool,
+  body: (if (packedTarget source) then (if ((source =? 9) || (source =? 15)) then false else true)
+    else (((bytes source) =? 2) && (packedTarget destination))),
+  executable: true
+}
+
+definition{
   name: packedAdditionPlan,
   parameters: [left : NormPlan::TensorDescriptor, rhs : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
   result: Response,
-  body: (if (((((((((((((((((project left n0) =? (project rhs n0)) || ((project left ty) =? (project output ty))) && (repeatValid left rhs)) && (NormPlan::sameShape left output)) && ((project rhs ty) =? 0)) && ((project rhs s0) =? 4)) && (packedTarget (project left ty))) && (if (((project left ty) =? 9) || ((project left ty) =? 15)) then false else true)) && (0 <? (rowTargetWidth (project output ty)))) && ((project left s0) =? (rowTargetWidth (project left ty)))) && ((project output s0) =? (rowTargetWidth (project output ty)))) && ((prim remainder (project left n0) (storeBlockLanes (project left ty)) 1 : Nat) =? 0)) && ((prim remainder (project output n0) (storeBlockLanes (project output ty)) 1 : Nat) =? 0)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) && (RmsNormalization::nestedRows (prim multiply (prim quotient (project output n0) (storeBlockLanes (project output ty)) 0 : Nat) (project output s0) : Nat) (project output n1) (project output n2) (project output n3) (project output s1) (project output s2) (project output s3))) then
+  body: (if ((((((((((((((((project left n0) =? (project rhs n0)) || ((project left ty) =? (project output ty))) && (repeatValid left rhs)) && (NormPlan::sameShape left output)) && ((project rhs ty) =? 0)) && ((project rhs s0) =? 4)) && (addRowStorage (project left ty) (project output ty))) && (0 <? (rowTargetWidth (project output ty)))) && ((project left s0) =? (rowTargetWidth (project left ty)))) && ((project output s0) =? (rowTargetWidth (project output ty)))) && ((prim remainder (project left n0) (storeBlockLanes (project left ty)) 1 : Nat) =? 0)) && ((prim remainder (project output n0) (storeBlockLanes (project output ty)) 1 : Nat) =? 0)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) && (RmsNormalization::nestedRows (prim multiply (prim quotient (project output n0) (storeBlockLanes (project output ty)) 0 : Nat) (project output s0) : Nat) (project output n1) (project output n2) (project output n3) (project output s1) (project output s2) (project output s3))) then
     (ctor Response.planned (record Plan {steps := (if (empty left) then 0 else (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat)), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := 0, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := rhs, output := output, packedAddition := true}))
     else (ctor Response.invalid)),
   executable: true
@@ -537,7 +546,7 @@ definition{
         | Option.none => (ctor Response.invalid)
         | Option.some left => (match secondary
           | Option.none => (ctor Response.invalid)
-          | Option.some rhs => (if ((kind =? 0) && (packedTarget (project left ty))) then (packedAdditionPlan left rhs output) else (plan kind left rhs output)))))
+          | Option.some rhs => (if ((kind =? 0) && ((packedTarget (project left ty)) || (packedTarget (project output ty)))) then (packedAdditionPlan left rhs output) else (plan kind left rhs output)))))
     | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
     | Request.gate operation variant swapped alpha limit extra left secondary output => (if (operation =? 33) then (if extra then (ctor Response.invalid) else (match secondary
       | Option.none => (ctor Response.invalid)
@@ -549,6 +558,13 @@ definition{
     | Request.step index execution flag => (if (project execution packedAddition) then (packedAdditionStep index execution) else (if ((project execution operation) =? 33) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if (boundedGate (project execution gateVariant)) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag))))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
+}
+
+theorem{
+  name: bfloatAdditionCanEncodeImportanceBlocks,
+  parameters: [],
+  statement: ((addRowStorage 30 16) = true),
+  proof: reflexivity{}
 }
 
 theorem{

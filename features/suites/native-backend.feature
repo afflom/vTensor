@@ -734,3 +734,9 @@ Feature: native-backend
     Given the 841 executable GGML key and value type pairs and the documented accumulator precisions
     When the scheduler submits attention with explicit F32, BF16 or F16 minimum precision
     Then each output matches the original F32 CPU accumulator and Q8 and Q4 requests preserve the destination
+
+  @VT-179 @build
+  Scenario: GGML ADD_CAST encodes F16 and BF16 inputs plus F32 addends in every packed destination type
+    Given two distinct rows of half or bfloat values and an F32 addend
+    When the stock scheduler selects the sole provider before allocation
+    Then every packed output byte matches the original GGML CPU sum and row encoder

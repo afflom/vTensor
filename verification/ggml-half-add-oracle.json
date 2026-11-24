@@ -1,0 +1,17 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "source_types": [
+    "F16",
+    "BF16"
+  ],
+  "width": 256,
+  "rows": 2,
+  "destination_formats": 27,
+  "original_cpu_add_graphs": 2,
+  "original_encoded_rows": 108,
+  "reference": "Generate the two source rows using original GGML F16/BF16 conversion of ((37*i+11) mod 291 - 145)/37 and the F32 addend ((13*i+7) mod 29 - 14)/32. Evaluate ggml_add_cast to F32 on the pinned CPU. Encode each row with the CPU from_float callback where defined, otherwise use ggml_quantize_chunk with its declared importance rule.",
+  "words_sha256": "038d31895c1f136a0a7092ea3609258eb591fd44b0967d72d79af5deb37c8c00"
+}

@@ -1,0 +1,19 @@
+{
+  "requirement": "VT-179",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-half-add-oracle.json",
+  "semantic_id": "bac7cec0113dc2134fda6b8442146d78a7225c2a39093d957657358436bd9ecc",
+  "attestation": "13d3764206f3f5dc1751d61b80d7712f705e5bc731e2c403d48494390a6d3ee8",
+  "provider_sha256": "27bbc6700d0427637b8cbe9e46be65ae83a2b7a644aa36a180d0e1a07678dd84",
+  "source_types": [
+    "F16",
+    "BF16"
+  ],
+  "packed_destinations": 27,
+  "graphs_previously_refused": 54,
+  "scheduled_graphs": 54,
+  "encoded_rows_compared": 108,
+  "encoded_bytes_compared": 14288,
+  "negative_control": "Omitting the F32 addend only for BF16 -> IQ1_M made half_add_casts_vt_179 fail the 30 -> 29 byte comparison. Restoring summation passed all 54 graphs.",
+  "source_lines": 12605
+}

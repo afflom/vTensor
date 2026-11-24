@@ -72,6 +72,7 @@ ggml_batches! {
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
     fn flash_accumulators_vt_178() { "flash-precision", 4205, ["attention"] }
     fn flash_storage_pairs_vt_177() { "flash-storage", 697, ["attention"] }
+    fn half_add_casts_vt_179() { "half-add", 54, ["typed"] }
     fn codebook_addition_vt_176() { "codebook-add", 189, ["typed"] }
     fn e4m3_add_repeats_vt_175() { "e4m3-repeat", 12, ["typed"] }
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
@@ -1289,7 +1290,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "b497cdcb7f6bc85778602729d277f1f8fae9ce3425a30a416c05ea0c57d14afd",
+            "c08bd811d61a08a88c813261010414bea702b76c7f0664a76a87dc3b4d9a2ee8",
         )
     });
 
@@ -1826,8 +1827,6 @@ extern "C" size_t vtensor_build_sources_size();
 extern size_t vtensor_imported_suite(ggml_backend_t, ggml_backend_t, const char *);
 extern bool vtensor_imported_case(ggml_backend_t, ggml_backend_t, const char *, const char *, void *, ggml_tensor * (*)(ggml_context *, void *, void *), void (*)(ggml_context *, void *)=nullptr);
 extern ggml_tensor *vtensor_oracle_tensor(void *,ggml_context *,ggml_type,int64_t,int64_t,int64_t,int64_t);
-#endif
-#ifdef VTENSOR_IMPORTED_SUITE
 #define main vtensor_sleep_main
 #define printf(...) std::fprintf(stderr,__VA_ARGS__)
 "##,
@@ -1873,6 +1872,11 @@ static bool refuses_change(ggml_backend_t backend, ggml_backend_dev_t dev, ggml_
     const bool refused=(!capability || !ggml_backend_dev_supports_op(dev,result)) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED;
     field=saved;
     return refused && before==tensor_bytes(result);
+}
+static bool refuses_poisoned_output(ggml_backend_t backend, ggml_cgraph *graph, ggml_tensor *storage) {
+    const auto size=ggml_nbytes(storage);
+    ggml_backend_tensor_memset(storage,0x33,0,size);
+    return ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(storage)==std::vector<uint8_t>(size,0x33);
 }
 static ggml_tensor * canonical_copy(ggml_context *ctx, ggml_tensor *input) {
     const int64_t block=ggml_blck_size(input->type), count=ggml_nelements(input)/block;
@@ -2259,7 +2263,8 @@ int main(int argc, char **argv) {
     const bool lane_repeat=!strcmp(argv[3],"packed-lanes");
     const bool broadcast_add=lane_repeat || !strcmp(argv[3],"packed-broadcast");
     const bool codebook_add=!strcmp(argv[3],"codebook-add");
-    if (codebook_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
+    const bool half_add=!strcmp(argv[3],"half-add");
+    if (half_add || codebook_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
         int n=0; CHECK(scanf("%d",&n)==1 && n>0);
         for (int i=0;i<n;++i) {
@@ -2267,7 +2272,7 @@ int main(int argc, char **argv) {
             auto &bytes=sources[{type,width}]; CHECK(bytes.empty());
             bytes=read_hex_bytes(2*ggml_row_size(ggml_type(type),width)); CHECK(!bytes.empty());
         }
-        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==(codebook_add?175:625));
+        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==(half_add?54:codebook_add?175:625));
         size_t cases=0;
         for (int p=0;p<pairs;++p) {
             int from,to,width; CHECK(scanf("%d%d%d",&from,&to,&width)==3);
@@ -2350,9 +2355,7 @@ int main(int argc, char **argv) {
                             set_scalar_word(idx,1,0);
                         }
                         ggml_set_f32_1d(src,2*width-1,NAN);
-                        ggml_backend_tensor_memset(storage,0x33,0,ggml_nbytes(storage));
-                        CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
-                        CHECK(tensor_bytes(storage)==std::vector<unsigned char>(expected.size(),0x33));
+                        CHECK(refuses_poisoned_output(backend,graph,storage));
                     }
                 }
                 ++cases;
@@ -2410,9 +2413,7 @@ int main(int argc, char **argv) {
                 CHECK(oracle==actual);
                 for (uint64_t word:invalid) {
                     set_scalar_word(input,inputs.size()-1,word);
-                    ggml_backend_tensor_memset(padded?out:result,0x33,0,actual.size());
-                    CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED);
-                    CHECK(tensor_bytes(padded?out:result)==std::vector<uint8_t>(actual.size(),0x33));
+                    CHECK(refuses_poisoned_output(backend,graph,padded?out:result));
                     ++compared;
                 }
             }
@@ -2477,9 +2478,7 @@ int main(int argc, char **argv) {
                     if (!std::isnan(invalid)) continue;
                     uint8_t bits=0x7f; ggml_backend_tensor_set(input,&bits,block_address(input,15),1);
                 } else ggml_set_f32_1d(input,15,invalid);
-                ggml_backend_tensor_memset(padded?destination:result,0x33,0,ggml_nbytes(padded?destination:result));
-                auto before=tensor_bytes(padded?destination:result);
-                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(padded?destination:result)==before);
+                CHECK(refuses_poisoned_output(backend,graph,padded?destination:result));
             }
             ++cases;
           }

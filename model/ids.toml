@@ -1140,3 +1140,9 @@ id = "VT-178"
 level = "build"
 suite = "native-backend"
 statement = "Flash attention honors all documented accumulator settings and atomically refuses quantized accumulators"
+
+[[id]]
+id = "VT-179"
+level = "build"
+suite = "native-backend"
+statement = "GGML ADD_CAST encodes F16 and BF16 inputs plus F32 addends in every packed destination type"

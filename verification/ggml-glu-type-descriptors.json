@@ -1,0 +1,26 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "a3331269712080b9b283dde9652ec74247a18fe539a0a68c504f1e00af1c4ffc",
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "operations": "All seven GLU variants",
+  "descriptors": 1794,
+  "types": 36,
+  "layouts": "Dense and row-padded offset inputs at width 512 for every type and width 17 for each executable scalar type",
+  "direct_cpu_graphs": 276,
+  "provider_placed_and_executed": 276,
+  "words_compared": 202968,
+  "max_nmse": 7.86356235694e-15,
+  "ggml_error_limit": 1e-07,
+  "probe": "Build ggml_glu in both input orders and ggml_glu_split with independently initialized tensors. Also run ggml_swiglu_oai with alpha 1.702 and limit 1.5 and ggml_swiglu_clamp with limit 1.5. Probe each before allocation and query every admitted node after stock scheduler splitting. Poison outputs before each backend run and compare every finite logical value with GGML CPU.",
+  "table": "ggml-glu-type-descriptors.tsv.gz",
+  "table_sha256": "a1f0ebbc3bc15384469fbd6eec0d46ad7e0e8cd9ce48adfa235531f488e30312",
+  "uncompressed_sha256": "5a84ad34bc22196296d5698d2e7af6b69e9cfe7b62482f4bcc28e7462914731c",
+  "form_codes": [
+    "combined",
+    "combined swapped",
+    "split",
+    "parameterized split"
+  ]
+}

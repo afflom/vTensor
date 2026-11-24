@@ -1,0 +1,21 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "a3331269712080b9b283dde9652ec74247a18fe539a0a68c504f1e00af1c4ffc",
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "cpu_unary_sha256": "57a73a81b91473945040054a03bd921f1f77656d217e205cf8fd7f1e0acae7ad",
+  "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "operations": "All 22 GGML_UNARY_OP variants, SQR, SQRT, LOG, SIN and COS",
+  "descriptors": 3888,
+  "types": 36,
+  "layouts": "[256,2,2,1] dense and offset views with padded rows, each copied and in place",
+  "direct_cpu_graphs": 324,
+  "provider_placed_and_executed": 324,
+  "words_compared": 331776,
+  "max_nmse": 1.79080084251e-15,
+  "ggml_error_limit": 1e-07,
+  "probe": "Build public constructors on all 36 storage types before allocation. Split each admitted graph on the sole vTensor scheduler. The original three executable float storage types use identical nonconstant inputs, including positive-only inputs for SQRT and LOG. Refill the entire input backing between backends, poison copied outputs and compare every logical result against the original CPU. Parameterized variants use the generic constructor defaults.",
+  "table": "ggml-unary-type-descriptors.tsv.gz",
+  "table_sha256": "6170edec7abd190e3138e418f6b611661ba9183767af31e4f667f4681908b475",
+  "uncompressed_sha256": "2037a9bb3cdd6f3de7f9d3e1380e37e6f084b8305421bd0b80dfc93118b96186"
+}
