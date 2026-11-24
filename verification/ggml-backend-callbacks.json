@@ -1,0 +1,181 @@
+{
+  "requirements": [
+    "VT-11",
+    "VT-52"
+  ],
+  "implementation": "926e003af74a7b6d023d257734c6d40fc52156c5",
+  "provider_sha256": "e0ccd132205bf5e0b54fdbd898682bcd0b76051f040920b6b49a96a44c6bc84e",
+  "provider_inputs_sha256": "1e6ecf1551184b29070c1bee4af34ecafc50aa1a1c8472d51e9f29a0be18a864",
+  "ggml_source_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "ggml_archive_sha256": "4eec816a907885c31932e0ab4fa1ee2278af43000dc19d514929cd03cb4ff8a0",
+  "ggml_files_compared": 1630,
+  "ggml_libraries_sha256": {
+    "libggml.so": "38afd9f20c33879492df893e74d4269e80c96259addc7b3ef9960f40943ccddc",
+    "libggml-base.so": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+    "libggml-cpu.so": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c"
+  },
+  "probe_sha256": "1bb8c5cf7cf26529aa0aea8a2da67a8d0805d6783de004d6c85ad24075f976fc",
+  "probe_source_sha256": "5a55f6d76dd6cf2d939d1c899e7b9f4b1c6254108e5e8ec8eedf48857cc497a9",
+  "native_configuration": "11c26139806e868301cee4fbfdec1d0d631d76d9b003da0e2da6e85dd760996c",
+  "callback_slots": {
+    "ggml_backend_reg_i": {
+      "bound": [
+        "get_name",
+        "get_device_count",
+        "get_device",
+        "get_proc_address"
+      ],
+      "null": []
+    },
+    "ggml_backend_device_i": {
+      "bound": [
+        "get_name",
+        "get_description",
+        "get_memory",
+        "get_type",
+        "get_props",
+        "init_backend",
+        "get_buffer_type",
+        "buffer_from_host_ptr",
+        "supports_op",
+        "supports_buft"
+      ],
+      "null": [
+        "get_host_buffer_type",
+        "offload_op",
+        "event_new",
+        "event_free",
+        "event_synchronize"
+      ]
+    },
+    "ggml_backend_buffer_type_i": {
+      "bound": [
+        "get_name",
+        "alloc_buffer",
+        "get_alignment",
+        "get_alloc_size",
+        "is_host"
+      ],
+      "null": [
+        "alloc_buffer_n",
+        "get_max_size",
+        "get_alloc_size_n"
+      ]
+    },
+    "ggml_backend_buffer_i": {
+      "bound": [
+        "free_buffer",
+        "get_base",
+        "init_tensor",
+        "memset_tensor",
+        "set_tensor",
+        "get_tensor",
+        "cpy_tensor",
+        "clear"
+      ],
+      "null": [
+        "set_tensor_2d",
+        "get_tensor_2d",
+        "reset",
+        "set_tensor_n",
+        "get_tensor_n",
+        "cpy_tensor_n"
+      ]
+    },
+    "ggml_backend_i": {
+      "bound": [
+        "get_name",
+        "free",
+        "graph_compute"
+      ],
+      "null": [
+        "set_tensor_async",
+        "get_tensor_async",
+        "set_tensor_2d_async",
+        "get_tensor_2d_async",
+        "cpy_tensor_async",
+        "synchronize",
+        "graph_plan_create",
+        "graph_plan_free",
+        "graph_plan_update",
+        "graph_plan_compute",
+        "event_record",
+        "event_wait",
+        "graph_optimize"
+      ]
+    }
+  },
+  "unbound_capabilities": {
+    "graph_plans": "Optional plan API unavailable. The host calls GGML graph compute.",
+    "events": "Device returns no event; event methods require an event handle.",
+    "async_transfers": "Public wrappers synchronize or use the synchronous transfer callback.",
+    "allocation_and_batches": "Public GGML allocation planner, strided copy, and grouped batch fallbacks.",
+    "graph_optimize_and_reset": "Upstream skips absent hooks.",
+    "host_buffer_type_and_offload_op": "NULL and false through public accessors."
+  },
+  "observed": {
+    "device_memory_bytes": [
+      0,
+      0
+    ],
+    "maximum_allocation_bytes": "SIZE_MAX",
+    "scheduler": {
+      "graph": "11 F32 inputs, 7-element view at byte offset 8, SCALE by 1.25 then ADD the view",
+      "placements": [
+        [
+          "CPU",
+          "CPU"
+        ],
+        [
+          "vTensor",
+          "CPU"
+        ],
+        [
+          "CPU",
+          "vTensor"
+        ]
+      ],
+      "admission": "Both nodes admitted before graph allocation. Forced SCALE and ADD placements checked after allocation.",
+      "submission": "Reuse the allocated graph, call ggml_backend_sched_graph_compute_async then ggml_backend_sched_synchronize and read output.",
+      "input": "(i - 2 * pass) / 4 for i=0..10 and pass=0..2",
+      "cpu_outputs": [
+        [
+          1.125,
+          1.6875,
+          2.25,
+          2.8125,
+          3.375,
+          3.9375,
+          4.5
+        ],
+        [
+          0.0,
+          0.5625,
+          1.125,
+          1.6875,
+          2.25,
+          2.8125,
+          3.375
+        ],
+        [
+          -1.125,
+          -0.5625,
+          0.0,
+          0.5625,
+          1.125,
+          1.6875,
+          2.25
+        ]
+      ],
+      "matched_output_words": 42
+    },
+    "transfers": {
+      "storage": "Two I8[32] tensors on each backend and a 16-byte view at offset 4 of the first tensor. Batch allocation size equals actual buffer size.",
+      "input": "byte[i] = 7 * i + 1",
+      "async_2d": "4 copies of 3 bytes; tensor offset 1, tensor stride 6, external stride 5. Every destination byte and hole matched.",
+      "mixed_batch": "SET_N/GET_N for vTensor view, CPU tensor, vTensor tensor, offsets [1,3,5], sizes [3,4,5], external offsets [0,8,16]. Both directional COPY_N results match all 32 bytes.",
+      "async_copy": "Both directions synchronized and compared against source; vTensor buffer reset preserved data."
+    }
+  },
+  "calibration": "Changing the mixed graph SCALE to 1.5 while retaining CPU 1.25 failed the vTensor-to-CPU output comparison."
+}
