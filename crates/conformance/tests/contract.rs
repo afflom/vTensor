@@ -246,6 +246,7 @@ ggml_batches! {
     fn transpose_plane_vt_107() { "upstream-TRANSPOSE_CONV_2D", 8, ["pointwise"] }
     fn grouped_affine_writes_vt_122() { "upstream-GROUPED_AFFINE_WRITES", 6, ["typed"] }
     fn importance_storage_vt_148() { "upstream-IMPORTANCE_THREE_STORAGE", 4, ["typed"] }
+    fn importance_two_storage_vt_151() { "upstream-IMPORTANCE_TWO_STORAGE", 2, ["typed"] }
     fn nonlinear_storage_vt_135() { "upstream-NONLINEAR_STORAGE", 4, ["typed"] }
     fn triangular_solve_vt_134() { "upstream-SOLVE_TRI_BOUNDARIES", 3, ["pointwise"] }
     fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
@@ -1265,7 +1266,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "ef78b6fd86866cc8c1d466ee70bc4ac678e71bfd6b8d894894f9ba7971848283",
+            "a73e0c9e4ab95ad3393f8f80878eccab0202746699a24aca260d332092574168",
         )
     });
 
@@ -1584,7 +1585,7 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
     test.initialize_tensors(target);
     auto original=op==GGML_OP_OUT_PROD || op==GGML_OP_CPY ? nullptr : test.build_graph(reference);
     if (op==GGML_OP_CPY || op==GGML_OP_SET_ROWS) {
-        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S) return false;
+        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S && out->type!=GGML_TYPE_IQ2_S) return false;
         auto src=out->src[0];
         int64_t width=out->ne[0], rows=ggml_nrows(out);
         if (width<=0 || width%ggml_blck_size(out->type) || !ggml_is_contiguous_rows(out)) return false;
@@ -1701,7 +1702,7 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
       const size_t i=selected.empty()?pos:selected[pos];
       auto &test=tests[i];
-      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE");
+      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE") || !strcmp(op,"IMPORTANCE_TWO_STORAGE");
       auto operation= !strcmp(op,"GET_ROWS_BACK_DECODED") ? GGML_OP_GET_ROWS_BACK : !strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : !strcmp(op,"CONV_2D_CONTIGUOUS") ? GGML_OP_CONV_2D : GGML_OP_NONE;
       if (importance || operation!=GGML_OP_NONE) {
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {
@@ -2296,6 +2297,7 @@ int main(int argc, char **argv) {
       }
       static const struct { const char *batch; std::initializer_list<ggml_type> kinds; } stores[] = {
         {"SET_ROWS_SCALAR", {GGML_TYPE_F16}}, {"Q8_STORAGE_WRITES", {GGML_TYPE_Q8_0}},
+        {"IMPORTANCE_TWO_STORAGE", {GGML_TYPE_IQ2_S}},
         {"IMPORTANCE_THREE_STORAGE", {GGML_TYPE_IQ3_XXS,GGML_TYPE_IQ3_S}},
         {"SIGN_WEIGHT_WRITES", {GGML_TYPE_Q1_0,GGML_TYPE_Q2_0}},
         {"LOW_BIT_WRITES", {GGML_TYPE_Q4_0,GGML_TYPE_Q4_1,GGML_TYPE_Q5_0,GGML_TYPE_Q5_1}},
@@ -2696,12 +2698,13 @@ int main(int argc, char **argv) {
       using FixtureQuery=FixtureAnswer(*)(uint64_t,uint64_t,uint64_t,uint64_t);
       FixtureQuery query=nullptr;
       {CHECK(argc==5);auto model=dlopen(argv[4],RTLD_NOW|RTLD_LOCAL);CHECK(model);query=(FixtureQuery)dlsym(model,"fixture_query");CHECK(query);}
-      auto fixture=[&](uint64_t q,uint64_t c,uint64_t source,uint64_t item) {auto answer=query(fixture_base+q,c,source,item);if(answer.status!=1)unexpected_abort("invalid Prism fixture response");return answer.value;};
-      auto pattern_word=[&](int mode,int pattern,size_t index,unsigned item=0) {
-        auto answer=query(mode,pattern,index,item);
-        if(answer.status!=1 || answer.value>UINT32_MAX) unexpected_abort("invalid Prism pattern word");
-        return uint32_t(answer.value);
+      auto query_value=[&](uint64_t q,uint64_t c,uint64_t source,uint64_t item,uint64_t limit=UINT64_MAX) {
+        const auto answer=query(q,c,source,item);
+        if(answer.status!=1 || answer.value>limit) unexpected_abort("invalid Prism fixture response");
+        return answer.value;
       };
+      auto fixture=[&](uint64_t q,uint64_t c,uint64_t source,uint64_t item) {return query_value(fixture_base+q,c,source,item);};
+      auto pattern_word=[&](int mode,int pattern,size_t index,unsigned item=0) {return uint32_t(query_value(mode,pattern,index,item,UINT32_MAX));};
       uint64_t config[5]={};
       std::vector<uint64_t> fixture_plan;
       std::vector<std::vector<unsigned char>> patterns;
@@ -2715,11 +2718,7 @@ int main(int argc, char **argv) {
         const ggml_type output_type=typing?(ggml_type)fixture_plan[12]:relative?GGML_TYPE_F16:selecting?(operation?GGML_TYPE_I64:GGML_TYPE_I32):casting?(ggml_type)fixture_plan[9]:(unarying && operation%3==2)?GGML_TYPE_F32:type;
         const size_t output_bytes=ggml_type_size(output_type);
 
-        auto shape_field=[&](int axis) {
-          auto answer=query(100+family,case_id,geometry,axis);
-          if(answer.status!=1) unexpected_abort("invalid Prism fixture shape");
-          return int64_t(answer.value);
-        };
+        auto shape_field=[&](int axis) {return int64_t(query_value(100+family,case_id,geometry,axis));};
         const int window_case=windowing?shape_field(4):0, window_size=windowing?shape_field(5):1;
         const int image_width=windowing?shape_field(6):rows, image_height=windowing?shape_field(7):batches;
         int64_t shape[4];
@@ -2774,8 +2773,8 @@ int main(int argc, char **argv) {
         auto spatial_op = [&](ggml_tensor *a, bool reference) -> ggml_tensor * {
           int args[8]={};
           for(int axis=0;axis<(operation==1?1:4);++axis) for(int side=0;side<(operation==2?1:2);++side) {
-            auto answer=query(operation==0 && reference?3:operation,pattern,a->ne[axis],operation==2?axis:side);
-            if(answer.status!=1 || answer.value>UINT32_MAX)unexpected_abort("invalid Prism spatial fixture response");uint32_t word=answer.value;memcpy(&args[operation==0?axis*2+side:operation==1?side:axis],&word,4);
+            const auto word=pattern_word(operation==0 && reference?3:operation,pattern,a->ne[axis],operation==2?axis:side);
+            memcpy(&args[operation==0?axis*2+side:operation==1?side:axis],&word,sizeof word);
           }
           if(operation==0) return pattern%2?ggml_pad_ext_circular(ctx,a,args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]):ggml_pad_ext(ctx,a,args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
           if(operation==1) return ggml_pad_reflect_1d(ctx,a,args[0],args[1]);

@@ -1,0 +1,110 @@
+{
+  "requirement": "VT-151",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "case_ordinals": {
+    "SET_ROWS": [
+      1424,
+      1425,
+      1426,
+      1427,
+      1428,
+      1429,
+      1430,
+      1431,
+      1432,
+      1433,
+      1434,
+      1435,
+      1804,
+      1805,
+      1806,
+      1807,
+      1808,
+      1809,
+      1810,
+      1811,
+      1812,
+      1813,
+      1814,
+      1815
+    ],
+    "CPY": [
+      8493,
+      8494,
+      8551,
+      8552,
+      8609,
+      8610
+    ]
+  },
+  "passed": 30,
+  "verdant_revision": "5144b64dff50a3127f75a338fd607a4f70f35169",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/59",
+  "typed_semantic_id": "d9a4e3313dc09a52dfe2dc946ed845cbdc72d5fef73764a089225f2c9364c5a4",
+  "oracle": "The pinned GGML factory constructs the graph and initializes all operands. GGML decodes the source. For SET_ROWS, the imported CPU scatters source row numbers through the original index tensor. For CPY and each written destination row in SET_ROWS, ggml_quantize_chunk supplies the expected IQ2_S bytes with null importance. The comparison covers the complete destination including untouched rows and padding.",
+  "factory_transcript_sha256": "6dbb2ccff07bdcf5b573419dc061ceee1f0ae008d819d22efea3f1f7fafbf902",
+  "continuous": {
+    "ordinals": [
+      1424,
+      8493
+    ],
+    "transcript_sha256": "0d797c5a7ca97c3ff0c11f34d7523865958cd6a7fd00447ec01cb01ca9f34cdc",
+    "atomic_refusals": "For I32 and I64 indices, a bad second index and a nonfinite second row preserve the destination."
+  },
+  "additional_batches": [
+    {
+      "count": 10,
+      "transcript_sha256": "d9c5ffeb441c8c3feb89213f8819b9e0bba4426d86c9f8f147817a82575edd02",
+      "ordinals": [
+        1425,
+        1428,
+        1431,
+        1434,
+        1805,
+        1808,
+        1811,
+        1814,
+        8551,
+        8610
+      ]
+    },
+    {
+      "count": 9,
+      "transcript_sha256": "10560607bb8d5df73f6c95b14585adc4f6f99cc28c9374216feffc53316f6dd0",
+      "ordinals": [
+        1426,
+        1429,
+        1432,
+        1435,
+        1806,
+        1809,
+        1812,
+        1815,
+        8552
+      ]
+    },
+    {
+      "count": 9,
+      "transcript_sha256": "63eb8ebf0a0fe7c9c489f69d0b907139d69aa988215e6dd35f57306839a0ef4a",
+      "ordinals": [
+        1427,
+        1430,
+        1433,
+        1804,
+        1807,
+        1810,
+        1813,
+        8494,
+        8609
+      ]
+    }
+  ],
+  "sweep_build": {
+    "verdant_revision": "f34dee185cedb7cff4072cf7bac6d6d084052ba1",
+    "final_pin_verification": "The encoding certificate and interpreter are byte-identical at both revisions. Only whitespace changed in the packed dispatch. VT-151 passed again on the final pin.",
+    "provider_sha256": "d6b0db5c1b0c71afa1e3f822c71fab4a7e75bb5359ef6be62929b0055c067cdf",
+    "provider_sources_sha256": "f31f778223b1a3b449a1a307ec0a4239b4233344e34e73df827b33a610b9ce08",
+    "oracle_sha256": "fd22b7013ff47b419fe7194f61deaaed50a36e056a50a8a02298dbde5e4696b4"
+  },
+  "mutation": "Flipping the first encoded byte of every IQ2_S block failed the imported comparison: oracle mismatch type=22 width=256 rows=5 byte=328 actual=116 expected=117."
+}

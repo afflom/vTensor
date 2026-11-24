@@ -566,3 +566,9 @@ Feature: native-backend
     Given grouped strided drive and readout tensors, scalar or per-channel transitions and indexed initial states
     When GGML evaluates a selective state scan with one or more snapshot slots
     Then output rows and every written state match the imported CPU and older unfilled slots preserve their bytes
+
+  @VT-151 @build
+  Scenario: Prism routes IQ2_S row writes and copies through Verdant encoders against the GGML quantizer
+    Given floating-point source rows and IQ2_S destination storage
+    When a GGML graph copies the tensor or updates indexed rows
+    Then output bytes match the imported GGML quantizer and untouched bytes are preserved

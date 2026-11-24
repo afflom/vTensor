@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,605 passed**, **150 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,635 passed**, **120 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -37,7 +37,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,216 non-Prism lines** (12,765 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,215 non-Prism lines** (12,764 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -92,7 +92,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Replace the PR #56 pin with Verdant v2.21.5. Verify all 103 release archives and pass VT-02 and VT-148. [Release evidence](verification/verdant-versioned-registry.json)
 - [x] Pass all 48 IQ3_XXS/IQ3_S SET_ROWS and 12 CPY cases against the upstream quantizers. [VT-148](verification/factory-importance-three-storage-vt148.json)
 - [x] Verify all 26,244 eight-lane neighborhood entries used by the five remaining encoders, including GGML’s exact-match flags and candidate order. [Upstream directories](verification/ggml-importance-quantizer-oracle.json)
-- [ ] Implement IQ2_XXS, IQ2_XS, IQ2_S, IQ1_S and IQ1_M writes. Compare the remaining 120 SET_ROWS and 30 CPY cases with the upstream quantizers. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
+- [x] Pass all 24 IQ2_S SET_ROWS and six CPY cases. Verify atomic refusal on either index width and detect a changed output byte. [VT-151](verification/factory-importance-two-storage-vt151.json) · [Verdant PR #59](https://github.com/afflom/verdant-engine/pull/59)
+- [ ] Implement IQ2_XXS, IQ2_XS, IQ1_S and IQ1_M writes. Compare the remaining 96 SET_ROWS and 24 CPY cases with the upstream quantizers. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
 - [x] Pass F32-to-I32 copies 8708 and 8709, including strided storage and atomic refusal. [VT-126](verification/factory-signed-copy-vt126.json)
 - [x] Verify embedding and KV operand placement and all 129 default-precision F32 projections in llama.cpp prefill and decode. [Placement and intermediate outputs](verification/llama-projection-placement-vt126.json)
 - [x] Verify dense and indexed projection precision across all 24 accumulator/source mode pairs, 26 weight formats at F32 precision, and F16/BF16 activation inputs. [VT-128](verification/projection-precision-vt128.json)

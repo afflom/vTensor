@@ -1045,7 +1045,7 @@ packed_formats! {
     19 => Grouped(GroupedFormat::Codebook(ShiftedGrid));
     20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)), NonlinearFour;
     21 => Grouped(GroupedFormat::Codebook(FourLaneExplicitSigns)), ImportanceThree;
-    22 => Grouped(GroupedFormat::Codebook(ExplicitSigns));
+    22 => Grouped(GroupedFormat::Codebook(ExplicitSigns)), ImportanceTwo;
     23 => Grouped(GroupedFormat::NonlinearFour), GroupedNonlinearFour;
     29 => Grouped(GroupedFormat::Codebook(DistributedScale));
     34 => Grouped(GroupedFormat::PackedTrits), PackedTrits;

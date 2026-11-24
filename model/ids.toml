@@ -972,3 +972,9 @@ id = "VT-150"
 level = "build"
 suite = "native-backend"
 statement = "Prism models grouped selective state scans and cache rollback through Verdant against GGML CPU"
+
+[[id]]
+id = "VT-151"
+level = "build"
+suite = "native-backend"
+statement = "Prism routes IQ2_S row writes and copies through Verdant encoders against the GGML quantizer"
