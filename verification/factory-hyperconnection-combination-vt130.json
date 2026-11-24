@@ -1,0 +1,133 @@
+{
+  "requirement": "VT-130",
+  "implementation": "c1f6ad40d56a0201a6967692af2d94e337f739d0",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "prism_attestation": "cf238e320140482c48ec57bdb9d958f64bedb80f94b02caf71453d15a0c72523",
+  "pointwise_lock_sha256": "309a25356b768bf85381cc2e6cd84784a26bea40b45582b5f7b54a95eadc0993",
+  "provider_sha256": "c8f9619e00a37d28ac8b3fa13c5d8cfa334d3b66865266d40371d890a3139f4e",
+  "provider_inputs_sha256": "67e4146cddb57128d7703cd09239ed6237d1b06497e6dacc0b753949e8cfae43",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "case_ordinals": {
+    "DSV4_HC_COMB": [
+      506,
+      507,
+      508,
+      509,
+      510,
+      511,
+      512,
+      513,
+      514,
+      515,
+      516
+    ]
+  },
+  "factory_passed": 11,
+  "transcript_sha256": "54093d651a34749c994aeb8f896e6d0d21b50ab9c903311f4c442d026b65a811",
+  "supplemental": {
+    "reference": "ggml_dsv4_hc_comb executed on the pinned CPU reference backend",
+    "fixture": "Five tokens; scale has seven lanes. Transposed [24,5] mixes, independent scale stride 3 and base stride 2 when strided; F32 inputs (13*i + 7*j + salt) modulo 31 minus 15, divided by 16; salts 2,5,7.",
+    "results": [
+      {
+        "strided": false,
+        "epsilon": 0.0,
+        "iterations": 1,
+        "outputs": 80,
+        "max_abs": 0.0
+      },
+      {
+        "strided": false,
+        "epsilon": 0.0,
+        "iterations": 2,
+        "outputs": 80,
+        "max_abs": 0.0
+      },
+      {
+        "strided": false,
+        "epsilon": 0.0,
+        "iterations": 9,
+        "outputs": 80,
+        "max_abs": 0.0
+      },
+      {
+        "strided": false,
+        "epsilon": 0.015625,
+        "iterations": 1,
+        "outputs": 80,
+        "max_abs": 2.98023224e-08
+      },
+      {
+        "strided": false,
+        "epsilon": 0.015625,
+        "iterations": 2,
+        "outputs": 80,
+        "max_abs": 2.98023224e-08
+      },
+      {
+        "strided": false,
+        "epsilon": 0.015625,
+        "iterations": 9,
+        "outputs": 80,
+        "max_abs": 5.96046448e-08
+      },
+      {
+        "strided": true,
+        "epsilon": 0.0,
+        "iterations": 1,
+        "outputs": 80,
+        "max_abs": 0.0
+      },
+      {
+        "strided": true,
+        "epsilon": 0.0,
+        "iterations": 2,
+        "outputs": 80,
+        "max_abs": 0.0
+      },
+      {
+        "strided": true,
+        "epsilon": 0.0,
+        "iterations": 9,
+        "outputs": 80,
+        "max_abs": 0.0
+      },
+      {
+        "strided": true,
+        "epsilon": 0.015625,
+        "iterations": 1,
+        "outputs": 80,
+        "max_abs": 2.98023224e-08
+      },
+      {
+        "strided": true,
+        "epsilon": 0.015625,
+        "iterations": 2,
+        "outputs": 80,
+        "max_abs": 2.98023224e-08
+      },
+      {
+        "strided": true,
+        "epsilon": 0.015625,
+        "iterations": 9,
+        "outputs": 80,
+        "max_abs": 5.96046448e-08
+      }
+    ],
+    "preallocation_refusals": [
+      "missing base",
+      "unexpected fourth or trailing operand",
+      "wrong token extent",
+      "zero or negative iterations",
+      "short scale vector"
+    ],
+    "runner_source_sha256": "dba5529e9fd3a3dbcc823eade5ecd58d4506080453c55002702184c138996161"
+  },
+  "mutation": {
+    "change": "Dispatch sigmoid in place of the Verdant exponential.",
+    "ordinal": 506,
+    "observed_nmse": 0.02471868,
+    "upstream_limit": 1e-07
+  }
+}

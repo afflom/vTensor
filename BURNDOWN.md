@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,191 passed**, **564 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,202 passed**, **553 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -20,11 +20,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Verify the Verdant release dependency closure and confirm it landed on upstream main. A clean consumer executes the encoder, and a missing archive fails the release verifier. [Upstream integration](https://github.com/afflom/verdant-engine/commit/2c6ff1c) · [Verdant PR #38](https://github.com/afflom/verdant-engine/pull/38)
 - [x] Verify published Verdant v2.20.1 in a clean Cargo consumer. VTK-41 and VTK-42 execute, and all 85 resolved Verdant-registry archives match the release manifest and Cargo lock. [Release and manifest](https://github.com/afflom/verdant-engine/releases/tag/v2.20.1)
 - [x] Verify Verdant main contains VTK-43 through VTK-51. Its affine encoder passes fidelity and the VTK-50 and VTK-51 GGML comparisons. [Upstream verification](verification/verdant-vtk51-upstream-integration.json)
+- [x] Submit the portable MXFP4 oracle correction. All 5,100 MXFP4 reference bytes agree across x86-64 and AArch64. [Verdant PR #50](https://github.com/afflom/verdant-engine/pull/50)
 - [ ] Switch to the published Verdant crates containing VTK-43 through VTK-51. Verify the release checksums and rerun VT-02. [Exact patch pin](model/verdant-development.json)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,275 non-Prism lines** (12,824 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,270 non-Prism lines** (12,819 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -146,7 +147,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 18 DSV4_HC_PRE graphs, including sigmoid gates, and compare permuted inputs and weights. [VT-127](verification/factory-hyperconnection-pre-vt127.json)
 - [ ] Pass all 210 LIGHTNING_INDEXER graphs. 174 passed, 36 remaining. [VT-108](verification/factory-lightning-indexer-vt108.json)
 - [x] Pass all 11 DSV4_HC_POST graphs and compare 910 strided residual outputs across identity and mixed channels. [VT-129](verification/factory-hyperconnection-post-vt129.json)
-- [ ] Implement the 11 DSV4_HC_COMB normalization graphs.
+- [x] Pass all 11 DSV4_HC_COMB normalization graphs and compare 960 additional outputs across strides, epsilon and iteration counts. [VT-130](verification/factory-hyperconnection-combination-vt130.json)
 - [x] Pass all 2,051 IM2COL_3D factory cases. The 1,539 previous refusals now match the CPU for F32/F16 output, padded and dilated inputs and views. [VT-70 results](verification/factory-image-columns-vt70.json)
 - [x] Pass all 113 IM2COL factory cases, both supplemental F16-input graphs and all nine CONV_1D_DW compositions. [VT-72 evidence](verification/factory-planar-columns-vt72.json)
 - [x] Pass all 2,030 directly CPU-supported CONV_2D cases through the Verdant matrix product. 2,030 pass. [VT-74 results](verification/factory-direct-convolution-vt74.json)
