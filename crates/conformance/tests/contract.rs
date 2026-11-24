@@ -72,6 +72,7 @@ ggml_batches! {
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
     fn flash_accumulators_vt_178() { "flash-precision", 4205, ["attention"] }
     fn flash_storage_pairs_vt_177() { "flash-storage", 697, ["attention"] }
+    fn packed_binary_views_vt_183() { "row-repeat", 232, ["typed"] }
     fn scalar_binary_rows_vt_182() { "scalar-binary", 778, ["typed"] }
     fn mixed_row_casts_vt_181() { "mixed-cast", 22846, ["typed"] }
     /// `VT-180`: packed copied and in-place binary graphs match the original CPU decode, arithmetic and encode.
@@ -1270,7 +1271,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "f4a322e18a148ae1a09845de83f3f1f8b97d72a8a172088e6ce153eecc8c3704",
+            "aa931f2703d8dc2b7c2e008ac414a8bc38d6f230574f27954f1977211dccd808",
         )
     });
 
@@ -2258,7 +2259,8 @@ int main(int argc, char **argv) {
     const bool lane_repeat=!strcmp(argv[3],"packed-lanes");
     const bool broadcast_add=lane_repeat || !strcmp(argv[3],"packed-broadcast");
     const bool cast_add=!strcmp(argv[3],"codebook-add") || !strcmp(argv[3],"half-add");
-    const bool row_binary=!strcmp(argv[3],"scalar-binary") || !strcmp(argv[3],"packed-binary");
+    const bool views=!strcmp(argv[3],"row-repeat");
+    const bool row_binary=views || !strcmp(argv[3],"scalar-binary") || !strcmp(argv[3],"packed-binary");
     const bool mixed_cast=!strcmp(argv[3],"mixed-cast");
     const bool paired=row_binary || mixed_cast;
     if (paired || cast_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
@@ -2276,9 +2278,9 @@ int main(int argc, char **argv) {
             int right_type=GGML_TYPE_F32,kind=0;
             if (paired) CHECK(scanf("%d%d",&right_type,&kind)==2 && (mixed_cast?kind==0:from==to && kind>=0 && kind<4));
             auto &data=sources.at({from,width});
-            auto expected=read_hex_bytes(2*ggml_row_size(ggml_type(to),width)); CHECK(!expected.empty());
-            // The CPU packed kernel requires equal shapes. Materialize the broadcast with GGML itself.
-            const int rows=broadcast_add?4:2, planes=broadcast_add?4:1, batches=broadcast_add?2:1;
+            const int columns=views?2*width:width;
+            auto expected=read_hex_bytes((views?16:2)*ggml_row_size(ggml_type(to),columns)); CHECK(!expected.empty());
+            const int rows=views || broadcast_add?4:2, planes=views?2:broadcast_add?4:1, batches=views || broadcast_add?2:1;
             if (lane_repeat && from!=to) continue;
             const int periods[]={lane_repeat?1:width,width/2};
             for (int period_index=0;period_index<(lane_repeat?2:1);++period_index) {
@@ -2288,11 +2290,16 @@ int main(int argc, char **argv) {
                     const bool oracle=inplace<0;
                     auto selected=oracle?reference:backend;
                     graph_fixture ctx(12); CHECK(ctx);
-                    auto x=ggml_new_tensor_4d(ctx,ggml_type(from),width,rows,planes,batches);
-                    auto y=ggml_new_tensor_4d(ctx,ggml_type(right_type),period,2,broadcast_add?2:1,1);
+                    auto make=[&](ggml_type ty,int n0,int n1,int n2,int n3) {
+                        if (!views) return ggml_new_tensor_4d(ctx,ty,n0,n1,n2,n3);
+                        auto backing=ggml_new_tensor_4d(ctx,ty,n0+ggml_blck_size(ty),n1+1,n2+1,n3);
+                        return ggml_view_4d(ctx,backing,n0,n1,n2,n3,backing->nb[1],backing->nb[2],backing->nb[3],ggml_type_size(ty));
+                    };
+                    auto x=make(ggml_type(from),columns,rows,planes,batches);
+                    auto y=make(ggml_type(right_type),period,2,broadcast_add?2:1,1);
                     auto rhs=oracle?ggml_repeat_4d(ctx,y,width,rows,planes,batches):y;
                     auto out=row_binary || inplace>0 || lane_repeat?binary_nodes[kind][inplace>0](ctx,x,rhs):ggml_add_cast(ctx,x,rhs,ggml_type(to));
-                    if (!inplace && !kind && from==to && !lane_repeat && (ggml_is_quantized(ggml_type(from)) || from==GGML_TYPE_F16 || from==GGML_TYPE_BF16)) {
+                    if (!inplace && !kind && from==to && !lane_repeat && !views && (ggml_is_quantized(ggml_type(from)) || from==GGML_TYPE_F16 || from==GGML_TYPE_BF16)) {
                         auto ordinary=row_binary?ggml_add_cast(ctx,x,y,ggml_type(to)):ggml_add(ctx,x,y);
                         CHECK(ordinary->op==out->op && ordinary->type==out->type && ggml_are_same_shape(ordinary,out) && ggml_are_same_stride(ordinary,out));
                         CHECK(std::equal(std::begin(out->src),std::end(out->src),ordinary->src) && !memcmp(ordinary->op_params,out->op_params,sizeof(out->op_params)) && ordinary->flags==out->flags && !ordinary->view_src && !out->view_src);
@@ -2300,19 +2307,28 @@ int main(int argc, char **argv) {
                     }
                     if (oracle) CHECK(ggml_backend_supports_op(selected,out));
                     auto graph=ctx.allocate(out,selected,!oracle); CHECK(graph);
+                    if (views) ggml_backend_buffer_clear(ctx.storage.get(),0xa5);
                     const size_t row_bytes=data.size()/2;
-                    for (int row=0;row<ggml_nrows(x);++row) {
-                        int sample=(row+row/rows+row/(rows*planes))%2;
-                        ggml_backend_tensor_set(x,data.data()+sample*row_bytes,row*row_bytes,row_bytes);
+                    auto row_at=[](ggml_tensor *t,size_t row){ return block_address(t,row*(t->ne[0]/ggml_blck_size(t->type))); };
+                    for (int row=0;row<ggml_nrows(x);++row) for (int half=0;half<columns/width;++half) {
+                        int sample=(row+row/rows+row/(rows*planes)+half)%2;
+                        ggml_backend_tensor_set(x,data.data()+sample*row_bytes,row_at(x,row)+half*row_bytes,row_bytes);
                     }
                     if (paired) {
                         const auto &right=sources.at({right_type,width});
                         auto stride=right.size()/2;
-                        for (size_t row=0;row<2;++row) ggml_backend_tensor_set(y,right.data()+(1-row)*stride,row*stride,stride);
+                        for (size_t row=0;row<2;++row) ggml_backend_tensor_set(y,right.data()+(1-row)*stride,row_at(y,row),stride);
                     } else for (int i=0;i<ggml_nelements(y);++i) ggml_set_f32_1d(y,i,(float((13*i+7)%29)-14.f)/32.f);
+                    std::vector<unsigned char> left_backing,right_backing;
+                    if (views) {
+                        left_backing=tensor_bytes(x->view_src); right_backing=tensor_bytes(y->view_src);
+                        if (inplace) for (int row=0;row<ggml_nrows(x);++row)
+                            memcpy(left_backing.data()+x->view_offs+row_at(x,row),expected.data()+2*row_bytes*row,2*row_bytes);
+                    }
                     CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
                     if (oracle) {expected=tensor_bytes(out);continue;}
-                    if (tensor_bytes(out)!=expected) {fprintf(stderr,"packed addition differs for %d -> %d inplace %d right %d operation %d\n",from,to,inplace,right_type,kind);return 2;}
+                    if (views) CHECK(tensor_bytes(x->view_src)==left_backing && tensor_bytes(y->view_src)==right_backing);
+                    if (!(views && inplace) && tensor_bytes(out)!=expected) {fprintf(stderr,"packed addition differs for %d -> %d inplace %d right %d operation %d\n",from,to,inplace,right_type,kind);return 2;}
                     ++cases;
                 }
             }
@@ -2370,21 +2386,23 @@ int main(int argc, char **argv) {
     const bool signed64_floats=!strcmp(argv[3],"signed64-floats");
     const bool narrow=!strcmp(argv[3],"wide-narrow");
     const bool staged=narrow || !strcmp(argv[3],"wide-staged");
-    if (staged || binary_widths || signed64_floats || !strcmp(argv[3],"signed64-widths")) {
+    const bool integer_mixed=!strcmp(argv[3],"integer-floats");
+    const bool small=integer_mixed || !strcmp(argv[3],"integer-widths") || !strcmp(argv[3],"octet-integers");
+    if (small || staged || binary_widths || signed64_floats || !strcmp(argv[3],"signed64-widths")) {
         size_t compared=0;
-        for (int pair=0;pair<(narrow?7:staged?21:binary_widths?2:signed64_floats?3:6);++pair) {
+        for (int pair=0;pair<(integer_mixed?18:small?6:narrow?7:staged?21:binary_widths?2:signed64_floats?3:6);++pair) {
             int from=pair==0?GGML_TYPE_F32:GGML_TYPE_F64, to=pair==0?GGML_TYPE_F64:GGML_TYPE_F32;
             if (!binary_widths) CHECK(scanf("%d %d",&from,&to)==2);
             int invalid_count=(from==GGML_TYPE_F64 && to==GGML_TYPE_I64)?6:0;
-            if (staged) CHECK(scanf("%d",&invalid_count)==1 && invalid_count>=0 && invalid_count<=64);
-            std::array<uint64_t,64> inputs{}, expected{};
+            if (staged || small) CHECK(scanf("%d",&invalid_count)==1 && invalid_count>=0 && invalid_count<=64);
+            std::vector<uint64_t> inputs(small?16:64), expected(inputs.size());
             for (size_t i=0;i<inputs.size();++i) CHECK(scanf("%" SCNx64 " %" SCNx64,&inputs[i],&expected[i])==2);
             std::vector<uint64_t> invalid(invalid_count);
             for (auto &word:invalid) CHECK(scanf("%" SCNx64,&word)==1);
             for (bool padded : {false,true}) {
                 if (binary_widths && padded) continue;
                 graph_fixture target(8); CHECK(target);
-                auto [input,out,result]=scalar_cast_graph(target,ggml_type(from),ggml_type(to),8,padded);
+                auto [input,out,result]=scalar_cast_graph(target,ggml_type(from),ggml_type(to),inputs.size()/8,padded);
                 auto graph=target.allocate(result,backend,true);
                 CHECK(graph && ggml_backend_supports_op(backend,result));
                 ggml_backend_buffer_clear(target.storage.get(),0xa5);
@@ -2407,78 +2425,18 @@ int main(int argc, char **argv) {
                     };
                     CHECK(word==expected[i] || ((binary_widths || staged) && nan(word) && nan(expected[i])));
                     for (size_t j=0;j<result->nb[0];++j) oracle.at(offset+j)=actual.at(offset+j);
-                    ++compared;
+                    if (!small) ++compared;
                 }
                 CHECK(oracle==actual);
                 for (uint64_t word:invalid) {
                     set_scalar_word(input,inputs.size()-1,word);
                     CHECK(refuses_poisoned_output(backend,graph,out));
-                    ++compared;
+                    if (!small) ++compared;
                 }
+                if (small) ++compared;
             }
         }
         return finish(compared);
-    }
-    const bool integer_floats=!strcmp(argv[3],"integer-floats");
-    const bool octet_integers=!strcmp(argv[3],"octet-integers");
-    if (octet_integers || integer_floats || !strcmp(argv[3],"integer-widths")) {
-        size_t cases=0;
-        const auto *octet=octet_integers?ggml_get_type_traits(GGML_TYPE_F8_E4M3):nullptr;
-        const int32_t values[]={INT32_MIN,INT32_MAX,-32769,-32768,32767,32768,-129,-128,127,128,-1,0,1,255,65535,0x12345678};
-        const float fractions[]={-127.875f,127.75f,-0.25f,0.25f,-1.875f,1.875f,-7.5f,7.5f,3.5f,-3.5f,15.75f,-15.75f,0.f,-0.f,-63.25f,63.25f};
-        for (auto from : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32,GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16,GGML_TYPE_F8_E4M3})
-        for (auto to : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32,GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16,GGML_TYPE_F8_E4M3}) {
-          const auto integer=[](ggml_type t){return t>=GGML_TYPE_I8 && t<=GGML_TYPE_I32;};
-          if (octet_integers!=((from==GGML_TYPE_F8_E4M3 && integer(to)) || (to==GGML_TYPE_F8_E4M3 && integer(from)))) continue;
-          if (!octet_integers && (from==GGML_TYPE_F8_E4M3 || to==GGML_TYPE_F8_E4M3)) continue;
-          if (!octet_integers && (integer_floats ? integer(from)==integer(to) : from==to || !integer(from) || !integer(to))) continue;
-          for (bool padded : {false,true}) {
-            graph_fixture target(9), cpu(4); CHECK(target && cpu);
-            auto [input,destination,result]=scalar_cast_graph(target,from,to,2,padded);
-            auto expected=ggml_new_tensor_2d(cpu,to,padded?6:8,padded?4:2);
-            auto fp32=octet_integers?ggml_new_tensor_1d(cpu,GGML_TYPE_F32,1):nullptr;
-            auto logical=padded?ggml_view_2d(cpu,expected,4,4,expected->nb[1],ggml_type_size(to)):expected;
-            CHECK(ggml_backend_supports_op(backend,result));
-            auto graph=target.allocate(result,backend); CHECK(graph && cpu.allocate(logical,reference));
-            CHECK(ggml_backend_supports_op(backend,result));
-            ggml_backend_buffer_clear(target.storage.get(),0xa5); ggml_backend_buffer_clear(cpu.storage.get(),0xa5);
-            for (int i=0;i<16;++i) {
-                if (from==GGML_TYPE_F8_E4M3) {
-                    const uint8_t bytes[]={0,0x80,1,0x81,0x30,0xb0,0x3c,0xbc,0x41,0xc1,0x6f,0xef,0x70,0xf0,0x7e,0xfe};
-                    ggml_backend_tensor_set(input,bytes+i,block_address(input,i),1);
-                    float decoded; octet->to_float(bytes+i,&decoded,1);
-                    ggml_set_f32_1d(fp32,0,decoded);
-                    ggml_set_i32_1d(logical,i,ggml_get_i32_1d(fp32,0));
-                    continue;
-                }
-                if (integer(from)) ggml_set_i32_1d(input,i,values[i]);
-                else {
-                    float value=fractions[i];
-                    if (i==14) value=from==GGML_TYPE_F16 ? -65504.f : -0x1p31f;
-                    if (i==15) value=from==GGML_TYPE_F16 ? 65504.f : 0x1.fcp30f;
-                    ggml_set_f32_1d(input,i,value);
-                }
-                if (to==GGML_TYPE_F8_E4M3) {
-                    ggml_set_i32_1d(fp32,0,ggml_get_i32_1d(input,i));
-                    float value=ggml_get_f32_1d(fp32,0); uint8_t bits;
-                    octet->from_float_ref(&value,&bits,1);
-                    ggml_backend_tensor_set(logical,&bits,block_address(logical,i),1);
-                } else ggml_set_i32_1d(logical,i,ggml_get_i32_1d(input,i));
-            }
-            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-            CHECK(tensor_bytes(destination)==tensor_bytes(expected));
-            if (!integer(from)) for (float invalid : {INFINITY,-INFINITY,NAN,0x1p31f}) {
-                if (from==GGML_TYPE_F16 && invalid==0x1p31f) continue;
-                if (from==GGML_TYPE_F8_E4M3) {
-                    if (!std::isnan(invalid)) continue;
-                    uint8_t bits=0x7f; ggml_backend_tensor_set(input,&bits,block_address(input,15),1);
-                } else ggml_set_f32_1d(input,15,invalid);
-                CHECK(refuses_poisoned_output(backend,graph,destination));
-            }
-            ++cases;
-          }
-        }
-        return finish(cases);
     }
     if (!strcmp(argv[3],"scalar-diagonal")) {
         size_t cases=0;

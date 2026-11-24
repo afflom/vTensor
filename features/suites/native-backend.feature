@@ -758,3 +758,9 @@ Feature: native-backend
     Given original scalar and packed rows with finite nonzero divisors
     When GGML schedules each missing copied and in-place binary descriptor
     Then the scalar destination matches the original decoded F32 arithmetic and storage conversion
+
+  @VT-183 @build
+  Scenario: Four-axis packed binary broadcasts preserve offset views and in-place storage
+    Given offset views with padded strides and an independently repeatable right operand on every axis
+    When the public scheduler places each copied or in-place binary graph
+    Then every logical result matches original GGML and all guard and read-only bytes are preserved

@@ -1164,3 +1164,9 @@ id = "VT-182"
 level = "build"
 suite = "native-backend"
 statement = "GGML scalar-left binary graphs consume all decodable mixed right operands"
+
+[[id]]
+id = "VT-183"
+level = "build"
+suite = "native-backend"
+statement = "Four-axis packed binary broadcasts preserve offset views and in-place storage"

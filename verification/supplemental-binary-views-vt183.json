@@ -1,0 +1,35 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "semantic_id": "5bc403e22756a8ac6c0f65b1308d8ccd64c06723f3e895dd8c13eaed01b7e7c2",
+  "attestation": "85705f72658dc33ba83fe852d55fc5c54c266f4746e4b9e1f3f7b12216596bf6",
+  "provider_sha256": "291fd4965bec8f1db079c7cd58a8d58702467eccb28aadaa2fc787225baaf379",
+  "requirement": "VT-183",
+  "oracle": "ggml-row-repeat-oracle.json",
+  "left_storage_formats": 25,
+  "right_storage_formats": 29,
+  "original_f32_repeat_and_operation_graphs": 116,
+  "scheduled_copied_and_inplace_graphs": 232,
+  "output_bytes_compared": 902144,
+  "left_shape": [
+    512,
+    4,
+    2,
+    2
+  ],
+  "right_shape": [
+    256,
+    2,
+    1,
+    1
+  ],
+  "guard_evidence": "The host offset both views by one complete storage block, padded their backing row and plane strides and poisoned the allocated buffers. Check every byte of both backing allocations after execution. An in-place result may only change the modeled rows. A copied result must preserve both inputs.",
+  "negative_control": "Forcing repeated right rows to decode from offset zero failed the Q4_0/F32 copied graph. Restoring the row offset reproduced the certified, successfully tested provider binary byte for byte.",
+  "scalar_cast_fixture_reuse": {
+    "pairs": 30,
+    "layouts_per_pair": 2,
+    "frozen_source_lanes_per_pair": 16,
+    "poisoned_refusals": 72,
+    "reference_commit": "0eedb49"
+  },
+  "source_lines": 12550
+}

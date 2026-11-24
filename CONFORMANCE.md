@@ -270,6 +270,7 @@ model does not sanction.
 | `VT-180` | `build` | GGML packed binary arithmetic decodes both operands and encodes copied and in-place results |
 | `VT-181` | `build` | GGML ADD_CAST decodes mixed input rows and encodes all floating and packed destinations |
 | `VT-182` | `build` | GGML scalar-left binary graphs consume all decodable mixed right operands |
+| `VT-183` | `build` | Four-axis packed binary broadcasts preserve offset views and in-place storage |
 
 ## normalization-graphs
 

@@ -1,0 +1,23 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "compression": "gzip",
+  "source_width": 256,
+  "logical_output_shape": [
+    512,
+    4,
+    2,
+    2
+  ],
+  "logical_right_shape": [
+    256,
+    2,
+    1,
+    1
+  ],
+  "original_f32_graphs": 116,
+  "reference": "Use the frozen VT-180 rows and the original GGML decode traits. Cycle across 25 left formats with index (right_index + 7*operation) mod 25 for all 29 right formats and four operations. Tile left halves using source row (row + row/4 + row/8 + half) mod 2, with integer division, and reverse the two right rows. Run ggml_repeat on the right followed by the appropriate original F32 binary graph. Encode each complete output row with the original CPU callback or ggml_quantize_chunk with uniform importance when required.",
+  "words_sha256": "46a8ee8b3255e9d6836c17b13204da5cb1877761174184f6dd850b64b231d5c3"
+}

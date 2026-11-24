@@ -4,14 +4,16 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Verify four-axis repeats and padded views with packed right operands. Compare preallocation placement, output bytes and in-place writes against the original decoded broadcast.
+- [ ] Implement the 3,890 remaining ADD_CAST outputs to I8, I16, I32, I64 and F64 for decodable inputs. Verify bounded conversions and atomic refusals against original GGML and Berkeley SoftFloat.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,042 non-Prism lines** (12,591 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,001 non-Prism lines** (12,550 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Check 232 four-axis repeated binary graphs with offset, padded inputs. All 902,144 output bytes matched GGML, and all read-only and guard bytes were preserved. [VT-183](verification/supplemental-binary-views-vt183.json)
 
 - [x] Close all 6,728 ordinary and in-place floating or packed binary descriptors and all 24,273 ADD_CAST descriptors in the decodable floating domain. The last 778 graphs matched GGML. [VT-182](verification/supplemental-scalar-binary-vt182.json)
 
