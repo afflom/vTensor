@@ -4,6 +4,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
+- [ ] Support F32 row broadcasting along axes 1–3 for packed ADD, ADD_CAST and ADD_INPLACE. Compare stored results with original GGML REPEAT and ADD.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -13,6 +14,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Establish coverage and unblock release
 
+- [x] Replay stock llama-simple against the VT-172 plugin. All 13 reported layers ran on vTensor and all three eight-token outputs matched the original CPU. [Consumer replay](verification/llama-consumer-vt172.json)
 - [x] Place all 116 default matrix operand pairs with direct CPU execution. Compare the last two BF16 paths across eight graphs and replay all 2,592 descriptors. [VT-172](verification/supplemental-bfloat-matrices-vt172.json)
 - [x] Probe 4,212 OUT_PROD descriptors. Compare 103,784 results across all 85 directly executable CPU graphs, including broadcast batches, padded weight views and transposed inputs. [Outer products](verification/ggml-outer-product-descriptors.json)
 - [x] Place and compute prepacked matrix products across all 1,200 documented precision combinations. Share the 50 default cases and compare 6,900 additional output values. [VT-171](verification/supplemental-prepacked-precision-vt171.json)

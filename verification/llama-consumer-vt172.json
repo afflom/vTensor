@@ -1,0 +1,55 @@
+{
+  "revision": "43e7f0ec5a00f3c668d8fd6881e2f261223f888d",
+  "llama_cpp_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "executable": "unmodified llama-simple",
+  "executable_sha256": "61490f94e299eb54267151b8ed828d933ef83a8c3aeca472e593dcf26bbf2b41",
+  "provider_sha256": "ab53cf1e4617e9895c9ad0804e261c08066be925cb68d76cc0d4a2095fb7e701",
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "parameters": [
+    "-n",
+    "8",
+    "-ngl",
+    "0",
+    "The small model"
+  ],
+  "verification": "Loaded the installed vTensor shared library via GGML_BACKEND_PATH in the isolated stock host. Compared complete standard output to saved reference CPU runs at the same pinned host revision, models and command line.",
+  "models": [
+    {
+      "gguf": "stories15M-mixed-codebooks.gguf",
+      "gguf_sha256": "4894382dfada69a67d6221cd4f26070ea47474792fa51b074f3ece0b19851b03",
+      "placements": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "output_sha256": "bc81690c4428ff5a7d10afe81609270b5763ddaa3cd2f74e5b8073414d6aa12b",
+      "output_bytes": 53
+    },
+    {
+      "gguf": "tiny-random-gpt2-Q2_K.gguf",
+      "gguf_sha256": "8393b803d7b11df6f8618e89938ad6a1fc26e06a79e6ca154634116df3eeed94",
+      "placements": [
+        0,
+        1,
+        2
+      ],
+      "output_sha256": "cada01ef028a6d00cf37ff693ddf8368cd7b1ba4ba2bf7c82d613ae69ae49618",
+      "output_bytes": 69
+    },
+    {
+      "gguf": "tiny-mamba-f32.gguf",
+      "gguf_sha256": "211046273dd3a19d4e1ad4b5a58621b88a093e56e6258eae7070e8966e570a6a",
+      "placements": [
+        0,
+        1,
+        2
+      ],
+      "output_sha256": "14b3fe28432d1eb4e2284362ac7d6c7f2c20ef784d75fe9cfad2bba3e06d5d0a",
+      "output_bytes": 52
+    }
+  ]
+}
