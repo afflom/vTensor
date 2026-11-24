@@ -1,0 +1,32 @@
+{
+  "requirement": "VT-182",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-scalar-binary-oracle.json",
+  "semantic_id": "5bc403e22756a8ac6c0f65b1308d8ccd64c06723f3e895dd8c13eaed01b7e7c2",
+  "attestation": "85705f72658dc33ba83fe852d55fc5c54c266f4746e4b9e1f3f7b12216596bf6",
+  "provider_sha256": "291fd4965bec8f1db079c7cd58a8d58702467eccb28aadaa2fc787225baaf379",
+  "previously_refused_descriptors": 778,
+  "new_descriptors_by_constructor": {
+    "add": 56,
+    "add_inplace": 56,
+    "sub": 111,
+    "sub_inplace": 111,
+    "mul": 111,
+    "mul_inplace": 111,
+    "div": 111,
+    "div_inplace": 111
+  },
+  "source_lines": 12591,
+  "original_cpu_graph_results": 389,
+  "scheduled_graphs": 778,
+  "encoded_rows_compared": 1556,
+  "encoded_bytes_compared": 908288,
+  "negative_control": "Replacing F32-left ADD with SUB failed the original F32/F16 -> F32 comparison. Restoring the modeled opcode passed all 778 graphs.",
+  "domain": {
+    "readable_floating_operand_types": 29,
+    "encodable_floating_or_packed_destinations": 31,
+    "normal_and_in_place_descriptors_placed": 6728,
+    "add_cast_descriptors_placed": 24273,
+    "additional_packed_to_i32_descriptors": 25
+  }
+}

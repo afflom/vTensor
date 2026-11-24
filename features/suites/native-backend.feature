@@ -752,3 +752,9 @@ Feature: native-backend
     Given mixed floating or packed rows accepted by the original ADD_CAST constructor
     When the public scheduler places each new result before allocation
     Then the destination bytes match the original F32 GGML sum and destination encoder
+
+  @VT-182 @build
+  Scenario: GGML scalar-left binary graphs consume all decodable mixed right operands
+    Given original scalar and packed rows with finite nonzero divisors
+    When GGML schedules each missing copied and in-place binary descriptor
+    Then the scalar destination matches the original decoded F32 arithmetic and storage conversion

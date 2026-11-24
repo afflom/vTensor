@@ -443,7 +443,8 @@
     "ggml-flash-storage-oracle": "dfc6509dd2187eafb7c99d1622c08873323a6e29b523564cbd9b77b8c61f6518",
     "ggml-half-add-oracle": "ef13699e3f041b69f3f56d93ee3714315e18a56c2605b4bc41cf195e19876be8",
     "ggml-packed-binary-oracle": "195a2ce3594cf797f5b040ebc7092f4f61d9b04924ebff2d722e687df230ef4a",
-    "ggml-mixed-cast-oracle": "0a916009feb8af9e35dd8b219cae5c0ce2d3b8fb3b38aceffadbc96a27a3c88c"
+    "ggml-mixed-cast-oracle": "0a916009feb8af9e35dd8b219cae5c0ce2d3b8fb3b38aceffadbc96a27a3c88c",
+    "ggml-scalar-binary-oracle": "d24b3516f7ad821f18ea4f24f0ffe3741620d4a78e31d96173d02becf958e55c"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -637,6 +638,7 @@
     "flash-precision": "ggml-flash-storage",
     "half-add": "ggml-half-add",
     "packed-binary": "ggml-packed-binary",
-    "mixed-cast": "ggml-mixed-cast"
+    "mixed-cast": "ggml-mixed-cast",
+    "scalar-binary": "ggml-scalar-binary"
   }
 }

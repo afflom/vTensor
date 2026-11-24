@@ -4,7 +4,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Place and compare the remaining 778 copied and in-place binary descriptors with a scalar left operand and a decodable floating or packed right operand.
+- [ ] Verify four-axis repeats and padded views with packed right operands. Compare preallocation placement, output bytes and in-place writes against the original decoded broadcast.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -12,6 +12,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Close all 6,728 ordinary and in-place floating or packed binary descriptors and all 24,273 ADD_CAST descriptors in the decodable floating domain. The last 778 graphs matched GGML. [VT-182](verification/supplemental-scalar-binary-vt182.json)
 
 - [x] Place all 22,738 remaining mixed ADD_CAST tuples with floating or packed outputs. Compare 22,792 scheduled graphs against 758 original GGML sums and their destination encoders. [VT-181](verification/supplemental-mixed-cast-vt181.json)
 

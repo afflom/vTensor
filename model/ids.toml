@@ -1158,3 +1158,9 @@ id = "VT-181"
 level = "build"
 suite = "native-backend"
 statement = "GGML ADD_CAST decodes mixed input rows and encodes all floating and packed destinations"
+
+[[id]]
+id = "VT-182"
+level = "build"
+suite = "native-backend"
+statement = "GGML scalar-left binary graphs consume all decodable mixed right operands"

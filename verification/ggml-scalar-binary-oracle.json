@@ -1,0 +1,20 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "width": 256,
+  "rows": 2,
+  "left_formats": 4,
+  "right_formats": 29,
+  "operations": [
+    "ADD",
+    "SUB",
+    "MUL",
+    "DIV"
+  ],
+  "reference": "Decode the two VT-180 source rows through original GGML traits. Reverse the right rows, run original GGML F32 ADD, SUB, MUL or DIV, and store each result in the left type using original CPU conversion. Use the F32 words directly for F32. Restrict the table to previously refused tuples.",
+  "words_sha256": "4f0f530e4d4deeb6c22651c66b6874bb69abde468a6f3c7ce5071d7495f66aaa",
+  "new_original_results": 389,
+  "compression": "gzip"
+}

@@ -510,7 +510,7 @@ definition{
   parameters: [source : Nat, destination : Nat],
   result: Bool,
   body: (if (packedTarget source) then (if ((source =? 9) || (source =? 15)) then false else true)
-    else (((bytes source) =? 2) && ((packedTarget destination) || (0 <? (binaryWordBytes destination))))),
+    else (((source =? destination) && (0 <? (binaryWordBytes source))) || (((bytes source) =? 2) && ((packedTarget destination) || (0 <? (binaryWordBytes destination)))))),
   executable: true
 }
 
@@ -519,7 +519,7 @@ definition{
   parameters: [kind : Nat, left : Nat, rhs : NormPlan::TensorDescriptor, output : Nat],
   result: Bool,
   body: (let ty : Nat := (project rhs ty);
-    (if (((left =? output) && (packedTarget left)) || ((kind =? 0) && (((ty =? 0) || (packedTarget output)) || (0 <? (binaryWordBytes output))))) then
+    (if ((left =? output) || ((kind =? 0) && (((ty =? 0) || (packedTarget output)) || (0 <? (binaryWordBytes output))))) then
       ((((0 <? (binaryWordBytes ty)) || ((packedTarget ty) && (if ((ty =? 9) || (ty =? 15)) then false else true))) &&
         ((project rhs s0) =? (rowTargetWidth ty))) && ((prim remainder (project rhs n0) (storeBlockLanes ty) 1 : Nat) =? 0))
       else false)),
@@ -530,9 +530,10 @@ definition{
   name: rowArithmeticRequired,
   parameters: [kind : Nat, left : Nat, rhs : Nat, output : Nat],
   result: Bool,
-  body: (((packedTarget left) || (packedTarget output)) ||
-    ((((kind =? 0) && ((bytes left) =? 2)) && (0 <? (binaryWordBytes output))) &&
-      (if (storageTuple left rhs output) then false else true))),
+  body: (if ((packedTarget left) || (packedTarget output)) then true else
+    (if ((storageTuple left rhs output) || (((left =? 43) && (kind =? 0)) && (rhs =? 0))) then false else
+      (((left =? output) && (0 <? (binaryWordBytes left))) ||
+        (((kind =? 0) && ((bytes left) =? 2)) && (0 <? (binaryWordBytes output)))))),
   executable: true
 }
 

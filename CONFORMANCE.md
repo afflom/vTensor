@@ -269,6 +269,7 @@ model does not sanction.
 | `VT-179` | `build` | GGML ADD_CAST encodes F16 and BF16 inputs plus F32 addends in every packed destination type |
 | `VT-180` | `build` | GGML packed binary arithmetic decodes both operands and encodes copied and in-place results |
 | `VT-181` | `build` | GGML ADD_CAST decodes mixed input rows and encodes all floating and packed destinations |
+| `VT-182` | `build` | GGML scalar-left binary graphs consume all decodable mixed right operands |
 
 ## normalization-graphs
 
