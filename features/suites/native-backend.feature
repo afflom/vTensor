@@ -428,3 +428,9 @@ Feature: native-backend
     Given GGML projections with an explicit minimum activation and accumulation precision
     When their weights have scalar or packed storage
     Then Prism selects a Verdant product meeting both requested precisions
+
+  @VT-108 @build
+  Scenario: Prism selects query heads and key rows and Verdant computes masked weighted rectified attention scores
+    Given queries, keys, head weights and a batch-broadcast half precision mask
+    When vTensor decodes keys, contracts query heads and adds the masked scores
+    Then the scores match the pinned GGML CPU evaluator

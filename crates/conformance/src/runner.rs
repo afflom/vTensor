@@ -212,10 +212,10 @@ impl BufferContext {
 }
 
 fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
-    tensor_layout(tensor).map(|(metadata, _)| metadata)
+    tensor_layout(tensor).map(|(metadata, ..)| metadata)
 }
 
-fn tensor_layout(tensor: &Tensor) -> Result<(TensorDescriptor, usize), BackendError> {
+fn tensor_layout(tensor: &Tensor) -> Result<(TensorDescriptor, usize, usize), BackendError> {
     let ty = u64::try_from(tensor.ty).map_err(|_| BackendError::InvalidTensor)?;
     let vtensor_types::Adt0::C1(vtensor_types::Adt1::C0(_, block, element)) =
         vtensor_types::run(ty)
@@ -239,6 +239,7 @@ fn tensor_layout(tensor: &Tensor) -> Result<(TensorDescriptor, usize), BackendEr
     Ok((
         TensorDescriptor::C0(ty, n0, n1, n2, n3, s0, s1, s2, s3, size, address),
         block as usize,
+        element as usize,
     ))
 }
 
@@ -491,6 +492,7 @@ enum ExecutionPlan {
     Attention(Box<vtensor_attention::Adt2>),
     Softmax(Box<vtensor_attention::Adt3>),
     SparseMask(Box<vtensor_attention::Adt4>),
+    Indexer(Box<vtensor_attention::Adt5>),
 }
 
 // Each certified graph bundle renders its own type for the same GGML metadata.
@@ -553,7 +555,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             .then_some(Some(delay))
             .ok_or(InvalidTensor);
     }
-    if matches!(operation, 43 | 71 | 88) {
+    if matches!(operation, 43 | 71 | 84 | 88) {
         return attention::plan(tensor, operation, output);
     }
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
@@ -865,6 +867,7 @@ fn decode_words(
 
 struct TensorInput<'a> {
     block_lanes: usize,
+    block_bytes: usize,
     bytes: &'a [u8],
     ty: c_int,
     ne: [i64; 4],
@@ -873,7 +876,7 @@ struct TensorInput<'a> {
 
 impl<'a> TensorInput<'a> {
     fn new(t: &'a Tensor) -> Result<Self, BackendError> {
-        let (TensorDescriptor::C0(.., span, _), block_lanes) = tensor_layout(t)?;
+        let (TensorDescriptor::C0(.., span, _), block_lanes, block_bytes) = tensor_layout(t)?;
         let span = span as usize;
         let bytes = if span == 0 {
             &[]
@@ -884,6 +887,7 @@ impl<'a> TensorInput<'a> {
         Ok(Self {
             bytes,
             block_lanes,
+            block_bytes,
             ty: t.ty,
             ne: t.ne,
             nb: t.nb,
@@ -1266,7 +1270,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
     let mut offsets = Vec::new();
     let mut encoded = Vec::new();
-    let (TensorDescriptor::C0(.., span, _), lanes) = tensor_layout(tensor)?;
+    let (TensorDescriptor::C0(.., span, _), lanes, _) = tensor_layout(tensor)?;
     let output = graph_tensor_region(tensor, span as usize)?;
     let mut values = workspace(if kind.is_some() { lanes as u64 } else { 0 }, 0.0)?;
     for index in 0..*count {
@@ -1463,6 +1467,7 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                     std::thread::sleep(duration);
                     Ok(())
                 }
+                ExecutionPlan::Indexer(plan) => attention::indexer(&*tensor, *plan),
                 ExecutionPlan::SparseMask(plan) => attention::sparse_mask(&*tensor, *plan),
                 ExecutionPlan::Softmax(plan) => attention::softmax(&*tensor, *plan),
                 ExecutionPlan::Attention(plan) => attention::execute(&*tensor, *plan),
@@ -1648,12 +1653,87 @@ mod attention {
     };
     use vtensor_attention::{
         Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as SoftmaxPlan, Adt4 as SparsePlan,
-        Adt5 as Response,
+        Adt5 as IndexerPlan, Adt6 as Response,
     };
     use BackendError::{InvalidTensor, Overflow};
 
     fn request(query: Request) -> Result<Response, BackendError> {
         vtensor_attention::run(query).map_err(|_| Overflow)
+    }
+
+    pub(super) fn indexer(tensor: &Tensor, plan: IndexerPlan) -> Result<(), BackendError> {
+        let [Some(query), Some(key), Some(weights), Some(mask)] = tensor.inputs()? else {
+            return Err(InvalidTensor);
+        };
+        let offsets = |token, head, stream, key| match request(Request::C10(
+            plan.clone(),
+            token,
+            head,
+            stream,
+            key,
+        ))? {
+            Response::C11(q, k, w, m, out) => Ok([q, k, w, m, out]),
+            _ => Err(InvalidTensor),
+        };
+        let [width, heads, tokens, streams] = query.ne.map(|n| n as u64);
+        let keys = key.ne[2] as u64;
+        let matrix = |rows: u64, cols| workspace(rows.checked_mul(cols).ok_or(Overflow)?, 0.0_f32);
+        let mut key_row = workspace(width, 0.0_f32)?;
+        let mut transposed_keys = matrix(width, keys)?;
+        let mut queries = matrix(heads, width)?;
+        let mut dots = matrix(heads, keys)?;
+        let mut head_weights = workspace(heads, 0.0_f32)?;
+        let mut summed = workspace(keys, 0.0_f32)?;
+        let mut bias = workspace(keys, 0.0_f32)?;
+        let destination = graph_tensor_data(tensor)?;
+        for stream in 0..streams {
+            for column in 0..keys {
+                let [_, at, ..] = offsets(0, 0, stream, column)?;
+                key.decode(at, &mut key_row)?;
+                for (row, &value) in transposed_keys
+                    .chunks_exact_mut(keys as usize)
+                    .zip(&key_row)
+                {
+                    row[column as usize] = value;
+                }
+            }
+            for token in 0..tokens {
+                let [_, _, w, m, out] = offsets(token, 0, stream, 0)?;
+                weights.decode(w, &mut head_weights)?;
+                mask.decode(m, &mut bias)?;
+                for (head, row) in queries.chunks_exact_mut(width as usize).enumerate() {
+                    let [q, ..] = offsets(token, head as u64, stream, 0)?;
+                    query.decode(q, row)?;
+                }
+                multiply_matrix_rows_f32(
+                    heads as usize,
+                    width as usize,
+                    keys as usize,
+                    &queries,
+                    &transposed_keys,
+                    &mut dots,
+                )?;
+                for dot in &mut dots {
+                    let word = linear::evaluate_float_unary(4, 0, 0, dot.to_bits().into())?
+                        .ok_or(InvalidTensor)?;
+                    *dot = f32::from_bits(word as u32);
+                }
+                multiply_matrix_rows_f32(
+                    1,
+                    heads as usize,
+                    keys as usize,
+                    &head_weights,
+                    &dots,
+                    &mut summed,
+                )?;
+                for (sum, &mask) in summed.iter_mut().zip(&bias) {
+                    *sum = evaluate_f32_scalar(0, *sum, mask)?;
+                }
+                // SAFETY: Prism bounds this contiguous result row and excludes all source aliases.
+                unsafe { super::write_row(destination.add(out as usize), &summed) };
+            }
+        }
+        Ok(())
     }
 
     pub(super) fn sparse_mask(tensor: &Tensor, plan: SparsePlan) -> Result<(), BackendError> {
@@ -1848,6 +1928,7 @@ mod attention {
             Response::C1(p) => ExecutionPlan::Attention(Box::new(p)),
             Response::C3(p) => ExecutionPlan::Softmax(Box::new(p)),
             Response::C5(p) => ExecutionPlan::SparseMask(Box::new(p)),
+            Response::C10(p) => ExecutionPlan::Indexer(Box::new(p)),
             _ => return Err(InvalidTensor),
         }))
     }
@@ -1886,31 +1967,24 @@ mod attention {
                 unsafe { super::write_row(out.as_mut_ptr().cast(), bytes) };
                 return Ok(());
             }
-            if self.block_lanes > 1 {
-                let source = self.blocks(offset, out.len())?;
-                for (input, block) in source
-                    .chunks_exact(self.nb[0])
-                    .zip(out.chunks_exact_mut(self.block_lanes))
-                {
-                    super::decode_words(self.ty as u64, input, block, 4)?;
-                }
-                return Ok(());
+            if !out.len().is_multiple_of(self.block_lanes) {
+                return Err(InvalidTensor);
             }
-            // A scalar read has no inter-element stride. The Prism offset already selects its lane.
-            let width = match (out.len(), self.ty) {
-                (1, 1 | 30) => size_of::<u16>(),
-                (1, 43) => 1,
-                _ => self.nb[0],
-            };
-            let bytes = out.len().checked_mul(width).ok_or(Overflow)?;
-            for (bytes, value) in self.region(offset, bytes)?.chunks_exact(width).zip(out) {
-                *value = match (self.ty as u64, bytes) {
-                    (43, &[byte]) => super::decode_float(43, byte.into())?,
-                    (kind @ (1 | 30), &[a, b]) => {
-                        super::decode_float(kind, u16::from_ne_bytes([a, b]).into())?
-                    }
-                    _ => return Err(InvalidTensor),
-                };
+            let mut at = offset;
+            for (index, block) in out.chunks_exact_mut(self.block_lanes).enumerate() {
+                if index > 0 {
+                    at = at.checked_add(self.nb[0] as u64).ok_or(Overflow)?;
+                }
+                let encoded = self.region(at, self.block_bytes)?;
+                if matches!(self.ty, 0 | 1 | 30 | 43) {
+                    // SAFETY: the type catalog and region bound the complete unaligned scalar.
+                    let bits = unsafe {
+                        super::scalar_word(encoded.as_ptr().cast_mut(), encoded.len() as u64, None)?
+                    };
+                    block[0] = super::decode_float(self.ty as u64, bits)?;
+                } else {
+                    super::decode_words(self.ty as u64, encoded, block, size_of::<f32>())?;
+                }
             }
             Ok(())
         }

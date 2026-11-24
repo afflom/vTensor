@@ -329,6 +329,9 @@ ggml_batches! {
     /// Contract and overlap all original one-dimensional transposed convolutions.
     #[test]
     fn transpose_convolution_vt_106() { "upstream-TRANSPOSE_CONV_1D", 116, ["pointwise"] }
+    /// Compare masked and weighted per-head scores with the imported CPU evaluator.
+    #[test]
+    fn lightning_indexer_vt_108() { "upstream-LIGHTNING_INDEXER_BOUNDARIES", 10, ["attention"] }
     /// Contract and overlap all original two-dimensional transposed convolutions.
     #[test]
     fn transpose_plane_vt_107() { "upstream-TRANSPOSE_CONV_2D", 8, ["pointwise"] }
@@ -1508,7 +1511,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "1771d86f099135922f6a81370a6b4cc3a2396e3c129645a199bc5a2ab5632ddf",
+            "4ec5da97ba28b259275d40dafce9cf953312872548203ac2e6da7604580f3687",
         )
     });
 

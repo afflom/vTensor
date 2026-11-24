@@ -382,6 +382,10 @@ mod tests {
             fixture
         }
 
+        fn declared(name: &str, lib: &str) -> Self {
+            Self::limits(name, DECLARED, lib, Some(NEGATIVE_TEST))
+        }
+
         fn audit(&self) -> Result<(), String> {
             audit_limits(&self.root).map_err(|e| e.to_string())
         }
@@ -393,43 +397,32 @@ mod tests {
 
     #[test]
     fn a_declared_failure_type_passes() {
-        let f = TestRepo::limits(
+        let f = TestRepo::declared(
             "declared",
-            DECLARED,
             "pub type R<T> = Result<T, Overflow>;\n\
              pub struct Overflow;\n\
              pub fn f(x: u8) -> Result<u8, crate::Overflow> { Ok(x) }\n",
-            Some(NEGATIVE_TEST),
         );
         f.audit().expect("a declared type with its test passes");
     }
 
     #[test]
     fn a_result_broken_across_lines_is_read_whole() {
-        let ok = TestRepo::limits(
+        let ok = TestRepo::declared(
             "multiline-ok",
-            DECLARED,
             "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Overflow,\n> { body() }\n",
-            Some(NEGATIVE_TEST),
         );
         ok.audit().expect("the error type is on a later line");
-        let bad = TestRepo::limits(
+        let bad = TestRepo::declared(
             "multiline-bad",
-            DECLARED,
             "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Other,\n> { body() }\n",
-            Some(NEGATIVE_TEST),
         );
         rejected(&bad, &["src/lib.rs:1", "`Other`", "not declared"]);
     }
 
     #[test]
     fn an_undeclared_failure_type_fails() {
-        let f = TestRepo::limits(
-            "undeclared",
-            DECLARED,
-            "pub fn f() -> Result<u8, Other> { Ok(0) }\n",
-            Some(NEGATIVE_TEST),
-        );
+        let f = TestRepo::declared("undeclared", "pub fn f() -> Result<u8, Other> { Ok(0) }\n");
         rejected(&f, &["R5", "src/lib.rs:1", "`Other`", "not declared"]);
     }
 
@@ -451,12 +444,7 @@ mod tests {
     #[test]
     fn an_alias_that_hides_the_error_type_fails() {
         for ret in ["std::io::Result<u8>", "Result<u8>"] {
-            let f = TestRepo::limits(
-                "alias",
-                DECLARED,
-                &format!("pub fn f() -> {ret} {{ Ok(0) }}\n"),
-                Some(NEGATIVE_TEST),
-            );
+            let f = TestRepo::declared("alias", &format!("pub fn f() -> {ret} {{ Ok(0) }}\n"));
             rejected(&f, &["R5", "names no error type"]);
         }
     }
@@ -466,18 +454,14 @@ mod tests {
         // `Box<dyn Error>` is not the declared type merely because it begins
         // with a name; and the arrow of a function type does not end the
         // argument list early.
-        let boxed = TestRepo::limits(
+        let boxed = TestRepo::declared(
             "boxed",
-            DECLARED,
             "pub fn f() -> Result<u8, Box<dyn Overflow>> { Ok(0) }\n",
-            Some(NEGATIVE_TEST),
         );
         rejected(&boxed, &["R5", "`Box<dyn Overflow>`", "not declared"]);
-        let arrow = TestRepo::limits(
+        let arrow = TestRepo::declared(
             "arrow",
-            DECLARED,
             "pub fn f() -> Result<fn(u8) -> u8, Other> { Ok(id) }\n",
-            Some(NEGATIVE_TEST),
         );
         rejected(&arrow, &["R5", "`Other`", "not declared"]);
     }

@@ -1257,16 +1257,13 @@ mod tests {
     fn shallow_checkout_plant_is_rejected() {
         let workflow = include_str!("../../.github/workflows/prismpm.yml");
         assert!(workflow_history_is_complete(workflow));
-        assert!(!workflow_history_is_complete(&workflow.replacen(
+        for required in [
             "          fetch-depth: 0\n",
-            "",
-            1
-        )));
-        assert!(!workflow_history_is_complete(&workflow.replacen(
             "          persist-credentials: false\n",
-            "",
-            1
-        )));
+        ] {
+            let changed = workflow.replacen(required, "", 1);
+            assert!(!workflow_history_is_complete(&changed), "{required}");
+        }
     }
 
     #[test]
@@ -1321,10 +1318,7 @@ mod tests {
 
     #[test]
     fn host_docker_plugin_plant_is_rejected() {
-        let devcontainer = r#"{
-          "initializeCommand":"create .docker/config.json",
-          "mounts":["source=${localEnv:HOME}/.docker/config.json,target=/home/vscode/.docker/config.json,type=bind,readonly"]
-        }"#;
+        let devcontainer = include_str!("../../.devcontainer/devcontainer.json");
         let bootstrap = r#"--volume "$docker_config:/tmp/prismpm-home/.docker:ro"
 scratch=$(mktemp -d)
 trap 'rm -rf "$docker_config" "$scratch"' EXIT
@@ -1347,13 +1341,10 @@ docker buildx version
 
     #[test]
     fn missing_or_credential_nested_buildx_state_is_rejected() {
-        let devcontainer = r#"{
-          "initializeCommand":"create .docker/config.json",
-          "mounts":["source=${localEnv:HOME}/.docker/config.json,target=/home/vscode/.docker/config.json,type=bind,readonly"]
-        }"#;
+        let devcontainer = include_str!("../../.devcontainer/devcontainer.json");
         let bootstrap = include_str!("../../.github/workflows/bootstrap.yml");
         assert!(docker_credentials_are_confined(devcontainer, bootstrap));
-        let umask_mutations = [
+        for changed in [
             bootstrap.replace(
                 "docker buildx version",
                 "umask 022\n              docker buildx version",
@@ -1362,13 +1353,6 @@ docker buildx version
                 "docker buildx inspect --bootstrap",
                 "docker buildx inspect --bootstrap\n              umask 077",
             ),
-        ];
-        let rejected: Vec<_> = umask_mutations
-            .iter()
-            .map(|changed| !docker_credentials_are_confined(devcontainer, changed))
-            .collect();
-        assert_eq!(rejected, [true, true]);
-        for changed in [
             bootstrap.replace("--env BUILDX_CONFIG=/tmp/prismpm-buildx", ""),
             bootstrap.replace(
                 "--env BUILDX_CONFIG=/tmp/prismpm-buildx",
@@ -1418,68 +1402,25 @@ docker buildx version
 
     #[test]
     fn incomplete_release_lifecycle_plant_is_rejected() {
-        let complete = r#"
-          command: build
-          command: fetch
-          command: fetch
-          command: pull
-          command: pull
-          command: pull
-          command: pull
-          command: pull
-          command: prepare-promotion
-          command: prepare-promotion
-          command: conformance
-          command: sign-evidence
-          command: verify-release
-          command: verify-release
-          command: verify-release
-          command: verify-release
-          command: verify-release
-          Explicitly replay candidate release trust after the clean pull
-          Explicitly replay candidate release trust after the clean pull
-          Explicitly replay deployed release trust after the clean pull
-          Explicitly replay deployed release trust before acceptance
-          Independently replay every signature and promotion decision
-          needs: [resolve-sdk, promote, deploy, verify-deployment, conformance]
-          policy: ${{ steps.policy.outputs.policy-path }}
-          trusted-root: ${{ steps.policy.outputs.trusted-root-path }}
-          name: prismpm-deployment-plan
-          name: prismpm-deployment-plan
-          path: .prism/plans
-          path: .prism/plans
-          name: prismpm-deployment-state
-          name: prismpm-deployment-state
-          path: .prism/targets
-          path: .prism/targets
-        "#;
-        assert!(pipeline_lifecycle_is_complete(complete));
-        assert!(!pipeline_lifecycle_is_complete(
-            &complete.replace("          command: sign-evidence\n", "")
-        ));
-        assert!(!pipeline_lifecycle_is_complete(
-            &complete.replace("          command: conformance\n", "")
-        ));
-        assert!(!pipeline_lifecycle_is_complete(
-            &complete.replace("          path: .prism/plans\n", "")
-        ));
-        let overprivileged = format!(
-            "{}\n  deploy:\n    permissions:\n      id-token: write\n  verify-deployment:\n",
-            complete
-        );
-        assert!(!pipeline_lifecycle_is_complete(&overprivileged));
-    }
-
-    #[test]
-    fn accepted_promotion_bypass_plant_is_rejected() {
         let workflow = include_str!("../../.github/workflows/prismpm.yml");
         assert!(pipeline_lifecycle_is_complete(workflow));
-        assert!(!pipeline_lifecycle_is_complete(
-            &workflow.replace("          command: conformance\n", "")
-        ));
-        assert!(!pipeline_lifecycle_is_complete(&workflow.replace(
+        for required in [
+            "command: sign-evidence",
+            "command: conformance",
+            "path: .prism/plans",
+        ] {
+            let changed = workflow.replacen(required, "", 1);
+            assert!(!pipeline_lifecycle_is_complete(&changed), "{required}");
+        }
+        let bypass = workflow.replace(
             "needs: [resolve-sdk, promote, deploy, verify-deployment, conformance]",
-            "needs: [resolve-sdk, promote, deploy, verify-deployment]"
+            "needs: [resolve-sdk, promote, deploy, verify-deployment]",
+        );
+        assert!(!pipeline_lifecycle_is_complete(&bypass));
+        let (before, deploy) = workflow.split_once("\n  deploy:\n").unwrap();
+        let changed = deploy.replacen("permissions:", "permissions:\n      id-token: write", 1);
+        assert!(!pipeline_lifecycle_is_complete(&format!(
+            "{before}\n  deploy:\n{changed}"
         )));
     }
 }

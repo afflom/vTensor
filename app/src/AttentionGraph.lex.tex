@@ -54,6 +54,19 @@ structure{
   ]
 }
 
+structure{
+  name: IndexerPlan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: query, type: NormPlan::TensorDescriptor},
+    {name: key, type: NormPlan::TensorDescriptor},
+    {name: weights, type: NormPlan::TensorDescriptor},
+    {name: mask, type: NormPlan::TensorDescriptor},
+    {name: output, type: NormPlan::TensorDescriptor}
+  ]
+}
+
 inductive{
   name: Request,
   type_parameters: [],
@@ -140,7 +153,8 @@ inductive{
         NormPlan::TensorDescriptor
       ]
     },
-    {name: cacheIndex, fields: [Nat, Nat]}
+    {name: cacheIndex, fields: [Nat, Nat]},
+    {name: indexerRow, fields: [IndexerPlan, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -158,7 +172,9 @@ inductive{
     {name: sparseRows, fields: [Nat, Nat, Nat, Nat, Nat]},
     {name: sparseWord, fields: [Nat]},
     {name: skip, fields: []},
-    {name: cacheCell, fields: [Nat]}
+    {name: cacheCell, fields: [Nat]},
+    {name: indexerPlan, fields: [IndexerPlan]},
+    {name: indexerRows, fields: [Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -492,6 +508,30 @@ definition{
 }
 
 definition{
+  name: indexerGraph,
+  parameters: [
+    trailing : Bool,
+    query : NormPlan::TensorDescriptor,
+    key : NormPlan::TensorDescriptor,
+    weightsSlot : (Option NormPlan::TensorDescriptor),
+    maskSlot : (Option NormPlan::TensorDescriptor),
+    extra : (Option NormPlan::TensorDescriptor),
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (let weights : NormPlan::TensorDescriptor := (match weightsSlot | Option.none => query | Option.some supplied => supplied); (let mask : NormPlan::TensorDescriptor := (match maskSlot | Option.none => query | Option.some supplied => supplied); (if ((((((((((((((((((((((((((((((if trailing then false else (match extra | Option.some unused => false | Option.none => (match weightsSlot | Option.none => false | Option.some present => (match maskSlot | Option.none => false | Option.some presentMask => true)))) && (((project query ty) =? 0) && ((project query s0) =? 4))) && (((project weights ty) =? 0) && ((project weights s0) =? 4))) && (((project mask ty) =? 1) && ((project mask s0) =? 2))) && (denseOutput output)) && (rowStorage (project key ty) (project key n0) (project key s0))) && (0 <? (project query n0))) && (0 <? (project query n1))) && (0 <? (project query n2))) && (0 <? (project query n3))) && (0 <? (project key n2))) && ((project key n0) =? (project query n0))) && ((project key n1) =? 1)) && ((project key n3) =? (project query n3))) && ((project weights n0) =? (project query n1))) && ((project weights n1) =? (project query n2))) && ((project weights n2) =? 1)) && ((project weights n3) =? (project query n3))) && ((project mask n0) =? (project key n2))) && ((project mask n1) =? (project query n2))) && ((project mask n2) =? 1)) && (multiple (project query n3) (project mask n3))) && ((project output n0) =? (project key n2))) && ((project output n1) =? (project query n2))) && ((project output n2) =? 1)) && ((project output n3) =? (project query n3))) && (NormPlan::separateTensors query output)) && (NormPlan::separateTensors key output)) && (NormPlan::separateTensors weights output)) && (NormPlan::separateTensors mask output)) then (ctor Response.indexerPlan (record IndexerPlan {query := query, key := key, weights := weights, mask := mask, output := output})) else (ctor Response.invalid)))),
+  executable: true
+}
+
+definition{
+  name: indexerRows,
+  parameters: [plan : IndexerPlan, token : Nat, head : Nat, stream : Nat, key : Nat],
+  result: Response,
+  body: (if ((((token <? (project (project plan query) n2)) && (head <? (project (project plan query) n1))) && (stream <? (project (project plan query) n3))) && (key <? (project (project plan key) n2))) then (ctor Response.indexerRows (rowOffset (project plan query) head token stream) (rowOffset (project plan key) 0 key stream) (rowOffset (project plan weights) token 0 stream) (rowOffset (project plan mask) token 0 (prim remainder stream (project (project plan mask) n3) 0 : Nat)) (rowOffset (project plan output) token 0 stream)) else (ctor Response.invalid)),
+  executable: true
+}
+
+definition{
   name: placement,
   parameters: [
     op : Nat,
@@ -516,9 +556,9 @@ definition{
         | Option.some unused => (ctor Response.invalid)
         | Option.none => (normalizedPlan op trailing p0 p1 a slotB slotC output))) else (match slotB
       | Option.none => (ctor Response.invalid)
-      | Option.some b => (if (op =? 88) then (sparseGraph op trailing a b slotC slotD slotE output) else (match slotC
+      | Option.some b => (if (op =? 84) then (indexerGraph trailing a b slotC slotD slotE output) else (if (op =? 88) then (sparseGraph op trailing a b slotC slotD slotE output) else (match slotC
         | Option.none => (ctor Response.invalid)
-        | Option.some c => (graphPlan op trailing p1 p2 p3 a b c slotD slotE (ctor Option.none [NormPlan::TensorDescriptor]) output)))))),
+        | Option.some c => (graphPlan op trailing p1 p2 p3 a b c slotD slotE (ctor Option.none [NormPlan::TensorDescriptor]) output))))))),
   executable: true
 }
 
@@ -527,6 +567,7 @@ definition{
   parameters: [request : Request],
   result: Response,
   body: (match request
+    | Request.indexerRow plan token head stream key => (indexerRows plan token head stream key)
     | Request.cacheIndex raw cells => (if (raw <? 2147483648) then (if (raw <? cells) then (ctor Response.cacheCell raw) else (ctor Response.invalid)) else (if (raw <? 4294967296) then (ctor Response.skip) else (ctor Response.invalid)))
     | Request.cachePlacement op trailing p0 p1 p2 p3 a b c d e rows out => (match rows
       | Option.none => (placement op trailing p0 p1 p2 p3 a b c d e out)

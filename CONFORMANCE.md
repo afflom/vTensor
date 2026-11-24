@@ -215,6 +215,7 @@ model does not sanction.
 | `VT-126` | `build` | Prism stages binary32 to signed integer copies through the Verdant truncation operation |
 | `VT-127` | `build` | Prism contracts hyperconnection channels through Verdant with optional per-element sigmoid gates |
 | `VT-128` | `build` | Dense and indexed projections preserve explicit GGML accumulator and activation precision across stored weight formats |
+| `VT-108` | `build` | Prism selects query heads and key rows and Verdant computes masked weighted rectified attention scores |
 
 ## normalization-graphs
 

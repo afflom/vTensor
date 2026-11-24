@@ -834,3 +834,9 @@ id = "VT-128"
 level = "build"
 suite = "native-backend"
 statement = "Dense and indexed projections preserve explicit GGML accumulator and activation precision across stored weight formats"
+
+[[id]]
+id = "VT-108"
+level = "build"
+suite = "native-backend"
+statement = "Prism selects query heads and key rows and Verdant computes masked weighted rectified attention scores"
