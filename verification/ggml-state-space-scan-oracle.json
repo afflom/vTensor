@@ -25,5 +25,32 @@
   "columns": "state width, scalar-decay flag, head width, tokens, slots, groups, padded-view flag, repeated-ID flag, followed by hexadecimal binary32 output words",
   "geometry": "Four heads, two sequences, three initial state rows. Sequence IDs are [2,0] or [1,1]. X has head width lanes and four heads. B and C have state width lanes and one or two groups. Padded X/B/C use a base with one extra head or group and one extra token, retain the base strides, and start at its second row. All other tensors are contiguous.",
   "inputs": "For slot s in [initial state,X,dt,A,B,C], set n=i0+7*i1+11*i2+13*i3+5*s. A=-(1+n%13)/16. dt=21 when n%5==0 and n%17-8 otherwise. Remaining inputs=(n%19-9)/16. Initialize the complete result to 13.25.",
-  "baseline": "The pre-SSM provider refused the first graph. For zero tokens the upstream CPU preserves all snapshot slots."
+  "baseline": "The pre-SSM provider refused the first graph. For zero tokens the upstream CPU preserves all snapshot slots.",
+  "provider_comparison": {
+    "graphs": 440,
+    "words": 123264,
+    "untouched": 50560,
+    "bit_identical": 109666,
+    "max_absolute_error": 9.5367431640625e-07,
+    "max_scaled_error": 2.1431996779793025e-07,
+    "provider_transcript_sha256": "04b5466e0bb5305ced5dc89d694f7343395fa97cdf43984b527ba478715e375a",
+    "reference_transcript_sha256": "716623f3b91c8d22a0089425d0d855c3d3617e062d3b10e4c7bf66c1bdd208fd",
+    "atomic_refusals": 8,
+    "verdant_revision": "793ea05996c4e48dd3a221fb59480c9382901412",
+    "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/58",
+    "prism_graph_result": "dddfd87959f40124cabbb8b714f90b6736fc378157f4dd8c499c0a1e3e3c50f1",
+    "provider_sha256": "ef6f87258e048a5944ddd8c8552fffa75a6410d267b74dd11a1a42e5f6b51476",
+    "provider_sources_sha256": "5f8cea4b04f1b527693fe1edd5da8f0a043f918bc67278fef4d66efe2e9427cd",
+    "negative_controls": [
+      "negative second sequence ID",
+      "second sequence ID equal to cache capacity",
+      "maximum signed second sequence ID",
+      "zero snapshot slots",
+      "surplus source",
+      "missing sequence IDs",
+      "floating-point sequence IDs",
+      "padded injection row stride"
+    ],
+    "condition": "Every refusal left the complete score and snapshot destination byte-identical."
+  }
 }

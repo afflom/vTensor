@@ -192,6 +192,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Match all 11,088 frozen words for IM2COL_BACK and POOL_2D_BACK, including padding and overlapping windows. [CPU and provider transcripts](verification/ggml-spatial-gradient-oracle.json)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
 - [x] Freeze 123,264 GGML CPU words across 440 Mamba-1 and Mamba-2 scan graphs, including duplicate sequence IDs, padded inputs and empty scans. [SSM oracle](verification/ggml-state-space-scan-oracle.json)
+- [x] Submit the Verdant selective state update. Compare 26,040 scores and state entries across 135 GGML CPU steps. [Verdant PR #58](https://github.com/afflom/verdant-engine/pull/58)
+- [x] Match all 440 supplemental Mamba scans on the candidate provider. Preserve 50,560 snapshot words and the complete destination on eight invalid inputs. [GGML comparison](verification/ggml-state-space-scan-oracle.json)
 - [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).
 - [x] Pass all four GATED_LINEAR_ATTN factory graphs and match 7,056 token and state words across 96 additional GGML CPU graphs. [VT-142](verification/factory-gated-linear-attention-vt142.json)
 - [x] Pass all four RWKV_WKV6 and five RWKV_WKV7 factory graphs. Match 7,056 token and state words on 96 additional GGML CPU graphs. [VT-143](verification/factory-recurrent-weighted-keys-vt143.json)

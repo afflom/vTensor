@@ -331,8 +331,8 @@ artifacts fit stricter M20 ceilings; no budget was raised. Exact evidence is in
 Verdant's native packager now includes the certified production dependency
 closure (36 crates), with exact registry versions and preserved SDK provenance.
 Its registry check requires a successful real Cargo consumer build and rejects
-missing or unresolvable dependencies. VT-147 verified the published v2.21.4
-release. Its resolved archives match the [release manifest](vendor/verdant-crates-manifest.json).
+missing or unresolvable dependencies. VT-148 uses the published v2.21.5
+release. All 103 resolved archives match the [release manifest](vendor/verdant-crates-manifest.json).
 
 The earlier Verdant extension added certified packed-scale and F8 word primitives
 for the remaining row-gathering work. Its 244,492 imported GGML comparisons pass;
