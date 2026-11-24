@@ -509,6 +509,13 @@ fn pointwise(request: GraphRequest) -> Result<GraphResponse, BackendError> {
 }
 
 impl Tensor {
+    fn views_start_of(&self, source: &Tensor) -> bool {
+        let backing = std::ptr::NonNull::new(source.view_src).unwrap_or_else(|| source.into());
+        self.view_src == backing.as_ptr()
+            && self.view_offs == source.view_offs
+            && (self.data.is_null() || source.data.is_null() || self.data == source.data)
+    }
+
     fn source(&self, slot: usize) -> Option<&Tensor> {
         // SAFETY: GGML retains every present source descriptor for the graph call.
         unsafe { self.src[slot].as_ref() }
@@ -540,14 +547,13 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     }
     if operation == 99 {
         let source = tensor.source(0).ok_or(InvalidTensor)?;
-        let backing = std::ptr::NonNull::new(source.view_src).unwrap_or_else(|| source.into());
         let layout = |t: &Tensor| (t.ty, t.ne, t.nb, t.data);
         let micros = u64::from(tensor.op_params[0] as u32);
         let request = vtensor_native_predicates::Adt0::C4(
             operation,
             micros,
             layout(tensor) == layout(source),
-            tensor.view_src == backing.as_ptr() && tensor.view_offs == source.view_offs,
+            tensor.views_start_of(source),
         );
         let delay = ExecutionPlan::Delay(std::time::Duration::from_micros(micros));
         return vtensor_native_predicates::run(request)
@@ -559,9 +565,8 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     }
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
         tensor.op_params.map(|word| u64::from(word as u32));
-    let [primary, secondary, base, fourth, trailing @ ..] =
-        tensor.map_sources::<_, GGML_MAX_SRC>(tensor_metadata)?;
-    let trailing = trailing.iter().any(Option::is_some);
+    let [primary, secondary, base, fourth, fifth] = tensor.map_sources(tensor_metadata)?;
+    let trailing = tensor.src[5..].iter().any(|source| !source.is_null());
     if matches!(operation, 45 | 46) {
         return rotary::plan(
             tensor,
@@ -573,7 +578,8 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         )
         .map(|plan| plan.map(ExecutionPlan::Rotary));
     }
-    let extra = fourth.is_some() || trailing;
+    let extra = fourth.is_some() || fifth.is_some() || trailing;
+    let weight = tensor.source(0);
     let response = pointwise(GraphRequest::C0(
         operation,
         Parameters::C0(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11),
@@ -581,7 +587,10 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         secondary.clone(),
         base.clone(),
         fourth,
+        fifth,
         trailing,
+        weight.map_or(0, |t| u64::from(t.flags as u32)),
+        weight.is_some_and(|t| tensor.views_start_of(t)),
         output.clone(),
     ))?;
     let metadata = descriptor_for!(vtensor_typed::Adt1::C0);
@@ -1151,11 +1160,10 @@ fn execute_word(
     else {
         return Err(InvalidTensor);
     };
+    let source = |slot: u64| pointers.get(slot as usize).copied().ok_or(InvalidTensor);
     let read = |operand| {
         let (pointer, offset) = match operand {
-            WordOperand::C0(index, offset) => {
-                (*pointers.get(index as usize).ok_or(InvalidTensor)?, offset)
-            }
+            WordOperand::C0(slot, offset) => (source(slot)?, offset),
             WordOperand::C1(index) => {
                 return words.get(index as usize).copied().ok_or(InvalidTensor)
             }
@@ -1220,14 +1228,17 @@ fn execute_word(
         }
     }
     .ok_or(InvalidTensor)?;
-    match target {
-        WordTarget::C0(index) => *words.get_mut(index as usize).ok_or(InvalidTensor)? = value,
-        // SAFETY: Prism bounds each output word, including eight-byte COUNT_EQUAL results.
-        WordTarget::C1(offset) => unsafe {
-            scalar_word(destination.add(offset as usize), write_bytes, Some(value))?;
-        },
+    let (pointer, offset) = match target {
+        WordTarget::C0(index) => {
+            *words.get_mut(index as usize).ok_or(InvalidTensor)? = value;
+            return Ok(());
+        }
+        WordTarget::C1(offset) => (destination, offset),
         WordTarget::C2 => return Err(InvalidTensor),
-    }
+        WordTarget::C3(slot, offset) => (source(slot)?, offset),
+    };
+    // SAFETY: Prism bounds each store in the output or a bound mutable optimizer state.
+    unsafe { scalar_word(pointer.add(offset as usize), write_bytes, Some(value))? };
     Ok(())
 }
 
@@ -1336,7 +1347,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let GraphPlan::C4(count, bytes, source, destination, mode) = plan else {
         return Err(InvalidTensor);
     };
-    let GraphResponse::C6(mask, literal_type, bits, constant) =
+    let GraphResponse::C6(mask, literal_type, bits, constant, capacity) =
         pointwise(GraphRequest::C2(mode.clone()))?
     else {
         return Err(InvalidTensor);
@@ -1370,11 +1381,10 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let destination_data = graph_tensor_data(tensor)?;
     let mut block = workspace(bytes, 0_u8)?;
     let mut fixed = [0; 3];
-    let mut dynamic = match &mode {
-        CopyMode::C26(_, _, _, size) | CopyMode::C35(size) if *size > fixed.len() as u64 => {
-            Some(workspace(*size, 0_u64)?)
-        }
-        _ => None,
+    let mut dynamic = if capacity > fixed.len() as u64 {
+        Some(workspace(capacity, 0_u64)?)
+    } else {
+        None
     };
     let words = dynamic.as_deref_mut().unwrap_or(&mut fixed);
     for index in 0..count {

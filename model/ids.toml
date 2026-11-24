@@ -852,3 +852,9 @@ id = "VT-130"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules four-channel hyperconnection normalization and Verdant evaluates each word against the GGML CPU combination oracle"
+
+[[id]]
+id = "VT-131"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules in-place SGD and AdamW updates and Verdant evaluates parameters and Adam moments against GGML CPU"

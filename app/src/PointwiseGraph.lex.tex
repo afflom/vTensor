@@ -156,7 +156,8 @@ inductive{
     {name: signedCopy, fields: [Nat]},
     {name: hyperconnectionPre, fields: [IndexContext, Bool, Nat]},
     {name: hyperconnectionPost, fields: [IndexContext, IndexContext, (Option IndexContext)]},
-    {name: hyperconnectionCombination, fields: [IndexContext, IndexContext, Nat, Nat]}
+    {name: hyperconnectionCombination, fields: [IndexContext, IndexContext, Nat, Nat]},
+    {name: optimizer, fields: [Bool]}
   ]
 }
 
@@ -313,6 +314,9 @@ inductive{
         (Option TensorDescriptor),
         (Option TensorDescriptor),
         (Option TensorDescriptor),
+        (Option TensorDescriptor),
+        Bool,
+        Nat,
         Bool,
         TensorDescriptor
       ]
@@ -367,7 +371,8 @@ inductive{
   constructors: [
     {name: scratch, fields: [Nat]},
     {name: output, fields: [Nat]},
-    {name: invalid, fields: []}
+    {name: invalid, fields: []},
+    {name: source, fields: [Nat, Nat]}
   ]
 }
 
@@ -382,7 +387,7 @@ inductive{
     {name: converted, fields: [Nat, Nat, Nat, Nat]},
     {name: word, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat]},
     {name: decoded, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: bindings, fields: [Nat, Nat, Nat, Bool]},
+    {name: bindings, fields: [Nat, Nat, Nat, Bool, Nat]},
     {name: instruction, fields: [WordOperation, WordOperand, WordOperand, WordTarget, Nat, Nat]},
     {name: sample, fields: [(Option Nat)]},
     {name: tableResult, fields: [(Option Nat)]},
@@ -1827,6 +1832,7 @@ definition{
     | CopyMode.hyperconnectionPre weights gated scale => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.hyperconnectionPost residual post combination => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.optimizer adam => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.signedCopy count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
@@ -1907,6 +1913,38 @@ definition{
   ],
   result: PointwiseDecision,
   body: (let x : ColumnAxis := (record ColumnAxis {kernel := (project kernel n0), stride := (project options p0), pad := (project options p2), dilation := (project options p4)}); (let y : ColumnAxis := (record ColumnAxis {kernel := (project kernel n1), stride := (project options p1), pad := (project options p3), dilation := (project options p5)}); (let storage : Nat := (project kernel ty); (let channelsFirst : Bool := ((project image s2) <? (project image s0)); (if (((((((((((((((storage =? 0) || (storage =? 1)) && ((project image ty) =? 0)) && ((project output ty) =? 0)) && ((project kernel n2) =? 1)) && ((project kernel n3) =? (project image n2))) && ((project output n2) =? (project image n2))) && ((project output n3) =? (project image n3))) && ((((((0 <? (project x kernel)) && (0 <? (project x stride))) && ((project x stride) <? 2147483648)) && (0 <? (project x dilation))) && ((project x dilation) <? 2147483648)) && ((project output n0) =? (columnExtent x (project image n0))))) && ((((((0 <? (project y kernel)) && (0 <? (project y stride))) && ((project y stride) <? 2147483648)) && (0 <? (project y dilation))) && ((project y dilation) <? 2147483648)) && ((project output n1) =? (columnExtent y (project image n1))))) && (depthwiseLayout image 4 channelsFirst false)) && (depthwiseLayout output 4 channelsFirst false)) && (depthwiseLayout kernel (if (storage =? 0) then 4 else 2) channelsFirst true)) && (separateTensors kernel output)) && (separateTensors image output)) then (ctor PointwiseDecision.copyBlocks (prim multiply ((prim multiply 3 (prim multiply (project x kernel) (project y kernel) : Nat) : Nat) + 2) (blockCount output 1) : Nat) 4 (indexContext kernel 1) (indexContext output 1) (ctor CopyMode.depthwise (indexContext image 1) x y storage)) else (ctor PointwiseDecision.invalidShape)))))),
+  executable: true
+}
+
+definition{
+  name: optimizerSetup,
+  parameters: [adam : Bool],
+  result: Nat,
+  body: (if adam then 11 else 4),
+  executable: true
+}
+
+definition{
+  name: optimizerPhases,
+  parameters: [adam : Bool],
+  result: Nat,
+  body: (if adam then 15 else 3),
+  executable: true
+}
+
+definition{
+  name: optimizerOperand,
+  parameters: [weight : TensorDescriptor, other : TensorDescriptor],
+  result: Bool,
+  body: ((((project other ty) =? 0) && (sameShape weight other)) && (((blockCount weight 1) =? 0) || (((blockOffset (prim subtract (blockCount weight 1) 1 : Nat) (indexContext weight 1)) + 4) <=? (project other span)))),
+  executable: true
+}
+
+definition{
+  name: planOptimizer,
+  parameters: [adam : Bool, flags : Nat, view : Bool, input : (Option TensorDescriptor), derivative : (Option TensorDescriptor), third : (Option TensorDescriptor), fourth : (Option TensorDescriptor), fifth : (Option TensorDescriptor), trailing : Bool, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let weight : TensorDescriptor := (match input | Option.none => output | Option.some supplied => supplied); (let gradient : TensorDescriptor := (match derivative | Option.none => output | Option.some supplied => supplied); (let m : TensorDescriptor := (match third | Option.none => output | Option.some supplied => supplied); (let v : TensorDescriptor := (match fourth | Option.none => output | Option.some supplied => supplied); (let params : TensorDescriptor := (if adam then (match fifth | Option.none => output | Option.some supplied => supplied) else (match third | Option.none => output | Option.some supplied => supplied)); (if (((((((((((match input | Option.none => false | Option.some supplied => true) && (match derivative | Option.none => false | Option.some supplied => true)) && (match third | Option.none => false | Option.some supplied => true)) && (if adam then ((match fourth | Option.none => false | Option.some supplied => true) && (match fifth | Option.none => false | Option.some supplied => true)) else ((if (match fourth | Option.none => false | Option.some supplied => true) then false else true) && (if (match fifth | Option.none => false | Option.some supplied => true) then false else true)))) && (if trailing then false else true)) && (((((((((view && ((prim remainder (prim quotient flags 4 0 : Nat) 2 0 : Nat) =? 1)) && ((project weight ty) =? 0)) && ((project weight s0) =? 4)) && (signedCopySpan weight (blockCount weight 1))) && (optimizerOperand weight output)) && (((project weight n0) <=? 1) || ((project weight s0) =? (project output s0)))) && (((project weight n1) <=? 1) || ((project weight s1) =? (project output s1)))) && (((project weight n2) <=? 1) || ((project weight s2) =? (project output s2)))) && (((project weight n3) <=? 1) || ((project weight s3) =? (project output s3))))) && (optimizerOperand weight gradient)) && (if adam then ((optimizerOperand weight m) && (optimizerOperand weight v)) else true)) && ((project params ty) =? 0)) && ((blockCount params 1) =? (if adam then 7 else 2))) && ((if adam then 28 else 8) <=? (project params span))) then (ctor PointwiseDecision.copyBlocks ((optimizerSetup adam) + (prim multiply (blockCount weight 1) (optimizerPhases adam) : Nat)) 4 (indexContext weight 1) (indexContext output 1) (ctor CopyMode.optimizer adam)) else (ctor PointwiseDecision.invalidShape))))))),
   executable: true
 }
 
@@ -2020,45 +2058,46 @@ definition{
   parameters: [mode : CopyMode],
   result: GraphResponse,
   body: (match mode
-    | CopyMode.linear => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.repeated => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.concatenated axis right => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.padded p0 p1 p2 p3 circular => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.reflected left => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.rolled p0 p1 p2 p3 => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.updated initial base adding => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.folded initial => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.selected kind => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.constant kind bits => (ctor GraphResponse.bindings 0 kind bits true)
-    | CopyMode.arithmetic kind unary right => (ctor GraphResponse.bindings (if unary then 1 else 3) 0 0 false)
-    | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.softmaxGradient scale => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.siluGradient activation => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.hyperconnectionPre weights gated scale => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.hyperconnectionPost residual post combination => (ctor GraphResponse.bindings (match combination | Option.none => 7 | Option.some mix => 15) 0 0 false)
-    | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.bindings 7 0 0 false)
-    | CopyMode.signedCopy count => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.depthwise image x y storage => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.windowed reverse size nx => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.scanned => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.reduced operation storage => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.argmaxRow => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.counted elements right => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.scattered storage indices => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.gathered storage indices => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.relativePosition => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false)
-    | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false)
-    | CopyMode.pooled geometry => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.stateConvolution weights => (ctor GraphResponse.bindings 3 0 0 false)
-    | CopyMode.columnOverlap axis storage => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.imageColumns geometry => (ctor GraphResponse.bindings 2 0 0 false)
-    | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings (if (kind =? 66) then 3 else 1) 0 0 false)
-    | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false)
-    | CopyMode.arange start stop step count => (ctor GraphResponse.bindings 0 0 0 false)),
+    | CopyMode.linear => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.repeated => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.concatenated axis right => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.padded p0 p1 p2 p3 circular => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.reflected left => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.rolled p0 p1 p2 p3 => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.updated initial base adding => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.folded initial => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.selected kind => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.constant kind bits => (ctor GraphResponse.bindings 0 kind bits true 3)
+    | CopyMode.arithmetic kind unary right => (ctor GraphResponse.bindings (if unary then 1 else 3) 0 0 false 3)
+    | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.softmaxGradient scale => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.siluGradient activation => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.hyperconnectionPre weights gated scale => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.hyperconnectionPost residual post combination => (ctor GraphResponse.bindings (match combination | Option.none => 7 | Option.some mix => 15) 0 0 false 3)
+    | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.bindings 7 0 0 false 3)
+    | CopyMode.optimizer adam => (ctor GraphResponse.bindings (if adam then 31 else 7) 0 0 false 12)
+    | CopyMode.signedCopy count => (ctor GraphResponse.bindings 1 0 0 false count)
+    | CopyMode.depthwise image x y storage => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.windowed reverse size nx => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.scanned => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.reduced operation storage => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.argmaxRow => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.counted elements right => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.scattered storage indices => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.gathered storage indices => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.relativePosition => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.indexedAdd table indices => (ctor GraphResponse.bindings 7 0 0 false 3)
+    | CopyMode.relativeAdd initial width biases => (ctor GraphResponse.bindings ((if (0 <? initial) then 1 else 0) + (if (0 <? biases) then 6 else 0)) 0 0 false 3)
+    | CopyMode.pooled geometry => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.stateConvolution weights => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.columnOverlap axis storage => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.imageColumns geometry => (ctor GraphResponse.bindings 2 0 0 false 3)
+    | CopyMode.normalized kind epsilon rows capacity => (ctor GraphResponse.bindings (if (kind =? 66) then 3 else 1) 0 0 false capacity)
+    | CopyMode.l2Norm epsilon => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.arange start stop step count => (ctor GraphResponse.bindings 0 0 0 false 3)),
   executable: true
 }
 
@@ -2084,6 +2123,7 @@ definition{
     | CopyMode.hyperconnectionPre weights gated scale => 0
     | CopyMode.hyperconnectionPost residual post combination => 0
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
+    | CopyMode.optimizer adam => 0
     | CopyMode.signedCopy count => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
@@ -2155,6 +2195,7 @@ definition{
     | CopyMode.hyperconnectionPre weights gated scale => (ctor WordOperation.invalid)
     | CopyMode.hyperconnectionPost residual post combination => (ctor WordOperation.invalid)
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor WordOperation.invalid)
+    | CopyMode.optimizer adam => (ctor WordOperation.invalid)
     | CopyMode.signedCopy count => (ctor WordOperation.invalid)
     | CopyMode.depthwise image x y storage => (ctor WordOperation.invalid)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -2202,6 +2243,7 @@ definition{
     | CopyMode.hyperconnectionPre weights gated scale => 0
     | CopyMode.hyperconnectionPost residual post combination => 0
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
+    | CopyMode.optimizer adam => 0
     | CopyMode.signedCopy count => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
@@ -2259,7 +2301,7 @@ definition{
     | GraphResponse.converted sourceType destinationType from to => (typedWord (convertedOperation mode sourceType destinationType) sourceType destinationType 0 from 2 (convertedArgument mode) 3 to)
     | GraphResponse.word operation leftSlot leftAt rightSlot rightAt target to => (let storage : Nat := (wordStorage mode operation); (typedWord (legacyOperation mode operation) storage storage leftSlot leftAt rightSlot rightAt target to))
     | GraphResponse.decoded a b c d e f => (ctor GraphResponse.decoded a b c d e f)
-    | GraphResponse.bindings a b c d => (ctor GraphResponse.bindings a b c d)
+    | GraphResponse.bindings a b c d capacity => (ctor GraphResponse.bindings a b c d capacity)
     | GraphResponse.instruction a b c d e f => (ctor GraphResponse.instruction a b c d e f)),
   executable: true
 }
@@ -2411,6 +2453,14 @@ definition{
 }
 
 definition{
+  name: optimizerStep,
+  parameters: [index : Nat, weight : IndexContext, adam : Bool],
+  result: GraphResponse,
+  body: (let setup : Nat := (optimizerSetup adam); (if (index <? setup) then (if (index <? (if adam then 7 else 2)) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.source (if adam then 4 else 2) (prim multiply 4 index : Nat)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch index) 4 4) else (if (index =? (if adam then 7 else 2)) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch (if adam then 4 else 1)) (ctor WordTarget.scratch 7) 4 4) else (if (index =? ((if adam then 7 else 2) + 1)) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 7) (ctor WordTarget.scratch 7) 4 4) else (if (index =? 9) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 8) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 2) (ctor WordTarget.scratch 9) 4 4))))) else (let relative : Nat := (prim subtract index setup : Nat); (let phases : Nat := (optimizerPhases adam); (let phase : Nat := (prim remainder relative phases 0 : Nat); (let address : Nat := (blockOffset (prim quotient relative phases 0 : Nat) weight); (if adam then (if (phase <? 7) then (if (phase <? 3) then (if (phase <? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 2 address) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 10) 4 4) else (if (phase <? 2) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 address) (ctor WordOperand.scratch 8) (ctor WordTarget.scratch 11) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 10) (ctor WordOperand.scratch 11) (ctor WordTarget.source 2 address) 4 4))) else (if (phase <? 5) then (if (phase <? 4) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 3 address) (ctor WordOperand.scratch 2) (ctor WordTarget.scratch 10) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 address) (ctor WordOperand.source 1 address) (ctor WordTarget.scratch 11) 4 4)) else (if (phase <? 6) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 11) (ctor WordOperand.scratch 9) (ctor WordTarget.scratch 11) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 10) (ctor WordOperand.scratch 11) (ctor WordTarget.source 3 address) 4 4)))) else (if (phase <? 11) then (if (phase <? 9) then (if (phase <? 8) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 2 address) (ctor WordOperand.scratch 5) (ctor WordTarget.scratch 10) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 3 address) (ctor WordOperand.scratch 6) (ctor WordTarget.scratch 11) 4 4)) else (if (phase <? 10) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 4) (ctor WordOperand.scratch 11) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 11) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 11) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 11) 4 4))) else (if (phase <? 13) then (if (phase <? 12) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 10) (ctor WordTarget.scratch 10) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 10) (ctor WordOperand.scratch 11) (ctor WordTarget.scratch 10) 4 4)) else (if (phase <? 14) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 address) (ctor WordOperand.scratch 7) (ctor WordTarget.scratch 11) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 11) (ctor WordOperand.scratch 10) (ctor WordTarget.output address) 4 4))))) else (if (phase <? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 address) (ctor WordOperand.scratch 7) (ctor WordTarget.scratch 10) 4 4) else (if (phase <? 2) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 0) (ctor WordOperand.source 1 address) (ctor WordTarget.scratch 11) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 10) (ctor WordOperand.scratch 11) (ctor WordTarget.output address) 4 4)))))))))),
+  executable: true
+}
+
+definition{
   name: hyperconnectionCombinationStep,
   parameters: [index : Nat, mix : IndexContext, scale : IndexContext, base : IndexContext, destination : IndexContext, eps : Nat, iterations : Nat, flag : Nat],
   result: GraphResponse,
@@ -2496,6 +2546,7 @@ definition{
     | CopyMode.hyperconnectionPre weights gated scale => (hyperconnectionPreStep index source weights destination gated scale)
     | CopyMode.hyperconnectionPost residual post combination => (hyperconnectionPostStep index source residual post combination destination)
     | CopyMode.hyperconnectionCombination scale base eps iterations => (hyperconnectionCombinationStep index source scale base destination eps iterations flag)
+    | CopyMode.optimizer adam => (optimizerStep index source adam)
     | CopyMode.signedCopy count => (signedCopyStep index count source destination)
     | CopyMode.depthwise image x y storage => (depthwiseStep index source image destination x y storage)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
@@ -2556,9 +2607,9 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 trailing output => (if (operation =? 85) then (ctor GraphResponse.planned (planHyperconnectionCombination options input0 input1 input2 (match input3 | Option.none => trailing | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if ((operation =? 96) || (operation =? 97)) then (ctor GraphResponse.planned (planOptimizer (operation =? 96) flags view input0 input1 input2 input3 input4 tailPresent output)) else (let trailing : Bool := (match input4 | Option.none => tailPresent | Option.some supplied => true); (if (operation =? 85) then (ctor GraphResponse.planned (planHyperconnectionCombination options input0 input1 input2 (match input3 | Option.none => trailing | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))))
+      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
@@ -3431,14 +3482,14 @@ theorem{
 theorem{
   name: arangeBindsNoSource,
   parameters: [start : Nat, stop : Nat, step : Nat, count : Nat],
-  statement: ((sourceBindings (ctor CopyMode.arange start stop step count)) = (ctor GraphResponse.bindings 0 0 0 false)),
+  statement: ((sourceBindings (ctor CopyMode.arange start stop step count)) = (ctor GraphResponse.bindings 0 0 0 false 3)),
   proof: reflexivity{}
 }
 
 theorem{
   name: constantBindingKeepsLiteral,
   parameters: [kind : Nat, bits : Nat],
-  statement: ((sourceBindings (ctor CopyMode.constant kind bits)) = (ctor GraphResponse.bindings 0 kind bits true)),
+  statement: ((sourceBindings (ctor CopyMode.constant kind bits)) = (ctor GraphResponse.bindings 0 kind bits true 3)),
   proof: reflexivity{}
 }
 
@@ -3514,7 +3565,7 @@ theorem{
 theorem{
   name: l2NormUsesOnlySourceZero,
   parameters: [epsilon : Nat],
-  statement: ((sourceBindings (ctor CopyMode.l2Norm epsilon)) = (ctor GraphResponse.bindings 1 0 0 false)),
+  statement: ((sourceBindings (ctor CopyMode.l2Norm epsilon)) = (ctor GraphResponse.bindings 1 0 0 false 3)),
   proof: reflexivity{}
 }
 
@@ -3714,14 +3765,14 @@ theorem{
 theorem{
   name: backwardBindsBothSources,
   parameters: [],
-  statement: ((sourceBindings (ctor CopyMode.normalized 66 0 4 6)) = (ctor GraphResponse.bindings 3 0 0 false)),
+  statement: ((sourceBindings (ctor CopyMode.normalized 66 0 4 6)) = (ctor GraphResponse.bindings 3 0 0 false 6)),
   proof: reflexivity{}
 }
 
 theorem{
   name: backwardDoesNotAddBindingsToForwardNorm,
   parameters: [],
-  statement: ((sourceBindings (ctor CopyMode.normalized 64 0 4 6)) = (ctor GraphResponse.bindings 1 0 0 false)),
+  statement: ((sourceBindings (ctor CopyMode.normalized 64 0 4 6)) = (ctor GraphResponse.bindings 1 0 0 false 6)),
   proof: reflexivity{}
 }
 

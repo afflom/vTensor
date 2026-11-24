@@ -218,6 +218,7 @@ model does not sanction.
 | `VT-108` | `build` | Prism selects query heads and key rows and Verdant computes masked weighted rectified attention scores |
 | `VT-129` | `build` | Prism models residual hyperconnection mixing and Verdant contracts optional channel combinations against the GGML CPU evaluator |
 | `VT-130` | `build` | Prism schedules four-channel hyperconnection normalization and Verdant evaluates each word against the GGML CPU combination oracle |
+| `VT-131` | `build` | Prism schedules in-place SGD and AdamW updates and Verdant evaluates parameters and Adam moments against GGML CPU |
 
 ## normalization-graphs
 

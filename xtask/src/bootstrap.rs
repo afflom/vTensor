@@ -1118,26 +1118,14 @@ mod tests {
             encode(&changed)
         };
         let pins = vec!["unicode-normalization".to_string()];
-        // Declared and ignored: accepted.
-        assert!(dependency_updates_are_confined(
-            &with_ignore(&["unicode-normalization"]),
-            &pins
-        ));
-        // Ignored with no authority pinning it: refused.
-        assert!(!dependency_updates_are_confined(
-            &with_ignore(&["unicode-normalization"]),
-            &[]
-        ));
-        // Pinned but not ignored: refused, the pin would drift.
+        let pinned_policy = with_ignore(&["unicode-normalization"]);
+        assert!(dependency_updates_are_confined(&pinned_policy, &pins));
+        assert!(!dependency_updates_are_confined(&pinned_policy, &[]));
         assert!(!dependency_updates_are_confined(source, &pins));
-        // A second, undeclared ignore beside the declared one: refused.
-        assert!(!dependency_updates_are_confined(
-            &with_ignore(&["serde", "unicode-normalization"]),
-            &pins
-        ));
-        // Every other deviation still fails with a pin declared.
-        let mut changed: serde_json::Value =
-            serde_json::from_str(&with_ignore(&["unicode-normalization"])).unwrap();
+        let undeclared_ignore = with_ignore(&["serde", "unicode-normalization"]);
+        assert!(!dependency_updates_are_confined(&undeclared_ignore, &pins));
+
+        let mut changed: serde_json::Value = serde_json::from_str(&pinned_policy).unwrap();
         changed["updates"][1]["schedule"]["interval"] = serde_json::json!("never");
         assert!(!dependency_updates_are_confined(&encode(&changed), &pins));
     }
@@ -1270,21 +1258,26 @@ mod tests {
     fn project_overwrite_plant_is_rejected() {
         let workflow = include_str!("../../.github/workflows/template-update.yml");
         assert!(update_preserves_project_content(workflow));
-        assert!(!update_preserves_project_content(&workflow.replace(
-            "for path in AGENTS.md",
-            "for path in bootstrap/render.sh AGENTS.md"
-        )));
-        assert!(!update_preserves_project_content(
-            &workflow.replace("prismpm.lock standards.lock", "prismpm.lock")
-        ));
-        assert!(!update_preserves_project_content(&workflow.replace(
-            "/template-policy/bootstrap/render.mjs",
-            "bootstrap/render.mjs"
-        )));
-        assert!(!update_preserves_project_content(&workflow.replace(
-            "$PWD/.template-policy:/template-policy:ro",
-            "$PWD/.template-policy:/template-policy"
-        )));
+        for (original, replacement) in [
+            (
+                "for path in AGENTS.md",
+                "for path in bootstrap/render.sh AGENTS.md",
+            ),
+            ("prismpm.lock standards.lock", "prismpm.lock"),
+            (
+                "/template-policy/bootstrap/render.mjs",
+                "bootstrap/render.mjs",
+            ),
+            (
+                "$PWD/.template-policy:/template-policy:ro",
+                "$PWD/.template-policy:/template-policy",
+            ),
+        ] {
+            assert!(
+                !update_preserves_project_content(&workflow.replace(original, replacement)),
+                "{original}"
+            );
+        }
         assert!(!update_preserves_project_content(&format!(
             "{workflow}\n          rm -f .github/workflows/honesty.yml\n"
         )));
@@ -1292,20 +1285,15 @@ mod tests {
 
     #[test]
     fn mutable_sdk_plant_is_rejected() {
-        assert!(!immutable_image(
-            "ghcr.io/uor-foundation/prismpm-sdk:latest"
-        ));
+        let digest = sha256(b"test SDK");
+        let github = "ghcr.io/uor-foundation/prismpm-sdk";
+        assert!(!immutable_image(&format!("{github}:latest")));
+        assert!(immutable_image(&format!("{github}@{digest}")));
         assert!(immutable_image(&format!(
-            "ghcr.io/uor-foundation/prismpm-sdk@sha256:{}",
-            "a".repeat(64)
-        )));
-        assert!(immutable_image(&format!(
-            "localhost:5000/prismpm-sdk@sha256:{}",
-            "a".repeat(64)
+            "localhost:5000/prismpm-sdk@{digest}"
         )));
         assert!(!immutable_image(&format!(
-            "localhost:65536/prismpm-sdk@sha256:{}",
-            "a".repeat(64)
+            "localhost:65536/prismpm-sdk@{digest}"
         )));
     }
 
@@ -1370,16 +1358,10 @@ mod tests {
         let mut required = UNIVERSAL_POLICY_PATHS.to_vec();
         required.extend(PROJECT_CONTENT_PATHS);
         required.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
-        assert!(policy_boundary_is_canonical(
-            &UNIVERSAL_POLICY_PATHS,
-            &PROJECT_CONTENT_PATHS,
-            &required,
-        ));
-        assert!(!policy_boundary_is_canonical(
-            &UNIVERSAL_POLICY_PATHS[..6],
-            &PROJECT_CONTENT_PATHS,
-            &required,
-        ));
+        let accepts =
+            |paths: &[&str]| policy_boundary_is_canonical(paths, &PROJECT_CONTENT_PATHS, &required);
+        assert!(accepts(&UNIVERSAL_POLICY_PATHS));
+        assert!(!accepts(&UNIVERSAL_POLICY_PATHS[..6]));
     }
 
     #[test]

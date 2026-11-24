@@ -446,3 +446,9 @@ Feature: native-backend
     Given four-channel mixture logits, a scale, base offsets, epsilon and a positive iteration count
     When vTensor performs row softmax and iterative column and row normalization
     Then each output matches the pinned GGML CPU graph
+
+  @VT-131 @build
+  Scenario: Prism schedules in-place SGD and AdamW updates and Verdant evaluates parameters and Adam moments against GGML CPU
+    Given weights, gradients, optimizer parameters and the AdamW moment tensors
+    When vTensor submits the optimizer graph repeatedly
+    Then weights and persistent moment updates match the pinned GGML CPU graph
