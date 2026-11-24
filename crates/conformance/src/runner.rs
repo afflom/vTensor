@@ -1393,16 +1393,15 @@ fn execute_word(
 }
 
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
-    use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as AddRow};
+    use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as BinaryRow};
     use BackendError::InvalidTensor;
-    let vtensor_typed::Adt2::C0(count, capacity, importance, operation, .., adding) = &plan;
+    let vtensor_typed::Adt2::C0(count, capacity, importance, operation, .., row_arithmetic) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
     let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
     use linear::RowRankingF32;
     let kind = weight_encoder(tensor.ty);
-    let adding = *adding;
-    let staged = adding
+    let staged = *row_arithmetic
         || kind.is_some()
         || matches!(tensor.ty, 9 | 15)
         || (*operation == 41 && tensor.ty == 26);
@@ -1421,7 +1420,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         .map(|word| workspace(lanes as u64, f32::from_bits(word as u32)))
         .transpose()?;
     let output = graph_tensor_region(tensor, span as usize)?;
-    let width = if adding {
+    let width = if *row_arithmetic {
         tensor.ne[0] as u64
     } else if staged {
         lanes as u64
@@ -1429,25 +1428,29 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         0
     };
     let mut values = workspace(width, 0.0)?;
-    let addend = if adding { tensor.input(1)? } else { None };
-    let mut addends = workspace(addend.as_ref().map_or(0, |input| input.ne[0] as u64), 0.0)?;
+    let right = if *row_arithmetic {
+        tensor.input(1)?
+    } else {
+        None
+    };
+    let mut right_values = workspace(right.as_ref().map_or(0, |input| input.ne[0] as u64), 0.0)?;
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
                 .map_err(BackendError::overflow)?;
         match instruction {
-            Encode(from, to) | AddRow(from, _, to) => {
+            Encode(from, to) | BinaryRow(from, _, to) => {
                 source
                     .as_ref()
                     .ok_or(InvalidTensor)?
                     .decode(from, &mut values)?;
-                if let AddRow(_, offset, _) = instruction {
-                    addend
+                if let BinaryRow(_, offset, _) = instruction {
+                    right
                         .as_ref()
                         .ok_or(InvalidTensor)?
-                        .decode(offset, &mut addends)?;
-                    for (value, add) in values.iter_mut().zip(addends.iter().cycle()) {
-                        *value = linear::evaluate_f32_scalar(0, *value, *add)?;
+                        .decode(offset, &mut right_values)?;
+                    for (value, rhs) in values.iter_mut().zip(right_values.iter().cycle()) {
+                        *value = linear::evaluate_f32_scalar(*operation, *value, *rhs)?;
                     }
                 }
                 for (index, block_values) in values.chunks_exact(lanes).enumerate() {

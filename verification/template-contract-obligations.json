@@ -1,0 +1,42 @@
+{
+  "paths": [
+    ".devcontainer/devcontainer.json",
+    ".github/workflows/bootstrap.yml",
+    "AGENTS.md",
+    "VERIFICATION.md",
+    "prismpm.lock",
+    "template-contract.json"
+  ],
+  "declarations": {
+    "conformant_decides": [
+      "parameters: [observation : Observation],",
+      "statement: (((conformant observation) = true) <-> (Conformant observation)),",
+      "axioms: [propext]"
+    ],
+    "SameDigest": [
+      "((project left w0) = (project right w0))",
+      "((project left w1) = (project right w1))",
+      "((project left w2) = (project right w2))",
+      "((project left w3) = (project right w3))"
+    ],
+    "dispatch": [
+      "(if ((BackendCore::supportsF64Matmul4 true true true) && (conformant (observe value))) then"
+    ],
+    "Conformant": [
+      "(SameDigest (project (project observation devcontainer) expected) (project (project observation devcontainer) observed))",
+      "(SameDigest (project (project observation bootstrap) expected) (project (project observation bootstrap) observed))",
+      "(SameDigest (project (project observation agents) expected) (project (project observation agents) observed))",
+      "(SameDigest (project (project observation verification) expected) (project (project observation verification) observed))",
+      "(SameDigest (project (project observation prismpmLock) expected) (project (project observation prismpmLock) observed))",
+      "(SameDigest (project (project observation templateContract) expected) (project (project observation templateContract) observed))"
+    ],
+    "drifted": [
+      "(driftEntry (project observation devcontainer)",
+      "(driftEntry (project observation bootstrap)",
+      "(driftEntry (project observation agents)",
+      "(driftEntry (project observation verification)",
+      "(driftEntry (project observation prismpmLock)",
+      "(driftEntry (project observation templateContract)"
+    ]
+  }
+}

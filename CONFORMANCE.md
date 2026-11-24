@@ -267,6 +267,7 @@ model does not sanction.
 | `VT-177` | `build` | GGML flash attention supports all directly executable key and value storage pairs with default precision |
 | `VT-178` | `build` | Flash attention honors all documented accumulator settings and atomically refuses quantized accumulators |
 | `VT-179` | `build` | GGML ADD_CAST encodes F16 and BF16 inputs plus F32 addends in every packed destination type |
+| `VT-180` | `build` | GGML packed binary arithmetic decodes both operands and encodes copied and in-place results |
 
 ## normalization-graphs
 

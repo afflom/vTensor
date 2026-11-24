@@ -72,6 +72,8 @@ ggml_batches! {
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
     fn flash_accumulators_vt_178() { "flash-precision", 4205, ["attention"] }
     fn flash_storage_pairs_vt_177() { "flash-storage", 697, ["attention"] }
+    /// `VT-180`: packed copied and in-place binary graphs match the original CPU decode, arithmetic and encode.
+    fn packed_binary_rows_vt_180() { "packed-binary", 6450, ["typed"] }
     fn half_add_casts_vt_179() { "half-add", 54, ["typed"] }
     fn codebook_addition_vt_176() { "codebook-add", 189, ["typed"] }
     fn e4m3_add_repeats_vt_175() { "e4m3-repeat", 12, ["typed"] }
@@ -328,46 +330,22 @@ fn contract_tc_01() {
     let requires = |name: &str, term: &str| {
         assert!(declarations[name].contains(term), "{name} omitted {term}");
     };
-    for clause in [
-        "parameters: [observation : Observation],",
-        "statement: (((conformant observation) = true) <-> (Conformant observation)),",
-        "axioms: [propext]",
-    ] {
-        requires("conformant_decides", clause);
+    let obligations = native_backend_oracle::frozen_json(
+        "template-contract-obligations",
+        "4e9cc146865e995570b59117fe3ff34e0cc9e53fcfce4874c6cc6e627df6f033",
+    );
+    for (name, clauses) in obligations["declarations"].as_object().unwrap() {
+        for clause in clauses.as_array().unwrap() {
+            requires(name, clause.as_str().unwrap());
+        }
     }
-    // The proposition names every universal policy file whose digest
-    // `template.lock` binds: all of them but the self-referential lock.
     let contract = ggml_oracle::read_json(root().join("template-contract.json"));
     let paths = contract["universal_policy_paths"].as_array().unwrap();
-    let bound: Vec<_> = paths
-        .iter()
-        .map(|path| path.as_str().unwrap())
-        .filter(|&path| path != "template.lock")
-        .collect();
-    let fields = [
-        "devcontainer",
-        "bootstrap",
-        "agents",
-        "verification",
-        "prismpmLock",
-        "templateContract",
-    ];
-    assert_eq!(bound.len(), fields.len(), "the contract binds {bound:?}");
-    for (field, path) in fields.iter().zip(&bound) {
-        requires("Conformant", &format!("(SameDigest (project (project observation {field}) expected) (project (project observation {field}) observed))"));
-        requires(
-            "drifted",
-            &format!("(driftEntry (project observation {field})"),
-        );
-        requires("drifted", &format!("\" {path}\""));
+    let bound: Vec<_> = paths.iter().filter(|p| *p != "template.lock").collect();
+    assert_eq!(serde_json::json!(bound), obligations["paths"]);
+    for path in bound {
+        requires("drifted", &format!("\" {}\"", path.as_str().unwrap()));
     }
-    for word in ["w0", "w1", "w2", "w3"] {
-        requires(
-            "SameDigest",
-            &format!("((project left {word}) = (project right {word}))"),
-        );
-    }
-    requires("dispatch", "(if ((BackendCore::supportsF64Matmul4 true true true) && (conformant (observe value))) then");
 }
 
 /// `VT-10`: Prism tensor placement matches the imported GGML linear allocator for aligned buffers and refuses invalid alignment, exhausted capacity, and arithmetic overflow
@@ -1279,7 +1257,7 @@ mod native_backend_oracle {
     use std::path::Path;
     use std::process::Command;
 
-    fn frozen_json(name: &str, expected: &str) -> serde_json::Value {
+    pub(super) fn frozen_json(name: &str, expected: &str) -> serde_json::Value {
         let bytes = std::fs::read(super::root().join(format!("verification/{name}.json"))).unwrap();
         assert_eq!(sha256_hex(&bytes), expected, "frozen {name} changed");
         serde_json::from_slice(&bytes).unwrap()
@@ -1290,7 +1268,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "c08bd811d61a08a88c813261010414bea702b76c7f0664a76a87dc3b4d9a2ee8",
+            "c9cac31478fa3e638d0e3586f04eb9f8d99956302e1eb2dc17d9ca1227f98e03",
         )
     });
 
@@ -1878,6 +1856,18 @@ static bool refuses_poisoned_output(ggml_backend_t backend, ggml_cgraph *graph, 
     ggml_backend_tensor_memset(storage,0x33,0,size);
     return ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(storage)==std::vector<uint8_t>(size,0x33);
 }
+static const decltype(&ggml_add) binary_nodes[][2]={{ggml_add,ggml_add_inplace},{ggml_sub,ggml_sub_inplace},{ggml_mul,ggml_mul_inplace},{ggml_div,ggml_div_inplace}};
+static std::array<ggml_tensor *,4> scalar_cast_graph(ggml_context *ctx, ggml_type from, ggml_type to, int rows, bool padded) {
+    auto backing=ggml_new_tensor_2d(ctx,from,padded?10:8,rows);
+    auto input=padded?ggml_view_2d(ctx,backing,8,rows,backing->nb[1],ggml_type_size(from)):backing;
+    if (!padded) {
+        auto result=ggml_cast(ctx,input,to);
+        return {input,result,result,result};
+    }
+    auto storage=ggml_new_tensor_2d(ctx,to,6,2*rows);
+    auto view=ggml_view_2d(ctx,storage,4,2*rows,storage->nb[1],ggml_type_size(to));
+    return {input,storage,view,ggml_cpy(ctx,input,view)};
+}
 static ggml_tensor * canonical_copy(ggml_context *ctx, ggml_tensor *input) {
     const int64_t block=ggml_blck_size(input->type), count=ggml_nelements(input)/block;
     ggml_tensor *target=ggml_new_tensor_2d(ctx,input->type,block,count); target->nb[1]*=2; target->nb[2]=target->nb[1]*count; target->nb[3]=target->nb[2];
@@ -2264,7 +2254,8 @@ int main(int argc, char **argv) {
     const bool broadcast_add=lane_repeat || !strcmp(argv[3],"packed-broadcast");
     const bool codebook_add=!strcmp(argv[3],"codebook-add");
     const bool half_add=!strcmp(argv[3],"half-add");
-    if (half_add || codebook_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
+    const bool row_binary=!strcmp(argv[3],"packed-binary");
+    if (row_binary || half_add || codebook_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
         int n=0; CHECK(scanf("%d",&n)==1 && n>0);
         for (int i=0;i<n;++i) {
@@ -2272,10 +2263,12 @@ int main(int argc, char **argv) {
             auto &bytes=sources[{type,width}]; CHECK(bytes.empty());
             bytes=read_hex_bytes(2*ggml_row_size(ggml_type(type),width)); CHECK(!bytes.empty());
         }
-        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==(half_add?54:codebook_add?175:625));
+        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==(row_binary?2875:half_add?54:codebook_add?175:625));
         size_t cases=0;
         for (int p=0;p<pairs;++p) {
             int from,to,width; CHECK(scanf("%d%d%d",&from,&to,&width)==3);
+            int right_type=GGML_TYPE_F32,kind=0;
+            if (row_binary) CHECK(scanf("%d%d",&right_type,&kind)==2 && from==to && kind>=0 && kind<4);
             auto &data=sources.at({from,width});
             auto expected=read_hex_bytes(2*ggml_row_size(ggml_type(to),width)); CHECK(!expected.empty());
             // The CPU packed kernel requires equal shapes. Materialize the broadcast with GGML itself.
@@ -2290,11 +2283,11 @@ int main(int argc, char **argv) {
                     auto selected=oracle?reference:backend;
                     graph_fixture ctx(12); CHECK(ctx);
                     auto x=ggml_new_tensor_4d(ctx,ggml_type(from),width,rows,planes,batches);
-                    auto y=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,period,2,broadcast_add?2:1,1);
+                    auto y=ggml_new_tensor_4d(ctx,ggml_type(right_type),period,2,broadcast_add?2:1,1);
                     auto rhs=oracle?ggml_repeat_4d(ctx,y,width,rows,planes,batches):y;
-                    auto out=inplace>0?ggml_add_inplace(ctx,x,rhs):lane_repeat?ggml_add(ctx,x,rhs):ggml_add_cast(ctx,x,rhs,ggml_type(to));
-                    if (!inplace && from==to && !lane_repeat) {
-                        auto ordinary=ggml_add(ctx,x,y);
+                    auto out=row_binary || inplace>0 || lane_repeat?binary_nodes[kind][inplace>0](ctx,x,rhs):ggml_add_cast(ctx,x,rhs,ggml_type(to));
+                    if (!inplace && !kind && from==to && !lane_repeat) {
+                        auto ordinary=row_binary?ggml_add_cast(ctx,x,y,ggml_type(to)):ggml_add(ctx,x,y);
                         CHECK(ordinary->op==out->op && ordinary->type==out->type && ggml_are_same_shape(ordinary,out) && ggml_are_same_stride(ordinary,out));
                         CHECK(std::equal(std::begin(out->src),std::end(out->src),ordinary->src) && !memcmp(ordinary->op_params,out->op_params,sizeof(out->op_params)) && ordinary->flags==out->flags && !ordinary->view_src && !out->view_src);
                         ++cases;
@@ -2306,10 +2299,14 @@ int main(int argc, char **argv) {
                         int sample=(row+row/rows+row/(rows*planes))%2;
                         ggml_backend_tensor_set(x,data.data()+sample*row_bytes,row*row_bytes,row_bytes);
                     }
-                    for (int i=0;i<ggml_nelements(y);++i) ggml_set_f32_1d(y,i,(float((13*i+7)%29)-14.f)/32.f);
+                    if (row_binary) {
+                        const auto &right=sources.at({right_type,width});
+                        auto stride=right.size()/2;
+                        for (size_t row=0;row<2;++row) ggml_backend_tensor_set(y,right.data()+(1-row)*stride,row*stride,stride);
+                    } else for (int i=0;i<ggml_nelements(y);++i) ggml_set_f32_1d(y,i,(float((13*i+7)%29)-14.f)/32.f);
                     CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
                     if (oracle) {expected=tensor_bytes(out);continue;}
-                    if (tensor_bytes(out)!=expected) {fprintf(stderr,"packed addition differs for %d -> %d inplace %d\n",from,to,inplace);return 2;}
+                    if (tensor_bytes(out)!=expected) {fprintf(stderr,"packed addition differs for %d -> %d inplace %d right %d operation %d\n",from,to,inplace,right_type,kind);return 2;}
                     ++cases;
                 }
             }
@@ -2381,17 +2378,13 @@ int main(int argc, char **argv) {
             for (bool padded : {false,true}) {
                 if (binary_widths && padded) continue;
                 graph_fixture target(8); CHECK(target);
-                auto backing=ggml_new_tensor_2d(target,ggml_type(from),padded?10:8,8);
-                auto input=padded?ggml_view_2d(target,backing,8,8,backing->nb[1],ggml_type_size(ggml_type(from))):backing;
-                auto out=ggml_new_tensor_2d(target,ggml_type(to),6,16);
-                auto view=ggml_view_2d(target,out,4,16,out->nb[1],ggml_type_size(ggml_type(to)));
-                auto result=padded?ggml_cpy(target,input,view):ggml_cast(target,input,ggml_type(to));
+                auto [input,out,view,result]=scalar_cast_graph(target,ggml_type(from),ggml_type(to),8,padded);
                 auto graph=target.allocate(result,backend,true);
                 CHECK(graph && ggml_backend_supports_op(backend,result));
                 ggml_backend_buffer_clear(target.storage.get(),0xa5);
                 for (size_t i=0;i<inputs.size();++i) set_scalar_word(input,i,inputs[i]);
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-                auto actual=tensor_bytes(padded?out:result);
+                auto actual=tensor_bytes(out);
                 std::vector<uint8_t> oracle(actual.size(),0xa5);
                 for (size_t i=0;i<expected.size();++i) {
                     size_t offset=(padded?view->view_offs:0)+block_address(result,i);
@@ -2413,7 +2406,7 @@ int main(int argc, char **argv) {
                 CHECK(oracle==actual);
                 for (uint64_t word:invalid) {
                     set_scalar_word(input,inputs.size()-1,word);
-                    CHECK(refuses_poisoned_output(backend,graph,padded?out:result));
+                    CHECK(refuses_poisoned_output(backend,graph,out));
                     ++compared;
                 }
             }
@@ -2435,11 +2428,7 @@ int main(int argc, char **argv) {
           if (!octet_integers && (integer_floats ? integer(from)==integer(to) : from==to || !integer(from) || !integer(to))) continue;
           for (bool padded : {false,true}) {
             graph_fixture target(9), cpu(4); CHECK(target && cpu);
-            auto backing=ggml_new_tensor_2d(target,from,padded?10:8,2);
-            auto input=padded?ggml_view_2d(target,backing,8,2,backing->nb[1],ggml_type_size(from)):backing;
-            auto destination=ggml_new_tensor_2d(target,to,6,4);
-            auto view=ggml_view_2d(target,destination,4,4,destination->nb[1],ggml_type_size(to));
-            auto result=padded?ggml_cpy(target,input,view):ggml_cast(target,input,to);
+            auto [input,destination,view,result]=scalar_cast_graph(target,from,to,2,padded);
             auto expected=ggml_new_tensor_2d(cpu,to,padded?6:8,padded?4:2);
             auto fp32=octet_integers?ggml_new_tensor_1d(cpu,GGML_TYPE_F32,1):nullptr;
             auto logical=padded?ggml_view_2d(cpu,expected,4,4,expected->nb[1],ggml_type_size(to)):expected;
@@ -2471,14 +2460,14 @@ int main(int argc, char **argv) {
                 } else ggml_set_i32_1d(logical,i,ggml_get_i32_1d(input,i));
             }
             CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-            CHECK(tensor_bytes(padded?destination:result)==tensor_bytes(expected));
+            CHECK(tensor_bytes(destination)==tensor_bytes(expected));
             if (!integer(from)) for (float invalid : {INFINITY,-INFINITY,NAN,0x1p31f}) {
                 if (from==GGML_TYPE_F16 && invalid==0x1p31f) continue;
                 if (from==GGML_TYPE_F8_E4M3) {
                     if (!std::isnan(invalid)) continue;
                     uint8_t bits=0x7f; ggml_backend_tensor_set(input,&bits,block_address(input,15),1);
                 } else ggml_set_f32_1d(input,15,invalid);
-                CHECK(refuses_poisoned_output(backend,graph,padded?destination:result));
+                CHECK(refuses_poisoned_output(backend,graph,destination));
             }
             ++cases;
           }
@@ -3198,10 +3187,8 @@ int main(int argc, char **argv) {
         auto output_storage = [&](ggml_tensor *node) {if(node->type!=output_type) {node->type=output_type;node->nb[0]=output_bytes;for(int axis=1;axis<4;axis++)node->nb[axis]=node->nb[axis-1]*node->ne[axis-1];}return node;};
         auto word_operation = [&](ggml_tensor *a, bool inplace) {
           if(typing) {
-            using Binary=ggml_tensor *(*)(ggml_context *,ggml_tensor *,ggml_tensor *);
-            static const Binary ops[2][4]={{ggml_add,ggml_sub,ggml_mul,ggml_div},{ggml_add_inplace,ggml_sub_inplace,ggml_mul_inplace,ggml_div_inplace}};
             const auto code=fixture_plan[9];if(code!=2 && code!=5 && code!=6 && code!=7)unexpected_abort("invalid typed binary constructor");
-            auto node=ops[inplace][code==2?0:code==5?1:code==6?2:3](ctx,a,backward_input);
+            auto node=binary_nodes[code==2?0:code==5?1:code==6?2:3][inplace](ctx,a,backward_input);
             if(inplace && operation==2)node->view_src=backward_input;
             return output_storage(node);
           }

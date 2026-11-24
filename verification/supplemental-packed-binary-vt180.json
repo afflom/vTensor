@@ -1,0 +1,35 @@
+{
+  "requirement": "VT-180",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-packed-binary-oracle.json",
+  "semantic_id": "c2e42e0362826da7da8dad62c6a38b7fb06d2fa4209705ea0d573e7c796b03f8",
+  "attestation": "2a7352b687e134db96bee2a15a95a6f04eadd65b98c090d22e14f73b19282330",
+  "provider_sha256": "43662828815c058e9f5496f127537b41c5e48c9313bdfa0df0e711229c0f7732",
+  "packed_left_types": 25,
+  "right_types": 29,
+  "operation_kinds": [
+    "ADD",
+    "SUB",
+    "MUL",
+    "DIV"
+  ],
+  "previously_refused_descriptors": 6450,
+  "new_descriptors_by_constructor": {
+    "sub": 725,
+    "sub_inplace": 725,
+    "mul": 725,
+    "mul_inplace": 725,
+    "div": 725,
+    "div_inplace": 725,
+    "add": 700,
+    "add_inplace": 700,
+    "add_cast": 700
+  },
+  "original_cpu_arithmetic_graph_results": 2875,
+  "copied_and_in_place_graphs": 5750,
+  "identical_add_cast_descriptors": 700,
+  "encoded_rows_compared": 11500,
+  "encoded_bytes_compared": 1376320,
+  "negative_control": "Replacing Q4_0 division with multiplication failed the copied Q4_0/F32 DIV comparison. Restoring the certified operation matched the original bytes.",
+  "source_lines": 12593
+}

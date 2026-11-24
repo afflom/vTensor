@@ -740,3 +740,9 @@ Feature: native-backend
     Given two distinct rows of half or bfloat values and an F32 addend
     When the stock scheduler selects the sole provider before allocation
     Then every packed output byte matches the original GGML CPU sum and row encoder
+
+  @VT-180 @build
+  Scenario: GGML packed binary arithmetic decodes both operands and encodes copied and in-place results
+    Given two distinct rows from each decodable scalar and block format
+    When GGML schedules a copied or in-place binary operation with a packed left operand
+    Then the encoded rows match original GGML decode, F32 arithmetic and row encoding

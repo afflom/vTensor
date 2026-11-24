@@ -4,14 +4,16 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Implement packed ADD, SUB, MUL and DIV with decodable scalar and block operands. Compare each new copied and in-place tuple with GGML decode, F32 arithmetic and row encoding.
+- [ ] Place the remaining 22,738 ADD_CAST tuples with decodable inputs and floating or packed outputs. Reuse each original F32 sum across destination encoders.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,053 non-Prism lines** (12,602 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,044 non-Prism lines** (12,593 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place 6,450 additional packed binary descriptors. All 5,750 copied and in-place graphs matched the original GGML bytes, and 700 ADD_CAST constructors produced identical descriptors. [VT-180](verification/supplemental-packed-binary-vt180.json)
 
 - [x] Run unmodified llama-simple with the certified opcode selector. All 13 layer assignments and three eight-token outputs matched the previous verified run. [Consumer replay](verification/llama-consumer-operation-route.json)
 - [x] Move native opcode routing into Prism. Check all 100 declarations at empty and nonempty spans and exercise each route with the original GGML backend. [Operation index and verification](verification/ggml-operation-evidence.json)
