@@ -245,6 +245,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass the complete VT-140 gate on Ubuntu x86-64 and Arm64 with released Verdant v2.21.3. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45376031600)
 - [x] Pass the full locked-SDK gate on Ubuntu x86-64 and Arm64 for ELU, XIELU and gated linear attention. [VT-138](https://github.com/afflom/vTensor/actions/runs/45382087025) · [VT-142](https://github.com/afflom/vTensor/actions/runs/45384171793)
 - [x] Pass the complete IQ3 storage gate at VT-148 on x86-64 and Arm64. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45407868018)
+- [x] Install the release-profile plugin and run the unmodified llama-simple binary with GPT-2 and Mamba on Linux x86-64. Verify every layer placement and both eight-token outputs. [Build, invocation and artifact hashes](verification/llama-installed-provider.json)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 
 For each implementation batch, register the scenario and failing case first. Export only changed Prism roots, reuse hash-checked oracle objects, and run the affected cases together. Check a representative planted defect before closing the batch. [Repository workflow](AGENTS.md) · [Oracle cache](verification/native-oracle-cache.json)

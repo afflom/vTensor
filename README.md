@@ -24,6 +24,28 @@ comparisons against the imported Berkeley SoftFloat oracle passed. Prism now
 binds SUM, SUM_ROWS and MEAN graphs to this foundation and the existing F32
 and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 
+## Run vTensor with llama.cpp on Linux
+
+From the vTensor checkout, build the plugin in the locked SDK. Set `LLAMA_SRC` to an absolute path to llama.cpp at `9a080f44b503c64f66c84a6274b9d9ee5d5b09d5` and `MODEL` to an absolute GGUF path. The example installs vTensor as the CPU device for an unmodified `llama-simple`. GGML searches the executable directory and the working directory for CPU plugins, so run the example in its own directory. [GGML loader](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-backend-reg.cpp#L488-L501)
+
+```sh
+cargo build --locked --release -p vtensor-backend
+prefix="$HOME/.local/share/vtensor"
+host_build="$LLAMA_SRC/build-vtensor"
+install -Dm755 "${CARGO_TARGET_DIR:-target}/release/libvtensor_backend.so" "$prefix/lib/libvtensor_backend.so"
+
+cmake -S "$LLAMA_SRC" -B "$host_build" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
+  -DGGML_BACKEND_DL=ON -DGGML_NATIVE=OFF -DLLAMA_BUILD_EXAMPLES=ON
+cmake --build "$host_build" --config Release --target llama-simple --parallel
+install -Dm755 "$host_build/bin/llama-simple" "$prefix/bin/llama-simple"
+cd "$prefix/bin"
+LD_LIBRARY_PATH="$host_build/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+  GGML_BACKEND_PATH="$prefix/lib/libvtensor_backend.so" \
+  ./llama-simple -m "$MODEL" -n 8 -ngl 0 "The small model"
+```
+
+The installed x86-64 release library loaded as the sole backend for GPT-2 and Mamba. llama.cpp assigned every layer to vTensor, and both eight-token outputs matched the imported CPU results byte for byte. The receipt records the library, executable, model and output hashes. [Installed-provider verification](verification/llama-installed-provider.json)
+
 ## Architecture
 
 - **Verdant Tensor** is the sole source of tensor computation. Backend glue may
