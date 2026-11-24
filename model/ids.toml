@@ -888,3 +888,9 @@ id = "VT-136"
 level = "build"
 suite = "native-backend"
 statement = "Custom GGML callbacks retain their tensor descriptors, user data, task indices and synchronous graph completion"
+
+[[id]]
+id = "VT-137"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules GELU_ERF and GEGLU_ERF using the Verdant binary32 Gaussian error function"

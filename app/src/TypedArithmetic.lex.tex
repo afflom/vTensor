@@ -248,7 +248,7 @@ definition{
   name: admittedGate,
   parameters: [variant : Nat],
   result: Bool,
-  body: (((variant <=? 3) || (variant =? 5)) || (variant =? 6)),
+  body: (variant <=? 6),
   executable: true
 }
 
@@ -806,9 +806,9 @@ theorem{
 }
 
 theorem{
-  name: erfGateRequiresItsOwnEvaluator,
+  name: erfGateUsesBinary32Activation,
   parameters: [],
-  statement: ((admittedGate 4) = false),
+  statement: ((admittedGate 4) = true),
   proof: reflexivity{}
 }
 

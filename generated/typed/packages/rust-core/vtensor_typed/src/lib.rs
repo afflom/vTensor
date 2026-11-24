@@ -1501,33 +1501,35 @@ pub fn f5(v0: u64, v1: u64, v2: Adt1, v3: Adt1) -> R<Adt3> {
 
 pub fn f6(v0: u64) -> bool {
     let a215 = v0;
-    let a216 = 3u64;
-    if if nat_le(a215, a216) {
-        true
-    } else {
-        let a217 = v0;
-        let a218 = 5u64;
-        nat_eq(a217, a218)
-    } {
-        true
-    } else {
-        let a219 = v0;
-        let a220 = 6u64;
-        nat_eq(a219, a220)
-    }
+    let a216 = 6u64;
+    nat_le(a215, a216)
 }
 
 pub fn f7(v0: u64, v1: bool, v2: u64, v3: u64, v4: u64, v5: Adt1, v6: Adt1, v7: Adt1) -> R<Adt3> {
-    let a221 = v2;
-    let a222 = 1u64;
-    if if if if if if if if if if if if if if if nat_le(a221, a222) {
-        let a224 = 0u64;
-        let a225 = f33(match v5.clone() {
+    let a217 = v2;
+    let a218 = 1u64;
+    if if if if if if if if if if if if if if if nat_le(a217, a218) {
+        let a220 = 0u64;
+        let a221 = f33(match v5.clone() {
+            Adt1::C0(h219, _, _, _, _, _, _, _, _, _, _) => {
+                h219
+            }
+        });
+        nat_lt(a220, a221)
+    } else {
+        false
+    } {
+        let a224 = match v5.clone() {
+            Adt1::C0(h222, _, _, _, _, _, _, _, _, _, _) => {
+                h222
+            }
+        };
+        let a225 = match v6.clone() {
             Adt1::C0(h223, _, _, _, _, _, _, _, _, _, _) => {
                 h223
             }
-        });
-        nat_lt(a224, a225)
+        };
+        nat_eq(a224, a225)
     } else {
         false
     } {
@@ -1536,26 +1538,12 @@ pub fn f7(v0: u64, v1: bool, v2: u64, v3: u64, v4: u64, v5: Adt1, v6: Adt1, v7: 
                 h226
             }
         };
-        let a229 = match v6.clone() {
+        let a229 = match v7.clone() {
             Adt1::C0(h227, _, _, _, _, _, _, _, _, _, _) => {
                 h227
             }
         };
         nat_eq(a228, a229)
-    } else {
-        false
-    } {
-        let a232 = match v5.clone() {
-            Adt1::C0(h230, _, _, _, _, _, _, _, _, _, _) => {
-                h230
-            }
-        };
-        let a233 = match v7.clone() {
-            Adt1::C0(h231, _, _, _, _, _, _, _, _, _, _) => {
-                h231
-            }
-        };
-        nat_eq(a232, a233)
     } else {
         false
     } {
@@ -1575,13 +1563,27 @@ pub fn f7(v0: u64, v1: bool, v2: u64, v3: u64, v4: u64, v5: Adt1, v6: Adt1, v7: 
     } else {
         false
     } {
+        let a232 = match v5.clone() {
+            Adt1::C0(_, _, h230, _, _, _, _, _, _, _, _) => {
+                h230
+            }
+        };
+        let a233 = match v7.clone() {
+            Adt1::C0(_, _, h231, _, _, _, _, _, _, _, _) => {
+                h231
+            }
+        };
+        nat_eq(a232, a233)
+    } else {
+        false
+    } {
         let a236 = match v5.clone() {
-            Adt1::C0(_, _, h234, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, h234, _, _, _, _, _, _, _) => {
                 h234
             }
         };
         let a237 = match v7.clone() {
-            Adt1::C0(_, _, h235, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, h235, _, _, _, _, _, _, _) => {
                 h235
             }
         };
@@ -1590,12 +1592,12 @@ pub fn f7(v0: u64, v1: bool, v2: u64, v3: u64, v4: u64, v5: Adt1, v6: Adt1, v7: 
         false
     } {
         let a240 = match v5.clone() {
-            Adt1::C0(_, _, _, h238, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, h238, _, _, _, _, _, _) => {
                 h238
             }
         };
         let a241 = match v7.clone() {
-            Adt1::C0(_, _, _, h239, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, h239, _, _, _, _, _, _) => {
                 h239
             }
         };
@@ -1603,52 +1605,38 @@ pub fn f7(v0: u64, v1: bool, v2: u64, v3: u64, v4: u64, v5: Adt1, v6: Adt1, v7: 
     } else {
         false
     } {
-        let a244 = match v5.clone() {
-            Adt1::C0(_, _, _, _, h242, _, _, _, _, _, _) => {
+        let a248 = match v7.clone() {
+            Adt1::C0(_, h242, _, _, _, _, _, _, _, _, _) => {
                 h242
             }
         };
-        let a245 = match v7.clone() {
-            Adt1::C0(_, _, _, _, h243, _, _, _, _, _, _) => {
-                h243
-            }
-        };
-        nat_eq(a244, a245)
-    } else {
-        false
-    } {
-        let a252 = match v7.clone() {
-            Adt1::C0(_, h246, _, _, _, _, _, _, _, _, _) => {
-                h246
-            }
-        };
-        let a253 = if v1 {
+        let a249 = if v1 {
             match v5.clone() {
-                Adt1::C0(_, h247, _, _, _, _, _, _, _, _, _) => {
-                    h247
+                Adt1::C0(_, h243, _, _, _, _, _, _, _, _, _) => {
+                    h243
                 }
             }
         } else {
-            let a249 = match v5.clone() {
-                Adt1::C0(_, h248, _, _, _, _, _, _, _, _, _) => {
-                    h248
+            let a245 = match v5.clone() {
+                Adt1::C0(_, h244, _, _, _, _, _, _, _, _, _) => {
+                    h244
                 }
             };
-            let a250 = 2u64;
-            let a251 = 0u64;
-            nat_quot(a249, a250, a251)
+            let a246 = 2u64;
+            let a247 = 0u64;
+            nat_quot(a245, a246, a247)
         };
-        nat_eq(a252, a253)
+        nat_eq(a248, a249)
     } else {
         false
     } {
-        let a255 = match v7.clone() {
-            Adt1::C0(_, h254, _, _, _, _, _, _, _, _, _) => {
-                h254
+        let a251 = match v7.clone() {
+            Adt1::C0(_, h250, _, _, _, _, _, _, _, _, _) => {
+                h250
             }
         };
-        let a256 = 2147483647u64;
-        nat_le(a255, a256)
+        let a252 = 2147483647u64;
+        nat_le(a251, a252)
     } else {
         false
     } {
@@ -1661,17 +1649,17 @@ pub fn f7(v0: u64, v1: bool, v2: u64, v3: u64, v4: u64, v5: Adt1, v6: Adt1, v7: 
         false
     } {
         Ok(Adt3::C2(Adt2::C0(if f11(v0) {
-            let a259 = 1u64;
-            let a260 = {
-                let a257 = f37(v0);
-                let a258 = f24(v7.clone())?;
-                nat_mul(a257, a258)?
+            let a255 = 1u64;
+            let a256 = {
+                let a253 = f37(v0);
+                let a254 = f24(v7.clone())?;
+                nat_mul(a253, a254)?
             };
-            nat_add(a259, a260)?
+            nat_add(a255, a256)?
         } else {
-            let a261 = 4u64;
-            let a262 = f24(v7.clone())?;
-            nat_mul(a261, a262)?
+            let a257 = 4u64;
+            let a258 = f24(v7.clone())?;
+            nat_mul(a257, a258)?
         }, if f11(v0) {
             4u64
         } else {
@@ -1679,9 +1667,9 @@ pub fn f7(v0: u64, v1: bool, v2: u64, v3: u64, v4: u64, v5: Adt1, v6: Adt1, v7: 
         }, if v1 {
             98u64
         } else {
-            let a263 = 99u64;
-            let a264 = v2;
-            nat_add(a263, a264)?
+            let a259 = 99u64;
+            let a260 = v2;
+            nat_add(a259, a260)?
         }, v0, v3, v4, v5, v6, v7)))
     } else {
         Ok(Adt3::C1)
@@ -1689,66 +1677,75 @@ pub fn f7(v0: u64, v1: bool, v2: u64, v3: u64, v4: u64, v5: Adt1, v6: Adt1, v7: 
 }
 
 pub fn f8(v0: u64, v1: Adt2) -> R<Adt3> {
-    let a266 = v0;
-    let a267 = match v1.clone() {
-        Adt2::C0(h265, _, _, _, _, _, _, _, _) => {
-            h265
+    let a262 = v0;
+    let a263 = match v1.clone() {
+        Adt2::C0(h261, _, _, _, _, _, _, _, _) => {
+            h261
         }
     };
-    if nat_lt(a266, a267) {
+    if nat_lt(a262, a263) {
         let v2: Adt1 = match v1.clone() {
-            Adt2::C0(_, _, _, _, _, _, _, _, h268) => {
-                h268
+            Adt2::C0(_, _, _, _, _, _, _, _, h264) => {
+                h264
             }
         };
         let v3: u64 = f29(match v2.clone() {
-            Adt1::C0(h269, _, _, _, _, _, _, _, _, _, _) => {
-                h269
+            Adt1::C0(h265, _, _, _, _, _, _, _, _, _, _) => {
+                h265
             }
         });
         let v4: u64 = {
-            let a271 = match v2.clone() {
-                Adt1::C0(_, h270, _, _, _, _, _, _, _, _, _) => {
-                    h270
+            let a267 = match v2.clone() {
+                Adt1::C0(_, h266, _, _, _, _, _, _, _, _, _) => {
+                    h266
                 }
             };
-            let a272 = v3;
-            let a273 = 0u64;
-            nat_quot(a271, a272, a273)
+            let a268 = v3;
+            let a269 = 0u64;
+            nat_quot(a267, a268, a269)
         };
         let v5: u64 = {
-            let a274 = v0;
-            let a275 = v4;
+            let a270 = v0;
+            let a271 = v4;
+            let a272 = 0u64;
+            nat_quot(a270, a271, a272)
+        };
+        let v6: u64 = {
+            let a274 = v5;
+            let a275 = match v2.clone() {
+                Adt1::C0(_, _, h273, _, _, _, _, _, _, _, _) => {
+                    h273
+                }
+            };
             let a276 = 0u64;
             nat_quot(a274, a275, a276)
         };
-        let v6: u64 = {
-            let a278 = v5;
-            let a279 = match v2.clone() {
-                Adt1::C0(_, _, h277, _, _, _, _, _, _, _, _) => {
-                    h277
-                }
-            };
-            let a280 = 0u64;
-            nat_quot(a278, a279, a280)
-        };
         Ok(Adt3::C6(f38({
-            let a281 = v0;
-            let a282 = v3;
-            nat_mul(a281, a282)?
+            let a277 = v0;
+            let a278 = v3;
+            nat_mul(a277, a278)?
         }, match v1 {
-            Adt2::C0(_, _, _, _, _, _, h283, _, _) => {
-                h283
+            Adt2::C0(_, _, _, _, _, _, h279, _, _) => {
+                h279
             }
         })?, f39({
-            let a284 = v0;
-            let a285 = v4;
+            let a280 = v0;
+            let a281 = v4;
+            let a282 = 0u64;
+            nat_rem(a280, a281, a282)
+        }, {
+            let a284 = v5;
+            let a285 = match v2.clone() {
+                Adt1::C0(_, _, h283, _, _, _, _, _, _, _, _) => {
+                    h283
+                }
+            };
             let a286 = 0u64;
             nat_rem(a284, a285, a286)
         }, {
-            let a288 = v5;
+            let a288 = v6;
             let a289 = match v2.clone() {
-                Adt1::C0(_, _, h287, _, _, _, _, _, _, _, _) => {
+                Adt1::C0(_, _, _, h287, _, _, _, _, _, _, _) => {
                     h287
                 }
             };
@@ -1762,31 +1759,22 @@ pub fn f8(v0: u64, v1: Adt2) -> R<Adt3> {
                 }
             };
             let a294 = 0u64;
-            nat_rem(a292, a293, a294)
-        }, {
-            let a296 = v6;
-            let a297 = match v2.clone() {
-                Adt1::C0(_, _, _, h295, _, _, _, _, _, _, _) => {
-                    h295
-                }
-            };
-            let a298 = 0u64;
-            nat_quot(a296, a297, a298)
+            nat_quot(a292, a293, a294)
         }, match v2.clone() {
-            Adt1::C0(_, _, _, _, _, h299, _, _, _, _, _) => {
-                h299
+            Adt1::C0(_, _, _, _, _, h295, _, _, _, _, _) => {
+                h295
             }
         }, match v2.clone() {
-            Adt1::C0(_, _, _, _, _, _, h300, _, _, _, _) => {
-                h300
+            Adt1::C0(_, _, _, _, _, _, h296, _, _, _, _) => {
+                h296
             }
         }, match v2.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, h301, _, _, _) => {
-                h301
+            Adt1::C0(_, _, _, _, _, _, _, h297, _, _, _) => {
+                h297
             }
         }, match v2 {
-            Adt1::C0(_, _, _, _, _, _, _, _, h302, _, _) => {
-                h302
+            Adt1::C0(_, _, _, _, _, _, _, _, h298, _, _) => {
+                h298
             }
         })?))
     } else {
@@ -1796,54 +1784,54 @@ pub fn f8(v0: u64, v1: Adt2) -> R<Adt3> {
 
 pub fn f9(v0: u64, v1: Adt2) -> R<Adt3> {
     let v2: Adt1 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, _, h303, _, _) => {
-            h303
+        Adt2::C0(_, _, _, _, _, _, h299, _, _) => {
+            h299
         }
     };
     let v3: Adt1 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, _, _, _, h304) => {
-            h304
+        Adt2::C0(_, _, _, _, _, _, _, _, h300) => {
+            h300
         }
     };
-    let a306 = v0;
-    let a307 = match v1.clone() {
-        Adt2::C0(h305, _, _, _, _, _, _, _, _) => {
-            h305
+    let a302 = v0;
+    let a303 = match v1.clone() {
+        Adt2::C0(h301, _, _, _, _, _, _, _, _) => {
+            h301
         }
     };
-    if nat_lt(a306, a307) {
+    if nat_lt(a302, a303) {
         Ok(Adt3::C5({
-            let a309 = v0;
-            let a310 = match v2.clone() {
-                Adt1::C0(_, _, _, _, _, _, h308, _, _, _, _) => {
-                    h308
+            let a305 = v0;
+            let a306 = match v2.clone() {
+                Adt1::C0(_, _, _, _, _, _, h304, _, _, _, _) => {
+                    h304
                 }
             };
-            nat_mul(a309, a310)?
+            nat_mul(a305, a306)?
         }, {
-            let a312 = v0;
-            let a313 = match v3.clone() {
-                Adt1::C0(_, _, _, _, _, _, h311, _, _, _, _) => {
-                    h311
+            let a308 = v0;
+            let a309 = match v3.clone() {
+                Adt1::C0(_, _, _, _, _, _, h307, _, _, _, _) => {
+                    h307
                 }
             };
-            nat_mul(a312, a313)?
+            nat_mul(a308, a309)?
         }, match v2 {
-            Adt1::C0(_, h314, _, _, _, _, _, _, _, _, _) => {
-                h314
+            Adt1::C0(_, h310, _, _, _, _, _, _, _, _, _) => {
+                h310
             }
         }, match v3 {
-            Adt1::C0(_, h315, _, _, _, _, _, _, _, _, _) => {
-                h315
+            Adt1::C0(_, h311, _, _, _, _, _, _, _, _, _) => {
+                h311
             }
         }, {
-            let a317 = match v1 {
-                Adt2::C0(_, _, _, h316, _, _, _, _, _) => {
-                    h316
+            let a313 = match v1 {
+                Adt2::C0(_, _, _, h312, _, _, _, _, _) => {
+                    h312
                 }
             };
-            let a318 = 1u64;
-            nat_eq(a317, a318)
+            let a314 = 1u64;
+            nat_eq(a313, a314)
         }))
     } else {
         Ok(Adt3::C1)
@@ -1851,57 +1839,57 @@ pub fn f9(v0: u64, v1: Adt2) -> R<Adt3> {
 }
 
 pub fn f10(v0: u64, v1: Adt2, v2: u64) -> R<Adt3> {
-    let a320 = v0;
-    let a321 = match v1.clone() {
-        Adt2::C0(h319, _, _, _, _, _, _, _, _) => {
-            h319
+    let a316 = v0;
+    let a317 = match v1.clone() {
+        Adt2::C0(h315, _, _, _, _, _, _, _, _) => {
+            h315
         }
     };
-    if nat_lt(a320, a321) {
+    if nat_lt(a316, a317) {
         let v3: u64 = {
-            let a323 = 2u64;
-            let a324 = f24(match v1.clone() {
-                Adt2::C0(_, _, _, _, _, _, _, h322, _) => {
-                    h322
+            let a319 = 2u64;
+            let a320 = f24(match v1.clone() {
+                Adt2::C0(_, _, _, _, _, _, _, h318, _) => {
+                    h318
                 }
             })?;
-            nat_mul(a323, a324)?
+            nat_mul(a319, a320)?
         };
-        let a325 = v0;
-        let a326 = v3;
-        if nat_lt(a325, a326) {
+        let a321 = v0;
+        let a322 = v3;
+        if nat_lt(a321, a322) {
             f40(v0, match v1.clone() {
-                Adt2::C0(_, _, _, _, _, _, _, h327, _) => {
-                    h327
+                Adt2::C0(_, _, _, _, _, _, _, h323, _) => {
+                    h323
                 }
             }, {
-                let m330 = match v1 {
-                    Adt2::C0(_, _, _, _, _, _, _, _, h329) => {
-                        h329
+                let m326 = match v1 {
+                    Adt2::C0(_, _, _, _, _, _, _, _, h325) => {
+                        h325
                     }
                 };
-                match m330 {
-                    Adt1::C0(_, _, h328, _, _, _, _, _, _, _, _) => {
-                        h328
+                match m326 {
+                    Adt1::C0(_, _, h324, _, _, _, _, _, _, _, _) => {
+                        h324
                     }
                 }
             }, v2)
         } else {
             f41({
-                let a331 = v0;
-                let a332 = v3;
-                nat_sub(a331, a332)
+                let a327 = v0;
+                let a328 = v3;
+                nat_sub(a327, a328)
             }, match v1.clone() {
-                Adt2::C0(_, _, _, _, _, _, h333, _, _) => {
-                    h333
+                Adt2::C0(_, _, _, _, _, _, h329, _, _) => {
+                    h329
                 }
             }, match v1.clone() {
-                Adt2::C0(_, _, _, _, _, _, _, h334, _) => {
-                    h334
+                Adt2::C0(_, _, _, _, _, _, _, h330, _) => {
+                    h330
                 }
             }, match v1 {
-                Adt2::C0(_, _, _, _, _, _, _, _, h335) => {
-                    h335
+                Adt2::C0(_, _, _, _, _, _, _, _, h331) => {
+                    h331
                 }
             }, v2)
         }
@@ -1911,158 +1899,158 @@ pub fn f10(v0: u64, v1: Adt2, v2: u64) -> R<Adt3> {
 }
 
 pub fn f11(v0: u64) -> bool {
-    let a336 = v0;
-    let a337 = 3u64;
-    if nat_eq(a336, a337) {
+    let a332 = v0;
+    let a333 = 3u64;
+    if nat_eq(a332, a333) {
         true
     } else {
-        let a338 = v0;
-        let a339 = 6u64;
-        nat_eq(a338, a339)
+        let a334 = v0;
+        let a335 = 6u64;
+        nat_eq(a334, a335)
     }
 }
 
 pub fn f12(v0: u64, v1: Adt2, v2: u64) -> R<Adt3> {
     let v3: u64 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, h340, _, _, _) => {
-            h340
+        Adt2::C0(_, _, _, _, _, h336, _, _, _) => {
+            h336
         }
     };
-    let a342 = v0;
-    let a343 = match v1.clone() {
-        Adt2::C0(h341, _, _, _, _, _, _, _, _) => {
-            h341
+    let a338 = v0;
+    let a339 = match v1.clone() {
+        Adt2::C0(h337, _, _, _, _, _, _, _, _) => {
+            h337
         }
     };
-    if nat_lt(a342, a343) {
-        let a344 = v0;
-        let a345 = 0u64;
-        if nat_eq(a344, a345) {
+    if nat_lt(a338, a339) {
+        let a340 = v0;
+        let a341 = 0u64;
+        if nat_eq(a340, a341) {
             Ok(Adt3::C3(1u64, 6u64, 0u64, 0u64, 2u64, v3, 2u64, 0u64, 0u64, 3u64, 4u64, 4u64))
         } else {
             let v4: u64 = {
-                let a346 = v0;
-                let a347 = 1u64;
-                nat_sub(a346, a347)
+                let a342 = v0;
+                let a343 = 1u64;
+                nat_sub(a342, a343)
             };
             let v5: u64 = {
-                let a349 = v4;
-                let a350 = f37(match v1.clone() {
-                    Adt2::C0(_, _, _, h348, _, _, _, _, _) => {
-                        h348
+                let a345 = v4;
+                let a346 = f37(match v1.clone() {
+                    Adt2::C0(_, _, _, h344, _, _, _, _, _) => {
+                        h344
                     }
                 });
-                let a351 = 0u64;
-                nat_rem(a349, a350, a351)
+                let a347 = 0u64;
+                nat_rem(a345, a346, a347)
             };
             let v6: u64 = {
-                let a356 = 4u64;
-                let a357 = {
-                    let a353 = v4;
-                    let a354 = f37(match v1.clone() {
-                        Adt2::C0(_, _, _, h352, _, _, _, _, _) => {
-                            h352
+                let a352 = 4u64;
+                let a353 = {
+                    let a349 = v4;
+                    let a350 = f37(match v1.clone() {
+                        Adt2::C0(_, _, _, h348, _, _, _, _, _) => {
+                            h348
                         }
                     });
-                    let a355 = 0u64;
-                    nat_quot(a353, a354, a355)
+                    let a351 = 0u64;
+                    nat_quot(a349, a350, a351)
                 };
-                nat_mul(a356, a357)?
+                nat_mul(a352, a353)?
             };
-            let a358 = v5;
-            let a359 = 2u64;
-            if nat_lt(a358, a359) {
+            let a354 = v5;
+            let a355 = 2u64;
+            if nat_lt(a354, a355) {
                 f13({
-                    let a360 = v6;
-                    let a361 = v5;
-                    nat_add(a360, a361)?
+                    let a356 = v6;
+                    let a357 = v5;
+                    nat_add(a356, a357)?
                 }, v1)
             } else {
-                let a362 = v5;
-                let a363 = 2u64;
-                if nat_eq(a362, a363) {
+                let a358 = v5;
+                let a359 = 2u64;
+                if nat_eq(a358, a359) {
                     Ok(f42(0u64, 2u64, v3))
                 } else {
-                    let a364 = v5;
-                    let a365 = 3u64;
-                    if nat_eq(a364, a365) {
+                    let a360 = v5;
+                    let a361 = 3u64;
+                    if nat_eq(a360, a361) {
                         Ok(f43(0u64, 2u64, v3, {
-                            let a366 = v2;
-                            let a367 = 2u64;
-                            nat_eq(a366, a367)
+                            let a362 = v2;
+                            let a363 = 2u64;
+                            nat_eq(a362, a363)
                         }))
                     } else {
-                        let a368 = v5;
-                        let a369 = 4u64;
-                        if nat_eq(a368, a369) {
+                        let a364 = v5;
+                        let a365 = 4u64;
+                        if nat_eq(a364, a365) {
                             Ok(f42(1u64, 1u64, 3u64))
                         } else {
-                            let a370 = v5;
-                            let a371 = 5u64;
-                            if nat_eq(a370, a371) {
+                            let a366 = v5;
+                            let a367 = 5u64;
+                            if nat_eq(a366, a367) {
                                 Ok(f43(1u64, 1u64, 3u64, {
-                                    let a372 = v2;
-                                    let a373 = 0u64;
-                                    nat_eq(a372, a373)
+                                    let a368 = v2;
+                                    let a369 = 0u64;
+                                    nat_eq(a368, a369)
                                 }))
                             } else {
-                                let a374 = v5;
-                                let a375 = 6u64;
-                                if nat_eq(a374, a375) {
+                                let a370 = v5;
+                                let a371 = 6u64;
+                                if nat_eq(a370, a371) {
                                     Ok(f42(1u64, 2u64, v3))
                                 } else {
-                                    let a376 = v5;
-                                    let a377 = 7u64;
-                                    if nat_eq(a376, a377) {
+                                    let a372 = v5;
+                                    let a373 = 7u64;
+                                    if nat_eq(a372, a373) {
                                         Ok(f43(1u64, 2u64, v3, {
-                                            let a378 = v2;
-                                            let a379 = 2u64;
-                                            nat_eq(a378, a379)
+                                            let a374 = v2;
+                                            let a375 = 2u64;
+                                            nat_eq(a374, a375)
                                         }))
                                     } else {
-                                        let a381 = match v1.clone() {
-                                            Adt2::C0(_, _, _, h380, _, _, _, _, _) => {
-                                                h380
+                                        let a377 = match v1.clone() {
+                                            Adt2::C0(_, _, _, h376, _, _, _, _, _) => {
+                                                h376
                                             }
                                         };
-                                        let a382 = 3u64;
-                                        if nat_eq(a381, a382) {
-                                            let a383 = v5;
-                                            let a384 = 15u64;
-                                            if nat_eq(a383, a384) {
+                                        let a378 = 3u64;
+                                        if nat_eq(a377, a378) {
+                                            let a379 = v5;
+                                            let a380 = 15u64;
+                                            if nat_eq(a379, a380) {
                                                 f13({
-                                                    let a385 = v6;
-                                                    let a386 = 3u64;
-                                                    nat_add(a385, a386)?
+                                                    let a381 = v6;
+                                                    let a382 = 3u64;
+                                                    nat_add(a381, a382)?
                                                 }, v1)
                                             } else {
                                                 Ok(f44(v5, match v1 {
-                                                    Adt2::C0(_, _, _, _, h387, _, _, _, _) => {
-                                                        h387
+                                                    Adt2::C0(_, _, _, _, h383, _, _, _, _) => {
+                                                        h383
                                                     }
                                                 }))
                                             }
                                         } else {
-                                            let a388 = v5;
-                                            let a389 = 8u64;
-                                            if nat_eq(a388, a389) {
+                                            let a384 = v5;
+                                            let a385 = 8u64;
+                                            if nat_eq(a384, a385) {
                                                 Ok(Adt3::C4(2u64, {
-                                                    let m392 = match v1 {
-                                                        Adt2::C0(_, _, _, _, _, _, _, _, h391) => {
-                                                            h391
+                                                    let m388 = match v1 {
+                                                        Adt2::C0(_, _, _, _, _, _, _, _, h387) => {
+                                                            h387
                                                         }
                                                     };
-                                                    match m392 {
-                                                        Adt1::C0(h390, _, _, _, _, _, _, _, _, _, _) => {
-                                                            h390
+                                                    match m388 {
+                                                        Adt1::C0(h386, _, _, _, _, _, _, _, _, _, _) => {
+                                                            h386
                                                         }
                                                     }
                                                 }, 0u64, 1u64, 0u64))
                                             } else {
                                                 f13({
-                                                    let a393 = v6;
-                                                    let a394 = 3u64;
-                                                    nat_add(a393, a394)?
+                                                    let a389 = v6;
+                                                    let a390 = 3u64;
+                                                    nat_add(a389, a390)?
                                                 }, v1)
                                             }
                                         }
@@ -2081,185 +2069,185 @@ pub fn f12(v0: u64, v1: Adt2, v2: u64) -> R<Adt3> {
 
 pub fn f13(v0: u64, v1: Adt2) -> R<Adt3> {
     let v2: Adt1 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, _, h395, _, _) => {
-            h395
+        Adt2::C0(_, _, _, _, _, _, h391, _, _) => {
+            h391
         }
     };
     let v3: Adt1 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, _, _, h396, _) => {
-            h396
+        Adt2::C0(_, _, _, _, _, _, _, h392, _) => {
+            h392
         }
     };
     let v4: Adt1 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, _, _, _, h397) => {
-            h397
+        Adt2::C0(_, _, _, _, _, _, _, _, h393) => {
+            h393
         }
     };
     let v5: u64 = match v1.clone() {
-        Adt2::C0(_, _, h398, _, _, _, _, _, _) => {
-            h398
+        Adt2::C0(_, _, h394, _, _, _, _, _, _) => {
+            h394
         }
     };
     let v6: u64 = {
-        let a399 = v0;
-        let a400 = 4u64;
-        let a401 = 0u64;
-        nat_rem(a399, a400, a401)
+        let a395 = v0;
+        let a396 = 4u64;
+        let a397 = 0u64;
+        nat_rem(a395, a396, a397)
     };
     let v7: u64 = {
-        let a402 = v0;
-        let a403 = 4u64;
+        let a398 = v0;
+        let a399 = 4u64;
+        let a400 = 0u64;
+        nat_quot(a398, a399, a400)
+    };
+    let v8: u64 = {
+        let a402 = v7;
+        let a403 = match v4.clone() {
+            Adt1::C0(_, h401, _, _, _, _, _, _, _, _, _) => {
+                h401
+            }
+        };
         let a404 = 0u64;
         nat_quot(a402, a403, a404)
     };
-    let v8: u64 = {
-        let a406 = v7;
-        let a407 = match v4.clone() {
-            Adt1::C0(_, h405, _, _, _, _, _, _, _, _, _) => {
-                h405
-            }
-        };
-        let a408 = 0u64;
-        nat_quot(a406, a407, a408)
-    };
     let v9: u64 = f33(match v4.clone() {
-        Adt1::C0(h409, _, _, _, _, _, _, _, _, _, _) => {
-            h409
+        Adt1::C0(h405, _, _, _, _, _, _, _, _, _, _) => {
+            h405
         }
     });
     let v10: u64 = {
-        let a414 = {
-            let a411 = v7;
-            let a412 = match v4.clone() {
-                Adt1::C0(_, h410, _, _, _, _, _, _, _, _, _) => {
-                    h410
+        let a410 = {
+            let a407 = v7;
+            let a408 = match v4.clone() {
+                Adt1::C0(_, h406, _, _, _, _, _, _, _, _, _) => {
+                    h406
                 }
             };
-            let a413 = 0u64;
-            nat_rem(a411, a412, a413)
+            let a409 = 0u64;
+            nat_rem(a407, a408, a409)
         };
-        let a415 = v9;
-        nat_mul(a414, a415)?
+        let a411 = v9;
+        nat_mul(a410, a411)?
     };
     let v11: u64 = {
-        let a417 = match v4.clone() {
-            Adt1::C0(_, h416, _, _, _, _, _, _, _, _, _) => {
-                h416
+        let a413 = match v4.clone() {
+            Adt1::C0(_, h412, _, _, _, _, _, _, _, _, _) => {
+                h412
             }
         };
-        let a418 = v9;
-        nat_mul(a417, a418)?
+        let a414 = v9;
+        nat_mul(a413, a414)?
     };
-    let a420 = v0;
-    let a421 = match v1.clone() {
-        Adt2::C0(h419, _, _, _, _, _, _, _, _) => {
-            h419
+    let a416 = v0;
+    let a417 = match v1.clone() {
+        Adt2::C0(h415, _, _, _, _, _, _, _, _) => {
+            h415
         }
     };
-    if nat_lt(a420, a421) {
-        let a422 = v6;
-        let a423 = 0u64;
-        if nat_eq(a422, a423) {
+    if nat_lt(a416, a417) {
+        let a418 = v6;
+        let a419 = 0u64;
+        if nat_eq(a418, a419) {
             Ok(Adt3::C3(0u64, 0u64, match v2.clone() {
-                Adt1::C0(h424, _, _, _, _, _, _, _, _, _, _) => {
-                    h424
+                Adt1::C0(h420, _, _, _, _, _, _, _, _, _, _) => {
+                    h420
                 }
             }, 0u64, 0u64, {
-                let a432 = {
-                    let a428 = {
-                        let a426 = v8;
-                        let a427 = match v2 {
-                            Adt1::C0(_, _, _, _, _, _, h425, _, _, _, _) => {
-                                h425
+                let a428 = {
+                    let a424 = {
+                        let a422 = v8;
+                        let a423 = match v2 {
+                            Adt1::C0(_, _, _, _, _, _, h421, _, _, _, _) => {
+                                h421
                             }
                         };
-                        nat_mul(a426, a427)?
+                        nat_mul(a422, a423)?
                     };
-                    let a429 = v10;
-                    nat_add(a428, a429)?
+                    let a425 = v10;
+                    nat_add(a424, a425)?
                 };
-                let a433 = {
-                    let a430 = v5;
-                    let a431 = 100u64;
-                    if nat_eq(a430, a431) {
+                let a429 = {
+                    let a426 = v5;
+                    let a427 = 100u64;
+                    if nat_eq(a426, a427) {
                         v11
                     } else {
                         0u64
                     }
                 };
-                nat_add(a432, a433)?
+                nat_add(a428, a429)?
             }, 2u64, 0u64, 0u64, 0u64, v9, 4u64))
         } else {
-            let a434 = v6;
-            let a435 = 1u64;
-            if nat_eq(a434, a435) {
+            let a430 = v6;
+            let a431 = 1u64;
+            if nat_eq(a430, a431) {
                 Ok(Adt3::C3(0u64, 0u64, match v3.clone() {
-                    Adt1::C0(h436, _, _, _, _, _, _, _, _, _, _) => {
-                        h436
+                    Adt1::C0(h432, _, _, _, _, _, _, _, _, _, _) => {
+                        h432
                     }
                 }, 0u64, {
-                    let a437 = v5;
-                    let a438 = 98u64;
-                    if nat_eq(a437, a438) {
+                    let a433 = v5;
+                    let a434 = 98u64;
+                    if nat_eq(a433, a434) {
                         4u64
                     } else {
                         0u64
                     }
                 }, {
-                    let a446 = {
-                        let a442 = {
-                            let a440 = v8;
-                            let a441 = match v3 {
-                                Adt1::C0(_, _, _, _, _, _, h439, _, _, _, _) => {
-                                    h439
+                    let a442 = {
+                        let a438 = {
+                            let a436 = v8;
+                            let a437 = match v3 {
+                                Adt1::C0(_, _, _, _, _, _, h435, _, _, _, _) => {
+                                    h435
                                 }
                             };
-                            nat_mul(a440, a441)?
+                            nat_mul(a436, a437)?
                         };
-                        let a443 = v10;
-                        nat_add(a442, a443)?
+                        let a439 = v10;
+                        nat_add(a438, a439)?
                     };
-                    let a447 = {
-                        let a444 = v5;
-                        let a445 = 99u64;
-                        if nat_eq(a444, a445) {
+                    let a443 = {
+                        let a440 = v5;
+                        let a441 = 99u64;
+                        if nat_eq(a440, a441) {
                             v11
                         } else {
                             0u64
                         }
                     };
-                    nat_add(a446, a447)?
+                    nat_add(a442, a443)?
                 }, 2u64, 0u64, 0u64, 1u64, v9, 4u64))
             } else {
-                let a448 = v6;
-                let a449 = 2u64;
-                if nat_eq(a448, a449) {
+                let a444 = v6;
+                let a445 = 2u64;
+                if nat_eq(a444, a445) {
                     Ok(Adt3::C4(match v1 {
-                        Adt2::C0(_, _, _, h450, _, _, _, _, _) => {
-                            h450
+                        Adt2::C0(_, _, _, h446, _, _, _, _, _) => {
+                            h446
                         }
                     }, match v4 {
-                        Adt1::C0(h451, _, _, _, _, _, _, _, _, _, _) => {
-                            h451
+                        Adt1::C0(h447, _, _, _, _, _, _, _, _, _, _) => {
+                            h447
                         }
                     }, 0u64, 1u64, 0u64))
                 } else {
                     Ok(Adt3::C3(0u64, 0u64, 0u64, match v4.clone() {
-                        Adt1::C0(h452, _, _, _, _, _, _, _, _, _, _) => {
-                            h452
+                        Adt1::C0(h448, _, _, _, _, _, _, _, _, _, _) => {
+                            h448
                         }
                     }, 1u64, 0u64, 2u64, 0u64, 3u64, {
-                        let a456 = {
-                            let a454 = v8;
-                            let a455 = match v4 {
-                                Adt1::C0(_, _, _, _, _, _, h453, _, _, _, _) => {
-                                    h453
+                        let a452 = {
+                            let a450 = v8;
+                            let a451 = match v4 {
+                                Adt1::C0(_, _, _, _, _, _, h449, _, _, _, _) => {
+                                    h449
                                 }
                             };
-                            nat_mul(a454, a455)?
+                            nat_mul(a450, a451)?
                         };
-                        let a457 = v10;
-                        nat_add(a456, a457)?
+                        let a453 = v10;
+                        nat_add(a452, a453)?
                     }, 4u64, v9))
                 }
             }
@@ -2271,80 +2259,80 @@ pub fn f13(v0: u64, v1: Adt2) -> R<Adt3> {
 
 pub fn f14(v0: u64, v1: Adt2, v2: u64) -> R<Adt3> {
     let v3: Adt1 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, _, h458, _, _) => {
-            h458
+        Adt2::C0(_, _, _, _, _, _, h454, _, _) => {
+            h454
         }
     };
     let v4: Adt1 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, _, _, h459, _) => {
-            h459
+        Adt2::C0(_, _, _, _, _, _, _, h455, _) => {
+            h455
         }
     };
     let v5: Adt1 = match v1.clone() {
-        Adt2::C0(_, _, _, _, _, _, _, _, h460) => {
-            h460
+        Adt2::C0(_, _, _, _, _, _, _, _, h456) => {
+            h456
         }
     };
     let v6: u64 = {
-        let a462 = match v1.clone() {
-            Adt2::C0(_, h461, _, _, _, _, _, _, _) => {
-                h461
+        let a458 = match v1.clone() {
+            Adt2::C0(_, h457, _, _, _, _, _, _, _) => {
+                h457
             }
         };
-        let a463 = 3u64;
-        if nat_eq(a462, a463) {
+        let a459 = 3u64;
+        if nat_eq(a458, a459) {
             0u64
         } else {
-            let a464 = f24(v3.clone())?;
-            let a465 = 2u64;
-            nat_mul(a464, a465)?
+            let a460 = f24(v3.clone())?;
+            let a461 = 2u64;
+            nat_mul(a460, a461)?
         }
     };
-    let a467 = match v1.clone() {
-        Adt2::C0(h466, _, _, _, _, _, _, _, _) => {
-            h466
+    let a463 = match v1.clone() {
+        Adt2::C0(h462, _, _, _, _, _, _, _, _) => {
+            h462
         }
     };
-    let a468 = v0;
-    if nat_le(a467, a468) {
+    let a464 = v0;
+    if nat_le(a463, a464) {
         Ok(Adt3::C1)
     } else {
-        let a469 = v0;
-        let a470 = v6;
-        if nat_lt(a469, a470) {
+        let a465 = v0;
+        let a466 = v6;
+        if nat_lt(a465, a466) {
             let v7: u64 = {
-                let a471 = v0;
-                let a472 = 2u64;
-                let a473 = 0u64;
-                nat_quot(a471, a472, a473)
+                let a467 = v0;
+                let a468 = 2u64;
+                let a469 = 0u64;
+                nat_quot(a467, a468, a469)
             };
             let v8: u64 = {
-                let a478 = 3u64;
-                let a479 = {
-                    let a475 = f38(v7, v5.clone())?;
-                    let a476 = f18(match v5 {
-                        Adt1::C0(h474, _, _, _, _, _, _, _, _, _, _) => {
-                            h474
+                let a474 = 3u64;
+                let a475 = {
+                    let a471 = f38(v7, v5.clone())?;
+                    let a472 = f18(match v5 {
+                        Adt1::C0(h470, _, _, _, _, _, _, _, _, _, _) => {
+                            h470
                         }
                     });
-                    let a477 = 0u64;
-                    nat_quot(a475, a476, a477)
+                    let a473 = 0u64;
+                    nat_quot(a471, a472, a473)
                 };
-                nat_add(a478, a479)?
+                nat_add(a474, a475)?
             };
-            let a483 = {
-                let a480 = v0;
-                let a481 = 2u64;
-                let a482 = 0u64;
-                nat_rem(a480, a481, a482)
+            let a479 = {
+                let a476 = v0;
+                let a477 = 2u64;
+                let a478 = 0u64;
+                nat_rem(a476, a477, a478)
             };
-            let a484 = 0u64;
-            if nat_eq(a483, a484) {
+            let a480 = 0u64;
+            if nat_eq(a479, a480) {
                 Ok(Adt3::C3(2u64, 3u64, 0u64, 0u64, 1u64, v8, 2u64, 0u64, 0u64, 2u64, 8u64, 8u64))
             } else {
-                let a485 = v2;
-                let a486 = 0u64;
-                if nat_eq(a485, a486) {
+                let a481 = v2;
+                let a482 = 0u64;
+                if nat_eq(a481, a482) {
                     Ok(Adt3::C3(2u64, 3u64, 0u64, 0u64, 2u64, 1u64, 2u64, 0u64, 0u64, v8, 8u64, 8u64))
                 } else {
                     Ok(Adt3::C1)
@@ -2352,154 +2340,154 @@ pub fn f14(v0: u64, v1: Adt2, v2: u64) -> R<Adt3> {
             }
         } else {
             let v9: u64 = {
-                let a487 = v0;
-                let a488 = v6;
-                nat_sub(a487, a488)
+                let a483 = v0;
+                let a484 = v6;
+                nat_sub(a483, a484)
             };
             let v10: u64 = f25(match v3.clone() {
-                Adt1::C0(h489, _, _, _, _, _, _, _, _, _, _) => {
-                    h489
+                Adt1::C0(h485, _, _, _, _, _, _, _, _, _, _) => {
+                    h485
                 }
             }, match v4.clone() {
-                Adt1::C0(h490, _, _, _, _, _, _, _, _, _, _) => {
-                    h490
+                Adt1::C0(h486, _, _, _, _, _, _, _, _, _, _) => {
+                    h486
                 }
             }, match v5.clone() {
-                Adt1::C0(h491, _, _, _, _, _, _, _, _, _, _) => {
-                    h491
+                Adt1::C0(h487, _, _, _, _, _, _, _, _, _, _) => {
+                    h487
                 }
             })?;
             let v11: u64 = {
-                let a492 = v9;
-                let a493 = v10;
-                let a494 = 0u64;
-                nat_quot(a492, a493, a494)
+                let a488 = v9;
+                let a489 = v10;
+                let a490 = 0u64;
+                nat_quot(a488, a489, a490)
             };
             let v12: u64 = {
-                let a495 = v9;
-                let a496 = v10;
-                let a497 = 0u64;
-                nat_rem(a495, a496, a497)
+                let a491 = v9;
+                let a492 = v10;
+                let a493 = 0u64;
+                nat_rem(a491, a492, a493)
             };
             let v13: u64 = {
-                let a499 = match v3.clone() {
-                    Adt1::C0(h498, _, _, _, _, _, _, _, _, _, _) => {
-                        h498
+                let a495 = match v3.clone() {
+                    Adt1::C0(h494, _, _, _, _, _, _, _, _, _, _) => {
+                        h494
                     }
                 };
-                let a500 = 0u64;
-                if nat_eq(a499, a500) {
+                let a496 = 0u64;
+                if nat_eq(a495, a496) {
                     0u64
                 } else {
                     1u64
                 }
             };
             let v14: u64 = {
-                let a502 = match v4.clone() {
-                    Adt1::C0(h501, _, _, _, _, _, _, _, _, _, _) => {
-                        h501
+                let a498 = match v4.clone() {
+                    Adt1::C0(h497, _, _, _, _, _, _, _, _, _, _) => {
+                        h497
                     }
                 };
-                let a503 = 0u64;
-                if nat_eq(a502, a503) {
+                let a499 = 0u64;
+                if nat_eq(a498, a499) {
                     0u64
                 } else {
                     1u64
                 }
             };
-            let a504 = v12;
-            let a505 = v13;
-            if nat_lt(a504, a505) {
+            let a500 = v12;
+            let a501 = v13;
+            if nat_lt(a500, a501) {
                 Ok(Adt3::C3(0u64, 0u64, match v3.clone() {
-                    Adt1::C0(h506, _, _, _, _, _, _, _, _, _, _) => {
-                        h506
+                    Adt1::C0(h502, _, _, _, _, _, _, _, _, _, _) => {
+                        h502
                     }
                 }, 0u64, 0u64, f38(v11, v3.clone())?, 2u64, 0u64, 0u64, 0u64, f18(match v3 {
-                    Adt1::C0(h507, _, _, _, _, _, _, _, _, _, _) => {
-                        h507
+                    Adt1::C0(h503, _, _, _, _, _, _, _, _, _, _) => {
+                        h503
                     }
                 }), 4u64))
             } else {
-                let a510 = v12;
-                let a511 = {
-                    let a508 = v13;
-                    let a509 = v14;
-                    nat_add(a508, a509)?
+                let a506 = v12;
+                let a507 = {
+                    let a504 = v13;
+                    let a505 = v14;
+                    nat_add(a504, a505)?
                 };
-                if nat_lt(a510, a511) {
+                if nat_lt(a506, a507) {
                     Ok(Adt3::C3(0u64, 0u64, match v4.clone() {
-                        Adt1::C0(h512, _, _, _, _, _, _, _, _, _, _) => {
-                            h512
+                        Adt1::C0(h508, _, _, _, _, _, _, _, _, _, _) => {
+                            h508
                         }
                     }, 0u64, 4u64, f45(v11, v3, v4.clone())?, 2u64, 0u64, 0u64, 1u64, f18(match v4 {
-                        Adt1::C0(h513, _, _, _, _, _, _, _, _, _, _) => {
-                            h513
+                        Adt1::C0(h509, _, _, _, _, _, _, _, _, _, _) => {
+                            h509
                         }
                     }), 4u64))
                 } else {
-                    let a516 = v12;
-                    let a517 = {
-                        let a514 = v13;
-                        let a515 = v14;
-                        nat_add(a514, a515)?
+                    let a512 = v12;
+                    let a513 = {
+                        let a510 = v13;
+                        let a511 = v14;
+                        nat_add(a510, a511)?
                     };
-                    if nat_eq(a516, a517) {
+                    if nat_eq(a512, a513) {
                         Ok(Adt3::C3(1u64, match v1 {
-                            Adt2::C0(_, _, h518, _, _, _, _, _, _) => {
-                                h518
+                            Adt2::C0(_, _, h514, _, _, _, _, _, _) => {
+                                h514
                             }
                         }, 0u64, 0u64, {
-                            let a519 = v13;
-                            let a520 = 0u64;
-                            if nat_eq(a519, a520) {
+                            let a515 = v13;
+                            let a516 = 0u64;
+                            if nat_eq(a515, a516) {
                                 0u64
                             } else {
                                 1u64
                             }
                         }, {
-                            let a521 = v13;
-                            let a522 = 0u64;
-                            if nat_eq(a521, a522) {
+                            let a517 = v13;
+                            let a518 = 0u64;
+                            if nat_eq(a517, a518) {
                                 f38(v11, v3.clone())?
                             } else {
                                 0u64
                             }
                         }, {
-                            let a523 = v14;
-                            let a524 = 0u64;
-                            if nat_eq(a523, a524) {
+                            let a519 = v14;
+                            let a520 = 0u64;
+                            if nat_eq(a519, a520) {
                                 4u64
                             } else {
                                 1u64
                             }
                         }, {
-                            let a525 = v14;
-                            let a526 = 0u64;
-                            if nat_eq(a525, a526) {
+                            let a521 = v14;
+                            let a522 = 0u64;
+                            if nat_eq(a521, a522) {
                                 f45(v11, v3, v4)?
                             } else {
                                 1u64
                             }
                         }, {
-                            let a528 = match v5.clone() {
-                                Adt1::C0(h527, _, _, _, _, _, _, _, _, _, _) => {
-                                    h527
+                            let a524 = match v5.clone() {
+                                Adt1::C0(h523, _, _, _, _, _, _, _, _, _, _) => {
+                                    h523
                                 }
                             };
-                            let a529 = 0u64;
-                            if nat_eq(a528, a529) {
+                            let a525 = 0u64;
+                            if nat_eq(a524, a525) {
                                 3u64
                             } else {
                                 0u64
                             }
                         }, {
-                            let a531 = match v5.clone() {
-                                Adt1::C0(h530, _, _, _, _, _, _, _, _, _, _) => {
-                                    h530
+                            let a527 = match v5.clone() {
+                                Adt1::C0(h526, _, _, _, _, _, _, _, _, _, _) => {
+                                    h526
                                 }
                             };
-                            let a532 = 0u64;
-                            if nat_eq(a531, a532) {
+                            let a528 = 0u64;
+                            if nat_eq(a527, a528) {
                                 f38(v11, v5)?
                             } else {
                                 0u64
@@ -2507,12 +2495,12 @@ pub fn f14(v0: u64, v1: Adt2, v2: u64) -> R<Adt3> {
                         }, 4u64, 4u64))
                     } else {
                         Ok(Adt3::C3(0u64, 0u64, 0u64, match v5.clone() {
-                            Adt1::C0(h533, _, _, _, _, _, _, _, _, _, _) => {
-                                h533
+                            Adt1::C0(h529, _, _, _, _, _, _, _, _, _, _) => {
+                                h529
                             }
                         }, 1u64, 0u64, 2u64, 0u64, 3u64, f38(v11, v5.clone())?, 4u64, f18(match v5 {
-                            Adt1::C0(h534, _, _, _, _, _, _, _, _, _, _) => {
-                                h534
+                            Adt1::C0(h530, _, _, _, _, _, _, _, _, _, _) => {
+                                h530
                             }
                         })))
                     }
@@ -2523,24 +2511,38 @@ pub fn f14(v0: u64, v1: Adt2, v2: u64) -> R<Adt3> {
 }
 
 pub fn f15(v0: Adt1, v1: Adt1) -> bool {
-    let a537 = match v0.clone() {
-        Adt1::C0(_, h535, _, _, _, _, _, _, _, _, _) => {
-            h535
+    let a533 = match v0.clone() {
+        Adt1::C0(_, h531, _, _, _, _, _, _, _, _, _) => {
+            h531
         }
     };
-    let a538 = match v1.clone() {
-        Adt1::C0(_, h536, _, _, _, _, _, _, _, _, _) => {
-            h536
+    let a534 = match v1.clone() {
+        Adt1::C0(_, h532, _, _, _, _, _, _, _, _, _) => {
+            h532
         }
     };
-    if if if nat_eq(a537, a538) {
+    if if if nat_eq(a533, a534) {
+        let a537 = match v0.clone() {
+            Adt1::C0(_, _, h535, _, _, _, _, _, _, _, _) => {
+                h535
+            }
+        };
+        let a538 = match v1.clone() {
+            Adt1::C0(_, _, h536, _, _, _, _, _, _, _, _) => {
+                h536
+            }
+        };
+        nat_eq(a537, a538)
+    } else {
+        false
+    } {
         let a541 = match v0.clone() {
-            Adt1::C0(_, _, h539, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, h539, _, _, _, _, _, _, _) => {
                 h539
             }
         };
         let a542 = match v1.clone() {
-            Adt1::C0(_, _, h540, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, h540, _, _, _, _, _, _, _) => {
                 h540
             }
         };
@@ -2548,73 +2550,59 @@ pub fn f15(v0: Adt1, v1: Adt1) -> bool {
     } else {
         false
     } {
-        let a545 = match v0.clone() {
-            Adt1::C0(_, _, _, h543, _, _, _, _, _, _, _) => {
+        let a545 = match v0 {
+            Adt1::C0(_, _, _, _, h543, _, _, _, _, _, _) => {
                 h543
             }
         };
-        let a546 = match v1.clone() {
-            Adt1::C0(_, _, _, h544, _, _, _, _, _, _, _) => {
+        let a546 = match v1 {
+            Adt1::C0(_, _, _, _, h544, _, _, _, _, _, _) => {
                 h544
             }
         };
         nat_eq(a545, a546)
     } else {
         false
-    } {
-        let a549 = match v0 {
-            Adt1::C0(_, _, _, _, h547, _, _, _, _, _, _) => {
-                h547
-            }
-        };
-        let a550 = match v1 {
-            Adt1::C0(_, _, _, _, h548, _, _, _, _, _, _) => {
-                h548
-            }
-        };
-        nat_eq(a549, a550)
-    } else {
-        false
     }
 }
 
 pub fn f16(v0: u64, v1: Adt1, v2: Adt1, v3: Adt1) -> R<bool> {
-    let a552 = match v1.clone() {
-        Adt1::C0(h551, _, _, _, _, _, _, _, _, _, _) => {
-            h551
+    let a548 = match v1.clone() {
+        Adt1::C0(h547, _, _, _, _, _, _, _, _, _, _) => {
+            h547
         }
     };
-    let a553 = 43u64;
-    if nat_eq(a552, a553) {
-        let a554 = v0;
-        let a555 = 0u64;
-        if if if if if if nat_eq(a554, a555) {
-            let a557 = match v2.clone() {
-                Adt1::C0(h556, _, _, _, _, _, _, _, _, _, _) => {
-                    h556
+    let a549 = 43u64;
+    if nat_eq(a548, a549) {
+        let a550 = v0;
+        let a551 = 0u64;
+        if if if if if if nat_eq(a550, a551) {
+            let a553 = match v2.clone() {
+                Adt1::C0(h552, _, _, _, _, _, _, _, _, _, _) => {
+                    h552
                 }
             };
-            let a558 = 0u64;
-            nat_eq(a557, a558)
+            let a554 = 0u64;
+            nat_eq(a553, a554)
         } else {
             false
         } {
-            let a560 = match v3.clone() {
-                Adt1::C0(h559, _, _, _, _, _, _, _, _, _, _) => {
-                    h559
+            let a556 = match v3.clone() {
+                Adt1::C0(h555, _, _, _, _, _, _, _, _, _, _) => {
+                    h555
                 }
             };
-            let a561 = 0u64;
-            if nat_eq(a560, a561) {
+            let a557 = 0u64;
+            if nat_eq(a556, a557) {
                 true
             } else {
-                let a563 = match v3.clone() {
-                    Adt1::C0(h562, _, _, _, _, _, _, _, _, _, _) => {
-                        h562
+                let a559 = match v3.clone() {
+                    Adt1::C0(h558, _, _, _, _, _, _, _, _, _, _) => {
+                        h558
                     }
                 };
-                let a564 = 43u64;
-                nat_eq(a563, a564)
+                let a560 = 43u64;
+                nat_eq(a559, a560)
             }
         } else {
             false
@@ -2623,49 +2611,49 @@ pub fn f16(v0: u64, v1: Adt1, v2: Adt1, v3: Adt1) -> R<bool> {
         } else {
             false
         } {
-            let a566 = match v2 {
-                Adt1::C0(_, _, _, _, _, h565, _, _, _, _, _) => {
-                    h565
+            let a562 = match v2 {
+                Adt1::C0(_, _, _, _, _, h561, _, _, _, _, _) => {
+                    h561
                 }
             };
-            let a567 = 4u64;
-            nat_eq(a566, a567)
+            let a563 = 4u64;
+            nat_eq(a562, a563)
         } else {
             false
         } {
-            let a570 = match v3.clone() {
-                Adt1::C0(_, _, _, _, _, h568, _, _, _, _, _) => {
-                    h568
+            let a566 = match v3.clone() {
+                Adt1::C0(_, _, _, _, _, h564, _, _, _, _, _) => {
+                    h564
                 }
             };
-            let a571 = match v3.clone() {
-                Adt1::C0(_, _, _, _, _, _, h569, _, _, _, _) => {
-                    h569
+            let a567 = match v3.clone() {
+                Adt1::C0(_, _, _, _, _, _, h565, _, _, _, _) => {
+                    h565
                 }
             };
-            if nat_le(a570, a571) {
-                let a574 = match v3.clone() {
-                    Adt1::C0(_, _, _, _, _, _, h572, _, _, _, _) => {
-                        h572
+            if nat_le(a566, a567) {
+                let a570 = match v3.clone() {
+                    Adt1::C0(_, _, _, _, _, _, h568, _, _, _, _) => {
+                        h568
                     }
                 };
-                let a575 = match v3.clone() {
-                    Adt1::C0(_, _, _, _, _, _, _, h573, _, _, _) => {
-                        h573
+                let a571 = match v3.clone() {
+                    Adt1::C0(_, _, _, _, _, _, _, h569, _, _, _) => {
+                        h569
                     }
                 };
-                if nat_le(a574, a575) {
-                    let a578 = match v3.clone() {
-                        Adt1::C0(_, _, _, _, _, _, _, h576, _, _, _) => {
-                            h576
+                if nat_le(a570, a571) {
+                    let a574 = match v3.clone() {
+                        Adt1::C0(_, _, _, _, _, _, _, h572, _, _, _) => {
+                            h572
                         }
                     };
-                    let a579 = match v3 {
-                        Adt1::C0(_, _, _, _, _, _, _, _, h577, _, _) => {
-                            h577
+                    let a575 = match v3 {
+                        Adt1::C0(_, _, _, _, _, _, _, _, h573, _, _) => {
+                            h573
                         }
                     };
-                    nat_le(a578, a579)
+                    nat_le(a574, a575)
                 } else {
                     false
                 }
@@ -2675,45 +2663,45 @@ pub fn f16(v0: u64, v1: Adt1, v2: Adt1, v3: Adt1) -> R<bool> {
         } else {
             false
         } {
-            let a587 = {
-                let a585 = match v1.clone() {
-                    Adt1::C0(_, _, h580, _, _, _, _, _, _, _, _) => {
-                        h580
+            let a583 = {
+                let a581 = match v1.clone() {
+                    Adt1::C0(_, _, h576, _, _, _, _, _, _, _, _) => {
+                        h576
                     }
                 };
-                let a586 = {
-                    let a583 = match v1.clone() {
-                        Adt1::C0(_, _, _, h581, _, _, _, _, _, _, _) => {
-                            h581
+                let a582 = {
+                    let a579 = match v1.clone() {
+                        Adt1::C0(_, _, _, h577, _, _, _, _, _, _, _) => {
+                            h577
                         }
                     };
-                    let a584 = match v1 {
-                        Adt1::C0(_, _, _, _, h582, _, _, _, _, _, _) => {
-                            h582
+                    let a580 = match v1 {
+                        Adt1::C0(_, _, _, _, h578, _, _, _, _, _, _) => {
+                            h578
                         }
                     };
-                    nat_mul(a583, a584)?
+                    nat_mul(a579, a580)?
                 };
-                nat_mul(a585, a586)?
+                nat_mul(a581, a582)?
             };
-            let a588 = 2147483647u64;
-            Ok(nat_le(a587, a588))
+            let a584 = 2147483647u64;
+            Ok(nat_le(a583, a584))
         } else {
             Ok(false)
         }
     } else {
         if f46(v1.clone(), v2.clone()) {
             Ok(f47(match v1 {
-                Adt1::C0(h589, _, _, _, _, _, _, _, _, _, _) => {
-                    h589
+                Adt1::C0(h585, _, _, _, _, _, _, _, _, _, _) => {
+                    h585
                 }
             }, match v2 {
-                Adt1::C0(h590, _, _, _, _, _, _, _, _, _, _) => {
-                    h590
+                Adt1::C0(h586, _, _, _, _, _, _, _, _, _, _) => {
+                    h586
                 }
             }, match v3 {
-                Adt1::C0(h591, _, _, _, _, _, _, _, _, _, _) => {
-                    h591
+                Adt1::C0(h587, _, _, _, _, _, _, _, _, _, _) => {
+                    h587
                 }
             }))
         } else {
@@ -2724,28 +2712,28 @@ pub fn f16(v0: u64, v1: Adt1, v2: Adt1, v3: Adt1) -> R<bool> {
 
 pub fn f17(v0: Adt1) -> bool {
     f48(match v0.clone() {
-        Adt1::C0(_, h592, _, _, _, _, _, _, _, _, _) => {
-            h592
+        Adt1::C0(_, h588, _, _, _, _, _, _, _, _, _) => {
+            h588
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, h593, _, _, _, _, _, _, _, _) => {
-            h593
+        Adt1::C0(_, _, h589, _, _, _, _, _, _, _, _) => {
+            h589
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, h594, _, _, _, _, _, _, _) => {
-            h594
+        Adt1::C0(_, _, _, h590, _, _, _, _, _, _, _) => {
+            h590
         }
     }, match v0 {
-        Adt1::C0(_, _, _, _, h595, _, _, _, _, _, _) => {
-            h595
+        Adt1::C0(_, _, _, _, h591, _, _, _, _, _, _) => {
+            h591
         }
     })
 }
 
 pub fn f18(v0: u64) -> u64 {
-    let a596 = v0;
-    let a597 = 43u64;
-    if nat_eq(a596, a597) {
+    let a592 = v0;
+    let a593 = 43u64;
+    if nat_eq(a592, a593) {
         1u64
     } else {
         f33(v0)
@@ -2754,57 +2742,57 @@ pub fn f18(v0: u64) -> u64 {
 
 pub fn f19(v0: Adt1) -> bool {
     let v1: u64 = f18(match v0.clone() {
-        Adt1::C0(h598, _, _, _, _, _, _, _, _, _, _) => {
-            h598
+        Adt1::C0(h594, _, _, _, _, _, _, _, _, _, _) => {
+            h594
         }
     });
-    let a603 = {
-        let a600 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h599) => {
-                h599
+    let a599 = {
+        let a596 = match v0.clone() {
+            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h595) => {
+                h595
             }
         };
-        let a601 = v1;
-        let a602 = 1u64;
-        nat_rem(a600, a601, a602)
+        let a597 = v1;
+        let a598 = 1u64;
+        nat_rem(a596, a597, a598)
     };
-    let a604 = 0u64;
-    if if nat_eq(a603, a604) {
+    let a600 = 0u64;
+    if if nat_eq(a599, a600) {
         f49(match v0.clone() {
-            Adt1::C0(_, h605, _, _, _, _, _, _, _, _, _) => {
-                h605
+            Adt1::C0(_, h601, _, _, _, _, _, _, _, _, _) => {
+                h601
             }
         }, match v0.clone() {
-            Adt1::C0(_, _, _, _, _, h606, _, _, _, _, _) => {
-                h606
+            Adt1::C0(_, _, _, _, _, h602, _, _, _, _, _) => {
+                h602
             }
         }, v1)
     } else {
         false
     } {
         f50(match v0.clone() {
-            Adt1::C0(_, _, h607, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, h603, _, _, _, _, _, _, _, _) => {
+                h603
+            }
+        }, match v0.clone() {
+            Adt1::C0(_, _, _, h604, _, _, _, _, _, _, _) => {
+                h604
+            }
+        }, match v0.clone() {
+            Adt1::C0(_, _, _, _, h605, _, _, _, _, _, _) => {
+                h605
+            }
+        }, match v0.clone() {
+            Adt1::C0(_, _, _, _, _, _, h606, _, _, _, _) => {
+                h606
+            }
+        }, match v0.clone() {
+            Adt1::C0(_, _, _, _, _, _, _, h607, _, _, _) => {
                 h607
             }
-        }, match v0.clone() {
-            Adt1::C0(_, _, _, h608, _, _, _, _, _, _, _) => {
-                h608
-            }
-        }, match v0.clone() {
-            Adt1::C0(_, _, _, _, h609, _, _, _, _, _, _) => {
-                h609
-            }
-        }, match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, h610, _, _, _, _) => {
-                h610
-            }
-        }, match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, h611, _, _, _) => {
-                h611
-            }
         }, match v0 {
-            Adt1::C0(_, _, _, _, _, _, _, _, h612, _, _) => {
-                h612
+            Adt1::C0(_, _, _, _, _, _, _, _, h608, _, _) => {
+                h608
             }
         }, v1)
     } else {
@@ -2813,45 +2801,45 @@ pub fn f19(v0: Adt1) -> bool {
 }
 
 pub fn f20(v0: Adt1, v1: Adt1) -> R<bool> {
-    let a620 = {
-        let a618 = match v0.clone() {
-            Adt1::C0(_, _, h613, _, _, _, _, _, _, _, _) => {
-                h613
+    let a616 = {
+        let a614 = match v0.clone() {
+            Adt1::C0(_, _, h609, _, _, _, _, _, _, _, _) => {
+                h609
             }
         };
-        let a619 = {
-            let a616 = match v0.clone() {
-                Adt1::C0(_, _, _, h614, _, _, _, _, _, _, _) => {
-                    h614
+        let a615 = {
+            let a612 = match v0.clone() {
+                Adt1::C0(_, _, _, h610, _, _, _, _, _, _, _) => {
+                    h610
                 }
             };
-            let a617 = match v0.clone() {
-                Adt1::C0(_, _, _, _, h615, _, _, _, _, _, _) => {
-                    h615
+            let a613 = match v0.clone() {
+                Adt1::C0(_, _, _, _, h611, _, _, _, _, _, _) => {
+                    h611
                 }
             };
-            nat_mul(a616, a617)?
+            nat_mul(a612, a613)?
         };
-        nat_mul(a618, a619)?
+        nat_mul(a614, a615)?
     };
-    let a621 = 9223372036854775807u64;
-    if nat_le(a620, a621) {
+    let a617 = 9223372036854775807u64;
+    if nat_le(a616, a617) {
         if f30(v1.clone()) {
-            let a623 = match v1 {
-                Adt1::C0(_, h622, _, _, _, _, _, _, _, _, _) => {
-                    h622
+            let a619 = match v1 {
+                Adt1::C0(_, h618, _, _, _, _, _, _, _, _, _) => {
+                    h618
                 }
             };
-            let a624 = 2147483647u64;
-            Ok(nat_le(a623, a624))
+            let a620 = 2147483647u64;
+            Ok(nat_le(a619, a620))
         } else {
-            let a626 = match v0 {
-                Adt1::C0(_, h625, _, _, _, _, _, _, _, _, _) => {
-                    h625
+            let a622 = match v0 {
+                Adt1::C0(_, h621, _, _, _, _, _, _, _, _, _) => {
+                    h621
                 }
             };
-            let a627 = 2147483647u64;
-            Ok(nat_le(a626, a627))
+            let a623 = 2147483647u64;
+            Ok(nat_le(a622, a623))
         }
     } else {
         Ok(false)
@@ -2868,141 +2856,155 @@ pub fn f21(v0: Adt1, v1: Adt1) -> R<bool> {
 
 pub fn f22(v0: Adt1) -> R<bool> {
     f52({
-        let a630 = match v0.clone() {
-            Adt1::C0(_, h628, _, _, _, _, _, _, _, _, _) => {
-                h628
+        let a626 = match v0.clone() {
+            Adt1::C0(_, h624, _, _, _, _, _, _, _, _, _) => {
+                h624
             }
         };
-        let a631 = f18(match v0.clone() {
-            Adt1::C0(h629, _, _, _, _, _, _, _, _, _, _) => {
-                h629
+        let a627 = f18(match v0.clone() {
+            Adt1::C0(h625, _, _, _, _, _, _, _, _, _, _) => {
+                h625
             }
         });
-        nat_mul(a630, a631)?
+        nat_mul(a626, a627)?
     }, match v0.clone() {
-        Adt1::C0(_, _, h632, _, _, _, _, _, _, _, _) => {
+        Adt1::C0(_, _, h628, _, _, _, _, _, _, _, _) => {
+            h628
+        }
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, h629, _, _, _, _, _, _, _) => {
+            h629
+        }
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, h630, _, _, _, _, _, _) => {
+            h630
+        }
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, h631, _, _, _, _) => {
+            h631
+        }
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, h632, _, _, _) => {
             h632
         }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, h633, _, _, _, _, _, _, _) => {
-            h633
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, _, h634, _, _, _, _, _, _) => {
-            h634
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, h635, _, _, _, _) => {
-            h635
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, h636, _, _, _) => {
-            h636
-        }
     }, match v0 {
-        Adt1::C0(_, _, _, _, _, _, _, _, h637, _, _) => {
-            h637
+        Adt1::C0(_, _, _, _, _, _, _, _, h633, _, _) => {
+            h633
         }
     })
 }
 
 pub fn f23(v0: u64, v1: u64, v2: u64) -> R<u64> {
-    let a644 = {
-        let a638 = v0;
-        let a639 = v2;
-        nat_mul(a638, a639)?
+    let a640 = {
+        let a634 = v0;
+        let a635 = v2;
+        nat_mul(a634, a635)?
     };
-    let a645 = {
-        let a640 = v1;
-        let a641 = 0u64;
-        if nat_eq(a640, a641) {
+    let a641 = {
+        let a636 = v1;
+        let a637 = 0u64;
+        if nat_eq(a636, a637) {
             0u64
         } else {
-            let a642 = v0;
-            let a643 = 2u64;
-            nat_mul(a642, a643)?
+            let a638 = v0;
+            let a639 = 2u64;
+            nat_mul(a638, a639)?
         }
     };
-    nat_add(a644, a645)
+    nat_add(a640, a641)
 }
 
 pub fn f24(v0: Adt1) -> R<u64> {
-    let a654 = {
+    let a650 = {
+        let a644 = match v0.clone() {
+            Adt1::C0(_, h642, _, _, _, _, _, _, _, _, _) => {
+                h642
+            }
+        };
+        let a645 = match v0.clone() {
+            Adt1::C0(_, _, h643, _, _, _, _, _, _, _, _) => {
+                h643
+            }
+        };
+        nat_mul(a644, a645)?
+    };
+    let a651 = {
         let a648 = match v0.clone() {
-            Adt1::C0(_, h646, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, h646, _, _, _, _, _, _, _) => {
                 h646
             }
         };
-        let a649 = match v0.clone() {
-            Adt1::C0(_, _, h647, _, _, _, _, _, _, _, _) => {
+        let a649 = match v0 {
+            Adt1::C0(_, _, _, _, h647, _, _, _, _, _, _) => {
                 h647
             }
         };
         nat_mul(a648, a649)?
     };
-    let a655 = {
-        let a652 = match v0.clone() {
-            Adt1::C0(_, _, _, h650, _, _, _, _, _, _, _) => {
-                h650
-            }
-        };
-        let a653 = match v0 {
-            Adt1::C0(_, _, _, _, h651, _, _, _, _, _, _) => {
-                h651
-            }
-        };
-        nat_mul(a652, a653)?
-    };
-    nat_mul(a654, a655)
+    nat_mul(a650, a651)
 }
 
 pub fn f25(v0: u64, v1: u64, v2: u64) -> R<u64> {
-    let a666 = {
-        let a662 = {
-            let a658 = 1u64;
-            let a659 = {
-                let a656 = v0;
-                let a657 = 0u64;
-                if nat_eq(a656, a657) {
+    let a662 = {
+        let a658 = {
+            let a654 = 1u64;
+            let a655 = {
+                let a652 = v0;
+                let a653 = 0u64;
+                if nat_eq(a652, a653) {
                     0u64
                 } else {
                     1u64
                 }
             };
-            nat_add(a658, a659)?
+            nat_add(a654, a655)?
         };
-        let a663 = {
-            let a660 = v1;
-            let a661 = 0u64;
-            if nat_eq(a660, a661) {
+        let a659 = {
+            let a656 = v1;
+            let a657 = 0u64;
+            if nat_eq(a656, a657) {
                 0u64
             } else {
                 1u64
             }
         };
-        nat_add(a662, a663)?
+        nat_add(a658, a659)?
     };
-    let a667 = {
-        let a664 = v2;
-        let a665 = 0u64;
-        if nat_eq(a664, a665) {
+    let a663 = {
+        let a660 = v2;
+        let a661 = 0u64;
+        if nat_eq(a660, a661) {
             0u64
         } else {
             1u64
         }
     };
-    nat_add(a666, a667)
+    nat_add(a662, a663)
 }
 
 pub fn f26(v0: Adt1, v1: Adt1) -> bool {
     if if if if if if f15(v0.clone(), v1.clone()) {
+        let a666 = match v0.clone() {
+            Adt1::C0(h664, _, _, _, _, _, _, _, _, _, _) => {
+                h664
+            }
+        };
+        let a667 = match v1.clone() {
+            Adt1::C0(h665, _, _, _, _, _, _, _, _, _, _) => {
+                h665
+            }
+        };
+        nat_eq(a666, a667)
+    } else {
+        false
+    } {
         let a670 = match v0.clone() {
-            Adt1::C0(h668, _, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, h668, _, _, _, _, _) => {
                 h668
             }
         };
         let a671 = match v1.clone() {
-            Adt1::C0(h669, _, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, h669, _, _, _, _, _) => {
                 h669
             }
         };
@@ -3011,12 +3013,12 @@ pub fn f26(v0: Adt1, v1: Adt1) -> bool {
         false
     } {
         let a674 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, h672, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, h672, _, _, _, _) => {
                 h672
             }
         };
         let a675 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, h673, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, h673, _, _, _, _) => {
                 h673
             }
         };
@@ -3025,12 +3027,12 @@ pub fn f26(v0: Adt1, v1: Adt1) -> bool {
         false
     } {
         let a678 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, h676, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, _, h676, _, _, _) => {
                 h676
             }
         };
         let a679 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, _, h677, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, _, h677, _, _, _) => {
                 h677
             }
         };
@@ -3039,12 +3041,12 @@ pub fn f26(v0: Adt1, v1: Adt1) -> bool {
         false
     } {
         let a682 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, h680, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, _, _, h680, _, _) => {
                 h680
             }
         };
         let a683 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, h681, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, _, _, h681, _, _) => {
                 h681
             }
         };
@@ -3052,50 +3054,36 @@ pub fn f26(v0: Adt1, v1: Adt1) -> bool {
     } else {
         false
     } {
-        let a686 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, _, h684, _, _) => {
+        let a685 = match v0.clone() {
+            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h684) => {
                 h684
             }
         };
-        let a687 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, _, h685, _, _) => {
-                h685
-            }
-        };
-        nat_eq(a686, a687)
-    } else {
-        false
-    } {
-        let a689 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h688) => {
-                h688
-            }
-        };
-        let a690 = 0u64;
-        if if nat_eq(a689, a690) {
+        let a686 = 0u64;
+        if if nat_eq(a685, a686) {
             true
         } else {
-            let a692 = match v1.clone() {
+            let a688 = match v1.clone() {
+                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h687) => {
+                    h687
+                }
+            };
+            let a689 = 0u64;
+            nat_eq(a688, a689)
+        } {
+            true
+        } else {
+            let a692 = match v0 {
+                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h690) => {
+                    h690
+                }
+            };
+            let a693 = match v1 {
                 Adt1::C0(_, _, _, _, _, _, _, _, _, _, h691) => {
                     h691
                 }
             };
-            let a693 = 0u64;
             nat_eq(a692, a693)
-        } {
-            true
-        } else {
-            let a696 = match v0 {
-                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h694) => {
-                    h694
-                }
-            };
-            let a697 = match v1 {
-                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h695) => {
-                    h695
-                }
-            };
-            nat_eq(a696, a697)
         }
     } else {
         false
@@ -3104,15 +3092,15 @@ pub fn f26(v0: Adt1, v1: Adt1) -> bool {
 
 pub fn f27(v0: u64) -> u64 {
     if f32(v0) {
-        let m698 = f53(v0);
-        match m698 {
+        let m694 = f53(v0);
+        match m694 {
             Adt4::C0 => {
                 0u64
             }
             Adt4::C1(v1) => {
                 match v1 {
-                    Adt5::C0(_, _, h699) => {
-                        h699
+                    Adt5::C0(_, _, h695) => {
+                        h695
                     }
                 }
             }
@@ -3123,14 +3111,14 @@ pub fn f27(v0: u64) -> u64 {
 }
 
 pub fn f28(v0: u64) -> u64 {
-    let a700 = v0;
-    let a701 = 26u64;
-    if nat_eq(a700, a701) {
+    let a696 = v0;
+    let a697 = 26u64;
+    if nat_eq(a696, a697) {
         4u64
     } else {
-        let a702 = v0;
-        let a703 = 27u64;
-        if nat_eq(a702, a703) {
+        let a698 = v0;
+        let a699 = 27u64;
+        if nat_eq(a698, a699) {
             8u64
         } else {
             0u64
@@ -3140,15 +3128,15 @@ pub fn f28(v0: u64) -> u64 {
 
 pub fn f29(v0: u64) -> u64 {
     if f32(v0) {
-        let m704 = f53(v0);
-        match m704 {
+        let m700 = f53(v0);
+        match m700 {
             Adt4::C0 => {
                 1u64
             }
             Adt4::C1(v1) => {
                 match v1 {
-                    Adt5::C0(_, h705, _) => {
-                        h705
+                    Adt5::C0(_, h701, _) => {
+                        h701
                     }
                 }
             }
@@ -3159,118 +3147,118 @@ pub fn f29(v0: u64) -> u64 {
 }
 
 pub fn f30(v0: Adt1) -> bool {
-    let a707 = match v0.clone() {
-        Adt1::C0(_, h706, _, _, _, _, _, _, _, _, _) => {
-            h706
+    let a703 = match v0.clone() {
+        Adt1::C0(_, h702, _, _, _, _, _, _, _, _, _) => {
+            h702
         }
     };
-    let a708 = 1u64;
-    if nat_eq(a707, a708) {
+    let a704 = 1u64;
+    if nat_eq(a703, a704) {
         true
     } else {
-        let a711 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, h709, _, _, _, _, _) => {
-                h709
+        let a707 = match v0.clone() {
+            Adt1::C0(_, _, _, _, _, h705, _, _, _, _, _) => {
+                h705
             }
         };
-        let a712 = f18(match v0 {
-            Adt1::C0(h710, _, _, _, _, _, _, _, _, _, _) => {
-                h710
+        let a708 = f18(match v0 {
+            Adt1::C0(h706, _, _, _, _, _, _, _, _, _, _) => {
+                h706
             }
         });
-        nat_eq(a711, a712)
+        nat_eq(a707, a708)
     }
 }
 
 pub fn f31(v0: Adt1, v1: u64) -> R<u64> {
-    let a718 = {
-        let a714 = match v0.clone() {
-            Adt1::C0(_, h713, _, _, _, _, _, _, _, _, _) => {
-                h713
+    let a714 = {
+        let a710 = match v0.clone() {
+            Adt1::C0(_, h709, _, _, _, _, _, _, _, _, _) => {
+                h709
             }
         };
-        let a715 = f29(v1);
-        let a716 = 0u64;
-        nat_quot(a714, a715, a716)
+        let a711 = f29(v1);
+        let a712 = 0u64;
+        nat_quot(a710, a711, a712)
     };
-    let a719 = f54(match v0 {
-        Adt1::C0(h717, _, _, _, _, _, _, _, _, _, _) => {
-            h717
+    let a715 = f54(match v0 {
+        Adt1::C0(h713, _, _, _, _, _, _, _, _, _, _) => {
+            h713
         }
     }, v1);
-    nat_mul(a718, a719)
+    nat_mul(a714, a715)
 }
 
 pub fn f32(v0: u64) -> bool {
-    let a720 = v0;
-    let a721 = 20u64;
-    if if if nat_eq(a720, a721) {
+    let a716 = v0;
+    let a717 = 20u64;
+    if if if nat_eq(a716, a717) {
         true
     } else {
-        let a722 = v0;
-        let a723 = 23u64;
-        nat_eq(a722, a723)
+        let a718 = v0;
+        let a719 = 23u64;
+        nat_eq(a718, a719)
     } {
         true
     } else {
-        let a724 = 10u64;
-        let a725 = v0;
-        if nat_le(a724, a725) {
-            let a726 = v0;
-            let a727 = 14u64;
-            nat_le(a726, a727)
+        let a720 = 10u64;
+        let a721 = v0;
+        if nat_le(a720, a721) {
+            let a722 = v0;
+            let a723 = 14u64;
+            nat_le(a722, a723)
         } else {
             false
         }
     } {
         true
     } else {
-        let a728 = v0;
-        let a729 = 2u64;
-        if if if if nat_eq(a728, a729) {
+        let a724 = v0;
+        let a725 = 2u64;
+        if if if if nat_eq(a724, a725) {
+            true
+        } else {
+            let a726 = v0;
+            let a727 = 3u64;
+            nat_eq(a726, a727)
+        } {
+            true
+        } else {
+            let a728 = v0;
+            let a729 = 6u64;
+            nat_eq(a728, a729)
+        } {
             true
         } else {
             let a730 = v0;
-            let a731 = 3u64;
-            nat_eq(a730, a731)
-        } {
-            true
-        } else {
-            let a732 = v0;
-            let a733 = 6u64;
-            nat_eq(a732, a733)
-        } {
-            true
-        } else {
-            let a734 = v0;
-            let a735 = 7u64;
-            if nat_eq(a734, a735) {
+            let a731 = 7u64;
+            if nat_eq(a730, a731) {
                 true
             } else {
-                let a736 = v0;
-                let a737 = 8u64;
-                nat_eq(a736, a737)
+                let a732 = v0;
+                let a733 = 8u64;
+                nat_eq(a732, a733)
             }
         } {
             true
         } else {
-            let a738 = 34u64;
-            let a739 = v0;
-            if if nat_le(a738, a739) {
-                let a740 = v0;
-                let a741 = 35u64;
-                nat_le(a740, a741)
+            let a734 = 34u64;
+            let a735 = v0;
+            if if nat_le(a734, a735) {
+                let a736 = v0;
+                let a737 = 35u64;
+                nat_le(a736, a737)
             } else {
                 false
             } {
                 true
             } else {
-                let a742 = 39u64;
-                let a743 = v0;
-                if nat_le(a742, a743) {
-                    let a744 = v0;
-                    let a745 = 42u64;
-                    nat_le(a744, a745)
+                let a738 = 39u64;
+                let a739 = v0;
+                if nat_le(a738, a739) {
+                    let a740 = v0;
+                    let a741 = 42u64;
+                    nat_le(a740, a741)
                 } else {
                     false
                 }
@@ -3280,19 +3268,19 @@ pub fn f32(v0: u64) -> bool {
 }
 
 pub fn f33(v0: u64) -> u64 {
-    let a746 = v0;
-    let a747 = 0u64;
-    if nat_eq(a746, a747) {
+    let a742 = v0;
+    let a743 = 0u64;
+    if nat_eq(a742, a743) {
         4u64
     } else {
-        let a748 = v0;
-        let a749 = 1u64;
-        if if nat_eq(a748, a749) {
+        let a744 = v0;
+        let a745 = 1u64;
+        if if nat_eq(a744, a745) {
             true
         } else {
-            let a750 = v0;
-            let a751 = 30u64;
-            nat_eq(a750, a751)
+            let a746 = v0;
+            let a747 = 30u64;
+            nat_eq(a746, a747)
         } {
             2u64
         } else {
@@ -3303,102 +3291,102 @@ pub fn f33(v0: u64) -> u64 {
 
 pub fn f34(v0: Adt1) -> R<bool> {
     let v1: u64 = {
+        let a749 = match v0.clone() {
+            Adt1::C0(_, h748, _, _, _, _, _, _, _, _, _) => {
+                h748
+            }
+        };
+        let a750 = 4u64;
+        nat_mul(a749, a750)?
+    };
+    let v2: u64 = {
         let a753 = match v0.clone() {
-            Adt1::C0(_, h752, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, h751, _, _, _, _) => {
+                h751
+            }
+        };
+        let a754 = match v0.clone() {
+            Adt1::C0(_, _, h752, _, _, _, _, _, _, _, _) => {
                 h752
             }
         };
-        let a754 = 4u64;
         nat_mul(a753, a754)?
     };
-    let v2: u64 = {
+    let v3: u64 = {
+        let a756 = v2;
         let a757 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, h755, _, _, _, _) => {
+            Adt1::C0(_, _, _, h755, _, _, _, _, _, _, _) => {
                 h755
             }
         };
-        let a758 = match v0.clone() {
-            Adt1::C0(_, _, h756, _, _, _, _, _, _, _, _) => {
-                h756
-            }
-        };
-        nat_mul(a757, a758)?
+        nat_mul(a756, a757)?
     };
-    let v3: u64 = {
-        let a760 = v2;
-        let a761 = match v0.clone() {
-            Adt1::C0(_, _, _, h759, _, _, _, _, _, _, _) => {
-                h759
-            }
-        };
-        nat_mul(a760, a761)?
-    };
-    let a763 = match v0.clone() {
-        Adt1::C0(_, _, _, _, _, h762, _, _, _, _, _) => {
-            h762
+    let a759 = match v0.clone() {
+        Adt1::C0(_, _, _, _, _, h758, _, _, _, _, _) => {
+            h758
         }
     };
-    let a764 = 4u64;
-    if if if if nat_eq(a763, a764) {
-        let a769 = {
-            let a766 = match v0.clone() {
-                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h765) => {
-                    h765
+    let a760 = 4u64;
+    if if if if nat_eq(a759, a760) {
+        let a765 = {
+            let a762 = match v0.clone() {
+                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h761) => {
+                    h761
                 }
             };
-            let a767 = 4u64;
-            let a768 = 1u64;
-            nat_rem(a766, a767, a768)
+            let a763 = 4u64;
+            let a764 = 1u64;
+            nat_rem(a762, a763, a764)
         };
-        let a770 = 0u64;
-        nat_eq(a769, a770)
+        let a766 = 0u64;
+        nat_eq(a765, a766)
     } else {
         false
     } {
-        let a778 = {
-            let a776 = match v0.clone() {
-                Adt1::C0(_, _, h771, _, _, _, _, _, _, _, _) => {
-                    h771
+        let a774 = {
+            let a772 = match v0.clone() {
+                Adt1::C0(_, _, h767, _, _, _, _, _, _, _, _) => {
+                    h767
                 }
             };
-            let a777 = {
-                let a774 = match v0.clone() {
-                    Adt1::C0(_, _, _, h772, _, _, _, _, _, _, _) => {
-                        h772
+            let a773 = {
+                let a770 = match v0.clone() {
+                    Adt1::C0(_, _, _, h768, _, _, _, _, _, _, _) => {
+                        h768
                     }
                 };
-                let a775 = match v0.clone() {
-                    Adt1::C0(_, _, _, _, h773, _, _, _, _, _, _) => {
-                        h773
+                let a771 = match v0.clone() {
+                    Adt1::C0(_, _, _, _, h769, _, _, _, _, _, _) => {
+                        h769
                     }
                 };
-                nat_mul(a774, a775)?
+                nat_mul(a770, a771)?
             };
-            nat_mul(a776, a777)?
+            nat_mul(a772, a773)?
         };
-        let a779 = 1u64;
-        if nat_le(a778, a779) {
+        let a775 = 1u64;
+        if nat_le(a774, a775) {
             true
         } else {
-            let a781 = v1;
-            let a782 = match v0.clone() {
-                Adt1::C0(_, _, _, _, _, _, h780, _, _, _, _) => {
-                    h780
+            let a777 = v1;
+            let a778 = match v0.clone() {
+                Adt1::C0(_, _, _, _, _, _, h776, _, _, _, _) => {
+                    h776
                 }
             };
-            if nat_le(a781, a782) {
-                let a787 = {
-                    let a784 = match v0.clone() {
-                        Adt1::C0(_, _, _, _, _, _, h783, _, _, _, _) => {
-                            h783
+            if nat_le(a777, a778) {
+                let a783 = {
+                    let a780 = match v0.clone() {
+                        Adt1::C0(_, _, _, _, _, _, h779, _, _, _, _) => {
+                            h779
                         }
                     };
-                    let a785 = 4u64;
-                    let a786 = 1u64;
-                    nat_rem(a784, a785, a786)
+                    let a781 = 4u64;
+                    let a782 = 1u64;
+                    nat_rem(a780, a781, a782)
                 };
-                let a788 = 0u64;
-                nat_eq(a787, a788)
+                let a784 = 0u64;
+                nat_eq(a783, a784)
             } else {
                 false
             }
@@ -3406,42 +3394,42 @@ pub fn f34(v0: Adt1) -> R<bool> {
     } else {
         false
     } {
-        let a790 = match v0.clone() {
-            Adt1::C0(_, _, _, h789, _, _, _, _, _, _, _) => {
-                h789
+        let a786 = match v0.clone() {
+            Adt1::C0(_, _, _, h785, _, _, _, _, _, _, _) => {
+                h785
             }
         };
-        let a791 = 1u64;
-        if nat_le(a790, a791) {
+        let a787 = 1u64;
+        if nat_le(a786, a787) {
             true
         } else {
-            let a793 = match v0.clone() {
-                Adt1::C0(_, _, _, _, _, _, _, h792, _, _, _) => {
-                    h792
+            let a789 = match v0.clone() {
+                Adt1::C0(_, _, _, _, _, _, _, h788, _, _, _) => {
+                    h788
                 }
             };
-            let a794 = v2;
-            nat_eq(a793, a794)
+            let a790 = v2;
+            nat_eq(a789, a790)
         }
     } else {
         false
     } {
-        let a796 = match v0.clone() {
-            Adt1::C0(_, _, _, _, h795, _, _, _, _, _, _) => {
-                h795
+        let a792 = match v0.clone() {
+            Adt1::C0(_, _, _, _, h791, _, _, _, _, _, _) => {
+                h791
             }
         };
-        let a797 = 1u64;
-        if nat_le(a796, a797) {
+        let a793 = 1u64;
+        if nat_le(a792, a793) {
             Ok(true)
         } else {
-            let a799 = match v0 {
-                Adt1::C0(_, _, _, _, _, _, _, _, h798, _, _) => {
-                    h798
+            let a795 = match v0 {
+                Adt1::C0(_, _, _, _, _, _, _, _, h794, _, _) => {
+                    h794
                 }
             };
-            let a800 = v3;
-            Ok(nat_eq(a799, a800))
+            let a796 = v3;
+            Ok(nat_eq(a795, a796))
         }
     } else {
         Ok(false)
@@ -3449,82 +3437,82 @@ pub fn f34(v0: Adt1) -> R<bool> {
 }
 
 pub fn f35(v0: Adt1, v1: Adt1) -> R<bool> {
-    let a802 = match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, h801, _) => {
-            h801
+    let a798 = match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, h797, _) => {
+            h797
         }
     };
-    let a803 = 0u64;
-    if nat_eq(a802, a803) {
+    let a799 = 0u64;
+    if nat_eq(a798, a799) {
         Ok(true)
     } else {
-        let a805 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, _, _, h804, _) => {
-                h804
+        let a801 = match v1.clone() {
+            Adt1::C0(_, _, _, _, _, _, _, _, _, h800, _) => {
+                h800
             }
         };
-        let a806 = 0u64;
-        if nat_eq(a805, a806) {
+        let a802 = 0u64;
+        if nat_eq(a801, a802) {
             Ok(true)
         } else {
-            let a808 = match v0.clone() {
-                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h807) => {
-                    h807
+            let a804 = match v0.clone() {
+                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h803) => {
+                    h803
                 }
             };
-            let a809 = 0u64;
-            if nat_eq(a808, a809) {
+            let a805 = 0u64;
+            if nat_eq(a804, a805) {
                 Ok(true)
             } else {
-                let a811 = match v1.clone() {
-                    Adt1::C0(_, _, _, _, _, _, _, _, _, _, h810) => {
-                        h810
+                let a807 = match v1.clone() {
+                    Adt1::C0(_, _, _, _, _, _, _, _, _, _, h806) => {
+                        h806
                     }
                 };
-                let a812 = 0u64;
-                if nat_eq(a811, a812) {
+                let a808 = 0u64;
+                if nat_eq(a807, a808) {
                     Ok(true)
                 } else {
-                    let a818 = {
-                        let a815 = match v0.clone() {
-                            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h813) => {
-                                h813
+                    let a814 = {
+                        let a811 = match v0.clone() {
+                            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h809) => {
+                                h809
                             }
                         };
-                        let a816 = match v0.clone() {
-                            Adt1::C0(_, _, _, _, _, _, _, _, _, h814, _) => {
-                                h814
+                        let a812 = match v0.clone() {
+                            Adt1::C0(_, _, _, _, _, _, _, _, _, h810, _) => {
+                                h810
                             }
                         };
-                        nat_add(a815, a816)?
+                        nat_add(a811, a812)?
                     };
-                    let a819 = match v1.clone() {
-                        Adt1::C0(_, _, _, _, _, _, _, _, _, _, h817) => {
-                            h817
+                    let a815 = match v1.clone() {
+                        Adt1::C0(_, _, _, _, _, _, _, _, _, _, h813) => {
+                            h813
                         }
                     };
-                    if nat_le(a818, a819) {
+                    if nat_le(a814, a815) {
                         Ok(true)
                     } else {
-                        let a825 = {
-                            let a822 = match v1.clone() {
-                                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h820) => {
-                                    h820
+                        let a821 = {
+                            let a818 = match v1.clone() {
+                                Adt1::C0(_, _, _, _, _, _, _, _, _, _, h816) => {
+                                    h816
                                 }
                             };
-                            let a823 = match v1 {
-                                Adt1::C0(_, _, _, _, _, _, _, _, _, h821, _) => {
-                                    h821
+                            let a819 = match v1 {
+                                Adt1::C0(_, _, _, _, _, _, _, _, _, h817, _) => {
+                                    h817
                                 }
                             };
-                            nat_add(a822, a823)?
+                            nat_add(a818, a819)?
                         };
-                        let a826 = match v0 {
-                            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h824) => {
-                                h824
+                        let a822 = match v0 {
+                            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h820) => {
+                                h820
                             }
                         };
-                        Ok(nat_le(a825, a826))
+                        Ok(nat_le(a821, a822))
                     }
                 }
             }
@@ -3534,63 +3522,63 @@ pub fn f35(v0: Adt1, v1: Adt1) -> R<bool> {
 
 pub fn f36(v0: Adt1) -> R<bool> {
     let v1: u64 = {
-        let a829 = match v0.clone() {
-            Adt1::C0(_, _, h827, _, _, _, _, _, _, _, _) => {
+        let a825 = match v0.clone() {
+            Adt1::C0(_, _, h823, _, _, _, _, _, _, _, _) => {
+                h823
+            }
+        };
+        let a826 = match v0.clone() {
+            Adt1::C0(_, _, _, _, _, _, h824, _, _, _, _) => {
+                h824
+            }
+        };
+        nat_mul(a825, a826)?
+    };
+    if if f30(v0.clone()) {
+        let a828 = match v0.clone() {
+            Adt1::C0(_, _, _, h827, _, _, _, _, _, _, _) => {
                 h827
             }
         };
-        let a830 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, h828, _, _, _, _) => {
-                h828
-            }
-        };
-        nat_mul(a829, a830)?
-    };
-    if if f30(v0.clone()) {
-        let a832 = match v0.clone() {
-            Adt1::C0(_, _, _, h831, _, _, _, _, _, _, _) => {
-                h831
-            }
-        };
-        let a833 = 1u64;
-        if nat_eq(a832, a833) {
+        let a829 = 1u64;
+        if nat_eq(a828, a829) {
             true
         } else {
-            let a835 = match v0.clone() {
-                Adt1::C0(_, _, _, _, _, _, _, h834, _, _, _) => {
-                    h834
+            let a831 = match v0.clone() {
+                Adt1::C0(_, _, _, _, _, _, _, h830, _, _, _) => {
+                    h830
                 }
             };
-            let a836 = v1;
-            nat_eq(a835, a836)
+            let a832 = v1;
+            nat_eq(a831, a832)
         }
     } else {
         false
     } {
-        let a838 = match v0.clone() {
-            Adt1::C0(_, _, _, _, h837, _, _, _, _, _, _) => {
-                h837
+        let a834 = match v0.clone() {
+            Adt1::C0(_, _, _, _, h833, _, _, _, _, _, _) => {
+                h833
             }
         };
-        let a839 = 1u64;
-        if nat_eq(a838, a839) {
+        let a835 = 1u64;
+        if nat_eq(a834, a835) {
             Ok(true)
         } else {
-            let a844 = match v0.clone() {
-                Adt1::C0(_, _, _, _, _, _, _, _, h840, _, _) => {
-                    h840
+            let a840 = match v0.clone() {
+                Adt1::C0(_, _, _, _, _, _, _, _, h836, _, _) => {
+                    h836
                 }
             };
-            let a845 = {
-                let a842 = v1;
-                let a843 = match v0 {
-                    Adt1::C0(_, _, _, h841, _, _, _, _, _, _, _) => {
-                        h841
+            let a841 = {
+                let a838 = v1;
+                let a839 = match v0 {
+                    Adt1::C0(_, _, _, h837, _, _, _, _, _, _, _) => {
+                        h837
                     }
                 };
-                nat_mul(a842, a843)?
+                nat_mul(a838, a839)?
             };
-            Ok(nat_eq(a844, a845))
+            Ok(nat_eq(a840, a841))
         }
     } else {
         Ok(false)
@@ -3598,9 +3586,9 @@ pub fn f36(v0: Adt1) -> R<bool> {
 }
 
 pub fn f37(v0: u64) -> u64 {
-    let a846 = v0;
-    let a847 = 3u64;
-    if nat_eq(a846, a847) {
+    let a842 = v0;
+    let a843 = 3u64;
+    if nat_eq(a842, a843) {
         16u64
     } else {
         10u64
@@ -3609,38 +3597,47 @@ pub fn f37(v0: u64) -> u64 {
 
 pub fn f38(v0: u64, v1: Adt1) -> R<u64> {
     let v2: u64 = {
-        let a849 = v0;
+        let a845 = v0;
+        let a846 = match v1.clone() {
+            Adt1::C0(_, h844, _, _, _, _, _, _, _, _, _) => {
+                h844
+            }
+        };
+        let a847 = 0u64;
+        nat_quot(a845, a846, a847)
+    };
+    let v3: u64 = {
+        let a849 = v2;
         let a850 = match v1.clone() {
-            Adt1::C0(_, h848, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, h848, _, _, _, _, _, _, _, _) => {
                 h848
             }
         };
         let a851 = 0u64;
         nat_quot(a849, a850, a851)
     };
-    let v3: u64 = {
-        let a853 = v2;
+    f39({
+        let a853 = v0;
         let a854 = match v1.clone() {
-            Adt1::C0(_, _, h852, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, h852, _, _, _, _, _, _, _, _, _) => {
                 h852
             }
         };
         let a855 = 0u64;
-        nat_quot(a853, a854, a855)
-    };
-    f39({
-        let a857 = v0;
+        nat_rem(a853, a854, a855)
+    }, {
+        let a857 = v2;
         let a858 = match v1.clone() {
-            Adt1::C0(_, h856, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, h856, _, _, _, _, _, _, _, _) => {
                 h856
             }
         };
         let a859 = 0u64;
         nat_rem(a857, a858, a859)
     }, {
-        let a861 = v2;
+        let a861 = v3;
         let a862 = match v1.clone() {
-            Adt1::C0(_, _, h860, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, h860, _, _, _, _, _, _, _) => {
                 h860
             }
         };
@@ -3654,108 +3651,99 @@ pub fn f38(v0: u64, v1: Adt1) -> R<u64> {
             }
         };
         let a867 = 0u64;
-        nat_rem(a865, a866, a867)
-    }, {
-        let a869 = v3;
-        let a870 = match v1.clone() {
-            Adt1::C0(_, _, _, h868, _, _, _, _, _, _, _) => {
-                h868
-            }
-        };
-        let a871 = 0u64;
-        nat_quot(a869, a870, a871)
+        nat_quot(a865, a866, a867)
     }, match v1.clone() {
-        Adt1::C0(_, _, _, _, _, h872, _, _, _, _, _) => {
-            h872
+        Adt1::C0(_, _, _, _, _, h868, _, _, _, _, _) => {
+            h868
         }
     }, match v1.clone() {
-        Adt1::C0(_, _, _, _, _, _, h873, _, _, _, _) => {
-            h873
+        Adt1::C0(_, _, _, _, _, _, h869, _, _, _, _) => {
+            h869
         }
     }, match v1.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, h874, _, _, _) => {
-            h874
+        Adt1::C0(_, _, _, _, _, _, _, h870, _, _, _) => {
+            h870
         }
     }, match v1 {
-        Adt1::C0(_, _, _, _, _, _, _, _, h875, _, _) => {
-            h875
+        Adt1::C0(_, _, _, _, _, _, _, _, h871, _, _) => {
+            h871
         }
     })
 }
 
 pub fn f39(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64) -> R<u64> {
-    let a888 = {
-        let a884 = {
-            let a880 = {
-                let a876 = v0;
-                let a877 = v4;
-                nat_mul(a876, a877)?
+    let a884 = {
+        let a880 = {
+            let a876 = {
+                let a872 = v0;
+                let a873 = v4;
+                nat_mul(a872, a873)?
             };
-            let a881 = {
-                let a878 = v1;
-                let a879 = v5;
-                nat_mul(a878, a879)?
+            let a877 = {
+                let a874 = v1;
+                let a875 = v5;
+                nat_mul(a874, a875)?
             };
-            nat_add(a880, a881)?
+            nat_add(a876, a877)?
         };
-        let a885 = {
-            let a882 = v2;
-            let a883 = v6;
-            nat_mul(a882, a883)?
+        let a881 = {
+            let a878 = v2;
+            let a879 = v6;
+            nat_mul(a878, a879)?
         };
-        nat_add(a884, a885)?
+        nat_add(a880, a881)?
     };
-    let a889 = {
-        let a886 = v3;
-        let a887 = v7;
-        nat_mul(a886, a887)?
+    let a885 = {
+        let a882 = v3;
+        let a883 = v7;
+        nat_mul(a882, a883)?
     };
-    nat_add(a888, a889)
+    nat_add(a884, a885)
 }
 
 pub fn f40(v0: u64, v1: Adt1, v2: u64, v3: u64) -> R<Adt3> {
     let v4: u64 = {
+        let a886 = v0;
+        let a887 = 2u64;
+        let a888 = 0u64;
+        nat_quot(a886, a887, a888)
+    };
+    let v5: u64 = f28(match v1.clone() {
+        Adt1::C0(h889, _, _, _, _, _, _, _, _, _, _) => {
+            h889
+        }
+    });
+    let a893 = {
         let a890 = v0;
         let a891 = 2u64;
         let a892 = 0u64;
-        nat_quot(a890, a891, a892)
+        nat_rem(a890, a891, a892)
     };
-    let v5: u64 = f28(match v1.clone() {
-        Adt1::C0(h893, _, _, _, _, _, _, _, _, _, _) => {
-            h893
-        }
-    });
-    let a897 = {
-        let a894 = v0;
-        let a895 = 2u64;
-        let a896 = 0u64;
-        nat_rem(a894, a895, a896)
-    };
-    let a898 = 0u64;
-    if nat_eq(a897, a898) {
+    let a894 = 0u64;
+    if nat_eq(a893, a894) {
         Ok(Adt3::C3(2u64, 3u64, 0u64, 0u64, 4u64, f38(v4, v1)?, 2u64, 0u64, 0u64, 2u64, v5, 8u64))
     } else {
-        let a899 = v3;
-        let a900 = v2;
-        if if nat_lt(a899, a900) {
-            let a903 = v3;
-            let a904 = {
-                let a901 = v5;
-                let a902 = 4u64;
-                if nat_eq(a901, a902) {
+        let a895 = v3;
+        let a896 = v2;
+        if if nat_lt(a895, a896) {
+            let a899 = v3;
+            let a900 = {
+                let a897 = v5;
+                let a898 = 4u64;
+                if nat_eq(a897, a898) {
                     2147483648u64
                 } else {
                     9223372036854775808u64
                 }
             };
-            nat_lt(a903, a904)
+            nat_lt(a899, a900)
         } else {
             false
         } {
             Ok(Adt3::C3(2u64, 3u64, 0u64, 0u64, 1u64, 2u64, 2u64, 0u64, 0u64, {
-                let a905 = 3u64;
-                let a906 = v4;
-                nat_add(a905, a906)?
+                let a901 = 3u64;
+                let a902 = v4;
+                nat_add(a901, a902)?
             }, 8u64, 8u64))
         } else {
             Ok(Adt3::C1)
@@ -3765,27 +3753,37 @@ pub fn f40(v0: u64, v1: Adt1, v2: u64, v3: u64) -> R<Adt3> {
 
 pub fn f41(v0: u64, v1: Adt1, v2: Adt1, v3: Adt1, v4: u64) -> R<Adt3> {
     let v5: u64 = {
-        let a908 = 1u64;
-        let a909 = f31(v1.clone(), match v3.clone() {
-            Adt1::C0(h907, _, _, _, _, _, _, _, _, _, _) => {
-                h907
+        let a904 = 1u64;
+        let a905 = f31(v1.clone(), match v3.clone() {
+            Adt1::C0(h903, _, _, _, _, _, _, _, _, _, _) => {
+                h903
             }
         })?;
-        nat_add(a908, a909)?
+        nat_add(a904, a905)?
     };
     let v6: u64 = {
-        let a910 = v0;
-        let a911 = v5;
-        let a912 = 0u64;
-        nat_rem(a910, a911, a912)
+        let a906 = v0;
+        let a907 = v5;
+        let a908 = 0u64;
+        nat_rem(a906, a907, a908)
     };
     let v7: u64 = {
-        let a913 = v0;
-        let a914 = v5;
-        let a915 = 0u64;
-        nat_quot(a913, a914, a915)
+        let a909 = v0;
+        let a910 = v5;
+        let a911 = 0u64;
+        nat_quot(a909, a910, a911)
     };
     let v8: u64 = {
+        let a913 = v7;
+        let a914 = match v1.clone() {
+            Adt1::C0(_, _, h912, _, _, _, _, _, _, _, _) => {
+                h912
+            }
+        };
+        let a915 = 0u64;
+        nat_rem(a913, a914, a915)
+    };
+    let v9: u64 = {
         let a917 = v7;
         let a918 = match v1.clone() {
             Adt1::C0(_, _, h916, _, _, _, _, _, _, _, _) => {
@@ -3793,19 +3791,19 @@ pub fn f41(v0: u64, v1: Adt1, v2: Adt1, v3: Adt1, v4: u64) -> R<Adt3> {
             }
         };
         let a919 = 0u64;
-        nat_rem(a917, a918, a919)
+        nat_quot(a917, a918, a919)
     };
-    let v9: u64 = {
-        let a921 = v7;
+    let v10: u64 = {
+        let a921 = v9;
         let a922 = match v1.clone() {
-            Adt1::C0(_, _, h920, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, h920, _, _, _, _, _, _, _) => {
                 h920
             }
         };
         let a923 = 0u64;
-        nat_quot(a921, a922, a923)
+        nat_rem(a921, a922, a923)
     };
-    let v10: u64 = {
+    let v11: u64 = {
         let a925 = v9;
         let a926 = match v1.clone() {
             Adt1::C0(_, _, _, h924, _, _, _, _, _, _, _) => {
@@ -3813,156 +3811,146 @@ pub fn f41(v0: u64, v1: Adt1, v2: Adt1, v3: Adt1, v4: u64) -> R<Adt3> {
             }
         };
         let a927 = 0u64;
-        nat_rem(a925, a926, a927)
+        nat_quot(a925, a926, a927)
     };
-    let v11: u64 = {
-        let a929 = v9;
-        let a930 = match v1.clone() {
-            Adt1::C0(_, _, _, h928, _, _, _, _, _, _, _) => {
-                h928
-            }
-        };
-        let a931 = 0u64;
-        nat_quot(a929, a930, a931)
-    };
-    let a932 = v6;
-    let a933 = 0u64;
-    if nat_eq(a932, a933) {
+    let a928 = v6;
+    let a929 = 0u64;
+    if nat_eq(a928, a929) {
         let v12: u64 = {
-            let a950 = v8;
-            let a951 = {
-                let a948 = match v2.clone() {
-                    Adt1::C0(_, h934, _, _, _, _, _, _, _, _, _) => {
-                        h934
+            let a946 = v8;
+            let a947 = {
+                let a944 = match v2.clone() {
+                    Adt1::C0(_, h930, _, _, _, _, _, _, _, _, _) => {
+                        h930
                     }
                 };
-                let a949 = {
-                    let a946 = {
-                        let a936 = v10;
-                        let a937 = match v2.clone() {
+                let a945 = {
+                    let a942 = {
+                        let a932 = v10;
+                        let a933 = match v2.clone() {
+                            Adt1::C0(_, _, h931, _, _, _, _, _, _, _, _) => {
+                                h931
+                            }
+                        };
+                        let a934 = 0u64;
+                        nat_rem(a932, a933, a934)
+                    };
+                    let a943 = {
+                        let a940 = match v2.clone() {
                             Adt1::C0(_, _, h935, _, _, _, _, _, _, _, _) => {
                                 h935
                             }
                         };
-                        let a938 = 0u64;
-                        nat_rem(a936, a937, a938)
-                    };
-                    let a947 = {
-                        let a944 = match v2.clone() {
-                            Adt1::C0(_, _, h939, _, _, _, _, _, _, _, _) => {
-                                h939
-                            }
-                        };
-                        let a945 = {
-                            let a941 = v11;
-                            let a942 = match v2 {
-                                Adt1::C0(_, _, _, h940, _, _, _, _, _, _, _) => {
-                                    h940
+                        let a941 = {
+                            let a937 = v11;
+                            let a938 = match v2 {
+                                Adt1::C0(_, _, _, h936, _, _, _, _, _, _, _) => {
+                                    h936
                                 }
                             };
-                            let a943 = 0u64;
-                            nat_rem(a941, a942, a943)
+                            let a939 = 0u64;
+                            nat_rem(a937, a938, a939)
                         };
-                        nat_mul(a944, a945)?
+                        nat_mul(a940, a941)?
                     };
-                    nat_add(a946, a947)?
+                    nat_add(a942, a943)?
                 };
-                nat_mul(a948, a949)?
+                nat_mul(a944, a945)?
             };
-            nat_add(a950, a951)?
+            nat_add(a946, a947)?
         };
         Ok(Adt3::C3(2u64, 3u64, 0u64, 0u64, 1u64, {
-            let a952 = 3u64;
-            let a953 = v12;
-            nat_add(a952, a953)?
+            let a948 = 3u64;
+            let a949 = v12;
+            nat_add(a948, a949)?
         }, 2u64, 0u64, 0u64, 2u64, 8u64, 8u64))
     } else {
-        let a955 = v4;
-        let a956 = match v3.clone() {
-            Adt1::C0(_, _, h954, _, _, _, _, _, _, _, _) => {
-                h954
+        let a951 = v4;
+        let a952 = match v3.clone() {
+            Adt1::C0(_, _, h950, _, _, _, _, _, _, _, _) => {
+                h950
             }
         };
-        if nat_lt(a955, a956) {
+        if nat_lt(a951, a952) {
             let v13: u64 = {
-                let a961 = {
-                    let a957 = v6;
-                    let a958 = 1u64;
-                    nat_sub(a957, a958)
+                let a957 = {
+                    let a953 = v6;
+                    let a954 = 1u64;
+                    nat_sub(a953, a954)
                 };
-                let a962 = f54(match v1.clone() {
-                    Adt1::C0(h959, _, _, _, _, _, _, _, _, _, _) => {
-                        h959
+                let a958 = f54(match v1.clone() {
+                    Adt1::C0(h955, _, _, _, _, _, _, _, _, _, _) => {
+                        h955
                     }
                 }, match v3.clone() {
+                    Adt1::C0(h956, _, _, _, _, _, _, _, _, _, _) => {
+                        h956
+                    }
+                });
+                let a959 = 0u64;
+                nat_quot(a957, a958, a959)
+            };
+            let v14: u64 = f39({
+                let a961 = v13;
+                let a962 = f29(match v3.clone() {
                     Adt1::C0(h960, _, _, _, _, _, _, _, _, _, _) => {
                         h960
                     }
                 });
-                let a963 = 0u64;
-                nat_quot(a961, a962, a963)
-            };
-            let v14: u64 = f39({
-                let a965 = v13;
-                let a966 = f29(match v3.clone() {
-                    Adt1::C0(h964, _, _, _, _, _, _, _, _, _, _) => {
-                        h964
-                    }
-                });
-                nat_mul(a965, a966)?
+                nat_mul(a961, a962)?
             }, v8, v10, v11, match v1.clone() {
+                Adt1::C0(_, _, _, _, _, h963, _, _, _, _, _) => {
+                    h963
+                }
+            }, match v1.clone() {
+                Adt1::C0(_, _, _, _, _, _, h964, _, _, _, _) => {
+                    h964
+                }
+            }, match v1.clone() {
+                Adt1::C0(_, _, _, _, _, _, _, h965, _, _, _) => {
+                    h965
+                }
+            }, match v1.clone() {
+                Adt1::C0(_, _, _, _, _, _, _, _, h966, _, _) => {
+                    h966
+                }
+            })?;
+            let v15: u64 = f39(v13, v4, v10, v11, match v3.clone() {
                 Adt1::C0(_, _, _, _, _, h967, _, _, _, _, _) => {
                     h967
                 }
-            }, match v1.clone() {
+            }, match v3.clone() {
                 Adt1::C0(_, _, _, _, _, _, h968, _, _, _, _) => {
                     h968
                 }
-            }, match v1.clone() {
+            }, match v3.clone() {
                 Adt1::C0(_, _, _, _, _, _, _, h969, _, _, _) => {
                     h969
                 }
-            }, match v1.clone() {
+            }, match v3.clone() {
                 Adt1::C0(_, _, _, _, _, _, _, _, h970, _, _) => {
                     h970
                 }
             })?;
-            let v15: u64 = f39(v13, v4, v10, v11, match v3.clone() {
-                Adt1::C0(_, _, _, _, _, h971, _, _, _, _, _) => {
-                    h971
-                }
-            }, match v3.clone() {
-                Adt1::C0(_, _, _, _, _, _, h972, _, _, _, _) => {
-                    h972
-                }
-            }, match v3.clone() {
-                Adt1::C0(_, _, _, _, _, _, _, h973, _, _, _) => {
-                    h973
-                }
-            }, match v3.clone() {
-                Adt1::C0(_, _, _, _, _, _, _, _, h974, _, _) => {
-                    h974
-                }
-            })?;
             if f32(match v3.clone() {
-                Adt1::C0(h975, _, _, _, _, _, _, _, _, _, _) => {
-                    h975
+                Adt1::C0(h971, _, _, _, _, _, _, _, _, _, _) => {
+                    h971
                 }
             }) {
                 Ok(Adt3::C6(v14, v15))
             } else {
                 Ok(f55(match v1 {
-                    Adt1::C0(h976, _, _, _, _, _, _, _, _, _, _) => {
-                        h976
+                    Adt1::C0(h972, _, _, _, _, _, _, _, _, _, _) => {
+                        h972
                     }
                 }, match v3 {
-                    Adt1::C0(h977, _, _, _, _, _, _, _, _, _, _) => {
-                        h977
+                    Adt1::C0(h973, _, _, _, _, _, _, _, _, _, _) => {
+                        h973
                     }
                 }, {
-                    let a978 = v6;
-                    let a979 = 1u64;
-                    nat_sub(a978, a979)
+                    let a974 = v6;
+                    let a975 = 1u64;
+                    nat_sub(a974, a975)
                 }, v14, v15))
             }
         } else {
@@ -3988,39 +3976,39 @@ pub fn f43(v0: u64, v1: u64, v2: u64, v3: bool) -> Adt3 {
 }
 
 pub fn f44(v0: u64, v1: u64) -> Adt3 {
-    let a980 = v0;
-    let a981 = 8u64;
-    if nat_eq(a980, a981) {
+    let a976 = v0;
+    let a977 = 8u64;
+    if nat_eq(a976, a977) {
         Adt3::C3(1u64, 6u64, 0u64, 0u64, 1u64, 0u64, 2u64, 0u64, 0u64, 2u64, 4u64, 4u64)
     } else {
-        let a982 = v0;
-        let a983 = 9u64;
-        if nat_eq(a982, a983) {
+        let a978 = v0;
+        let a979 = 9u64;
+        if nat_eq(a978, a979) {
             Adt3::C3(1u64, 2u64, 0u64, 0u64, 2u64, v1, 1u64, 2u64, 0u64, 2u64, 4u64, 4u64)
         } else {
-            let a984 = v0;
-            let a985 = 10u64;
-            if nat_eq(a984, a985) {
+            let a980 = v0;
+            let a981 = 10u64;
+            if nat_eq(a980, a981) {
                 Adt3::C3(5u64, 16u64, 0u64, 0u64, 1u64, 2u64, 2u64, 0u64, 0u64, 2u64, 4u64, 4u64)
             } else {
-                let a986 = v0;
-                let a987 = 11u64;
-                if nat_eq(a986, a987) {
+                let a982 = v0;
+                let a983 = 11u64;
+                if nat_eq(a982, a983) {
                     Adt3::C3(1u64, 0u64, 0u64, 0u64, 2u64, 1065353216u64, 1u64, 2u64, 0u64, 2u64, 4u64, 4u64)
                 } else {
-                    let a988 = v0;
-                    let a989 = 12u64;
-                    if nat_eq(a988, a989) {
+                    let a984 = v0;
+                    let a985 = 12u64;
+                    if nat_eq(a984, a985) {
                         Adt3::C3(1u64, 3u64, 0u64, 0u64, 1u64, 0u64, 1u64, 2u64, 0u64, 0u64, 4u64, 4u64)
                     } else {
-                        let a990 = v0;
-                        let a991 = 13u64;
-                        if nat_eq(a990, a991) {
+                        let a986 = v0;
+                        let a987 = 13u64;
+                        if nat_eq(a986, a987) {
                             Adt3::C3(1u64, 0u64, 0u64, 0u64, 1u64, 1u64, 2u64, 1065353216u64, 0u64, 1u64, 4u64, 4u64)
                         } else {
-                            let a992 = v0;
-                            let a993 = 14u64;
-                            if nat_eq(a992, a993) {
+                            let a988 = v0;
+                            let a989 = 14u64;
+                            if nat_eq(a988, a989) {
                                 Adt3::C3(1u64, 2u64, 0u64, 0u64, 1u64, 0u64, 1u64, 1u64, 0u64, 0u64, 4u64, 4u64)
                             } else {
                                 Adt3::C1
@@ -4035,112 +4023,112 @@ pub fn f44(v0: u64, v1: u64) -> Adt3 {
 
 pub fn f45(v0: u64, v1: Adt1, v2: Adt1) -> R<u64> {
     let v3: u64 = {
-        let a995 = v0;
+        let a991 = v0;
+        let a992 = match v1.clone() {
+            Adt1::C0(_, h990, _, _, _, _, _, _, _, _, _) => {
+                h990
+            }
+        };
+        let a993 = 0u64;
+        nat_quot(a991, a992, a993)
+    };
+    let v4: u64 = {
+        let a995 = v3;
         let a996 = match v1.clone() {
-            Adt1::C0(_, h994, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, h994, _, _, _, _, _, _, _, _) => {
                 h994
             }
         };
         let a997 = 0u64;
         nat_quot(a995, a996, a997)
     };
-    let v4: u64 = {
-        let a999 = v3;
-        let a1000 = match v1.clone() {
-            Adt1::C0(_, _, h998, _, _, _, _, _, _, _, _) => {
-                h998
-            }
-        };
-        let a1001 = 0u64;
-        nat_quot(a999, a1000, a1001)
-    };
     f39({
-        let a1007 = {
-            let a1003 = v0;
-            let a1004 = match v1.clone() {
-                Adt1::C0(_, h1002, _, _, _, _, _, _, _, _, _) => {
-                    h1002
+        let a1003 = {
+            let a999 = v0;
+            let a1000 = match v1.clone() {
+                Adt1::C0(_, h998, _, _, _, _, _, _, _, _, _) => {
+                    h998
                 }
             };
-            let a1005 = 0u64;
-            nat_rem(a1003, a1004, a1005)
+            let a1001 = 0u64;
+            nat_rem(a999, a1000, a1001)
         };
-        let a1008 = match v2.clone() {
-            Adt1::C0(_, h1006, _, _, _, _, _, _, _, _, _) => {
-                h1006
+        let a1004 = match v2.clone() {
+            Adt1::C0(_, h1002, _, _, _, _, _, _, _, _, _) => {
+                h1002
             }
         };
-        let a1009 = 0u64;
-        nat_rem(a1007, a1008, a1009)
+        let a1005 = 0u64;
+        nat_rem(a1003, a1004, a1005)
     }, {
-        let a1015 = {
-            let a1011 = v3;
-            let a1012 = match v1.clone() {
-                Adt1::C0(_, _, h1010, _, _, _, _, _, _, _, _) => {
-                    h1010
+        let a1011 = {
+            let a1007 = v3;
+            let a1008 = match v1.clone() {
+                Adt1::C0(_, _, h1006, _, _, _, _, _, _, _, _) => {
+                    h1006
                 }
             };
-            let a1013 = 0u64;
-            nat_rem(a1011, a1012, a1013)
+            let a1009 = 0u64;
+            nat_rem(a1007, a1008, a1009)
         };
-        let a1016 = match v2.clone() {
-            Adt1::C0(_, _, h1014, _, _, _, _, _, _, _, _) => {
-                h1014
+        let a1012 = match v2.clone() {
+            Adt1::C0(_, _, h1010, _, _, _, _, _, _, _, _) => {
+                h1010
             }
         };
-        let a1017 = 0u64;
-        nat_rem(a1015, a1016, a1017)
+        let a1013 = 0u64;
+        nat_rem(a1011, a1012, a1013)
     }, {
-        let a1023 = {
-            let a1019 = v4;
-            let a1020 = match v1.clone() {
-                Adt1::C0(_, _, _, h1018, _, _, _, _, _, _, _) => {
-                    h1018
+        let a1019 = {
+            let a1015 = v4;
+            let a1016 = match v1.clone() {
+                Adt1::C0(_, _, _, h1014, _, _, _, _, _, _, _) => {
+                    h1014
                 }
             };
-            let a1021 = 0u64;
-            nat_rem(a1019, a1020, a1021)
+            let a1017 = 0u64;
+            nat_rem(a1015, a1016, a1017)
         };
-        let a1024 = match v2.clone() {
-            Adt1::C0(_, _, _, h1022, _, _, _, _, _, _, _) => {
-                h1022
+        let a1020 = match v2.clone() {
+            Adt1::C0(_, _, _, h1018, _, _, _, _, _, _, _) => {
+                h1018
             }
         };
-        let a1025 = 0u64;
-        nat_rem(a1023, a1024, a1025)
+        let a1021 = 0u64;
+        nat_rem(a1019, a1020, a1021)
     }, {
-        let a1031 = {
-            let a1027 = v4;
-            let a1028 = match v1 {
-                Adt1::C0(_, _, _, h1026, _, _, _, _, _, _, _) => {
-                    h1026
+        let a1027 = {
+            let a1023 = v4;
+            let a1024 = match v1 {
+                Adt1::C0(_, _, _, h1022, _, _, _, _, _, _, _) => {
+                    h1022
                 }
             };
-            let a1029 = 0u64;
-            nat_quot(a1027, a1028, a1029)
+            let a1025 = 0u64;
+            nat_quot(a1023, a1024, a1025)
         };
-        let a1032 = match v2.clone() {
-            Adt1::C0(_, _, _, _, h1030, _, _, _, _, _, _) => {
-                h1030
+        let a1028 = match v2.clone() {
+            Adt1::C0(_, _, _, _, h1026, _, _, _, _, _, _) => {
+                h1026
             }
         };
-        let a1033 = 0u64;
-        nat_rem(a1031, a1032, a1033)
+        let a1029 = 0u64;
+        nat_rem(a1027, a1028, a1029)
     }, match v2.clone() {
-        Adt1::C0(_, _, _, _, _, h1034, _, _, _, _, _) => {
-            h1034
+        Adt1::C0(_, _, _, _, _, h1030, _, _, _, _, _) => {
+            h1030
         }
     }, match v2.clone() {
-        Adt1::C0(_, _, _, _, _, _, h1035, _, _, _, _) => {
-            h1035
+        Adt1::C0(_, _, _, _, _, _, h1031, _, _, _, _) => {
+            h1031
         }
     }, match v2.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, h1036, _, _, _) => {
-            h1036
+        Adt1::C0(_, _, _, _, _, _, _, h1032, _, _, _) => {
+            h1032
         }
     }, match v2 {
-        Adt1::C0(_, _, _, _, _, _, _, _, h1037, _, _) => {
-            h1037
+        Adt1::C0(_, _, _, _, _, _, _, _, h1033, _, _) => {
+            h1033
         }
     })
 }
@@ -4149,76 +4137,76 @@ pub fn f46(v0: Adt1, v1: Adt1) -> bool {
     if f17(v1.clone()) {
         f17(v0)
     } else {
-        let a1043 = {
-            let a1040 = match v0.clone() {
-                Adt1::C0(_, h1038, _, _, _, _, _, _, _, _, _) => {
-                    h1038
+        let a1039 = {
+            let a1036 = match v0.clone() {
+                Adt1::C0(_, h1034, _, _, _, _, _, _, _, _, _) => {
+                    h1034
                 }
             };
-            let a1041 = match v1.clone() {
-                Adt1::C0(_, h1039, _, _, _, _, _, _, _, _, _) => {
-                    h1039
+            let a1037 = match v1.clone() {
+                Adt1::C0(_, h1035, _, _, _, _, _, _, _, _, _) => {
+                    h1035
                 }
             };
-            let a1042 = 1u64;
-            nat_rem(a1040, a1041, a1042)
+            let a1038 = 1u64;
+            nat_rem(a1036, a1037, a1038)
         };
-        let a1044 = 0u64;
-        if if if nat_eq(a1043, a1044) {
-            let a1050 = {
-                let a1047 = match v0.clone() {
-                    Adt1::C0(_, _, h1045, _, _, _, _, _, _, _, _) => {
-                        h1045
+        let a1040 = 0u64;
+        if if if nat_eq(a1039, a1040) {
+            let a1046 = {
+                let a1043 = match v0.clone() {
+                    Adt1::C0(_, _, h1041, _, _, _, _, _, _, _, _) => {
+                        h1041
                     }
                 };
-                let a1048 = match v1.clone() {
-                    Adt1::C0(_, _, h1046, _, _, _, _, _, _, _, _) => {
-                        h1046
+                let a1044 = match v1.clone() {
+                    Adt1::C0(_, _, h1042, _, _, _, _, _, _, _, _) => {
+                        h1042
                     }
                 };
-                let a1049 = 1u64;
-                nat_rem(a1047, a1048, a1049)
+                let a1045 = 1u64;
+                nat_rem(a1043, a1044, a1045)
             };
-            let a1051 = 0u64;
-            nat_eq(a1050, a1051)
+            let a1047 = 0u64;
+            nat_eq(a1046, a1047)
         } else {
             false
         } {
-            let a1057 = {
-                let a1054 = match v0.clone() {
-                    Adt1::C0(_, _, _, h1052, _, _, _, _, _, _, _) => {
-                        h1052
+            let a1053 = {
+                let a1050 = match v0.clone() {
+                    Adt1::C0(_, _, _, h1048, _, _, _, _, _, _, _) => {
+                        h1048
                     }
                 };
-                let a1055 = match v1.clone() {
-                    Adt1::C0(_, _, _, h1053, _, _, _, _, _, _, _) => {
-                        h1053
+                let a1051 = match v1.clone() {
+                    Adt1::C0(_, _, _, h1049, _, _, _, _, _, _, _) => {
+                        h1049
                     }
                 };
-                let a1056 = 1u64;
-                nat_rem(a1054, a1055, a1056)
+                let a1052 = 1u64;
+                nat_rem(a1050, a1051, a1052)
             };
-            let a1058 = 0u64;
-            nat_eq(a1057, a1058)
+            let a1054 = 0u64;
+            nat_eq(a1053, a1054)
         } else {
             false
         } {
-            let a1064 = {
-                let a1061 = match v0 {
-                    Adt1::C0(_, _, _, _, h1059, _, _, _, _, _, _) => {
-                        h1059
+            let a1060 = {
+                let a1057 = match v0 {
+                    Adt1::C0(_, _, _, _, h1055, _, _, _, _, _, _) => {
+                        h1055
                     }
                 };
-                let a1062 = match v1 {
-                    Adt1::C0(_, _, _, _, h1060, _, _, _, _, _, _) => {
-                        h1060
+                let a1058 = match v1 {
+                    Adt1::C0(_, _, _, _, h1056, _, _, _, _, _, _) => {
+                        h1056
                     }
                 };
-                let a1063 = 1u64;
-                nat_rem(a1061, a1062, a1063)
+                let a1059 = 1u64;
+                nat_rem(a1057, a1058, a1059)
             };
-            let a1065 = 0u64;
-            nat_eq(a1064, a1065)
+            let a1061 = 0u64;
+            nat_eq(a1060, a1061)
         } else {
             false
         }
@@ -4226,54 +4214,54 @@ pub fn f46(v0: Adt1, v1: Adt1) -> bool {
 }
 
 pub fn f47(v0: u64, v1: u64, v2: u64) -> bool {
-    let a1066 = v0;
-    let a1067 = 0u64;
-    if if if nat_eq(a1066, a1067) {
-        let a1068 = v1;
-        let a1069 = 0u64;
-        nat_eq(a1068, a1069)
+    let a1062 = v0;
+    let a1063 = 0u64;
+    if if if nat_eq(a1062, a1063) {
+        let a1064 = v1;
+        let a1065 = 0u64;
+        nat_eq(a1064, a1065)
     } else {
         false
     } {
-        let a1070 = v2;
-        let a1071 = 0u64;
-        nat_eq(a1070, a1071)
+        let a1066 = v2;
+        let a1067 = 0u64;
+        nat_eq(a1066, a1067)
     } else {
         false
     } {
         true
     } else {
-        let a1072 = v0;
-        let a1073 = 1u64;
-        if if nat_eq(a1072, a1073) {
+        let a1068 = v0;
+        let a1069 = 1u64;
+        if if nat_eq(a1068, a1069) {
             true
         } else {
-            let a1074 = v0;
-            let a1075 = 30u64;
-            nat_eq(a1074, a1075)
+            let a1070 = v0;
+            let a1071 = 30u64;
+            nat_eq(a1070, a1071)
         } {
-            let a1076 = v1;
-            let a1077 = v0;
-            if if nat_eq(a1076, a1077) {
-                let a1078 = v2;
-                let a1079 = v0;
-                nat_eq(a1078, a1079)
+            let a1072 = v1;
+            let a1073 = v0;
+            if if nat_eq(a1072, a1073) {
+                let a1074 = v2;
+                let a1075 = v0;
+                nat_eq(a1074, a1075)
             } else {
                 false
             } {
                 true
             } else {
-                let a1080 = v1;
-                let a1081 = 0u64;
-                if nat_eq(a1080, a1081) {
-                    let a1082 = v2;
-                    let a1083 = v0;
-                    if nat_eq(a1082, a1083) {
+                let a1076 = v1;
+                let a1077 = 0u64;
+                if nat_eq(a1076, a1077) {
+                    let a1078 = v2;
+                    let a1079 = v0;
+                    if nat_eq(a1078, a1079) {
                         true
                     } else {
-                        let a1084 = v2;
-                        let a1085 = 0u64;
-                        nat_eq(a1084, a1085)
+                        let a1080 = v2;
+                        let a1081 = 0u64;
+                        nat_eq(a1080, a1081)
                     }
                 } else {
                     false
@@ -4286,43 +4274,43 @@ pub fn f47(v0: u64, v1: u64, v2: u64) -> bool {
 }
 
 pub fn f48(v0: u64, v1: u64, v2: u64, v3: u64) -> bool {
-    let a1086 = v0;
-    let a1087 = 0u64;
-    if if if nat_eq(a1086, a1087) {
+    let a1082 = v0;
+    let a1083 = 0u64;
+    if if if nat_eq(a1082, a1083) {
         true
     } else {
-        let a1088 = v1;
+        let a1084 = v1;
+        let a1085 = 0u64;
+        nat_eq(a1084, a1085)
+    } {
+        true
+    } else {
+        let a1086 = v2;
+        let a1087 = 0u64;
+        nat_eq(a1086, a1087)
+    } {
+        true
+    } else {
+        let a1088 = v3;
         let a1089 = 0u64;
         nat_eq(a1088, a1089)
-    } {
-        true
-    } else {
-        let a1090 = v2;
-        let a1091 = 0u64;
-        nat_eq(a1090, a1091)
-    } {
-        true
-    } else {
-        let a1092 = v3;
-        let a1093 = 0u64;
-        nat_eq(a1092, a1093)
     }
 }
 
 pub fn f49(v0: u64, v1: u64, v2: u64) -> bool {
-    let a1094 = v0;
-    let a1095 = 1u64;
-    if nat_le(a1094, a1095) {
+    let a1090 = v0;
+    let a1091 = 1u64;
+    if nat_le(a1090, a1091) {
         true
     } else {
-        let a1099 = {
-            let a1096 = v1;
-            let a1097 = v2;
-            let a1098 = 1u64;
-            nat_rem(a1096, a1097, a1098)
+        let a1095 = {
+            let a1092 = v1;
+            let a1093 = v2;
+            let a1094 = 1u64;
+            nat_rem(a1092, a1093, a1094)
         };
-        let a1100 = 0u64;
-        nat_eq(a1099, a1100)
+        let a1096 = 0u64;
+        nat_eq(a1095, a1096)
     }
 }
 
@@ -4340,13 +4328,27 @@ pub fn f50(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64) -> boo
 
 pub fn f51(v0: Adt1, v1: Adt1) -> bool {
     if if if if if if f15(v0.clone(), v1.clone()) {
+        let a1099 = match v0.clone() {
+            Adt1::C0(h1097, _, _, _, _, _, _, _, _, _, _) => {
+                h1097
+            }
+        };
+        let a1100 = match v1.clone() {
+            Adt1::C0(h1098, _, _, _, _, _, _, _, _, _, _) => {
+                h1098
+            }
+        };
+        nat_eq(a1099, a1100)
+    } else {
+        false
+    } {
         let a1103 = match v0.clone() {
-            Adt1::C0(h1101, _, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h1101) => {
                 h1101
             }
         };
         let a1104 = match v1.clone() {
-            Adt1::C0(h1102, _, _, _, _, _, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h1102) => {
                 h1102
             }
         };
@@ -4355,12 +4357,12 @@ pub fn f51(v0: Adt1, v1: Adt1) -> bool {
         false
     } {
         let a1107 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h1105) => {
+            Adt1::C0(_, _, _, _, _, h1105, _, _, _, _, _) => {
                 h1105
             }
         };
         let a1108 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, _, _, _, h1106) => {
+            Adt1::C0(_, _, _, _, _, h1106, _, _, _, _, _) => {
                 h1106
             }
         };
@@ -4369,12 +4371,12 @@ pub fn f51(v0: Adt1, v1: Adt1) -> bool {
         false
     } {
         let a1111 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, h1109, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, h1109, _, _, _, _) => {
                 h1109
             }
         };
         let a1112 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, h1110, _, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, h1110, _, _, _, _) => {
                 h1110
             }
         };
@@ -4383,12 +4385,12 @@ pub fn f51(v0: Adt1, v1: Adt1) -> bool {
         false
     } {
         let a1115 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, h1113, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, _, h1113, _, _, _) => {
                 h1113
             }
         };
         let a1116 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, _, h1114, _, _, _, _) => {
+            Adt1::C0(_, _, _, _, _, _, _, h1114, _, _, _) => {
                 h1114
             }
         };
@@ -4396,31 +4398,17 @@ pub fn f51(v0: Adt1, v1: Adt1) -> bool {
     } else {
         false
     } {
-        let a1119 = match v0.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, h1117, _, _, _) => {
+        let a1119 = match v0 {
+            Adt1::C0(_, _, _, _, _, _, _, _, h1117, _, _) => {
                 h1117
             }
         };
-        let a1120 = match v1.clone() {
-            Adt1::C0(_, _, _, _, _, _, _, h1118, _, _, _) => {
+        let a1120 = match v1 {
+            Adt1::C0(_, _, _, _, _, _, _, _, h1118, _, _) => {
                 h1118
             }
         };
         nat_eq(a1119, a1120)
-    } else {
-        false
-    } {
-        let a1123 = match v0 {
-            Adt1::C0(_, _, _, _, _, _, _, _, h1121, _, _) => {
-                h1121
-            }
-        };
-        let a1124 = match v1 {
-            Adt1::C0(_, _, _, _, _, _, _, _, h1122, _, _) => {
-                h1122
-            }
-        };
-        nat_eq(a1123, a1124)
     } else {
         false
     }
@@ -4451,184 +4439,184 @@ pub fn f52(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64) -> R<b
 }
 
 pub fn f53(v0: u64) -> Adt4 {
-    let a1125 = v0;
-    let a1126 = 0u64;
-    if nat_eq(a1125, a1126) {
+    let a1121 = v0;
+    let a1122 = 0u64;
+    if nat_eq(a1121, a1122) {
         Adt4::C1(Adt5::C0(0u64, 1u64, 4u64))
     } else {
-        let a1127 = v0;
-        let a1128 = 1u64;
-        if nat_eq(a1127, a1128) {
+        let a1123 = v0;
+        let a1124 = 1u64;
+        if nat_eq(a1123, a1124) {
             Adt4::C1(Adt5::C0(1u64, 1u64, 2u64))
         } else {
-            let a1129 = v0;
-            let a1130 = 2u64;
-            if nat_eq(a1129, a1130) {
+            let a1125 = v0;
+            let a1126 = 2u64;
+            if nat_eq(a1125, a1126) {
                 Adt4::C1(Adt5::C0(2u64, 32u64, 18u64))
             } else {
-                let a1131 = v0;
-                let a1132 = 3u64;
-                if nat_eq(a1131, a1132) {
+                let a1127 = v0;
+                let a1128 = 3u64;
+                if nat_eq(a1127, a1128) {
                     Adt4::C1(Adt5::C0(3u64, 32u64, 20u64))
                 } else {
-                    let a1133 = v0;
-                    let a1134 = 6u64;
-                    if nat_eq(a1133, a1134) {
+                    let a1129 = v0;
+                    let a1130 = 6u64;
+                    if nat_eq(a1129, a1130) {
                         Adt4::C1(Adt5::C0(6u64, 32u64, 22u64))
                     } else {
-                        let a1135 = v0;
-                        let a1136 = 7u64;
-                        if nat_eq(a1135, a1136) {
+                        let a1131 = v0;
+                        let a1132 = 7u64;
+                        if nat_eq(a1131, a1132) {
                             Adt4::C1(Adt5::C0(7u64, 32u64, 24u64))
                         } else {
-                            let a1137 = v0;
-                            let a1138 = 8u64;
-                            if nat_eq(a1137, a1138) {
+                            let a1133 = v0;
+                            let a1134 = 8u64;
+                            if nat_eq(a1133, a1134) {
                                 Adt4::C1(Adt5::C0(8u64, 32u64, 34u64))
                             } else {
-                                let a1139 = v0;
-                                let a1140 = 9u64;
-                                if nat_eq(a1139, a1140) {
+                                let a1135 = v0;
+                                let a1136 = 9u64;
+                                if nat_eq(a1135, a1136) {
                                     Adt4::C1(Adt5::C0(9u64, 32u64, 36u64))
                                 } else {
-                                    let a1141 = v0;
-                                    let a1142 = 10u64;
-                                    if nat_eq(a1141, a1142) {
+                                    let a1137 = v0;
+                                    let a1138 = 10u64;
+                                    if nat_eq(a1137, a1138) {
                                         Adt4::C1(Adt5::C0(10u64, 256u64, 84u64))
                                     } else {
-                                        let a1143 = v0;
-                                        let a1144 = 11u64;
-                                        if nat_eq(a1143, a1144) {
+                                        let a1139 = v0;
+                                        let a1140 = 11u64;
+                                        if nat_eq(a1139, a1140) {
                                             Adt4::C1(Adt5::C0(11u64, 256u64, 110u64))
                                         } else {
-                                            let a1145 = v0;
-                                            let a1146 = 12u64;
-                                            if nat_eq(a1145, a1146) {
+                                            let a1141 = v0;
+                                            let a1142 = 12u64;
+                                            if nat_eq(a1141, a1142) {
                                                 Adt4::C1(Adt5::C0(12u64, 256u64, 144u64))
                                             } else {
-                                                let a1147 = v0;
-                                                let a1148 = 13u64;
-                                                if nat_eq(a1147, a1148) {
+                                                let a1143 = v0;
+                                                let a1144 = 13u64;
+                                                if nat_eq(a1143, a1144) {
                                                     Adt4::C1(Adt5::C0(13u64, 256u64, 176u64))
                                                 } else {
-                                                    let a1149 = v0;
-                                                    let a1150 = 14u64;
-                                                    if nat_eq(a1149, a1150) {
+                                                    let a1145 = v0;
+                                                    let a1146 = 14u64;
+                                                    if nat_eq(a1145, a1146) {
                                                         Adt4::C1(Adt5::C0(14u64, 256u64, 210u64))
                                                     } else {
-                                                        let a1151 = v0;
-                                                        let a1152 = 15u64;
-                                                        if nat_eq(a1151, a1152) {
+                                                        let a1147 = v0;
+                                                        let a1148 = 15u64;
+                                                        if nat_eq(a1147, a1148) {
                                                             Adt4::C1(Adt5::C0(15u64, 256u64, 292u64))
                                                         } else {
-                                                            let a1153 = v0;
-                                                            let a1154 = 16u64;
-                                                            if nat_eq(a1153, a1154) {
+                                                            let a1149 = v0;
+                                                            let a1150 = 16u64;
+                                                            if nat_eq(a1149, a1150) {
                                                                 Adt4::C1(Adt5::C0(16u64, 256u64, 66u64))
                                                             } else {
-                                                                let a1155 = v0;
-                                                                let a1156 = 17u64;
-                                                                if nat_eq(a1155, a1156) {
+                                                                let a1151 = v0;
+                                                                let a1152 = 17u64;
+                                                                if nat_eq(a1151, a1152) {
                                                                     Adt4::C1(Adt5::C0(17u64, 256u64, 74u64))
                                                                 } else {
-                                                                    let a1157 = v0;
-                                                                    let a1158 = 18u64;
-                                                                    if nat_eq(a1157, a1158) {
+                                                                    let a1153 = v0;
+                                                                    let a1154 = 18u64;
+                                                                    if nat_eq(a1153, a1154) {
                                                                         Adt4::C1(Adt5::C0(18u64, 256u64, 98u64))
                                                                     } else {
-                                                                        let a1159 = v0;
-                                                                        let a1160 = 19u64;
-                                                                        if nat_eq(a1159, a1160) {
+                                                                        let a1155 = v0;
+                                                                        let a1156 = 19u64;
+                                                                        if nat_eq(a1155, a1156) {
                                                                             Adt4::C1(Adt5::C0(19u64, 256u64, 50u64))
                                                                         } else {
-                                                                            let a1161 = v0;
-                                                                            let a1162 = 20u64;
-                                                                            if nat_eq(a1161, a1162) {
+                                                                            let a1157 = v0;
+                                                                            let a1158 = 20u64;
+                                                                            if nat_eq(a1157, a1158) {
                                                                                 Adt4::C1(Adt5::C0(20u64, 32u64, 18u64))
                                                                             } else {
-                                                                                let a1163 = v0;
-                                                                                let a1164 = 21u64;
-                                                                                if nat_eq(a1163, a1164) {
+                                                                                let a1159 = v0;
+                                                                                let a1160 = 21u64;
+                                                                                if nat_eq(a1159, a1160) {
                                                                                     Adt4::C1(Adt5::C0(21u64, 256u64, 110u64))
                                                                                 } else {
-                                                                                    let a1165 = v0;
-                                                                                    let a1166 = 22u64;
-                                                                                    if nat_eq(a1165, a1166) {
+                                                                                    let a1161 = v0;
+                                                                                    let a1162 = 22u64;
+                                                                                    if nat_eq(a1161, a1162) {
                                                                                         Adt4::C1(Adt5::C0(22u64, 256u64, 82u64))
                                                                                     } else {
-                                                                                        let a1167 = v0;
-                                                                                        let a1168 = 23u64;
-                                                                                        if nat_eq(a1167, a1168) {
+                                                                                        let a1163 = v0;
+                                                                                        let a1164 = 23u64;
+                                                                                        if nat_eq(a1163, a1164) {
                                                                                             Adt4::C1(Adt5::C0(23u64, 256u64, 136u64))
                                                                                         } else {
-                                                                                            let a1169 = v0;
-                                                                                            let a1170 = 24u64;
-                                                                                            if nat_eq(a1169, a1170) {
+                                                                                            let a1165 = v0;
+                                                                                            let a1166 = 24u64;
+                                                                                            if nat_eq(a1165, a1166) {
                                                                                                 Adt4::C1(Adt5::C0(24u64, 1u64, 1u64))
                                                                                             } else {
-                                                                                                let a1171 = v0;
-                                                                                                let a1172 = 25u64;
-                                                                                                if nat_eq(a1171, a1172) {
+                                                                                                let a1167 = v0;
+                                                                                                let a1168 = 25u64;
+                                                                                                if nat_eq(a1167, a1168) {
                                                                                                     Adt4::C1(Adt5::C0(25u64, 1u64, 2u64))
                                                                                                 } else {
-                                                                                                    let a1173 = v0;
-                                                                                                    let a1174 = 26u64;
-                                                                                                    if nat_eq(a1173, a1174) {
+                                                                                                    let a1169 = v0;
+                                                                                                    let a1170 = 26u64;
+                                                                                                    if nat_eq(a1169, a1170) {
                                                                                                         Adt4::C1(Adt5::C0(26u64, 1u64, 4u64))
                                                                                                     } else {
-                                                                                                        let a1175 = v0;
-                                                                                                        let a1176 = 27u64;
-                                                                                                        if nat_eq(a1175, a1176) {
+                                                                                                        let a1171 = v0;
+                                                                                                        let a1172 = 27u64;
+                                                                                                        if nat_eq(a1171, a1172) {
                                                                                                             Adt4::C1(Adt5::C0(27u64, 1u64, 8u64))
                                                                                                         } else {
-                                                                                                            let a1177 = v0;
-                                                                                                            let a1178 = 28u64;
-                                                                                                            if nat_eq(a1177, a1178) {
+                                                                                                            let a1173 = v0;
+                                                                                                            let a1174 = 28u64;
+                                                                                                            if nat_eq(a1173, a1174) {
                                                                                                                 Adt4::C1(Adt5::C0(28u64, 1u64, 8u64))
                                                                                                             } else {
-                                                                                                                let a1179 = v0;
-                                                                                                                let a1180 = 29u64;
-                                                                                                                if nat_eq(a1179, a1180) {
+                                                                                                                let a1175 = v0;
+                                                                                                                let a1176 = 29u64;
+                                                                                                                if nat_eq(a1175, a1176) {
                                                                                                                     Adt4::C1(Adt5::C0(29u64, 256u64, 56u64))
                                                                                                                 } else {
-                                                                                                                    let a1181 = v0;
-                                                                                                                    let a1182 = 30u64;
-                                                                                                                    if nat_eq(a1181, a1182) {
+                                                                                                                    let a1177 = v0;
+                                                                                                                    let a1178 = 30u64;
+                                                                                                                    if nat_eq(a1177, a1178) {
                                                                                                                         Adt4::C1(Adt5::C0(30u64, 1u64, 2u64))
                                                                                                                     } else {
-                                                                                                                        let a1183 = v0;
-                                                                                                                        let a1184 = 34u64;
-                                                                                                                        if nat_eq(a1183, a1184) {
+                                                                                                                        let a1179 = v0;
+                                                                                                                        let a1180 = 34u64;
+                                                                                                                        if nat_eq(a1179, a1180) {
                                                                                                                             Adt4::C1(Adt5::C0(34u64, 256u64, 54u64))
                                                                                                                         } else {
-                                                                                                                            let a1185 = v0;
-                                                                                                                            let a1186 = 35u64;
-                                                                                                                            if nat_eq(a1185, a1186) {
+                                                                                                                            let a1181 = v0;
+                                                                                                                            let a1182 = 35u64;
+                                                                                                                            if nat_eq(a1181, a1182) {
                                                                                                                                 Adt4::C1(Adt5::C0(35u64, 256u64, 66u64))
                                                                                                                             } else {
-                                                                                                                                let a1187 = v0;
-                                                                                                                                let a1188 = 39u64;
-                                                                                                                                if nat_eq(a1187, a1188) {
+                                                                                                                                let a1183 = v0;
+                                                                                                                                let a1184 = 39u64;
+                                                                                                                                if nat_eq(a1183, a1184) {
                                                                                                                                     Adt4::C1(Adt5::C0(39u64, 32u64, 17u64))
                                                                                                                                 } else {
-                                                                                                                                    let a1189 = v0;
-                                                                                                                                    let a1190 = 40u64;
-                                                                                                                                    if nat_eq(a1189, a1190) {
+                                                                                                                                    let a1185 = v0;
+                                                                                                                                    let a1186 = 40u64;
+                                                                                                                                    if nat_eq(a1185, a1186) {
                                                                                                                                         Adt4::C1(Adt5::C0(40u64, 64u64, 36u64))
                                                                                                                                     } else {
-                                                                                                                                        let a1191 = v0;
-                                                                                                                                        let a1192 = 41u64;
-                                                                                                                                        if nat_eq(a1191, a1192) {
+                                                                                                                                        let a1187 = v0;
+                                                                                                                                        let a1188 = 41u64;
+                                                                                                                                        if nat_eq(a1187, a1188) {
                                                                                                                                             Adt4::C1(Adt5::C0(41u64, 128u64, 18u64))
                                                                                                                                         } else {
-                                                                                                                                            let a1193 = v0;
-                                                                                                                                            let a1194 = 42u64;
-                                                                                                                                            if nat_eq(a1193, a1194) {
+                                                                                                                                            let a1189 = v0;
+                                                                                                                                            let a1190 = 42u64;
+                                                                                                                                            if nat_eq(a1189, a1190) {
                                                                                                                                                 Adt4::C1(Adt5::C0(42u64, 64u64, 18u64))
                                                                                                                                             } else {
-                                                                                                                                                let a1195 = v0;
-                                                                                                                                                let a1196 = 43u64;
-                                                                                                                                                if nat_eq(a1195, a1196) {
+                                                                                                                                                let a1191 = v0;
+                                                                                                                                                let a1192 = 43u64;
+                                                                                                                                                if nat_eq(a1191, a1192) {
                                                                                                                                                     Adt4::C1(Adt5::C0(43u64, 1u64, 1u64))
                                                                                                                                                 } else {
                                                                                                                                                     Adt4::C0
@@ -4671,12 +4659,12 @@ pub fn f53(v0: u64) -> Adt4 {
 }
 
 pub fn f54(v0: u64, v1: u64) -> u64 {
-    let a1197 = v0;
-    let a1198 = 1u64;
-    if if nat_eq(a1197, a1198) {
-        let a1199 = v1;
-        let a1200 = 43u64;
-        nat_eq(a1199, a1200)
+    let a1193 = v0;
+    let a1194 = 1u64;
+    if if nat_eq(a1193, a1194) {
+        let a1195 = v1;
+        let a1196 = 43u64;
+        nat_eq(a1195, a1196)
     } else {
         false
     } {
@@ -4687,17 +4675,17 @@ pub fn f54(v0: u64, v1: u64) -> u64 {
 }
 
 pub fn f55(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64) -> Adt3 {
-    let a1201 = f54(v0, v1);
-    let a1202 = 2u64;
-    if nat_eq(a1201, a1202) {
-        let a1206 = {
-            let a1203 = v2;
-            let a1204 = 2u64;
-            let a1205 = 0u64;
-            nat_rem(a1203, a1204, a1205)
+    let a1197 = f54(v0, v1);
+    let a1198 = 2u64;
+    if nat_eq(a1197, a1198) {
+        let a1202 = {
+            let a1199 = v2;
+            let a1200 = 2u64;
+            let a1201 = 0u64;
+            nat_rem(a1199, a1200, a1201)
         };
-        let a1207 = 0u64;
-        if nat_eq(a1206, a1207) {
+        let a1203 = 0u64;
+        if nat_eq(a1202, a1203) {
             Adt3::C3(0u64, 0u64, v0, 0u64, 0u64, v3, 2u64, 0u64, 1u64, 0u64, f33(v0), 8u64)
         } else {
             Adt3::C3(0u64, 0u64, 0u64, v1, 1u64, 0u64, 2u64, 0u64, 3u64, v4, 8u64, f27(v1))
@@ -4708,71 +4696,71 @@ pub fn f55(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64) -> Adt3 {
 }
 
 pub fn f56(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64) -> R<bool> {
-    let a1208 = v1;
-    let a1209 = 1u64;
-    if if if nat_le(a1208, a1209) {
+    let a1204 = v1;
+    let a1205 = 1u64;
+    if if if nat_le(a1204, a1205) {
         true
     } else {
-        let a1210 = v0;
-        let a1211 = v2;
-        nat_le(a1210, a1211)
+        let a1206 = v0;
+        let a1207 = v2;
+        nat_le(a1206, a1207)
     } {
-        let a1212 = v3;
-        let a1213 = 1u64;
-        if nat_le(a1212, a1213) {
+        let a1208 = v3;
+        let a1209 = 1u64;
+        if nat_le(a1208, a1209) {
             true
         } else {
-            let a1220 = {
-                let a1218 = v0;
-                let a1219 = {
-                    let a1216 = {
-                        let a1214 = v1;
-                        let a1215 = 1u64;
-                        nat_sub(a1214, a1215)
+            let a1216 = {
+                let a1214 = v0;
+                let a1215 = {
+                    let a1212 = {
+                        let a1210 = v1;
+                        let a1211 = 1u64;
+                        nat_sub(a1210, a1211)
                     };
-                    let a1217 = v2;
-                    nat_mul(a1216, a1217)?
+                    let a1213 = v2;
+                    nat_mul(a1212, a1213)?
                 };
-                nat_add(a1218, a1219)?
+                nat_add(a1214, a1215)?
             };
-            let a1221 = v4;
-            nat_le(a1220, a1221)
+            let a1217 = v4;
+            nat_le(a1216, a1217)
         }
     } else {
         false
     } {
-        let a1222 = v5;
-        let a1223 = 1u64;
-        if nat_le(a1222, a1223) {
+        let a1218 = v5;
+        let a1219 = 1u64;
+        if nat_le(a1218, a1219) {
             Ok(true)
         } else {
-            let a1236 = {
-                let a1234 = {
-                    let a1228 = v0;
-                    let a1229 = {
-                        let a1226 = {
-                            let a1224 = v1;
-                            let a1225 = 1u64;
-                            nat_sub(a1224, a1225)
+            let a1232 = {
+                let a1230 = {
+                    let a1224 = v0;
+                    let a1225 = {
+                        let a1222 = {
+                            let a1220 = v1;
+                            let a1221 = 1u64;
+                            nat_sub(a1220, a1221)
                         };
-                        let a1227 = v2;
-                        nat_mul(a1226, a1227)?
+                        let a1223 = v2;
+                        nat_mul(a1222, a1223)?
                     };
-                    nat_add(a1228, a1229)?
+                    nat_add(a1224, a1225)?
                 };
-                let a1235 = {
-                    let a1232 = {
-                        let a1230 = v3;
-                        let a1231 = 1u64;
-                        nat_sub(a1230, a1231)
+                let a1231 = {
+                    let a1228 = {
+                        let a1226 = v3;
+                        let a1227 = 1u64;
+                        nat_sub(a1226, a1227)
                     };
-                    let a1233 = v4;
-                    nat_mul(a1232, a1233)?
+                    let a1229 = v4;
+                    nat_mul(a1228, a1229)?
                 };
-                nat_add(a1234, a1235)?
+                nat_add(a1230, a1231)?
             };
-            let a1237 = v6;
-            Ok(nat_le(a1236, a1237))
+            let a1233 = v6;
+            Ok(nat_le(a1232, a1233))
         }
     } else {
         Ok(false)

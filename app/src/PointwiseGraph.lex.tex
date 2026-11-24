@@ -978,7 +978,7 @@ definition{
   name: unaryKind,
   parameters: [operation : Nat, variant : Nat],
   result: (Option Nat),
-  body: (if ((operation =? 89) && (variant =? 14)) then (ctor Option.some [Nat] 23) else (if ((operation =? 89) && (variant =? 15)) then (ctor Option.some [Nat] 22) else (if ((operation =? 89) && ((8 <=? variant) && (variant <=? 9))) then (ctor Option.some [Nat] (variant + 12)) else (if ((operation =? 89) && (variant =? 4)) then (ctor Option.some [Nat] 19) else (if ((10 <=? operation) && (operation <=? 12)) then (ctor Option.some [Nat] (operation + 3)) else (if ((operation =? 89) && (variant =? 7)) then (ctor Option.some [Nat] 17) else (if ((operation =? 89) && (variant =? 10)) then (ctor Option.some [Nat] 18) else (if ((operation =? 89) && (variant =? 13)) then (ctor Option.some [Nat] 16) else (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat])))))))))))),
+  body: (if ((operation =? 89) && (variant =? 16)) then (ctor Option.some [Nat] 24) else (if ((operation =? 89) && (variant =? 14)) then (ctor Option.some [Nat] 23) else (if ((operation =? 89) && (variant =? 15)) then (ctor Option.some [Nat] 22) else (if ((operation =? 89) && ((8 <=? variant) && (variant <=? 9))) then (ctor Option.some [Nat] (variant + 12)) else (if ((operation =? 89) && (variant =? 4)) then (ctor Option.some [Nat] 19) else (if ((10 <=? operation) && (operation <=? 12)) then (ctor Option.some [Nat] (operation + 3)) else (if ((operation =? 89) && (variant =? 7)) then (ctor Option.some [Nat] 17) else (if ((operation =? 89) && (variant =? 10)) then (ctor Option.some [Nat] 18) else (if ((operation =? 89) && (variant =? 13)) then (ctor Option.some [Nat] 16) else (if (operation =? 8) then (ctor Option.some [Nat] 5) else (if (operation =? 9) then (ctor Option.some [Nat] 6) else (if (operation =? 89) then (if (variant =? 0) then (ctor Option.some [Nat] 0) else (if (variant =? 1) then (ctor Option.some [Nat] 1) else (if (variant =? 2) then (ctor Option.some [Nat] 2) else (if (variant =? 3) then (ctor Option.some [Nat] 3) else (if (variant =? 6) then (ctor Option.some [Nat] 4) else (if (variant =? 12) then (ctor Option.some [Nat] 7) else (if (variant =? 11) then (ctor Option.some [Nat] 8) else (if (variant =? 18) then (ctor Option.some [Nat] 9) else (if (variant =? 19) then (ctor Option.some [Nat] 10) else (if (variant =? 20) then (ctor Option.some [Nat] 11) else (if (variant =? 21) then (ctor Option.some [Nat] 12) else (ctor Option.none [Nat])))))))))))) else (ctor Option.none [Nat]))))))))))))),
   executable: true
 }
 
@@ -1938,9 +1938,34 @@ definition{
 
 definition{
   name: planCrossEntropy,
-  parameters: [backward : Bool, inputA : (Option TensorDescriptor), inputB : (Option TensorDescriptor), inputC : (Option TensorDescriptor), surplus : Bool, output : TensorDescriptor],
+  parameters: [
+    backward : Bool,
+    inputA : (Option TensorDescriptor),
+    inputB : (Option TensorDescriptor),
+    inputC : (Option TensorDescriptor),
+    surplus : Bool,
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
-  body: (let gradient : TensorDescriptor := (match inputA | Option.none => output | Option.some descriptor => descriptor); (let logits : TensorDescriptor := (if backward then (match inputB | Option.none => output | Option.some descriptor => descriptor) else (match inputA | Option.none => output | Option.some descriptor => descriptor)); (let labels : TensorDescriptor := (if backward then (match inputC | Option.none => output | Option.some descriptor => descriptor) else (match inputB | Option.none => output | Option.some descriptor => descriptor)); (let rows : Nat := (prim multiply (prim multiply (project logits n1) (project logits n2) : Nat) (project logits n3) : Nat); (if ((((((((((match inputA | Option.none => false | Option.some descriptor => true) && (match inputB | Option.none => false | Option.some descriptor => true)) && (if backward then (match inputC | Option.none => false | Option.some descriptor => true) else (if (match inputC | Option.none => false | Option.some descriptor => true) then false else true))) && (if surplus then false else true)) && (0 <? rows)) && (0 <? (project logits n0))) && (sameShape logits labels)) && (entropyRowLayout logits rows backward)) && (entropyRowLayout labels rows backward)) && (if backward then ((((((project gradient ty) =? 0) && ((blockCount gradient 1) =? 1)) && (4 <=? (project gradient span))) && (sameShape logits output)) && (entropyRowLayout output rows true)) else ((((project output ty) =? 0) && ((blockCount output 1) =? 1)) && (4 <=? (project output span))))) then (ctor PointwiseDecision.copyBlocks ((2 + (prim multiply rows (entropyRowSteps backward (project logits n0)) : Nat)) + (if backward then 0 else 1)) 4 (indexContext logits 1) (indexContext output 1) (ctor CopyMode.crossEntropy backward (project labels s1) rows)) else (ctor PointwiseDecision.invalidShape)))))),
+  body: (let gradient : TensorDescriptor := (match inputA
+    | Option.none => output
+    | Option.some descriptor => descriptor); (let logits : TensorDescriptor := (if backward then (match inputB
+    | Option.none => output
+    | Option.some descriptor => descriptor) else (match inputA
+    | Option.none => output
+    | Option.some descriptor => descriptor)); (let labels : TensorDescriptor := (if backward then (match inputC
+    | Option.none => output
+    | Option.some descriptor => descriptor) else (match inputB
+    | Option.none => output
+    | Option.some descriptor => descriptor)); (let rows : Nat := (prim multiply (prim multiply (project logits n1) (project logits n2) : Nat) (project logits n3) : Nat); (if ((((((((((match inputA
+    | Option.none => false
+    | Option.some descriptor => true) && (match inputB
+    | Option.none => false
+    | Option.some descriptor => true)) && (if backward then (match inputC
+    | Option.none => false
+    | Option.some descriptor => true) else (if (match inputC
+    | Option.none => false
+    | Option.some descriptor => true) then false else true))) && (if surplus then false else true)) && (0 <? rows)) && (0 <? (project logits n0))) && (sameShape logits labels)) && (entropyRowLayout logits rows backward)) && (entropyRowLayout labels rows backward)) && (if backward then ((((((project gradient ty) =? 0) && ((blockCount gradient 1) =? 1)) && (4 <=? (project gradient span))) && (sameShape logits output)) && (entropyRowLayout output rows true)) else ((((project output ty) =? 0) && ((blockCount output 1) =? 1)) && (4 <=? (project output span))))) then (ctor PointwiseDecision.copyBlocks ((2 + (prim multiply rows (entropyRowSteps backward (project logits n0)) : Nat)) + (if backward then 0 else 1)) 4 (indexContext logits 1) (indexContext output 1) (ctor CopyMode.crossEntropy backward (project labels s1) rows)) else (ctor PointwiseDecision.invalidShape)))))),
   executable: true
 }
 
@@ -1970,9 +1995,46 @@ definition{
 
 definition{
   name: planOptimizer,
-  parameters: [adam : Bool, flags : Nat, view : Bool, input : (Option TensorDescriptor), derivative : (Option TensorDescriptor), third : (Option TensorDescriptor), fourth : (Option TensorDescriptor), fifth : (Option TensorDescriptor), trailing : Bool, output : TensorDescriptor],
+  parameters: [
+    adam : Bool,
+    flags : Nat,
+    view : Bool,
+    input : (Option TensorDescriptor),
+    derivative : (Option TensorDescriptor),
+    third : (Option TensorDescriptor),
+    fourth : (Option TensorDescriptor),
+    fifth : (Option TensorDescriptor),
+    trailing : Bool,
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
-  body: (let weight : TensorDescriptor := (match input | Option.none => output | Option.some supplied => supplied); (let gradient : TensorDescriptor := (match derivative | Option.none => output | Option.some supplied => supplied); (let m : TensorDescriptor := (match third | Option.none => output | Option.some supplied => supplied); (let v : TensorDescriptor := (match fourth | Option.none => output | Option.some supplied => supplied); (let params : TensorDescriptor := (if adam then (match fifth | Option.none => output | Option.some supplied => supplied) else (match third | Option.none => output | Option.some supplied => supplied)); (if (((((((((((match input | Option.none => false | Option.some supplied => true) && (match derivative | Option.none => false | Option.some supplied => true)) && (match third | Option.none => false | Option.some supplied => true)) && (if adam then ((match fourth | Option.none => false | Option.some supplied => true) && (match fifth | Option.none => false | Option.some supplied => true)) else ((if (match fourth | Option.none => false | Option.some supplied => true) then false else true) && (if (match fifth | Option.none => false | Option.some supplied => true) then false else true)))) && (if trailing then false else true)) && (((((((((view && ((prim remainder (prim quotient flags 4 0 : Nat) 2 0 : Nat) =? 1)) && ((project weight ty) =? 0)) && ((project weight s0) =? 4)) && (signedCopySpan weight (blockCount weight 1))) && (optimizerOperand weight output)) && (((project weight n0) <=? 1) || ((project weight s0) =? (project output s0)))) && (((project weight n1) <=? 1) || ((project weight s1) =? (project output s1)))) && (((project weight n2) <=? 1) || ((project weight s2) =? (project output s2)))) && (((project weight n3) <=? 1) || ((project weight s3) =? (project output s3))))) && (optimizerOperand weight gradient)) && (if adam then ((optimizerOperand weight m) && (optimizerOperand weight v)) else true)) && ((project params ty) =? 0)) && ((blockCount params 1) =? (if adam then 7 else 2))) && ((if adam then 28 else 8) <=? (project params span))) then (ctor PointwiseDecision.copyBlocks ((optimizerSetup adam) + (prim multiply (blockCount weight 1) (optimizerPhases adam) : Nat)) 4 (indexContext weight 1) (indexContext output 1) (ctor CopyMode.optimizer adam)) else (ctor PointwiseDecision.invalidShape))))))),
+  body: (let weight : TensorDescriptor := (match input
+    | Option.none => output
+    | Option.some supplied => supplied); (let gradient : TensorDescriptor := (match derivative
+    | Option.none => output
+    | Option.some supplied => supplied); (let m : TensorDescriptor := (match third
+    | Option.none => output
+    | Option.some supplied => supplied); (let v : TensorDescriptor := (match fourth
+    | Option.none => output
+    | Option.some supplied => supplied); (let params : TensorDescriptor := (if adam then (match fifth
+    | Option.none => output
+    | Option.some supplied => supplied) else (match third
+    | Option.none => output
+    | Option.some supplied => supplied)); (if (((((((((((match input
+    | Option.none => false
+    | Option.some supplied => true) && (match derivative
+    | Option.none => false
+    | Option.some supplied => true)) && (match third
+    | Option.none => false
+    | Option.some supplied => true)) && (if adam then ((match fourth
+    | Option.none => false
+    | Option.some supplied => true) && (match fifth
+    | Option.none => false
+    | Option.some supplied => true)) else ((if (match fourth
+    | Option.none => false
+    | Option.some supplied => true) then false else true) && (if (match fifth
+    | Option.none => false
+    | Option.some supplied => true) then false else true)))) && (if trailing then false else true)) && (((((((((view && ((prim remainder (prim quotient flags 4 0 : Nat) 2 0 : Nat) =? 1)) && ((project weight ty) =? 0)) && ((project weight s0) =? 4)) && (signedCopySpan weight (blockCount weight 1))) && (optimizerOperand weight output)) && (((project weight n0) <=? 1) || ((project weight s0) =? (project output s0)))) && (((project weight n1) <=? 1) || ((project weight s1) =? (project output s1)))) && (((project weight n2) <=? 1) || ((project weight s2) =? (project output s2)))) && (((project weight n3) <=? 1) || ((project weight s3) =? (project output s3))))) && (optimizerOperand weight gradient)) && (if adam then ((optimizerOperand weight m) && (optimizerOperand weight v)) else true)) && ((project params ty) =? 0)) && ((blockCount params 1) =? (if adam then 7 else 2))) && ((if adam then 28 else 8) <=? (project params span))) then (ctor PointwiseDecision.copyBlocks ((optimizerSetup adam) + (prim multiply (blockCount weight 1) (optimizerPhases adam) : Nat)) 4 (indexContext weight 1) (indexContext output 1) (ctor CopyMode.optimizer adam)) else (ctor PointwiseDecision.invalidShape))))))),
   executable: true
 }
 
@@ -1986,9 +2048,28 @@ definition{
 
 definition{
   name: planHyperconnectionCombination,
-  parameters: [options : OperationParameters, input : (Option TensorDescriptor), scaling : (Option TensorDescriptor), offsets : (Option TensorDescriptor), trailing : Bool, output : TensorDescriptor],
+  parameters: [
+    options : OperationParameters,
+    input : (Option TensorDescriptor),
+    scaling : (Option TensorDescriptor),
+    offsets : (Option TensorDescriptor),
+    trailing : Bool,
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
-  body: (let mix : TensorDescriptor := (match input | Option.none => output | Option.some supplied => supplied); (let scale : TensorDescriptor := (match scaling | Option.none => output | Option.some supplied => supplied); (let base : TensorDescriptor := (match offsets | Option.none => output | Option.some supplied => supplied); (let iterations : Nat := (project options p1); (if (((((((((((((((((((((((((match input | Option.none => false | Option.some supplied => true) && (match scaling | Option.none => false | Option.some supplied => true)) && (match offsets | Option.none => false | Option.some supplied => true)) && (if trailing then false else true)) && ((((project mix ty) =? 0) && (signedCopySpan mix (blockCount mix 1))) && (separateTensors mix output))) && ((((project scale ty) =? 0) && (signedCopySpan scale (blockCount scale 1))) && (separateTensors scale output))) && ((((project base ty) =? 0) && (signedCopySpan base (blockCount base 1))) && (separateTensors base output))) && ((project mix n0) =? 24)) && ((project mix n2) =? 1)) && ((project mix n3) =? 1)) && ((project base n0) =? 24)) && ((project base n1) =? 1)) && ((project base n2) =? 1)) && ((project base n3) =? 1)) && ((project scale n1) =? 1)) && ((project scale n2) =? 1)) && ((project scale n3) =? 1)) && (3 <=? (project scale n0))) && ((project output n0) =? 4)) && ((project output n1) =? 4)) && ((project output n2) =? (project mix n1))) && ((project output n3) =? 1)) && (siluGradientLayout output)) && (0 <? iterations)) && (iterations <? 2147483648)) then (ctor PointwiseDecision.copyBlocks (prim multiply (project mix n1) (combinationTokenSteps iterations) : Nat) 4 (indexContext mix 1) (indexContext output 1) (ctor CopyMode.hyperconnectionCombination (indexContext scale 1) (indexContext base 1) (project options p0) iterations)) else (ctor PointwiseDecision.invalidShape)))))),
+  body: (let mix : TensorDescriptor := (match input
+    | Option.none => output
+    | Option.some supplied => supplied); (let scale : TensorDescriptor := (match scaling
+    | Option.none => output
+    | Option.some supplied => supplied); (let base : TensorDescriptor := (match offsets
+    | Option.none => output
+    | Option.some supplied => supplied); (let iterations : Nat := (project options p1); (if (((((((((((((((((((((((((match input
+    | Option.none => false
+    | Option.some supplied => true) && (match scaling
+    | Option.none => false
+    | Option.some supplied => true)) && (match offsets
+    | Option.none => false
+    | Option.some supplied => true)) && (if trailing then false else true)) && ((((project mix ty) =? 0) && (signedCopySpan mix (blockCount mix 1))) && (separateTensors mix output))) && ((((project scale ty) =? 0) && (signedCopySpan scale (blockCount scale 1))) && (separateTensors scale output))) && ((((project base ty) =? 0) && (signedCopySpan base (blockCount base 1))) && (separateTensors base output))) && ((project mix n0) =? 24)) && ((project mix n2) =? 1)) && ((project mix n3) =? 1)) && ((project base n0) =? 24)) && ((project base n1) =? 1)) && ((project base n2) =? 1)) && ((project base n3) =? 1)) && ((project scale n1) =? 1)) && ((project scale n2) =? 1)) && ((project scale n3) =? 1)) && (3 <=? (project scale n0))) && ((project output n0) =? 4)) && ((project output n1) =? 4)) && ((project output n2) =? (project mix n1))) && ((project output n3) =? 1)) && (siluGradientLayout output)) && (0 <? iterations)) && (iterations <? 2147483648)) then (ctor PointwiseDecision.copyBlocks (prim multiply (project mix n1) (combinationTokenSteps iterations) : Nat) 4 (indexContext mix 1) (indexContext output 1) (ctor CopyMode.hyperconnectionCombination (indexContext scale 1) (indexContext base 1) (project options p0) iterations)) else (ctor PointwiseDecision.invalidShape)))))),
   executable: true
 }
 
@@ -1996,15 +2077,40 @@ definition{
   name: hyperconnectionPostPhases,
   parameters: [channels : Nat, combination : (Option IndexContext)],
   result: Nat,
-  body: (match combination | Option.none => 2 | Option.some mix => (1 + (prim multiply 2 channels : Nat))),
+  body: (match combination
+    | Option.none => 2
+    | Option.some mix => (1 + (prim multiply 2 channels : Nat))),
   executable: true
 }
 
 definition{
   name: planHyperconnectionPost,
-  parameters: [input : (Option TensorDescriptor), channels : (Option TensorDescriptor), weights : (Option TensorDescriptor), combination : (Option TensorDescriptor), trailing : Bool, output : TensorDescriptor],
+  parameters: [
+    input : (Option TensorDescriptor),
+    channels : (Option TensorDescriptor),
+    weights : (Option TensorDescriptor),
+    combination : (Option TensorDescriptor),
+    trailing : Bool,
+    output : TensorDescriptor
+  ],
   result: PointwiseDecision,
-  body: (let x : TensorDescriptor := (match input | Option.none => output | Option.some value => value); (let residual : TensorDescriptor := (match channels | Option.none => output | Option.some value => value); (let post : TensorDescriptor := (match weights | Option.none => output | Option.some value => value); (if ((if trailing then false else (match input | Option.none => false | Option.some supplied => (match channels | Option.none => false | Option.some physical => (match weights | Option.none => false | Option.some suppliedPost => true)))) && ((((((((((((((((project x ty) =? 0) && ((project x n3) =? 1)) && (signedCopySpan x (blockCount x 1))) && (separateTensors x output)) && (((((project residual ty) =? 0) && ((project residual n3) =? 1)) && (signedCopySpan residual (blockCount residual 1))) && (separateTensors residual output))) && (((((project post ty) =? 0) && ((project post n3) =? 1)) && (signedCopySpan post (blockCount post 1))) && (separateTensors post output))) && ((project x n2) =? 1)) && ((project post n2) =? 1)) && ((project residual n0) =? (project x n0))) && ((project residual n2) =? (project x n1))) && ((project post n0) =? (project residual n1))) && ((project post n1) =? (project x n1))) && ((0 <? (project residual n1)) && (sameShape residual output))) && (siluGradientLayout output)) && (match combination | Option.none => true | Option.some mix => ((((((((project mix ty) =? 0) && ((project mix n3) =? 1)) && (signedCopySpan mix (blockCount mix 1))) && (separateTensors mix output)) && ((project mix n0) =? (project residual n1))) && ((project mix n1) =? (project residual n1))) && ((project mix n2) =? (project x n1)))))) then (let mix : (Option IndexContext) := (match combination | Option.none => (ctor Option.none [IndexContext]) | Option.some mix => (ctor Option.some [IndexContext] (indexContext mix 1))); (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (hyperconnectionPostPhases (project residual n1) mix) : Nat) 4 (indexContext x 1) (indexContext output 1) (ctor CopyMode.hyperconnectionPost (indexContext residual 1) (indexContext post 1) mix))) else (ctor PointwiseDecision.invalidShape))))),
+  body: (let x : TensorDescriptor := (match input
+    | Option.none => output
+    | Option.some value => value); (let residual : TensorDescriptor := (match channels
+    | Option.none => output
+    | Option.some value => value); (let post : TensorDescriptor := (match weights
+    | Option.none => output
+    | Option.some value => value); (if ((if trailing then false else (match input
+    | Option.none => false
+    | Option.some supplied => (match channels
+      | Option.none => false
+      | Option.some physical => (match weights
+        | Option.none => false
+        | Option.some suppliedPost => true)))) && ((((((((((((((((project x ty) =? 0) && ((project x n3) =? 1)) && (signedCopySpan x (blockCount x 1))) && (separateTensors x output)) && (((((project residual ty) =? 0) && ((project residual n3) =? 1)) && (signedCopySpan residual (blockCount residual 1))) && (separateTensors residual output))) && (((((project post ty) =? 0) && ((project post n3) =? 1)) && (signedCopySpan post (blockCount post 1))) && (separateTensors post output))) && ((project x n2) =? 1)) && ((project post n2) =? 1)) && ((project residual n0) =? (project x n0))) && ((project residual n2) =? (project x n1))) && ((project post n0) =? (project residual n1))) && ((project post n1) =? (project x n1))) && ((0 <? (project residual n1)) && (sameShape residual output))) && (siluGradientLayout output)) && (match combination
+    | Option.none => true
+    | Option.some mix => ((((((((project mix ty) =? 0) && ((project mix n3) =? 1)) && (signedCopySpan mix (blockCount mix 1))) && (separateTensors mix output)) && ((project mix n0) =? (project residual n1))) && ((project mix n1) =? (project residual n1))) && ((project mix n2) =? (project x n1)))))) then (let mix : (Option IndexContext) := (match combination
+    | Option.none => (ctor Option.none [IndexContext])
+    | Option.some mix => (ctor Option.some [IndexContext] (indexContext mix 1))); (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (hyperconnectionPostPhases (project residual n1) mix) : Nat) 4 (indexContext x 1) (indexContext output 1) (ctor CopyMode.hyperconnectionPost (indexContext residual 1) (indexContext post 1) mix))) else (ctor PointwiseDecision.invalidShape))))),
   executable: true
 }
 
@@ -2119,7 +2225,9 @@ definition{
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.siluGradient activation => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.hyperconnectionPre weights gated scale => (ctor GraphResponse.bindings 3 0 0 false 3)
-    | CopyMode.hyperconnectionPost residual post combination => (ctor GraphResponse.bindings (match combination | Option.none => 7 | Option.some mix => 15) 0 0 false 3)
+    | CopyMode.hyperconnectionPost residual post combination => (ctor GraphResponse.bindings (match combination
+      | Option.none => 7
+      | Option.some mix => 15) 0 0 false 3)
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.bindings 7 0 0 false 3)
     | CopyMode.optimizer adam => (ctor GraphResponse.bindings (if adam then 31 else 7) 0 0 false 12)
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.bindings (if backward then 7 else 3) 0 0 false 7)
@@ -2492,7 +2600,17 @@ definition{
 
 definition{
   name: combinationSoftmaxStep,
-  parameters: [part : Nat, row : Nat, token : Nat, mix : IndexContext, scale : IndexContext, base : IndexContext, destination : IndexContext, eps : Nat, flag : Nat],
+  parameters: [
+    part : Nat,
+    row : Nat,
+    token : Nat,
+    mix : IndexContext,
+    scale : IndexContext,
+    base : IndexContext,
+    destination : IndexContext,
+    eps : Nat,
+    flag : Nat
+  ],
   result: GraphResponse,
   body: (if (part <? 16) then (let lane : Nat := (prim quotient part 4 0 : Nat); (let feature : Nat := ((8 + (prim multiply 4 row : Nat)) + lane); (let address : Nat := (offsetCoordinates destination lane row token 0); (if ((prim remainder part 4 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 (offsetCoordinates mix feature token 0 0)) (ctor WordOperand.source 1 (offsetCoordinates scale 2 0 0 0)) (ctor WordTarget.scratch 1) 4 4) else (if ((prim remainder part 4 0 : Nat) =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 1) (ctor WordOperand.source 2 (offsetCoordinates base feature 0 0 0)) (ctor WordTarget.output address) 4 4) else (if ((prim remainder part 4 0 : Nat) =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 0) (if (lane =? 0) then (ctor WordOperand.immediate 4286578688) else (ctor WordOperand.scratch 0)) (ctor WordOperand.output address) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (if (flag =? 2) then (if (lane =? 0) then (ctor WordOperand.immediate 4286578688) else (ctor WordOperand.scratch 0)) else (ctor WordOperand.output address)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4))))))) else (if (part <? 28) then (let relative : Nat := (prim subtract part 16 : Nat); (let lane : Nat := (prim quotient relative 3 0 : Nat); (let address : Nat := (offsetCoordinates destination lane row token 0); (if ((prim remainder relative 3 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.output address) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 2) 4 4) else (if ((prim remainder relative 3 0 : Nat) =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.elementary 16 0 0) (ctor WordOperand.scratch 2) (ctor WordOperand.immediate 0) (ctor WordTarget.output address) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (if (lane =? 0) then (ctor WordOperand.immediate 0) else (ctor WordOperand.scratch 1)) (ctor WordOperand.output address) (ctor WordTarget.scratch 1) 4 4)))))) else (if (part =? 28) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 1) 4 4) else (let relative : Nat := (prim subtract part 29 : Nat); (let lane : Nat := (prim quotient relative 2 0 : Nat); (let address : Nat := (offsetCoordinates destination lane row token 0); (if ((prim remainder relative 2 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.output address) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 2) (ctor WordOperand.immediate eps) (ctor WordTarget.output address) 4 4)))))))),
   executable: true
@@ -2516,7 +2634,15 @@ definition{
 
 definition{
   name: crossEntropyStep,
-  parameters: [index : Nat, source : IndexContext, destination : IndexContext, backward : Bool, labelStride : Nat, rows : Nat, flag : Nat],
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    destination : IndexContext,
+    backward : Bool,
+    labelStride : Nat,
+    rows : Nat,
+    flag : Nat
+  ],
   result: GraphResponse,
   body: (let width : Nat := (project source u0); (let steps : Nat := (entropyRowSteps backward width); (let relative : Nat := (prim subtract index 2 : Nat); (let row : Nat := (prim quotient relative steps 0 : Nat); (let phase : Nat := (prim remainder relative steps 0 : Nat); (if (index =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.wide 3) (ctor WordOperand.immediate rows) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 6) 4 4) else (if (index =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (if backward then (ctor WordOperand.source 0 0) else (ctor WordOperand.immediate 3212836864)) (ctor WordOperand.scratch 6) (ctor WordTarget.scratch 6) 4 4) else (if (row =? rows) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 5) (ctor WordOperand.scratch 6) (ctor WordTarget.output 0) 4 4) else (if (phase <? (prim multiply 2 width : Nat)) then (let lane : Nat := (prim quotient phase 2 0 : Nat); (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 0) (if (lane =? 0) then (ctor WordOperand.immediate 4286578688) else (ctor WordOperand.scratch 0)) (ctor WordOperand.source (if backward then 1 else 0) ((prim multiply row (project source s1) : Nat) + (prim multiply 4 lane : Nat))) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (if (flag =? 2) then (if (lane =? 0) then (ctor WordOperand.immediate 4286578688) else (ctor WordOperand.scratch 0)) else (ctor WordOperand.source (if backward then 1 else 0) ((prim multiply row (project source s1) : Nat) + (prim multiply 4 lane : Nat)))) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4))) else (if (phase <? (prim multiply 6 width : Nat)) then (let part : Nat := (prim subtract phase (prim multiply 2 width : Nat) : Nat); (let lane : Nat := (prim quotient part 4 0 : Nat); (if ((prim remainder part 4 0 : Nat) <? 2) then (if ((prim remainder part 4 0 : Nat) <? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.source (if backward then 1 else 0) ((prim multiply row (project source s1) : Nat) + (prim multiply 4 lane : Nat))) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 3) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.elementary 16 0 0) (ctor WordOperand.scratch 3) (ctor WordOperand.immediate 0) (if backward then (ctor WordTarget.output ((prim multiply row (project destination s1) : Nat) + (prim multiply 4 lane : Nat))) else (ctor WordTarget.scratch 3)) 4 4)) else (if ((prim remainder part 4 0 : Nat) <? 3) then (ctor GraphResponse.instruction (ctor WordOperation.wide 1) (if backward then (ctor WordOperand.output ((prim multiply row (project destination s1) : Nat) + (prim multiply 4 lane : Nat))) else (ctor WordOperand.scratch 3)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 3) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.wide 0) (if (lane =? 0) then (ctor WordOperand.immediate 0) else (ctor WordOperand.scratch 1)) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 1) 4 4))))) else (if (phase <? ((prim multiply 6 width : Nat) + 2)) then (if (phase =? (prim multiply 6 width : Nat)) then (if backward then (ctor GraphResponse.instruction (ctor WordOperation.wide 4) (ctor WordOperand.immediate 4607182418800017408) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.wide 2) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4)) else (if backward then (ctor GraphResponse.instruction (ctor WordOperation.wide 2) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.elementary 13 0 0) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4))) else (if backward then (let part : Nat := (prim subtract phase ((prim multiply 6 width : Nat) + 2) : Nat); (let lane : Nat := (prim quotient part 3 0 : Nat); (if ((prim remainder part 3 0 : Nat) <? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.output ((prim multiply row (project destination s1) : Nat) + (prim multiply 4 lane : Nat))) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 3) 4 4) else (if ((prim remainder part 3 0 : Nat) <? 2) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 3) (ctor WordOperand.source (if backward then 2 else 1) ((prim multiply row labelStride : Nat) + (prim multiply 4 lane : Nat))) (ctor WordTarget.scratch 3) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 3) (ctor WordOperand.scratch 6) (ctor WordTarget.output ((prim multiply row (project destination s1) : Nat) + (prim multiply 4 lane : Nat))) 4 4))))) else (if (phase <? ((prim multiply 11 width : Nat) + 2)) then (let part : Nat := (prim subtract phase ((prim multiply 6 width : Nat) + 2) : Nat); (let lane : Nat := (prim quotient part 5 0 : Nat); (if ((prim remainder part 5 0 : Nat) <? 2) then (if ((prim remainder part 5 0 : Nat) <? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.source (if backward then 1 else 0) ((prim multiply row (project source s1) : Nat) + (prim multiply 4 lane : Nat))) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 3) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 3) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 3) 4 4)) else (if ((prim remainder part 5 0 : Nat) <? 3) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 3) (ctor WordOperand.source (if backward then 2 else 1) ((prim multiply row labelStride : Nat) + (prim multiply 4 lane : Nat))) (ctor WordTarget.scratch 3) 4 4) else (if ((prim remainder part 5 0 : Nat) <? 4) then (ctor GraphResponse.instruction (ctor WordOperation.wide 1) (ctor WordOperand.scratch 3) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 3) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.wide 0) (if (lane =? 0) then (ctor WordOperand.immediate 0) else (ctor WordOperand.scratch 4)) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 4) 4 4)))))) else (if (phase =? ((prim multiply 11 width : Nat) + 2)) then (ctor GraphResponse.instruction (ctor WordOperation.wide 2) (ctor WordOperand.scratch 4) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 4) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (if (row =? 0) then (ctor WordOperand.immediate 0) else (ctor WordOperand.scratch 5)) (ctor WordOperand.scratch 4) (ctor WordTarget.scratch 5) 4 4))))))))))))))),
   executable: true
@@ -2532,7 +2658,16 @@ definition{
 
 definition{
   name: hyperconnectionCombinationStep,
-  parameters: [index : Nat, mix : IndexContext, scale : IndexContext, base : IndexContext, destination : IndexContext, eps : Nat, iterations : Nat, flag : Nat],
+  parameters: [
+    index : Nat,
+    mix : IndexContext,
+    scale : IndexContext,
+    base : IndexContext,
+    destination : IndexContext,
+    eps : Nat,
+    iterations : Nat,
+    flag : Nat
+  ],
   result: GraphResponse,
   body: (let steps : Nat := (combinationTokenSteps iterations); (let phase : Nat := (prim remainder index steps 0 : Nat); (let token : Nat := (prim quotient index steps 0 : Nat); (if (phase <? 148) then (combinationSoftmaxStep (prim remainder phase 37 0 : Nat) (prim quotient phase 37 0 : Nat) token mix scale base destination eps flag) else (combinationNormalizeStep (prim subtract phase 148 : Nat) token destination eps))))),
   executable: true
@@ -2540,9 +2675,18 @@ definition{
 
 definition{
   name: hyperconnectionPostStep,
-  parameters: [index : Nat, x : IndexContext, residual : IndexContext, post : IndexContext, combination : (Option IndexContext), destination : IndexContext],
+  parameters: [
+    index : Nat,
+    x : IndexContext,
+    residual : IndexContext,
+    post : IndexContext,
+    combination : (Option IndexContext),
+    destination : IndexContext
+  ],
   result: GraphResponse,
-  body: (let phases : Nat := (hyperconnectionPostPhases (project residual n1) combination); (let phase : Nat := (prim remainder index phases 0 : Nat); (let element : Nat := (prim quotient index phases 0 : Nat); (let coordinate : Nat := (prim remainder element (project destination u0) 0 : Nat); (let row : Nat := (prim quotient element (project destination u0) 0 : Nat); (let destChannel : Nat := (prim remainder row (project residual n1) 0 : Nat); (let token : Nat := (prim quotient row (project residual n1) 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 ((prim multiply (project x s0) coordinate : Nat) + (prim multiply (project x s1) token : Nat))) (ctor WordOperand.source 2 ((prim multiply (project post s0) destChannel : Nat) + (prim multiply (project post s1) token : Nat))) (ctor WordTarget.scratch 0) 4 4) else (match combination | Option.none => (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.source 1 (((prim multiply (project residual s0) coordinate : Nat) + (prim multiply (project residual s1) destChannel : Nat)) + (prim multiply (project residual s2) token : Nat))) (ctor WordTarget.output (blockOffset element destination)) 4 4) | Option.some mix => (let lane : Nat := (prim subtract phase 1 : Nat); (let channel : Nat := (prim quotient lane 2 0 : Nat); (if ((prim remainder lane 2 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 (((prim multiply (project residual s0) coordinate : Nat) + (prim multiply (project residual s1) channel : Nat)) + (prim multiply (project residual s2) token : Nat))) (ctor WordOperand.source 3 (((prim multiply (project mix s0) destChannel : Nat) + (prim multiply (project mix s1) channel : Nat)) + (prim multiply (project mix s2) token : Nat))) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (if ((phase + 1) =? phases) then (ctor WordTarget.output (blockOffset element destination)) else (ctor WordTarget.scratch 0)) 4 4))))))))))))),
+  body: (let phases : Nat := (hyperconnectionPostPhases (project residual n1) combination); (let phase : Nat := (prim remainder index phases 0 : Nat); (let element : Nat := (prim quotient index phases 0 : Nat); (let coordinate : Nat := (prim remainder element (project destination u0) 0 : Nat); (let row : Nat := (prim quotient element (project destination u0) 0 : Nat); (let destChannel : Nat := (prim remainder row (project residual n1) 0 : Nat); (let token : Nat := (prim quotient row (project residual n1) 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 ((prim multiply (project x s0) coordinate : Nat) + (prim multiply (project x s1) token : Nat))) (ctor WordOperand.source 2 ((prim multiply (project post s0) destChannel : Nat) + (prim multiply (project post s1) token : Nat))) (ctor WordTarget.scratch 0) 4 4) else (match combination
+    | Option.none => (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.source 1 (((prim multiply (project residual s0) coordinate : Nat) + (prim multiply (project residual s1) destChannel : Nat)) + (prim multiply (project residual s2) token : Nat))) (ctor WordTarget.output (blockOffset element destination)) 4 4)
+    | Option.some mix => (let lane : Nat := (prim subtract phase 1 : Nat); (let channel : Nat := (prim quotient lane 2 0 : Nat); (if ((prim remainder lane 2 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 (((prim multiply (project residual s0) coordinate : Nat) + (prim multiply (project residual s1) channel : Nat)) + (prim multiply (project residual s2) token : Nat))) (ctor WordOperand.source 3 (((prim multiply (project mix s0) destChannel : Nat) + (prim multiply (project mix s1) channel : Nat)) + (prim multiply (project mix s2) token : Nat))) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (if ((phase + 1) =? phases) then (ctor WordTarget.output (blockOffset element destination)) else (ctor WordTarget.scratch 0)) 4 4))))))))))))),
   executable: true
 }
 
@@ -2678,9 +2822,7 @@ definition{
   name: suppliedTensor,
   parameters: [input : (Option TensorDescriptor)],
   result: Bool,
-  body: (match input
-    | Option.none => false
-    | Option.some tensor => true),
+  body: (match input | Option.none => false | Option.some tensor => true),
   executable: true
 }
 
@@ -2689,7 +2831,15 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if ((operation =? 82) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || tailPresent)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3 | Option.some descriptor => true | Option.none => (match input4 | Option.some descriptor => true | Option.none => tailPresent)) output)) else (if ((operation =? 96) || (operation =? 97)) then (ctor GraphResponse.planned (planOptimizer (operation =? 96) flags view input0 input1 input2 input3 input4 tailPresent output)) else (let trailing : Bool := (match input4 | Option.none => tailPresent | Option.some supplied => true); (if (operation =? 85) then (ctor GraphResponse.planned (planHyperconnectionCombination options input0 input1 input2 (match input3 | Option.none => trailing | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if ((operation =? 82) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || tailPresent)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
+      | Option.some descriptor => true
+      | Option.none => (match input4
+        | Option.some descriptor => true
+        | Option.none => tailPresent)) output)) else (if ((operation =? 96) || (operation =? 97)) then (ctor GraphResponse.planned (planOptimizer (operation =? 96) flags view input0 input1 input2 input3 input4 tailPresent output)) else (let trailing : Bool := (match input4
+      | Option.none => tailPresent
+      | Option.some supplied => true); (if (operation =? 85) then (ctor GraphResponse.planned (planHyperconnectionCombination options input0 input1 input2 (match input3
+      | Option.none => trailing
+      | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
       | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
@@ -4051,6 +4201,13 @@ theorem{
   name: frozenCopySourcesUseBlockDecoding,
   parameters: [],
   statement: (((decodedCopyType 2) && (decodedCopyType 26)) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: errorGaussianSelectsBinary32,
+  parameters: [],
+  statement: ((unaryKind 89 16) = (ctor Option.some [Nat] 24)),
   proof: reflexivity{}
 }
 \end{semanticmodule}

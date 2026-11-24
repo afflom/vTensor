@@ -1254,10 +1254,11 @@ fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32,
         },
         1 => linear::gelu_f32(input)?,
         2 => return Ok(linear::swiglu_f32(input, gate)?),
+        4 => linear::gaussian_error_f32(input, true)?,
         5 => linear::gelu_quick_f32(input)?,
         _ => return Err(BackendError::InvalidTensor),
     };
-    let activation = if storage == 1 && variant != 0 {
+    let activation = if storage == 1 && matches!(variant, 1 | 5) {
         prepare_float(0, 1, u64::from(activation.to_bits()))?
     } else {
         activation
@@ -1337,6 +1338,7 @@ fn execute_word(
                 20 => linear::gelu_f32(input),
                 21 => linear::gelu_quick_f32(input),
                 22 => linear::softplus_f32(input),
+                24 => linear::gaussian_error_f32(input, true),
                 _ => return Err(InvalidTensor),
             }
             .map_err(BackendError::overflow)?;

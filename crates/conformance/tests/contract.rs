@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn gaussian_error_graphs_vt_137() { "upstream-GAUSSIAN_ERROR", 48, ["typed", "pointwise"] }
     fn gaussian_graphs_vt_75() { "upstream-GELU_FAMILIES", 64, ["pointwise"] }
 
     fn contiguous_convolution_vt_76() { "upstream-CONV_2D_CONTIGUOUS", 3, ["pointwise"] }
@@ -285,15 +286,13 @@ fn contract_tc_01() {
     let requires = |name: &str, term: &str| {
         assert!(declarations[name].contains(term), "{name} omitted {term}");
     };
-    requires(
-        "conformant_decides",
+    for clause in [
         "parameters: [observation : Observation],",
-    );
-    requires(
-        "conformant_decides",
         "statement: (((conformant observation) = true) <-> (Conformant observation)),",
-    );
-    requires("conformant_decides", "axioms: [propext]");
+        "axioms: [propext]",
+    ] {
+        requires("conformant_decides", clause);
+    }
     // The proposition names every universal policy file whose digest
     // `template.lock` binds: all of them but the self-referential lock.
     let contract = ggml_oracle::read_json(root().join("template-contract.json"));
@@ -1336,6 +1335,7 @@ fn buffer_transfer_vt_09() {
 
 mod native_backend_oracle {
     use super::ggml_oracle::{build, digest, publish_file, run, storage_oracle, verify_file};
+    use repo_model::artifact::sha256_hex;
     use sha2::{Digest, Sha256};
     use std::fmt::Write;
     use std::path::Path;
@@ -1343,8 +1343,7 @@ mod native_backend_oracle {
 
     fn frozen_json(name: &str, expected: &str) -> serde_json::Value {
         let bytes = std::fs::read(super::root().join(format!("verification/{name}.json"))).unwrap();
-        let digest = repo_model::artifact::sha256_hex(&bytes);
-        assert_eq!(digest, expected, "frozen {name} changed");
+        assert_eq!(sha256_hex(&bytes), expected, "frozen {name} changed");
         serde_json::from_slice(&bytes).unwrap()
     }
 
@@ -1353,7 +1352,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "b2d461e9b135bd4d4e04c658b55a679e0511feaf12e2c13b4ad110caf184d5ea",
+            "af9aec11ac9dd06d809eda64b8845a891b207a27dbe0266a9b8edbac7f301d57",
         )
     });
 
@@ -1395,10 +1394,7 @@ mod native_backend_oracle {
             assert_eq!(input.get(..32), Some(header.as_flattened()));
             let records = &input[32..];
             assert_eq!(baseline["transcript_bytes"], records.len());
-            assert_eq!(
-                baseline["transcript_sha256"],
-                repo_model::artifact::sha256_hex(records)
-            );
+            assert_eq!(baseline["transcript_sha256"], sha256_hex(records));
             input
         })
     }
@@ -1547,7 +1543,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let input: &[u8] = match mode {
             "matrix" | "elementwise" => fixture_input(u64::from(mode == "elementwise")),
             "update" => &[],
-            mode if mode.starts_with("upstream-") => ORACLE_BINDINGS["factory_inputs"][mode]
+            _ if imported => ORACLE_BINDINGS["factory_inputs"][mode]
                 .as_str()
                 .unwrap_or("")
                 .as_bytes(),
@@ -1566,7 +1562,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             std::thread::current().id()
         ));
         std::fs::write(&expected_snapshot, vtensor_backend::source_snapshot()).unwrap();
-        let recipe = if mode.starts_with("upstream-") {
+        let recipe = if imported {
             None
         } else if mode == "typed-binary" {
             Some(&*TYPED_BINARY)
@@ -1603,7 +1599,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         if let Some(digest) = ORACLE_BINDINGS["factory_transcripts"][mode].as_str() {
             let rows = text.strip_suffix(&footer).expect("complete factory count");
             assert_eq!(
-                repo_model::artifact::sha256_hex(rows.as_bytes()),
+                sha256_hex(rows.as_bytes()),
                 digest,
                 "factory ordinals or parameters differ from the pinned transcript"
             );
@@ -1613,8 +1609,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         for (path, recipe) in recipes {
             let bytes =
                 std::fs::read(&path).expect("this execution must emit its fixture transcript");
-            let hash = repo_model::artifact::sha256_hex(&bytes);
             assert_eq!(recipe["bytes"], bytes.len(), "{mode} fixture length");
+            let hash = sha256_hex(&bytes);
             assert_eq!(recipe["sha256"], hash, "{mode} fixture digest");
             std::fs::remove_file(path).unwrap();
         }
@@ -2196,19 +2192,20 @@ int main(int argc, char **argv) {
         }
       }
       const bool parameterized = !strcmp(argv[3]+9,"SWIGLU_OAI_VARIANTS");
-      if (parameterized || !strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
-        const std::array<float,12> inputs={8,-8,0,-0.f,2,-2,-8,8,-3,3,0,-0.f};
+      const bool erf = !strcmp(argv[3]+9,"GAUSSIAN_ERROR");
+      if (erf || parameterized || !strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
+        const std::array<float,12> inputs={erf?1.25f:8.f,-8,0,-0.f,2,-2,erf?3.f:-8.f,8,-3,3,0,-0.f};
         for (int swapped : {0,1}) {
           std::array<float,6> expected;
           for (auto selected : {reference,backend}) {
             graph_fixture ctx(4); CHECK(ctx);
-            auto x=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,inputs.size());
-            auto out=parameterized ? ggml_swiglu_oai(ctx,x,nullptr,-0.5f,2.f) : ggml_swiglu_clamp(ctx,x,nullptr,2.f);
+            auto x=ggml_new_tensor_1d(ctx,erf?GGML_TYPE_F16:GGML_TYPE_F32,inputs.size());
+            auto out=erf ? ggml_geglu_erf(ctx,x) : parameterized ? ggml_swiglu_oai(ctx,x,nullptr,-0.5f,2.f) : ggml_swiglu_clamp(ctx,x,nullptr,2.f);
             out->op_params[1]=swapped;
             auto graph=ctx.allocate(out,selected); CHECK(graph);
-            ggml_backend_tensor_set(x,inputs.data(),0,sizeof(inputs));
+            for (size_t i=0;i<inputs.size();++i) ggml_set_f32_1d(x,i,inputs[i]);
             CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-            std::array<float,6> actual; ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
+            std::array<float,6> actual; for (size_t i=0;i<actual.size();++i) actual[i]=ggml_get_f32_1d(out,i);
             if (selected==reference) expected=actual;
             else {
               for (size_t i=0;i<actual.size();++i) {

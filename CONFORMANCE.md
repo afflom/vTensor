@@ -224,6 +224,7 @@ model does not sanction.
 | `VT-134` | `build` | Prism schedules batched lower triangular solves and Verdant performs forward substitution against GGML CPU |
 | `VT-135` | `build` | Prism routes nonlinear four-bit row writes and copies through Verdant encoders against GGML CPU |
 | `VT-136` | `build` | Custom GGML callbacks retain their tensor descriptors, user data, task indices and synchronous graph completion |
+| `VT-137` | `build` | Prism schedules GELU_ERF and GEGLU_ERF using the Verdant binary32 Gaussian error function |
 
 ## normalization-graphs
 

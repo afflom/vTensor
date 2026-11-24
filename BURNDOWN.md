@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,360 passed**, **395 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,408 passed**, **347 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -31,7 +31,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,234 non-Prism lines** (12,783 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,233 non-Prism lines** (12,782 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -138,7 +138,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 12 SWIGLU_CLAMP graphs across F32, F16 and BF16 and 303 newly supported matrix fusions. [VT-93 results](verification/factory-clamped-swiglu-vt93.json)
 - [x] Pass all 173 ADD graphs, including ordinary and in-place E4M3 + F32. All 427 SUB, MUL and DIV graphs also pass. [E4M3 comparisons](verification/factory-small-float-add-vt120.json) · [Binary arithmetic](verification/factory-checkpoint-vt57.json)
 - [x] Submit and pin Verdant’s binary32 error function. Its 259,460 scalar comparisons passed, and the planted exponential defect failed. [Verdant PR #54](https://github.com/afflom/verdant-engine/pull/54) · [Patch pin](model/verdant-development.json)
-- [ ] Pass the remaining GELU_ERF (12), GEGLU_ERF (36), ELU (12) and XIELU (6) graphs.
+- [x] Pass 12 GELU_ERF and 36 GEGLU_ERF graphs. Verify half-precision gate rounding against two additional CPU graphs. [VT-137 comparisons](verification/factory-gaussian-error-vt137.json)
+- [ ] Pass ELU (12) and XIELU (6).
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract

@@ -482,3 +482,9 @@ Feature: native-backend
     Given an upstream custom graph with in-place or distinct output storage
     When the host callback runs at the graph task width
     Then all tasks finish with the same inputs and outputs as GGML CPU
+
+  @VT-137 @build
+  Scenario: Prism schedules GELU_ERF and GEGLU_ERF using the Verdant binary32 Gaussian error function
+    Given the imported unary and combined or split gated Gaussian error graphs
+    When vTensor applies the activation and any gate before the destination conversion
+    Then the results agree with the GGML CPU evaluator
