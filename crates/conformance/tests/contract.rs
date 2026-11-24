@@ -72,6 +72,7 @@ ggml_batches! {
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
     fn flash_accumulators_vt_178() { "flash-precision", 4205, ["attention"] }
     fn flash_storage_pairs_vt_177() { "flash-storage", 697, ["attention"] }
+    fn mixed_row_casts_vt_181() { "mixed-cast", 22846, ["typed"] }
     /// `VT-180`: packed copied and in-place binary graphs match the original CPU decode, arithmetic and encode.
     fn packed_binary_rows_vt_180() { "packed-binary", 6450, ["typed"] }
     fn half_add_casts_vt_179() { "half-add", 54, ["typed"] }
@@ -1268,7 +1269,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "c9cac31478fa3e638d0e3586f04eb9f8d99956302e1eb2dc17d9ca1227f98e03",
+            "58553552dd2542611640ee6ecfc11f9d1324aeaa7e44e33d27674f706fb8eba1",
         )
     });
 
@@ -1443,9 +1444,15 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let input: &[u8] = match (mode, ORACLE_BINDINGS["cast_word_tables"][mode].as_str()) {
             ("matrix" | "elementwise", _) => fixture_input(u64::from(mode == "elementwise")),
             (_, Some(table)) => {
-                words =
-                    std::fs::read(root.join(format!("verification/{table}-words.tsv"))).unwrap();
+                let path = root.join(format!("verification/{table}-words.tsv"));
                 let oracle = fixture_record(&format!("{table}-oracle"));
+                words = if oracle["compression"] == "gzip" {
+                    run(Command::new("gzip")
+                        .arg("-dc")
+                        .arg(path.with_extension("tsv.gz")))
+                } else {
+                    std::fs::read(path).unwrap()
+                };
                 assert_eq!(sha256_hex(&words), oracle["words_sha256"]);
                 &words
             }
@@ -1857,16 +1864,13 @@ static bool refuses_poisoned_output(ggml_backend_t backend, ggml_cgraph *graph, 
     return ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(storage)==std::vector<uint8_t>(size,0x33);
 }
 static const decltype(&ggml_add) binary_nodes[][2]={{ggml_add,ggml_add_inplace},{ggml_sub,ggml_sub_inplace},{ggml_mul,ggml_mul_inplace},{ggml_div,ggml_div_inplace}};
-static std::array<ggml_tensor *,4> scalar_cast_graph(ggml_context *ctx, ggml_type from, ggml_type to, int rows, bool padded) {
+static std::array<ggml_tensor *,3> scalar_cast_graph(ggml_context *ctx, ggml_type from, ggml_type to, int rows, bool padded) {
     auto backing=ggml_new_tensor_2d(ctx,from,padded?10:8,rows);
     auto input=padded?ggml_view_2d(ctx,backing,8,rows,backing->nb[1],ggml_type_size(from)):backing;
-    if (!padded) {
-        auto result=ggml_cast(ctx,input,to);
-        return {input,result,result,result};
-    }
-    auto storage=ggml_new_tensor_2d(ctx,to,6,2*rows);
+    auto storage=padded?ggml_new_tensor_2d(ctx,to,6,2*rows):ggml_cast(ctx,input,to);
+    if (!padded) return {input,storage,storage};
     auto view=ggml_view_2d(ctx,storage,4,2*rows,storage->nb[1],ggml_type_size(to));
-    return {input,storage,view,ggml_cpy(ctx,input,view)};
+    return {input,storage,ggml_cpy(ctx,input,view)};
 }
 static ggml_tensor * canonical_copy(ggml_context *ctx, ggml_tensor *input) {
     const int64_t block=ggml_blck_size(input->type), count=ggml_nelements(input)/block;
@@ -2255,7 +2259,9 @@ int main(int argc, char **argv) {
     const bool codebook_add=!strcmp(argv[3],"codebook-add");
     const bool half_add=!strcmp(argv[3],"half-add");
     const bool row_binary=!strcmp(argv[3],"packed-binary");
-    if (row_binary || half_add || codebook_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
+    const bool mixed_cast=!strcmp(argv[3],"mixed-cast");
+    const bool paired=row_binary || mixed_cast;
+    if (paired || half_add || codebook_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
         int n=0; CHECK(scanf("%d",&n)==1 && n>0);
         for (int i=0;i<n;++i) {
@@ -2263,12 +2269,12 @@ int main(int argc, char **argv) {
             auto &bytes=sources[{type,width}]; CHECK(bytes.empty());
             bytes=read_hex_bytes(2*ggml_row_size(ggml_type(type),width)); CHECK(!bytes.empty());
         }
-        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==(row_binary?2875:half_add?54:codebook_add?175:625));
+        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==(mixed_cast?22738:row_binary?2875:half_add?54:codebook_add?175:625));
         size_t cases=0;
         for (int p=0;p<pairs;++p) {
             int from,to,width; CHECK(scanf("%d%d%d",&from,&to,&width)==3);
             int right_type=GGML_TYPE_F32,kind=0;
-            if (row_binary) CHECK(scanf("%d%d",&right_type,&kind)==2 && from==to && kind>=0 && kind<4);
+            if (paired) CHECK(scanf("%d%d",&right_type,&kind)==2 && (mixed_cast?kind==0:from==to && kind>=0 && kind<4));
             auto &data=sources.at({from,width});
             auto expected=read_hex_bytes(2*ggml_row_size(ggml_type(to),width)); CHECK(!expected.empty());
             // The CPU packed kernel requires equal shapes. Materialize the broadcast with GGML itself.
@@ -2299,7 +2305,7 @@ int main(int argc, char **argv) {
                         int sample=(row+row/rows+row/(rows*planes))%2;
                         ggml_backend_tensor_set(x,data.data()+sample*row_bytes,row*row_bytes,row_bytes);
                     }
-                    if (row_binary) {
+                    if (paired) {
                         const auto &right=sources.at({right_type,width});
                         auto stride=right.size()/2;
                         for (size_t row=0;row<2;++row) ggml_backend_tensor_set(y,right.data()+(1-row)*stride,row*stride,stride);
@@ -2378,7 +2384,7 @@ int main(int argc, char **argv) {
             for (bool padded : {false,true}) {
                 if (binary_widths && padded) continue;
                 graph_fixture target(8); CHECK(target);
-                auto [input,out,view,result]=scalar_cast_graph(target,ggml_type(from),ggml_type(to),8,padded);
+                auto [input,out,result]=scalar_cast_graph(target,ggml_type(from),ggml_type(to),8,padded);
                 auto graph=target.allocate(result,backend,true);
                 CHECK(graph && ggml_backend_supports_op(backend,result));
                 ggml_backend_buffer_clear(target.storage.get(),0xa5);
@@ -2387,7 +2393,7 @@ int main(int argc, char **argv) {
                 auto actual=tensor_bytes(out);
                 std::vector<uint8_t> oracle(actual.size(),0xa5);
                 for (size_t i=0;i<expected.size();++i) {
-                    size_t offset=(padded?view->view_offs:0)+block_address(result,i);
+                    size_t offset=(padded?ggml_type_size(ggml_type(to)):0)+block_address(result,i);
                     uint64_t word=0;
                     for (size_t j=0;j<result->nb[0];++j) word|=uint64_t(actual.at(offset+j))<<(8*j);
                     const auto nan=[&](uint64_t x) {
@@ -2428,7 +2434,7 @@ int main(int argc, char **argv) {
           if (!octet_integers && (integer_floats ? integer(from)==integer(to) : from==to || !integer(from) || !integer(to))) continue;
           for (bool padded : {false,true}) {
             graph_fixture target(9), cpu(4); CHECK(target && cpu);
-            auto [input,destination,view,result]=scalar_cast_graph(target,from,to,2,padded);
+            auto [input,destination,result]=scalar_cast_graph(target,from,to,2,padded);
             auto expected=ggml_new_tensor_2d(cpu,to,padded?6:8,padded?4:2);
             auto fp32=octet_integers?ggml_new_tensor_1d(cpu,GGML_TYPE_F32,1):nullptr;
             auto logical=padded?ggml_view_2d(cpu,expected,4,4,expected->nb[1],ggml_type_size(to)):expected;

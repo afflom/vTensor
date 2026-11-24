@@ -746,3 +746,9 @@ Feature: native-backend
     Given two distinct rows from each decodable scalar and block format
     When GGML schedules a copied or in-place binary operation with a packed left operand
     Then the encoded rows match original GGML decode, F32 arithmetic and row encoding
+
+  @VT-181 @build
+  Scenario: GGML ADD_CAST decodes mixed input rows and encodes all floating and packed destinations
+    Given mixed floating or packed rows accepted by the original ADD_CAST constructor
+    When the public scheduler places each new result before allocation
+    Then the destination bytes match the original F32 GGML sum and destination encoder

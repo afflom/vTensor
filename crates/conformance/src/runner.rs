@@ -466,21 +466,18 @@ impl Tensor {
 
     fn map_sources<'a, T, const N: usize>(
         &'a self,
+        first: usize,
         bind: impl Fn(&'a Tensor) -> Result<T, BackendError>,
     ) -> Result<[Option<T>; N], BackendError> {
         let mut inputs = [const { None }; N];
         for (slot, input) in inputs.iter_mut().enumerate() {
-            *input = self.source(slot).map(&bind).transpose()?;
+            *input = self.source(first + slot).map(&bind).transpose()?;
         }
         Ok(inputs)
     }
 
     fn inputs<const N: usize>(&self) -> Result<[Option<TensorInput<'_>>; N], BackendError> {
-        self.map_sources(TensorInput::new)
-    }
-
-    fn input(&self, slot: usize) -> Result<Option<TensorInput<'_>>, BackendError> {
-        self.source(slot).map(TensorInput::new).transpose()
+        self.map_sources(0, TensorInput::new)
     }
 }
 
@@ -532,7 +529,7 @@ impl CallbackParams {
         // SAFETY: graph_compute retains each descriptor and its allocation until fill joins all callback tasks.
         let descriptor = unsafe { &*tensor };
         graph_tensor_data(descriptor)?;
-        descriptor.map_sources::<_, GGML_MAX_SRC>(graph_tensor_data)?;
+        descriptor.map_sources::<_, GGML_MAX_SRC>(0, graph_tensor_data)?;
         let mut tasks = workspace(width as u64, ())?;
         let (dst, function, user, operation) = (
             tensor as usize,
@@ -622,7 +619,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, ..] =
         tensor.op_params.map(|word| u64::from(word as u32));
     let [primary, secondary, base, fourth, fifth, sixth, seventh] =
-        tensor.map_sources(tensor_metadata)?;
+        tensor.map_sources(0, tensor_metadata)?;
     let has_source_from = |slot: usize| tensor.src[slot..].iter().any(|source| !source.is_null());
     let weight = tensor.source(0);
     let response = pointwise(GraphRequest::C0(
@@ -1408,31 +1405,32 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     // Word instructions can update their input in place. Only staged row conversion
     // retains an immutable input slice throughout the instruction loop.
     let source = staged.then(|| TensorInput::new(left)).transpose()?;
-    let primary = match &source {
-        Some(input) => input.bytes.as_ptr().cast_mut(),
-        None => graph_tensor_data(left)?,
+    let right = secondary
+        .filter(|_| *row_arithmetic)
+        .map(TensorInput::new)
+        .transpose()?;
+    let pointer = |tensor, input: Option<&TensorInput>| match input {
+        Some(input) => Ok(input.bytes.as_ptr().cast_mut()),
+        None => graph_tensor_data(tensor),
     };
-    let pointers = [primary, secondary.map_or(Ok(primary), graph_tensor_data)?];
+    let primary = pointer(left, source.as_ref())?;
+    let pointers = [
+        primary,
+        secondary.map_or(Ok(primary), |t| pointer(t, right.as_ref()))?,
+    ];
     let mut offsets = Vec::new();
     let mut encoded = Vec::new();
-    let (TensorDescriptor::C0(.., span, _), lanes, _) = tensor_layout(tensor)?;
+    let (TensorDescriptor::C0(.., span, _), lanes, block_bytes) = tensor_layout(tensor)?;
     let uniform = importance
         .map(|word| workspace(lanes as u64, f32::from_bits(word as u32)))
         .transpose()?;
     let output = graph_tensor_region(tensor, span as usize)?;
-    let width = if *row_arithmetic {
-        tensor.ne[0] as u64
-    } else if staged {
-        lanes as u64
-    } else {
-        0
+    let width = match (&source, *row_arithmetic) {
+        (None, _) => 0,
+        (Some(_), true) => tensor.ne[0] as u64,
+        (Some(_), false) => lanes as u64,
     };
     let mut values = workspace(width, 0.0)?;
-    let right = if *row_arithmetic {
-        tensor.input(1)?
-    } else {
-        None
-    };
     let mut right_values = workspace(right.as_ref().map_or(0, |input| input.ne[0] as u64), 0.0)?;
     for index in 0..*count {
         let instruction =
@@ -1440,15 +1438,11 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 .map_err(BackendError::overflow)?;
         match instruction {
             Encode(from, to) | BinaryRow(from, _, to) => {
-                source
-                    .as_ref()
-                    .ok_or(InvalidTensor)?
-                    .decode(from, &mut values)?;
+                let source = source.as_ref().ok_or(InvalidTensor)?;
+                source.decode(from, &mut values)?;
                 if let BinaryRow(_, offset, _) = instruction {
-                    right
-                        .as_ref()
-                        .ok_or(InvalidTensor)?
-                        .decode(offset, &mut right_values)?;
+                    let right = right.as_ref().ok_or(InvalidTensor)?;
+                    right.decode(offset, &mut right_values)?;
                     for (value, rhs) in values.iter_mut().zip(right_values.iter().cycle()) {
                         *value = linear::evaluate_f32_scalar(*operation, *value, *rhs)?;
                     }
@@ -1477,22 +1471,21 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                             encoded.extend(row.codes.map(|code| code as u8));
                             encoded.extend(row.sums.into_iter().flat_map(i16::to_ne_bytes));
                         }
-                        0 | 1 | 30 | 43 => {
-                            let word =
-                                convert(0, tensor.ty as u64, u64::from(block_values[0].to_bits()))?;
-                            match tensor.ty {
-                                0 => encoded.extend((word as u32).to_ne_bytes()),
-                                43 => encoded.push(word as u8),
-                                _ => encoded.extend((word as u16).to_ne_bytes()),
-                            }
-                        }
-                        26 => {
-                            let word = linear::truncate_signed_word_f32(u64::from(
-                                block_values[0].to_bits(),
-                            ))
-                            .map_err(BackendError::invalid)?
-                            .ok_or(InvalidTensor)?;
-                            encoded.extend((word as u32).to_ne_bytes());
+                        0 | 1 | 26 | 30 | 43 => {
+                            let bits = u64::from(block_values[0].to_bits());
+                            let word = if tensor.ty == 26 {
+                                linear::truncate_signed_word_f32(bits)
+                                    .map_err(BackendError::invalid)?
+                                    .ok_or(InvalidTensor)?
+                            } else {
+                                convert(0, tensor.ty as u64, bits)?
+                            };
+                            let mut native = [0; 8];
+                            // SAFETY: scalar_word accepts only 1, 2, 4 or 8 unaligned bytes.
+                            unsafe {
+                                scalar_word(native.as_mut_ptr(), block_bytes as u64, Some(word))?
+                            };
+                            encoded.extend_from_slice(&native[..block_bytes]);
                         }
                         _ => {
                             let kind = kind.ok_or(InvalidTensor)?;
@@ -1781,7 +1774,7 @@ mod rotary {
         let descriptor = descriptor_for!(Descriptor::C0);
         tensor_fields!(
             [Some(source), Some(positions), factors] =
-                tensor.map_sources(|t| super::tensor_metadata(t).map(descriptor))?
+                tensor.map_sources(0, |t| super::tensor_metadata(t).map(descriptor))?
         );
         let p = tensor.op_params.map(|word| u64::from(word as u32));
         match request(Request::C0(
@@ -2207,8 +2200,7 @@ mod attention {
     pub(super) fn softmax(tensor: &Tensor, plan: SoftmaxPlan) -> Result<(), BackendError> {
         let source = graph_tensor_data(tensor.source(0).ok_or(InvalidTensor)?)?;
         let output = graph_tensor_data(tensor)?;
-        let mask = tensor.input(1)?;
-        let sink = tensor.input(2)?;
+        let [mask, sink] = tensor.map_sources(1, TensorInput::new)?;
         let SoftmaxPlan::C0(_, _, _, scale, bias) = &plan;
         let scale = f32::from_bits(*scale as u32);
         let bias = bias.map(|bits| f32::from_bits(bits as u32));
@@ -2258,7 +2250,7 @@ mod attention {
         use super::ExecutionPlan;
         let descriptor = descriptor_for!(Descriptor::C0);
         let [a, b, c, d, e, rows, ids] =
-            tensor.map_sources(|t| super::tensor_metadata(t).map(descriptor))?;
+            tensor.map_sources(0, |t| super::tensor_metadata(t).map(descriptor))?;
         let trailing = tensor.src[7..].iter().any(|p| !p.is_null());
         let [p0, p1, p2, p3, ..] = tensor.op_params.map(|w| u64::from(w as u32));
         let slots = [a, b, c, d, e, rows];

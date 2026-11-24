@@ -1,0 +1,16 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "width": 256,
+  "rows": 2,
+  "reference": "Reuse the 29 encoded source arrays from VT-180 and decode with original GGML type traits. Reverse the two right rows. Compute one original GGML F32 ADD per new input pair. Encode once per new destination using the original CPU from_float where provided and ggml_quantize_chunk with declared uniform importance otherwise. Preserve F32 words directly. Reuse earlier receipts for tuples previously placed.",
+  "words_sha256": "ec829936d815ad6879bbb6ffb4e00adda047176482b999e37a00539f69ea285b",
+  "left_formats": 27,
+  "possible_right_formats": 29,
+  "destination_formats": 31,
+  "cpu_sum_graphs": 758,
+  "encoded_destinations": 22738,
+  "compression": "gzip"
+}

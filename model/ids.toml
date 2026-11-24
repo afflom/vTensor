@@ -1152,3 +1152,9 @@ id = "VT-180"
 level = "build"
 suite = "native-backend"
 statement = "GGML packed binary arithmetic decodes both operands and encodes copied and in-place results"
+
+[[id]]
+id = "VT-181"
+level = "build"
+suite = "native-backend"
+statement = "GGML ADD_CAST decodes mixed input rows and encodes all floating and packed destinations"

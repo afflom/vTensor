@@ -510,7 +510,7 @@ definition{
   parameters: [source : Nat, destination : Nat],
   result: Bool,
   body: (if (packedTarget source) then (if ((source =? 9) || (source =? 15)) then false else true)
-    else (((bytes source) =? 2) && (packedTarget destination))),
+    else (((bytes source) =? 2) && ((packedTarget destination) || (0 <? (binaryWordBytes destination))))),
   executable: true
 }
 
@@ -519,10 +519,20 @@ definition{
   parameters: [kind : Nat, left : Nat, rhs : NormPlan::TensorDescriptor, output : Nat],
   result: Bool,
   body: (let ty : Nat := (project rhs ty);
-    (if (((left =? output) && (packedTarget left)) || ((kind =? 0) && (ty =? 0))) then
+    (if (((left =? output) && (packedTarget left)) || ((kind =? 0) && (((ty =? 0) || (packedTarget output)) || (0 <? (binaryWordBytes output))))) then
       ((((0 <? (binaryWordBytes ty)) || ((packedTarget ty) && (if ((ty =? 9) || (ty =? 15)) then false else true))) &&
         ((project rhs s0) =? (rowTargetWidth ty))) && ((prim remainder (project rhs n0) (storeBlockLanes ty) 1 : Nat) =? 0))
       else false)),
+  executable: true
+}
+
+definition{
+  name: rowArithmeticRequired,
+  parameters: [kind : Nat, left : Nat, rhs : Nat, output : Nat],
+  result: Bool,
+  body: (((packedTarget left) || (packedTarget output)) ||
+    ((((kind =? 0) && ((bytes left) =? 2)) && (0 <? (binaryWordBytes output))) &&
+      (if (storageTuple left rhs output) then false else true))),
   executable: true
 }
 
@@ -558,7 +568,7 @@ definition{
         | Option.none => (ctor Response.invalid)
         | Option.some left => (match secondary
           | Option.none => (ctor Response.invalid)
-          | Option.some rhs => (if ((packedTarget (project left ty)) || (packedTarget (project output ty))) then (rowArithmeticPlan kind left rhs output) else (plan kind left rhs output)))))
+          | Option.some rhs => (if (rowArithmeticRequired kind (project left ty) (project rhs ty) (project output ty)) then (rowArithmeticPlan kind left rhs output) else (plan kind left rhs output)))))
     | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
     | Request.gate operation variant swapped alpha limit extra left secondary output => (if (operation =? 33) then (if extra then (ctor Response.invalid) else (match secondary
       | Option.none => (ctor Response.invalid)

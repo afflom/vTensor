@@ -1,0 +1,22 @@
+{
+  "requirement": "VT-181",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-mixed-cast-oracle.json",
+  "semantic_id": "8c1e46cce3ea68c742b27e5426d948bce85efcc8c440e531ed429b150cd57db1",
+  "attestation": "cca1e62ae6050aac46170c61c9c2ef7d6a12ba8a68a67819c118ef3bf0c88fe3",
+  "provider_sha256": "52108e86d96769f13b6e03dda8026199d65d05878e85477b51462fb0ff1ff455",
+  "previously_refused_descriptors": 22846,
+  "new_descriptors_by_constructor": {
+    "add_cast": 22738,
+    "add": 54,
+    "add_inplace": 54
+  },
+  "source_lines": 12591,
+  "original_cpu_sum_graphs": 758,
+  "destinations_compared": 22738,
+  "scheduled_graphs": 22792,
+  "equivalent_constructors": 54,
+  "encoded_rows_compared": 45584,
+  "encoded_bytes_compared": 8773280,
+  "negative_control": "Substituting subtraction for the half-to-bfloat sum failed the first copied F16/F32 -> BF16 graph. Restoring ADD reproduced every encoded destination."
+}
