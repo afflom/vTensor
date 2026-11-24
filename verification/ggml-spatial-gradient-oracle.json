@@ -55,5 +55,20 @@
     "sha256": "1cd08bb9d022dda6e67eaa7e9ba556ca59432f71edf0a8d4025cdb7a93228de9",
     "preallocation_refusals": 96,
     "uncompressed_transcript_sha256": "5c3014b9bf2312897a395bc0a4b979e83435eca81933bdddf6c27c035e5f44c4"
+  },
+  "VT-139": {
+    "mode": "column-gradients",
+    "graphs": 64,
+    "exact_binary32_words": 6048,
+    "family_ids": [
+      0,
+      1
+    ],
+    "transcript_sha256": "5d77fa671c42f5c6431ee1958ec1287e6ff51da13c5ad7409dc3f70f8a3ac303",
+    "production_verdant": "2.21.3",
+    "pointwise_result": "d7e576bc0d76766078d3d7c3a83647da53e6a12c64328e7139f2cfdc9108e3cf",
+    "provider_sha256": "dab833b063b3eddba0f5881e757c11819e812465bca0d0c8bb931fc6ec8ad19e",
+    "refusal_checks": "Each restored provider graph rejects an extra source and zero x stride without changing output bytes.",
+    "mutation": "Clearing scratch accumulator 0 before each column-gradient instruction failed the exact output comparison. Restoring accumulation reproduced all 6,048 frozen words."
   }
 }

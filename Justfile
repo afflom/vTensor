@@ -206,22 +206,7 @@ certified-export name:
     name={{quote(name)}}
     case "$name" in
       layout) project=app/lexlean.toml ;;
-      native) project=app/native.lexlean.toml ;;
-      matrix) project=app/matrix.lexlean.toml ;;
-      index) project=app/index.lexlean.toml ;;
-      fixtures) project=app/fixtures.lexlean.toml ;;
-      arithmetic) project=app/arithmetic.lexlean.toml ;;
-      spatial) project=app/spatial.lexlean.toml ;;
-      norm) project=app/norm.lexlean.toml ;;
-      normfixtures) project=app/normfixtures.lexlean.toml ;;
-      groupfixtures) project=app/groupfixtures.lexlean.toml ;;
-      rmsbackfixtures) project=app/rmsbackfixtures.lexlean.toml ;;
-      pointwise) project=app/pointwise.lexlean.toml ;;
-      probes) project=app/probes.lexlean.toml ;;
-      attention) project=app/attention.lexlean.toml ;;
-      rotary) project=app/rotary.lexlean.toml ;;
-      typed) project=app/typed.lexlean.toml ;;
-      typedfixtures) project=app/typedfixtures.lexlean.toml ;;
+      native|matrix|index|fixtures|arithmetic|spatial|norm|normfixtures|groupfixtures|rmsbackfixtures|pointwise|probes|attention|rotary|typed|typedfixtures) project="app/$name.lexlean.toml" ;;
       *) echo "unknown certified bundle: $name" >&2; exit 1 ;;
     esac
     receipt=$(mktemp)
@@ -245,35 +230,13 @@ certified-install name artifact:
     const source = path.resolve('app', artifact);
     const result = JSON.parse(fs.readFileSync(path.join(source, 'result.json'), 'utf8'));
     if (path.basename(source) !== result.result_id) throw Error('SDK result identity differs from its path');
-    const [primary, packageName] = {
-      layout: ['PrismTemplateContract.TensorLayout.tensorByteSpan', 'vtensor_layout'],
-      native: ['PrismTemplateContract.NativeBackend.configuration', 'vtensor_native_config'],
-      matrix: ['PrismTemplateContract.MatrixGraph.planMatrix', 'vtensor_matrix'],
-      index: ['PrismTemplateContract.TensorIndex.elementOffset', 'vtensor_index'],
-      fixtures: ['PrismTemplateContract.MatrixFixtures.evaluate', 'vtensor_fixtures'],
-      arithmetic: ['PrismTemplateContract.ArithmeticFixtures.evaluate', 'vtensor_arithmetic'],
-      spatial: ['PrismTemplateContract.SpatialFixtures.evaluate', 'vtensor_spatial'],
-      norm: ['PrismTemplateContract.NormGraph.evaluate', 'vtensor_norm'],
-      normfixtures: ['PrismTemplateContract.NormFixtures.evaluate', 'vtensor_normfixtures'],
-      groupfixtures: ['PrismTemplateContract.GroupFixtures.evaluate', 'vtensor_groupfixtures'],
-      rmsbackfixtures: ['PrismTemplateContract.RmsBackwardFixtures.evaluate', 'vtensor_rmsbackfixtures'],
-      probes: ['PrismTemplateContract.FixtureProbes.evaluate', 'vtensor_probes'],
-      attention: ['PrismTemplateContract.AttentionGraph.evaluate', 'vtensor_attention'],
-      rotary: ['PrismTemplateContract.RotaryGraph.evaluate', 'vtensor_rotary'],
-      typed: ['PrismTemplateContract.TypedArithmetic.evaluate', 'vtensor_typed'],
-      typedfixtures: ['PrismTemplateContract.TypedBinaryFixtures.evaluate', 'vtensor_typedfixtures'],
-      pointwise: ['PrismTemplateContract.PointwiseGraph.evaluate', 'vtensor_pointwise'],
-    }[name];
-    const output = result.roots.find(r => r.root === primary).outputs[0].package.files.find(f => f.path.endsWith('/src/lib.rs'));
-    if (output.path !== `packages/rust-core/${packageName}/src/lib.rs`) throw Error('unexpected exported package');
+    const lock = require('node:child_process').execFileSync('just', ['--quiet', 'certified-kernel-lock', name, source]);
     fs.mkdirSync('generated', {recursive: true});
     const staging = path.join('generated', `.${name}-${process.pid}`);
     fs.cpSync(source, staging, {recursive: true});
     fs.rmSync(`generated/${name}`, {recursive: true, force: true});
     fs.renameSync(staging, `generated/${name}`);
-    const files = result.roots.flatMap(r => r.outputs.flatMap(o => [...o.package.files.filter(f => f.path.endsWith('.rs')), o.crate].map(f => ({path: `generated/${name}/${f.path}`, sha256: f.sha256}))));
-    const lock = {spec: 'prism/kernel-lock/1', source: {repository: 'afflom/vTensor', attestation: result.verification.attestation_id, result: result.result_id}, output: {path: `generated/${name}/${output.path}`, sha256: output.sha256}, files};
-    fs.writeFileSync(`${name}-kernel.lock`, JSON.stringify(lock) + '\n');
+    fs.writeFileSync(`${name}-kernel.lock`, lock);
     JS
     # cargo-deny uses XXH32 for license evidence. Refresh existing decisions only for this export.
     python3 - {{quote(name)}} <<'PYTHON'
@@ -303,6 +266,53 @@ certified-install name artifact:
     if updated != original:
         policy.write_text(updated)
     PYTHON
+
+# Reconstruct the repository lock from the requested roots and their checked SDK outputs.
+certified-kernel-lock name directory:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    node - {{quote(name)}} {{quote(directory)}} <<'JS'
+    const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
+    const [name, directory] = process.argv.slice(2);
+    const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
+    const result = read(path.join(directory, 'result.json'));
+    const wanted = read(`app/${name}-production.json`).roots;
+    assert.equal(result.roots.length, wanted.length, 'root count');
+    for (const [i, root] of result.roots.entries()) {
+      const request = wanted[i];
+      assert.equal(root.root, request.root, 'requested root');
+      assert.equal(root.outputs.length, 1, root.root);
+      const [output] = root.outputs;
+      assert.deepEqual(output.target, request.targets[0]);
+      assert.equal(output.package.name, request.package.name);
+      assert.equal(output.package.version, request.package.version);
+      assert.equal(output.certification.status, 'kernel-checked');
+    }
+    const [primary, packageName] = {
+      layout: ['PrismTemplateContract.TensorLayout.tensorByteSpan', 'vtensor_layout'],
+      native: ['PrismTemplateContract.NativeBackend.configuration', 'vtensor_native_config'],
+      matrix: ['PrismTemplateContract.MatrixGraph.planMatrix', 'vtensor_matrix'],
+      index: ['PrismTemplateContract.TensorIndex.elementOffset', 'vtensor_index'],
+      fixtures: ['PrismTemplateContract.MatrixFixtures.evaluate', 'vtensor_fixtures'],
+      arithmetic: ['PrismTemplateContract.ArithmeticFixtures.evaluate', 'vtensor_arithmetic'],
+      spatial: ['PrismTemplateContract.SpatialFixtures.evaluate', 'vtensor_spatial'],
+      norm: ['PrismTemplateContract.NormGraph.evaluate', 'vtensor_norm'],
+      normfixtures: ['PrismTemplateContract.NormFixtures.evaluate', 'vtensor_normfixtures'],
+      groupfixtures: ['PrismTemplateContract.GroupFixtures.evaluate', 'vtensor_groupfixtures'],
+      rmsbackfixtures: ['PrismTemplateContract.RmsBackwardFixtures.evaluate', 'vtensor_rmsbackfixtures'],
+      probes: ['PrismTemplateContract.FixtureProbes.evaluate', 'vtensor_probes'],
+      attention: ['PrismTemplateContract.AttentionGraph.evaluate', 'vtensor_attention'],
+      rotary: ['PrismTemplateContract.RotaryGraph.evaluate', 'vtensor_rotary'],
+      typed: ['PrismTemplateContract.TypedArithmetic.evaluate', 'vtensor_typed'],
+      typedfixtures: ['PrismTemplateContract.TypedBinaryFixtures.evaluate', 'vtensor_typedfixtures'],
+      pointwise: ['PrismTemplateContract.PointwiseGraph.evaluate', 'vtensor_pointwise'],
+    }[name];
+    const output = result.roots.find(r => r.root === primary).outputs[0].package.files.find(f => f.path.endsWith('/src/lib.rs'));
+    if (output.path !== `packages/rust-core/${packageName}/src/lib.rs`) throw Error('unexpected exported package');
+    const files = result.roots.flatMap(r => r.outputs.flatMap(o => [...o.package.files.filter(f => f.path.endsWith('.rs')), o.crate].map(f => ({path: `generated/${name}/${f.path}`, sha256: f.sha256}))));
+    const lock = {spec: 'prism/kernel-lock/1', source: {repository: 'afflom/vTensor', attestation: result.verification.attestation_id, result: result.result_id}, output: {path: `generated/${name}/${output.path}`, sha256: output.sha256}, files};
+    process.stdout.write(JSON.stringify(lock) + '\n');
+    JS
 
 # Prefetch the same immutable dependencies used by normal Cargo builds.
 verdant-prepare:

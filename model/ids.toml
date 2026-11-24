@@ -894,3 +894,9 @@ id = "VT-137"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules GELU_ERF and GEGLU_ERF using the Verdant binary32 Gaussian error function"
+
+[[id]]
+id = "VT-139"
+level = "build"
+suite = "native-backend"
+statement = "Prism accumulates one- and two-dimensional image-column gradients in GGML kernel order using Verdant binary32 addition"

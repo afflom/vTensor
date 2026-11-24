@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn column_gradients_vt_139() { "column-gradients", 64, ["pointwise"] }
     fn gaussian_error_graphs_vt_137() { "upstream-GAUSSIAN_ERROR", 48, ["typed", "pointwise"] }
     fn gaussian_graphs_vt_75() { "upstream-GELU_FAMILIES", 64, ["pointwise"] }
 
@@ -966,10 +967,7 @@ mod ggml_inventory {
             let expected = compiled[key].as_array().expect("upstream C enumerators");
             let original = inventory[key].as_array().expect("declarations");
             let matches = |rows: &[toml::Value]| rows == expected;
-            assert!(
-                matches(original),
-                "{key} differs from the pinned declarations"
-            );
+            assert!(matches(original), "changed GGML {key} declarations");
             // This gate must reject omissions, additions, reordering, numeric drift,
             // and invented implementation claims, including changes to its own comparator.
             for mutation in 0..5 {
@@ -1096,11 +1094,6 @@ mod tensor_layout {
     }
 
     fn verify_scope(root: &std::path::Path, name: &str) {
-        let package = if name == "native" {
-            "native_config"
-        } else {
-            name
-        };
         let project = match name {
             "layout" => "app/lexlean.toml".to_owned(),
             _ => format!("app/{name}.lexlean.toml"),
@@ -1112,38 +1105,13 @@ mod tensor_layout {
         super::assert_model_identity(name, &current, &result["source"]);
         let lock_digest = ggml_oracle::file_digest(root.join(project).with_extension("lock"));
         assert_eq!(result["source"]["lock_sha256"], lock_digest);
-        let request = ggml_oracle::read_json(root.join(format!("app/{name}-production.json")));
-        let wanted = request["roots"].as_array().expect("requested roots");
-        let exported = result["roots"].as_array().expect("exported roots");
-        assert_eq!(exported.len(), wanted.len());
-        for (actual, expected) in exported.iter().zip(wanted) {
-            assert_eq!(actual["root"], expected["root"]);
-            assert_eq!(actual["outputs"].as_array().expect("outputs").len(), 1);
-            let output = &actual["outputs"][0];
-            assert_eq!(output["target"], expected["targets"][0]);
-            assert_eq!(output["package"]["name"], expected["package"]["name"]);
-            assert_eq!(output["package"]["version"], expected["package"]["version"]);
-            assert_eq!(output["certification"]["status"], "kernel-checked");
-        }
-        let kernel_lock = ggml_oracle::read_json(root.join(format!("{name}-kernel.lock")));
-        assert_eq!(kernel_lock["source"]["result"], result["result_id"]);
-        assert_eq!(
-            kernel_lock["source"]["attestation"],
-            result["verification"]["attestation_id"]
+        let expected = ggml_oracle::tool_json(
+            root,
+            "just",
+            &["--quiet", "certified-kernel-lock", name, &bundle],
         );
-        let output = format!("{bundle}/packages/rust-core/vtensor_{package}/src/lib.rs");
-        let certified_files: Vec<_> = exported.iter()
-        .flat_map(|root| root["outputs"].as_array().expect("outputs"))
-        .flat_map(|output| output["package"]["files"].as_array().expect("files").iter().filter(|file| file["path"].as_str().expect("path").ends_with(".rs")).chain(std::iter::once(&output["crate"])))
-        .map(|file| serde_json::json!({"path": format!("{bundle}/{}", file["path"].as_str().expect("path")), "sha256": file["sha256"]}))
-        .collect();
-        assert_eq!(kernel_lock["output"]["path"], output);
-        assert!(certified_files.contains(&kernel_lock["output"]));
-        assert_eq!(
-            kernel_lock["files"],
-            serde_json::Value::Array(certified_files),
-            "generated-code exemptions must exactly match the certified outputs"
-        );
+        let lock = ggml_oracle::read_json(root.join(format!("{name}-kernel.lock")));
+        assert_eq!(lock, expected, "stale {name} kernel lock");
         ggml_oracle::run(
             std::process::Command::new("lexlean")
                 .current_dir(root)
@@ -1261,11 +1229,10 @@ mod verdant_api {
         let kernels = verified_unified_tensor_kernels().expect("Verdant verified kernel inventory");
         assert!(kernels.iter().map(|kernel| kernel.index).eq(0..15));
 
-        let library = super::provider_library();
         let listing = super::ggml_oracle::run(
             std::process::Command::new("nm")
                 .args(["-D", "--undefined-only", "--format=just-symbols"])
-                .arg(library),
+                .arg(super::provider_library()),
         );
         let allowed = super::native_backend_oracle::ORACLE_BINDINGS["allowed_ggml_host_imports"]
             .as_array()
@@ -1975,6 +1942,37 @@ int main(int argc, char **argv) {
         printf("RESULT cases %zu\n", cases);
         return 0;
     };
+    if (!strcmp(argv[3],"column-gradients")) {
+      size_t cases=0;
+      for (bool plane : {false,true}) for (int v=0;v<32;++v) {
+        int sx=1+(v&1), sy=plane?3-sx:0, px=(v>>1)&1, py=plane?px:0;
+        int dx=1+((v>>2)&1), dy=plane?1:0, batches=1+((v>>3)&1);
+        std::vector<float> expected;
+        for (auto selected : {reference,backend}) {
+          graph_fixture ctx(6); CHECK(ctx);
+          auto x=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,7,plane?5:3,plane?3:batches,plane?batches:1);
+          auto k=ggml_new_tensor_4d(ctx,(v&16)?GGML_TYPE_F16:GGML_TYPE_F32,3,plane?2:3,plane?3:2,plane?2:1);
+          auto forward=ggml_im2col(ctx,k,x,sx,sy,px,py,dx,dy,plane,GGML_TYPE_F32);
+          auto grad=ggml_dup_tensor(ctx,forward);
+          auto out=ggml_im2col_back(ctx,grad,k,x->ne,sx,sy,px,py,dx,dy,plane);
+          CHECK(ggml_backend_supports_op(selected,out));
+          auto graph=ctx.allocate(out,selected); CHECK(graph);
+          for(int i=0;i<ggml_nelements(grad);++i) ggml_set_f32_1d(grad,i,float((i*5)%17-8)/8);
+          std::vector<float> actual(ggml_nelements(out),13.f);
+          ggml_backend_tensor_set(out,actual.data(),0,ggml_nbytes(out));
+          CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+          ggml_backend_tensor_get(out,actual.data(),0,ggml_nbytes(out));
+          if(selected==reference) expected=actual;
+          else {
+            CHECK(!std::memcmp(expected.data(),actual.data(),ggml_nbytes(out)));
+            CHECK(refuses_change(backend,dev,graph,out,out->src[2],x));
+            CHECK(refuses_change(backend,dev,graph,out,out->op_params[0],int32_t(0)));
+          }
+        }
+        ++cases;
+      }
+      return finish(cases);
+    }
     if (!strcmp(argv[3],"custom-callbacks")) {
         static_assert(GGML_DEFAULT_N_THREADS==4);
         struct observation {

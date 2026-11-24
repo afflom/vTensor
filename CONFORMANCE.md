@@ -225,6 +225,7 @@ model does not sanction.
 | `VT-135` | `build` | Prism routes nonlinear four-bit row writes and copies through Verdant encoders against GGML CPU |
 | `VT-136` | `build` | Custom GGML callbacks retain their tensor descriptors, user data, task indices and synchronous graph completion |
 | `VT-137` | `build` | Prism schedules GELU_ERF and GEGLU_ERF using the Verdant binary32 Gaussian error function |
+| `VT-139` | `build` | Prism accumulates one- and two-dimensional image-column gradients in GGML kernel order using Verdant binary32 addition |
 
 ## normalization-graphs
 

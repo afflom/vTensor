@@ -488,3 +488,9 @@ Feature: native-backend
     Given the imported unary and combined or split gated Gaussian error graphs
     When vTensor applies the activation and any gate before the destination conversion
     Then the results agree with the GGML CPU evaluator
+
+  @VT-139 @build
+  Scenario: Prism accumulates one- and two-dimensional image-column gradients in GGML kernel order using Verdant binary32 addition
+    Given an image-column gradient with a padded, strided or dilated kernel
+    When vTensor computes the input gradient
+    Then each ordered binary32 sum agrees with the GGML CPU backward graph
