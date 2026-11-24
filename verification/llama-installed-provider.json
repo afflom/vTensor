@@ -1,12 +1,12 @@
 {
-  "vtensor_revision": "1e489d6ceb6f77e4c09865d49bc4ea5bf25e9dec",
+  "vtensor_revision": "e7b5960fa0a5787ef1a2843b8dbcfd4c1ad8c18b",
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "verdant_revision": "957ea60b71eb84dd796112c9908d609c3f7462a1",
+  "verdant_revision": "931139cb13223ac6fd0291ee72aabeb639e6c45b",
   "architecture": "x86_64-unknown-linux-gnu",
   "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
   "provider_build": "cargo build --locked --release -p vtensor-backend",
-  "plugin_sha256": "ff2c6b65a472a1217776cae6007e4aa9a772bdfc51bf13d1da66f52c925d933c",
-  "provider_inputs_sha256": "fc5e52558292ae9b802a66c6f4514f70a6ff472d58e669f678f9a940f74cf102",
+  "plugin_sha256": "df019a10eed232e4494ef3a4f354ba5bb123c6def123a4abd8b80a2bc93e7f90",
+  "provider_inputs_sha256": "509eb59d3e3757af9e9c126f65429efada1b83ec2957c97041cb9201338307f3",
   "host_build": "CMake llama-simple target with BUILD_SHARED_LIBS=ON, GGML_NATIVE=OFF, GGML_BACKEND_DL=ON and an empty GGML_BACKEND_DIR",
   "llama_simple_sha256": "61490f94e299eb54267151b8ed828d933ef83a8c3aeca472e593dcf26bbf2b41",
   "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
@@ -56,6 +56,43 @@
       "decoded_tokens": 8,
       "stdout_sha256": "14b3fe28432d1eb4e2284362ac7d6c7f2c20ef784d75fe9cfad2bba3e06d5d0a",
       "oracle": "verification/llama-mamba-decode.json"
+    },
+    {
+      "model": "stories15M-mixed-codebooks.gguf",
+      "arguments": [
+        "-n",
+        "8",
+        "-ngl",
+        "0",
+        "The small model"
+      ],
+      "oracle": "verification/factory-shifted-codebooks-vt116.json",
+      "model_sha256": "4894382dfada69a67d6221cd4f26070ea47474792fa51b074f3ece0b19851b03",
+      "loaded_backends": [
+        "vTensor"
+      ],
+      "assigned_layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "decoded_tokens": 8,
+      "stdout_sha256": "bc81690c4428ff5a7d10afe81609270b5763ddaa3cd2f74e5b8073414d6aa12b",
+      "weight_overrides": {
+        "blk.0.ffn_down.weight": "tq1_0",
+        "blk.1.ffn_down.weight": "tq2_0",
+        "blk.2.ffn_down.weight": "iq3_xxs",
+        "blk.3.ffn_down.weight": "iq3_s",
+        "blk.4.ffn_down.weight": "iq1_s",
+        "blk.5.ffn_down.weight": "iq1_m"
+      },
+      "stdout_utf8": "<s> The small model is delight on and the world. The\n"
     }
-  ]
+  ],
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "comparison": "Run the same stock llama-simple executable, GGUF, prompt and arguments twice. GGML_BACKEND_PATH selects exactly one plugin per process. Check the loaded registry, all assigned layers, the decode count and every byte of stdout."
 }

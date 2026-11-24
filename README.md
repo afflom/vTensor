@@ -43,7 +43,7 @@ LD_LIBRARY_PATH="$host_build/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
   ./llama-simple -m "$MODEL" -n 8 -ngl 0 "The small model"
 ```
 
-The installed x86-64 release library loaded as the sole backend for GPT-2 and Mamba. llama.cpp assigned every layer to vTensor, and both eight-token outputs matched the imported CPU results byte for byte. The receipt records the library, executable, model and output hashes. [Installed-provider verification](verification/llama-installed-provider.json)
+The installed x86-64 release library loaded as the sole backend for GPT-2, Mamba and a six-layer Llama model with six quantized weight formats. llama.cpp assigned every layer to vTensor. All three eight-token outputs matched the original GGML CPU plugin byte for byte. The receipt records the library, executable, model and output hashes. [Installed-provider verification](verification/llama-installed-provider.json)
 
 ## Architecture
 
