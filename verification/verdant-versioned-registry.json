@@ -56,6 +56,7 @@
         "bytes": 136,
         "sha256": "7f8c2aa566611b979a882dcb1fa8ae561676618a7d8528c9e4a2ddd80517ad03"
       }
-    ]
+    ],
+    "provider_check": "VT-02 passed against the published 2.21.2 archives. Replacing the pinned mirror commit with the moving branch name failed the source gate. Restoring the commit passed."
   }
 }

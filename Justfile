@@ -24,7 +24,7 @@ model:
 # that resolution and replays the separate upstream quotient certificate.
 verdant-source-check:
     #!/usr/bin/env python3
-    import hashlib, json, subprocess, tarfile, tomllib
+    import hashlib, json, re, subprocess, tarfile, tomllib
     from pathlib import Path
 
     def digest(data):
@@ -39,7 +39,10 @@ verdant-source-check:
     packages = {p["name"]: p for p in metadata["packages"] if p["name"].startswith("verdant")}
     engine = packages["verdant-tensor"]
     if pin["spec"] == "vtensor/verdant-release/1":
-        registry = "sparse+https://afflom.github.io/verdant-engine/crates/index/"
+        mirror = pin["index_commit"]
+        if not re.fullmatch("[0-9a-f]{40}", mirror):
+            raise ValueError("Verdant registry requires a full mirror commit")
+        registry = f"sparse+https://raw.githubusercontent.com/afflom/verdant-engine/{mirror}/v{pin['version']}/crates/index/"
         require(engine["source"], registry, "Verdant registry")
         require(engine["version"], pin["version"], "Verdant release")
         manifest = Path("vendor/verdant-crates-manifest.json").read_bytes()
