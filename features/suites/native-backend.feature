@@ -728,3 +728,9 @@ Feature: native-backend
     Given the original GGML CPU executes 841 key and value type pairs on a two-query attention graph
     When the stock scheduler places the 697 previously unplaced pairs on vTensor
     Then each complete output satisfies the original GGML flash attention error limit
+
+  @VT-178 @build
+  Scenario: Flash attention honors all documented accumulator settings and atomically refuses quantized accumulators
+    Given the 841 executable GGML key and value type pairs and the documented accumulator precisions
+    When the scheduler submits attention with explicit F32, BF16 or F16 minimum precision
+    Then each output matches the original F32 CPU accumulator and Q8 and Q4 requests preserve the destination

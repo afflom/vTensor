@@ -70,6 +70,7 @@ ggml_batches! {
     fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
+    fn flash_accumulators_vt_178() { "flash-precision", 4205, ["attention"] }
     fn flash_storage_pairs_vt_177() { "flash-storage", 697, ["attention"] }
     fn codebook_addition_vt_176() { "codebook-add", 189, ["typed"] }
     fn e4m3_add_repeats_vt_175() { "e4m3-repeat", 12, ["typed"] }
@@ -762,7 +763,8 @@ host:
         std::thread::scope(|scope| {
             let writer = scope.spawn(move || stdin.write_all(input));
             let output = child.wait_with_output().expect("oracle result");
-            writer.join().expect("input writer").expect("write input");
+            let written = writer.join().expect("input writer");
+            if output.status.success() { written.expect("complete oracle input"); }
             output
         })
     }
@@ -1010,8 +1012,10 @@ mod ggml_storage_oracle {
             .into_iter()
             .chain(std::iter::repeat_n([4, 1, 4], 8192));
         assert!(rows.into_iter().eq(reference));
-        let malformed =
-            ggml_oracle::pipe_input(&mut std::process::Command::new(executable), b"malformed\n");
+        let malformed = ggml_oracle::pipe_input(
+            &mut std::process::Command::new(executable),
+            &b"malformed\n".repeat(131072),
+        );
         assert_eq!(malformed.status.code(), Some(2));
 
         assert_eq!(modified(), built_at, "warm storage oracle was rebuilt");
@@ -1285,7 +1289,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "b105c85e655b536d1f08b855aff16fac149221147a9f83ae837dfc52b9ee6e9a",
+            "b497cdcb7f6bc85778602729d277f1f8fae9ce3425a30a416c05ea0c57d14afd",
         )
     });
 
@@ -1565,8 +1569,9 @@ struct graph_fixture {
             if (ggml_backend_sched_get_tensor_backend(sched.get(),ggml_graph_node(graph,n))!=backend) return false;
         return true;
     }
-    ggml_cgraph *allocate(ggml_tensor *out, ggml_backend_t backend) {
+    ggml_cgraph *allocate(ggml_tensor *out, ggml_backend_t backend, bool check_placement=false) {
         auto graph=build(out);
+        if (check_placement && !(ggml_backend_supports_op(backend,out) && placed(graph,backend))) return nullptr;
         storage.reset(ggml_backend_alloc_ctx_tensors(arena.get(),backend));
         return storage ? graph : nullptr;
     }
@@ -1808,6 +1813,7 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
 #include <limits>
 #include <numeric>
 #include <map>
+#include <set>
 #include <vector>
 #include <dlfcn.h>
 #include <sys/wait.h>
@@ -1886,6 +1892,16 @@ static std::vector<unsigned char> read_hex_bytes(size_t count) {
         byte=static_cast<unsigned char>(value);
     }
     return bytes;
+}
+static bool finite_f32_matches(const std::vector<unsigned char> &actual, const std::vector<unsigned char> &reference, bool exact, bool require_energy) {
+    if (actual.size()!=reference.size() || actual.size()%sizeof(float)) return false;
+    double error=0,energy=0;
+    for(size_t i=0;i<actual.size();i+=sizeof(float)) {
+        float value,ref; memcpy(&value,actual.data()+i,sizeof(value)); memcpy(&ref,reference.data()+i,sizeof(ref));
+        if (!std::isfinite(value) || !std::isfinite(ref)) return false;
+        double delta=double(value)-ref; error+=delta*delta; energy+=double(ref)*ref;
+    }
+    return (!exact || actual==reference) && (!require_energy || energy>0) && error<=5e-4*energy;
 }
 static void set_scalar_word(ggml_tensor *tensor, size_t element, uint64_t word) {
     std::array<uint8_t,8> bytes{};
@@ -2155,13 +2171,7 @@ int main(int argc, char **argv) {
                         if (!execute) {CHECK(ggml_backend_supports_op(backend,out) && ctx.placed(graph,backend));continue;}
                         ggml_backend_tensor_memset(out,0xff,0,ggml_nbytes(out));
                         CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-                        auto actual=tensor_bytes(out); double error=0,energy=0;
-                        for (int j=0;j<6;++j) {
-                            float value,ref;memcpy(&value,actual.data()+4*j,4);memcpy(&ref,expected.data()+4*j,4);
-                            CHECK(std::isfinite(value));double delta=double(value)-ref;error+=delta*delta;energy+=double(ref)*ref;
-                        }
-                        CHECK(error<=5e-4*energy);
-                        if (exact) CHECK(actual==expected);
+                        CHECK(finite_f32_matches(tensor_bytes(out),expected,exact,false));
                         ++compared;
                     }
                 }
@@ -2169,7 +2179,8 @@ int main(int argc, char **argv) {
         }
         return finish(compared);
     }
-    if (!strcmp(argv[3],"flash-storage")) {
+    const bool flash_precision=!strcmp(argv[3],"flash-precision");
+    if (flash_precision || !strcmp(argv[3],"flash-storage")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> samples;
         int count; CHECK(scanf("%d",&count)==1 && count==59);
         for(int i=0;i<count;++i) {
@@ -2177,12 +2188,28 @@ int main(int argc, char **argv) {
             auto bytes=read_hex_bytes(size); CHECK(!bytes.empty() && samples.emplace(std::make_pair(slot,kind),std::move(bytes)).second);
         }
         size_t cases=0; int key_type,value_type;
-        while(scanf("%d%d",&key_type,&value_type)==2) {
+        std::set<std::pair<int,int>> pairs;
+        while(scanf("%d%d",&key_type,&value_type)==2) CHECK(pairs.emplace(key_type,value_type).second);
+        CHECK(feof(stdin) && pairs.size()==697);
+        if (flash_precision) {
+            for(const auto &k:samples) if(k.first.first==1)
+                for(const auto &v:samples) if(v.first.first==2) pairs.emplace(k.first.second,v.first.second);
+            CHECK(pairs.size()==841);
+        }
+        for(auto [key_type,value_type]:pairs) {
             graph_fixture ctx(6); CHECK(ctx);
             auto q=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,256,2);
             auto k=ggml_new_tensor_2d(ctx,ggml_type(key_type),256,3),v=ggml_new_tensor_2d(ctx,ggml_type(value_type),256,3);
             auto out=ggml_flash_attn_ext(ctx,q,k,v,nullptr,0.0625f,0,0);
-            auto graph=ctx.build(out); CHECK(ggml_backend_supports_op(backend,out) && ctx.placed(graph,backend));
+            auto graph=ctx.build(out);
+            std::vector<ggml_prec> modes=flash_precision?std::vector<ggml_prec>{GGML_PREC_F32,GGML_PREC_BF16,GGML_PREC_F16,GGML_PREC_Q8,GGML_PREC_Q4}:std::vector<ggml_prec>{GGML_PREC_UNDEFINED};
+            for(auto prec:modes) {
+                CHECK(ggml_prec_set_acc(out,prec) && ggml_prec_get_acc(out)==prec);
+                const bool legal=prec!=GGML_PREC_Q8 && prec!=GGML_PREC_Q4;
+                CHECK(ggml_backend_supports_op(backend,out)==legal);
+                if(legal) CHECK(ctx.placed(graph,backend));
+            }
+            CHECK(ggml_prec_set_acc(out,flash_precision?GGML_PREC_F32:GGML_PREC_UNDEFINED));
             ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend)); CHECK(ctx.storage);
             int slot=0;
             for(auto t:{q,k,v}) {
@@ -2190,19 +2217,19 @@ int main(int argc, char **argv) {
                 ggml_backend_tensor_set(t,bytes.data(),0,bytes.size());
             }
             CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
-            std::array<float,512> expected,actual; ggml_backend_tensor_get(out,expected.data(),0,sizeof(expected));
-            ggml_backend_tensor_memset(out,0xff,0,sizeof(expected));
-            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-            ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
-            double energy=0,error=0;
-            for(size_t i=0;i<actual.size();++i) {
-                CHECK(std::isfinite(actual[i]) && std::isfinite(expected[i]));
-                double delta=double(actual[i])-expected[i]; error+=delta*delta; energy+=double(expected[i])*expected[i];
+            const auto expected=tensor_bytes(out); CHECK(expected.size()==512*sizeof(float));
+            for(auto prec:modes) {
+                ggml_backend_tensor_memset(out,0xff,0,expected.size());
+                CHECK(ggml_prec_set_acc(out,prec));
+                if(prec==GGML_PREC_Q8 || prec==GGML_PREC_Q4) {
+                    auto before=tensor_bytes(out); CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && before==tensor_bytes(out));
+                    ++cases; continue;
+                }
+                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+                if(!finite_f32_matches(tensor_bytes(out),expected,false,true)) {fprintf(stderr,"flash attention differs for %d / %d\n",key_type,value_type);return 2;}
+                ++cases;
             }
-            if(!(energy>0 && error<=5e-4*energy)) {fprintf(stderr,"flash attention differs for %d / %d\n",key_type,value_type);return 2;}
-            ++cases;
         }
-        CHECK(feof(stdin));
         return finish(cases);
     }
     if (!strcmp(argv[3],"e4m3-repeat")) {
@@ -2216,9 +2243,7 @@ int main(int argc, char **argv) {
                 auto y=ggml_view_4d(ctx,storage,period,2,2,1,storage->nb[1],storage->nb[2],storage->nb[3],padded*sizeof(float));
                 auto rhs=selected==reference?ggml_repeat_4d(ctx,y,16,4,4,2):y;
                 auto out=inplace?ggml_add_inplace(ctx,x,rhs):ggml_add(ctx,x,rhs);
-                auto graph=ctx.build(out);
-                if (selected==backend) CHECK(ggml_backend_supports_op(backend,out) && ctx.placed(graph,backend));
-                ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,selected)); CHECK(ctx.storage);
+                auto graph=ctx.allocate(out,selected,selected==backend); CHECK(graph);
                 std::vector<unsigned char> bytes(ggml_nbytes(x));
                 for (size_t i=0;i<bytes.size();++i) bytes[i]=uint8_t((i%2?128:0)+(19*i+3)%112);
                 ggml_backend_tensor_set(x,bytes.data(),0,bytes.size());
@@ -2269,9 +2294,8 @@ int main(int argc, char **argv) {
                         CHECK(std::equal(std::begin(out->src),std::end(out->src),ordinary->src) && !memcmp(ordinary->op_params,out->op_params,sizeof(out->op_params)) && ordinary->flags==out->flags && !ordinary->view_src && !out->view_src);
                         ++cases;
                     }
-                    CHECK(ggml_backend_supports_op(selected,out));
-                    auto graph=ctx.build(out);if (!oracle) CHECK(ctx.placed(graph,backend));
-                    ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,selected));CHECK(ctx.storage);
+                    if (oracle) CHECK(ggml_backend_supports_op(selected,out));
+                    auto graph=ctx.allocate(out,selected,!oracle); CHECK(graph);
                     const size_t row_bytes=data.size()/2;
                     for (int row=0;row<ggml_nrows(x);++row) {
                         int sample=(row+row/rows+row/(rows*planes))%2;
@@ -2303,10 +2327,7 @@ int main(int argc, char **argv) {
                     auto view=ggml_view_2d(ctx,dst,width,variant>=4?3:2,dst->nb[1],padded?ggml_type_size(to):0);
                     auto idx=ggml_new_tensor_1d(ctx,variant%2?GGML_TYPE_I64:GGML_TYPE_I32,2);
                     auto out=variant>=2?ggml_set_rows(ctx,variant>=4?view:dst,src,idx):variant==1 && selected==backend?ggml_cpy(ctx,src,view):ggml_cast(ctx,src,to);
-                    if (selected==backend) CHECK(ggml_backend_supports_op(backend,out));
-                    auto graph=ctx.build(out);
-                    if (selected==backend) CHECK(ctx.placed(graph,backend));
-                    ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,selected)); CHECK(ctx.storage);
+                    auto graph=ctx.allocate(out,selected,selected==backend); CHECK(graph);
                     ggml_backend_buffer_clear(ctx.storage.get(),0xa5);
                     for (int i=0;i<2*width;++i) ggml_set_f32_1d(src,i,float((i*13)%31-15)/8);
                     if (integer_rows) {
@@ -2362,11 +2383,8 @@ int main(int argc, char **argv) {
                 auto out=ggml_new_tensor_2d(target,ggml_type(to),6,16);
                 auto view=ggml_view_2d(target,out,4,16,out->nb[1],ggml_type_size(ggml_type(to)));
                 auto result=padded?ggml_cpy(target,input,view):ggml_cast(target,input,ggml_type(to));
-                CHECK(ggml_backend_supports_op(backend,result));
-                auto graph=target.build(result);
-                CHECK(target.placed(graph,backend));
-                target.storage.reset(ggml_backend_alloc_ctx_tensors(target,backend));
-                CHECK(target.storage && ggml_backend_supports_op(backend,result));
+                auto graph=target.allocate(result,backend,true);
+                CHECK(graph && ggml_backend_supports_op(backend,result));
                 ggml_backend_buffer_clear(target.storage.get(),0xa5);
                 for (size_t i=0;i<inputs.size();++i) set_scalar_word(input,i,inputs[i]);
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);

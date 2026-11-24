@@ -4,14 +4,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Honor GGML’s F16 minimum accumulator setting for flash attention and verify it against the permitted F32 CPU accumulator. Check Q8/Q4 refusal.
+- [ ] Place F16 and BF16 ADD_CAST inputs with an F32 addend across all 27 packed destinations. Compare each stored row with the original GGML CPU sum and encoder.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,067 non-Prism lines** (12,616 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,057 non-Prism lines** (12,606 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Verify F32, BF16 and F16 flash accumulators for 841 storage pairs. All 1,291,776 outputs matched GGML CPU within tolerance and all 1,682 Q8/Q4 requests preserved the destination. [VT-178](verification/supplemental-flash-precision-vt178.json)
+- [x] Replay stock llama-simple with the released Verdant v2.22.0 dependency. All three eight-token outputs matched CPU and all 13 layers were placed on vTensor. [Installed plugin](verification/llama-consumer-verdant-2.22.0.json)
 
 - [x] Replace both Verdant conversion patch pins with v2.22.0. Verify all 106 registry archives, zero Git packages and the independent conversion and quotient oracles. [Registry verification](verification/verdant-versioned-registry.json)
 - [x] Pass the full hosted SDK gate on x86-64 and AArch64 after the swapped-GLU repair. [Acceptance at 877aae8](https://github.com/afflom/vTensor/actions/runs/45485151157)

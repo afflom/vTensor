@@ -1134,3 +1134,9 @@ id = "VT-177"
 level = "build"
 suite = "native-backend"
 statement = "GGML flash attention supports all directly executable key and value storage pairs with default precision"
+
+[[id]]
+id = "VT-178"
+level = "build"
+suite = "native-backend"
+statement = "Flash attention honors all documented accumulator settings and atomically refuses quantized accumulators"

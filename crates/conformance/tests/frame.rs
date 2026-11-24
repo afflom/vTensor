@@ -1,25 +1,16 @@
 //! Executes the production frame regressions under Node.
 
-use std::path::PathBuf;
 use std::process::Command;
+use std::sync::LazyLock;
 
 /// Runs a Node regression from the repository root and fails with its output unless it passes.
 fn node(id: &str, args: &[&str]) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let result = Command::new("node")
         .args(args)
-        .current_dir(root)
+        .current_dir(repo_model::repo_root())
         .output()
         .expect("Node runs");
-    let (out, err) = (
-        String::from_utf8_lossy(&result.stdout),
-        String::from_utf8_lossy(&result.stderr),
-    );
-    assert!(
-        result.status.success(),
-        "{id}: {out}
-{err}"
-    );
+    assert!(result.status.success(), "{id}: {result:?}");
 }
 
 /// `FR-01`: With a working worker, the page loads and verifies the archive only in that worker before using its identities or guest
@@ -46,7 +37,7 @@ fn frame_fr_03() {
 /// `identity/test.mjs` (try-page.yml).
 #[test]
 fn frame_fr_04() {
-    node("FR-04", &["--input-type=module", "-e", WORKSPACE]);
+    LazyLock::force(&WORKSPACE_CHECK);
 }
 
 /// `FR-05`: An app's pages on every device of one Prism ID meet on a relay topic only those devices derive, per app, with every message sealed to the ID, and a removed device is left behind
@@ -55,8 +46,11 @@ fn frame_fr_04() {
 /// `identity/test.mjs`.
 #[test]
 fn frame_fr_05() {
-    node("FR-05", &["--input-type=module", "-e", WORKSPACE]);
+    LazyLock::force(&WORKSPACE_CHECK);
 }
+
+static WORKSPACE_CHECK: LazyLock<()> =
+    LazyLock::new(|| node("FR-04/FR-05", &["--input-type=module", "-e", WORKSPACE]));
 
 const WORKSPACE: &str = r#"
 import assert from "node:assert/strict";

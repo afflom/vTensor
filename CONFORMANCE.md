@@ -265,6 +265,7 @@ model does not sanction.
 | `VT-175` | `build` | F8_E4M3 addition repeats dense and offset padded F32 addends across all four axes |
 | `VT-176` | `build` | Packed GGML addition reaches all seven codebook destination encodings through Verdant |
 | `VT-177` | `build` | GGML flash attention supports all directly executable key and value storage pairs with default precision |
+| `VT-178` | `build` | Flash attention honors all documented accumulator settings and atomically refuses quantized accumulators |
 
 ## normalization-graphs
 

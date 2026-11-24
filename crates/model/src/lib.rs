@@ -210,43 +210,34 @@ pub fn repo_root() -> PathBuf {
 mod tests {
     use super::*;
 
+    static MODEL: std::sync::LazyLock<Model> = std::sync::LazyLock::new(|| {
+        let model = Model::load_from_repo_root().expect("model loads");
+        model.check().expect("model checks");
+        model
+    });
+
     /// CM-01: the model is self-consistent and every numeral in it derives.
     #[test]
     fn model_is_consistent_cm_01() {
-        let model = Model::load_from_repo_root().expect("model loads");
-        model.check().expect("model checks");
+        std::sync::LazyLock::force(&MODEL);
     }
 
     /// CM-02: every registered ID is unique and well formed.
     #[test]
     fn the_id_register_is_well_formed_cm_02() {
-        let model = Model::load_from_repo_root().expect("model loads");
-        model.check().expect("model checks");
-        // No lower bound on the count. "More than fifty IDs" was a fact about
-        // the repository this template was cut from, not a property of a
-        // well-formed register, and a threshold copied forward would fail here
-        // for the whole time the register is being rebuilt --- teaching whoever
-        // is rebuilding it to delete the assertion. What `check` above enforces
-        // is the part that is true at every size: no duplicate, no untagged
-        // claim, no ID without a suite.
-        let ids = model.ids.id.len();
-        eprintln!("CM-02: {ids} registered IDs, each unique and tagged");
+        eprintln!(
+            "CM-02: {} registered IDs, each unique and tagged",
+            MODEL.ids.id.len()
+        );
     }
 
     /// CM-03: every `some-true` claim cites an authority that exists.
     #[test]
     fn every_some_true_claim_cites_an_authority_cm_03() {
-        let model = Model::load_from_repo_root().expect("model loads");
-        for c in &model.ledger.claim {
-            if c.level == Level::SomeTrue {
-                let name = c
-                    .authority
-                    .as_ref()
-                    .expect("a some-true claim names its authority");
-                assert!(
-                    model.authorities.authority.iter().any(|a| &a.id == name),
-                    "{name}"
-                );
+        let listed = |id: &String| MODEL.authorities.authority.iter().any(|row| &row.id == id);
+        for claim in &MODEL.ledger.claim {
+            if claim.level == Level::SomeTrue {
+                assert!(claim.authority.as_ref().is_some_and(listed), "{}", claim.id);
             }
         }
     }
@@ -286,7 +277,7 @@ mod tests {
             words(&header, &["# ", "#"]).contains(&rule),
             "the header of model/authorities.toml must state AUTHORITY_RULE"
         );
-        let generated = codegen::render_conformance(&Model::load_from_repo_root().expect("loads"));
+        let generated = codegen::render_conformance(&MODEL);
         assert!(
             words(&generated, &[]).contains(&rule),
             "CONFORMANCE.md is generated from AUTHORITY_RULE"
@@ -632,48 +623,28 @@ pub mod conformance {
                 "VERIFICATION.md",
                 "ANALYSIS.md",
             ] {
-                let path = root.join(doc);
-                let Ok(text) = std::fs::read_to_string(&path) else {
+                let Ok(text) = std::fs::read_to_string(root.join(doc)) else {
                     continue;
                 };
-                for (i, line) in text.lines().enumerate() {
+                let checks_authorities = matches!(doc, "README.md" | "CONFORMANCE.md");
+                for (index, line) in text.lines().enumerate() {
                     let lower = line.to_lowercase();
-                    for id in &open_ids {
-                        if !line.contains(id) {
-                            continue;
-                        }
-                        if let Some(word) = ASSERTIVE.iter().find(|w| lower.contains(*w)) {
-                            report.violations.push(format!(
-                        "R2: {doc}:{}: `{id}` is an `open` claim --- measured and reported, \
-                         never asserted --- but this line says `{word}`.\n    {}",
-                        i + 1,
-                        line.trim()
-                    ));
-                        }
-                    }
-                }
-            }
-
-            // R2: a `some-true` authority is reproduced, not established here.
-            for authority in &model.authorities.authority {
-                for doc in ["README.md", "CONFORMANCE.md"] {
-                    let path = root.join(doc);
-                    let Ok(text) = std::fs::read_to_string(&path) else {
+                    let Some(word) = ASSERTIVE.iter().find(|word| lower.contains(**word)) else {
                         continue;
                     };
-                    for (i, line) in text.lines().enumerate() {
-                        if !line.contains(&authority.id) {
-                            continue;
-                        }
-                        let lower = line.to_lowercase();
-                        if let Some(word) = ASSERTIVE.iter().find(|w| lower.contains(*w)) {
-                            report.violations.push(format!(
-                                "R2: {doc}:{}: `{}` is cited, not established here, but this line \
-                         says `{word}`.\n    {}",
-                                i + 1,
-                                authority.id,
-                                line.trim()
-                            ));
+                    let location = format!("R2: {doc}:{}", index + 1);
+                    for id in open_ids.iter().filter(|id| line.contains(**id)) {
+                        report.violations.push(format!(
+                            "{location}: `{id}` is an `open` claim --- measured and reported, never asserted --- but this line says `{word}`.\n    {}", line.trim()
+                        ));
+                    }
+                    if checks_authorities {
+                        for authority in &model.authorities.authority {
+                            if line.contains(&authority.id) {
+                                report.violations.push(format!(
+                                    "{location}: `{}` is cited, not established here, but this line says `{word}`.\n    {}", authority.id, line.trim()
+                                ));
+                            }
                         }
                     }
                 }

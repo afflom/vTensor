@@ -1,0 +1,18 @@
+{
+  "requirement": "VT-178",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "accumulator_contract": "ggml/include/ggml.h, enum ggml_prec and ggml_prec_set_acc",
+  "reference": "The pinned CPU runs FLASH_ATTN_EXT with the permitted F32 accumulator. Reuse one CPU execution per storage pair and compare every word separately for F32, BF16 and F16 minimum precision. Both quantized accumulator settings must fail admission and graph execution while preserving poisoned output bytes.",
+  "inputs": "ggml-flash-storage-oracle.json",
+  "provider_sha256": "a3331269712080b9b283dde9652ec74247a18fe539a0a68c504f1e00af1c4ffc",
+  "semantic_id": "361568ca9b6989c6ead1bb02424c39d8c7c1aee9f7e5ac4034454fde5052565a",
+  "attestation": "eaf960277af316fa93bc6e703431a91ff1174c9bd99477461c698d41e5d51508",
+  "cpu_type_pairs": 841,
+  "previous_f16_placements": 0,
+  "valid_placements": 2523,
+  "cpu_comparisons": 1291776,
+  "atomic_refusals": 1682,
+  "nmse_limit": 0.0005,
+  "negative_control": "Zeroing the query only for F16 accumulation with IQ1_M keys and Q2_0 values made flash_accumulators_vt_178 fail with flash attention differs for 29 / 42. Restoring the query passed all 4205 cases.",
+  "source_lines": 12606
+}

@@ -630,6 +630,7 @@
     "packed-broadcast": "ggml-packed-add",
     "packed-lanes": "ggml-packed-add",
     "codebook-add": "ggml-codebook-add",
-    "flash-storage": "ggml-flash-storage"
+    "flash-storage": "ggml-flash-storage",
+    "flash-precision": "ggml-flash-storage"
   }
 }
