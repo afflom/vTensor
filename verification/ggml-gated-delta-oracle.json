@@ -1,0 +1,25 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "authority_files": [
+    "ggml/src/ggml.c",
+    "ggml/src/ggml-cpu/ops.cpp"
+  ],
+  "entry_point": "ggml_gated_delta_net",
+  "oracle": "Single-threaded pinned GGML generic CPU, contraction disabled.",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "object_sha256": {
+    "ggml-oracle-core.o": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+    "ggml-oracle-cpu.o": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f"
+  },
+  "graphs": 72,
+  "f32_words": 37760,
+  "untouched_snapshot_words": 11840,
+  "transcript": "ggml-gated-delta-oracle.tsv.gz",
+  "transcript_sha256": "6c48a9d1453c4d47a44b6aac972a553bc0bcb6cf0e0396d3730cae8e631d2c74",
+  "fields": "Decimal width, tokens, slots, per-lane gate and strided flags followed by binary32 output words in hexadecimal.",
+  "dimensions": "Use four value heads and two sequences. Q has two heads and one sequence. K has one head and two sequences. Gates use one or width lanes per head.",
+  "views": "For strided Q/K/V allocate [width+2,tokens,heads,sequences]. Use a one-word offset, swap strides 1 and 2 and keep stride 3. Other inputs and output are contiguous.",
+  "inputs": "For input slot s and logical index [i0,i1,i2,i3] let n=i0+7*i1+11*i2+13*i3+5*s. Gate = -(n%7)/16, beta = (n%8)/8, all other inputs = (n%19-9)/16. Initialize the entire output to 13.25.",
+  "baseline": "The vTensor provider refused upstream factory ordinal 27498 before allocation. The GPU-free CPU reference completed all 72 supplemental graphs.",
+  "independent_native_cpu_max_abs_difference": 5.960464477539063e-08
+}

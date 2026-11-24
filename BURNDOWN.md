@@ -87,7 +87,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Submit Verdant’s IQ4_NL and IQ4_XS encoders. Verify 768 blocks against the imported GGML quantizers and decoder. [Verdant PR #52](https://github.com/afflom/verdant-engine/pull/52)
 - [x] Pin Verdant PR #52 and pass all 48 IQ4_NL/IQ4_XS indexed writes and 12 copies against GGML CPU. [VT-135 comparisons](verification/factory-nonlinear-storage-vt135.json)
 - [x] Freeze 216 authoritative IQ encoding blocks and map all 210 refused writes and copies to the seven destination formats. [Quantizer inputs, bytes and ordinals](verification/ggml-importance-quantizer-oracle.json)
-- [x] Submit the two Verdant IQ3 encoders. Match 64,896 weighted and unweighted bytes with both GGML quantizers. [Verdant PR #56](https://github.com/afflom/verdant-engine/pull/56)
+- [x] Submit the two Verdant IQ3 encoders. Match 67,392 weighted and unweighted bytes with both GGML quantizers. [Verdant PR #56](https://github.com/afflom/verdant-engine/pull/56)
 - [ ] Verify the seven CPU-refused IQ encoders against the upstream quantizers. Cover 168 SET_ROWS and 42 CPY cases. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
 - [x] Pass F32-to-I32 copies 8708 and 8709, including strided storage and atomic refusal. [VT-126](verification/factory-signed-copy-vt126.json)
 - [x] Verify embedding and KV operand placement and all 129 default-precision F32 projections in llama.cpp prefill and decode. [Placement and intermediate outputs](verification/llama-projection-placement-vt126.json)
@@ -192,6 +192,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).
 - [x] Pass all four GATED_LINEAR_ATTN factory graphs and match 7,056 token and state words across 96 additional GGML CPU graphs. [VT-142](verification/factory-gated-linear-attention-vt142.json)
 - [x] Pass all four RWKV_WKV6 and five RWKV_WKV7 factory graphs. Match 7,056 token and state words on 96 additional GGML CPU graphs. [VT-143](verification/factory-recurrent-weighted-keys-vt143.json)
+- [x] Freeze 37,760 GGML CPU output words for 72 gated delta graphs, including 11,840 untouched snapshot words. [Oracle corpus](verification/ggml-gated-delta-oracle.json)
 - [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5).
 - [x] Pass all 26 SOLVE_TRI graphs and 1,392 exact batched solution words. Reject surplus inputs before allocation. [VT-134 comparisons](verification/factory-triangular-solve-vt134.json)
 - [x] Pass all 48 SOFT_MAX_BACK graphs at both scales. The GGML CPU verified 24 zero-bias cases and GGML Vulkan verified 24 positive-bias cases. [Oracle comparisons](verification/factory-softmax-gradients-vt121.json)
