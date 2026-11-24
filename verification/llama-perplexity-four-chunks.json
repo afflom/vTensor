@@ -106,5 +106,56 @@
     "mean_kl_divergence": 0.000179,
     "max_kl_divergence": 0.0051,
     "log_sha256": "97259d84dab544e3ff60712501b55267f2638701e5196b097f192ab6819b989f"
+  },
+  "component_replay": {
+    "provider_sha256": "682e5ca17eff0b10e1a3fc6b5574ee7be695901004378470f141c4d2485e5022",
+    "method": "A diagnostic llama-perplexity build used its evaluation callback to rerun one operator family on the original generic GGML CPU. Each reference graph copied the live source tensors, strides and operation parameters, then returned the reference output to the running graph. Each family used a separate four-chunk process. The unmodified host comparison is recorded above.",
+    "oracle": "llama.cpp ggml/src/ggml-cpu/ops.cpp and ggml/src/ggml-cpu/vec.cpp at the pinned revision. The generic x86-64 build selects the four-lane SSE2 implementation for complete SwiGLU vectors.",
+    "unchanged_provider": {
+      "perplexity": 79.045908,
+      "mean_kl_divergence": 0.000179,
+      "max_kl_divergence": 0.0051,
+      "top_token_agreement_percent": 100.0
+    },
+    "original_swiglu": {
+      "perplexity": 79.15844,
+      "mean_kl_divergence": -2e-06,
+      "max_kl_divergence": 2.6e-05,
+      "top_token_agreement_percent": 100.0
+    },
+    "original_matrix_products": {
+      "perplexity": 79.045908,
+      "mean_kl_divergence": 0.000179,
+      "max_kl_divergence": 0.0051,
+      "top_token_agreement_percent": 100.0
+    },
+    "original_flash_attention": {
+      "perplexity": 79.045908,
+      "mean_kl_divergence": 0.000179,
+      "max_kl_divergence": 0.0051,
+      "top_token_agreement_percent": 100.0
+    },
+    "original_rms_norm": {
+      "perplexity": 79.04777,
+      "mean_kl_divergence": 0.000179,
+      "max_kl_divergence": 0.0051,
+      "top_token_agreement_percent": 100.0
+    },
+    "rotary_node_753": {
+      "dimensions": [
+        48,
+        6,
+        16
+      ],
+      "positions": [
+        48,
+        63
+      ],
+      "source_sha256": "e86151714a6b9cbd32075d2ae4937629dfdbbee5089aa3ae11ca80d2962795de",
+      "identical_input_words": 4608,
+      "different_rotated_words": 61,
+      "different_coefficients_out_of_768": 13,
+      "note": "A one-hot replay recovered each backend\u2019s phase coefficients. Separate F32 multiply/add/subtract reproduced all 4,608 outputs for each backend using its own coefficients."
+    }
   }
 }

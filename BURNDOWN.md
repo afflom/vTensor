@@ -4,7 +4,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Trace the residual probability drift in stock llama-perplexity against generic GGML. At VT-186 all 124 top tokens match and mean KL divergence is 0.000179. [Four-chunk replay](verification/llama-perplexity-four-chunks.json)
+- [ ] Match the pinned generic GGML F32 SwiGLU vector arithmetic and rerun stock llama-perplexity. Restoring only its original SwiGLU outputs in a diagnostic replay reduced mean KL divergence from 0.000179 to the CPU self-replay value of −0.000002. [Four-chunk replay](verification/llama-perplexity-four-chunks.json)
 - [ ] Cover the remaining 7,016 binary descriptors. Verify the 2,408 with a floating or packed left operand and a Q8 activation right operand, then the 4,608 with signed, F64 or Q8 activation left operands. [Descriptor map](verification/ggml-binary-type-descriptors.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
