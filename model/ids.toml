@@ -1104,3 +1104,9 @@ id = "VT-172"
 level = "build"
 suite = "native-backend"
 statement = "Ordinary F16 and indexed BF16 matrix products consume BF16 activation rows at their stored precision"
+
+[[id]]
+id = "VT-173"
+level = "build"
+suite = "native-backend"
+statement = "Packed addition broadcasts repeated rows along three GGML axes before encoding or updating the destination"

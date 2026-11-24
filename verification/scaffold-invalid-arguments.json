@@ -1,0 +1,54 @@
+[
+  [
+    "cx-01",
+    "build",
+    "parsing",
+    "lowercase ID"
+  ],
+  [
+    "CX01",
+    "build",
+    "parsing",
+    "no hyphen"
+  ],
+  [
+    "CX-",
+    "build",
+    "parsing",
+    "no number"
+  ],
+  [
+    "CX-01",
+    "proven",
+    "parsing",
+    "unknown level"
+  ],
+  [
+    "CX-01",
+    "build",
+    "Parsing",
+    "uppercase suite"
+  ],
+  [
+    "CX-01",
+    "build",
+    "../x",
+    "escaping suite"
+  ],
+  [
+    "CX-01",
+    "build",
+    "parsing",
+    "  "
+  ],
+  [
+    "CX-01",
+    "build",
+    "parsing",
+    "two\nlines"
+  ],
+  [
+    "CX-01",
+    "build"
+  ]
+]

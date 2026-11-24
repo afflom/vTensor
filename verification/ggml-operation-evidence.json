@@ -1,0 +1,27 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "operations": 100,
+  "factory_ordinals": 27755,
+  "factory_opcodes": 89,
+  "supplemental_opcodes": 11,
+  "exact_node_descriptors": 29060,
+  "source_root": "ggml/src/ggml-cpu",
+  "dispatch_function": "ggml_compute_forward in ggml-cpu.c",
+  "cpu_sources": {
+    "ggml-cpu.c": "1f090b6a61b2304b2ca607f826661ef455013aeeed617ddcf5bcee3eaee9613d",
+    "ops.cpp": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+    "binary-ops.cpp": "2df261aadce36a20f5e3bf6961d4ca27b8c2d461afc41488361ee6ad09c1730d",
+    "unary-ops.cpp": "57a73a81b91473945040054a03bd921f1f77656d217e205cf8fd7f1e0acae7ad"
+  },
+  "table": "ggml-operation-evidence.tsv",
+  "table_sha256": "e9191289ea31979184bc68693deb3f772777d75e0c868362e3d586aa33d1399f",
+  "inputs": {
+    "ggml-constructor-contracts.json": "514d075f7e4e1cbf9e978ce2c79d5e6db3125705b7765f4fdc33ad330015b620",
+    "ggml-factory-signatures.json": "c79d118eca52e070db92ea1cdaa1f8dadaca7fe8d89efb734872dc21792a3d84",
+    "ggml-factory-layouts.tsv.gz": "7d4309209323416a959e056f823485185f92f7259649697a54e3c86a14bc0c4e",
+    "ggml-factory-evidence-index.json": "6f5b7afcd66de670c98aa3e8fe96fe3eb103ab74d76dd731cb8fe334fcfb8a0c"
+  },
+  "ordinal_groups": "just factory-remaining evidence",
+  "scope": "Each row locates an opcode in the original CPU evaluation switch and names its implementation and definition where applicable. Factory columns count distinct containing graphs, exact descriptors and observed operand/output type tuples. Root evidence groups count only the public graph output node. A graph may contribute to several containing opcodes. Evidence groups are the receipts for those whole graphs. The supplemental column identifies the individual record for declarations absent from factory graphs, including the public constructor refusal. Type and layout completeness beyond these graphs is tracked separately.",
+  "empty_field": "-"
+}

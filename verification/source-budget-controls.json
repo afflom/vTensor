@@ -1,0 +1,76 @@
+{
+  "refuses_a_new_non_prism_file": [
+    {
+      "before": {
+        "studio/a.mjs": "a()\nb()\n"
+      },
+      "after": {
+        "studio/a.mjs": "a()\n",
+        "studio/b.ts": "b()\n"
+      },
+      "expected": [
+        "1 new non-Prism file(s): studio/b.ts. Author the behavior in LexLean (`*.lex.tex`) so PrismPM builds it."
+      ]
+    }
+  ],
+  "refuses_net_growth": [
+    {
+      "before": {
+        "studio/a.mjs": "a()\n",
+        "crates/x.rs": "x();\n"
+      },
+      "after": {
+        "studio/a.mjs": "a()\nb()\nc()\n"
+      },
+      "expected": [
+        "non-Prism implementation grew by 1 lines (2 to 3); grown: studio/a.mjs +2. It may only shrink: move the logic into the Prism model, or delete as much as you add."
+      ]
+    }
+  ],
+  "names_what_grew_when_another_file_shrank": [
+    {
+      "before": {
+        "studio/a.mjs": "a()\nb()\n",
+        "studio/c.mjs": "c()\n"
+      },
+      "after": {
+        "studio/a.mjs": "a()\n",
+        "studio/c.mjs": "c()\nd()\ne()\nf()\n"
+      },
+      "expected": [
+        "non-Prism implementation grew by 2 lines (3 to 5); grown: studio/c.mjs +3. It may only shrink: move the logic into the Prism model, or delete as much as you add."
+      ]
+    }
+  ],
+  "admits_shrinking_and_growth_paid_for_by_deletion": [
+    {
+      "before": {
+        "studio/a.mjs": "a()\nb()\n",
+        "studio/c.mjs": "c()\n"
+      },
+      "after": {
+        "studio/a.mjs": "a()\nb()\nd()\n"
+      },
+      "expected": []
+    },
+    {
+      "before": {
+        "studio/a.mjs": "a()\nb()\n",
+        "studio/c.mjs": "c()\n"
+      },
+      "after": {},
+      "expected": []
+    }
+  ],
+  "a_comment_or_a_blank_line_is_free": [
+    {
+      "before": {
+        "studio/a.mjs": "a()\n"
+      },
+      "after": {
+        "studio/a.mjs": "// why a\n\na()\n"
+      },
+      "expected": []
+    }
+  ]
+}

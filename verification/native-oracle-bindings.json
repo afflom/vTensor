@@ -624,6 +624,7 @@
     "packed-add": "ggml-packed-add",
     "prepacked-products": "ggml-prepacked-matrix",
     "prepacked-precision": "ggml-prepacked-matrix",
-    "bfloat-products": "ggml-bfloat-matrix"
+    "bfloat-products": "ggml-bfloat-matrix",
+    "packed-broadcast": "ggml-packed-add"
   }
 }

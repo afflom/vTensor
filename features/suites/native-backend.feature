@@ -698,3 +698,9 @@ Feature: native-backend
     Given original GGML CPU results for BF16 activations outside the F16 range
     When vTensor schedules F16 matrix weights and reversed BF16 experts at four inner widths
     Then 24 integer-valued outputs match the CPU words exactly and 24 fractional outputs meet the GGML tolerance
+
+  @VT-173 @build
+  Scenario: Packed addition broadcasts repeated rows along three GGML axes before encoding or updating the destination
+    Given two encoded source rows and four distinct F32 addend rows tiled along three axes
+    When GGML schedules copied and in-place packed additions on vTensor
+    Then all stored bytes agree with an original CPU REPEAT followed by the original packed addition

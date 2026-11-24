@@ -274,23 +274,16 @@ mod tests {
         let fixture = scratch("bad");
         let root = &fixture.root;
         let ids = std::fs::read_to_string(root.join("model/ids.toml")).unwrap();
-        for bad in [
-            ["cx-01", "build", "parsing", "lowercase ID"],
-            ["CX01", "build", "parsing", "no hyphen"],
-            ["CX-", "build", "parsing", "no number"],
-            ["CX-01", "proven", "parsing", "unknown level"],
-            ["CX-01", "build", "Parsing", "uppercase suite"],
-            ["CX-01", "build", "../x", "escaping suite"],
-            ["CX-01", "build", "parsing", "  "],
-            ["CX-01", "build", "parsing", "two\nlines"],
-        ] {
+        let invalid: [Vec<String>; 9] = pinned_fixture!(
+            "scaffold-invalid-arguments",
+            "fc93df63dedd481e217c462b7ccf7b46cdfca33829ca1dd06b87a6a1268882bf"
+        );
+        for arguments in invalid {
             assert!(
-                new_capability(root, &args(bad)).is_err(),
-                "{bad:?} was accepted"
+                new_capability(root, &arguments).is_err(),
+                "{arguments:?} was accepted"
             );
         }
-        let short = vec!["CX-01".to_string(), "build".to_string()];
-        assert!(new_capability(root, &short).is_err());
         assert_eq!(
             std::fs::read_to_string(root.join("model/ids.toml")).unwrap(),
             ids

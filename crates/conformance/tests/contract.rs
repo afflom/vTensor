@@ -70,6 +70,7 @@ ggml_batches! {
     fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
+    fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn signed_indexed_rows_vt_168() { "integer-rows", 8, ["typed"] }
     fn activation_q8_stores_vt_167() { "activation-q8", 20, ["typed"] }
@@ -1280,7 +1281,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "25ee446e760470e175eac299858f0e2744a1a1959fb03e621f249721005553a7",
+            "eba6844a99d1bfa0cf74e696feae6b38a633b2aae2f84e57a2271c7e4b336f1a",
         )
     });
 
@@ -2164,7 +2165,8 @@ int main(int argc, char **argv) {
         }
         return finish(compared);
     }
-    if (!strcmp(argv[3],"packed-add")) {
+    const bool broadcast_add=!strcmp(argv[3],"packed-broadcast");
+    if (broadcast_add || !strcmp(argv[3],"packed-add")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
         int n=0; CHECK(scanf("%d",&n)==1 && n>0);
         for (int i=0;i<n;++i) {
@@ -2177,23 +2179,35 @@ int main(int argc, char **argv) {
         for (int p=0;p<pairs;++p) {
             int from,to,width; CHECK(scanf("%d%d%d",&from,&to,&width)==3);
             auto &data=sources.at({from,width});
-            const auto expected=read_hex_bytes(2*ggml_row_size(ggml_type(to),width)); CHECK(!expected.empty());
-            for (int inplace=0;inplace<=(from==to);++inplace) {
-                graph_fixture ctx(8); CHECK(ctx);
-                auto x=ggml_new_tensor_2d(ctx,ggml_type(from),width,2), y=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,width,2);
-                auto out=inplace?ggml_add_inplace(ctx,x,y):ggml_add_cast(ctx,x,y,ggml_type(to));
+            auto expected=read_hex_bytes(2*ggml_row_size(ggml_type(to),width)); CHECK(!expected.empty());
+            // The CPU packed kernel requires equal shapes. Materialize the broadcast with GGML itself.
+            const int rows=broadcast_add?4:2, planes=broadcast_add?4:1, batches=broadcast_add?2:1;
+            const int first=broadcast_add?-1:0;
+            for (int inplace=first;inplace<=(from==to);++inplace) {
+                const bool oracle=inplace<0;
+                auto selected=oracle?reference:backend;
+                graph_fixture ctx(12); CHECK(ctx);
+                auto x=ggml_new_tensor_4d(ctx,ggml_type(from),width,rows,planes,batches);
+                auto y=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,width,2,broadcast_add?2:1,1);
+                auto rhs=oracle?ggml_repeat_4d(ctx,y,width,rows,planes,batches):y;
+                auto out=inplace>0?ggml_add_inplace(ctx,x,rhs):ggml_add_cast(ctx,x,rhs,ggml_type(to));
                 if (!inplace && from==to) {
                     auto ordinary=ggml_add(ctx,x,y);
                     CHECK(ordinary->op==out->op && ordinary->type==out->type && ggml_are_same_shape(ordinary,out) && ggml_are_same_stride(ordinary,out));
                     CHECK(std::equal(std::begin(out->src),std::end(out->src),ordinary->src) && !memcmp(ordinary->op_params,out->op_params,sizeof(out->op_params)) && ordinary->flags==out->flags && !ordinary->view_src && !out->view_src);
                     ++cases;
                 }
-                CHECK(ggml_backend_supports_op(backend,out));
-                auto graph=ctx.build(out);CHECK(ctx.placed(graph,backend));
-                ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend));CHECK(ctx.storage);
-                ggml_backend_tensor_set(x,data.data(),0,data.size());
-                for (int i=0;i<2*width;++i) ggml_set_f32_1d(y,i,(float((13*i+7)%29)-14.f)/32.f);
-                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+                CHECK(ggml_backend_supports_op(selected,out));
+                auto graph=ctx.build(out);if (!oracle) CHECK(ctx.placed(graph,backend));
+                ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,selected));CHECK(ctx.storage);
+                const size_t row_bytes=data.size()/2;
+                for (int row=0;row<ggml_nrows(x);++row) {
+                    int sample=(row+row/rows+row/(rows*planes))%2;
+                    ggml_backend_tensor_set(x,data.data()+sample*row_bytes,row*row_bytes,row_bytes);
+                }
+                for (int i=0;i<ggml_nelements(y);++i) ggml_set_f32_1d(y,i,(float((13*i+7)%29)-14.f)/32.f);
+                CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+                if (oracle) {expected=tensor_bytes(out);continue;}
                 if (tensor_bytes(out)!=expected) {fprintf(stderr,"packed addition differs for %d -> %d inplace %d\n",from,to,inplace);return 2;}
                 ++cases;
             }

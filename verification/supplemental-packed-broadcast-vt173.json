@@ -1,0 +1,37 @@
+{
+  "requirement": "VT-173",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "semantic_id": "8162be4e56f983983b92825906ae9e6cdad247df311b60bb92c27b7799feeba0",
+  "attestation": "7ed5c3f16b6e6ec9b40400c031f9d41c91e7a95574a5efd825cc0cb257c79d97",
+  "provider_sha256": "3052350ab7382f4e37c5d8a0185cc094d3bb55f56cc563479b79176799bb8797",
+  "oracle": "Pinned GGML CPU REPEAT materializes the three-axis F32 broadcast, then the original packed ADD_CAST or ADD_INPLACE computes the reference bytes.",
+  "left_shape": [
+    "width",
+    4,
+    4,
+    2
+  ],
+  "right_shape": [
+    "width",
+    2,
+    2,
+    1
+  ],
+  "cast_graphs": 625,
+  "inplace_graphs": 18,
+  "equivalent_standard_constructors": 18,
+  "comparison": "All stored destination bytes",
+  "negative_control": "Forcing RHS row zero for input type 42 and output type 43 failed the byte comparison. Restoring the provider passed the suite.",
+  "activation_regression": {
+    "run": "https://github.com/afflom/vTensor/actions/runs/45478723787",
+    "cause": "The packed-add plan reused the swapped GLU discriminator. The certified Plan now carries an independent packedAddition field.",
+    "replayed": [
+      56,
+      77,
+      93,
+      111,
+      137
+    ]
+  },
+  "source_lines": 12645
+}

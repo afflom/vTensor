@@ -4,15 +4,18 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Support F32 row broadcasting along axes 1–3 for packed ADD, ADD_CAST and ADD_INPLACE. Compare stored results with original GGML REPEAT and ADD.
+- [ ] Support repeated F32 widths in copied and in-place packed ADD. Compare full four-axis repeats against GGML CPU.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,098 non-Prism lines** (12,647 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,096 non-Prism lines** (12,645 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Switch the signed-conversion and narrowing patches to the Verdant registry when released. [PR #63](https://github.com/afflom/verdant-engine/pull/63) · [PR #64](https://github.com/afflom/verdant-engine/pull/64)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Broadcast F32 rows along axes 1–3 in packed addition across 625 storage pairs. Restore swapped GLU execution and replay all five affected suites. [VT-173](verification/supplemental-packed-broadcast-vt173.json)
+- [x] Link each of the 100 public opcodes to its original CPU dispatch, factory graph signatures and supplemental evidence. [Opcode index](verification/ggml-operation-evidence.tsv)
 
 - [x] Replay stock llama-simple against the VT-172 plugin. All 13 reported layers ran on vTensor and all three eight-token outputs matched the original CPU. [Consumer replay](verification/llama-consumer-vt172.json)
 - [x] Place all 116 default matrix operand pairs with direct CPU execution. Compare the last two BF16 paths across eight graphs and replay all 2,592 descriptors. [VT-172](verification/supplemental-bfloat-matrices-vt172.json)

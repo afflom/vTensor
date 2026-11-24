@@ -1398,13 +1398,13 @@ fn execute_word(
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
     use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as AddRow};
     use BackendError::InvalidTensor;
-    let vtensor_typed::Adt2::C0(count, capacity, importance, operation, ..) = &plan;
+    let vtensor_typed::Adt2::C0(count, capacity, importance, operation, .., adding) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
     let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
     use linear::RowRankingF32;
     let kind = weight_encoder(tensor.ty);
-    let adding = *operation == 100;
+    let adding = *adding;
     let staged = adding
         || kind.is_some()
         || matches!(tensor.ty, 9 | 15)

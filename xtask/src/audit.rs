@@ -748,7 +748,7 @@ pub mod prism {
             assert_eq!(imported.total(), 1, "drifted imported bytes were exempted");
         }
 
-        fn measure(files: &[(&str, &str)]) -> Measure {
+        fn measure<'a>(files: impl IntoIterator<Item = (&'a str, &'a str)>) -> Measure {
             let mut m = Measure::default();
             for (path, text) in files {
                 m.add(path, text.as_bytes(), &BTreeMap::new());
@@ -773,7 +773,7 @@ pub mod prism {
 
         #[test]
         fn prism_and_data_are_not_counted() {
-            let m = measure(&[
+            let m = measure([
                 ("app/src/Kernel.lex.tex", "def a := 1\n"),
                 ("model/ids.toml", "x = 1\n"),
                 ("app/product.json", "{}\n"),
@@ -817,55 +817,42 @@ pub mod prism {
             assert_eq!(m.total(), 2);
         }
 
-        // The planted defects: each must be refused.
-        #[test]
-        fn refuses_a_new_non_prism_file() {
-            let before = measure(&[("studio/a.mjs", "a()\nb()\n")]);
-            let after = measure(&[("studio/a.mjs", "a()\n"), ("studio/b.ts", "b()\n")]);
-            let refused = refusals(&before, &after);
-            assert_eq!(refused.len(), 1);
-            assert!(refused[0].contains("studio/b.ts"));
+        #[derive(serde::Deserialize)]
+        struct BudgetCase<'a> {
+            #[serde(borrow)]
+            before: BTreeMap<&'a str, String>,
+            after: BTreeMap<&'a str, String>,
+            expected: Vec<String>,
         }
-
-        #[test]
-        fn refuses_net_growth() {
-            let before = measure(&[("studio/a.mjs", "a()\n"), ("crates/x.rs", "x();\n")]);
-            let after = measure(&[("studio/a.mjs", "a()\nb()\nc()\n")]);
-            let refused = refusals(&before, &after);
-            assert_eq!(refused.len(), 1);
-            assert!(
-                refused[0].contains("grew by 1 lines (2 to 3)"),
-                "{refused:?}"
-            );
-            assert!(refused[0].contains("studio/a.mjs +2"));
+        fn compare_budget_cases(name: &str, count: usize) {
+            static CASES: std::sync::LazyLock<BTreeMap<&str, Vec<BudgetCase>>> =
+                std::sync::LazyLock::new(|| {
+                    pinned_fixture!(
+                        "source-budget-controls",
+                        "5a2936c3574b36636a36d00c0530b8c0492930faa82bf56347808bd7af5c3de3"
+                    )
+                });
+            let cases = &CASES[name];
+            assert_eq!(cases.len(), count);
+            let snapshot = |files: &BTreeMap<&str, String>| {
+                measure(files.iter().map(|(&path, text)| (path, text.as_str())))
+            };
+            for case in cases {
+                assert_eq!(
+                    refusals(&snapshot(&case.before), &snapshot(&case.after)),
+                    case.expected
+                );
+            }
         }
-
-        #[test]
-        fn names_what_grew_when_another_file_shrank() {
-            let before = measure(&[("studio/a.mjs", "a()\nb()\n"), ("studio/c.mjs", "c()\n")]);
-            let after = measure(&[
-                ("studio/a.mjs", "a()\n"),
-                ("studio/c.mjs", "c()\nd()\ne()\nf()\n"),
-            ]);
-            let refused = refusals(&before, &after);
-            assert_eq!(refused.len(), 1);
-            assert!(refused[0].contains("studio/c.mjs +3"), "{refused:?}");
-            assert!(!refused[0].contains("studio/a.mjs"), "{refused:?}");
+        macro_rules! budget_controls {
+            ($($name:ident => $count:literal),+) => { $(#[test] fn $name() {compare_budget_cases(stringify!($name),$count);} )+ };
         }
-
-        #[test]
-        fn admits_shrinking_and_growth_paid_for_by_deletion() {
-            let before = measure(&[("studio/a.mjs", "a()\nb()\n"), ("studio/c.mjs", "c()\n")]);
-            let after = measure(&[("studio/a.mjs", "a()\nb()\nd()\n")]);
-            assert!(refusals(&before, &after).is_empty());
-            assert!(refusals(&before, &measure(&[])).is_empty());
-        }
-
-        #[test]
-        fn a_comment_or_a_blank_line_is_free() {
-            let before = measure(&[("studio/a.mjs", "a()\n")]);
-            let after = measure(&[("studio/a.mjs", "// why a\n\na()\n")]);
-            assert!(refusals(&before, &after).is_empty());
+        budget_controls! {
+            refuses_a_new_non_prism_file => 1,
+            refuses_net_growth => 1,
+            names_what_grew_when_another_file_shrank => 1,
+            admits_shrinking_and_growth_paid_for_by_deletion => 2,
+            a_comment_or_a_blank_line_is_free => 1
         }
     }
 }
