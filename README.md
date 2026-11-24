@@ -16,9 +16,8 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 The completion checklist tracks remaining GGML operations, scheduler callbacks
 and consumer checks. [Provider burndown](BURNDOWN.md)
 
-Cargo fetches Verdant Tensor from the immutable upstream commit in the
-[patch record](model/verdant-development.json), which links the submitted
-Verdant Engine PR. The patch stays pinned until a release includes its primitives.
+Cargo resolves Verdant Tensor v2.21.4 from its immutable upstream release index.
+Each locked registry archive is checked against the published manifest. [Release pin](model/verdant-development.json) · [Registry checks](verification/verdant-versioned-registry.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940
@@ -48,7 +47,7 @@ and storage-conversion primitives, matching 4,080 imported CPU comparisons.
 | ID | Level | Status |
 | --- | --- | --- |
 | `VT-01` | build | Pins and checks the imported GGML contract and oracle source. |
-| `VT-02` | build | Checks the exact Verdant patch, fifteen ordered kernel descriptors and the compiled provider’s GGML host imports. [Linkage check](VTENSOR-VERIFICATION.md#provider-linkage) |
+| `VT-02` | build | Checks the exact Verdant dependency, fifteen ordered kernel descriptors and the compiled provider’s GGML host imports. [Linkage check](VTENSOR-VERIFICATION.md#provider-linkage) |
 | `VT-03` | build | Delegates one fixed 4×4 F64 matrix primitive to Verdant. |
 | `VT-04` | build | Checks GGML operations, unary and GLU variants, and storage-type declarations against the pinned header. |
 | `VT-05` | build | Executes upstream storage-size functions from the pinned source. |
@@ -333,8 +332,8 @@ artifacts fit stricter M20 ceilings; no budget was raised. Exact evidence is in
 Verdant's native packager now includes the certified production dependency
 closure (36 crates), with exact registry versions and preserved SDK provenance.
 Its registry check requires a successful real Cargo consumer build and rejects
-missing or unresolvable dependencies. vTensor now consumes the published v2.21.3
-release. Its 94 resolved archives match the [release manifest](vendor/verdant-crates-manifest.json).
+missing or unresolvable dependencies. vTensor consumes the published v2.21.4
+release. Its resolved archives match the [release manifest](vendor/verdant-crates-manifest.json).
 
 The earlier Verdant extension added certified packed-scale and F8 word primitives
 for the remaining row-gathering work. Its 244,492 imported GGML comparisons pass;

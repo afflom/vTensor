@@ -150,7 +150,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Submit Verdant’s cancellation-safe exponential increment. Across 195,716 binary32 inputs the largest finite difference was one ULP. [Verdant PR #55](https://github.com/afflom/verdant-engine/pull/55)
 - [x] Pass all 12 ELU and six XIELU factory cases and four additional CPU graphs on the pinned upstream patch. [VT-138 comparisons](verification/factory-exponential-units-vt138.json)
 - [x] Pin Verdant PR #55 at `2586327`. VE-80 passes with three proof projects. All 79 certified Rust kernels are byte-identical to the prior pin, and VT-02, VT-45, VT-137 and VT-138 pass. [Integration evidence](verification/verdant-exponential-increment-integration.json)
-- [ ] Replace the merged exponential-increment patch with the published v2.21.4 registry package. [Merged Verdant PR #55](https://github.com/afflom/verdant-engine/pull/55)
+- [x] Replace the merged exponential-increment patch with published Verdant v2.21.4. All 98 locked archives match. VT-02, VT-45 and VT-138 pass. [Release evidence](verification/verdant-versioned-registry.json)
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract

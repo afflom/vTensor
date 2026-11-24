@@ -69,5 +69,18 @@
       "VT-45 quotient and normalization regression",
       "VT-137 all 48 GELU_ERF and GEGLU_ERF factory graphs and the two rounding probes"
     ]
+  },
+  "published_v2_21_4": {
+    "release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.4",
+    "registry": "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/9c67d952eb86adbe8dcd33eb0d296b0952c06817/v2.21.4/crates/index/",
+    "manifest_sha256": "6c2c970457889c582faed70e6b7c2ead7538f9b4533c814410cdbe2499f6058b",
+    "resolved_registry_archives": 98,
+    "verification": "Each Cargo.lock name, version and checksum matches the downloaded release manifest and the SHA-256 of the downloaded Cargo archive.",
+    "provider_checks": [
+      "VT-02 dependency and GGML imports",
+      "VT-45 quotient and normalization regression",
+      "VT-138 all 18 upstream ELU and XIELU graphs",
+      "cargo deny"
+    ]
   }
 }
