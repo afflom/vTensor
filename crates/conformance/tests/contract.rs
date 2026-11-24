@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn signed_indexed_rows_vt_168() { "integer-rows", 8, ["typed"] }
     fn activation_q8_stores_vt_167() { "activation-q8", 20, ["typed"] }
@@ -1277,7 +1278,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "b38feab7c4f92fbffc9f9a1447de1f486d20106cb13c2aa0150f347c52b59330",
+            "95eab1cb33043cfac9faa1bfbec4f087614997c9ddd69c1746cd959944f0cda0",
         )
     });
 
@@ -1870,6 +1871,15 @@ size_t block_address(const ggml_tensor *tensor, size_t ordinal) {
     ggml_unravel_index(tensor,ordinal*block,&i0,&i1,&i2,&i3);
     return (i0/block)*tensor->nb[0]+i1*tensor->nb[1]+i2*tensor->nb[2]+i3*tensor->nb[3];
 }
+static std::vector<unsigned char> read_hex_bytes(size_t count) {
+    std::vector<unsigned char> bytes(count);
+    for (auto &byte:bytes) {
+        unsigned value;
+        if (scanf("%2x",&value)!=1) return {};
+        byte=static_cast<unsigned char>(value);
+    }
+    return bytes;
+}
 static void set_scalar_word(ggml_tensor *tensor, size_t element, uint64_t word) {
     std::array<uint8_t,8> bytes{};
     for (size_t j=0;j<tensor->nb[0];++j) bytes.at(j)=uint8_t(word>>(8*j));
@@ -2109,25 +2119,47 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
+    if (!strcmp(argv[3],"prepacked-products")) {
+        int cases; CHECK(scanf("%d",&cases)==1 && cases==50);
+        for (int i=0;i<cases;++i) {
+            int expert,type,activation,width;CHECK(scanf("%d%d%d%d",&expert,&type,&activation,&width)==4);
+            graph_fixture ctx(8);CHECK(ctx);
+            auto x=ggml_new_tensor_3d(ctx,ggml_type(type),width,3,expert?2:1);
+            auto y=ggml_new_tensor_3d(ctx,ggml_type(activation),width,expert?1:2,expert?2:1);
+            auto ids=ggml_new_tensor_2d(ctx,GGML_TYPE_I32,1,2);
+            auto out=expert?ggml_mul_mat_id(ctx,x,y,ids):ggml_mul_mat(ctx,x,y);
+            CHECK(ggml_backend_supports_op(backend,out));auto graph=ctx.build(out);CHECK(ctx.placed(graph,backend));
+            ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend));CHECK(ctx.storage);
+            for (auto input : {x,y}) {
+                auto bytes=read_hex_bytes(ggml_nbytes(input));CHECK(!bytes.empty());
+                ggml_backend_tensor_set(input,bytes.data(),0,bytes.size());
+            }
+            const auto expected=read_hex_bytes(ggml_nbytes(out));CHECK(expected.size()==6*sizeof(float));
+            set_scalar_word(ids,0,1);set_scalar_word(ids,1,0);
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+            auto actual=tensor_bytes(out); double error=0,energy=0;
+            for (int j=0;j<6;++j) {
+                float value,ref;memcpy(&value,actual.data()+4*j,4);memcpy(&ref,expected.data()+4*j,4);
+                CHECK(std::isfinite(value));double delta=double(value)-ref;error+=delta*delta;energy+=double(ref)*ref;
+            }
+            CHECK(error<=5e-4*energy);
+        }
+        return finish(cases);
+    }
     if (!strcmp(argv[3],"packed-add")) {
-        auto read_bytes=[](size_t count) {
-            std::vector<unsigned char> bytes(count);
-            for (auto &byte:bytes) {unsigned value;if (scanf("%2x",&value)!=1) return std::vector<unsigned char>{};byte=static_cast<unsigned char>(value);}
-            return bytes;
-        };
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
         int n=0; CHECK(scanf("%d",&n)==1 && n>0);
         for (int i=0;i<n;++i) {
             int type,width; CHECK(scanf("%d%d",&type,&width)==2 && width>0);
             auto &bytes=sources[{type,width}]; CHECK(bytes.empty());
-            bytes=read_bytes(2*ggml_row_size(ggml_type(type),width)); CHECK(!bytes.empty());
+            bytes=read_hex_bytes(2*ggml_row_size(ggml_type(type),width)); CHECK(!bytes.empty());
         }
         int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==625);
         size_t cases=0;
         for (int p=0;p<pairs;++p) {
             int from,to,width; CHECK(scanf("%d%d%d",&from,&to,&width)==3);
             auto &data=sources.at({from,width});
-            const auto expected=read_bytes(2*ggml_row_size(ggml_type(to),width)); CHECK(!expected.empty());
+            const auto expected=read_hex_bytes(2*ggml_row_size(ggml_type(to),width)); CHECK(!expected.empty());
             for (int inplace=0;inplace<=(from==to);++inplace) {
                 graph_fixture ctx(8); CHECK(ctx);
                 auto x=ggml_new_tensor_2d(ctx,ggml_type(from),width,2), y=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,width,2);

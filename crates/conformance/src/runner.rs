@@ -1019,6 +1019,47 @@ packed_formats! {
     42 => Symmetric(linear::dot_two_bit_row), CenteredTwo;
 }
 
+fn block_field<const N: usize>(bytes: &mut &[u8]) -> Result<[u8; N], BackendError> {
+    let (field, tail) = bytes
+        .split_first_chunk()
+        .ok_or(BackendError::InvalidTensor)?;
+    *bytes = tail;
+    Ok(*field)
+}
+
+fn symmetric_activation(mut bytes: &[u8]) -> Result<linear::SymmetricQ8Block<32>, BackendError> {
+    Ok(linear::SymmetricQ8Block {
+        scale: u16::from_ne_bytes(block_field(&mut bytes)?),
+        codes: block_field(&mut bytes)?.map(|byte| byte as i8),
+    })
+}
+
+fn affine_activation(mut bytes: &[u8]) -> Result<linear::AffineQ8Block<32>, BackendError> {
+    let scale = u16::from_ne_bytes(block_field(&mut bytes)?);
+    let scaled_sum = u16::from_ne_bytes(block_field(&mut bytes)?);
+    Ok(linear::AffineQ8Block {
+        symmetric: linear::SymmetricQ8Block {
+            scale,
+            codes: block_field(&mut bytes)?.map(|byte| byte as i8),
+        },
+        scaled_sum,
+    })
+}
+
+fn grouped_activation(mut bytes: &[u8]) -> Result<linear::GroupedQ8Block, BackendError> {
+    let scale = f32::from_ne_bytes(block_field(&mut bytes)?);
+    let codes = block_field(&mut bytes)?.map(|byte| byte as i8);
+    let (words, []) = bytes.as_chunks::<2>() else {
+        return Err(BackendError::InvalidTensor);
+    };
+    let sums: &[[u8; 2]; 16] = words.try_into().map_err(BackendError::invalid)?;
+    Ok(linear::GroupedQ8Block {
+        scale,
+        codes,
+        sums: sums.map(i16::from_ne_bytes),
+    })
+}
+
 fn execute_row_products(
     execution: &threadpool::Execution,
     tensor: &Tensor,
@@ -1027,13 +1068,20 @@ fn execute_row_products(
     use RowProductPlan::C0;
     let C0(_, weight_bytes, ..) = plan;
     macro_rules! packed {
-        ($encode:expr, $dot:expr) => {
+        ($encode:expr, $read:expr, $dot:expr) => {
             execute_block_rows(
                 execution,
                 0,
                 tensor,
                 plan,
-                |x| Ok($encode(x)?),
+                |input, at, lanes| {
+                    if input.block_lanes == 1 {
+                        input.decode(at, lanes)?;
+                        Ok($encode(lanes)?)
+                    } else {
+                        $read(input.region(at, input.block_bytes)?)
+                    }
+                },
                 |source, at, a, _| Ok(($dot)(source.region(at, weight_bytes as usize)?, a)?),
             )
         };
@@ -1044,15 +1092,24 @@ fn execute_row_products(
             inner,
             tensor,
             plan,
-            |&[x]| prepare_float(0, precision, x.to_bits().into()),
+            |input, at, lanes: &mut [f32; 1]| {
+                input.decode(at, lanes)?;
+                prepare_float(0, precision, lanes[0].to_bits().into())
+            },
             |source, at, activations, weights| source.dot(at, activations, weights),
         ),
         C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
-            PackedWeight::Grouped(kind) => packed!(linear::encode_grouped_q8_block, |w, a| {
-                linear::dot_grouped_weight_row(w, a, kind)
-            }),
-            PackedWeight::Symmetric(dot) => packed!(linear::encode_symmetric_q8_block, dot),
-            PackedWeight::Affine(dot) => packed!(linear::encode_affine_q8_block, dot),
+            PackedWeight::Grouped(kind) => packed!(
+                linear::encode_grouped_q8_block,
+                grouped_activation,
+                |w, a| { linear::dot_grouped_weight_row(w, a, kind) }
+            ),
+            PackedWeight::Symmetric(dot) => {
+                packed!(linear::encode_symmetric_q8_block, symmetric_activation, dot)
+            }
+            PackedWeight::Affine(dot) => {
+                packed!(linear::encode_affine_q8_block, affine_activation, dot)
+            }
         },
     }
 }
@@ -1062,7 +1119,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     scratch_width: u64,
     tensor: &Tensor,
     plan: RowProductPlan,
-    encode: impl Fn(&[f32; LANES]) -> Result<Block, BackendError>,
+    prepare: impl Fn(&TensorInput, u64, &mut [f32; LANES]) -> Result<Block, BackendError>,
     dot: impl Fn(&TensorInput, u64, &[Block], &mut [f32]) -> Result<f32, BackendError> + Sync,
 ) -> Result<(), BackendError> {
     use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
@@ -1073,7 +1130,12 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = reserved(usize::try_from(visits).map_err(BackendError::overflow)?)?;
-    let stride = LANES.checked_mul(activations.nb[0]).ok_or(Overflow)? as u64;
+    if !LANES.is_multiple_of(activations.block_lanes) {
+        return Err(InvalidTensor);
+    }
+    let stride = (LANES / activations.block_lanes)
+        .checked_mul(activations.nb[0])
+        .ok_or(Overflow)? as u64;
     let mut lanes = [0.0; LANES];
     let mut prepared = reserved(usize::try_from(blocks).map_err(BackendError::overflow)?)?;
     for (column, values) in (0..visits).zip(results.chunks_exact_mut(rows as usize)) {
@@ -1095,8 +1157,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
         prepared.clear();
         let mut from = activation;
         for _ in 0..blocks {
-            activations.decode(from, &mut lanes)?;
-            prepared.push(encode(&lanes)?);
+            prepared.push(prepare(&activations, from, &mut lanes)?);
             from = from.checked_add(stride).ok_or(Overflow)?;
         }
         execution.fill(values, |first, chunk| {

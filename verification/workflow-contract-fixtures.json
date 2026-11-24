@@ -1,0 +1,87 @@
+{
+  "proof_inputs": [
+    "id: proof-inputs",
+    "shell: bash",
+    "run: |",
+    "set -euo pipefail",
+    "sdk=$(sed -n 's/.*\"sdk_image\":\"[^\"@]*@sha256:\\([0-9a-f]\\{64\\}\\)\".*/\\1/p' prismpm.lock)",
+    "lean=$(sed -n 's/^leanprover\\/lean4:\\(v[0-9A-Za-z.-]*\\)$/\\1/p' app/lean-toolchain)",
+    "test -n \"$sdk\"",
+    "test -n \"$lean\""
+  ],
+  "proof_recipe": [
+    "case \"${PRISM_PROOF_EVENT:-}\" in",
+    "pull_request:*|merge_group:*|push:refs/heads/main)",
+    "if cargo run -q --locked -p xtask -- proof-reuse; then",
+    "exit 0",
+    "fi",
+    ";;",
+    "esac",
+    "rm -rf .prism-proof",
+    "prismpm --project app verify | tee .prism-proof.log",
+    "attestation=$(sed -n 's/^verified attestation: \\([0-9a-f]\\{64\\}\\)$/\\1/p' .prism-proof.log)",
+    "rm -f .prism-proof.log",
+    "cargo run -q --locked -p xtask -- proof-keep \"$attestation\""
+  ],
+  "update": {
+    "required": [
+      "prismpm.lock standards.lock template-contract.json template.lock",
+      "test \"$(git -C .template-policy rev-parse HEAD)\" = \"$TEMPLATE_REVISION\"",
+      "--volume \"$PWD/.template-policy:/template-policy:ro\"",
+      "/template-policy/bootstrap/render.mjs \"$SDK_IMAGE\" \"$ACTION_REFERENCE\" \"$TEMPLATE_REVISION\" /sdk-platforms"
+    ],
+    "forbidden": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/honesty.yml",
+      ".github/actions/prismpm"
+    ],
+    "counts": {}
+  },
+  "deployment": {
+    "required": [
+      "needs: [resolve-sdk, promote, deploy, verify-deployment, conformance]",
+      "policy: ${{ steps.policy.outputs.policy-path }}",
+      "trusted-root: ${{ steps.policy.outputs.trusted-root-path }}"
+    ],
+    "forbidden": [
+      "inputs.promotion-policy",
+      "inputs.trusted-root"
+    ],
+    "counts": {
+      "command: build": 1,
+      "command: fetch": 2,
+      "command: pull": 5,
+      "command: prepare-promotion": 2,
+      "command: conformance": 1,
+      "command: sign-evidence": 1,
+      "command: verify-release": 5,
+      "Explicitly replay candidate release trust after the clean pull": 2,
+      "Explicitly replay deployed release trust after the clean pull": 1,
+      "Explicitly replay deployed release trust before acceptance": 1,
+      "Independently replay every signature and promotion decision": 1,
+      "name: prismpm-deployment-plan": 2,
+      "path: .prism/plans": 2,
+      "name: prismpm-deployment-state": 2,
+      "path: .prism/targets": 2
+    }
+  },
+  "docker_mounts": {
+    "required": [
+      "source=${localEnv:HOME}/.docker/config.json,target=/home/vscode/.docker/config.json,type=bind,readonly",
+      ".docker/config.json"
+    ],
+    "forbidden": [
+      "source=${localEnv:HOME}/.docker,target=/home/vscode/.docker,type=bind,readonly"
+    ],
+    "counts": {}
+  },
+  "docker_workflow": {
+    "required": [
+      "--volume \"$docker_config:/tmp/prismpm-home/.docker:ro\""
+    ],
+    "forbidden": [
+      "--volume \"$HOME/.docker:/tmp/prismpm-home/.docker:ro\""
+    ],
+    "counts": {}
+  }
+}

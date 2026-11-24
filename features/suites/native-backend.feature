@@ -680,3 +680,9 @@ Feature: native-backend
     Given 25 packed inputs and 25 destination types with a callable CPU encoder
     When GGML constructs explicit-output or same-storage copied and in-place additions
     Then the sole-provider scheduler places the graph and complete results match the original CPU bytes
+
+  @VT-170 @build
+  Scenario: Prism and Verdant consume stored Q8 activation blocks in ordinary and indexed GGML matrix products across 25 weight formats
+    Given original GGML weight and Q8 activation bytes for two activation columns
+    When the public scheduler places ordinary products and reversed expert selections on vTensor
+    Then all six outputs per graph agree with the pinned GGML CPU dot kernel

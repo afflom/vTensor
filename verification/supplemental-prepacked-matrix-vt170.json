@@ -1,0 +1,26 @@
+{
+  "requirement": "VT-170",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "prism_root": "PrismTemplateContract.QuantizedMatrix.evaluate",
+  "semantic_id": "92fe924b350a3bf8c7507dbdc14f592366743f5bf3d8c1c4cb4427569d980dec",
+  "attestation": "b277a70499d183bcc29ab693c487d5a23008424e93b0310deaa1d0438b179f5b",
+  "verdant_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560",
+  "provider_sha256": "04176f8b5046aceccd3a9c5f6a4bead3836ef5b45f574fb29ac2b068e32df7b7",
+  "ordinary_graphs": 25,
+  "indexed_graphs": 25,
+  "sole_provider_allocations": 50,
+  "compared_f32_outputs": 300,
+  "byte_identical_graphs": 4,
+  "max_nmse": 4.313745587989417e-14,
+  "allowed_nmse": 0.0005,
+  "reference": "ggml-prepacked-matrix-oracle.json",
+  "original_capture": "https://github.com/afflom/vTensor/blob/e9f014ccc8695d77141df3dfb84817f0c3ff6608/verification/ggml-prepacked-matrix-reference.tsv",
+  "regression_suites": [
+    "VT-53",
+    "VT-64",
+    "VT-83",
+    "VT-128"
+  ],
+  "negative_control": "For the indexed Q2_0 \u00d7 Q8_0 case, reusing activation column zero failed the native error<=5e-4*energy comparison. Restored the column address and replayed all 50 graphs.",
+  "source_lines": 12661
+}

@@ -4,16 +4,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Bind prepacked Q8_0, Q8_1 and Q8_K activations for ordinary and expert matrix products across 25 weight formats. [50 CPU results](verification/ggml-prepacked-matrix-reference.json)
+- [ ] Support the 600 refused prepacked matrix precision combinations. Compare every documented flag pair for ordinary and expert products. [1,200 CPU graphs](verification/ggml-prepacked-precision-reference.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,123 non-Prism lines** (12,672 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,112 non-Prism lines** (12,661 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Switch the signed-conversion and narrowing patches to the Verdant registry when released. [PR #63](https://github.com/afflom/verdant-engine/pull/63) · [PR #64](https://github.com/afflom/verdant-engine/pull/64)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
 
+- [x] Consume stored Q8_0, Q8_1 and Q8_K activations for ordinary and indexed products across 25 weight formats. Compare all 300 outputs with GGML CPU. [VT-170](verification/supplemental-prepacked-matrix-vt170.json)
 - [x] Implement packed ADD across 625 input/output pairs. Compare 643 scheduled casts and in-place graphs byte for byte with generic GGML and check 18 equivalent standard constructors. [VT-169](verification/supplemental-packed-add-vt169.json)
 - [x] Implement the four I32 indexed-store tuples. All 130 directly executable GET_ROWS and SET_ROWS type tuples now pass sole-provider placement. [VT-168](verification/supplemental-signed-row-stores-vt168.json)
 - [x] Verify all 81 scalar CAST pairs. The last seven passed 896 value comparisons and 48 invalid conversions across 14 scheduled graphs. [Pair ledger](verification/ggml-scalar-cast-coverage.tsv) · [VT-166](verification/supplemental-wide-narrow-vt166.json)

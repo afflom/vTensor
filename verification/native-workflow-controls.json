@@ -446,5 +446,51 @@
         "    [[ -d .prism-proof ]] && exit 0\n    case \"${PRISM_PROOF_EVENT:-}\" in\n"
       ]
     ]
+  ],
+  "history": [
+    [
+      [
+        "      sdk-image: ${{ steps.lock.outputs.sdk-image }}\n    steps:\n      - name: Check out the exact event revision without credentials\n        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n        with:\n          fetch-depth: 0\n",
+        "      sdk-image: ${{ steps.lock.outputs.sdk-image }}\n    steps:\n      - name: Check out the exact event revision without credentials\n        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n        with:\n"
+      ]
+    ],
+    [
+      [
+        "      sdk-image: ${{ steps.lock.outputs.sdk-image }}\n    steps:\n      - name: Check out the exact event revision without credentials\n        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n        with:\n          fetch-depth: 0\n          persist-credentials: false\n",
+        "      sdk-image: ${{ steps.lock.outputs.sdk-image }}\n    steps:\n      - name: Check out the exact event revision without credentials\n        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n        with:\n          fetch-depth: 0\n"
+      ]
+    ]
+  ],
+  "lifecycle": [
+    [
+      [
+        "command: sign-evidence",
+        ""
+      ]
+    ],
+    [
+      [
+        "command: conformance",
+        ""
+      ]
+    ],
+    [
+      [
+        "          include-hidden-files: true\n          path: .prism/plans",
+        "          include-hidden-files: true\n          "
+      ]
+    ],
+    [
+      [
+        "needs: [resolve-sdk, promote, deploy, verify-deployment, conformance]",
+        "needs: [resolve-sdk, promote, deploy, verify-deployment]"
+      ]
+    ],
+    [
+      [
+        "    timeout-minutes: 45\n    environment: ${{ inputs.environment }}\n    permissions:",
+        "    timeout-minutes: 45\n    environment: ${{ inputs.environment }}\n    permissions:\n      id-token: write"
+      ]
+    ]
   ]
 }

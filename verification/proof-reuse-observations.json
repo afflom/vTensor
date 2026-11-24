@@ -1,0 +1,47 @@
+{
+  "baseline": {
+    "inputs": "sdk ghcr.io/uor-foundation/prismpm-sdk-candidate@sha256:cd3b\nprismpm 0.3.0\n",
+    "source_id": "c573a7a43bdb1d0561da769cbd12fb9a9dea517fdb004165d5086d292d82a92c",
+    "semantic_id": "fbad6e6ba85b0d26526724c760b0080c4a274f9c113c6776357dfd636d3ee02d",
+    "lean_sha256": "e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550",
+    "lake_sha256": "60330ab6f07dce20f3fa9ebb08e8b984ea9549eac172afeb15d9d2227060e2b3",
+    "arch": "x86_64",
+    "workspace": [
+      [
+        "lean-toolchain",
+        "8e3538e0ab5f81a3ee04927d8838c8c674e0e112838b4b3ce87ec218143276af"
+      ]
+    ]
+  },
+  "changes": {
+    "source": {
+      "source_id": "4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    "semantics": {
+      "semantic_id": "5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    "Lean": {
+      "lean_sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+    },
+    "Lake": {
+      "lake_sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "architecture": {
+      "arch": "aarch64"
+    },
+    "workspace": {
+      "workspace": [
+        [
+          "lean-toolchain",
+          "8888888888888888888888888888888888888888888888888888888888888888"
+        ]
+      ]
+    },
+    "SDK image": {
+      "inputs": "sdk ghcr.io/uor-foundation/prismpm-sdk-candidate@sha256:0000\nprismpm 0.3.0\n"
+    },
+    "modified input": {
+      "inputs": "sdk ghcr.io/uor-foundation/prismpm-sdk-candidate@sha256:cd3b\nprismpm 0.3.0\n M Justfile\n"
+    }
+  }
+}

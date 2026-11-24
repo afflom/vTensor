@@ -154,10 +154,21 @@ definition{
 }
 
 definition{
+  name: prepackedActivation,
+  parameters: [weight : Nat, activation : Nat, stride : Nat, full : Bool],
+  result: Bool,
+  body: (if full then false else
+    (if (groupedWeights weight) then ((activation =? 15) && (stride =? 292)) else
+    (if (ScalarDotStorage::affineActivationWeights weight) then ((activation =? 9) && (stride =? 36)) else
+    (((ScalarDotStorage::symmetricActivationWeights weight) || (blockFloatWeights weight)) && ((activation =? 8) && (stride =? 34)))))),
+  executable: true
+}
+
+definition{
   name: productStorage,
   parameters: [w : Tensor, a : Tensor, o : Tensor, scalarWeight : Bool, full : Bool, lanes : Nat, width : Nat],
   result: Bool,
-  body: (((((((((rowProductType (project w kind)) || (scalarWeight && ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)))) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && (activationStride (project a kind) (project a s0) full)) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))),
+  body: (((((((((rowProductType (project w kind)) || (scalarWeight && ((MatrixGraph::floatWord (project w kind)) || ((project w kind) =? 43)))) && ((prim remainder (project w n0) lanes 0 : Nat) =? 0)) && ((project w s0) =? width)) && ((activationStride (project a kind) (project a s0) full) || (prepackedActivation (project w kind) (project a kind) (project a s0) full))) && ((project o s0) =? 4)) && ((project o s0) <=? (project o s1))) && ((project o s1) <=? (project o s2))) && ((project o s2) <=? (project o s3))),
   executable: true
 }
 
@@ -194,7 +205,7 @@ definition{
     full : Bool
   ],
   result: Response,
-  body: (if ((((((((((((((((((((op =? 29) && (if extra then false else true)) && ((project ids kind) =? 26)) && (((project a kind) =? 0) || (full && (MatrixGraph::floatWord (project a kind))))) && ((project o kind) =? 0)) && ((project w n3) =? 1)) && ((project a n3) =? 1)) && ((project ids n3) =? 1)) && ((project o n3) =? 1)) && ((project ids n2) =? 1)) && ((project ids n1) =? (project a n2))) && ((project w n0) =? (project a n0))) && (0 <? (project a n1))) && ((prim remainder (project ids n0) (project a n1) 0 : Nat) =? 0)) && ((project o n0) =? (project w n1))) && ((project o n1) =? (project ids n0))) && ((project o n2) =? (project a n2))) && ((project w s0) <=? (project w s1))) && ((prim multiply (project o n0) 4 : Nat) <=? (project o s1))) && ((prim multiply (project o n1) (project o s1) : Nat) <=? (project o s2))) then (match (TensorTypes::tensorTypeStorage (project w kind))
+  body: (if ((((((((((((((((((((op =? 29) && (if extra then false else true)) && ((project ids kind) =? 26)) && ((((project a kind) =? 0) || (full && (MatrixGraph::floatWord (project a kind)))) || (prepackedActivation (project w kind) (project a kind) (project a s0) full))) && ((project o kind) =? 0)) && ((project w n3) =? 1)) && ((project a n3) =? 1)) && ((project ids n3) =? 1)) && ((project o n3) =? 1)) && ((project ids n2) =? 1)) && ((project ids n1) =? (project a n2))) && ((project w n0) =? (project a n0))) && (0 <? (project a n1))) && ((prim remainder (project ids n0) (project a n1) 0 : Nat) =? 0)) && ((project o n0) =? (project w n1))) && ((project o n1) =? (project ids n0))) && ((project o n2) =? (project a n2))) && ((project w s0) <=? (project w s1))) && ((prim multiply (project o n0) 4 : Nat) <=? (project o s1))) && ((prim multiply (project o n1) (project o s1) : Nat) <=? (project o s2))) then (match (TensorTypes::tensorTypeStorage (project w kind))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor Response.refused)
     | TensorTypes::TypeStorageDecision.knownType storage => (if (productStorage w a o true full (project storage blockSize) (project storage typeSize)) then (ctor Response.planned (makePlan w a o (project storage blockSize) (project storage typeSize) (project w n1) (project ids n0) (project ids n1) 1 1 1 (ctor Option.some [ExpertLayout] (record ExpertLayout {experts := (project w n2), activationRows := (project a n1), indexLane := (project ids s0), indexToken := (project ids s1)})) full)) else (ctor Response.refused))) else (ctor Response.refused)),
   executable: true

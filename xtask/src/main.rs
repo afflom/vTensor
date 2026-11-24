@@ -10,6 +10,15 @@ use std::process::ExitCode;
 
 use repo_model::{codegen, Model};
 
+// A compiled fixture carries its reviewed digest, including in focused gate runs.
+macro_rules! pinned_fixture {
+    ($name:literal, $digest:literal) => {{
+        let bytes = include_bytes!(concat!("../../verification/", $name, ".json"));
+        assert_eq!(repo_model::artifact::sha256_hex(bytes), $digest, $name);
+        serde_json::from_slice(bytes).expect($name)
+    }};
+}
+
 mod audit;
 mod bootstrap;
 mod proof;
@@ -199,12 +208,10 @@ mod test_repo {
     ) {
         static SUITES: std::sync::LazyLock<std::collections::BTreeMap<String, Suite>> =
             std::sync::LazyLock::new(|| {
-                let bytes = include_bytes!("../../verification/repository-gate-fixtures.json");
-                assert_eq!(
-                    repo_model::artifact::sha256_hex(bytes),
+                pinned_fixture!(
+                    "repository-gate-fixtures",
                     "c72231192e8d2e034efef570ddd3f719d54a0562815a58b924e202f5034ba8d5"
-                );
-                serde_json::from_slice(bytes).unwrap()
+                )
             });
         let suite = &SUITES[suite];
         let cases = &suite.cases[name];

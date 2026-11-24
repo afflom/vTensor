@@ -1,0 +1,42 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "provider_sha256": "04176f8b5046aceccd3a9c5f6a4bead3836ef5b45f574fb29ac2b068e32df7b7",
+  "input_table": "ggml-prepacked-matrix-words.tsv",
+  "input_sha256": "084d5db0f2d8e881a2f77845b4d3a68213a2a69177accdd458d29fd2ed277d26",
+  "operations": [
+    "MUL_MAT",
+    "MUL_MAT_ID"
+  ],
+  "weight_types": 25,
+  "stored_activations": [
+    "Q8_0",
+    "Q8_1",
+    "Q8_K"
+  ],
+  "accumulation_values": [
+    0,
+    10,
+    15,
+    20
+  ],
+  "activation_values": [
+    0,
+    10,
+    15,
+    20,
+    30,
+    40
+  ],
+  "graphs": 1200,
+  "comparisons_per_graph": 6,
+  "cpu_graphs_identical_to_default": 1200,
+  "provider_admitted": 600,
+  "provider_refused": 600,
+  "refused_source_precision_values": [
+    10,
+    15,
+    20
+  ],
+  "method": "For each stored operand pair and graph, apply the pinned public ggml_prec_set_acc and ggml_prec_set_src setters, query vTensor before allocation and run the original GGML CPU graph. Compare all six output words to the same graph at default precision."
+}

@@ -257,6 +257,7 @@ model does not sanction.
 | `VT-167` | `build` | Prism and Verdant encode Q8_1 and Q8_K copies and indexed row stores against the original GGML CPU bytes |
 | `VT-168` | `build` | Prism and Verdant scatter F32 and F16 rows into signed I32 storage against original GGML CPU output |
 | `VT-169` | `build` | Prism and Verdant add packed rows to F32 addends and store every directly encoded GGML CPU result type |
+| `VT-170` | `build` | Prism and Verdant consume stored Q8 activation blocks in ordinary and indexed GGML matrix products across 25 weight formats |
 
 ## normalization-graphs
 

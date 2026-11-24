@@ -16,6 +16,11 @@
   "executed_cpu_graphs": 50,
   "baseline_provider_refusals": 50,
   "reference": "Original GGML CPU quantize_chunk constructed weights; the original CPU activation from_float callback encoded both activation columns in the weight type's registered vec_dot_type. Three output rows, two stored activation blocks per column, reversed expert IDs 1/0. Each graph produced six F32 values.",
-  "table": "ggml-prepacked-matrix-reference.tsv",
-  "table_sha256": "228264faad98248ef1daf103dba50c1fbe07b138a6d5ceb4750bdd22e6ba0913"
+  "table": "ggml-prepacked-matrix-words.tsv",
+  "original_capture_sha256": "228264faad98248ef1daf103dba50c1fbe07b138a6d5ceb4750bdd22e6ba0913",
+  "words_sha256": "084d5db0f2d8e881a2f77845b4d3a68213a2a69177accdd458d29fd2ed277d26",
+  "test_backend_ops_acceptance": {
+    "ggml_mul_mat_max_nmse": 0.0005,
+    "ggml_mul_mat_id_max_nmse": 0.0005
+  }
 }

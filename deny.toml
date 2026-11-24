@@ -395,7 +395,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x9f696a2e }]
 name = "vtensor_matrix_q8"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x3bd6a1ce }]
+license-files = [{ path = "src/lib.rs", hash = 0xa516c9fe }]
 
 [[licenses.clarify]]
 name = "verdant_packed_dot"

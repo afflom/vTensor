@@ -58,17 +58,18 @@ fn content_matches(bytes: &[u8], expected: &str) -> bool {
     sha256(bytes) == expected
 }
 
+fn selected_lines<'a>(lines: &[&'a str], select: impl Fn(&str) -> bool) -> Vec<&'a str> {
+    lines.iter().copied().filter(|line| select(line)).collect()
+}
+
 /// The SDK's `/tmp` is a fresh mode-0700 directory on the runner's disk,
 /// removed with the credentials when the step ends. Its space is the disk the
 /// runner has, so no fixed size caps how large a model's build may grow, and
 /// no `/tmp` mount of another kind or size may stand in for it.
-fn private_scratch(bootstrap: &str) -> bool {
-    let lines: Vec<_> = bootstrap.lines().map(str::trim).collect();
-    let tmp_mounts: Vec<_> = lines
-        .iter()
-        .copied()
-        .filter(|line| line.starts_with("--tmpfs /tmp") || line.contains(":/tmp\""))
-        .collect();
+fn private_scratch(lines: &[&str]) -> bool {
+    let tmp_mounts = selected_lines(lines, |line| {
+        line.starts_with("--tmpfs /tmp") || line.contains(":/tmp\"")
+    });
     lines.contains(&"scratch=$(mktemp -d)")
         && lines.contains(&"trap 'rm -rf \"$docker_config\" \"$scratch\"' EXIT")
         && tmp_mounts == [r#"--volume "$scratch:/tmp" \"#]
@@ -76,11 +77,7 @@ fn private_scratch(bootstrap: &str) -> bool {
 
 fn docker_credentials_are_confined(devcontainer: &str, bootstrap: &str) -> bool {
     let lines: Vec<_> = bootstrap.lines().map(str::trim).collect();
-    let buildx_config: Vec<_> = lines
-        .iter()
-        .copied()
-        .filter(|line| line.starts_with("--env BUILDX_CONFIG="))
-        .collect();
+    let buildx_config = selected_lines(&lines, |line| line.starts_with("--env BUILDX_CONFIG="));
     let Some(start) = lines
         .iter()
         .position(|line| *line == "\"$image\" bash -c '")
@@ -99,21 +96,15 @@ fn docker_credentials_are_confined(devcontainer: &str, bootstrap: &str) -> bool 
     };
     let mut umasks = script
         .iter()
+        .copied()
         .enumerate()
-        .map(|(index, line)| (index, *line))
         .filter(|(_, line)| line.starts_with("umask "));
     let private_umask = matches!(umasks.next(), Some((index, "umask 077")) if index < first_buildx)
         && umasks.next().is_none();
-    devcontainer.contains(
-        "source=${localEnv:HOME}/.docker/config.json,target=/home/vscode/.docker/config.json,type=bind,readonly",
-    ) && devcontainer.contains(".docker/config.json")
-        && !devcontainer.contains(
-            "source=${localEnv:HOME}/.docker,target=/home/vscode/.docker,type=bind,readonly",
-        )
-        && bootstrap.contains("--volume \"$docker_config:/tmp/prismpm-home/.docker:ro\"")
-        && !bootstrap.contains("--volume \"$HOME/.docker:/tmp/prismpm-home/.docker:ro\"")
+    WORKFLOW.docker_mounts.matches(devcontainer)
+        && WORKFLOW.docker_workflow.matches(bootstrap)
         && buildx_config == [r"--env BUILDX_CONFIG=/tmp/prismpm-buildx \"]
-        && private_scratch(bootstrap)
+        && private_scratch(&lines)
         && private_umask
 }
 
@@ -176,35 +167,37 @@ fn native_coverage_is_complete(bootstrap: &str) -> bool {
 /// toolchain by value. A key that omits one would find a proof of other inputs.
 const PROOF_KEY: &str = "key: prism-proof-${{ runner.os }}-${{ runner.arch }}-sdk-${{ steps.proof-inputs.outputs.sdk }}-lean-${{ steps.proof-inputs.outputs.lean }}-${{ hashFiles('app/**', '!app/specs/**', 'prismpm.lock', 'Justfile', 'rust-toolchain.toml') }}";
 
-/// The step that names the SDK image digest and the Lean toolchain for the key.
-const PROOF_INPUTS: [&str; 8] = [
-    "id: proof-inputs",
-    "shell: bash",
-    "run: |",
-    "set -euo pipefail",
-    r#"sdk=$(sed -n 's/.*"sdk_image":"[^"@]*@sha256:\([0-9a-f]\{64\}\)".*/\1/p' prismpm.lock)"#,
-    r"lean=$(sed -n 's/^leanprover\/lean4:\(v[0-9A-Za-z.-]*\)$/\1/p' app/lean-toolchain)",
-    r#"test -n "$sdk""#,
-    r#"test -n "$lean""#,
-];
-
-/// The `app` recipe's reuse and proof, line for line: reuse only on a pull
-/// request, a merge queue run or a main push, only through the read-time check,
-/// and otherwise prove in full and keep the proof.
-const PROOF_RECIPE: [&str; 12] = [
-    r#"case "${PRISM_PROOF_EVENT:-}" in"#,
-    "pull_request:*|merge_group:*|push:refs/heads/main)",
-    "if cargo run -q --locked -p xtask -- proof-reuse; then",
-    "exit 0",
-    "fi",
-    ";;",
-    "esac",
-    "rm -rf .prism-proof",
-    "prismpm --project app verify | tee .prism-proof.log",
-    r"attestation=$(sed -n 's/^verified attestation: \([0-9a-f]\{64\}\)$/\1/p' .prism-proof.log)",
-    "rm -f .prism-proof.log",
-    r#"cargo run -q --locked -p xtask -- proof-keep "$attestation""#,
-];
+#[derive(serde::Deserialize)]
+struct WorkflowTerms {
+    required: Vec<String>,
+    forbidden: Vec<String>,
+    counts: std::collections::BTreeMap<String, usize>,
+}
+impl WorkflowTerms {
+    fn matches(&self, source: &str) -> bool {
+        self.required.iter().all(|term| source.contains(term))
+            && self.forbidden.iter().all(|term| !source.contains(term))
+            && self
+                .counts
+                .iter()
+                .all(|(term, n)| source.matches(term).count() == *n)
+    }
+}
+#[derive(serde::Deserialize)]
+struct WorkflowContract {
+    proof_inputs: Vec<String>,
+    proof_recipe: Vec<String>,
+    update: WorkflowTerms,
+    deployment: WorkflowTerms,
+    docker_mounts: WorkflowTerms,
+    docker_workflow: WorkflowTerms,
+}
+static WORKFLOW: std::sync::LazyLock<WorkflowContract> = std::sync::LazyLock::new(|| {
+    pinned_fixture!(
+        "workflow-contract-fixtures",
+        "2c368019d757aac0e7e4fa3e2019e446b4d61f7a958b9a977a499b8b90205860"
+    )
+});
 
 /// A run may reuse a kept proof only when nothing it would prove has changed.
 /// The cache key finds a candidate and names every proof input; the event and
@@ -215,19 +208,11 @@ const PROOF_RECIPE: [&str; 12] = [
 /// Main's cache scope holds only proofs main made, so main reuses its own.
 fn proof_reuse_is_confined(bootstrap: &str, justfile: &str) -> bool {
     let lines: Vec<_> = bootstrap.lines().map(str::trim).collect();
-    let keys: Vec<_> = lines
-        .iter()
-        .copied()
-        .filter(|line| line.starts_with("key: prism-proof-"))
-        .collect();
-    let events: Vec<_> = lines
-        .iter()
-        .copied()
-        .filter(|line| line.contains("PRISM_PROOF_EVENT"))
-        .collect();
+    let keys = selected_lines(&lines, |line| line.starts_with("key: prism-proof-"));
+    let events = selected_lines(&lines, |line| line.contains("PRISM_PROOF_EVENT"));
     let names_inputs = lines
-        .windows(PROOF_INPUTS.len())
-        .any(|window| window == PROOF_INPUTS)
+        .windows(WORKFLOW.proof_inputs.len())
+        .any(|window| window == WORKFLOW.proof_inputs)
         && lines.contains(&r#"printf 'sdk=%s\nlean=%s\n' "$sdk" "$lean" >>"$GITHUB_OUTPUT""#)
         && bootstrap.matches("steps.proof-inputs.outputs.").count() == 2;
     let Some(start) = justfile.find("\napp:\n") else {
@@ -252,8 +237,8 @@ fn proof_reuse_is_confined(bootstrap: &str, justfile: &str) -> bool {
             ]
         && lines.contains(&"path: .prism-proof")
         && recipe
-            .windows(PROOF_RECIPE.len())
-            .any(|window| window == PROOF_RECIPE)
+            .windows(WORKFLOW.proof_recipe.len())
+            .any(|window| window == WORKFLOW.proof_recipe)
         && exits == 1
         && justfile.matches("PRISM_PROOF_EVENT").count() == 2
         && justfile.matches("proof-reuse").count() == 2
@@ -262,10 +247,9 @@ fn proof_reuse_is_confined(bootstrap: &str, justfile: &str) -> bool {
 fn workflow_history_is_complete(source: &str) -> bool {
     source.split("\n      - ").all(|step| {
         !step.contains("uses: actions/checkout@")
-            || (step.lines().any(|line| line.trim() == "fetch-depth: 0")
-                && step
-                    .lines()
-                    .any(|line| line.trim() == "persist-credentials: false"))
+            || ["fetch-depth: 0", "persist-credentials: false"]
+                .iter()
+                .all(|required| step.lines().map(str::trim).any(|line| line == *required))
     })
 }
 
@@ -275,13 +259,7 @@ fn update_preserves_project_content(source: &str) -> bool {
             .strip_prefix("for path in ")
             .and_then(|line| line.strip_suffix("; do"))
     }) == Some("AGENTS.md VERIFICATION.md template-contract.json .github/workflows/bootstrap.yml")
-        && source.contains("prismpm.lock standards.lock template-contract.json template.lock")
-        && source.contains("test \"$(git -C .template-policy rev-parse HEAD)\" = \"$TEMPLATE_REVISION\"")
-        && source.contains("--volume \"$PWD/.template-policy:/template-policy:ro\"")
-        && source.contains("/template-policy/bootstrap/render.mjs \"$SDK_IMAGE\" \"$ACTION_REFERENCE\" \"$TEMPLATE_REVISION\" /sdk-platforms")
-        && !source.contains(".github/workflows/ci.yml")
-        && !source.contains(".github/workflows/honesty.yml")
-        && !source.contains(".github/actions/prismpm")
+        && WORKFLOW.update.matches(source)
 }
 
 fn audit_policy_files(root: &Path, lock: &serde_json::Value, sdk_lock: &[u8]) -> Result<(), Fail> {
@@ -437,36 +415,16 @@ fn action_reference_is_pinned(line: &str) -> bool {
 }
 
 fn pipeline_lifecycle_is_complete(source: &str) -> bool {
-    let count = |needle: &str| source.matches(needle).count();
     let conformance = source.find("command: conformance");
     let evidence_signature = source.find("command: sign-evidence");
     let deploy_has_signing_identity = source
         .split_once("\n  deploy:\n")
         .and_then(|(_, rest)| rest.split_once("\n  verify-deployment:\n"))
         .is_some_and(|(deploy, _)| deploy.contains("id-token: write"));
-    count("command: build") == 1
-        && count("command: fetch") == 2
-        && count("command: pull") == 5
-        && count("command: prepare-promotion") == 2
-        && count("command: conformance") == 1
-        && count("command: sign-evidence") == 1
-        && count("command: verify-release") == 5
-        && count("Explicitly replay candidate release trust after the clean pull") == 2
-        && count("Explicitly replay deployed release trust after the clean pull") == 1
-        && count("Explicitly replay deployed release trust before acceptance") == 1
-        && count("Independently replay every signature and promotion decision") == 1
+    WORKFLOW.deployment.matches(source)
         && conformance
             .is_some_and(|offset| evidence_signature.is_some_and(|signature| offset < signature))
-        && source.contains("needs: [resolve-sdk, promote, deploy, verify-deployment, conformance]")
         && !deploy_has_signing_identity
-        && source.contains("policy: ${{ steps.policy.outputs.policy-path }}")
-        && source.contains("trusted-root: ${{ steps.policy.outputs.trusted-root-path }}")
-        && count("name: prismpm-deployment-plan") == 2
-        && count("path: .prism/plans") == 2
-        && count("name: prismpm-deployment-state") == 2
-        && count("path: .prism/targets") == 2
-        && !source.contains("inputs.promotion-policy")
-        && !source.contains("inputs.trusted-root")
 }
 
 fn workflow_files(root: &Path) -> Result<Vec<PathBuf>, Fail> {
@@ -735,12 +693,10 @@ mod tests {
     ) {
         type Controls = std::collections::BTreeMap<String, Vec<Vec<[String; 2]>>>;
         static CONTROLS: std::sync::LazyLock<Controls> = std::sync::LazyLock::new(|| {
-            let bytes = include_bytes!("../../verification/native-workflow-controls.json");
-            assert_eq!(
-                repo_model::artifact::sha256_hex(bytes),
-                "c427f8db974258b20a376235cec50c18f9e66a891d35332f2dcacbd23c2f7392"
-            );
-            serde_json::from_slice(bytes).unwrap()
+            pinned_fixture!(
+                "native-workflow-controls",
+                "d7901e2ebf9354e15b8be41f29e781b4996ca635f7f49870f7352d43d56785fb"
+            )
         });
         let cases = &CONTROLS[group];
         assert_eq!(cases.len(), count);
@@ -847,35 +803,13 @@ mod tests {
 
     #[test]
     fn authority_pins_name_each_dependency_once() {
-        let authorities = |pins: &[&[&str]]| repo_model::Authorities {
-            spec: "template/1".into(),
-            authority: pins
-                .iter()
-                .enumerate()
-                .map(|(index, names)| repo_model::AuthorityRow {
-                    id: format!("A-{index}"),
-                    name: "n".into(),
-                    citation: "c".into(),
-                    checksum: "none".into(),
-                    checksum_reason: "r".into(),
-                    artifact: None,
-                    statement: "s".into(),
-                    realized_by: vec![],
-                    pins: names.iter().map(|name| (*name).to_string()).collect(),
-                })
-                .collect(),
-        };
-        assert_eq!(upstream_pins(&authorities(&[])), Some(vec![]));
-        assert_eq!(
-            upstream_pins(&authorities(&[&["unicode-normalization"], &["blake3"]])),
-            Some(vec!["blake3".into(), "unicode-normalization".into()])
+        let cases: [(repo_model::Authorities, Option<Vec<String>>); 5] = pinned_fixture!(
+            "authority-pin-controls",
+            "c584ef665bea4bdc6a3e2c159d700791259656e80e35bfddd944ce6fa2dd241e"
         );
-        assert_eq!(
-            upstream_pins(&authorities(&[&["blake3"], &["blake3"]])),
-            None
-        );
-        assert_eq!(upstream_pins(&authorities(&[&["*"]])), None);
-        assert_eq!(upstream_pins(&authorities(&[&[""]])), None);
+        for (authorities, expected) in cases {
+            assert_eq!(upstream_pins(&authorities), expected);
+        }
     }
 
     #[test]
@@ -914,12 +848,10 @@ mod tests {
 
     #[test]
     fn native_platform_inventory_rejects_swaps_missing_platforms_and_legacy_drift() {
-        let data = include_bytes!("../../verification/sdk-platform-inventory-controls.json");
-        assert_eq!(
-            repo_model::artifact::sha256_hex(data),
+        let fixture: serde_json::Value = pinned_fixture!(
+            "sdk-platform-inventory-controls",
             "78410957e2a7e8e8b2d0ef1d80d658559873788b9752b6d884ce5c29854d4eb2"
         );
-        let fixture: serde_json::Value = serde_json::from_slice(data).unwrap();
         let amd64 = fixture["amd64"].as_str().unwrap().as_bytes();
         let arm64 = fixture["arm64"].as_str().unwrap().as_bytes();
         let lock = &fixture["lock"];
@@ -948,29 +880,20 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn shallow_checkout_plant_is_rejected() {
-        let workflow = include_str!("../../.github/workflows/prismpm.yml");
-        assert!(workflow_history_is_complete(workflow));
-        for required in [
-            "          fetch-depth: 0\n",
-            "          persist-credentials: false\n",
-        ] {
-            let changed = workflow.replacen(required, "", 1);
-            assert!(!workflow_history_is_complete(&changed), "{required}");
-        }
+    macro_rules! workflow_tests {
+        ($(fn $name:ident() { $file:literal, $controls:literal, $count:literal, $accept:ident })+) => { $(
+            #[test]
+            fn $name() {
+                let source = include_str!(concat!("../../.github/workflows/", $file));
+                assert!($accept(source));
+                check_workflow_controls($controls, $count, source, $accept);
+            }
+        )+ };
     }
-
-    #[test]
-    fn project_overwrite_plant_is_rejected() {
-        let workflow = include_str!("../../.github/workflows/template-update.yml");
-        assert!(update_preserves_project_content(workflow));
-        check_workflow_controls(
-            "template_update",
-            5,
-            workflow,
-            update_preserves_project_content,
-        );
+    workflow_tests! {
+        fn shallow_checkout_plant_is_rejected() { "prismpm.yml", "history", 2, workflow_history_is_complete }
+        fn project_overwrite_plant_is_rejected() { "template-update.yml", "template_update", 5, update_preserves_project_content }
+        fn incomplete_release_lifecycle_plant_is_rejected() { "prismpm.yml", "lifecycle", 5, pipeline_lifecycle_is_complete }
     }
 
     #[test]
@@ -1017,29 +940,5 @@ mod tests {
             |paths: &[&str]| policy_boundary_is_canonical(paths, &PROJECT_CONTENT_PATHS, &required);
         assert!(accepts(&UNIVERSAL_POLICY_PATHS));
         assert!(!accepts(&UNIVERSAL_POLICY_PATHS[..6]));
-    }
-
-    #[test]
-    fn incomplete_release_lifecycle_plant_is_rejected() {
-        let workflow = include_str!("../../.github/workflows/prismpm.yml");
-        assert!(pipeline_lifecycle_is_complete(workflow));
-        for required in [
-            "command: sign-evidence",
-            "command: conformance",
-            "path: .prism/plans",
-        ] {
-            let changed = workflow.replacen(required, "", 1);
-            assert!(!pipeline_lifecycle_is_complete(&changed), "{required}");
-        }
-        let bypass = workflow.replace(
-            "needs: [resolve-sdk, promote, deploy, verify-deployment, conformance]",
-            "needs: [resolve-sdk, promote, deploy, verify-deployment]",
-        );
-        assert!(!pipeline_lifecycle_is_complete(&bypass));
-        let (before, deploy) = workflow.split_once("\n  deploy:\n").unwrap();
-        let changed = deploy.replacen("permissions:", "permissions:\n      id-token: write", 1);
-        assert!(!pipeline_lifecycle_is_complete(&format!(
-            "{before}\n  deploy:\n{changed}"
-        )));
     }
 }

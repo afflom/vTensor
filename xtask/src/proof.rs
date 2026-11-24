@@ -34,6 +34,7 @@ struct Kept {
 
 /// What this checkout and this SDK image would prove now.
 #[derive(Clone)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 struct Observed {
     inputs: String,
     source_id: String,
@@ -311,19 +312,14 @@ mod tests {
     }
     use serde_json::json;
 
-    const LEAN: &str = "e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550";
-    const LAKE: &str = "60330ab6f07dce20f3fa9ebb08e8b984ea9549eac172afeb15d9d2227060e2b3";
-    const SOURCE: &str = "c573a7a43bdb1d0561da769cbd12fb9a9dea517fdb004165d5086d292d82a92c";
-    const SEMANTIC: &str = "fbad6e6ba85b0d26526724c760b0080c4a274f9c113c6776357dfd636d3ee02d";
-    const TOOLCHAIN_FILE: &str = "8e3538e0ab5f81a3ee04927d8838c8c674e0e112838b4b3ce87ec218143276af";
     const INPUTS: &str =
         "sdk ghcr.io/uor-foundation/prismpm-sdk-candidate@sha256:cd3b\nprismpm 0.3.0\n";
 
     fn proof() -> serde_json::Value {
-        serde_json::from_str(include_str!(
-            "../../verification/proof-reuse-documents.json"
-        ))
-        .unwrap()
+        pinned_fixture!(
+            "proof-reuse-documents",
+            "838d9933dbd95cb9b8a89c26f6e52ae2f6fe6ab4b8dd2786c3550a7ed9235499"
+        )
     }
 
     /// Seals a proof the way `prismpm verify` does: the manifest hashes the
@@ -348,16 +344,14 @@ mod tests {
         }
     }
 
+    static OBSERVATIONS: std::sync::LazyLock<serde_json::Value> = std::sync::LazyLock::new(|| {
+        pinned_fixture!(
+            "proof-reuse-observations",
+            "3e9ef5b1daecc5dae3ed9e692ae9449f4c72b61ce6f4acb6df58976e73ddbfcb"
+        )
+    });
     fn observed() -> Observed {
-        Observed {
-            inputs: INPUTS.to_owned(),
-            source_id: SOURCE.to_owned(),
-            semantic_id: SEMANTIC.to_owned(),
-            lean_sha256: LEAN.to_owned(),
-            lake_sha256: LAKE.to_owned(),
-            arch: "x86_64".to_owned(),
-            workspace: vec![("lean-toolchain".to_owned(), TOOLCHAIN_FILE.to_owned())],
-        }
+        serde_json::from_value(OBSERVATIONS["baseline"].clone()).unwrap()
     }
 
     #[test]
@@ -425,20 +419,16 @@ mod tests {
             assert!(binds(&seal(&changed), &now).is_err(), "{document}/{key}");
         }
 
-        let corrupt_observed: &[Mutation<Observed>] = &[
-            ("source", |o| o.source_id = "4".repeat(64)),
-            ("semantics", |o| o.semantic_id = "5".repeat(64)),
-            ("Lean", |o| o.lean_sha256 = "6".repeat(64)),
-            ("Lake", |o| o.lake_sha256 = "7".repeat(64)),
-            ("architecture", |o| o.arch = "aarch64".into()),
-            ("workspace", |o| o.workspace[0].1 = "8".repeat(64)),
-            ("SDK image", |o| o.inputs = INPUTS.replace("cd3b", "0000")),
-            ("modified input", |o| o.inputs.push_str(" M Justfile\n")),
-        ];
-        for (defect, corrupt) in corrupt_observed {
-            let mut changed = now.clone();
-            corrupt(&mut changed);
-            assert!(binds(&baseline, &changed).is_err(), "{defect} was reused");
+        let changes = OBSERVATIONS["changes"].as_object().unwrap();
+        assert_eq!(changes.len(), 8);
+        for (defect, fields) in changes {
+            let mut changed = OBSERVATIONS["baseline"].as_object().unwrap().clone();
+            changed.extend(fields.as_object().unwrap().clone());
+            let observation = serde_json::from_value(changed.into()).unwrap();
+            assert!(
+                binds(&baseline, &observation).is_err(),
+                "{defect} was reused"
+            );
         }
     }
 

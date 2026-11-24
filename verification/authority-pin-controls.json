@@ -1,0 +1,116 @@
+[
+  [
+    {
+      "spec": "template/1",
+      "authority": []
+    },
+    []
+  ],
+  [
+    {
+      "spec": "template/1",
+      "authority": [
+        {
+          "id": "A-0",
+          "name": "n",
+          "citation": "c",
+          "checksum": "none",
+          "checksum_reason": "r",
+          "statement": "s",
+          "realized_by": [],
+          "pins": [
+            "unicode-normalization"
+          ]
+        },
+        {
+          "id": "A-1",
+          "name": "n",
+          "citation": "c",
+          "checksum": "none",
+          "checksum_reason": "r",
+          "statement": "s",
+          "realized_by": [],
+          "pins": [
+            "blake3"
+          ]
+        }
+      ]
+    },
+    [
+      "blake3",
+      "unicode-normalization"
+    ]
+  ],
+  [
+    {
+      "spec": "template/1",
+      "authority": [
+        {
+          "id": "A-0",
+          "name": "n",
+          "citation": "c",
+          "checksum": "none",
+          "checksum_reason": "r",
+          "statement": "s",
+          "realized_by": [],
+          "pins": [
+            "blake3"
+          ]
+        },
+        {
+          "id": "A-1",
+          "name": "n",
+          "citation": "c",
+          "checksum": "none",
+          "checksum_reason": "r",
+          "statement": "s",
+          "realized_by": [],
+          "pins": [
+            "blake3"
+          ]
+        }
+      ]
+    },
+    null
+  ],
+  [
+    {
+      "spec": "template/1",
+      "authority": [
+        {
+          "id": "A-0",
+          "name": "n",
+          "citation": "c",
+          "checksum": "none",
+          "checksum_reason": "r",
+          "statement": "s",
+          "realized_by": [],
+          "pins": [
+            "*"
+          ]
+        }
+      ]
+    },
+    null
+  ],
+  [
+    {
+      "spec": "template/1",
+      "authority": [
+        {
+          "id": "A-0",
+          "name": "n",
+          "citation": "c",
+          "checksum": "none",
+          "checksum_reason": "r",
+          "statement": "s",
+          "realized_by": [],
+          "pins": [
+            ""
+          ]
+        }
+      ]
+    },
+    null
+  ]
+]

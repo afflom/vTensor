@@ -1086,3 +1086,9 @@ id = "VT-169"
 level = "build"
 suite = "native-backend"
 statement = "Prism and Verdant add packed rows to F32 addends and store every directly encoded GGML CPU result type"
+
+[[id]]
+id = "VT-170"
+level = "build"
+suite = "native-backend"
+statement = "Prism and Verdant consume stored Q8 activation blocks in ordinary and indexed GGML matrix products across 25 weight formats"
