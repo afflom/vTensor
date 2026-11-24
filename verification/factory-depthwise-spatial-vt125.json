@@ -1,0 +1,122 @@
+{
+  "requirement": "VT-125",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "implementation": "88440c74814fc784460e9835ea1f2f681f5173f7",
+  "verdant_revision": "ec3e4b6c2f6c9c5e908e23fe8d597f6b22540ba4",
+  "prism_attestation": "9a332ce06575c02c848c94b194559c9d062a5d587d4bd89d2aab9a91afb69a84",
+  "pointwise_lock_sha256": "3f4112aa27f05111d470ed2a7de35e2bb3449a5500a33f30265d88d0261805bb",
+  "provider_sha256": "27cbd48bc9659b114f980dfe6d87efcc4d8851026c2ac1eee16084fd2faf44f3",
+  "provider_inputs_sha256": "878b2cc9f56f517df83aa44a4de663c7a6e88fb838efa5dd7fc3b58eb80c4f6a",
+  "oracle_sha256": "90755f5fef49291b5c7171577638c236b15221743e14c6e0afb353a0ad1d9b40",
+  "case_ordinals": {
+    "CONV_2D_DW": [
+      7670,
+      7671,
+      7672,
+      7673,
+      7674,
+      7675,
+      7676,
+      7677
+    ]
+  },
+  "contract_transcript_sha256": "97ab936a78ae8403db14cd9bedb85346c8325ed6e302543f3afb3f26184f3b36",
+  "factory_passed": 8,
+  "supplemental": {
+    "reference": "ggml_backend_cpu_set_use_ref(cpu, true)",
+    "operation": "ggml_conv_2d_dw_direct(ctx, filter, input, 2, 1, pad_x, 2, 2, pad_x > 0 ? 2 : 3)",
+    "input_shape_whcn": [
+      10,
+      9,
+      5,
+      2
+    ],
+    "filter_shape": [
+      2,
+      3,
+      1,
+      5
+    ],
+    "input_word": "((batch*23 + channel*7 + y*3 + x*11) % 31 - 15) * 0.125",
+    "filter_word": "((channel*13 + y*5 + x*3) % 17 - 8) * 0.0625",
+    "layout": "CWHN creates input [C,W,H,N] and filter [C,1,KW,KH], then applies ggml_permute with (2,0,1,3) and (3,2,0,1), respectively.",
+    "runner_source_sha256": "7d35f44eaff62eeebb9285be784440cfc0296dd832eae4bff05892ef109a6119",
+    "runner_sha256": "8df1633c099c3a4f9f2c667e6d4f47c67c6e3f2e8777e5cd56839b1f0f12c427",
+    "reference_libraries": {
+      "libggml-base.so": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+      "libggml-cpu.so": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+      "libggml.so": "38afd9f20c33879492df893e74d4269e80c96259addc7b3ef9960f40943ccddc"
+    },
+    "results": [
+      {
+        "filter_type": "f32",
+        "layout": "WHCN",
+        "pad_x": 1,
+        "elements": 450,
+        "max_absolute_error": 0.0
+      },
+      {
+        "filter_type": "f32",
+        "layout": "WHCN",
+        "pad_x": -1,
+        "elements": 210,
+        "max_absolute_error": 0.0
+      },
+      {
+        "filter_type": "f32",
+        "layout": "CWHN",
+        "pad_x": 1,
+        "elements": 450,
+        "max_absolute_error": 0.0
+      },
+      {
+        "filter_type": "f32",
+        "layout": "CWHN",
+        "pad_x": -1,
+        "elements": 210,
+        "max_absolute_error": 0.0
+      },
+      {
+        "filter_type": "f16",
+        "layout": "WHCN",
+        "pad_x": 1,
+        "elements": 450,
+        "max_absolute_error": 0.0
+      },
+      {
+        "filter_type": "f16",
+        "layout": "WHCN",
+        "pad_x": -1,
+        "elements": 210,
+        "max_absolute_error": 0.0
+      },
+      {
+        "filter_type": "f16",
+        "layout": "CWHN",
+        "pad_x": 1,
+        "elements": 450,
+        "max_absolute_error": 0.0
+      },
+      {
+        "filter_type": "f16",
+        "layout": "CWHN",
+        "pad_x": -1,
+        "elements": 210,
+        "max_absolute_error": 0.0
+      }
+    ]
+  },
+  "preallocation_refusals": [
+    "wrong output width",
+    "zero stride",
+    "inconsistent channel count",
+    "unsupported image pitch"
+  ],
+  "mutation": {
+    "change": "Replace binary32 multiplication with addition in the Verdant dispatcher.",
+    "factory": "CONV_2D_DW",
+    "observed_error": 1.225289761,
+    "upstream_limit": 1e-07
+  }
+}
