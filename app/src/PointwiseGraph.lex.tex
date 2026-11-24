@@ -165,7 +165,8 @@ inductive{
     {name: timestep, fields: [Nat]},
     {name: exponentialUnit, fields: [Bool, Nat, Nat, OperationParameters]},
     {name: gatedLinear, fields: [Nat, Nat]},
-    {name: weightedKeys, fields: [Bool, Nat]}
+    {name: weightedKeys, fields: [Bool, Nat]},
+    {name: nearest, fields: [Bool, Nat, Nat]}
   ]
 }
 
@@ -1981,6 +1982,61 @@ definition{
 }
 
 definition{
+  name: nearestBands,
+  parameters: [size : Nat],
+  result: Nat,
+  body: (if (size <? 2147483521) then 1 else (if (size <? 549755813761) then 2 else (if (size <? 140737488355201) then 3 else (if (size <? 36028797018963841) then 4 else (if (size <? 9223372036854775681) then 5 else 6))))),
+  executable: true
+}
+
+definition{
+  name: nearestAxisSteps,
+  parameters: [size : Nat, target : Nat],
+  result: Nat,
+  body: (3 + (prim multiply target (if (size <? 2147483521) then 4 else (2 + (prim multiply 4 (nearestBands size) : Nat))) : Nat)),
+  executable: true
+}
+
+definition{
+  name: nearestAxisStep,
+  parameters: [index : Nat, start : Nat, size : Nat, target : Nat, stride : Nat, align : Bool, flag : Nat],
+  result: GraphResponse,
+  body: (if (index <? 3) then (let corners : Bool := ((align && (1 <? size)) && (1 <? target)); (if (index =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.wide 3) (ctor WordOperand.immediate (if corners then (prim subtract target 1 : Nat) else target)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (index =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.wide 3) (ctor WordOperand.immediate (if corners then (prim subtract size 1 : Nat) else size)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 3) 4 4)))) else (let step : Nat := (if (size <? 2147483521) then 4 else (2 + (prim multiply 4 (nearestBands size) : Nat)));
+      (let k : Nat := (prim subtract index 3 : Nat);
+      (let coordinate : Nat := (prim quotient k step 0 : Nat);
+      (let phase : Nat := (prim remainder k step 0 : Nat);
+      (let cache : Nat := (start + coordinate);
+      (if (size <? 2147483521) then (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.wide 3) (ctor WordOperand.immediate coordinate) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 2) 4 4) else (if (phase =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.signedTruncation) (ctor WordOperand.scratch 2) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (prim multiply (if (flag <? size) then flag else (prim subtract size 1 : Nat)) stride : Nat)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch cache) 4 4)))) else (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.wide 3) (ctor WordOperand.immediate coordinate) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 1) 4 4) else (let band : Nat := (prim quotient (prim subtract phase 2 : Nat) 4 0 : Nat);
+      (let part : Nat := (prim remainder (prim subtract phase 2 : Nat) 4 0 : Nat);
+      (if (part =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (if (part =? 1) then (if (((if (band =? 0) then 0 else (if (band =? 1) then 1325400064 else (if (band =? 2) then 1392508928 else (if (band =? 3) then 1459617792 else (if (band =? 4) then 1526726656 else 1593835520))))) <=? flag) && (flag <? (if (band =? 0) then 1325400064 else (if (band =? 1) then 1392508928 else (if (band =? 2) then 1459617792 else (if (band =? 3) then 1526726656 else (if (band =? 4) then 1593835520 else 1660944384))))))) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate (if (band =? 0) then 1065353216 else (if (band =? 1) then 1132462080 else (if (band =? 2) then 1199570944 else (if (band =? 3) then 1266679808 else (if (band =? 4) then 1333788672 else 1400897536)))))) (ctor WordTarget.scratch 0) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate 3212836864) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4)) else (if (part =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.signedTruncation) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 4 4) else (if (flag =? 4294967295) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate (prim multiply (if ((prim multiply flag (if (band =? 0) then 1 else (if (band =? 1) then 256 else (if (band =? 2) then 65536 else (if (band =? 3) then 16777216 else (if (band =? 4) then 4294967296 else 1099511627776))))) : Nat) <? size) then (prim multiply flag (if (band =? 0) then 1 else (if (band =? 1) then 256 else (if (band =? 2) then 65536 else (if (band =? 3) then 16777216 else (if (band =? 4) then 4294967296 else 1099511627776))))) : Nat) else (prim subtract size 1 : Nat)) stride : Nat)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch cache) 4 4)))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: nearestStep,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, align : Bool, setup : Nat, flag : Nat],
+  result: GraphResponse,
+  body: (if (index <? setup) then (let axisSteps0 : Nat := (nearestAxisSteps (project source u0) (project destination u0));
+      (if (index <? axisSteps0) then (nearestAxisStep index 4 (project source u0) (project destination u0) (project source s0) align flag) else (let i1 : Nat := (prim subtract index axisSteps0 : Nat);
+      (let axisSteps1 : Nat := (nearestAxisSteps (project source n1) (project destination n1));
+      (if (i1 <? axisSteps1) then (nearestAxisStep i1 (4 + (project destination u0)) (project source n1) (project destination n1) (project source s1) align flag) else (let i2 : Nat := (prim subtract i1 axisSteps1 : Nat);
+      (let axisSteps2 : Nat := (nearestAxisSteps (project source n2) (project destination n2));
+      (if (i2 <? axisSteps2) then (nearestAxisStep i2 ((4 + (project destination u0)) + (project destination n1)) (project source n2) (project destination n2) (project source s2) false flag) else (let i3 : Nat := (prim subtract i2 axisSteps2 : Nat);
+      (nearestAxisStep i3 (((4 + (project destination u0)) + (project destination n1)) + (project destination n2)) (project source n3) (project destination n3) (project source s3) false flag)))))))))) else (let width : Nat := (project destination u0);
+      (let steps : Nat := (2 + (prim multiply 2 width : Nat));
+      (let relative : Nat := (prim subtract index setup : Nat);
+      (let row : Nat := (prim quotient relative steps 0 : Nat);
+      (let phase : Nat := (prim remainder relative steps 0 : Nat);
+      (let next : Nat := (prim quotient row (project destination n1) 0 : Nat);
+      (let y : Nat := ((4 + (project destination u0)) + (prim remainder row (project destination n1) 0 : Nat));
+      (let z : Nat := (((4 + (project destination u0)) + (project destination n1)) + (prim remainder next (project destination n2) 0 : Nat));
+      (let w : Nat := ((((4 + (project destination u0)) + (project destination n1)) + (project destination n2)) + (prim quotient next (project destination n2) 0 : Nat));
+      (let x : Nat := (prim quotient (prim subtract phase 2 : Nat) 2 0 : Nat);
+      (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch y) (ctor WordOperand.scratch z) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch w) (ctor WordTarget.scratch 1) 4 4) else (if ((prim remainder phase 2 0 : Nat) =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch (4 + x)) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.offsets false flag (blockOffset ((prim multiply row width : Nat) + x) destination)))))))))))))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -2006,6 +2062,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.optimizer adam => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.nearest align slots setup => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.weightedKeys seven sequences => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.gatedLinear scale sequences => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.timestep period => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
@@ -2477,6 +2534,17 @@ definition{
 }
 
 definition{
+  name: planNearest,
+  parameters: [options : OperationParameters, input : TensorDescriptor, out : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let flags : Nat := (project options p0);
+      (let slots : Nat := ((((project out n0) + (project out n1)) + (project out n2)) + (project out n3));
+      (let setup : Nat := ((((nearestAxisSteps (project input n0) (project out n0)) + (nearestAxisSteps (project input n1) (project out n1))) + (nearestAxisSteps (project input n2) (project out n2))) + (nearestAxisSteps (project input n3) (project out n3)));
+      (if (((((((((project input ty) =? 0) && ((project out ty) =? 0)) && (0 <? (blockCount input 1))) && (0 <? (blockCount out 1))) && (signedCopySpan input (blockCount input 1))) && (signedCopySpan out (blockCount out 1))) && (separateTensors input out)) && (((prim remainder flags 256 0 : Nat) =? 0) && (flags <? 512))) then (ctor PointwiseDecision.copyBlocks (setup + (prim multiply (prim quotient (blockCount out 1) (project out n0) 0 : Nat) (2 + (prim multiply 2 (project out n0) : Nat)) : Nat)) 4 (indexContext input 1) (indexContext out 1) (ctor CopyMode.nearest ((prim remainder (prim quotient flags 256 0 : Nat) 2 0 : Nat) =? 1) slots setup)) else (ctor PointwiseDecision.invalidShape))))),
+  executable: true
+}
+
+definition{
   name: planTwoSources,
   parameters: [
     operation : Nat,
@@ -2552,6 +2620,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.bindings 7 0 0 false 3)
     | CopyMode.optimizer adam => (ctor GraphResponse.bindings (if adam then 31 else 7) 0 0 false 12)
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.bindings (if backward then 7 else 3) 0 0 false 7)
+    | CopyMode.nearest align slots setup => (ctor GraphResponse.bindings 1 0 0 false (4 + slots))
     | CopyMode.weightedKeys seven sequences => (ctor GraphResponse.bindings (if seven then 127 else 63) 0 0 false 3)
     | CopyMode.gatedLinear scale sequences => (ctor GraphResponse.bindings 31 0 0 false 3)
     | CopyMode.timestep period => (ctor GraphResponse.bindings 1 0 0 false 5)
@@ -2608,6 +2677,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.nearest align slots setup => 0
     | CopyMode.weightedKeys seven sequences => 0
     | CopyMode.gatedLinear scale sequences => 0
     | CopyMode.timestep period => 0
@@ -2688,6 +2758,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor WordOperation.invalid)
     | CopyMode.optimizer adam => (ctor WordOperation.invalid)
     | CopyMode.crossEntropy backward labelStride rows => (ctor WordOperation.invalid)
+    | CopyMode.nearest align slots setup => (ctor WordOperation.invalid)
     | CopyMode.weightedKeys seven sequences => (ctor WordOperation.invalid)
     | CopyMode.gatedLinear scale sequences => (ctor WordOperation.invalid)
     | CopyMode.timestep period => (ctor WordOperation.invalid)
@@ -2744,6 +2815,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.nearest align slots setup => 0
     | CopyMode.weightedKeys seven sequences => 0
     | CopyMode.gatedLinear scale sequences => 0
     | CopyMode.timestep period => 0
@@ -3107,6 +3179,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (hyperconnectionCombinationStep index source scale base destination eps iterations flag)
     | CopyMode.optimizer adam => (optimizerStep index source adam)
     | CopyMode.crossEntropy backward labelStride rows => (crossEntropyStep index source destination backward labelStride rows flag)
+    | CopyMode.nearest align slots setup => (nearestStep index source destination align setup flag)
     | CopyMode.weightedKeys seven sequences => (weightedKeyStep index source seven sequences)
     | CopyMode.gatedLinear scale sequences => (gatedLinearStep index source scale sequences)
     | CopyMode.timestep period => (timestepStep index destination period)
@@ -3182,7 +3255,7 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 tailPresent flags view output => (if ((operation =? 79) || (operation =? 81)) then (ctor GraphResponse.planned (planWeightedKeys (operation =? 81) input0 input1 input2 input3 input4 input5 input6 tailPresent output)) else (let trailingInputs : Bool := (((suppliedTensor input5) || (suppliedTensor input6)) || tailPresent); (if (operation =? 80) then (ctor GraphResponse.planned (planGatedLinear (project options p0) input0 input1 input2 input3 input4 trailingInputs output)) else (if (((((operation =? 82) || (operation =? 50)) || (operation =? 59)) || (operation =? 65)) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || trailingInputs)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 input5 input6 tailPresent flags view output => (if (operation =? 60) then (ctor GraphResponse.planned (match input0 | Option.none => (ctor PointwiseDecision.invalidShape) | Option.some input => (if ((suppliedTensor input1) || ((suppliedTensor input2) || ((suppliedTensor input3) || ((suppliedTensor input4) || ((suppliedTensor input5) || ((suppliedTensor input6) || tailPresent)))))) then (ctor PointwiseDecision.invalidShape) else (planNearest options input output)))) else (if ((operation =? 79) || (operation =? 81)) then (ctor GraphResponse.planned (planWeightedKeys (operation =? 81) input0 input1 input2 input3 input4 input5 input6 tailPresent output)) else (let trailingInputs : Bool := (((suppliedTensor input5) || (suppliedTensor input6)) || tailPresent); (if (operation =? 80) then (ctor GraphResponse.planned (planGatedLinear (project options p0) input0 input1 input2 input3 input4 trailingInputs output)) else (if (((((operation =? 82) || (operation =? 50)) || (operation =? 59)) || (operation =? 65)) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || trailingInputs)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
       | Option.some descriptor => true
       | Option.none => (match input4
         | Option.some descriptor => true
@@ -3192,7 +3265,7 @@ definition{
       | Option.none => trailing
       | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output)))))))))))))))))))
+      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))))))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)

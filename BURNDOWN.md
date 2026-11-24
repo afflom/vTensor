@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,445 passed**, **310 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,449 passed**, **306 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -182,7 +182,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all eight CONV_TRANSPOSE_2D cases with F32 and F16 kernels, multiple batches and both strides. [VT-107 evidence](verification/factory-transpose-plane-vt107.json)
 - [x] Pass all eight CONV_2D_DW graphs. Compare both channel layouts with asymmetric strides, dilations, padding and two batches. [VT-125](verification/factory-depthwise-spatial-vt125.json)
 - [x] Pass all six TIMESTEP_EMBEDDING factory graphs, including the 134,221,824-element output, and 70 additional CPU comparisons across widths, periods and views. [VT-141](verification/factory-timestep-embeddings-vt141.json)
-- [ ] Pass all 24 UPSCALE cases. [Case inventory](verification/ggml-factory-inventory.json)
+- [x] Pass all four nearest-neighbor UPSCALE cases. Match 2,972 raw output words on 28 additional GGML CPU graphs. [VT-144](verification/factory-nearest-resampling-vt144.json)
+- [ ] Pass plain bilinear (8), antialiased bilinear (4) and bicubic (8) UPSCALE cases. [Case inventory](verification/ggml-factory-inventory.json)
 - [x] Match all 11,088 frozen words for IM2COL_BACK and POOL_2D_BACK, including padding and overlapping windows. [CPU and provider transcripts](verification/ggml-spatial-gradient-oracle.json)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
 - [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).

@@ -445,11 +445,7 @@ unsafe extern "C" fn tensor_copy(
     // are copied; false is returned before mutation for every unsupported source.
     unsafe {
         let source = &*source;
-        let source_buffer = if source.view_src.is_null() {
-            source.buffer
-        } else {
-            (*source.view_src).buffer
-        };
+        let source_buffer = source.view_src.as_ref().unwrap_or(source).buffer;
         if source_buffer.is_null() || !ggml_backend_buffer_is_host(source_buffer) {
             return false;
         }

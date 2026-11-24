@@ -1,0 +1,123 @@
+{
+  "requirement": "VT-144",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "case_ordinals": {
+    "UPSCALE": [
+      19022,
+      19023,
+      19024,
+      19025
+    ]
+  },
+  "passed": 4,
+  "factory_transcript_sha256": "7fc04811807ed1ba2218becacd7772707dbfb18772fec663bccf166d720b75a4",
+  "factory_build": {
+    "pointwise_result": "63c7281ba7dbf8dc3b100c911cc1d825b3984fc3d8e2c528f7abff931bad3c95",
+    "verdant_patch": "2586327cadf8fa57ab8e2df5b4347f1a2b0e891f",
+    "provider_sha256": "9b727f89c057b3ce465b05140615337e29c1b8e1d40eb53e6855bbac72de4547",
+    "provider_inputs_sha256": "96d0e7d1b94f29738af09bb9165caa5552d0198717ae4889ab27904ca7bf78df",
+    "oracle_sha256": "50459b570f8163d12c376ec03debee95ccb7b58840703bd9fb67d3a61ab826f7",
+    "continuous_factory_ordinals": [
+      19024,
+      19025
+    ]
+  },
+  "supplemental": {
+    "graphs": 28,
+    "exact_output_words": 2972,
+    "cpu_and_provider_transcript_sha256": "d958687a58b64e29cd9ebbdad7f78c3b0950de14831071b7334cf4dd2ffb0816",
+    "oracle": "Pinned GGML CPU in reference mode. Compare raw binary32 output words.",
+    "source_and_target_shapes": [
+      [
+        [
+          14,
+          5,
+          3,
+          2
+        ],
+        [
+          2,
+          7,
+          2,
+          3
+        ]
+      ],
+      [
+        [
+          2,
+          7,
+          2,
+          3
+        ],
+        [
+          14,
+          5,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          1,
+          4,
+          3,
+          2
+        ],
+        [
+          2,
+          8,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          4,
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          1,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          5,
+          4,
+          14,
+          3
+        ],
+        [
+          7,
+          1,
+          2,
+          5
+        ]
+      ],
+      [
+        [
+          3,
+          5,
+          1,
+          14
+        ],
+        [
+          4,
+          2,
+          2,
+          2
+        ]
+      ]
+    ],
+    "views": "Evaluate each shape with a one-word source offset, both dense and first-two-axis-transposed layouts, and flags 0 and 256.",
+    "input_words": "For backing index i use 0x80000000 when i%31=0, otherwise 0x7fc12345 when i%29=0, otherwise 0x3f000000+i.",
+    "broadcast": "Four further graphs use source [(1<<k)+14,3,1,1], k in {31,40,49,56}, zero X stride, source words [0x80000000,0x40400000,0x7fc11234], destination [7,5,1,1].",
+    "refusals": "Surplus source and invalid flag words 255, 512 and 768 refuse admission and graph execution and preserve all output bytes.",
+    "rounding": "The continuous GGML graph [14,5,3,2] to [2,7,2,3] distinguishes binary32 nearest indexing from an integer ratio."
+  },
+  "mutation": "Substituting source byte offset zero failed the continuous upstream interpolation comparison: [UPSCALE] ERR = 4.274752404 > 0.000000100."
+}

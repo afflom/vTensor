@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn nearest_resampling_vt_144() { "upstream-UPSCALE_NEAREST", 2, ["pointwise"] }
     fn recurrent_weighted_keys_vt_143() { "upstream-RWKV_BOUNDARIES", 2, ["pointwise"] }
     fn gated_linear_attention_vt_142() { "upstream-GATED_LINEAR_ATTN_BOUNDARIES", 1, ["pointwise"] }
     fn timestep_embeddings_vt_141() { "upstream-TIMESTEP_EMBEDDING_BOUNDARIES", 5, ["pointwise"] }
@@ -1294,7 +1295,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "2202d2576bdf88ae70edb5272263301924fbcc9a172c4e661a79cecbc9c3a15c",
+            "6bed93202723ecb4d52db196badc00d15904d31df30ab34ebcc7e5e48d349f95",
         )
     });
 
@@ -1643,15 +1644,18 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
     if (actual.size()!=wanted.size()) return false;
     // An exactly matching all-padding output has zero reference energy and undefined NMSE.
     if (actual==wanted) return true;
-    const double error=nmse(wanted.data(),actual.data(),wanted.size());
-    if (!(error<=test.max_nmse_err(backend))) {
-        fprintf(stderr,"[%s] ERR = %.9f > %.9f\n",ggml_op_name(op),error,test.max_nmse_err(backend));
-        return false;
-    }
-    return true;
+    const double error=nmse(wanted.data(),actual.data(),wanted.size()), limit=test.max_nmse_err(backend);
+    if (error<=limit) return true;
+    fprintf(stderr,"[%s] ERR = %.9f > %.9f\n",ggml_op_name(op),error,limit);
+    return false;
 }
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     vtensor_observation observed;size_t cases=0;
+    if (!strcmp(op,"UPSCALE_NEAREST")) {
+      test_interpolate rounding(GGML_TYPE_F32,{14,5,3,2},{2,7,2,3});
+      vtensor_observation control;
+      if (rounding.eval(backend,reference,nullptr,&control)!=test_status_t::OK || control.bad || control.records!=1) return SIZE_MAX;
+    }
     decltype(make_test_cases_eval()) tests;
     if (!strcmp(op,"POOL_HALF_INPUT")) {
       for (ggml_op_pool kind : {GGML_OP_POOL_AVG, GGML_OP_POOL_MAX}) {

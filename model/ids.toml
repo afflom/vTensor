@@ -930,3 +930,9 @@ id = "VT-143"
 level = "build"
 suite = "native-backend"
 statement = "Prism models RWKV6 and RWKV7 recurrent state and output accumulation through Verdant against the imported GGML CPU"
+
+[[id]]
+id = "VT-144"
+level = "build"
+suite = "native-backend"
+statement = "Prism models GGML nearest-neighbor resampling on four strided axes with Verdant binary32 coordinates"

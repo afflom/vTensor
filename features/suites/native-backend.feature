@@ -524,3 +524,9 @@ Feature: native-backend
     Given token channels and an initial state matrix for each sequence
     When vTensor evaluates a recurrent weighted key-value graph
     Then its token outputs and final states agree with GGML CPU
+
+  @VT-144 @build
+  Scenario: Prism models GGML nearest-neighbor resampling on four strided axes with Verdant binary32 coordinates
+    Given a strided F32 tensor and GGML target extents
+    When the provider selects the nearest input coordinate on each axis
+    Then every output word matches the imported GGML CPU
