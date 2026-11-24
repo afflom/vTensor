@@ -634,6 +634,7 @@ pub enum Adt0 {
     C2(u64),
     C3(u64, u64, u64),
     C4(u64, u64, bool, bool),
+    C5(u64, u64, u64, bool, bool, bool),
 }
 
 #[derive(Clone)]
@@ -644,101 +645,178 @@ pub enum Adt1 {
 pub fn f0(v0: Adt0) -> bool {
     let m1 = v0;
     match m1 {
-        Adt0::C0(v1) => {
-            let a4 = v1;
-            let a5 = {
-                let m3 = f1();
-                match m3 {
-                    Adt1::C0(_, _, h2, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
-                        h2
+        Adt0::C0(v7) => {
+            let a26 = v7;
+            let a27 = {
+                let m25 = f1();
+                match m25 {
+                    Adt1::C0(_, _, h24, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
+                        h24
                     }
                 }
             };
-            nat_lt(a4, a5)
+            nat_lt(a26, a27)
         }
-        Adt0::C1(v2, v3) => {
-            let a6 = v3;
-            let a7 = 0u64;
-            if nat_eq(a6, a7) {
+        Adt0::C1(v8, v9) => {
+            let a28 = v9;
+            let a29 = 0u64;
+            if nat_eq(a28, a29) {
                 true
             } else {
-                let a8 = v2;
-                let a9 = 0u64;
-                if if if if nat_eq(a8, a9) {
+                let a30 = v8;
+                let a31 = 0u64;
+                if if if if nat_eq(a30, a31) {
                     true
                 } else {
-                    let a10 = v2;
-                    let a11 = 35u64;
-                    nat_eq(a10, a11)
+                    let a32 = v8;
+                    let a33 = 35u64;
+                    nat_eq(a32, a33)
                 } {
                     true
                 } else {
-                    let a12 = v2;
-                    let a13 = 36u64;
-                    nat_eq(a12, a13)
+                    let a34 = v8;
+                    let a35 = 36u64;
+                    nat_eq(a34, a35)
                 } {
                     true
                 } else {
-                    let a14 = v2;
-                    let a15 = 37u64;
-                    nat_eq(a14, a15)
+                    let a36 = v8;
+                    let a37 = 37u64;
+                    nat_eq(a36, a37)
                 } {
                     true
                 } else {
-                    let a16 = v2;
-                    let a17 = 38u64;
-                    nat_eq(a16, a17)
+                    let a38 = v8;
+                    let a39 = 38u64;
+                    nat_eq(a38, a39)
                 }
             }
         }
-        Adt0::C2(v4) => {
-            let a21 = 16u64;
-            let a22 = {
-                let a18 = v4;
-                let a19 = 32u64;
-                let a20 = 0u64;
-                nat_rem(a18, a19, a20)
+        Adt0::C2(v10) => {
+            let a43 = 16u64;
+            let a44 = {
+                let a40 = v10;
+                let a41 = 32u64;
+                let a42 = 0u64;
+                nat_rem(a40, a41, a42)
             };
-            nat_le(a21, a22)
+            nat_le(a43, a44)
         }
-        Adt0::C3(v5, v6, v7) => {
-            let a23 = 0u64;
-            let a24 = v5;
-            if if if nat_lt(a23, a24) {
-                let a25 = v5;
-                let a26 = 512u64;
-                nat_le(a25, a26)
+        Adt0::C3(v11, v12, v13) => {
+            let a45 = 0u64;
+            let a46 = v11;
+            if if if nat_lt(a45, a46) {
+                let a47 = v11;
+                let a48 = 512u64;
+                nat_le(a47, a48)
             } else {
                 false
             } {
-                let a27 = v6;
-                let a28 = 4u64;
-                nat_le(a27, a28)
+                let a49 = v12;
+                let a50 = 4u64;
+                nat_le(a49, a50)
             } else {
                 false
             } {
-                let a29 = v7;
-                let a30 = 100u64;
-                nat_le(a29, a30)
+                let a51 = v13;
+                let a52 = 100u64;
+                nat_le(a51, a52)
             } else {
                 false
             }
         }
-        Adt0::C4(v8, v9, v10, v11) => {
-            let a31 = v8;
-            let a32 = 99u64;
-            if if if nat_eq(a31, a32) {
-                let a33 = v9;
-                let a34 = 2147483648u64;
-                nat_lt(a33, a34)
+        Adt0::C4(v14, v15, v16, v17) => {
+            let a53 = v14;
+            let a54 = 99u64;
+            if if if nat_eq(a53, a54) {
+                let a55 = v15;
+                let a56 = 2147483648u64;
+                nat_lt(a55, a56)
             } else {
                 false
             } {
-                v10
+                v16
             } else {
                 false
             } {
-                v11
+                v17
+            } else {
+                false
+            }
+        }
+        Adt0::C5(v1, v2, v3, v4, v5, v6) => {
+            if v4 {
+                let a2 = 0u64;
+                let a3 = v3;
+                if if if nat_lt(a2, a3) {
+                    let a4 = v3;
+                    let a5 = 2147483648u64;
+                    nat_lt(a4, a5)
+                } else {
+                    false
+                } {
+                    true
+                } else {
+                    let a6 = v3;
+                    let a7 = 4294967295u64;
+                    nat_eq(a6, a7)
+                } {
+                    let a8 = v1;
+                    let a9 = 93u64;
+                    if nat_eq(a8, a9) {
+                        let a10 = v2;
+                        let a11 = 512u64;
+                        if nat_lt(a10, a11) {
+                            if v5 {
+                                v6
+                            } else {
+                                true
+                            }
+                        } else {
+                            false
+                        }
+                    } else {
+                        if v6 {
+                            let a12 = v1;
+                            let a13 = 90u64;
+                            if if nat_eq(a12, a13) {
+                                let a14 = v2;
+                                let a15 = 1u64;
+                                nat_eq(a14, a15)
+                            } else {
+                                false
+                            } {
+                                true
+                            } else {
+                                let a16 = v1;
+                                let a17 = 91u64;
+                                if if nat_eq(a16, a17) {
+                                    let a18 = v2;
+                                    let a19 = 3u64;
+                                    nat_eq(a18, a19)
+                                } else {
+                                    false
+                                } {
+                                    true
+                                } else {
+                                    let a20 = v1;
+                                    let a21 = 92u64;
+                                    if nat_eq(a20, a21) {
+                                        let a22 = v2;
+                                        let a23 = 7u64;
+                                        nat_eq(a22, a23)
+                                    } else {
+                                        false
+                                    }
+                                }
+                            }
+                        } else {
+                            false
+                        }
+                    }
+                } else {
+                    false
+                }
             } else {
                 false
             }

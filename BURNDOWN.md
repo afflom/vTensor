@@ -181,6 +181,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Import the pinned llama.cpp scheduler-delay oracle. Its four CPU controls passed timing, buffer aliasing and byte identity, including a chain of four delays. [Upstream timing test](vendor/llama.cpp-oracle/tests/test-sleep.cpp)
 - [x] Verify all three SLEEP factory cases and chained scheduler timing, aliasing and byte preservation. [VT-123](verification/factory-scheduler-delay-vt123.json)
 - [x] Measure callback task width on the pinned CPU across 416 graphs, including default threads, mixed graphs and all eight constructors. [Oracle record](verification/ggml-custom-callback-oracle.json)
+- [x] Export the Prism roots for callback admission and graph-wide task selection. [Certified native model](generated/native/result.json)
 - [ ] Implement MAP_CUSTOM1/2/3 and CUSTOM. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.
 - [ ] Close every residual legal variant in the ledger, including partial families from VT-01–51. Cover strides, empty axes, broadcasting, overlapping views, precision and typed failures where applicable.
 

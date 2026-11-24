@@ -36,6 +36,14 @@ definition{
   production: {effects: [], targets: [rust-core]}
 }
 
+definition{
+  name: callbackGraphWidth,
+  parameters: [operation : Nat, variant : Nat, elements : Nat, rows : Nat, heads : Nat, requested : Nat, limit : Nat],
+  result: Nat,
+  body: (if (elements =? 0) then 1 else (if ((90 <=? operation) && (operation <=? 93)) then (if (requested =? 4294967295) then limit else (if (requested <? limit) then requested else limit)) else (if ((((operation =? 0) || ((operation =? 5) || ((8 <=? operation) && (operation <=? 14)))) || ((((16 <=? operation) && (operation <=? 17)) || ((19 <=? operation) && (operation <=? 20))) || (((31 <=? operation) && (operation <=? 32)) || ((35 <=? operation) && (operation <=? 38))))) || (((operation =? 40) || ((operation =? 42) || (operation =? 47))) || ((((57 <=? operation) && (operation <=? 59)) || (operation =? 68)) || (((75 <=? operation) && (operation <=? 77)) || (operation =? 99))))) then 1 else (if ((operation =? 89) && (((0 <=? variant) && (variant <=? 7)) || (((11 <=? variant) && (variant <=? 15)) || ((18 <=? variant) && (variant <=? 21))))) then 1 else (if ((operation =? 39) && (elements <? 262144)) then 1 else (if (operation =? 43) then (if (rows <? limit) then rows else limit) else (if ((79 <=? operation) && (operation <=? 81)) then (if (heads <? limit) then heads else limit) else limit))))))),
+  executable: true
+}
+
 inductive{
   name: MemoryRequest,
   type_parameters: [],
@@ -44,7 +52,8 @@ inductive{
     {name: backingBytes, fields: [Nat]},
     {name: alignedOffset, fields: [Nat]},
     {name: workChunk, fields: [Nat, Nat]},
-    {name: schedulingPriority, fields: [Nat]}
+    {name: schedulingPriority, fields: [Nat]},
+    {name: callbackWidth, fields: [Nat, Nat, Nat, Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -56,6 +65,7 @@ definition{
     | MemoryRequest.backingBytes size => (if (size =? 0) then 0 else (size + (prim subtract (project (configuration) alignment) 1 : Nat)))
     | MemoryRequest.alignedOffset address => (prim remainder (prim subtract (project (configuration) alignment) (prim remainder address (project (configuration) alignment) 0 : Nat) : Nat) (project (configuration) alignment) 0 : Nat)
     | MemoryRequest.workChunk threads items => (if ((threads =? 0) || (items =? 0)) then 0 else ((prim quotient (prim subtract items 1 : Nat) threads 0 : Nat) + 1))
+    | MemoryRequest.callbackWidth operation variant elements rows heads requested limit => (callbackGraphWidth operation variant elements rows heads requested limit)
     | MemoryRequest.schedulingPriority level => (if (level =? 2) then 40 else (if (level =? 3) then 80 else (if (level =? 4) then 90 else 0)))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
@@ -70,7 +80,8 @@ inductive{
     {name: metadataOperation, fields: [Nat, Nat]},
     {name: computeNode, fields: [Nat]},
     {name: threadpool, fields: [Nat, Nat, Nat]},
-    {name: synchronousDelay, fields: [Nat, Nat, Bool, Bool]}
+    {name: synchronousDelay, fields: [Nat, Nat, Bool, Bool]},
+    {name: customAdmission, fields: [Nat, Nat, Nat, Bool, Bool, Bool]}
   ]
 }
 
@@ -79,6 +90,7 @@ definition{
   parameters: [request : PredicateRequest],
   result: Bool,
   body: (match request
+    | PredicateRequest.customAdmission operation mask requested callable hasView compatible => (callable && ((((0 <? requested) && (requested <? 2147483648)) || (requested =? 4294967295)) && (if (operation =? 93) then ((mask <? 512) && (if hasView then compatible else true)) else (compatible && (((operation =? 90) && (mask =? 1)) || (((operation =? 91) && (mask =? 3)) || ((operation =? 92) && (mask =? 7))))))))
     | PredicateRequest.deviceIndex index => (index <? (project (configuration) deviceCount))
     | PredicateRequest.metadataOperation operation span => ((span =? 0) || (((((operation =? 0) || (operation =? 35)) || (operation =? 36)) || (operation =? 37)) || (operation =? 38)))
     | PredicateRequest.computeNode flags => (16 <=? (prim remainder flags 32 0 : Nat))
@@ -164,5 +176,33 @@ theorem{
   statement: ((decideNative (ctor PredicateRequest.threadpool 513 1 50)) = false),
   proof: reflexivity{}
 }
+theorem{
+  name: customThreeRequiresThreeSources,
+  parameters: [],
+  statement: ((decideNative (ctor PredicateRequest.customAdmission 92 3 2 true false true)) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: customCanCreateWithoutSources,
+  parameters: [],
+  statement: ((decideNative (ctor PredicateRequest.customAdmission 93 0 4294967295 true false false)) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: requestedCallbackWidthIsCapped,
+  parameters: [],
+  statement: ((callbackGraphWidth 90 0 17 1 0 5 2) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: parallelAddSelectsAllWorkers,
+  parameters: [],
+  statement: ((callbackGraphWidth 2 0 17 1 0 0 4) = 4),
+  proof: reflexivity{}
+}
+
 \end{semanticmodule}
 \end{lexlean}
