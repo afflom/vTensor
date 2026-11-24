@@ -506,3 +506,9 @@ Feature: native-backend
     Given GGML timesteps with even and odd embedding dimensions
     When the provider emits cosine and sine halves for each timestep
     Then the lanes and odd trailing zero agree with the pinned CPU backend
+
+  @VT-138 @build
+  Scenario: Prism schedules ELU and parameterized XIELU with cancellation-preserving Verdant exponential increments
+    Given the pinned ELU and XIELU graphs with binary32 operation parameters
+    When vTensor selects the positive or negative activation at each coordinate
+    Then each converted result agrees with the upstream CPU

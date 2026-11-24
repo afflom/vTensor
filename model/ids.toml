@@ -912,3 +912,9 @@ id = "VT-141"
 level = "build"
 suite = "native-backend"
 statement = "Prism plans timestep embedding frequencies and destination lanes and Verdant evaluates the circular functions against the imported GGML CPU"
+
+[[id]]
+id = "VT-138"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules ELU and parameterized XIELU with cancellation-preserving Verdant exponential increments"

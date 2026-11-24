@@ -36,6 +36,7 @@ deny = []
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+allow-git = ["https://github.com/afflom/verdant-engine", "https://github.com/UOR-Foundation/uor-matmul"]
 allow-registry = ["https://github.com/rust-lang/crates.io-index", "https://raw.githubusercontent.com/afflom/verdant-engine/f07ae161a6b065a15a859aa89a84a7b8615e6f04/v2.21.3/crates/index/"]
 
 # The certified renderer omits package licensing metadata. The repository
@@ -107,7 +108,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xac07c02c }]
+license-files = [{ path = "src/lib.rs", hash = 0x6cc30347 }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -789,3 +790,27 @@ name = "verdant_error_function"
 version = "=2.47.0"
 expression = "(MIT OR Apache-2.0) AND SunPro"
 license-files = [{ path = "src/lib.rs", hash = 0x67da5469 }]
+
+[[licenses.clarify]]
+name = "verdant_exponential_increment"
+version = "=2.48.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xcb5dee84 }]
+
+[[licenses.clarify]]
+name = "verdant_increment_pack"
+version = "=2.48.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xe54c499b }]
+
+[[licenses.clarify]]
+name = "verdant_increment_term"
+version = "=2.48.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0xa97b156c }]
+
+[[licenses.clarify]]
+name = "verdant_unary_dispatch"
+version = "=2.48.0"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x1b8b8323 }]

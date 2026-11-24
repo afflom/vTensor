@@ -160,6 +160,7 @@ ggml_batches! {
     fn timestep_embeddings_vt_141() { "upstream-TIMESTEP_EMBEDDING_BOUNDARIES", 5, ["pointwise"] }
     fn pool_gradients_vt_140() { "pool-gradients", 37, ["pointwise"] }
     fn column_gradients_vt_139() { "column-gradients", 64, ["pointwise"] }
+    fn exponential_units_vt_138() { "upstream-EXPONENTIAL_UNITS", 18, ["pointwise"] }
     fn gaussian_error_graphs_vt_137() { "upstream-GAUSSIAN_ERROR", 48, ["typed", "pointwise"] }
     fn gaussian_graphs_vt_75() { "upstream-GELU_FAMILIES", 64, ["pointwise"] }
 
@@ -546,19 +547,13 @@ mod ggml_oracle {
     use std::path::{Path, PathBuf};
     use std::process::{Command, Output, Stdio};
 
-    fn read_bytes(path: &Path) -> Vec<u8> {
+    pub(super) fn read_bytes(path: &Path) -> Vec<u8> {
         std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
     }
 
     pub(super) fn read_json(path: impl AsRef<Path>) -> serde_json::Value {
         let path = path.as_ref();
         serde_json::from_slice(&read_bytes(path))
-            .unwrap_or_else(|error| panic!("{}: {error}", path.display()))
-    }
-
-    pub(super) fn read_toml(path: impl AsRef<Path>) -> toml::Value {
-        let path = path.as_ref();
-        toml::from_slice(&read_bytes(path))
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()))
     }
 
@@ -642,13 +637,7 @@ host:
     }
 
     fn checked_output(command: &Command, output: Output) -> Vec<u8> {
-        assert!(
-            output.status.success(),
-            "{command:?}: {:?}\n{}\n{}",
-            output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
+        assert!(output.status.success(), "{command:?}: {output:?}");
         output.stdout
     }
 
@@ -935,7 +924,9 @@ mod ggml_inventory {
     use std::sync::LazyLock;
 
     static INVENTORY: LazyLock<toml::Value> = LazyLock::new(|| {
-        super::ggml_oracle::read_toml(super::root().join("model/ggml-declarations.toml"))
+        let file = super::root().join("model/ggml-declarations.toml");
+        toml::from_slice(&super::ggml_oracle::read_bytes(&file))
+            .expect("GGML declaration inventory")
     });
     pub(super) static STORAGE_TYPES: LazyLock<Vec<u64>> = LazyLock::new(|| {
         let types = INVENTORY["tensor_type"].as_array().expect("types");
@@ -943,11 +934,8 @@ mod ggml_inventory {
             .iter()
             .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
             .map(|row| {
-                row["value"]
-                    .as_integer()
-                    .expect("numeric type")
-                    .try_into()
-                    .expect("positive type")
+                u64::try_from(row["value"].as_integer().expect("type identifier"))
+                    .expect("nonnegative GGML type")
             })
             .collect()
     });
@@ -1307,7 +1295,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "6892de029ad7ebd946c37652ae12662938454ccffe3a90b1de5d3bb18cd01b8e",
+            "02491455e9cad5c24081390ad8145b1c87f816df722ecc35029a104d841df3a2",
         )
     });
 
@@ -2186,29 +2174,39 @@ int main(int argc, char **argv) {
 
         }
       }
+      const bool units = !strcmp(argv[3]+9,"EXPONENTIAL_UNITS");
       const bool parameterized = !strcmp(argv[3]+9,"SWIGLU_OAI_VARIANTS");
       const bool erf = !strcmp(argv[3]+9,"GAUSSIAN_ERROR");
-      if (erf || parameterized || !strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
-        const std::array<float,12> inputs={erf?1.25f:8.f,-8,0,-0.f,2,-2,erf?3.f:-8.f,8,-3,3,0,-0.f};
-        for (int swapped : {0,1}) {
-          std::array<float,6> expected;
+      if (units || erf || parameterized || !strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
+        const std::array<float,12> inputs=units
+          ? std::array<float,12>{-0.f,0.f,-0x1p-149f,-0x1p-28f,-0x1p-25f,-0.25f,-0.5f,-1.25f,0.25f,1.f,NAN,-8.f}
+          : std::array<float,12>{erf?1.25f:8.f,-8,0,-0.f,2,-2,erf?3.f:-8.f,8,-3,3,0,-0.f};
+        for (int variant=0;variant<(units?4:2);++variant) {
+          std::vector<float> expected;
           for (auto selected : {reference,backend}) {
             graph_fixture ctx(4); CHECK(ctx);
             auto x=ggml_new_tensor_1d(ctx,erf?GGML_TYPE_F16:GGML_TYPE_F32,inputs.size());
-            auto out=erf ? ggml_geglu_erf(ctx,x) : parameterized ? ggml_swiglu_oai(ctx,x,nullptr,-0.5f,2.f) : ggml_swiglu_clamp(ctx,x,nullptr,2.f);
-            out->op_params[1]=swapped;
+            ggml_tensor *out;
+            if (units) out=variant==0 ? ggml_elu(ctx,x) : ggml_xielu(ctx,x,-0.75f,1.25f,0.5f,variant==1?-0.125f:variant==2?-0.f:NAN);
+            else {
+              out=erf ? ggml_geglu_erf(ctx,x) : parameterized ? ggml_swiglu_oai(ctx,x,nullptr,-0.5f,2.f) : ggml_swiglu_clamp(ctx,x,nullptr,2.f);
+              out->op_params[1]=variant;
+            }
             auto graph=ctx.allocate(out,selected); CHECK(graph);
             for (size_t i=0;i<inputs.size();++i) ggml_set_f32_1d(x,i,inputs[i]);
             CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-            std::array<float,6> actual; for (size_t i=0;i<actual.size();++i) actual[i]=ggml_get_f32_1d(out,i);
-            if (selected==reference) expected=actual;
-            else {
-              for (size_t i=0;i<actual.size();++i) {
-                CHECK(std::fabs(actual[i]-expected[i])<=1e-6f && std::signbit(actual[i])==std::signbit(expected[i]));
-              }
-              CHECK(refuses_change(backend,dev,graph,out,out->op_params[1],int32_t(2)));
+            for (int64_t i=0;i<ggml_nelements(out);++i) {
+              float actual=ggml_get_f32_1d(out,i);
+              if (selected==reference) { expected.push_back(actual); continue; }
+              float want=expected.at(i);
+              if (std::isnan(want)) { CHECK(std::isnan(actual)); continue; }
+              CHECK(std::signbit(actual)==std::signbit(want));
+              if (units) {
+                uint32_t a,b; std::memcpy(&a,&actual,4); std::memcpy(&b,&want,4);
+                CHECK(std::max(a,b)-std::min(a,b)<=(i<5 && variant==0 ? 0u : 3u));
+              } else CHECK(std::fabs(actual-want)<=1e-6f);
             }
-
+            if (!units && selected==backend) CHECK(refuses_change(backend,dev,graph,out,out->op_params[1],int32_t(2)));
           }
         }
       }

@@ -1,0 +1,43 @@
+{
+  "requirement": "VT-138",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_patch": "25e117ad0ed70f95cc98fdfec1af7442059023e4",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/55",
+  "pointwise_result": "80725cf7723b8cd9e56310a14d60e6f147db0bec0ec7aa5779b0b5df4c8a854a",
+  "provider_sha256": "6040c924d0bba84bf71323d8e621494f708c0e584e365b4dc32aa47d45a2ae6a",
+  "provider_inputs_sha256": "2b6bdd8cb589b6d7862cb20583d81ee52edce291b118f69768e17926bb932306",
+  "oracle_sha256": "69d1b59032f7f0c3fabb3d224723c0275bee8b47bc72b66ed7c9cb2f5252ce3f",
+  "factory_transcript_sha256": "5b88904cded485dd54d342ea1c70f96f6cc3df368d9bd5ef941ef9076fb5fcd6",
+  "case_ordinals": {
+    "ELU": [
+      10,
+      11,
+      52,
+      53,
+      94,
+      95,
+      136,
+      137,
+      178,
+      179,
+      220,
+      221
+    ],
+    "XIELU": [
+      19157,
+      19158,
+      19159,
+      19160,
+      19161,
+      19162
+    ]
+  },
+  "passed": 18,
+  "supplemental": {
+    "graphs": 4,
+    "input_lanes_per_graph": 12,
+    "reference": "Pinned ggml_elu and ggml_xielu on GGML CPU",
+    "checks": "Compare zero signs, NaN classification and values near zero. Compare XIELU with negative, negative-zero and NaN epsilon. Require exact tiny ELU words and at most three ULP for finite outputs."
+  },
+  "mutation": "Dispatching unary code 13 to square caused the imported ELU factory comparison to fail. Restoring the certified exponential increment passed."
+}
