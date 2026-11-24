@@ -95,5 +95,16 @@
       "timing_scope": "One run each of the same stock executable, model and command on this workstation. Machine load was uncontrolled. The replay ran the VT-186 matrix implementation before the equivalent indexer reply adapter cleanup.",
       "log_sha256": "c0bb2b869e5d4f97744e9d66113a36e2c19222e43a920102f7cf3fb17c357029"
     }
+  },
+  "mixed_scalar_matrix_replay": {
+    "revision": "f8ed5037bff8b60d042d986ade87277ec6b3a393",
+    "provider_sha256": "682e5ca17eff0b10e1a3fc6b5574ee7be695901004378470f141c4d2485e5022",
+    "reference": "generic GGML, same four chunks and original saved logits",
+    "scored_positions": 124,
+    "matching_top_tokens": 124,
+    "perplexity": 79.045908,
+    "mean_kl_divergence": 0.000179,
+    "max_kl_divergence": 0.0051,
+    "log_sha256": "97259d84dab544e3ff60712501b55267f2638701e5196b097f192ab6819b989f"
   }
 }
