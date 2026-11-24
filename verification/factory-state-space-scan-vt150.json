@@ -1,0 +1,118 @@
+{
+  "requirement": "VT-150",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "case_ordinals": {
+    "SSM_SCAN": [
+      10454,
+      10455,
+      10456,
+      10457,
+      10458,
+      10460,
+      10461,
+      10462,
+      10463,
+      10464,
+      10465,
+      10466,
+      10467,
+      10469,
+      10470,
+      10471,
+      10472
+    ],
+    "SSM_SCAN_ROLLBACK": [
+      10459,
+      10468
+    ],
+    "SSM_SCAN_CACHE_FUSION": [
+      10473,
+      10474,
+      10475,
+      10476,
+      10477,
+      10478,
+      10479,
+      10480,
+      10481
+    ]
+  },
+  "passed": 28,
+  "factory_transcript_sha256": "1d9a5eb590e257ab2f210e73136c604f27f5dd64e391b4d3a2771b0d825ec60f",
+  "continuous": {
+    "ordinals": [
+      10454,
+      10462,
+      10468,
+      10474
+    ],
+    "transcript_sha256": "921d26fbd7df6b584b1a43c7a9b1507e2db56c7495a513fab3207fc73ea7b602"
+  },
+  "additional_batches": [
+    {
+      "count": 1,
+      "ordinals": [
+        10464
+      ],
+      "transcript_sha256": "b33089315340b51b629fd2f5d3b6e4c3eddda32f2f84a2d4d39f96c6419b8707"
+    },
+    {
+      "count": 10,
+      "ordinals": [
+        10465,
+        10455,
+        10471,
+        10470,
+        10460,
+        10476,
+        10475,
+        10457,
+        10478,
+        10456
+      ],
+      "transcript_sha256": "57517f2291012b0d0d5d78892f550f557653c55b30d275b5e50d6917cb46743e"
+    },
+    {
+      "count": 13,
+      "ordinals": [
+        10463,
+        10458,
+        10481,
+        10472,
+        10469,
+        10461,
+        10467,
+        10459,
+        10466,
+        10480,
+        10473,
+        10477,
+        10479
+      ],
+      "transcript_sha256": "89020b3d3d229c0e6dd77783d5e723c3fbba8f41ebdb8420fe4c6cf89fe01987"
+    }
+  ],
+  "attention_result": "82a5231fa2c36c5db3444fd6dcd9c4097340f8b5cdf9cb008b656e7b845cc447",
+  "oracle": "Original GGML factory constructors and CPU evaluator for 17 scans, nine cache fusions and two rollbacks.",
+  "supplemental": {
+    "graphs": 440,
+    "words": 123264,
+    "untouched": 50560,
+    "bit_identical": 109666,
+    "max_absolute_error": 9.5367431640625e-07,
+    "max_scaled_error": 2.1431996779793025e-07,
+    "provider_transcript_sha256": "04b5466e0bb5305ced5dc89d694f7343395fa97cdf43984b527ba478715e375a",
+    "reference_transcript_sha256": "716623f3b91c8d22a0089425d0d855c3d3617e062d3b10e4c7bf66c1bdd208fd",
+    "atomic_refusals": 8
+  },
+  "atomic_refusals": "See ggml-state-space-scan-oracle.json for the eight invalid inputs that preserved the entire output.",
+  "mutation": "Using the injection coefficients as the readout failed factory ordinal 10454 with error 1.085265889 against tolerance 0.000000100.",
+  "consumer": "verification/llama-mamba-decode.json",
+  "sweep_build": {
+    "verdant_revision": "793ea05996c4e48dd3a221fb59480c9382901412",
+    "provider_sha256": "12f77ebd85bfb08e0d2eab1c4001c28f94e4282ac9c355fcd434cedc99f9baed",
+    "provider_sources_sha256": "37a0634322394f836be3ec00ef5ecee9113f4bdc9d55ef2206e5803e2fc9ca25",
+    "oracle_sha256": "2b26985121a64ce2f0a4ffcb37a69879c98db9d65b776704b7c7a86da2cb3f1f"
+  },
+  "verified_dependency": "89e86b7034786b7d39011515d6211a831de08ad4"
+}

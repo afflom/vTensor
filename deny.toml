@@ -563,7 +563,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x1a27f392 }]
 name = "vtensor_attention"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x69e30a29 }]
+license-files = [{ path = "src/lib.rs", hash = 0x8a120813 }]
 
 [[licenses.clarify]]
 name = "vtensor_attention_mask"

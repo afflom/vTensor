@@ -16,7 +16,7 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 The completion checklist tracks remaining GGML operations, scheduler callbacks
 and consumer checks. [Provider burndown](BURNDOWN.md)
 
-Cargo pins Verdant’s gated delta projection at `36199061` until it ships in the registry. [Verdant PR #57](https://github.com/afflom/verdant-engine/pull/57) · [Dependency record](model/verdant-development.json)
+Cargo pins Verdant’s selective-state and gated-delta projections at `89e86b70` until they ship in the registry. [Verdant PR #58](https://github.com/afflom/verdant-engine/pull/58) · [Dependency record](model/verdant-development.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940

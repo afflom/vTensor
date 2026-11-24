@@ -560,3 +560,9 @@ Feature: native-backend
     Given strided queries, keys and values, scalar or per-lane gates and an initial state
     When GGML evaluates gated delta attention with one or more snapshot slots
     Then attention values and every written state match the imported CPU and older unfilled slots preserve their bytes
+
+  @VT-150 @build
+  Scenario: Prism models grouped selective state scans and cache rollback through Verdant against GGML CPU
+    Given grouped strided drive and readout tensors, scalar or per-channel transitions and indexed initial states
+    When GGML evaluates a selective state scan with one or more snapshot slots
+    Then output rows and every written state match the imported CPU and older unfilled slots preserve their bytes

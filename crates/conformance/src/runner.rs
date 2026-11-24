@@ -501,7 +501,7 @@ enum ExecutionPlan {
     Softmax(Box<vtensor_attention::Adt3>),
     SparseMask(Box<vtensor_attention::Adt4>),
     Indexer(Box<vtensor_attention::Adt5>),
-    GatedDelta(Box<vtensor_attention::Adt6>),
+    Recurrent(Box<vtensor_attention::Adt6>),
 }
 
 // Each certified graph bundle renders its own type for the same GGML metadata.
@@ -543,14 +543,6 @@ impl Tensor {
 
     fn inputs<const N: usize>(&self) -> Result<[Option<TensorInput<'_>>; N], BackendError> {
         self.map_sources(TensorInput::new)
-    }
-
-    fn required_inputs<const N: usize>(&self) -> Result<[TensorInput<'_>; N], BackendError> {
-        let slots = self.inputs()?;
-        if slots.iter().any(Option::is_none) {
-            return Err(BackendError::InvalidTensor);
-        }
-        Ok(slots.map(|slot| slot.expect("all required tensor inputs were bound")))
     }
 
     fn input(&self, slot: usize) -> Result<Option<TensorInput<'_>>, BackendError> {
@@ -690,25 +682,17 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             .then_some(Some(delay))
             .ok_or(InvalidTensor);
     }
-    if matches!(operation, 43 | 71 | 83 | 84 | 88) {
+    if matches!(operation, 43 | 71 | 74 | 83 | 84 | 88) {
         return attention::plan(tensor, operation, output);
     }
-    let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] =
+    if matches!(operation, 45 | 46) {
+        return rotary::plan(tensor, output);
+    }
+    let [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, ..] =
         tensor.op_params.map(|word| u64::from(word as u32));
     let [primary, secondary, base, fourth, fifth, sixth, seventh] =
         tensor.map_sources(tensor_metadata)?;
     let has_source_from = |slot: usize| tensor.src[slot..].iter().any(|source| !source.is_null());
-    if matches!(operation, 45 | 46) {
-        return rotary::plan(
-            tensor,
-            vtensor_rotary::Adt1::C0(p1, p2, p15, p11, p12, p13, p14),
-            primary.ok_or(InvalidTensor)?,
-            secondary.ok_or(InvalidTensor)?,
-            base,
-            output,
-        )
-        .map(|plan| plan.map(ExecutionPlan::Rotary));
-    }
     let weight = tensor.source(0);
     let response = pointwise(GraphRequest::C0(
         operation,
@@ -875,7 +859,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
             Instruction::C5(at, from, kind, bytes, stride, skip) => {
                 let block = weights.region(from, bytes as usize)?;
                 let dst = &mut values[at as usize..left_count as usize];
-                decode_words(kind, block, dst, stride as usize)?;
+                decode_block(kind, block, float_bytes(dst), stride as usize)?;
                 index = index.checked_add(skip).ok_or(BackendError::Overflow)?;
             }
             Instruction::C2 => {
@@ -902,14 +886,12 @@ fn execute_convolution(tensor: &Tensor, geometry: ConvolutionGeometry) -> Result
         overlap_cells,
         ..,
     ) = geometry;
-    let [kernel, image] = tensor.required_inputs()?;
+    tensor_fields!([Some(kernel), Some(image)] = tensor.inputs()?);
     let destination = graph_tensor_data(tensor)?;
     let sample = |phase, start, index| {
         let query = GraphRequest::C4(geometry.clone(), phase, start, index as u64);
-        match pointwise(query)? {
-            GraphResponse::C8(offset) => Ok(offset),
-            _ => Err(InvalidTensor),
-        }
+        tensor_fields!(GraphResponse::C8(offset) = pointwise(query)?);
+        Ok(offset)
     };
     let mut weights = workspace(weight_count, 0.0_f32)?;
     for (index, weight) in weights.iter_mut().enumerate() {
@@ -975,20 +957,11 @@ fn decode_block(
     Ok(linear::decode_storage_block(kind, source, output, stride)?)
 }
 
-fn decode_words(
-    kind: u64,
-    source: &[u8],
-    destination: &mut [f32],
-    stride: usize,
-) -> Result<(), BackendError> {
-    // SAFETY: all f32 bit patterns are valid and the mutable slice owns these bytes.
-    let bytes = unsafe {
-        std::slice::from_raw_parts_mut(
-            destination.as_mut_ptr().cast(),
-            std::mem::size_of_val(destination),
-        )
-    };
-    decode_block(kind, source, bytes, stride)
+fn float_bytes(values: &mut [f32]) -> &mut [u8] {
+    // SAFETY: the borrow is exclusive and every binary32 bit pattern is valid.
+    unsafe {
+        std::slice::from_raw_parts_mut(values.as_mut_ptr().cast(), std::mem::size_of_val(values))
+    }
 }
 
 struct TensorInput<'a> {
@@ -1503,7 +1476,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
             GraphResponse::C10(kind, from, width, to, lanes, stride) => unsafe {
                 let mut decoded = [0.0; 256];
                 let row = decoded.get_mut(..lanes as usize).ok_or(InvalidTensor)?;
-                decode_words(kind, encoded(from, width), row, 4)?;
+                decode_block(kind, encoded(from, width), float_bytes(row), 4)?;
                 let base = destination_data.add(to as usize);
                 for (i, &value) in row.iter().enumerate() {
                     let lane = base.add(i * stride as usize).cast::<f32>();
@@ -1590,9 +1563,7 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                     std::thread::sleep(duration);
                     Ok(())
                 }
-                ExecutionPlan::GatedDelta(plan) => {
-                    attention::gated_delta(&execution, &*tensor, *plan)
-                }
+                ExecutionPlan::Recurrent(plan) => attention::recurrent(&execution, &*tensor, *plan),
                 ExecutionPlan::Indexer(plan) => attention::indexer(&*tensor, *plan),
                 ExecutionPlan::SparseMask(plan) => attention::sparse_mask(&*tensor, *plan),
                 ExecutionPlan::Softmax(plan) => attention::softmax(&*tensor, *plan),
@@ -1630,23 +1601,24 @@ mod rotary {
 
     pub(super) fn plan(
         tensor: &Tensor,
-        layout: Layout,
-        source: TensorDescriptor,
-        positions: TensorDescriptor,
-        factors: Option<TensorDescriptor>,
         output: TensorDescriptor,
-    ) -> Result<Option<Plan>, BackendError> {
+    ) -> Result<Option<super::ExecutionPlan>, BackendError> {
         let descriptor = descriptor_for!(Descriptor::C0);
+        tensor_fields!(
+            [Some(source), Some(positions), factors] =
+                tensor.map_sources(|t| super::tensor_metadata(t).map(descriptor))?
+        );
+        let p = tensor.op_params.map(|word| u64::from(word as u32));
         match request(Request::C0(
             tensor.op as u64,
             tensor.src[3..].iter().any(|v| !v.is_null()),
-            layout,
-            descriptor(source),
-            descriptor(positions),
-            factors.map(descriptor),
+            Layout::C0(p[1], p[2], p[15], p[11], p[12], p[13], p[14]),
+            source,
+            positions,
+            factors,
             descriptor(output),
         ))? {
-            Response::C2(plan) => Ok(Some(plan)),
+            Response::C2(plan) => Ok(Some(super::ExecutionPlan::Rotary(plan))),
             Response::C0 => Ok(None),
             _ => Err(BackendError::InvalidTensor),
         }
@@ -1767,14 +1739,15 @@ mod rotary {
 
 mod attention {
     use super::{
-        graph_tensor_data, workspace, BackendError, Tensor, TensorDescriptor, TensorInput,
+        decode_block, float_bytes, graph_tensor_data, workspace, BackendError, Tensor,
+        TensorDescriptor, TensorInput,
     };
     use verdant_tensor::linear::{
         self, evaluate_f32_scalar, multiply_matrix_rows_f32, WeightedMeanF32,
     };
     use vtensor_attention::{
         Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as SoftmaxPlan, Adt4 as SparsePlan,
-        Adt5 as IndexerPlan, Adt6 as DeltaPlan, Adt7 as Response,
+        Adt5 as IndexerPlan, Adt6 as RecurrentPlan, Adt7 as Response,
     };
     use BackendError::{InvalidTensor, Overflow};
 
@@ -1782,14 +1755,21 @@ mod attention {
         vtensor_attention::run(query).map_err(BackendError::overflow)
     }
 
-    pub(super) fn gated_delta(
+    pub(super) fn recurrent(
         execution: &super::threadpool::Execution,
         tensor: &Tensor,
-        plan: DeltaPlan,
+        plan: RecurrentPlan,
     ) -> Result<(), BackendError> {
-        let [q, k, v, gate, gain, initial] = tensor.required_inputs()?;
+        let RecurrentPlan::C0(.., streams, cells, capacity, written, selective) = plan;
+        tensor_fields!(
+            [Some(a), Some(b), Some(c), Some(d), Some(e), Some(f), ids] = tensor.inputs()?
+        );
+        let [q, k, v, gate, gain, initial] = if selective {
+            [e, f, b, d, c, a]
+        } else {
+            [a, b, c, d, e, f]
+        };
         let [width, heads, tokens, _] = v.ne.map(|n| n as u64);
-        let DeltaPlan::C0(.., streams, cells, capacity, written) = plan;
         let mut staged = workspace(written, 0.0f32)?;
         let address = staged.as_mut_ptr().expose_provenance();
         let stage = |offset: Option<u64>, row: &[f32]| {
@@ -1801,50 +1781,74 @@ mod attention {
             }
         };
         let mut jobs = workspace(streams, ())?;
-        execution.fill(&mut jobs, |first, chunk| {
-            let mut vectors = workspace(width.checked_mul(4).ok_or(Overflow)?, 0.0f32)?;
-            let (query, rest) = vectors.split_at_mut(width as usize);
-            let (key, rest) = rest.split_at_mut(width as usize);
-            let (value, scores) = rest.split_at_mut(width as usize);
-            let mut decay = workspace(gate.ne[0] as u64, 0.0f32)?;
+        execution.fill(&mut jobs, |start, chunk| {
+            let mut query = workspace(q.ne[0] as u64, 0.0f32)?;
+            let mut key = workspace(k.ne[0] as u64, 0.0f32)?;
+            let mut value = workspace(width, 0.0f32)?;
+            let mut scores = workspace(width, 0.0f32)?;
+            let mut coefficients = workspace(gate.ne[0] as u64, 0.0f32)?;
             let mut state = workspace(cells, 0.0f32)?;
             let mut scratch = workspace(capacity, 0.0f32)?;
-            for stream in first..first + chunk.len() {
+            for stream in start..start + chunk.len() {
                 let stream = stream as u64;
                 let (head, batch) = (stream % heads, stream / heads);
-                let reply = request(Request::C11(plan.clone(), head, batch))?;
+                let query_start = if let Some(ids) = &ids {
+                    let index =
+                        u32::from_ne_bytes(ids.word(batch.checked_mul(4).ok_or(Overflow)?)?);
+                    Request::C14(plan.clone(), head, batch, index.into())
+                } else {
+                    Request::C11(plan.clone(), head, batch)
+                };
+                let reply = request(query_start)?;
                 tensor_fields!(Response::C13(start, empty_snapshot) = reply);
                 initial.decode(start, &mut state)?;
                 stage(empty_snapshot, &state);
                 for token in 0..tokens {
                     let reply = request(Request::C12(plan.clone(), head, batch, token))?;
                     tensor_fields!(Response::C14(a, b, c, d, e, out, snapshot) = reply);
-                    q.decode(a, query)?;
-                    k.decode(b, key)?;
-                    v.decode(c, value)?;
-                    gate.decode(d, &mut decay)?;
-                    let input = linear::GatedDeltaInput {
-                        query,
-                        key,
-                        value,
-                        log_decay: &decay,
-                        gain: f32::from_ne_bytes(gain.word(e)?),
-                    };
-                    linear::gated_delta_step_f32(input, &mut state, scores, &mut scratch)?;
-                    stage(Some(out), scores);
+                    q.decode(a, &mut query)?;
+                    k.decode(b, &mut key)?;
+                    v.decode(c, &mut value)?;
+                    gate.decode(d, &mut coefficients)?;
+                    let rate = f32::from_ne_bytes(gain.word(e)?);
+                    if selective {
+                        let input = linear::SelectiveStateInput {
+                            drive: &value,
+                            time_step: rate,
+                            transition: &coefficients,
+                            injection: &query,
+                            readout: &key,
+                        };
+                        linear::selective_state_step_f32(
+                            input,
+                            &mut state,
+                            &mut scores,
+                            &mut scratch,
+                        )?;
+                    } else {
+                        let input = linear::GatedDeltaInput {
+                            query: &query,
+                            key: &key,
+                            value: &value,
+                            log_decay: &coefficients,
+                            gain: rate,
+                        };
+                        linear::gated_delta_step_f32(input, &mut state, &mut scores, &mut scratch)?;
+                    }
+                    stage(Some(out), &scores);
                     stage(snapshot, &state);
                 }
             }
             Ok(())
         })?;
         let output = graph_tensor_data(tensor)?;
-        // SAFETY: only the certified initialized prefix is published, after every worker succeeds.
+        // SAFETY: publish only the certified prefix, after every index and every worker succeeds.
         unsafe { super::write_row(output, &staged) };
         Ok(())
     }
 
     pub(super) fn indexer(tensor: &Tensor, plan: IndexerPlan) -> Result<(), BackendError> {
-        let [query, key, weights, mask] = tensor.required_inputs()?;
+        tensor_fields!([Some(query), Some(key), Some(weights), Some(mask)] = tensor.inputs()?);
         let offsets = |token, head, stream, key| match request(Request::C10(
             plan.clone(),
             token,
@@ -2043,14 +2047,12 @@ mod attention {
                 for token in 0..tensor.ne[1] as u64 {
                     let reply = request(Request::C3(plan.clone(), token, head, batch))?;
                     tensor_fields!(Response::C4(from, moff, soff, to) = reply);
+                    let bytes = float_bytes(&mut row);
                     // SAFETY: the admitted dense row fits the live input. Stage it before the in-place write.
-                    unsafe {
-                        std::ptr::copy_nonoverlapping(
-                            source.add(from as usize),
-                            row.as_mut_ptr().cast(),
-                            std::mem::size_of_val(row.as_slice()),
-                        )
+                    let input = unsafe {
+                        std::slice::from_raw_parts(source.add(from as usize), bytes.len())
                     };
+                    bytes.copy_from_slice(input);
                     for value in &mut row {
                         *value = scalar(2, *value, scale)?;
                     }
@@ -2080,33 +2082,25 @@ mod attention {
     ) -> Result<Option<super::ExecutionPlan>, BackendError> {
         use super::ExecutionPlan;
         let descriptor = descriptor_for!(Descriptor::C0);
-        let [a, b, c, d, e, rows, trailing @ ..] = tensor
-            .map_sources::<_, { super::GGML_MAX_SRC }>(|t| {
-                super::tensor_metadata(t).map(descriptor)
-            })?;
-        let trailing = trailing.iter().any(Option::is_some);
+        let [a, b, c, d, e, rows, ids] =
+            tensor.map_sources(|t| super::tensor_metadata(t).map(descriptor))?;
+        let trailing = tensor.src[7..].iter().any(|p| !p.is_null());
         let [p0, p1, p2, p3, ..] = tensor.op_params.map(|w| u64::from(w as u32));
-        let query = Request::C8(
-            op,
-            trailing,
-            p0,
-            p1,
-            p2,
-            p3,
-            a,
-            b,
-            c,
-            d,
-            e,
-            rows,
-            descriptor(output),
-        );
+        let slots = [a, b, c, d, e, rows];
+        let output = descriptor(output);
+        let query = if let Some(ids) = ids {
+            tensor_fields!([Some(a), Some(b), Some(c), Some(d), Some(e), Some(f)] = slots);
+            Request::C13(op, trailing, p0, a, b, c, d, e, f, ids, output)
+        } else {
+            let [a, b, c, d, e, f] = slots;
+            Request::C8(op, trailing, p0, p1, p2, p3, a, b, c, d, e, f, output)
+        };
         Ok(Some(match request(query)? {
             Response::C1(p) => ExecutionPlan::Attention(Box::new(p)),
             Response::C3(p) => ExecutionPlan::Softmax(Box::new(p)),
             Response::C5(p) => ExecutionPlan::SparseMask(Box::new(p)),
             Response::C10(p) => ExecutionPlan::Indexer(Box::new(p)),
-            Response::C12(p) => ExecutionPlan::GatedDelta(Box::new(p)),
+            Response::C12(p) => ExecutionPlan::Recurrent(Box::new(p)),
             _ => return Err(InvalidTensor),
         }))
     }
@@ -2141,8 +2135,7 @@ mod attention {
         pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
             if self.ty == 0 && (self.nb[0] == size_of::<f32>() || out.len() == 1) {
                 let bytes = self.region(offset, size_of_val(out))?;
-                // SAFETY: out exclusively owns the full destination and every binary32 word is valid.
-                unsafe { super::write_row(out.as_mut_ptr().cast(), bytes) };
+                float_bytes(out).copy_from_slice(bytes);
                 return Ok(());
             }
             if !out.len().is_multiple_of(self.block_lanes) {
@@ -2161,7 +2154,12 @@ mod attention {
                     };
                     block[0] = super::decode_float(self.ty as u64, bits)?;
                 } else {
-                    super::decode_words(self.ty as u64, encoded, block, size_of::<f32>())?;
+                    decode_block(
+                        self.ty as u64,
+                        encoded,
+                        float_bytes(block),
+                        size_of::<f32>(),
+                    )?;
                 }
             }
             Ok(())
@@ -2182,10 +2180,7 @@ mod attention {
         target: &mut Vec<B>,
         encode: impl Fn(&[f32; 32]) -> Result<B, verdant_tensor::TensorComputeError>,
     ) -> Result<(), BackendError> {
-        let (blocks, tail) = query.as_chunks::<32>();
-        if !tail.is_empty() {
-            return Err(InvalidTensor);
-        }
+        tensor_fields!((blocks, []) = query.as_chunks::<32>());
         target.clear();
         for block in blocks {
             target.push(encode(block)?);

@@ -162,6 +162,7 @@ ggml_batches! {
     fn bilinear_resampling_vt_145() { "upstream-UPSCALE_BILINEAR", 5, ["pointwise"] }
     fn nearest_resampling_vt_144() { "upstream-UPSCALE_NEAREST", 2, ["pointwise"] }
     fn recurrent_weighted_keys_vt_143() { "upstream-RWKV_BOUNDARIES", 2, ["pointwise"] }
+    fn state_space_scan_vt_150() { "upstream-SSM_SCAN_BOUNDARIES", 4, ["attention"] }
     fn gated_delta_state_vt_149() { "upstream-GATED_DELTA_BOUNDARIES", 4, ["attention"] }
     fn gated_linear_attention_vt_142() { "upstream-GATED_LINEAR_ATTN_BOUNDARIES", 1, ["pointwise"] }
     fn timestep_embeddings_vt_141() { "upstream-TIMESTEP_EMBEDDING_BOUNDARIES", 5, ["pointwise"] }
@@ -1264,7 +1265,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "e9a9dadcbc64364270c7d0321d59ff62ba573472bdaea690fd6b8d54fce35f70",
+            "ef78b6fd86866cc8c1d466ee70bc4ac678e71bfd6b8d894894f9ba7971848283",
         )
     });
 

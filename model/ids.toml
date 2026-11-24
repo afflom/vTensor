@@ -966,3 +966,9 @@ id = "VT-149"
 level = "build"
 suite = "native-backend"
 statement = "Prism models gated delta attention and retained state snapshots through Verdant against GGML CPU"
+
+[[id]]
+id = "VT-150"
+level = "build"
+suite = "native-backend"
+statement = "Prism models grouped selective state scans and cache rollback through Verdant against GGML CPU"

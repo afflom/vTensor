@@ -5,7 +5,7 @@
     "src/models/mamba-base.cpp",
     "examples/simple/simple.cpp"
   ],
-  "implementation": "VT-150 candidate",
+  "implementation": "VT-150",
   "prism_attention_result": "82a5231fa2c36c5db3444fd6dcd9c4097340f8b5cdf9cb008b656e7b845cc447",
   "verdant_revision": "793ea05996c4e48dd3a221fb59480c9382901412",
   "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/58",
@@ -132,5 +132,13 @@
       "logits_sha256": "db387f39c726a713bd0b871a008b92017e5251e69b303c0f5993bec3beac52af",
       "state_transcript_sha256": "88a49857421c4bdb4e7732dec2c04daa26d63be8ac8eea08e22dc6345c82f87e"
     }
+  },
+  "integrated_replay": {
+    "verdant_commit": "89e86b7034786b7d39011515d6211a831de08ad4",
+    "provider_sha256": "5c7bfee75990e12cfc8779d24b06fb820dffd883132f9a4c2b9b933f8d4fcdd7",
+    "provider_inputs_sha256": "080c2224eb85be1c4d5557bb903fd3245864a63acaafde337ca71d449683b897",
+    "placements": 339,
+    "placement_transcript_sha256": "6b9fe7cf2001829ecb4426e5ba13c6378821caa277e53575fb61d6b6ca1d23d9",
+    "logits_state_and_greedy_outputs": "Byte-identical to the measured candidate."
   }
 }

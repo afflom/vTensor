@@ -68,7 +68,7 @@ structure{
 }
 
 structure{
-  name: DeltaPlan,
+  name: RecurrentPlan,
   type_parameters: [],
   parameters: [],
   fields: [
@@ -82,7 +82,8 @@ structure{
     {name: streams, type: Nat},
     {name: stateWords, type: Nat},
     {name: scratchWords, type: Nat},
-    {name: writtenWords, type: Nat}
+    {name: writtenWords, type: Nat},
+    {name: selective, type: Bool}
   ]
 }
 
@@ -174,8 +175,10 @@ inductive{
     },
     {name: cacheIndex, fields: [Nat, Nat]},
     {name: indexerRow, fields: [IndexerPlan, Nat, Nat, Nat, Nat]},
-    {name: deltaStart, fields: [DeltaPlan, Nat, Nat]},
-    {name: deltaToken, fields: [DeltaPlan, Nat, Nat, Nat]}
+    {name: deltaStart, fields: [RecurrentPlan, Nat, Nat]},
+    {name: deltaToken, fields: [RecurrentPlan, Nat, Nat, Nat]},
+    {name: scanGraph, fields: [Nat, Bool, Nat, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor]},
+    {name: scanStart, fields: [RecurrentPlan, Nat, Nat, Nat]}
   ]
 }
 
@@ -196,7 +199,7 @@ inductive{
     {name: cacheCell, fields: [Nat]},
     {name: indexerPlan, fields: [IndexerPlan]},
     {name: indexerRows, fields: [Nat, Nat, Nat, Nat, Nat]},
-    {name: deltaPlan, fields: [DeltaPlan]},
+    {name: deltaPlan, fields: [RecurrentPlan]},
     {name: initialState, fields: [Nat, (Option Nat)]},
     {name: deltaOffsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, (Option Nat)]}
   ]
@@ -614,7 +617,7 @@ definition{
         (let cells : Nat := (prim multiply width width : Nat);
         (let saved : Nat := (if ((tokens =? 0) && (slots =? 1)) then 1 else (if (slots <? tokens) then slots else tokens));
         (let written : Nat := (prim multiply streams ((prim multiply tokens width : Nat) + (prim multiply saved cells : Nat)) : Nat);
-        (ctor Response.deltaPlan (record DeltaPlan {query := query, key := key, value := value, gate := gate, gain := gain, state := state, slots := slots, streams := streams, stateWords := cells, scratchWords := ((cells + width) + width), writtenWords := written})))))) else (ctor Response.invalid)))))),
+        (ctor Response.deltaPlan (record RecurrentPlan {query := query, key := key, value := value, gate := gate, gain := gain, state := state, slots := slots, streams := streams, stateWords := cells, scratchWords := ((cells + width) + width), writtenWords := written, selective := false})))))) else (ctor Response.invalid)))))),
   executable: true
 }
 
@@ -652,7 +655,7 @@ definition{
 
 definition{
   name: deltaStart,
-  parameters: [plan : DeltaPlan, head : Nat, batch : Nat],
+  parameters: [plan : RecurrentPlan, head : Nat, batch : Nat],
   result: Response,
   body: (let value : NormPlan::TensorDescriptor := (project plan value);
       (if ((head <? (project value n1)) && (batch <? (project value n3))) then (ctor Response.initialState (rowOffset (project plan state) 0 head batch) (if (((project value n2) =? 0) && ((project plan slots) =? 1)) then (ctor Option.some [Nat] (deltaSnapshot value head batch 0)) else (ctor Option.none [Nat]))) else (ctor Response.invalid))),
@@ -661,7 +664,7 @@ definition{
 
 definition{
   name: deltaToken,
-  parameters: [plan : DeltaPlan, head : Nat, batch : Nat, token : Nat],
+  parameters: [plan : RecurrentPlan, head : Nat, batch : Nat, token : Nat],
   result: Response,
   body: (let query : NormPlan::TensorDescriptor := (project plan query);
       (let key : NormPlan::TensorDescriptor := (project plan key);
@@ -672,14 +675,74 @@ definition{
 }
 
 definition{
+  name: scanShape,
+  parameters: [t : NormPlan::TensorDescriptor, a : Nat, b : Nat, c : Nat, d : Nat],
+  result: Bool,
+  body: (((((project t n0) =? a) && ((project t n1) =? b)) && ((project t n2) =? c)) && ((project t n3) =? d)),
+  executable: true
+}
+
+definition{
+  name: scanRows,
+  parameters: [t : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: (((project t s0) =? 4) && ((project t s1) =? (prim multiply 4 (project t n0) : Nat))),
+  executable: true
+}
+
+definition{
+  name: scanGraph,
+  parameters: [op : Nat, trailing : Bool, slots : Nat, state : NormPlan::TensorDescriptor, drive : NormPlan::TensorDescriptor, step : NormPlan::TensorDescriptor, transition : NormPlan::TensorDescriptor, injection : NormPlan::TensorDescriptor, readout : NormPlan::TensorDescriptor, ids : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
+  result: Response,
+  body: (let channels : Nat := (project state n0);
+      (let width : Nat := (project drive n0);
+      (let heads : Nat := (project drive n1);
+      (let tokens : Nat := (project drive n2);
+      (let batches : Nat := (project drive n3);
+      (let cells : Nat := (prim multiply channels width : Nat);
+      (let streams : Nat := (prim multiply heads batches : Nat);
+      (let scores : Nat := (prim multiply (prim multiply tokens width : Nat) streams : Nat);
+      (if ((((((((((((((((((((((((((((((((((((((((op =? 74) && (if trailing then false else true)) && (0 <? slots)) && (slots <=? 2147483647)) && (0 <? channels)) && (0 <? width)) && (0 <? heads)) && (0 <? batches)) && (0 <? (project state n3))) && (multiple heads (project injection n1))) && (deltaOperand state output)) && (deltaOperand drive output)) && (deltaOperand step output)) && (deltaOperand transition output)) && (deltaOperand injection output)) && (deltaOperand readout output)) && (scanRows drive)) && (scanRows injection)) && (scanRows readout)) && (contiguousScalar state 4)) && (contiguousScalar step 4)) && (contiguousScalar transition 4)) && (contiguousScalar output 4)) && ((project state n1) =? width)) && ((project state n2) =? heads)) && (scanShape step heads tokens batches 1)) && ((project transition n1) =? heads)) && ((project transition n2) =? 1)) && ((project transition n3) =? 1)) && (((project transition n0) =? 1) || (((project transition n0) =? channels) && (slots =? 1)))) && ((project injection n0) =? channels)) && ((project injection n2) =? tokens)) && ((project injection n3) =? batches)) && (NormPlan::sameShape injection readout)) && (scanShape ids batches 1 1 1)) && ((project ids ty) =? 26)) && ((project ids s0) =? 4)) && (NormPlan::separateTensors ids output)) && ((project output ty) =? 0)) && (scanShape output (scores + (prim multiply slots (prim multiply cells streams : Nat) : Nat)) 1 1 1)) then (ctor Response.deltaPlan (record RecurrentPlan {query := injection, key := readout, value := drive, gate := transition, gain := step, state := state, slots := slots, streams := streams, stateWords := cells, scratchWords := ((cells + channels) + width), writtenWords := (scores + (prim multiply (if (slots <? tokens) then slots else tokens) (prim multiply cells streams : Nat) : Nat)), selective := true})) else (ctor Response.invalid)))))))))),
+  executable: true
+}
+
+definition{
+  name: scanStart,
+  parameters: [plan : RecurrentPlan, head : Nat, batch : Nat, index : Nat],
+  result: Response,
+  body: (let state : NormPlan::TensorDescriptor := (project plan state);
+      (let drive : NormPlan::TensorDescriptor := (project plan value);
+      (if ((((head <? (project drive n1)) && (batch <? (project drive n3))) && (index <? (project state n3))) && (index <? 2147483648)) then (ctor Response.initialState (rowOffset state 0 head index) (ctor Option.none [Nat])) else (ctor Response.invalid)))),
+  executable: true
+}
+
+definition{
+  name: scanToken,
+  parameters: [plan : RecurrentPlan, head : Nat, batch : Nat, token : Nat],
+  result: Response,
+  body: (let drive : NormPlan::TensorDescriptor := (project plan value);
+      (let injection : NormPlan::TensorDescriptor := (project plan query);
+      (let width : Nat := (project drive n0);
+      (let heads : Nat := (project drive n1);
+      (let tokens : Nat := (project drive n2);
+      (let batches : Nat := (project drive n3);
+      (if (((head <? heads) && (batch <? batches)) && (token <? tokens)) then (let group : Nat := (prim quotient head (prim quotient heads (project injection n1) 0 : Nat) 0 : Nat);
+      (let slot : Nat := (prim subtract tokens (token + 1) : Nat);
+      (ctor Response.deltaOffsets (rowOffset injection group token batch) (rowOffset (project plan key) group token batch) (rowOffset drive head token batch) (rowOffset (project plan gate) head 0 0) ((rowOffset (project plan gain) token batch 0) + (prim multiply 4 head : Nat)) (prim multiply 4 (prim multiply width (head + (prim multiply heads (token + (prim multiply tokens batch : Nat)) : Nat)) : Nat) : Nat) (if (slot <? (project plan slots)) then (ctor Option.some [Nat] (prim multiply 4 ((prim multiply (prim multiply width tokens : Nat) (project plan streams) : Nat) + (prim multiply (project plan stateWords) (head + (prim multiply heads (batch + (prim multiply batches slot : Nat)) : Nat)) : Nat)) : Nat)) else (ctor Option.none [Nat]))))) else (ctor Response.invalid)))))))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
   body: (match request
     | Request.indexerRow plan token head stream key => (indexerRows plan token head stream key)
     | Request.cacheIndex raw cells => (if (raw <? 2147483648) then (if (raw <? cells) then (ctor Response.cacheCell raw) else (ctor Response.invalid)) else (if (raw <? 4294967296) then (ctor Response.skip) else (ctor Response.invalid)))
-    | Request.deltaStart plan head batch => (deltaStart plan head batch)
-    | Request.deltaToken plan head batch token => (deltaToken plan head batch token)
+    | Request.scanGraph op trailing slots state drive step transition injection readout ids out => (scanGraph op trailing slots state drive step transition injection readout ids out)
+    | Request.scanStart plan head batch index => (if (project plan selective) then (scanStart plan head batch index) else (ctor Response.invalid))
+    | Request.deltaStart plan head batch => (if (project plan selective) then (ctor Response.invalid) else (deltaStart plan head batch))
+    | Request.deltaToken plan head batch token => (if (project plan selective) then (scanToken plan head batch token) else (deltaToken plan head batch token))
     | Request.cachePlacement op trailing p0 p1 p2 p3 a b c d e rows out => (if (op =? 83) then (deltaPlacement trailing p0 a b c d e rows out) else (match rows
       | Option.none => (placement op trailing p0 p1 p2 p3 a b c d e out)
       | Option.some indices => (match a

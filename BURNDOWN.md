@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,562 passed**, **193 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,590 passed**, **165 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -37,7 +37,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,218 non-Prism lines** (12,767 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,216 non-Prism lines** (12,765 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -45,7 +45,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Decode two independent sequences together with separate and unified KV caches in llama.cpp. Compare 384,000 logits and every updated cache row with CPU. [Multi-sequence replay](verification/llama-two-sequence-decode.json)
 - [x] Compare 3,456 token and pooled embedding values for two prompts in llama.cpp. All 782 observed placements selected vTensor across NONE, MEAN, CLS and LAST. [Embedding replay](verification/llama-embedding-pooling.json)
 - [x] Run mixed-quantized GPT-2 in unmodified llama-simple. Match eight greedy tokens, 301,542 two-sequence logits and 4,096 cache values against CPU. [Host comparison](verification/llama-gpt2-decode.json)
-- [x] Run two-sequence Mamba decode in pinned llama.cpp with the VT-150 candidate. Match 192,000 logits, 14,464 convolution, scan and cache words, and eight greedy tokens. [CPU comparison](verification/llama-mamba-decode.json)
+- [x] Run two-sequence Mamba decode in pinned llama.cpp with VT-150. Match 192,000 logits, 14,464 convolution, scan and cache words, and eight greedy tokens. [CPU comparison](verification/llama-mamba-decode.json)
 - [x] Match the upstream scheduler's compute-bit selection and reuse an allocated two-operation graph across active, inactive and reactivated runs (VT-52). [Oracle evidence](VTENSOR-VERIFICATION.md#scheduled-graph-selection)
 - [x] Inventory all 57 compiled backend callbacks. Compare two-way CPU/vTensor graph splits, views, batched transfers and synchronization with public GGML. [Host replay](verification/ggml-backend-callbacks.json)
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -195,7 +195,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Freeze 123,264 GGML CPU words across 440 Mamba-1 and Mamba-2 scan graphs, including duplicate sequence IDs, padded inputs and empty scans. [SSM oracle](verification/ggml-state-space-scan-oracle.json)
 - [x] Submit the Verdant selective state update. Compare 26,040 scores and state entries across 135 GGML CPU steps. [Verdant PR #58](https://github.com/afflom/verdant-engine/pull/58)
 - [x] Match all 440 supplemental Mamba scans on the candidate provider. Preserve 50,560 snapshot words and the complete destination on eight invalid inputs. [GGML comparison](verification/ggml-state-space-scan-oracle.json)
-- [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).
+- [x] Pass all 17 SSM_SCAN, nine cache fusion and two rollback graphs. [VT-150](verification/factory-state-space-scan-vt150.json)
 - [x] Pass all four GATED_LINEAR_ATTN factory graphs and match 7,056 token and state words across 96 additional GGML CPU graphs. [VT-142](verification/factory-gated-linear-attention-vt142.json)
 - [x] Pass all four RWKV_WKV6 and five RWKV_WKV7 factory graphs. Match 7,056 token and state words on 96 additional GGML CPU graphs. [VT-143](verification/factory-recurrent-weighted-keys-vt143.json)
 - [x] Freeze 37,760 GGML CPU output words for 72 gated delta graphs, including 11,840 untouched snapshot words. Add 18 zero-token CPU graphs. [Oracle corpus](verification/ggml-gated-delta-oracle.json)
