@@ -26,7 +26,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Verify the v2.21.0 and v2.21.1 releases in one Cargo cache using distinct index paths. All 93 archives per release matched. Q6_K and Q3_K matched GGML. [Release comparison](verification/verdant-versioned-registry.json)
 - [x] Confirm Verdant merged VTK-53. [Upstream merge](https://github.com/afflom/verdant-engine/commit/770b26a872939df32d1ad7ecdac3cf17633dad68)
 - [x] Merge the release-specific Cargo index publisher into Verdant. [Upstream integration](https://github.com/afflom/verdant-engine/commit/47ba77b62d75584e34533d6dbd2a6b9369c47cb7)
-- [ ] Pin the published VTK-53 crates through a release-specific sparse index and pass VT-02. [Verdant registry fix](https://github.com/afflom/verdant-engine/pull/53) · [Current patch pin](model/verdant-development.json)
+- [ ] Pin the published Verdant crates through a release-specific sparse index once it includes VTK-53 and VTK-54. Pass VT-02. [Verdant registry fix](https://github.com/afflom/verdant-engine/pull/53) · [Current patch pin](model/verdant-development.json)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
@@ -136,6 +136,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 241 zero-bias F16 attention graphs with soft cap 10. 241 pass. [VT-68 results](verification/factory-hyperbolic-vt68.json)
 - [x] Pass all 12 SWIGLU_CLAMP graphs across F32, F16 and BF16 and 303 newly supported matrix fusions. [VT-93 results](verification/factory-clamped-swiglu-vt93.json)
 - [x] Pass all 173 ADD graphs, including ordinary and in-place E4M3 + F32. All 427 SUB, MUL and DIV graphs also pass. [E4M3 comparisons](verification/factory-small-float-add-vt120.json) · [Binary arithmetic](verification/factory-checkpoint-vt57.json)
+- [x] Submit and pin Verdant’s binary32 error function. Its 259,460 scalar comparisons passed, and the planted exponential defect failed. [Verdant PR #54](https://github.com/afflom/verdant-engine/pull/54) · [Patch pin](model/verdant-development.json)
 - [ ] Pass the remaining GELU_ERF (12), GEGLU_ERF (36), ELU (12) and XIELU (6) graphs.
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 

@@ -783,3 +783,13 @@ name = "verdant_affine_quantized"
 version = "=2.43.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0xb11fef40 }]
+
+[[licenses.exceptions]]
+name = "verdant_error_function"
+allow = ["SunPro"]
+
+[[licenses.clarify]]
+name = "verdant_error_function"
+version = "=2.47.0"
+expression = "(MIT OR Apache-2.0) AND SunPro"
+license-files = [{ path = "src/lib.rs", hash = 0x67da5469 }]
