@@ -1,0 +1,42 @@
+{
+  "upstream": "https://github.com/afflom/verdant-engine",
+  "pull_request": "https://github.com/afflom/verdant-engine/pull/55",
+  "previous_commit": "25e117ad0ed70f95cc98fdfec1af7442059023e4",
+  "commit": "2586327cadf8fa57ab8e2df5b4347f1a2b0e891f",
+  "project": "tensor",
+  "result_id": "blake3:5ca34e63f54d8ed8282f55b98c65b3801f6f027aa876cc402fa840cb15c65d12",
+  "certified_rust_sources_compared": 79,
+  "identical_certified_rust_sources": 79,
+  "increment_roots": {
+    "VerdantEngine.ExponentialIncrement.increment": {
+      "package": "verdant_exponential_increment",
+      "source_sha256": "4278674bf2c42442e1ecbb9ad07a5788cfe2a6d142c64fc1b60e045f79ef578b"
+    },
+    "VerdantEngine.ExponentialIncrement.incrementTerm": {
+      "package": "verdant_increment_term",
+      "source_sha256": "bb63e00231911ed9df5a4d74dcbbb475584af4c22fd1cb7ba950d71dcfaae103"
+    },
+    "VerdantEngine.ExponentialIncrement.packIncrement": {
+      "package": "verdant_increment_pack",
+      "source_sha256": "07d9c85be977f9bf753fe7d55676c1ec4d19f59d07f83ab79cb2c61c2e9898fb"
+    },
+    "VerdantEngine.ExponentialIncrement.plan": {
+      "package": "verdant_unary_dispatch",
+      "source_sha256": "a63d26d0ad827f4793c1d54832770d184d2148020dbda3749c57e85f4dd0f8d8"
+    }
+  },
+  "upstream_checks": [
+    "VE-80 shared proof scope governance",
+    "VTK-55 differential oracle, 195716 binary32 inputs",
+    "fidelity",
+    "model",
+    "clippy",
+    "cargo-deny"
+  ],
+  "provider_checks": [
+    "VT-02 dependency closure",
+    "VT-45 quotient certificate and arithmetic",
+    "VT-137 Gaussian error graphs",
+    "VT-138 exponential units"
+  ]
+}
