@@ -87,6 +87,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Submit Verdant’s IQ4_NL and IQ4_XS encoders. Verify 768 blocks against the imported GGML quantizers and decoder. [Verdant PR #52](https://github.com/afflom/verdant-engine/pull/52)
 - [x] Pin Verdant PR #52 and pass all 48 IQ4_NL/IQ4_XS indexed writes and 12 copies against GGML CPU. [VT-135 comparisons](verification/factory-nonlinear-storage-vt135.json)
 - [x] Freeze 216 authoritative IQ encoding blocks and map all 210 refused writes and copies to the seven destination formats. [Quantizer inputs, bytes and ordinals](verification/ggml-importance-quantizer-oracle.json)
+- [x] Submit the two Verdant IQ3 encoders. Match 64,896 weighted and unweighted bytes with both GGML quantizers. [Verdant PR #56](https://github.com/afflom/verdant-engine/pull/56)
 - [ ] Verify the seven CPU-refused IQ encoders against the upstream quantizers. Cover 168 SET_ROWS and 42 CPY cases. Supply explicit importance weights for IQ2_XXS, IQ2_XS and IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
 - [x] Pass F32-to-I32 copies 8708 and 8709, including strided storage and atomic refusal. [VT-126](verification/factory-signed-copy-vt126.json)
 - [x] Verify embedding and KV operand placement and all 129 default-precision F32 projections in llama.cpp prefill and decode. [Placement and intermediate outputs](verification/llama-projection-placement-vt126.json)
@@ -149,7 +150,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Submit Verdant’s cancellation-safe exponential increment. Across 195,716 binary32 inputs the largest finite difference was one ULP. [Verdant PR #55](https://github.com/afflom/verdant-engine/pull/55)
 - [x] Pass all 12 ELU and six XIELU factory cases and four additional CPU graphs on the pinned upstream patch. [VT-138 comparisons](verification/factory-exponential-units-vt138.json)
 - [x] Pin Verdant PR #55 at `2586327`. VE-80 passes with three proof projects. All 79 certified Rust kernels are byte-identical to the prior pin, and VT-02, VT-45, VT-137 and VT-138 pass. [Integration evidence](verification/verdant-exponential-increment-integration.json)
-- [ ] Switch the exponential increment to a published Verdant release after PR #55 lands.
+- [ ] Replace the merged exponential-increment patch with the published v2.21.4 registry package. [Merged Verdant PR #55](https://github.com/afflom/verdant-engine/pull/55)
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract
@@ -227,6 +228,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Restore the dependency license check on the PR #31 pin. VT-87 passed all 95 contracts, then caught two missing clarifications. The upstream records for all four new primitives now pass `just deny`. [Verification](VTENSOR-VERIFICATION.md#verdant-generated-package-licenses)
 - [x] Pass the complete locked-SDK gate at VT-120 on Ubuntu x86-64 and Arm64. [GitHub acceptance run](https://github.com/afflom/vTensor/actions/runs/45276620915)
 - [x] Pass the complete locked-SDK gate at VT-121 on both Linux architectures. [GitHub acceptance run](https://github.com/afflom/vTensor/actions/runs/45282182230)
+- [x] Pass full x86-64 and Arm64 acceptance at the merged Verdant patch pin, including RWKV6 and RWKV7. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45390398202)
 - [x] Pass the complete VT-140 gate on Ubuntu x86-64 and Arm64 with released Verdant v2.21.3. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45376031600)
 - [x] Pass the full locked-SDK gate on Ubuntu x86-64 and Arm64 for ELU, XIELU and gated linear attention. [VT-138](https://github.com/afflom/vTensor/actions/runs/45382087025) · [VT-142](https://github.com/afflom/vTensor/actions/runs/45384171793)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
