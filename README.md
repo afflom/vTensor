@@ -16,7 +16,7 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 The completion checklist tracks remaining GGML operations, scheduler callbacks
 and consumer checks. [Provider burndown](BURNDOWN.md)
 
-Cargo pins Verdant’s IQ2_S, IQ2_XS and IQ2_XXS encoders and recurrent projections at `a591d47e` until release. GGML supplies no importance operand on CPY or SET_ROWS. For IQ2_XS and IQ2_XXS the vTensor plan gives each lane unit weight, and the GGML oracle uses the same weights. [Verdant PR #61](https://github.com/afflom/verdant-engine/pull/61) · [Dependency record](model/verdant-development.json)
+Cargo pins Verdant’s low-bit encoders and recurrent projections at `931139cb` until release. GGML supplies no importance operand on CPY or SET_ROWS. For IQ2_XXS, IQ2_XS and IQ1_S, the vTensor plan supplies unit weights and the original GGML oracle receives the same weights. IQ1_M uses the unweighted GGML encoding. [Verdant PR #62](https://github.com/afflom/verdant-engine/pull/62) · [Dependency record](model/verdant-development.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940

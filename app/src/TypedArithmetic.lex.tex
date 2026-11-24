@@ -346,7 +346,7 @@ definition{
   name: packedTarget,
   parameters: [kind : Nat],
   result: Bool,
-  body: (((((16 <=? kind) && (kind <=? 18)) || ((20 <=? kind) && (kind <=? 23))) || ((10 <=? kind) && (kind <=? 14))) || (((((kind =? 2) || (kind =? 3)) || (kind =? 6)) || ((kind =? 7) || (kind =? 8))) || (((34 <=? kind) && (kind <=? 35)) || ((39 <=? kind) && (kind <=? 42))))),
+  body: (((((16 <=? kind) && (kind <=? 23)) || (kind =? 29)) || ((10 <=? kind) && (kind <=? 14))) || (((((kind =? 2) || (kind =? 3)) || (kind =? 6)) || ((kind =? 7) || (kind =? 8))) || (((34 <=? kind) && (kind <=? 35)) || ((39 <=? kind) && (kind <=? 42))))),
   executable: true
 }
 
@@ -390,7 +390,7 @@ definition{
   name: writeImportance,
   parameters: [kind : Nat],
   result: (Option Nat),
-  body: (if ((kind =? 16) || (kind =? 17)) then (ctor Option.some [Nat] 1065353216) else (ctor Option.none [Nat])),
+  body: (if (((kind =? 16) || (kind =? 17)) || (kind =? 19)) then (ctor Option.some [Nat] 1065353216) else (ctor Option.none [Nat])),
   executable: true
 }
 

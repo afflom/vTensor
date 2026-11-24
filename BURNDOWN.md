@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,695 passed**, **60 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,755 passed**, **0 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -95,7 +95,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 24 IQ2_S SET_ROWS and six CPY cases. Verify atomic refusal on either index width and detect a changed output byte. [VT-151](verification/factory-importance-two-storage-vt151.json) · [Verdant PR #59](https://github.com/afflom/verdant-engine/pull/59)
 - [x] Pass all 24 IQ2_XS SET_ROWS and six CPY cases with unit importance. Verify atomic refusal for both index widths and detect a changed sign bit. [VT-152](verification/factory-parity-storage-vt152.json) · [Verdant PR #60](https://github.com/afflom/verdant-engine/pull/60)
 - [x] Pass all 24 IQ2_XXS SET_ROWS and six CPY cases with unit importance. Detect a changed packed sign and verify atomic refusal. [VT-153](verification/factory-grouped-parity-storage-vt153.json) · [Verdant PR #61](https://github.com/afflom/verdant-engine/pull/61)
-- [ ] Implement IQ1_S and IQ1_M writes. Compare the remaining 48 SET_ROWS and 12 CPY cases with the upstream quantizers. Supply explicit importance for IQ1_S. [CPU admission](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml-cpu/ggml-cpu.cpp#L443-L452) · [Quantizer contract](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L8021-L8041)
+- [x] Pass all 48 IQ1_S and IQ1_M SET_ROWS and 12 CPY cases. Check every output byte, rejected writes and a corrupted IQ1_S code. [VT-154](verification/factory-shifted-storage-vt154.json) · [Verdant PR #62](https://github.com/afflom/verdant-engine/pull/62)
 - [x] Pass F32-to-I32 copies 8708 and 8709, including strided storage and atomic refusal. [VT-126](verification/factory-signed-copy-vt126.json)
 - [x] Verify embedding and KV operand placement and all 129 default-precision F32 projections in llama.cpp prefill and decode. [Placement and intermediate outputs](verification/llama-projection-placement-vt126.json)
 - [x] Verify dense and indexed projection precision across all 24 accumulator/source mode pairs, 26 weight formats at F32 precision, and F16/BF16 activation inputs. [VT-128](verification/projection-precision-vt128.json)
@@ -221,7 +221,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 ## Accept and ship
 
 - [x] Reconcile all 27,755 ordinals with the original transcripts and supplemental receipts. Run `just factory-remaining` to list every unresolved case.
-- [ ] Pass every applicable remaining factory case on the plugin. Link supplemental evidence for missing-oracle rows, constructors and ABI behavior.
+- [x] Pass all 27,755 factory cases on the plugin. [Ordinal verdicts](verification/ggml-factory-inventory.json) · [Supplemental constructor evidence](verification/ggml-factory-signatures.json) · [Backend callbacks](verification/ggml-backend-callbacks.json)
 - [x] Pass the complete locked-SDK `just vv` for the VT-52 checkpoint on the Verdant PR #12 pin. All 57 backend contract tests passed. [Verification](VTENSOR-VERIFICATION.md#verdant-q8-dependency)
 - [x] Pass the complete locked-SDK `just vv` at the VT-55 checkpoint on the Verdant PR #15 pin. All 60 backend contract tests passed. [Verification](VTENSOR-VERIFICATION.md#vt-55-complete-checkpoint)
 - [x] Pass the full locked-SDK gate at VT-56. All 61 backend contract tests passed on the SwiGLU implementation. [Checkpoint](VTENSOR-VERIFICATION.md#vt-56-complete-checkpoint)

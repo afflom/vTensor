@@ -1042,12 +1042,12 @@ packed_formats! {
     16 => Grouped(GroupedFormat::Codebook(IndexedSigns)), ImportanceTwoGroupedParity;
     17 => Grouped(GroupedFormat::Codebook(ExtendedIndex)), ImportanceTwoParity;
     18 => Grouped(GroupedFormat::Codebook(FourLaneIndexedSigns)), ImportanceThreeCompact;
-    19 => Grouped(GroupedFormat::Codebook(ShiftedGrid));
+    19 => Grouped(GroupedFormat::Codebook(ShiftedGrid)), ImportanceOneShifted;
     20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)), NonlinearFour;
     21 => Grouped(GroupedFormat::Codebook(FourLaneExplicitSigns)), ImportanceThree;
     22 => Grouped(GroupedFormat::Codebook(ExplicitSigns)), ImportanceTwo;
     23 => Grouped(GroupedFormat::NonlinearFour), GroupedNonlinearFour;
-    29 => Grouped(GroupedFormat::Codebook(DistributedScale));
+    29 => Grouped(GroupedFormat::Codebook(DistributedScale)), ImportanceOneDistributed;
     34 => Grouped(GroupedFormat::PackedTrits), PackedTrits;
     35 => Grouped(GroupedFormat::TwoBitTernary), TwoBitTernary;
     39 => Symmetric(|w, a| linear::dot_block_float_row(w, a, ExponentOnly)), ExponentOnlyFour;

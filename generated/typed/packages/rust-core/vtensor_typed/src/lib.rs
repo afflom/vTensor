@@ -3200,12 +3200,18 @@ pub fn f31(v0: Adt1, v1: u64) -> R<u64> {
 pub fn f32(v0: u64) -> Option<u64> {
     let a718 = v0;
     let a719 = 16u64;
-    if if nat_eq(a718, a719) {
+    if if if nat_eq(a718, a719) {
         true
     } else {
         let a720 = v0;
         let a721 = 17u64;
         nat_eq(a720, a721)
+    } {
+        true
+    } else {
+        let a722 = v0;
+        let a723 = 19u64;
+        nat_eq(a722, a723)
     } {
         Some(1065353216u64)
     } else {
@@ -3214,26 +3220,20 @@ pub fn f32(v0: u64) -> Option<u64> {
 }
 
 pub fn f33(v0: u64) -> bool {
-    let a722 = 16u64;
-    let a723 = v0;
-    if if if if nat_le(a722, a723) {
-        let a724 = v0;
-        let a725 = 18u64;
-        nat_le(a724, a725)
+    let a724 = 16u64;
+    let a725 = v0;
+    if if if if nat_le(a724, a725) {
+        let a726 = v0;
+        let a727 = 23u64;
+        nat_le(a726, a727)
     } else {
         false
     } {
         true
     } else {
-        let a726 = 20u64;
-        let a727 = v0;
-        if nat_le(a726, a727) {
-            let a728 = v0;
-            let a729 = 23u64;
-            nat_le(a728, a729)
-        } else {
-            false
-        }
+        let a728 = v0;
+        let a729 = 29u64;
+        nat_eq(a728, a729)
     } {
         true
     } else {

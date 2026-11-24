@@ -249,6 +249,7 @@ ggml_batches! {
     fn importance_two_storage_vt_151() { "upstream-IMPORTANCE_TWO_STORAGE", 2, ["typed"] }
     fn parity_storage_vt_152() { "upstream-PARITY_GRID_STORAGE", 2, ["typed"] }
     fn grouped_parity_storage_vt_153() { "upstream-GROUPED_PARITY_STORAGE", 2, ["typed"] }
+    fn shifted_block_storage_vt_154() { "upstream-SHIFTED_BLOCK_STORAGE", 4, ["typed"] }
     fn nonlinear_storage_vt_135() { "upstream-NONLINEAR_STORAGE", 4, ["typed"] }
     fn triangular_solve_vt_134() { "upstream-SOLVE_TRI_BOUNDARIES", 3, ["pointwise"] }
     fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
@@ -1267,7 +1268,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "3df918a70298da5b228be6449ece797dba6fb0c4f569055f92b0974dacd83eb3",
+            "a24485a05fb4e3516b9d221e68458b7494ac5ff61be81ea3d516e1ada6bb3169",
         )
     });
 
@@ -1586,20 +1587,19 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
     test.initialize_tensors(target);
     auto original=op==GGML_OP_OUT_PROD || op==GGML_OP_CPY ? nullptr : test.build_graph(reference);
     if (op==GGML_OP_CPY || op==GGML_OP_SET_ROWS) {
-        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S && out->type!=GGML_TYPE_IQ2_S && out->type!=GGML_TYPE_IQ2_XS && out->type!=GGML_TYPE_IQ2_XXS) return false;
-        auto src=out->src[0];
+        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S && out->type!=GGML_TYPE_IQ2_S && out->type!=GGML_TYPE_IQ2_XS && out->type!=GGML_TYPE_IQ2_XXS && out->type!=GGML_TYPE_IQ1_S && out->type!=GGML_TYPE_IQ1_M) return false;
         int64_t width=out->ne[0], rows=ggml_nrows(out);
         if (width<=0 || width%ggml_blck_size(out->type) || !ggml_is_contiguous_rows(out)) return false;
         std::vector<float> importance(ggml_quantize_requires_imatrix(out->type) ? width : 0, 1.0f);
-        auto values=tensor_to_float(src);
+        auto values=tensor_to_float(out->src[0]);
         std::vector<float> mapping(rows,-1.f);
         if (op==GGML_OP_CPY) {
             if (uint64_t(rows)*width!=values.size()) return false;
             std::iota(mapping.begin(),mapping.end(),0.f);
         } else {
             auto dest=ggml_new_tensor_4d(reference,GGML_TYPE_F32,1,out->ne[1],out->ne[2],out->ne[3]);
-            auto ids=ggml_new_tensor_4d(reference,GGML_TYPE_F32,1,src->ne[1],src->ne[2],src->ne[3]);
-            if (src->ne[0]!=width || ggml_nelements(ids)>=1<<24) return false;
+            auto ids=ggml_new_tensor_4d(reference,GGML_TYPE_F32,1,out->src[0]->ne[1],out->src[0]->ne[2],out->src[0]->ne[3]);
+            if (out->src[0]->ne[0]!=width || ggml_nelements(ids)>=1<<24) return false;
             auto mapped=ggml_set_rows(reference,dest,ids,original->src[1]);
             auto scatter=reference.allocate(mapped,cpu);
             if (!scatter || !ggml_backend_supports_op(cpu,mapped)) return false;
@@ -1704,7 +1704,7 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
       const size_t i=selected.empty()?pos:selected[pos];
       auto &test=tests[i];
-      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE") || !strcmp(op,"IMPORTANCE_TWO_STORAGE") || !strcmp(op,"PARITY_GRID_STORAGE") || !strcmp(op,"GROUPED_PARITY_STORAGE");
+      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE") || !strcmp(op,"IMPORTANCE_TWO_STORAGE") || !strcmp(op,"PARITY_GRID_STORAGE") || !strcmp(op,"GROUPED_PARITY_STORAGE") || !strcmp(op,"SHIFTED_BLOCK_STORAGE");
       auto operation= !strcmp(op,"GET_ROWS_BACK_DECODED") ? GGML_OP_GET_ROWS_BACK : !strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : !strcmp(op,"CONV_2D_CONTIGUOUS") ? GGML_OP_CONV_2D : GGML_OP_NONE;
       if (importance || operation!=GGML_OP_NONE) {
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {

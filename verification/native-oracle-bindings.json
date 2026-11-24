@@ -242,7 +242,8 @@
     "upstream-SSM_SCAN_BOUNDARIES": "10454 10462 10468 10474",
     "upstream-IMPORTANCE_TWO_STORAGE": "1424 8493",
     "upstream-PARITY_GRID_STORAGE": "1412 8491",
-    "upstream-GROUPED_PARITY_STORAGE": "1400 8489"
+    "upstream-GROUPED_PARITY_STORAGE": "1400 8489",
+    "upstream-SHIFTED_BLOCK_STORAGE": "1448 1460 8497 8499"
   },
   "factory_transcripts": {
     "upstream-AFFINE_WEIGHT_ROWS": "68508ede9e210dbd20d9b8f0aded72c6293510e32ccba50dded95ad82434c5a6",
@@ -338,7 +339,8 @@
     "upstream-SSM_SCAN_BOUNDARIES": "921d26fbd7df6b584b1a43c7a9b1507e2db56c7495a513fab3207fc73ea7b602",
     "upstream-IMPORTANCE_TWO_STORAGE": "0d797c5a7ca97c3ff0c11f34d7523865958cd6a7fd00447ec01cb01ca9f34cdc",
     "upstream-PARITY_GRID_STORAGE": "1c74982925338e31dd25296d7425b95fad699c6aec4ed7c55e467fea8f476fe0",
-    "upstream-GROUPED_PARITY_STORAGE": "1c2b3d7532251546a0d550b267208383b9e29eb5fd2c86bf92363b32a9df42e6"
+    "upstream-GROUPED_PARITY_STORAGE": "1c2b3d7532251546a0d550b267208383b9e29eb5fd2c86bf92363b32a9df42e6",
+    "upstream-SHIFTED_BLOCK_STORAGE": "6edd346fa9d85b602ecd2534105ef724d91cbbab61522800092f29efeb4239cd"
   },
   "fixed_matrix": {
     "columns": [
@@ -599,6 +601,10 @@
     ],
     "GROUPED_PARITY_STORAGE": [
       16
+    ],
+    "SHIFTED_BLOCK_STORAGE": [
+      19,
+      29
     ]
   }
 }
