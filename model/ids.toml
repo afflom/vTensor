@@ -858,3 +858,9 @@ id = "VT-131"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules in-place SGD and AdamW updates and Verdant evaluates parameters and Adam moments against GGML CPU"
+
+[[id]]
+id = "VT-132"
+level = "build"
+suite = "native-backend"
+statement = "Prism models cross-entropy loss and its logit gradient through Verdant reductions against GGML"

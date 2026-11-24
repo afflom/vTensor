@@ -374,6 +374,8 @@ ggml_batches! {
     #[test]
     fn hyperconnection_combination_vt_130() { "upstream-HYPERCONNECTION_COMB", 11, ["pointwise"] }
     #[test]
+    fn cross_entropy_vt_132() { "upstream-CROSS_ENTROPY_TRAINING", 4, ["pointwise"] }
+    #[test]
     fn optimizer_updates_vt_131() { "upstream-OPTIMIZER_UPDATES", 2, ["pointwise"] }
     #[test]
     fn hyperconnection_pre_vt_127() { "upstream-HYPERCONNECTION_PRE", 18, ["pointwise"] }
@@ -613,28 +615,28 @@ fn boundary_rows<const N: usize, const M: usize>(
     rows.into_iter().zip(reference)
 }
 
-/// `VT-41`: Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results
-#[test]
-fn copy_fixture_generation_vt_41() {
-    fixture_queries(41, 11);
+macro_rules! fixture_query_tests {
+    ($( $(#[$meta:meta])* fn $name:ident() { $suite:literal, $count:literal } )+) => {
+        $( $(#[$meta])* fn $name() { fixture_queries($suite, $count); } )+
+    };
 }
 
-/// `VT-42`: Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results
-#[test]
-fn repeat_fixture_generation_vt_42() {
-    fixture_queries(42, 5);
-}
-
-/// `VT-43`: Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results
-#[test]
-fn concat_fixture_generation_vt_43() {
-    fixture_queries(43, 5);
-}
-
-/// `VT-44`: Prism generates FILL and CAST fixture enumeration typed layouts constants and initial bytes while preserving all 17280 frozen cases source release states and independent GGML CPU expected results
-#[test]
-fn typed_fixture_generation_vt_44() {
-    fixture_queries(44, 10);
+fixture_query_tests! {
+    /// `VT-41`: Prism generates COPY fixture enumeration source and target descriptors and initial bytes while preserving all 3456 frozen cases and independent GGML CPU expected results
+    #[test]
+    fn copy_fixture_generation_vt_41() { 41, 11 }
+    /// `VT-42`: Prism generates REPEAT fixture enumeration source target and output layouts and initial bytes while preserving all 160 frozen cases and independent GGML CPU expected results
+    #[test]
+    fn repeat_fixture_generation_vt_42() { 42, 5 }
+    /// `VT-43`: Prism generates CONCAT fixture enumeration operand and output layouts and byte recipes while preserving all 10368 frozen cases and independent GGML CPU expected results
+    #[test]
+    fn concat_fixture_generation_vt_43() { 43, 5 }
+    /// `VT-44`: Prism generates FILL and CAST fixture enumeration typed layouts constants and initial bytes while preserving all 17280 frozen cases source release states and independent GGML CPU expected results
+    #[test]
+    fn typed_fixture_generation_vt_44() { 44, 10 }
+    /// `VT-47`: Prism supplies spatial fixture parameters and rejects undefined recipe queries.
+    #[test]
+    fn fixture_generation_vt_47() { 47, 4 }
 }
 
 /// `VT-45`: Verdant supplies certified F64 division and unsigned count to F64 conversion for normalization and preserves the imported GGML accumulator division before narrowing regression
@@ -649,12 +651,6 @@ fn normalization_arithmetic_vt_45() {
     let mean = divide(widen(16777217), widen(5));
     assert_eq!(evaluate_wide(2, mean, 0).unwrap(), Some(0x4a4cccce));
     assert_eq!(evaluate_wide(6, 0, 0).unwrap(), None);
-}
-
-/// `VT-47`: Prism supplies spatial fixture parameters and rejects undefined recipe queries.
-#[test]
-fn fixture_generation_vt_47() {
-    fixture_queries(47, 4);
 }
 
 // Hash the compiler's own recipe tokens. A change to either the cached
@@ -1529,7 +1525,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "804bd330067a4c12cff0e3fcf7824cf9412d1067a296b546ad183b010d278511",
+            "29b24117c0e77884eaccf6302cafb88602bff02cef09c5c5d88185e3fad3a8ad",
         )
     });
 

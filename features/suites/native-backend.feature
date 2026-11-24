@@ -452,3 +452,9 @@ Feature: native-backend
     Given weights, gradients, optimizer parameters and the AdamW moment tensors
     When vTensor submits the optimizer graph repeatedly
     Then weights and persistent moment updates match the pinned GGML CPU graph
+
+  @VT-132 @build
+  Scenario: Prism models cross-entropy loss and its logit gradient through Verdant reductions against GGML
+    Given rows of logits and target probabilities with an incoming loss gradient
+    When vTensor computes the mean loss and its gradient across classes
+    Then both results match the imported GGML CPU evaluator
