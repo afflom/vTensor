@@ -2327,7 +2327,7 @@ mod attention {
     use linear::{AffineQ8Block, SymmetricQ8Block};
 
     enum KeyRows {
-        Scalar(Vec<f32>),
+        Scalar(Vec<f32>, [u64; 4]),
         Grouped(linear::GroupedWeightEncoding, Vec<linear::GroupedQ8Block>),
         Symmetric(BlockDot<SymmetricQ8Block<32>>, Vec<SymmetricQ8Block<32>>),
         Affine(BlockDot<AffineQ8Block<32>>, Vec<AffineQ8Block<32>>),
@@ -2377,7 +2377,12 @@ mod attention {
             Some(Symmetric(dot)) => KeyRows::Symmetric(dot, super::reserved(blocks)?),
             Some(Affine(dot)) => KeyRows::Affine(dot, super::reserved(blocks)?),
             Some(Grouped(kind)) => KeyRows::Grouped(kind, super::reserved(query.len() / 256)?),
-            None => KeyRows::Scalar(workspace(query.len() as u64, 0.0)?),
+            None => {
+                let response = request(Request::C15(k.ty as u64))?;
+                tensor_fields!(Response::C15(product, widen, add, narrow) = response);
+                let stages = [product, widen, add, narrow];
+                KeyRows::Scalar(workspace(query.len() as u64, 0.0)?, stages)
+            }
         };
         let mut value = workspace(tensor.ne[0] as u64, 0.0)?;
         let output = graph_tensor_data(tensor)?;
@@ -2411,8 +2416,8 @@ mod attention {
                         (KeyRows::Grouped(_, blocks), 15) => {
                             prepare_blocks(&query, blocks, linear::encode_grouped_q8_block)?
                         }
-                        (KeyRows::Scalar(_), 0) => {}
-                        (KeyRows::Scalar(_), 30) => {
+                        (KeyRows::Scalar(..), 0) => {}
+                        (KeyRows::Scalar(..), 30) => {
                             for word in &mut query {
                                 *word = super::prepare_float(0, dot_type, word.to_bits().into())?;
                             }
@@ -2441,19 +2446,25 @@ mod attention {
                             None => 0.0,
                         };
                         let key_offset = koff + row * ks;
+                        let packed = || k.blocks(key_offset, query.len());
                         let dot = match &mut keys {
-                            KeyRows::Symmetric(dot, blocks) => {
-                                dot(k.blocks(key_offset, query.len())?, blocks)?
+                            KeyRows::Symmetric(dot, blocks) => dot(packed()?, blocks)?,
+                            KeyRows::Affine(dot, blocks) => dot(packed()?, blocks)?,
+                            KeyRows::Grouped(kind, blocks) => {
+                                linear::dot_grouped_weight_row(packed()?, blocks, *kind)?
                             }
-                            KeyRows::Affine(dot, blocks) => {
-                                dot(k.blocks(key_offset, query.len())?, blocks)?
+                            KeyRows::Scalar(key, [product, widen, add, narrow]) => {
+                                k.decode(key_offset, key)?;
+                                let wide =
+                                    |op, a, b| super::checked_word(linear::evaluate_wide(op, a, b));
+                                let mut sum = 0;
+                                for (&weight, &activation) in key.iter().zip(&query) {
+                                    let term = scalar(*product, weight, activation)?;
+                                    let widened = wide(*widen, u64::from(term.to_bits()), 0)?;
+                                    sum = wide(*add, sum, widened)?;
+                                }
+                                f32::from_bits(wide(*narrow, sum, 0)? as u32)
                             }
-                            KeyRows::Grouped(kind, blocks) => linear::dot_grouped_weight_row(
-                                k.blocks(key_offset, query.len())?,
-                                blocks,
-                                *kind,
-                            )?,
-                            KeyRows::Scalar(key) => k.dot(key_offset, &query, key)?,
                         };
                         v.decode(voff + row * vs, &mut value)?;
                         let mut scaled = scalar(2, dot, scale)?;

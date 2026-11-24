@@ -1,0 +1,10 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "reference": "Use the original VT-157 byte pattern and run its pinned F16 GGML DIAG graph once per type and width. Each independent byte occupies one F16 lane. Reassemble the planes into scalar storage bytes and replay both original padding layouts.",
+  "words_sha256": "d55e64548128d0140dcb395acbf653f22580a383601ffa36160a707f5e967d53",
+  "graphs": 18,
+  "provider_layouts": 36
+}

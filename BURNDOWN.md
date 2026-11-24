@@ -4,15 +4,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Trace and close the stock llama-perplexity discrepancy on four 64-token chunks of Stories15M mixed-codebook weights. The upstream CPU self-replay matched all 124 top tokens. vTensor matched 119.
+- [ ] Trace the residual probability drift in stock llama-perplexity against generic GGML. All 124 top tokens match. Mean KL divergence is 0.000179 after correcting scalar dot precision. [Four-chunk replay](verification/llama-perplexity-four-chunks.json)
 - [ ] Cover the remaining 13,036 binary descriptors involving signed, F64 or packed Q8 activation inputs. Bind each numerical contract to original GGML or SoftFloat before enabling placement.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,997 non-Prism lines** (12,546 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,995 non-Prism lines** (12,544 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Match GGML scalar flash-score rounding for F32, F16 and BF16 keys. All 1,536 cancellation-sensitive words matched. The four-chunk llama.cpp mean KL divergence against generic GGML fell from 0.000615 to 0.000179. [VT-185](verification/supplemental-scalar-score-vt185.json)
 
 - [x] Place all 3,890 missing signed integer and F64 ADD_CAST destinations. All 1,991,680 values matched original GGML or SoftFloat. All 16 late invalid conversions preserved the output. [VT-184](verification/supplemental-numeric-results-vt184.json)
 

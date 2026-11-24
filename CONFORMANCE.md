@@ -272,6 +272,7 @@ model does not sanction.
 | `VT-182` | `build` | GGML scalar-left binary graphs consume all decodable mixed right operands |
 | `VT-183` | `build` | Four-axis packed binary broadcasts preserve offset views and in-place storage |
 | `VT-184` | `build` | GGML ADD_CAST stores bounded signed integers and binary64 results from decoded rows |
+| `VT-185` | `build` | Scalar flash attention rounds each product to binary32 and accumulates in binary64 order |
 
 ## normalization-graphs
 

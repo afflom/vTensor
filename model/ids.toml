@@ -1176,3 +1176,9 @@ id = "VT-184"
 level = "build"
 suite = "native-backend"
 statement = "GGML ADD_CAST stores bounded signed integers and binary64 results from decoded rows"
+
+[[id]]
+id = "VT-185"
+level = "build"
+suite = "native-backend"
+statement = "Scalar flash attention rounds each product to binary32 and accumulates in binary64 order"

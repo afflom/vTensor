@@ -770,3 +770,9 @@ Feature: native-backend
     Given mixed original GGML source rows and a signed integer or binary64 destination
     When the scheduler places the graph and computes the decoded F32 sum
     Then the output matches original GGML or SoftFloat and invalid signed conversions preserve the destination
+
+  @VT-185 @build
+  Scenario: Scalar flash attention rounds each product to binary32 and accumulates in binary64 order
+    Given F32 queries and F32, F16 or BF16 keys whose products cancel at different precisions
+    When the scheduler places and runs the attention graph
+    Then every output word matches the original generic GGML CPU kernel

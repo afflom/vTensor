@@ -449,7 +449,9 @@
     "ggml-integer-floats-oracle": "5b9fcbae80fec6e6af26732acf219dea9cc79671b21135e0aa9cf7bea5119f74",
     "ggml-octet-integers-oracle": "57654aca8442d8a0b56580297714a6c06c4e0c889777d937dd0dba93526a31e4",
     "ggml-row-repeat-oracle": "268e0f5dfce0e755c18696b0047237dae09aaea5d55544d2adbf2f3e8637bf8d",
-    "ggml-numeric-results-oracle": "21a9736fb7047c066804f63758617026351e331c49f9f90b458ab033242d7f9c"
+    "ggml-numeric-results-oracle": "21a9736fb7047c066804f63758617026351e331c49f9f90b458ab033242d7f9c",
+    "ggml-scalar-score-oracle": "2c18e068937401b2d8e83bd0c72c89b705b605988a2927561be8349996f610af",
+    "ggml-scalar-diag-oracle": "755c4394ea2402a5da5994492413a1ef319ea6a9f4c32ceb5538eb54a0ac84e2"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -649,6 +651,8 @@
     "integer-floats": "ggml-integer-floats",
     "octet-integers": "ggml-octet-integers",
     "row-repeat": "ggml-row-repeat",
-    "numeric-results": "ggml-numeric-results"
+    "numeric-results": "ggml-numeric-results",
+    "flash-rounding": "ggml-scalar-score",
+    "scalar-diagonal": "ggml-scalar-diag"
   }
 }

@@ -1,0 +1,10 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "reference": "Original ggml_flash_attn_ext on F32 queries, three key rows with F32, F16 or BF16 storage and F32 values. Query zero cancels products after binary32 multiplication. Query one loses the central 16 when the binary64 accumulator starts at 2^60. The source kernel returns 0x3eaaaaab for every output on this fixture.",
+  "words_sha256": "eadf29710a618c26a5bc0c7e2934cc83e58dc76e23144bb00c0387835a08381d",
+  "graphs": 3,
+  "words": 1536
+}

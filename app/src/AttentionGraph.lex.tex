@@ -179,7 +179,8 @@ inductive{
     {name: deltaStart, fields: [RecurrentPlan, Nat, Nat]},
     {name: deltaToken, fields: [RecurrentPlan, Nat, Nat, Nat]},
     {name: scanGraph, fields: [Nat, Bool, Nat, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor, NormPlan::TensorDescriptor]},
-    {name: scanStart, fields: [RecurrentPlan, Nat, Nat, Nat]}
+    {name: scanStart, fields: [RecurrentPlan, Nat, Nat, Nat]},
+    {name: scalarScore, fields: [Nat]}
   ]
 }
 
@@ -202,7 +203,8 @@ inductive{
     {name: indexerRows, fields: [Nat, Nat, Nat, Nat, Nat]},
     {name: deltaPlan, fields: [RecurrentPlan]},
     {name: initialState, fields: [Nat, (Option Nat)]},
-    {name: deltaOffsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, (Option Nat)]}
+    {name: deltaOffsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, (Option Nat)]},
+    {name: scoreArithmetic, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -734,10 +736,27 @@ definition{
 }
 
 definition{
+  name: scalarScoreArithmetic,
+  parameters: [key : Nat],
+  result: Response,
+  body: (if ((((key =? 0) || (key =? 1)) || (key =? 30)) || (key =? 43)) then
+    (ctor Response.scoreArithmetic 2 1 0 2) else (ctor Response.invalid)),
+  executable: true
+}
+
+theorem{
+  name: halfKeyRoundsEachProductBeforeWideAddition,
+  parameters: [],
+  statement: ((scalarScoreArithmetic 1) = (ctor Response.scoreArithmetic 2 1 0 2)),
+  proof: reflexivity{}
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
   body: (match request
+    | Request.scalarScore key => (scalarScoreArithmetic key)
     | Request.indexerRow plan token head stream key => (indexerRows plan token head stream key)
     | Request.cacheIndex raw cells => (if (raw <? 2147483648) then (if (raw <? cells) then (ctor Response.cacheCell raw) else (ctor Response.invalid)) else (if (raw <? 4294967296) then (ctor Response.skip) else (ctor Response.invalid)))
     | Request.scanGraph op trailing slots state drive step transition injection readout ids out => (scanGraph op trailing slots state drive step transition injection readout ids out)

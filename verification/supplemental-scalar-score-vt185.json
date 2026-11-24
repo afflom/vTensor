@@ -1,0 +1,23 @@
+{
+  "requirement": "VT-185",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "4e2f5ae9010ec79b11271a506e430d6586ae2b364ae4df990debc4cca944be14",
+  "attestation": "82e30f124659d6a2674b2241f3487ab1c5c642da1146e4fc601d0acec4cc37ca",
+  "oracle": "ggml-scalar-score-oracle.json",
+  "key_types": [
+    "F32",
+    "F16",
+    "BF16"
+  ],
+  "original_graphs": 3,
+  "exact_words": 1536,
+  "operation_order": [
+    "binary32 multiplication",
+    "exact widening to binary64",
+    "sequential binary64 addition",
+    "binary32 narrowing"
+  ],
+  "negative_control": "The preceding provider failed the F32 key. Reinstating the exact whole-vector dot only for F16 failed the F16 key. Restoring the certified precision stages passed all three graphs and reproduced the checked plugin bytes.",
+  "preserved_regressions": "VT-157 retains all 36 scalar diagonal graphs and both layouts using 18 once-recorded F16 byte-plane GGML DIAG results. VT-178 passed all 4,205 flash precision comparisons and refusals.",
+  "non_prism_lines": 12544
+}

@@ -70,6 +70,7 @@ ggml_batches! {
     fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
+    fn scalar_score_rounding_vt_185() { "flash-rounding", 3, ["attention"] }
     fn flash_accumulators_vt_178() { "flash-precision", 4205, ["attention"] }
     fn flash_storage_pairs_vt_177() { "flash-storage", 697, ["attention"] }
     fn numeric_row_results_vt_184() { "numeric-results", 3906, ["typed", "pointwise"] }
@@ -1272,7 +1273,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "29ca7e8a52848098a861fe9562b52dd9bba073a850446b6fd87b0d52697fea24",
+            "324904c54c4c2120ce518c8d2e7d1e49c61cd09baa05af36d67fd2eef63d565c",
         )
     });
 
@@ -2181,9 +2182,10 @@ int main(int argc, char **argv) {
         return finish(compared);
     }
     const bool flash_precision=!strcmp(argv[3],"flash-precision");
-    if (flash_precision || !strcmp(argv[3],"flash-storage")) {
+    const bool rounded=!strcmp(argv[3],"flash-rounding");
+    if (rounded || flash_precision || !strcmp(argv[3],"flash-storage")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> samples;
-        int count; CHECK(scanf("%d",&count)==1 && count==59);
+        int count; CHECK(scanf("%d",&count)==1 && count==(rounded?8:59));
         for(int i=0;i<count;++i) {
             int slot,kind; size_t size; CHECK(scanf("%d%d%zu",&slot,&kind,&size)==3);
             auto bytes=read_hex_bytes(size); CHECK(!bytes.empty() && samples.emplace(std::make_pair(slot,kind),std::move(bytes)).second);
@@ -2191,7 +2193,7 @@ int main(int argc, char **argv) {
         size_t cases=0; int key_type,value_type;
         std::set<std::pair<int,int>> pairs;
         while(scanf("%d%d",&key_type,&value_type)==2) CHECK(pairs.emplace(key_type,value_type).second);
-        CHECK(feof(stdin) && pairs.size()==697);
+        CHECK(feof(stdin) && pairs.size()==(rounded?3:697));
         if (flash_precision) {
             for(const auto &k:samples) if(k.first.first==1)
                 for(const auto &v:samples) if(v.first.first==2) pairs.emplace(k.first.second,v.first.second);
@@ -2217,8 +2219,8 @@ int main(int argc, char **argv) {
                 const auto &bytes=samples.at({slot++,t->type}); CHECK(bytes.size()==ggml_nbytes(t));
                 ggml_backend_tensor_set(t,bytes.data(),0,bytes.size());
             }
-            CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
-            const auto expected=tensor_bytes(out); CHECK(expected.size()==512*sizeof(float));
+            if (!rounded) CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+            const auto expected=rounded?samples.at({3,key_type}):tensor_bytes(out); CHECK(expected.size()==512*sizeof(float));
             for(auto prec:modes) {
                 ggml_backend_tensor_memset(out,0xff,0,expected.size());
                 CHECK(ggml_prec_set_acc(out,prec));
@@ -2227,7 +2229,7 @@ int main(int argc, char **argv) {
                     ++cases; continue;
                 }
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-                if(!finite_f32_matches(tensor_bytes(out),expected,false,true)) {fprintf(stderr,"flash attention differs for %d / %d\n",key_type,value_type);return 2;}
+                if(!finite_f32_matches(tensor_bytes(out),expected,rounded,true)) {fprintf(stderr,"flash attention differs for %d / %d\n",key_type,value_type);return 2;}
                 ++cases;
             }
         }
@@ -2447,34 +2449,19 @@ int main(int argc, char **argv) {
         return finish(compared);
     }
     if (!strcmp(argv[3],"scalar-diagonal")) {
-        size_t cases=0;
-        int kind;
-        while (scanf("%d",&kind)==1) {
-            const auto type=ggml_type(kind);
-            if (ggml_blck_size(type)!=1 || type==GGML_TYPE_F32 || type==GGML_TYPE_F16 || type==GGML_TYPE_BF16) continue;
-            const auto bytes=ggml_type_size(type);
-            for (int width : {1,4,7}) for (int pad : {0,2}) {
-                graph_fixture target(8), cpu(4); CHECK(target && cpu);
+        size_t cases=0; int kind,width;
+        while (scanf("%d%d",&kind,&width)==2) {
+            const auto type=ggml_type(kind); const size_t bytes=ggml_type_size(type);
+            const auto input=read_hex_bytes(6*width*bytes), expected=read_hex_bytes(6*width*width*bytes);
+            CHECK(!input.empty() && !expected.empty());
+            for(int pad:{0,2}) {
+                graph_fixture target(8); CHECK(target);
                 auto backing=ggml_new_tensor_4d(target,type,width+pad,1,2,3);
-                auto src=pad ? ggml_view_4d(target,backing,width,1,2,3,backing->nb[1],backing->nb[2],backing->nb[3],bytes) : backing;
-                auto out=ggml_diag(target,src);
-                auto lanes=ggml_new_tensor_4d(cpu,GGML_TYPE_F16,width,1,2,3*bytes);
-                auto oracle=ggml_diag(cpu,lanes);
-                CHECK(ggml_backend_supports_op(backend,out));
-                auto graph=target.allocate(out,backend), reference_graph=cpu.allocate(oracle,reference);
-                CHECK(graph && reference_graph && ggml_backend_supports_op(backend,out));
-                const size_t inputs=ggml_nelements(src), outputs=ggml_nelements(out);
-                std::vector<uint16_t> planes(inputs*bytes);
-                std::vector<uint8_t> input(inputs*bytes);
-                for (size_t i=0;i<inputs;++i) for (size_t b=0;b<bytes;++b)
-                    planes[b*inputs+i]=input[i*bytes+b]=uint8_t(1+((i*37+b*71)%255));
-                for (int row=0;row<6;++row) ggml_backend_tensor_set(src,input.data()+row*width*bytes,row*src->nb[2],width*bytes);
-                ggml_backend_tensor_set(lanes,planes.data(),0,ggml_nbytes(lanes));
-                CHECK(ggml_backend_graph_compute(reference,reference_graph)==GGML_STATUS_SUCCESS);
-                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-                planes.resize(outputs*bytes); ggml_backend_tensor_get(oracle,planes.data(),0,ggml_nbytes(oracle));
-                const auto actual=tensor_bytes(out);
-                for (size_t i=0;i<outputs;++i) for (size_t b=0;b<bytes;++b) CHECK(actual[i*bytes+b]==planes[b*outputs+i]);
+                auto src=pad?ggml_view_4d(target,backing,width,1,2,3,backing->nb[1],backing->nb[2],backing->nb[3],bytes):backing;
+                auto out=ggml_diag(target,src); auto graph=target.allocate(out,backend,true);
+                CHECK(graph && ggml_backend_supports_op(backend,out));
+                for(int row=0;row<6;row++) ggml_backend_tensor_set(src,input.data()+row*width*bytes,row*src->nb[2],width*bytes);
+                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS && tensor_bytes(out)==expected);
                 ++cases;
             }
         }

@@ -1,0 +1,68 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "host": "llama-perplexity",
+  "source_files": {
+    "main.cpp": "46a17685be442eee7e5d2e38ac6ee597d77577339aebd7ce97da4c41b1c8c7f4",
+    "perplexity.cpp": "42a39345830f9d0745e6e6da2bb35cc021210d5fd39f2224f6914327fc0088c0"
+  },
+  "executable_sha256": "132699073f44a2e96a389b910fbfab9256a8209de7b8a31ba30b34f663768926",
+  "implementation_library_sha256": "a059190536f1c6a41a830d73e4bf8eed6b881720ebd6e8c668e939dde856ab15",
+  "optimized_cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "generic_cpu_sha256": "03dd6e67d861f04190104c5ea7849262ce379ffc0bbdc4fee42c4d1cfedd865c",
+  "provider_sha256": "4e2f5ae9010ec79b11271a506e430d6586ae2b364ae4df990debc4cca944be14",
+  "prior_provider_sha256": "33bc0fc534a54f82d758ab07af2f496dc0ed493f3ab1b33085136859c990c2c3",
+  "model": "stories15M-mixed-codebooks.gguf",
+  "model_sha256": "4894382dfada69a67d6221cd4f26070ea47474792fa51b074f3ece0b19851b03",
+  "text": "The rain stopped before morning. A small bird landed by the open window. The child waited quietly until it took a seed and flew back to the oak tree. ",
+  "text_repetitions": 16,
+  "input_sha256": "701771f0261b5f536226b1da48bdeb753c9edf1f2c8aa687c0a781975b7c5e52",
+  "chunks": 4,
+  "context": 64,
+  "batch": 32,
+  "microbatch": 16,
+  "threads": 1,
+  "scored_positions": 124,
+  "repack": false,
+  "control": "Stock llama-perplexity saved reference logits with the original CPU plugin. The same unmodified host compared distributions with --kl-divergence. Its disk format quantizes the saved logits. The original portable CPU plugin used the pinned GGML sources and the generic non-contracted conformance build profile. CPU and vTensor ran in separate processes with one selected plugin each.",
+  "generic_reference_logits_sha256": "4c7059e93553e89d291a8d0acbc33d9fd2cf0b8228a90dda1d922d583aeb0584",
+  "identical_generic_baseline_with_microbatch_one": true,
+  "comparisons": {
+    "optimized_vs_optimized": {
+      "perplexity": 78.144098,
+      "mean_kl_divergence": -1e-06,
+      "max_kl_divergence": 2.7e-05,
+      "top_token_agreement_percent": 100.0
+    },
+    "generic_vs_generic": {
+      "perplexity": 79.15844,
+      "mean_kl_divergence": -2e-06,
+      "max_kl_divergence": 2.6e-05,
+      "top_token_agreement_percent": 100.0
+    },
+    "original_generic_vs_optimized": {
+      "perplexity": 79.15844,
+      "mean_kl_divergence": 0.002571,
+      "max_kl_divergence": 0.011699,
+      "top_token_agreement_percent": 95.968
+    },
+    "previous_provider_vs_generic": {
+      "perplexity": 78.932654,
+      "mean_kl_divergence": 0.000615,
+      "max_kl_divergence": 0.005419,
+      "top_token_agreement_percent": 100.0
+    },
+    "provider_vs_generic": {
+      "perplexity": 79.045908,
+      "mean_kl_divergence": 0.000179,
+      "max_kl_divergence": 0.0051,
+      "top_token_agreement_percent": 100.0
+    },
+    "provider_vs_optimized": {
+      "perplexity": 79.045908,
+      "mean_kl_divergence": 0.002587,
+      "max_kl_divergence": 0.011699,
+      "top_token_agreement_percent": 95.968
+    }
+  },
+  "diagnosis": "In layer 1 of the third chunk, 10 of 30 scalar key scores differed. Replaying the original rounded dots through the same Verdant weighted mean matched all 48 original attention values. Exact whole-vector products reproduced all 48 old provider values and differed at 36 coordinates. At the subsequent Q4 projection a single Q8 activation code changed. The generic and optimized CPU profiles also disagree at five top-token positions on this prompt."
+}
