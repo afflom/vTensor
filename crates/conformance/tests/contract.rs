@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn gated_linear_attention_vt_142() { "upstream-GATED_LINEAR_ATTN_BOUNDARIES", 1, ["pointwise"] }
     fn timestep_embeddings_vt_141() { "upstream-TIMESTEP_EMBEDDING_BOUNDARIES", 5, ["pointwise"] }
     fn pool_gradients_vt_140() { "pool-gradients", 37, ["pointwise"] }
     fn column_gradients_vt_139() { "column-gradients", 64, ["pointwise"] }
@@ -1006,8 +1007,7 @@ mod ggml_storage_oracle {
         // Exercise enough input and output to exceed pipe capacity in both
         // directions without starting a separate oracle process for every case.
         let batch = ggml_oracle::rows("storage", &"0 1 1 1 1 4 4 4 4\n".repeat(8192));
-        assert_eq!(batch.len(), 8192);
-        assert!(batch.iter().all(|row| *row == [4, 1, 4]));
+        assert!(batch.into_iter().eq(std::iter::repeat_n([4, 1, 4], 8192)));
         let modified = || std::fs::metadata(&executable).unwrap().modified().unwrap();
         let built_at = modified();
         assert_eq!(ggml_oracle::storage_oracle(&super::root()), executable);
@@ -1295,7 +1295,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "02491455e9cad5c24081390ad8145b1c87f816df722ecc35029a104d841df3a2",
+            "df0235643285fc56b6026307db561d597c8b0d72708263da5f810458d650c6b4",
         )
     });
 

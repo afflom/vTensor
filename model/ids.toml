@@ -918,3 +918,9 @@ id = "VT-138"
 level = "build"
 suite = "native-backend"
 statement = "Prism schedules ELU and parameterized XIELU with cancellation-preserving Verdant exponential increments"
+
+[[id]]
+id = "VT-142"
+level = "build"
+suite = "native-backend"
+statement = "Prism models gated linear attention state updates and ordered output accumulation through Verdant for the imported GGML CPU"

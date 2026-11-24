@@ -512,3 +512,9 @@ Feature: native-backend
     Given the pinned ELU and XIELU graphs with binary32 operation parameters
     When vTensor selects the positive or negative activation at each coordinate
     Then each converted result agrees with the upstream CPU
+
+  @VT-142 @build
+  Scenario: Prism models gated linear attention state updates and ordered output accumulation through Verdant for the imported GGML CPU
+    Given keys values queries gates and the initial state for each GGML sequence
+    When vTensor executes gated linear attention
+    Then both the token outputs and updated sequence states match the pinned CPU backend

@@ -229,6 +229,7 @@ model does not sanction.
 | `VT-140` | `build` | Prism scatters average and first-maximum pooling gradients through Verdant in upstream GGML window order |
 | `VT-141` | `build` | Prism plans timestep embedding frequencies and destination lanes and Verdant evaluates the circular functions against the imported GGML CPU |
 | `VT-138` | `build` | Prism schedules ELU and parameterized XIELU with cancellation-preserving Verdant exponential increments |
+| `VT-142` | `build` | Prism models gated linear attention state updates and ordered output accumulation through Verdant for the imported GGML CPU |
 
 ## normalization-graphs
 

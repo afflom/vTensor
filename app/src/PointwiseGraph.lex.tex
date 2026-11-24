@@ -163,7 +163,8 @@ inductive{
     {name: columnGradient, fields: [ColumnAxis, ColumnAxis]},
     {name: poolGradient, fields: [PoolGeometry, Nat]},
     {name: timestep, fields: [Nat]},
-    {name: exponentialUnit, fields: [Bool, Nat, Nat, OperationParameters]}
+    {name: exponentialUnit, fields: [Bool, Nat, Nat, OperationParameters]},
+    {name: gatedLinear, fields: [Nat, Nat]}
   ]
 }
 
@@ -1921,6 +1922,30 @@ definition{
 }
 
 definition{
+  name: gatedLinearStep,
+  parameters: [index : Nat, source : IndexContext, scale : Nat, sequences : Nat],
+  result: GraphResponse,
+  body: (let width : Nat := (project source u0);
+      (let channels : Nat := (prim multiply width (project source n1) : Nat);
+      (let words : Nat := (prim multiply channels (project source n2) : Nat);
+      (if (index <? words) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output (prim multiply 4 index : Nat)) 4 4) else (let relative : Nat := (prim subtract index words : Nat);
+      (let stride : Nat := (1 + (prim multiply 5 width : Nat));
+      (let packed : Nat := (prim quotient relative stride 0 : Nat);
+      (let phase : Nat := (prim remainder relative stride 0 : Nat);
+      (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 2 (prim multiply 4 packed : Nat)) (ctor WordOperand.immediate scale) (ctor WordTarget.scratch 0) 4 4) else (let at : Nat := (prim subtract phase 1 : Nat);
+      (let lane : Nat := (prim quotient at 5 0 : Nat);
+      (let stage : Nat := (prim remainder at 5 0 : Nat);
+      (let token : Nat := (prim quotient packed channels 0 : Nat);
+      (let within : Nat := (prim remainder packed channels 0 : Nat);
+      (let length : Nat := (prim quotient (project source n2) sequences 0 : Nat);
+      (let column : Nat := (prim multiply 4 ((prim subtract packed (prim remainder within width 0 : Nat) : Nat) + lane) : Nat);
+      (let stateOffset : Nat := (prim multiply 4 ((prim multiply ((prim multiply (prim quotient token length 0 : Nat) channels : Nat) + within) width : Nat) + lane) : Nat);
+      (let updated : Nat := ((prim multiply 4 words : Nat) + stateOffset);
+      (if (stage =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 column) (ctor WordOperand.source 0 (prim multiply 4 packed : Nat)) (ctor WordTarget.scratch 1) 4 4) else (if (stage =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (if ((prim remainder token length 0 : Nat) =? 0) then (ctor WordOperand.source 4 stateOffset) else (ctor WordOperand.output updated)) (ctor WordOperand.source 3 (prim multiply 4 packed : Nat)) (ctor WordTarget.scratch 2) 4 4) else (if (stage =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 2) (ctor WordOperand.scratch 1) (ctor WordTarget.output updated) 4 4) else (if (stage =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.output updated) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 2) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.output column) (ctor WordOperand.scratch 2) (ctor WordTarget.output column) 4 4))))))))))))))))))))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -1946,6 +1971,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.optimizer adam => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.gatedLinear scale sequences => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.timestep period => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.poolGradient geometry cells => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.columnGradient x y => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
@@ -2310,6 +2336,55 @@ definition{
 }
 
 definition{
+  name: gatedSource,
+  parameters: [input : TensorDescriptor, output : TensorDescriptor, words : Nat],
+  result: Bool,
+  body: (((((project input ty) =? 0) && (contiguousWords input)) && ((prim multiply 4 words : Nat) <=? (project input span))) && (separateTensors input output)),
+  executable: true
+}
+
+definition{
+  name: gatedChannels,
+  parameters: [input : TensorDescriptor, key : TensorDescriptor, output : TensorDescriptor, words : Nat],
+  result: Bool,
+  body: (((((project input n0) =? (project key n0)) && ((project input n1) =? (project key n1))) && ((project input n2) =? (project key n2))) && (gatedSource input output words)),
+  executable: true
+}
+
+definition{
+  name: gatedSteps,
+  parameters: [width : Nat, tokens : Nat],
+  result: Nat,
+  body: (tokens + (prim multiply tokens (1 + (prim multiply 5 width : Nat)) : Nat)),
+  executable: true
+}
+
+definition{
+  name: planGatedLinear,
+  parameters: [scale : Nat, input0 : (Option TensorDescriptor), input1 : (Option TensorDescriptor), input2 : (Option TensorDescriptor), input3 : (Option TensorDescriptor), input4 : (Option TensorDescriptor), extra : Bool, out : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if extra then (ctor PointwiseDecision.invalidShape) else (match input0
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some key => (match input1
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some value => (match input2
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some query => (match input3
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some gate => (match input4
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some state => (let width : Nat := (project key n0);
+      (let heads : Nat := (project key n1);
+      (let tokens : Nat := (project key n2);
+      (let sequences : Nat := (project state n1);
+      (let channels : Nat := (prim multiply width heads : Nat);
+      (let words : Nat := (prim multiply channels tokens : Nat);
+      (let stateWords : Nat := (prim multiply (prim multiply channels width : Nat) sequences : Nat);
+      (if (((((((((((((((((0 <? heads) && (0 <? tokens)) && (0 <? sequences)) && ((prim remainder tokens sequences 0 : Nat) =? 0)) && ((project out ty) =? 0)) && (contiguousWords out)) && ((project out n0) =? channels)) && ((project out n1) =? (tokens + (prim multiply width sequences : Nat)))) && ((project out n2) =? 1)) && ((project out n3) =? 1)) && ((blockCount state 1) =? stateWords)) && (gatedSource key out words)) && (gatedChannels value key out words)) && (gatedChannels query key out words)) && (gatedChannels gate key out words)) && (gatedSource state out stateWords)) && ((prim multiply 4 (words + stateWords) : Nat) <=? (project out span))) then (ctor PointwiseDecision.copyBlocks (gatedSteps width words) 4 (indexContext key 1) (indexContext out 1) (ctor CopyMode.gatedLinear scale sequences)) else (ctor PointwiseDecision.invalidShape))))))))))))))),
+  executable: true
+}
+
+definition{
   name: planTwoSources,
   parameters: [
     operation : Nat,
@@ -2385,6 +2460,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.bindings 7 0 0 false 3)
     | CopyMode.optimizer adam => (ctor GraphResponse.bindings (if adam then 31 else 7) 0 0 false 12)
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.bindings (if backward then 7 else 3) 0 0 false 7)
+    | CopyMode.gatedLinear scale sequences => (ctor GraphResponse.bindings 31 0 0 false 3)
     | CopyMode.timestep period => (ctor GraphResponse.bindings 1 0 0 false 5)
     | CopyMode.poolGradient geometry cells => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.columnGradient x y => (ctor GraphResponse.bindings 1 0 0 false 3)
@@ -2439,6 +2515,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.gatedLinear scale sequences => 0
     | CopyMode.timestep period => 0
     | CopyMode.poolGradient geometry cells => 0
     | CopyMode.columnGradient x y => 0
@@ -2517,6 +2594,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor WordOperation.invalid)
     | CopyMode.optimizer adam => (ctor WordOperation.invalid)
     | CopyMode.crossEntropy backward labelStride rows => (ctor WordOperation.invalid)
+    | CopyMode.gatedLinear scale sequences => (ctor WordOperation.invalid)
     | CopyMode.timestep period => (ctor WordOperation.invalid)
     | CopyMode.poolGradient geometry cells => (ctor WordOperation.invalid)
     | CopyMode.columnGradient x y => (ctor WordOperation.invalid)
@@ -2571,6 +2649,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.gatedLinear scale sequences => 0
     | CopyMode.timestep period => 0
     | CopyMode.poolGradient geometry cells => 0
     | CopyMode.columnGradient x y => 0
@@ -2932,6 +3011,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (hyperconnectionCombinationStep index source scale base destination eps iterations flag)
     | CopyMode.optimizer adam => (optimizerStep index source adam)
     | CopyMode.crossEntropy backward labelStride rows => (crossEntropyStep index source destination backward labelStride rows flag)
+    | CopyMode.gatedLinear scale sequences => (gatedLinearStep index source scale sequences)
     | CopyMode.timestep period => (timestepStep index destination period)
     | CopyMode.poolGradient geometry cells => (poolGradientStep index source destination geometry cells flag)
     | CopyMode.columnGradient x y => (columnGradientStep index source destination x y)
@@ -3005,7 +3085,7 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if (((((operation =? 82) || (operation =? 50)) || (operation =? 59)) || (operation =? 65)) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || tailPresent)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if (operation =? 80) then (ctor GraphResponse.planned (planGatedLinear (project options p0) input0 input1 input2 input3 input4 tailPresent output)) else (if (((((operation =? 82) || (operation =? 50)) || (operation =? 59)) || (operation =? 65)) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || tailPresent)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
       | Option.some descriptor => true
       | Option.none => (match input4
         | Option.some descriptor => true
@@ -3015,7 +3095,7 @@ definition{
       | Option.none => trailing
       | Option.some extra => true) output)) else (if (operation =? 87) then (ctor GraphResponse.planned (planHyperconnectionPost input0 input1 input2 input3 trailing output)) else (if (operation =? 64) then (ctor GraphResponse.planned (planArange options output)) else (match input0
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output))))))))))))))))
+      | Option.some left => (if ((operation =? 48) || (operation =? 56)) then (ctor GraphResponse.planned (planTransposeConvolution (operation =? 56) options left input1 output)) else (if ((operation =? 53) || (operation =? 54)) then (ctor GraphResponse.planned (planDirectConvolution (operation =? 54) options left input1 output)) else (if (operation =? 78) then (ctor GraphResponse.planned (planRelativeAdd options left input1 input2 output)) else (if (((operation =? 23) || (operation =? 26)) || (operation =? 25)) then (ctor GraphResponse.planned (planNormalization operation options left input1 output)) else (if (operation =? 24) then (ctor GraphResponse.planned (planRmsNorm options left output)) else (if (operation =? 27) then (ctor GraphResponse.planned (planL2Norm options left output)) else (if (operation =? 3) then (ctor GraphResponse.planned (planIndexedAddition left input1 input2 output)) else (planProjectionOrTwoSources operation options left input1 output)))))))))))))))))
     | GraphRequest.convolutionAddress geometry phase start index => (if (0 <? (project geometry overlapCells)) then (transposeConvolutionAddress geometry phase start index) else (convolutionAddress geometry phase start index))
     | GraphRequest.gaussianF32Table word => (ctor GraphResponse.tableResult (if ((3240099840 <=? word) && (word <=? 4286578688)) then (ctor Option.some [Nat] 0) else (if ((1092616192 <=? word) && (word <=? 2139095040)) then (ctor Option.some [Nat] word) else (ctor Option.none [Nat]))))
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
@@ -4444,6 +4524,13 @@ theorem{
   name: extendedUnitNarrowsAfterAddition,
   parameters: [],
   statement: ((exponentialUnitPhases true 1) = 9),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gatedLinearBindsEveryInput,
+  parameters: [scale : Nat, sequences : Nat],
+  statement: ((sourceBindings (ctor CopyMode.gatedLinear scale sequences)) = (ctor GraphResponse.bindings 31 0 0 false 3)),
   proof: reflexivity{}
 }
 
