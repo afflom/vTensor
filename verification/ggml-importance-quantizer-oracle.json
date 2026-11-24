@@ -409,5 +409,63 @@
         ]
       }
     }
+  },
+  "eight_lane_neighborhoods": {
+    "initializer": "ggml/src/ggml-quants.c:iq2xs_init_impl",
+    "source_sha256": "1665bffa9c0ef0e692f8799523a729879960a6aa07adaa32f9efb41f7076a3da",
+    "transcript": "ggml-eight-lane-neighborhoods.tsv.gz",
+    "uncompressed_sha256": "844d459102efa4fa7397f63920bcbdd47d307e723238e4af5b82eb550c263d54",
+    "columns": [
+      "ggml_type",
+      "ternary_pattern",
+      "exact",
+      "candidate_count",
+      "ordered_candidate_ordinals..."
+    ],
+    "patterns_per_grid": 6561,
+    "check": "Enumerate all eight-lane ternary inputs. Compare exact membership and every GGML candidate ordinal with squared distances ranked against ggml-common.h. Break ties by ascending grid ordinal. IQ1_S and IQ1_M share one GGML directory.",
+    "grids": {
+      "IQ2_XXS": {
+        "formats": [
+          "IQ2_XXS"
+        ],
+        "exact_patterns": 256,
+        "candidates": 113413,
+        "max_candidates": 150,
+        "off_grid_singletons": 0,
+        "sha256": "4b9ff4b0f5fd178e4a228fe8f4ad001392bedea0506523ebe27c7f193eea0c7a"
+      },
+      "IQ2_XS": {
+        "formats": [
+          "IQ2_XS"
+        ],
+        "exact_patterns": 512,
+        "candidates": 182233,
+        "max_candidates": 292,
+        "off_grid_singletons": 0,
+        "sha256": "f4e432ae4a0c320cedacb27e60f88b4a8a27c4486d8ca9851f36eb3d8e8e64c2"
+      },
+      "IQ2_S": {
+        "formats": [
+          "IQ2_S"
+        ],
+        "exact_patterns": 1024,
+        "candidates": 45740,
+        "max_candidates": 70,
+        "off_grid_singletons": 925,
+        "sha256": "30a85bd61e3b756ea3bb773ecd4a1319504f05f81a92bc6d360c376fe90c218c"
+      },
+      "IQ1_S": {
+        "formats": [
+          "IQ1_S",
+          "IQ1_M"
+        ],
+        "exact_patterns": 2048,
+        "candidates": 329769,
+        "max_candidates": 205,
+        "off_grid_singletons": 0,
+        "sha256": "e5ff2a107fa72bbf5e01c125c2b7bca1297c47dcfda1ed2abf20105466f3efe1"
+      }
+    }
   }
 }
