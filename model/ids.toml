@@ -1080,3 +1080,9 @@ id = "VT-168"
 level = "build"
 suite = "native-backend"
 statement = "Prism and Verdant scatter F32 and F16 rows into signed I32 storage against original GGML CPU output"
+
+[[id]]
+id = "VT-169"
+level = "build"
+suite = "native-backend"
+statement = "Prism and Verdant add packed rows to F32 addends and store every directly encoded GGML CPU result type"

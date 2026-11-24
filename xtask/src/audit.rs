@@ -325,55 +325,8 @@ mod tests {
 
     use super::*;
 
-    use crate::test_repo::TestRepo;
-
-    #[derive(serde::Deserialize)]
-    struct LimitFixture {
-        ids: String,
-        manifest: String,
-        source: String,
-        test: Option<String>,
-        expect: Vec<String>,
-    }
-
-    fn check_limits_cases(name: &str, count: usize) {
-        type Fixtures = std::collections::BTreeMap<String, Vec<LimitFixture>>;
-        static CASES: std::sync::LazyLock<Fixtures> = std::sync::LazyLock::new(|| {
-            let bytes = include_bytes!("../../verification/failure-audit-fixtures.json");
-            assert_eq!(
-                repo_model::artifact::sha256_hex(bytes),
-                "a68b9c1f9804bed54e3917f5a4ee74a0d3684925f59772be8903229634d3e0d5"
-            );
-            serde_json::from_slice(bytes).unwrap()
-        });
-        let cases = &CASES[name];
-        assert_eq!(cases.len(), count);
-        for case in cases {
-            let repo = TestRepo::new(name);
-            repo.registers(&case.ids, "authority = []");
-            repo.write("crates/shipped/Cargo.toml", &case.manifest);
-            repo.write("crates/shipped/src/lib.rs", &case.source);
-            if let Some(test) = &case.test {
-                repo.write("crates/shipped/tests/negative.rs", test);
-            }
-            let observed = crate::with_model(&repo.root, check_limits).map_err(|e| e.to_string());
-            if case.expect.is_empty() {
-                observed.unwrap();
-            } else {
-                let errors: Vec<_> = case.expect.iter().map(String::as_str).collect();
-                crate::test_repo::rejected(observed, &errors);
-            }
-        }
-    }
-
-    macro_rules! limit_fixtures {
-        ($( $name:ident => $count:literal ),+ $(,)?) => { $(
-            #[test]
-            fn $name() { check_limits_cases(stringify!($name), $count); }
-        )+ };
-    }
-
-    limit_fixtures! {
+    crate::test_repo::repository_cases! {
+        "limits", |repo| crate::with_model(&repo.root,check_limits);
         a_crate_that_does_not_ship_is_not_audited => 1,
         a_declaration_is_a_pair_and_is_made_once => 3,
         a_declared_failure_type_passes => 1,

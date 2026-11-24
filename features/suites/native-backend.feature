@@ -674,3 +674,9 @@ Feature: native-backend
     Given fractional and signed rows in both source formats with I32 or I64 indices
     When GGML scatters into dense storage or an offset view with padded strides
     Then every destination and guard byte matches the pinned CPU and a late invalid index or truncation preserves the destination
+
+  @VT-169 @build
+  Scenario: Prism and Verdant add packed rows to F32 addends and store every directly encoded GGML CPU result type
+    Given 25 packed inputs and 25 destination types with a callable CPU encoder
+    When GGML constructs explicit-output or same-storage copied and in-place additions
+    Then the sole-provider scheduler places the graph and complete results match the original CPU bytes

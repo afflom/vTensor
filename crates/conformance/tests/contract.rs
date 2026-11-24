@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn signed_indexed_rows_vt_168() { "integer-rows", 8, ["typed"] }
     fn activation_q8_stores_vt_167() { "activation-q8", 20, ["typed"] }
     fn narrow_wide_casts_vt_166() { "wide-narrow", 944, ["pointwise"] }
@@ -1276,7 +1277,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "d2c1a272324c85fd5b3c54c0e41e537f0bbab04543c80746fdebb8bb4a56c5f9",
+            "b38feab7c4f92fbffc9f9a1447de1f486d20106cb13c2aa0150f347c52b59330",
         )
     });
 
@@ -1798,6 +1799,7 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
 #include <filesystem>
 #include <limits>
 #include <numeric>
+#include <map>
 #include <vector>
 #include <dlfcn.h>
 #include <sys/wait.h>
@@ -2106,6 +2108,47 @@ int main(int argc, char **argv) {
 
         }
         return finish(expected.size());
+    }
+    if (!strcmp(argv[3],"packed-add")) {
+        auto read_bytes=[](size_t count) {
+            std::vector<unsigned char> bytes(count);
+            for (auto &byte:bytes) {unsigned value;if (scanf("%2x",&value)!=1) return std::vector<unsigned char>{};byte=static_cast<unsigned char>(value);}
+            return bytes;
+        };
+        std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
+        int n=0; CHECK(scanf("%d",&n)==1 && n>0);
+        for (int i=0;i<n;++i) {
+            int type,width; CHECK(scanf("%d%d",&type,&width)==2 && width>0);
+            auto &bytes=sources[{type,width}]; CHECK(bytes.empty());
+            bytes=read_bytes(2*ggml_row_size(ggml_type(type),width)); CHECK(!bytes.empty());
+        }
+        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==625);
+        size_t cases=0;
+        for (int p=0;p<pairs;++p) {
+            int from,to,width; CHECK(scanf("%d%d%d",&from,&to,&width)==3);
+            auto &data=sources.at({from,width});
+            const auto expected=read_bytes(2*ggml_row_size(ggml_type(to),width)); CHECK(!expected.empty());
+            for (int inplace=0;inplace<=(from==to);++inplace) {
+                graph_fixture ctx(8); CHECK(ctx);
+                auto x=ggml_new_tensor_2d(ctx,ggml_type(from),width,2), y=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,width,2);
+                auto out=inplace?ggml_add_inplace(ctx,x,y):ggml_add_cast(ctx,x,y,ggml_type(to));
+                if (!inplace && from==to) {
+                    auto ordinary=ggml_add(ctx,x,y);
+                    CHECK(ordinary->op==out->op && ordinary->type==out->type && ggml_are_same_shape(ordinary,out) && ggml_are_same_stride(ordinary,out));
+                    CHECK(std::equal(std::begin(out->src),std::end(out->src),ordinary->src) && !memcmp(ordinary->op_params,out->op_params,sizeof(out->op_params)) && ordinary->flags==out->flags && !ordinary->view_src && !out->view_src);
+                    ++cases;
+                }
+                CHECK(ggml_backend_supports_op(backend,out));
+                auto graph=ctx.build(out);CHECK(ctx.placed(graph,backend));
+                ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend));CHECK(ctx.storage);
+                ggml_backend_tensor_set(x,data.data(),0,data.size());
+                for (int i=0;i<2*width;++i) ggml_set_f32_1d(y,i,(float((13*i+7)%29)-14.f)/32.f);
+                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+                if (tensor_bytes(out)!=expected) {fprintf(stderr,"packed addition differs for %d -> %d inplace %d\n",from,to,inplace);return 2;}
+                ++cases;
+            }
+        }
+        return finish(cases);
     }
     const bool integer_rows=!strcmp(argv[3],"integer-rows");
     if (integer_rows || !strcmp(argv[3],"activation-q8")) {

@@ -177,6 +177,64 @@ mod test_repo {
         }
     }
 
+    #[derive(serde::Deserialize)]
+    struct RepositoryCase {
+        files: std::collections::BTreeMap<String, String>,
+        #[serde(default)]
+        dirs: Vec<String>,
+        expect: Vec<String>,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct Suite {
+        base: std::collections::BTreeMap<String, String>,
+        cases: std::collections::BTreeMap<String, Vec<RepositoryCase>>,
+    }
+
+    pub fn replay(
+        suite: &str,
+        name: &str,
+        count: usize,
+        check: impl Fn(&TestRepo) -> Result<(), super::Fail>,
+    ) {
+        static SUITES: std::sync::LazyLock<std::collections::BTreeMap<String, Suite>> =
+            std::sync::LazyLock::new(|| {
+                let bytes = include_bytes!("../../verification/repository-gate-fixtures.json");
+                assert_eq!(
+                    repo_model::artifact::sha256_hex(bytes),
+                    "c72231192e8d2e034efef570ddd3f719d54a0562815a58b924e202f5034ba8d5"
+                );
+                serde_json::from_slice(bytes).unwrap()
+            });
+        let suite = &SUITES[suite];
+        let cases = &suite.cases[name];
+        assert_eq!(cases.len(), count);
+        for case in cases {
+            let repo = TestRepo::new(name);
+            for (path, text) in suite.base.iter().chain(&case.files) {
+                repo.write(path, text);
+            }
+            for path in &case.dirs {
+                fs::create_dir_all(repo.root.join(path)).unwrap();
+            }
+            let observed = check(&repo);
+            if case.expect.is_empty() {
+                observed.unwrap();
+            } else {
+                let errors: Vec<_> = case.expect.iter().map(String::as_str).collect();
+                rejected(observed.map_err(|e| e.to_string()), &errors);
+            }
+        }
+    }
+
+    macro_rules! repository_cases {
+        ($suite:literal, $gate:expr; $( $name:ident => $count:literal ),+ $(,)?) => { $(
+            #[test]
+            fn $name() { crate::test_repo::replay($suite,stringify!($name),$count,$gate); }
+        )+ };
+    }
+    pub(crate) use repository_cases;
+
     pub fn rejected(result: Result<(), String>, needles: &[&str]) {
         let message = result.expect_err("the gate must reject this fixture");
         for needle in needles {
@@ -195,143 +253,26 @@ mod tests {
     //! the template's `authorities.toml` is empty, and a row in it would be
     //! copied into every repository cut from the template.
 
-    use repo_model::artifact::sha256_hex as hex;
-
     use super::*;
 
-    /// The checksum a directory artifact records: SHA-256 over one
-    /// `<sha256 of file>  <path>` line per file, in byte order of the paths.
-    fn manifest(files: &[(&str, &str)]) -> String {
-        let mut files = files.to_vec();
-        files.sort();
-        let lines: String = files
-            .iter()
-            .map(|(path, text)| format!("{}  {path}\n", hex(text.as_bytes())))
-            .collect();
-        hex(lines.as_bytes())
+    fn check_authority_artifact(repo: &test_repo::TestRepo) -> Result<(), Fail> {
+        let model = Model::load(&repo.root.join("model"))?;
+        repo.write("CONFORMANCE.md", codegen::render_conformance(&model));
+        check_model(&repo.root, false).map(drop)
     }
 
-    const CORPUS: [(&str, &str); 3] = [("a.json", "[]"), ("n_b.json", "[1,"), ("sub/c.json", "{}")];
-
-    use super::test_repo::TestRepo;
-
-    impl TestRepo {
-        /// A repository whose one authority names `artifact` and records
-        /// `checksum`, with `CORPUS` committed under `data/corpus`.
-        fn artifact(name: &str, artifact: Option<&str>, checksum: &str) -> Self {
-            let fixture = Self::new(name);
-            for (path, text) in CORPUS {
-                fixture.write(format!("data/corpus/{path}"), text);
-            }
-            fixture.write("data/single.txt", "one file");
-            let artifact_line = artifact
-                .map(|a| format!("artifact = \"{a}\"\n"))
-                .unwrap_or_default();
-            let reason = if checksum == "none" {
-                "checksum_reason = \"nothing is committed\"\n"
-            } else {
-                ""
-            };
-            fixture.registers(
-                "id = []",
-                &format!(
-                    "[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\n\
-                     citation = \"Somebody, https://example.invalid/corpus\"\n\
-                     checksum = \"{checksum}\"\n{reason}{artifact_line}\
-                     statement = \"What the corpus says.\"\n"
-                ),
-            );
-            let model = Model::load(&fixture.root.join("model")).expect("the fixture model loads");
-            fixture.write("CONFORMANCE.md", codegen::render_conformance(&model));
-            fixture
-        }
-
-        fn check(&self) -> Result<(), String> {
-            check_model(&self.root, false)
-                .map(drop)
-                .map_err(|e| e.to_string())
-        }
-    }
-
-    #[test]
-    fn a_committed_directory_with_its_recorded_checksum_passes() {
-        let f = TestRepo::artifact("dir-ok", Some("data/corpus"), &manifest(&CORPUS));
-        f.check()
-            .expect("the recorded checksum is the computed one");
-    }
-
-    #[test]
-    fn a_committed_file_with_its_recorded_checksum_passes() {
-        let f = TestRepo::artifact("file-ok", Some("data/single.txt"), &hex(b"one file"));
-        f.check()
-            .expect("a file's checksum is the SHA-256 of its bytes");
-    }
-
-    #[test]
-    fn a_committed_artifact_with_no_checksum_fails() {
-        let f = TestRepo::artifact("no-checksum", Some("data/corpus"), "none");
-        test_repo::rejected(
-            f.check(),
-            &["A-CORPUS", "data/corpus", "records no checksum"],
-        );
-    }
-
-    #[test]
-    fn a_committed_artifact_whose_checksum_does_not_match_fails() {
-        let f = TestRepo::artifact("altered", Some("data/corpus"), &manifest(&CORPUS));
-        std::fs::write(f.root.join("data/corpus/a.json"), "[ ]").expect("alter a file");
-        test_repo::rejected(
-            f.check(),
-            &["A-CORPUS", "does not match", "recorded", "computed"],
-        );
-    }
-
-    #[test]
-    fn a_file_added_to_or_removed_from_the_artifact_changes_its_checksum() {
-        let f = TestRepo::artifact("added", Some("data/corpus"), &manifest(&CORPUS));
-        std::fs::write(f.root.join("data/corpus/extra.json"), "1").expect("add a file");
-        test_repo::rejected(f.check(), &["A-CORPUS", "does not match"]);
-        let g = TestRepo::artifact("removed", Some("data/corpus"), &manifest(&CORPUS));
-        std::fs::remove_file(g.root.join("data/corpus/sub/c.json")).expect("remove a file");
-        test_repo::rejected(g.check(), &["A-CORPUS", "does not match"]);
-    }
-
-    #[test]
-    fn a_checksum_with_no_artifact_to_check_fails() {
-        let f = TestRepo::artifact("unchecked", None, &manifest(&CORPUS));
-        test_repo::rejected(f.check(), &["A-CORPUS", "names no `artifact`"]);
-    }
-
-    #[test]
-    fn an_artifact_that_is_not_committed_fails() {
-        let f = TestRepo::artifact("missing", Some("data/absent"), &manifest(&CORPUS));
-        test_repo::rejected(f.check(), &["A-CORPUS", "data/absent", "is not committed"]);
-    }
-
-    #[test]
-    fn an_artifact_outside_the_repository_fails() {
-        for path in ["../outside", "/etc/hostname", "data/../../outside"] {
-            let f = TestRepo::artifact("outside", Some(path), &manifest(&CORPUS));
-            test_repo::rejected(
-                f.check(),
-                &["A-CORPUS", "relative path inside the repository"],
-            );
-        }
-    }
-
-    #[test]
-    fn a_checksum_that_is_not_a_sha256_fails() {
-        for bad in ["abc", &manifest(&CORPUS).to_uppercase(), "sha256:deadbeef"] {
-            let f = TestRepo::artifact("not-hex", Some("data/corpus"), bad);
-            test_repo::rejected(f.check(), &["A-CORPUS", "64 lowercase hex digits"]);
-        }
-    }
-
-    #[test]
-    fn an_artifact_with_nothing_in_it_fails() {
-        let f = TestRepo::artifact("empty", Some("data/empty"), &hex(b""));
-        std::fs::create_dir_all(f.root.join("data/empty")).expect("mkdir");
-        test_repo::rejected(f.check(), &["A-CORPUS", "data/empty", "no files"]);
+    test_repo::repository_cases! {
+        "artifacts", check_authority_artifact;
+        a_checksum_that_is_not_a_sha256_fails => 3,
+        a_checksum_with_no_artifact_to_check_fails => 1,
+        a_committed_artifact_whose_checksum_does_not_match_fails => 1,
+        a_committed_artifact_with_no_checksum_fails => 1,
+        a_committed_directory_with_its_recorded_checksum_passes => 1,
+        a_committed_file_with_its_recorded_checksum_passes => 1,
+        a_file_added_to_or_removed_from_the_artifact_changes_its_checksum => 2,
+        an_artifact_outside_the_repository_fails => 3,
+        an_artifact_that_is_not_committed_fails => 1,
+        an_artifact_with_nothing_in_it_fails => 1,
     }
 
     #[test]

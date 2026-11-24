@@ -1,0 +1,21 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "6cd8ffea63fa3168164e08505f8baf290c67cdd2",
+  "provider_sha256": "929d476a68490b9d40c21bb7794b62eae77e1ad0e2e02ae36b114653fd98847d",
+  "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "operations": [
+    "MUL_MAT",
+    "MUL_MAT_ID"
+  ],
+  "weight_types": 25,
+  "prepacked_activation_types": [
+    "Q8_0",
+    "Q8_1",
+    "Q8_K"
+  ],
+  "executed_cpu_graphs": 50,
+  "baseline_provider_refusals": 50,
+  "reference": "Original GGML CPU quantize_chunk constructed weights; the original CPU activation from_float callback encoded both activation columns in the weight type's registered vec_dot_type. Three output rows, two stored activation blocks per column, reversed expert IDs 1/0. Each graph produced six F32 values.",
+  "table": "ggml-prepacked-matrix-reference.tsv",
+  "table_sha256": "228264faad98248ef1daf103dba50c1fbe07b138a6d5ceb4750bdd22e6ba0913"
+}

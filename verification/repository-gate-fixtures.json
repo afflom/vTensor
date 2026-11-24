@@ -1,0 +1,458 @@
+{
+  "limits": {
+    "base": {
+      "model/authorities.toml": "spec = \"template/1\"\nauthority = []\n",
+      "model/ledger.toml": "spec = \"template/1\"\nclaim = []\n"
+    },
+    "cases": {
+      "a_crate_that_does_not_ship_is_not_audited": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\nid = []\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\npublish = false\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, Other> { Ok(0) }\n"
+          },
+          "expect": []
+        }
+      ],
+      "a_declaration_is_a_pair_and_is_made_once": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "OV-01",
+            "names no negative test"
+          ]
+        },
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "OV-01",
+            "declares no failure type"
+          ]
+        },
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n[[id]]\nid = \"OV-03\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"Declared again.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "Overflow",
+            "OV-01",
+            "OV-03",
+            "declared twice"
+          ]
+        }
+      ],
+      "a_declared_failure_type_passes": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub type R<T> = Result<T, Overflow>;\npub struct Overflow;\npub fn f(x: u8) -> Result<u8, crate::Overflow> { Ok(x) }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": []
+        }
+      ],
+      "a_declared_type_whose_negative_test_is_not_registered_fails": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-09\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "OV-01",
+            "`Overflow`",
+            "OV-09",
+            "not a registered ID"
+          ]
+        }
+      ],
+      "a_declared_type_without_its_negative_test_fails": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n"
+          },
+          "expect": [
+            "R5",
+            "`Overflow`",
+            "OV-02",
+            "no test name ends in `ov_02`"
+          ]
+        }
+      ],
+      "a_negative_test_is_a_build_claim": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"open\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, Overflow> { Ok(0) }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "OV-02",
+            "must be a `build` claim"
+          ]
+        }
+      ],
+      "a_result_broken_across_lines_is_read_whole": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Overflow,\n> { body() }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": []
+        },
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<\n    Vec<(u8, u8)>,\n    Other,\n> { body() }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "src/lib.rs:1",
+            "`Other`",
+            "not declared"
+          ]
+        }
+      ],
+      "a_result_in_a_comment_or_a_test_module_is_not_audited": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\nid = []\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "// fn f() -> Result<u8, Other>\npub fn g() {}\n#[cfg(test)]\nmod tests {\n    fn h() -> Result<u8, Other> { Ok(0) }\n}\n"
+          },
+          "expect": []
+        }
+      ],
+      "an_alias_that_hides_the_error_type_fails": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> std::io::Result<u8> { Ok(0) }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "R5",
+            "names no error type"
+          ]
+        },
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8> { Ok(0) }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "R5",
+            "names no error type"
+          ]
+        }
+      ],
+      "an_undeclared_failure_type_fails": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, Other> { Ok(0) }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "R5",
+            "src/lib.rs:1",
+            "`Other`",
+            "not declared"
+          ]
+        }
+      ],
+      "no_error_type_is_sanctioned_without_a_declaration": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\nid = []\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, NotAProduct> { Ok(0) }\n"
+          },
+          "expect": [
+            "R5",
+            "`NotAProduct`",
+            "not declared"
+          ]
+        },
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\nid = []\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, ObservedBound> { Ok(0) }\n"
+          },
+          "expect": [
+            "R5",
+            "`ObservedBound`",
+            "not declared"
+          ]
+        },
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\nid = []\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, KappaError> { Ok(0) }\n"
+          },
+          "expect": [
+            "R5",
+            "`KappaError`",
+            "not declared"
+          ]
+        }
+      ],
+      "only_a_bare_type_name_is_a_declared_name": [
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<u8, Box<dyn Overflow>> { Ok(0) }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "R5",
+            "`Box<dyn Overflow>`",
+            "not declared"
+          ]
+        },
+        {
+          "files": {
+            "model/ids.toml": "spec = \"template/1\"\n\n[[id]]\nid = \"OV-01\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"A value past the bound is refused as Overflow.\"\nfailure = \"Overflow\"\nnegative = \"OV-02\"\n\n[[id]]\nid = \"OV-02\"\nlevel = \"build\"\nsuite = \"fixture\"\nstatement = \"The refusal of a value past the bound is observed.\"\n\n",
+            "crates/shipped/Cargo.toml": "[package]\nname = \"shipped\"\nversion = \"0.1.0\"\n",
+            "crates/shipped/src/lib.rs": "pub fn f() -> Result<fn(u8) -> u8, Other> { Ok(id) }\n",
+            "crates/shipped/tests/negative.rs": "#[test]\nfn refuses_a_value_past_the_bound_ov_02() {}\n"
+          },
+          "expect": [
+            "R5",
+            "`Other`",
+            "not declared"
+          ]
+        }
+      ]
+    }
+  },
+  "artifacts": {
+    "base": {
+      "data/corpus/n_b.json": "[1,",
+      "data/single.txt": "one file",
+      "model/ids.toml": "spec = \"template/1\"\nid = []\n",
+      "model/ledger.toml": "spec = \"template/1\"\nclaim = []\n"
+    },
+    "cases": {
+      "a_checksum_that_is_not_a_sha256_fails": [
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"abc\"\nartifact = \"data/corpus\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "64 lowercase hex digits"
+          ]
+        },
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"B5B93C0CAEF0921042DE61802444AAB8B223B0CFC07C73FD1F6A9761CC616D35\"\nartifact = \"data/corpus\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "64 lowercase hex digits"
+          ]
+        },
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"sha256:deadbeef\"\nartifact = \"data/corpus\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "64 lowercase hex digits"
+          ]
+        }
+      ],
+      "a_checksum_with_no_artifact_to_check_fails": [
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "names no `artifact`"
+          ]
+        }
+      ],
+      "a_committed_artifact_whose_checksum_does_not_match_fails": [
+        {
+          "files": {
+            "data/corpus/a.json": "[ ]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nartifact = \"data/corpus\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "does not match",
+            "recorded",
+            "computed"
+          ]
+        }
+      ],
+      "a_committed_artifact_with_no_checksum_fails": [
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"none\"\nchecksum_reason = \"nothing is committed\"\nartifact = \"data/corpus\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "data/corpus",
+            "records no checksum"
+          ]
+        }
+      ],
+      "a_committed_directory_with_its_recorded_checksum_passes": [
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nartifact = \"data/corpus\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": []
+        }
+      ],
+      "a_committed_file_with_its_recorded_checksum_passes": [
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"5a62d4db4ce377b04f588b21222bfc34327396698cddc75e09a4a9862b07a2a6\"\nartifact = \"data/single.txt\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": []
+        }
+      ],
+      "a_file_added_to_or_removed_from_the_artifact_changes_its_checksum": [
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/extra.json": "1",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nartifact = \"data/corpus\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "does not match"
+          ]
+        },
+        {
+          "dirs": [
+            "data/corpus/sub"
+          ],
+          "files": {
+            "data/corpus/a.json": "[]",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nartifact = \"data/corpus\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "does not match"
+          ]
+        }
+      ],
+      "an_artifact_outside_the_repository_fails": [
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nartifact = \"../outside\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "relative path inside the repository"
+          ]
+        },
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nartifact = \"/etc/hostname\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "relative path inside the repository"
+          ]
+        },
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nartifact = \"data/../../outside\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "relative path inside the repository"
+          ]
+        }
+      ],
+      "an_artifact_that_is_not_committed_fails": [
+        {
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"b5b93c0caef0921042de61802444aab8b223b0cfc07c73fd1f6a9761cc616d35\"\nartifact = \"data/absent\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "data/absent",
+            "is not committed"
+          ]
+        }
+      ],
+      "an_artifact_with_nothing_in_it_fails": [
+        {
+          "dirs": [
+            "data/empty"
+          ],
+          "files": {
+            "data/corpus/a.json": "[]",
+            "data/corpus/sub/c.json": "{}",
+            "model/authorities.toml": "spec = \"template/1\"\n[[authority]]\nid = \"A-CORPUS\"\nname = \"A corpus\"\ncitation = \"Somebody, https://example.invalid/corpus\"\nchecksum = \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\nartifact = \"data/empty\"\nstatement = \"What the corpus says.\"\n\n"
+          },
+          "expect": [
+            "A-CORPUS",
+            "data/empty",
+            "no files"
+          ]
+        }
+      ]
+    }
+  }
+}

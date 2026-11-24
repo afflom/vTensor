@@ -1,0 +1,28 @@
+{
+  "requirement": "VT-169",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "prism_root": "PrismTemplateContract.TypedArithmetic.evaluate",
+  "semantic_id": "de49312457b0d235ad4bbcf0fa162a675e6472f13c7cf999a438e546c16b3919",
+  "attestation": "575870683c223263f1c667116d6b84af35c16f8bb38f426826acbc1cf468d493",
+  "verdant_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560",
+  "numerical_bindings": [
+    "decode_storage_block",
+    "evaluate_f32_scalar",
+    "encode_weight_block",
+    "encode_affine_q8_block",
+    "encode_grouped_q8_block",
+    "convert_float_storage",
+    "evaluate_small_float",
+    "truncate_signed_word_f32"
+  ],
+  "source_types": 25,
+  "destination_types": 25,
+  "placed_and_byte_compared_graphs": 643,
+  "add_cast": 625,
+  "add_inplace": 18,
+  "equivalent_ordinary_add_descriptors": 18,
+  "reference": "ggml-packed-add-oracle.json",
+  "result": "All stored bytes matched the pinned generic CPU. The separately built native CPU agreed in 647 of 661 reference graphs. The other 14 differ in Q8_0 or Q8_1 rounding. Both reference runs used identical input buffers.",
+  "control": "Subtraction in place of addition on Q2_0 to E4M3 failed the byte comparator. Restored addition and replayed all 661 constructor forms.",
+  "source_lines": 12672
+}

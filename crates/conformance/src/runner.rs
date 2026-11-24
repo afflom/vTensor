@@ -1335,7 +1335,7 @@ fn execute_word(
 }
 
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
-    use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode};
+    use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as AddRow};
     use BackendError::InvalidTensor;
     let vtensor_typed::Adt2::C0(count, capacity, importance, operation, ..) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
@@ -1343,8 +1343,11 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
     use linear::RowRankingF32;
     let kind = weight_encoder(tensor.ty);
-    let staged =
-        kind.is_some() || matches!(tensor.ty, 9 | 15) || (*operation == 41 && tensor.ty == 26);
+    let adding = *operation == 100;
+    let staged = adding
+        || kind.is_some()
+        || matches!(tensor.ty, 9 | 15)
+        || (*operation == 41 && tensor.ty == 26);
     // Word instructions can update their input in place. Only staged row conversion
     // retains an immutable input slice throughout the instruction loop.
     let source = staged.then(|| TensorInput::new(left)).transpose()?;
@@ -1360,63 +1363,98 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         .map(|word| workspace(lanes as u64, f32::from_bits(word as u32)))
         .transpose()?;
     let output = graph_tensor_region(tensor, span as usize)?;
-    let mut values = workspace(if staged { lanes as u64 } else { 0 }, 0.0)?;
+    let width = if adding {
+        tensor.ne[0] as u64
+    } else if staged {
+        lanes as u64
+    } else {
+        0
+    };
+    let mut values = workspace(width, 0.0)?;
+    let addend = if adding { tensor.input(1)? } else { None };
+    let mut addends = workspace(if adding { width } else { 0 }, 0.0)?;
     for index in 0..*count {
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
                 .map_err(BackendError::overflow)?;
         match instruction {
-            Encode(from, to) => {
+            Encode(from, to) | AddRow(from, _, to) => {
                 source
                     .as_ref()
                     .ok_or(InvalidTensor)?
                     .decode(from, &mut values)?;
-                let start = encoded.len();
-                encoded.try_reserve(tensor.nb[0])?;
-                match tensor.ty {
-                    9 => {
-                        let row = linear::encode_affine_q8_block::<32>(
-                            values.as_slice().try_into().map_err(|_| InvalidTensor)?,
-                        )?;
-                        encoded.extend(row.symmetric.scale.to_ne_bytes());
-                        encoded.extend(row.scaled_sum.to_ne_bytes());
-                        encoded.extend(row.symmetric.codes.map(|code| code as u8));
+                if let AddRow(_, offset, _) = instruction {
+                    addend
+                        .as_ref()
+                        .ok_or(InvalidTensor)?
+                        .decode(offset, &mut addends)?;
+                    for (value, add) in values.iter_mut().zip(&addends) {
+                        *value = linear::evaluate_f32_scalar(0, *value, *add)?;
                     }
-                    15 => {
-                        let row = linear::encode_grouped_q8_block(
-                            values.as_slice().try_into().map_err(|_| InvalidTensor)?,
-                        )?;
-                        encoded.extend(row.scale.to_ne_bytes());
-                        encoded.extend(row.codes.map(|code| code as u8));
-                        encoded.extend(row.sums.into_iter().flat_map(i16::to_ne_bytes));
-                    }
-                    26 => {
-                        let word = linear::truncate_signed_word_f32(u64::from(values[0].to_bits()))
+                }
+                for (index, block_values) in values.chunks_exact(lanes).enumerate() {
+                    let displacement = index
+                        .checked_mul(tensor.nb[0])
+                        .ok_or(BackendError::Overflow)?
+                        as u64;
+                    let start = encoded.len();
+                    encoded.try_reserve(tensor.nb[0])?;
+                    match tensor.ty {
+                        9 => {
+                            let row = linear::encode_affine_q8_block::<32>(
+                                block_values.try_into().map_err(|_| InvalidTensor)?,
+                            )?;
+                            encoded.extend(row.symmetric.scale.to_ne_bytes());
+                            encoded.extend(row.scaled_sum.to_ne_bytes());
+                            encoded.extend(row.symmetric.codes.map(|code| code as u8));
+                        }
+                        15 => {
+                            let row = linear::encode_grouped_q8_block(
+                                block_values.try_into().map_err(|_| InvalidTensor)?,
+                            )?;
+                            encoded.extend(row.scale.to_ne_bytes());
+                            encoded.extend(row.codes.map(|code| code as u8));
+                            encoded.extend(row.sums.into_iter().flat_map(i16::to_ne_bytes));
+                        }
+                        0 | 1 | 30 | 43 => {
+                            let word =
+                                convert(0, tensor.ty as u64, u64::from(block_values[0].to_bits()))?;
+                            match tensor.ty {
+                                0 => encoded.extend((word as u32).to_ne_bytes()),
+                                43 => encoded.push(word as u8),
+                                _ => encoded.extend((word as u16).to_ne_bytes()),
+                            }
+                        }
+                        26 => {
+                            let word = linear::truncate_signed_word_f32(u64::from(
+                                block_values[0].to_bits(),
+                            ))
                             .map_err(BackendError::invalid)?
                             .ok_or(InvalidTensor)?;
-                        encoded.extend((word as u32).to_ne_bytes());
-                    }
-                    _ => {
-                        let kind = kind.ok_or(InvalidTensor)?;
-                        encoded.resize(start + tensor.nb[0], 0);
-                        let block = &mut encoded[start..];
-                        if let Some(weights) = uniform.as_deref() {
-                            linear::encode_importance_weight_block(
-                                &values,
-                                Some(weights),
-                                kind,
-                                block,
-                            )?;
-                        } else {
-                            linear::encode_weight_block(&values, kind, block)?;
+                            encoded.extend((word as u32).to_ne_bytes());
+                        }
+                        _ => {
+                            let kind = kind.ok_or(InvalidTensor)?;
+                            encoded.resize(start + tensor.nb[0], 0);
+                            let block = &mut encoded[start..];
+                            if let Some(weights) = uniform.as_deref() {
+                                linear::encode_importance_weight_block(
+                                    block_values,
+                                    Some(weights),
+                                    kind,
+                                    block,
+                                )?;
+                            } else {
+                                linear::encode_weight_block(block_values, kind, block)?;
+                            }
                         }
                     }
+                    if encoded.len() - start != tensor.nb[0] {
+                        return Err(InvalidTensor);
+                    }
+                    offsets.try_reserve(1)?;
+                    offsets.push(to.checked_add(displacement).ok_or(BackendError::Overflow)?);
                 }
-                if encoded.len() - start != tensor.nb[0] {
-                    return Err(InvalidTensor);
-                }
-                offsets.try_reserve(1)?;
-                offsets.push(to);
             }
             Rank(from, to, width, count, descending) => {
                 let (width, count) = (width as usize, count as usize);
