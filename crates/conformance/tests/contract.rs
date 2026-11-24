@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn timestep_embeddings_vt_141() { "upstream-TIMESTEP_EMBEDDING_BOUNDARIES", 5, ["pointwise"] }
     fn pool_gradients_vt_140() { "pool-gradients", 37, ["pointwise"] }
     fn column_gradients_vt_139() { "column-gradients", 64, ["pointwise"] }
     fn gaussian_error_graphs_vt_137() { "upstream-GAUSSIAN_ERROR", 48, ["typed", "pointwise"] }
@@ -388,9 +389,7 @@ fn verify_row_graphs() {
 #[test]
 fn fixture_generation_vt_35() {
     native_backend_oracle::fixture_input(0);
-    for probe in probes(35, 6, 0, 0) {
-        assert!(matches!(probe, vtensor_probes::Adt0::C6(true)));
-    }
+    assert!(probes(35, 6, 0, 0).all(|probe| matches!(probe, vtensor_probes::Adt0::C6(true))));
 }
 
 /// `VT-36`: Prism generates every arithmetic fixture descriptor and input word while preserving the complete frozen broadcasting and exceptional-word corpus and the independent GGML CPU numerical oracle
@@ -1308,7 +1307,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "af9aec11ac9dd06d809eda64b8845a891b207a27dbe0266a9b8edbac7f301d57",
+            "6892de029ad7ebd946c37652ae12662938454ccffe3a90b1de5d3bb18cd01b8e",
         )
     });
 

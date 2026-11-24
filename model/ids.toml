@@ -906,3 +906,9 @@ id = "VT-140"
 level = "build"
 suite = "native-backend"
 statement = "Prism scatters average and first-maximum pooling gradients through Verdant in upstream GGML window order"
+
+[[id]]
+id = "VT-141"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans timestep embedding frequencies and destination lanes and Verdant evaluates the circular functions against the imported GGML CPU"

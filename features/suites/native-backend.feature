@@ -500,3 +500,9 @@ Feature: native-backend
     Given an incoming pooling gradient and the original input across overlapping windows
     When vTensor accumulates each average or winning gradient
     Then every destination word agrees with the GGML CPU backend
+
+  @VT-141 @build
+  Scenario: Prism plans timestep embedding frequencies and destination lanes and Verdant evaluates the circular functions against the imported GGML CPU
+    Given GGML timesteps with even and odd embedding dimensions
+    When the provider emits cosine and sine halves for each timestep
+    Then the lanes and odd trailing zero agree with the pinned CPU backend

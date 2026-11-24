@@ -161,7 +161,8 @@ inductive{
     {name: crossEntropy, fields: [Bool, Nat, Nat]},
     {name: triangularSolve, fields: []},
     {name: columnGradient, fields: [ColumnAxis, ColumnAxis]},
-    {name: poolGradient, fields: [PoolGeometry, Nat]}
+    {name: poolGradient, fields: [PoolGeometry, Nat]},
+    {name: timestep, fields: [Nat]}
   ]
 }
 
@@ -1871,6 +1872,25 @@ definition{
 }
 
 definition{
+  name: timestepStep,
+  parameters: [index : Nat, destination : IndexContext, period : Nat],
+  result: GraphResponse,
+  body: (let width : Nat := (project destination u0);
+      (let rows : Nat := (project destination n1);
+      (let half : Nat := (prim quotient width 2 0 : Nat);
+      (let stride : Nat := (5 + (prim multiply 3 rows : Nat));
+      (let paired : Nat := (if (half =? 0) then 0 else (7 + (prim multiply half stride : Nat)));
+      (if (paired <=? index) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output (prim multiply 4 ((prim multiply (prim subtract index paired : Nat) width : Nat) + (prim multiply 2 half : Nat)) : Nat)) 4 4) else (if (index <? 7) then (if (index =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.wide 5) (ctor WordOperand.immediate ((positiveWord period) + (negativeWord period))) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (index =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.wide 2) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (index =? 2) then (if (period <? 2147483648) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 6) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4)) else (if (index =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.elementary 13 0 0) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (index =? 4) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 6) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (index =? 5) then (ctor GraphResponse.instruction (ctor WordOperation.wide 5) (ctor WordOperand.immediate half) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.wide 2) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4))))))) else (let relative : Nat := (prim subtract index 7 : Nat);
+      (let lane : Nat := (prim quotient relative stride 0 : Nat);
+      (let phase : Nat := (prim remainder relative stride 0 : Nat);
+      (if (phase <? 5) then (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.wide 5) (ctor WordOperand.immediate lane) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 3) 4 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.wide 2) (ctor WordOperand.scratch 3) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 3) 4 4) else (if (phase =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 3) 4 4) else (if (phase =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 3) (ctor WordOperand.scratch 3) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 3) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.elementary 16 0 0) (ctor WordOperand.scratch 3) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 3) 4 4))))) else (let at : Nat := (prim subtract phase 5 : Nat);
+      (let row : Nat := (prim quotient at 3 0 : Nat);
+      (let part : Nat := (prim remainder at 3 0 : Nat);
+      (if (part =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 (prim multiply 4 row : Nat)) (ctor WordOperand.scratch 3) (ctor WordTarget.scratch 4) 4 4) else (if (part =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.elementary 15 0 0) (ctor WordOperand.scratch 4) (ctor WordOperand.immediate 0) (ctor WordTarget.output (prim multiply 4 ((prim multiply row width : Nat) + lane) : Nat)) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.elementary 14 0 0) (ctor WordOperand.scratch 4) (ctor WordOperand.immediate 0) (ctor WordTarget.output (prim multiply 4 ((prim multiply row width : Nat) + (half + lane)) : Nat)) 4 4))))))))))))))))),
+  executable: true
+}
+
+definition{
   name: copyOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, mode : CopyMode],
   result: GraphResponse,
@@ -1896,6 +1916,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.optimizer adam => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.timestep period => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.poolGradient geometry cells => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.columnGradient x y => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.triangularSolve => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
@@ -2238,6 +2259,26 @@ definition{
 }
 
 definition{
+  name: timestepSteps,
+  parameters: [width : Nat, rows : Nat],
+  result: Nat,
+  body: (let half : Nat := (prim quotient width 2 0 : Nat);
+      ((if (half =? 0) then 0 else (7 + (prim multiply half (5 + (prim multiply 3 rows : Nat)) : Nat))) + (if ((prim remainder width 2 0 : Nat) =? 1) then rows else 0))),
+  executable: true
+}
+
+definition{
+  name: planTimestep,
+  parameters: [options : OperationParameters, source : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let width : Nat := (project options p0);
+      (let period : Nat := (project options p1);
+      (let rows : Nat := (project source n0);
+      (if ((((((((((((((project source ty) =? 0) && ((project output ty) =? 0)) && ((project source s0) =? 4)) && ((project output n0) =? width)) && ((project output n1) =? rows)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) && (width <? 2147483648)) && (period <? 4294967296)) && (contiguousWords output)) && ((prim multiply rows 4 : Nat) <=? (project source span))) && (signedCopySpan output (blockCount output 1))) && (separateTensors source output)) then (ctor PointwiseDecision.copyBlocks (if (rows =? 0) then 0 else (timestepSteps width rows)) 4 (indexContext source 1) (indexContext output 1) (ctor CopyMode.timestep period)) else (ctor PointwiseDecision.invalidShape))))),
+  executable: true
+}
+
+definition{
   name: planTwoSources,
   parameters: [
     operation : Nat,
@@ -2247,7 +2288,7 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 59) then (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 65) then (match right | Option.none => (planTimestep options left output) | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 59) then (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
     | Option.some original => (planPoolGradient options left original output)) else (if (operation =? 50) then (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
@@ -2267,7 +2308,7 @@ definition{
     | Option.none => false
     | Option.some value => true) output))) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -2313,6 +2354,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor GraphResponse.bindings 7 0 0 false 3)
     | CopyMode.optimizer adam => (ctor GraphResponse.bindings (if adam then 31 else 7) 0 0 false 12)
     | CopyMode.crossEntropy backward labelStride rows => (ctor GraphResponse.bindings (if backward then 7 else 3) 0 0 false 7)
+    | CopyMode.timestep period => (ctor GraphResponse.bindings 1 0 0 false 5)
     | CopyMode.poolGradient geometry cells => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.columnGradient x y => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.triangularSolve => (ctor GraphResponse.bindings 3 0 0 false 3)
@@ -2365,6 +2407,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.timestep period => 0
     | CopyMode.poolGradient geometry cells => 0
     | CopyMode.columnGradient x y => 0
     | CopyMode.triangularSolve => 0
@@ -2441,6 +2484,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (ctor WordOperation.invalid)
     | CopyMode.optimizer adam => (ctor WordOperation.invalid)
     | CopyMode.crossEntropy backward labelStride rows => (ctor WordOperation.invalid)
+    | CopyMode.timestep period => (ctor WordOperation.invalid)
     | CopyMode.poolGradient geometry cells => (ctor WordOperation.invalid)
     | CopyMode.columnGradient x y => (ctor WordOperation.invalid)
     | CopyMode.triangularSolve => (ctor WordOperation.invalid)
@@ -2493,6 +2537,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => 0
     | CopyMode.optimizer adam => 0
     | CopyMode.crossEntropy backward labelStride rows => 0
+    | CopyMode.timestep period => 0
     | CopyMode.poolGradient geometry cells => 0
     | CopyMode.columnGradient x y => 0
     | CopyMode.triangularSolve => 0
@@ -2852,6 +2897,7 @@ definition{
     | CopyMode.hyperconnectionCombination scale base eps iterations => (hyperconnectionCombinationStep index source scale base destination eps iterations flag)
     | CopyMode.optimizer adam => (optimizerStep index source adam)
     | CopyMode.crossEntropy backward labelStride rows => (crossEntropyStep index source destination backward labelStride rows flag)
+    | CopyMode.timestep period => (timestepStep index destination period)
     | CopyMode.poolGradient geometry cells => (poolGradientStep index source destination geometry cells flag)
     | CopyMode.columnGradient x y => (columnGradientStep index source destination x y)
     | CopyMode.triangularSolve => (triangularSolveStep index source destination flag)
@@ -2923,7 +2969,7 @@ definition{
   parameters: [request : GraphRequest],
   result: GraphResponse,
   body: (match request
-    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if ((((operation =? 82) || (operation =? 50)) || (operation =? 59)) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || tailPresent)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
+    | GraphRequest.plan operation options input0 input1 input2 input3 input4 tailPresent flags view output => (if (((((operation =? 82) || (operation =? 50)) || (operation =? 59)) || (operation =? 65)) && ((((suppliedTensor input2) || (suppliedTensor input3)) || (suppliedTensor input4)) || tailPresent)) then (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)) else (if ((operation =? 94) || (operation =? 95)) then (ctor GraphResponse.planned (planCrossEntropy (operation =? 95) input0 input1 input2 (match input3
       | Option.some descriptor => true
       | Option.none => (match input4
         | Option.some descriptor => true
@@ -4327,6 +4373,20 @@ theorem{
   name: maxGradientKeepsWinnerBeforeScatter,
   parameters: [],
   statement: ((poolGradientSteps true 6) = 22),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: unitTimestepIsAllZero,
+  parameters: [],
+  statement: ((timestepSteps 1 65) = 65),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: oddTimestepAddsOneLanePerRow,
+  parameters: [],
+  statement: ((timestepSteps 7 2) = ((timestepSteps 6 2) + 2)),
   proof: reflexivity{}
 }
 

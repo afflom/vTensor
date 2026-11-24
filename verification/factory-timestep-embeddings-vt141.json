@@ -1,0 +1,59 @@
+{
+  "requirement": "VT-141",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "production_verdant": "2.21.3",
+  "pointwise_result": "67ba68d1117974d36dd98747e59ecc836492141dc83013eb9857342a64ca4110",
+  "provider_sha256": "d1a6d5b3ed1c9b02f3fafb918bf04e84371d7d770f8995ab436af9f48ccd8350",
+  "provider_inputs_sha256": "15cc56d5f9e5fa6817efe70917ad197c2228cfe65ccf3bb97dc49bdd8be6b273",
+  "oracle_sha256": "faaf95218387ce74a6bebed760beef6a70c58080bfe0c599ff59e8c3b7586374",
+  "case_ordinals": {
+    "TIMESTEP_EMBEDDING": [
+      19135,
+      19137,
+      19138,
+      19139,
+      19140
+    ]
+  },
+  "passed": 5,
+  "continuous_factory_transcript_sha256": "e4ba40761f07143aeec6799651be58c30bd4950472fab5938873909c71cea684",
+  "supplemental": {
+    "graphs": 70,
+    "output_words": 3906,
+    "identical_words": 3206,
+    "maximum_finite_absolute_difference": 5.960464477539063e-08,
+    "width": [
+      1,
+      2,
+      3,
+      8,
+      17
+    ],
+    "max_period": [
+      1,
+      1000,
+      10000,
+      2147483647,
+      0,
+      -1,
+      -2147483648
+    ],
+    "input": [
+      "+0",
+      "-0",
+      "0.25",
+      "-0.25",
+      "1.5",
+      "-7.25",
+      "smallest positive binary32 subnormal",
+      "NaN",
+      "+Infinity"
+    ],
+    "layouts": "Contiguous vector and a two-row view with a one-word offset and two padding words per row. The upstream operator consumes the first row of timesteps.",
+    "cpu_transcript_sha256": "2227841ea93a72c4d44eea4a28420a35b6f87dc24d82770d2c6d99911e9fd9b6",
+    "provider_transcript_sha256": "4ae8264dd07af32771365e4af4a2ce474aff5b719c2df7c8396c673d8de1fa04",
+    "checks": "Signed zero and both unit values agree exactly. NaN classification matches. Each extra source and a mismatched dimension are refused before allocation. A rejected graph leaves the initialized output intact."
+  },
+  "mutation": "Selecting sine for the cosine half made the pinned factory comparison fail."
+}

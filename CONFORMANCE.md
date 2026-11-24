@@ -227,6 +227,7 @@ model does not sanction.
 | `VT-137` | `build` | Prism schedules GELU_ERF and GEGLU_ERF using the Verdant binary32 Gaussian error function |
 | `VT-139` | `build` | Prism accumulates one- and two-dimensional image-column gradients in GGML kernel order using Verdant binary32 addition |
 | `VT-140` | `build` | Prism scatters average and first-maximum pooling gradients through Verdant in upstream GGML window order |
+| `VT-141` | `build` | Prism plans timestep embedding frequencies and destination lanes and Verdant evaluates the circular functions against the imported GGML CPU |
 
 ## normalization-graphs
 
