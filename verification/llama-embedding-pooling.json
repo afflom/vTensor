@@ -1,0 +1,92 @@
+{
+  "implementation": "ea4fc79e62bba5a36c88dbe29f63896ea71f19c5",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "356b4c1e63005b67f79bc95d3d3625f9939ed077b97109eb38587f0df2903ed7",
+  "provider_inputs_sha256": "0e72d8f2b8e6fe4ad00c3e166b120143a1492825dc9a32de63572e32e7a4d617",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "model": "stories15M.gguf",
+  "model_sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+  "llama_library_sha256": "1e08c2203f5a02dc5a91a775929d955b1242b96716f5265faf68cd2c9f98187b",
+  "runner_sha256": "4d679aec7a2f2f1a922647b925a7a789947c6245867828e47681aae3331f9e23",
+  "runner_source_sha256": "feef16a58e586408084a63ac6197bb017dda28e6870a7dc6876773e57105899e",
+  "settings": {
+    "api": "llama_process, llama_batch_ext_set_output_embd, llama_get_embeddings_ith and llama_get_embeddings_seq",
+    "tokens": [
+      [
+        1,
+        22172,
+        29892,
+        278
+      ],
+      [
+        1,
+        1917
+      ]
+    ],
+    "ctx": 256,
+    "n_seq_max": 2,
+    "batch": 32,
+    "ubatch": 32,
+    "kv_unified": true,
+    "flash_attention": true,
+    "threads": 1,
+    "embeddings": true
+  },
+  "reference": "Pinned llama.cpp loaded in separate processes with exactly the CPU or vTensor backend. The CPU host buffer exports no owner device.",
+  "outputs": {
+    "cpu": {
+      "embeddings_sha256": "9b05bf977a477f9606cbf7a856881427e6d6010bcd2d9171625cce486da8811a",
+      "placements_sha256": "5d3cc3e8fddaa127a1afef372dbaf26cfd8b096b5e5911d44ba2e9b478e8904c"
+    },
+    "vtensor": {
+      "embeddings_sha256": "cc0b3c2983ae446bafdce44149365e5fcfa8f636c056479a36665f43a5a22a02",
+      "placements_sha256": "a4da51d9181b81846896d14cf06d3e40ef52fccf28234f871d8c6acd979004a8"
+    }
+  },
+  "pooling": [
+    {
+      "pooling_type": "NONE",
+      "vectors": 6,
+      "width": 288,
+      "placements_vtensor": 195,
+      "nmse": 6.0632878944929485e-09,
+      "max_abs": 0.004520893096923828
+    },
+    {
+      "pooling_type": "MEAN",
+      "vectors": 2,
+      "width": 288,
+      "placements_vtensor": 197,
+      "nmse": 4.2758935276565485e-09,
+      "max_abs": 0.002130746841430664,
+      "from_unpooled_max_abs": {
+        "cpu": 1.6689300537109375e-06,
+        "vtensor": 1.430511474609375e-06
+      }
+    },
+    {
+      "pooling_type": "CLS",
+      "vectors": 2,
+      "width": 288,
+      "placements_vtensor": 195,
+      "nmse": 4.9865736292951906e-11,
+      "max_abs": 0.00017321109771728516,
+      "from_unpooled_max_abs": {
+        "cpu": 0.0,
+        "vtensor": 0.0
+      }
+    },
+    {
+      "pooling_type": "LAST",
+      "vectors": 2,
+      "width": 288,
+      "placements_vtensor": 195,
+      "nmse": 3.47994630930867e-09,
+      "max_abs": 0.0014107227325439453,
+      "from_unpooled_max_abs": {
+        "cpu": 0.0,
+        "vtensor": 0.0
+      }
+    }
+  ]
+}
