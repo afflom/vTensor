@@ -165,9 +165,10 @@ definition{
 
 definition{
   name: requiresScalarActivation,
-  parameters: [w : Tensor, a : Tensor, full : Bool],
+  parameters: [op : Nat, w : Tensor, a : Tensor, full : Bool],
   result: Bool,
-  body: (if full then (if (prepackedActivation (project w kind) (project a kind) (project a s0)) then false else true) else false),
+  body: (if (((project a kind) =? 30) && (((op =? 28) && ((project w kind) =? 1)) || ((op =? 29) && ((project w kind) =? 30)))) then true else
+    (if full then (if (prepackedActivation (project w kind) (project a kind) (project a s0)) then false else true) else false)),
   executable: true
 }
 
@@ -241,11 +242,11 @@ definition{
   parameters: [request : Request],
   result: Response,
   body: (match request
-    | Request.graph op extra w a o full => (graphPlan op extra w a o (requiresScalarActivation w a full))
+    | Request.graph op extra w a o full => (graphPlan op extra w a o (requiresScalarActivation op w a full))
     | Request.column plan ordinal => (match (project plan expert)
       | Option.none => (ordinaryColumn plan ordinal)
       | Option.some layout => (if (ordinal <? (project plan visits)) then (ctor Response.readExpert ((prim multiply (prim remainder ordinal (project plan columns) 0 : Nat) (project layout indexLane) : Nat) + (prim multiply (prim quotient ordinal (project plan columns) 0 : Nat) (project layout indexToken) : Nat))) else (ctor Response.refused)))
-    | Request.indexedGraph op extra w a ids o full => (indexedPlan op extra w a ids o (requiresScalarActivation w a full))
+    | Request.indexedGraph op extra w a ids o full => (indexedPlan op extra w a ids o (requiresScalarActivation op w a full))
     | Request.expertColumn plan ordinal expert => (resolveExpert plan ordinal expert)
     | Request.row plan base row => (if (row <? (project plan rows)) then (ctor Response.weightOffset (base + (prim multiply row (project plan w1) : Nat))) else (ctor Response.refused))),
   executable: true,

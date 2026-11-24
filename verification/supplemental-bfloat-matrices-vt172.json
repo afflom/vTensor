@@ -1,0 +1,21 @@
+{
+  "requirement": "VT-172",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "semantic_id": "05f27ec10d52804259f8adcdaad28946eb57c7672096da94089eb235a4ce5f41",
+  "attestation": "0e2516afbfee333d4d47749ce5d26fcf0a6c0f4f98defdb08932e14d7ce326af",
+  "reference": "ggml-bfloat-matrix-oracle.json",
+  "prism_root": "PrismTemplateContract.QuantizedMatrix.evaluate",
+  "provider_sha256": "ab53cf1e4617e9895c9ad0804e261c08066be925cb68d76cc0d4a2095fb7e701",
+  "verdant_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560",
+  "graphs": 8,
+  "fractional_results": 24,
+  "exact_integer_results": 24,
+  "bit_identical_graphs": 5,
+  "max_nmse": 1.4884354007469964e-14,
+  "descriptor_baseline": "ggml-matrix-type-descriptors.json",
+  "descriptor_tuples_replayed": 2592,
+  "direct_cpu_tuples_placed": 116,
+  "all_placed": 141,
+  "negative_control": "Narrowing the width-68 indexed BF16 activation through F16 failed std::isfinite(value). Restored consumption at the stored precision and replayed the eight graphs.",
+  "source_lines": 12647
+}

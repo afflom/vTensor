@@ -221,7 +221,16 @@ mod tests {
     /// A fresh repository with mutually consistent empty registers.
     fn scratch(name: &str) -> TestRepo {
         let fixture = TestRepo::new(name);
-        fixture.registers("id = []", "authority = []");
+        for (file, key) in [
+            ("ids", "id"),
+            ("ledger", "claim"),
+            ("authorities", "authority"),
+        ] {
+            fixture.write(
+                format!("model/{file}.toml"),
+                format!("spec = \"template/1\"\n{key} = []\n"),
+            );
+        }
         for dir in ["features/suites", "crates/conformance/tests"] {
             std::fs::create_dir_all(fixture.root.join(dir)).unwrap();
         }
@@ -232,29 +241,18 @@ mod tests {
     fn scaffolded_capabilities_satisfy_the_meta_gate() {
         let fixture = scratch("ok");
         let root = &fixture.root;
-        new_capability(
-            root,
-            &args([
-                "CX-01",
-                "build",
-                "parsing",
-                "A \"parsed\" document round-trips",
-            ]),
-        )
-        .unwrap();
-        new_capability(
-            root,
-            &args(["CX-02", "open", "parsing", "Parsing throughput is measured"]),
-        )
-        .unwrap();
+        let statement = "A \"parsed\" document round-trips";
+        for row in [
+            ["CX-01", "build", "parsing", statement],
+            ["CX-02", "open", "parsing", "Parsing throughput is measured"],
+        ] {
+            new_capability(root, &args(row)).unwrap();
+        }
 
         let model = Model::load(&root.join("model")).unwrap();
         model.check().unwrap();
         assert_eq!(model.ids.id.len(), 2);
-        assert_eq!(
-            model.ids.id[0].statement,
-            "A \"parsed\" document round-trips"
-        );
+        assert_eq!(model.ids.id[0].statement, statement);
 
         let report =
             repo_model::conformance::check_honesty(root, &workspace_test_names(root)).unwrap();

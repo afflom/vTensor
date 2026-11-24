@@ -692,3 +692,9 @@ Feature: native-backend
     Given the original GGML precision setters and stored activations for 25 weight formats
     When ordinary and indexed products use each nondefault pair of documented precision settings
     Then all 1150 preallocation placements and scheduled results agree with the original GGML CPU
+
+  @VT-172 @build
+  Scenario: Ordinary F16 and indexed BF16 matrix products consume BF16 activation rows at their stored precision
+    Given original GGML CPU results for BF16 activations outside the F16 range
+    When vTensor schedules F16 matrix weights and reversed BF16 experts at four inner widths
+    Then 24 integer-valued outputs match the CPU words exactly and 24 fractional outputs meet the GGML tolerance

@@ -1098,3 +1098,9 @@ id = "VT-171"
 level = "build"
 suite = "native-backend"
 statement = "Stored Q8 activations retain their original GGML row products across all documented accumulation and activation precision settings"
+
+[[id]]
+id = "VT-172"
+level = "build"
+suite = "native-backend"
+statement = "Ordinary F16 and indexed BF16 matrix products consume BF16 activation rows at their stored precision"

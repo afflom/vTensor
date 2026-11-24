@@ -259,6 +259,7 @@ model does not sanction.
 | `VT-169` | `build` | Prism and Verdant add packed rows to F32 addends and store every directly encoded GGML CPU result type |
 | `VT-170` | `build` | Prism and Verdant consume stored Q8 activation blocks in ordinary and indexed GGML matrix products across 25 weight formats |
 | `VT-171` | `build` | Stored Q8 activations retain their original GGML row products across all documented accumulation and activation precision settings |
+| `VT-172` | `build` | Ordinary F16 and indexed BF16 matrix products consume BF16 activation rows at their stored precision |
 
 ## normalization-graphs
 

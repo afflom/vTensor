@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
@@ -1279,7 +1280,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "9bdd620d2cc2fe47ec9dd4ced63d2cef79e2e9794b5d5ba0a53667ecddd6b6f8",
+            "25ee446e760470e175eac299858f0e2744a1a1959fb03e621f249721005553a7",
         )
     });
 
@@ -2120,12 +2121,14 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
+    const bool bfloat_products=!strcmp(argv[3],"bfloat-products");
     const bool explicit_precision=!strcmp(argv[3],"prepacked-precision");
-    if (explicit_precision || !strcmp(argv[3],"prepacked-products")) {
-        int cases; CHECK(scanf("%d",&cases)==1 && cases==50);
+    if (explicit_precision || bfloat_products || !strcmp(argv[3],"prepacked-products")) {
+        int cases; CHECK(scanf("%d",&cases)==1 && cases==(bfloat_products?8:50));
         size_t compared=0;
         for (int i=0;i<cases;++i) {
-            int expert,type,activation,width;CHECK(scanf("%d%d%d%d",&expert,&type,&activation,&width)==4);
+            int exact=0,expert,type,activation,width;CHECK(scanf("%d%d%d%d",&expert,&type,&activation,&width)==4);
+            if (bfloat_products) CHECK(scanf("%d",&exact)==1 && (exact==0 || exact==1));
             graph_fixture ctx(8);CHECK(ctx);
             auto x=ggml_new_tensor_3d(ctx,ggml_type(type),width,3,expert?2:1);
             auto y=ggml_new_tensor_3d(ctx,ggml_type(activation),width,expert?1:2,expert?2:1);
@@ -2153,6 +2156,7 @@ int main(int argc, char **argv) {
                             CHECK(std::isfinite(value));double delta=double(value)-ref;error+=delta*delta;energy+=double(ref)*ref;
                         }
                         CHECK(error<=5e-4*energy);
+                        if (exact) CHECK(actual==expected);
                         ++compared;
                     }
                 }

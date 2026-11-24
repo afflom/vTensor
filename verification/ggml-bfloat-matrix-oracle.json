@@ -1,0 +1,15 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "words_sha256": "1a9e49aad3abcf3b46c140c3eeaf16b5d67387d5e3e83238fc3d1d438acb8170",
+  "graphs": 8,
+  "output_words": 48,
+  "inner_widths": [
+    8,
+    66,
+    16,
+    68
+  ],
+  "method": "The original ggml_quantize_chunk wrote both operands. Reference MUL_MAT used F16 weights and BF16 activations. MUL_MAT_ID used BF16 weights, BF16 activations and expert IDs 1 and 0. The two activation columns include +131072 and -131072. Both run on the pinned single-threaded GGML CPU.",
+  "comparison": "Widths 8 and 66 use fractional operands and the pinned test_mul_mat and test_mul_mat_id NMSE limit. Widths 16 and 68 use integers with exactly representable products and partial sums, requiring bit identity. Both groups include finite BF16 activations outside F16 range."
+}

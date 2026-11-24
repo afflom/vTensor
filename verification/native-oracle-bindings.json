@@ -437,7 +437,8 @@
     "ggml-wide-staged-oracle": "6adb74fa8b28b941c9736191de4f51d586493b8cb494555b749aa94194987d14",
     "ggml-wide-narrow-oracle": "416576f7ee55143146017e1581eaa7be746c9074db876c95c97994901ec8c5ff",
     "ggml-packed-add-oracle": "962a1d50b1d2a1cf500b8129471e3d3dc634f9e41168ffe2cdf17e5996b8e5cb",
-    "ggml-prepacked-matrix-oracle": "affd084b11aad40137318c93ab240986abb49b038f362914577205ab432f348e"
+    "ggml-prepacked-matrix-oracle": "affd084b11aad40137318c93ab240986abb49b038f362914577205ab432f348e",
+    "ggml-bfloat-matrix-oracle": "74d5e73f1f814339bbb7b57efacf7ceee4ef6447cc1f280e5f84b686635c5266"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -622,6 +623,7 @@
     "wide-narrow": "ggml-wide-narrow",
     "packed-add": "ggml-packed-add",
     "prepacked-products": "ggml-prepacked-matrix",
-    "prepacked-precision": "ggml-prepacked-matrix"
+    "prepacked-precision": "ggml-prepacked-matrix",
+    "bfloat-products": "ggml-bfloat-matrix"
   }
 }

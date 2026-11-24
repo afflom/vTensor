@@ -4,16 +4,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Admit F16 × BF16 ordinary products and BF16 × BF16 indexed products. These are the final two default type tuples with direct GGML CPU execution. [2,592 descriptors](verification/ggml-matrix-type-descriptors.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,108 non-Prism lines** (12,657 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,098 non-Prism lines** (12,647 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Switch the signed-conversion and narrowing patches to the Verdant registry when released. [PR #63](https://github.com/afflom/verdant-engine/pull/63) · [PR #64](https://github.com/afflom/verdant-engine/pull/64)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
 
+- [x] Place all 116 default matrix operand pairs with direct CPU execution. Compare the last two BF16 paths across eight graphs and replay all 2,592 descriptors. [VT-172](verification/supplemental-bfloat-matrices-vt172.json)
+- [x] Probe 4,212 OUT_PROD descriptors. Compare 103,784 results across all 85 directly executable CPU graphs, including broadcast batches, padded weight views and transposed inputs. [Outer products](verification/ggml-outer-product-descriptors.json)
 - [x] Place and compute prepacked matrix products across all 1,200 documented precision combinations. Share the 50 default cases and compare 6,900 additional output values. [VT-171](verification/supplemental-prepacked-precision-vt171.json)
 - [x] Consume stored Q8_0, Q8_1 and Q8_K activations for ordinary and indexed products across 25 weight formats. Compare all 300 outputs with GGML CPU. [VT-170](verification/supplemental-prepacked-matrix-vt170.json)
 - [x] Implement packed ADD across 625 input/output pairs. Compare 643 scheduled casts and in-place graphs byte for byte with generic GGML and check 18 equivalent standard constructors. [VT-169](verification/supplemental-packed-add-vt169.json)

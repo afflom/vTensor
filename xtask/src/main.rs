@@ -165,19 +165,6 @@ mod test_repo {
             fs::create_dir_all(path.parent().unwrap()).unwrap();
             fs::write(path, contents).unwrap();
         }
-
-        pub fn registers(&self, ids: &str, authorities: &str) {
-            for (name, rows) in [
-                ("ids", ids),
-                ("ledger", "claim = []"),
-                ("authorities", authorities),
-            ] {
-                self.write(
-                    format!("model/{name}.toml"),
-                    format!("spec = \"template/1\"\n{rows}\n"),
-                );
-            }
-        }
     }
 
     impl Drop for TestRepo {

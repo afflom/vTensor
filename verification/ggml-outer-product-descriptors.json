@@ -1,0 +1,25 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "1c7bd0f",
+  "provider_sha256": "13dc4ccd6f23b76f5faf2087507d3c7935f99f75f9d0bf33d24e0481191f9df7",
+  "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "cpu_dispatch_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "table": "ggml-outer-product-descriptors.tsv.gz",
+  "table_sha256": "af83696a54f4c1e2a8782903369e9097b13faa81fafc77237492b940ff5c9313",
+  "uncompressed_sha256": "4dc22e0aa0d2c8e7d56ec384448ec58b4452fb2376709776dee115905acdf7ea",
+  "descriptors": 4212,
+  "sole_provider_placements": 224,
+  "direct_cpu_graphs": 85,
+  "provider_results_compared": 103784,
+  "zero_nmse_graphs": 66,
+  "max_nmse": 8.008213730188826e-16,
+  "upstream_test_out_prod_max_nmse": 0.0005,
+  "layout_keys": {
+    "0": "contiguous inputs with two independent weight batches",
+    "1": "repeat two weight batches into four columns of batches and two outer batches",
+    "2": "offset weights by one encoded block inside independently padded rows",
+    "3": "transpose a scalar activation matrix before contraction"
+  },
+  "probe": "Call the original ggml_out_prod for every declared source type pair at layouts 0\u20132 and for every scalar right-hand type at layout 3. Query vTensor and the CPU on null-data descriptors, then verify sole-provider placement for every admitted tuple. Execute every direct original CPU path and the identical separately allocated provider graph. Upstream ggml_quantize_chunk encoded deterministic nonzero weights and activations. Poison the result before compute, reject nonfinite outputs, and compare the complete result to the original CPU using the upstream test_out_prod error limit.",
+  "cpu_kernel": "The GGML CPU implements F32 with weight batch broadcasting and F16 or registered decoded weight formats with equal batch extents. Each uses F32 right operands. Direct CPU dispatch inspects original ops.cpp, independently of the public CPU support report."
+}
