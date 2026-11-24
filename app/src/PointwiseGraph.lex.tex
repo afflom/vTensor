@@ -152,7 +152,8 @@ inductive{
     {name: softmaxGradient, fields: [Nat]},
     {name: siluGradient, fields: [IndexContext]},
     {name: depthwise, fields: [IndexContext, ColumnAxis, ColumnAxis, Nat]},
-    {name: signedCopy, fields: [Nat]}
+    {name: signedCopy, fields: [Nat]},
+    {name: hyperconnectionPre, fields: [IndexContext, Bool, Nat]}
   ]
 }
 
@@ -1814,6 +1815,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.siluGradient activation => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.hyperconnectionPre weights gated scale => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.signedCopy count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
@@ -1898,6 +1900,27 @@ definition{
 }
 
 definition{
+  name: hyperconnectionPhases,
+  parameters: [channels : Nat, gated : Bool],
+  result: Nat,
+  body: ((prim multiply channels (if gated then 3 else 2) : Nat) + 1),
+  executable: true
+}
+
+definition{
+  name: planHyperconnectionPre,
+  parameters: [
+    options : OperationParameters,
+    input : TensorDescriptor,
+    weights : TensorDescriptor,
+    output : TensorDescriptor
+  ],
+  result: PointwiseDecision,
+  body: (let gated : Bool := (0 <? (project options p1)); (if (((((((((((((((((project input ty) =? 0) && ((project weights ty) =? 0)) && ((project output ty) =? 0)) && ((project input n3) =? 1)) && ((project weights n3) =? 1)) && ((project output n3) =? 1)) && (0 <? (project input n1))) && ((project output n2) =? 1)) && ((project output n0) =? (project input n0))) && ((project output n1) =? (project input n2))) && (if gated then (sameShape input weights) else ((((project weights n0) =? (project input n1)) && ((project weights n1) =? (project input n2))) && ((project weights n2) =? 1)))) && (signedCopySpan input (blockCount input 1))) && (signedCopySpan weights (blockCount weights 1))) && (siluGradientLayout output)) && (separateTensors input output)) && (separateTensors weights output)) then (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (hyperconnectionPhases (project input n1) gated) : Nat) 4 (indexContext input 1) (indexContext output 1) (ctor CopyMode.hyperconnectionPre (indexContext weights 1) gated (project options p0))) else (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+definition{
   name: planSiluGradient,
   parameters: [dy : TensorDescriptor, x : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
@@ -1915,7 +1938,9 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 55) then (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 86) then (match right
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some weights => (planHyperconnectionPre options left weights output)) else (if (operation =? 55) then (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
     | Option.some image => (planDepthwise options left image output)) else (if (operation =? 22) then (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
@@ -1927,7 +1952,7 @@ definition{
     | Option.none => false
     | Option.some value => true) output))) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -1966,6 +1991,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.siluGradient activation => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.hyperconnectionPre weights gated scale => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.signedCopy count => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
@@ -2010,6 +2036,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => 0
     | CopyMode.softmaxGradient scale => 0
     | CopyMode.siluGradient activation => 0
+    | CopyMode.hyperconnectionPre weights gated scale => 0
     | CopyMode.signedCopy count => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
@@ -2078,6 +2105,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.softmaxGradient scale => (ctor WordOperation.invalid)
     | CopyMode.siluGradient activation => (ctor WordOperation.invalid)
+    | CopyMode.hyperconnectionPre weights gated scale => (ctor WordOperation.invalid)
     | CopyMode.signedCopy count => (ctor WordOperation.invalid)
     | CopyMode.depthwise image x y storage => (ctor WordOperation.invalid)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -2122,6 +2150,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => 0
     | CopyMode.softmaxGradient scale => 0
     | CopyMode.siluGradient activation => 0
+    | CopyMode.hyperconnectionPre weights gated scale => 0
     | CopyMode.signedCopy count => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
@@ -2315,6 +2344,21 @@ definition{
 }
 
 definition{
+  name: hyperconnectionPreStep,
+  parameters: [
+    index : Nat,
+    source : IndexContext,
+    weights : IndexContext,
+    destination : IndexContext,
+    gated : Bool,
+    scale : Nat
+  ],
+  result: GraphResponse,
+  body: (let perChannel : Nat := (if gated then 3 else 2); (let phases : Nat := (hyperconnectionPhases (project source n1) gated); (let phase : Nat := (prim remainder index phases 0 : Nat); (let element : Nat := (prim quotient index phases 0 : Nat); (if ((phase + 1) =? phases) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.immediate scale) (ctor WordOperand.scratch 0) (ctor WordTarget.output (blockOffset element destination)) 4 4) else (let channel : Nat := (prim quotient phase perChannel 0 : Nat); (let part : Nat := (prim remainder phase perChannel 0 : Nat); (let coordinate : Nat := (prim remainder element (project source u0) 0 : Nat); (let token : Nat := (prim quotient element (project source u0) 0 : Nat); (let weightAt : Nat := (if gated then (((prim multiply (project weights s0) coordinate : Nat) + (prim multiply (project weights s1) channel : Nat)) + (prim multiply (project weights s2) token : Nat)) else ((prim multiply (project weights s0) channel : Nat) + (prim multiply (project weights s1) token : Nat))); (if (gated && (part =? 0)) then (ctor GraphResponse.instruction (ctor WordOperation.elementary 17 0 0) (ctor WordOperand.source 1 weightAt) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) 4 4) else (if ((part + 1) =? perChannel) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (if (channel =? 0) then (ctor WordOperand.immediate 0) else (ctor WordOperand.scratch 0)) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 0) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 (((prim multiply (project source s0) coordinate : Nat) + (prim multiply (project source s1) channel : Nat)) + (prim multiply (project source s2) token : Nat))) (if gated then (ctor WordOperand.scratch 1) else (ctor WordOperand.source 1 weightAt)) (ctor WordTarget.scratch 1) 4 4))))))))))))),
+  executable: true
+}
+
+definition{
   name: siluGradientStep,
   parameters: [
     index : Nat,
@@ -2366,6 +2410,7 @@ definition{
     | CopyMode.smallFloatCast sourceType destinationType => (smallFloatCastStep index source destination sourceType destinationType)
     | CopyMode.softmaxGradient scale => (softmaxGradientStep index (project source u0) scale)
     | CopyMode.siluGradient activation => (siluGradientStep index source activation destination)
+    | CopyMode.hyperconnectionPre weights gated scale => (hyperconnectionPreStep index source weights destination gated scale)
     | CopyMode.signedCopy count => (signedCopyStep index count source destination)
     | CopyMode.depthwise image x y storage => (depthwiseStep index source image destination x y storage)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)

@@ -416,3 +416,9 @@ Feature: native-backend
     Given the imported F32 to I32 copies with contiguous and permuted source storage
     When the backend converts all source elements before committing the destination
     Then the destination words match the pinned GGML CPU
+
+  @VT-127 @build
+  Scenario: Prism contracts hyperconnection channels through Verdant with optional per-element sigmoid gates
+    Given the imported weighted and sigmoid-gated hyperconnection reductions
+    When the backend reduces the channels for each embedding coordinate and token, then applies the output scale
+    Then the outputs match the pinned GGML CPU for all channel counts

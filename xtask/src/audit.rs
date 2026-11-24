@@ -609,7 +609,7 @@ pub mod prism {
     use std::path::Path;
     use std::process::{Command, Stdio};
 
-    use sha2::{Digest, Sha256};
+    use repo_model::artifact::{file_sha256, sha256_hex};
 
     use crate::Fail;
 
@@ -754,7 +754,7 @@ pub mod prism {
             };
             if frame
                 .get(path)
-                .is_some_and(|sha256| *sha256 == hex(&Sha256::digest(bytes)))
+                .is_some_and(|sha256| *sha256 == sha256_hex(bytes))
             {
                 return;
             }
@@ -762,8 +762,6 @@ pub mod prism {
             self.files.insert(path.to_string(), lines);
         }
     }
-
-    use repo_model::artifact::digest_hex as hex;
 
     /// The ratchet itself: what `current` adds over `ceiling`, or nothing.
     fn refusals(ceiling: &Measure, current: &Measure) -> Vec<String> {
@@ -829,8 +827,7 @@ pub mod prism {
         })?;
         // Validate every bound file independently of the imported checker.
         for (path, expected) in &frame {
-            let bytes = std::fs::read(root.join(path))?;
-            if hex(&Sha256::digest(bytes)) != *expected {
+            if file_sha256(&root.join(path))? != *expected {
                 return Err(format!("imported/generated source drifted: {path}").into());
             }
         }
@@ -989,7 +986,7 @@ pub mod prism {
                 Some(&1),
                 "untracked implementation was omitted"
             );
-            let imported_lock = serde_json::json!({"source": {"repository": "fixture/upstream"}, "files": [{"path": "src/new.rs", "sha256": hex(&Sha256::digest(b"fn newly_created() {}\n"))}]});
+            let imported_lock = serde_json::json!({"source": {"repository": "fixture/upstream"}, "files": [{"path": "src/new.rs", "sha256": sha256_hex(b"fn newly_created() {}\n")}]});
             std::fs::write(root.join("frame.lock"), imported_lock.to_string()).unwrap();
             assert_eq!(measure_worktree(root).unwrap().total(), 0);
             fixture.write("src/new.rs", "fn drifted() {}\n");
@@ -1000,7 +997,7 @@ pub mod prism {
 
             let text = b"fn imported() {}\n";
             let mut imported = Measure::default();
-            let pins = BTreeMap::from([("oracle.rs".to_string(), hex(&Sha256::digest(text)))]);
+            let pins = BTreeMap::from([("oracle.rs".to_string(), sha256_hex(text))]);
             imported.add("oracle.rs", text, &pins);
             assert_eq!(imported.total(), 0);
             imported.add("oracle.rs", b"fn altered() {}\n", &pins);
@@ -1068,7 +1065,7 @@ pub mod prism {
         #[test]
         fn frame_counts_only_while_its_bytes_match_the_lock() {
             let bytes = b"export const a = 1;\n";
-            let lock = BTreeMap::from([("site/app.mjs".to_string(), hex(&Sha256::digest(bytes)))]);
+            let lock = BTreeMap::from([("site/app.mjs".to_string(), sha256_hex(bytes))]);
             let mut m = Measure::default();
             m.add("site/app.mjs", bytes, &lock);
             assert!(m.files.is_empty());

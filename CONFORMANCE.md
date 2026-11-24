@@ -213,6 +213,7 @@ model does not sanction.
 | `VT-124` | `build` | Prism schedules the binary32 SiLU derivative with Verdant arithmetic |
 | `VT-125` | `build` | Prism schedules depthwise spatial convolution in both GGML channel layouts using Verdant products and sums |
 | `VT-126` | `build` | Prism stages binary32 to signed integer copies through the Verdant truncation operation |
+| `VT-127` | `build` | Prism contracts hyperconnection channels through Verdant with optional per-element sigmoid gates |
 
 ## normalization-graphs
 

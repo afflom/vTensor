@@ -822,3 +822,9 @@ id = "VT-126"
 level = "build"
 suite = "native-backend"
 statement = "Prism stages binary32 to signed integer copies through the Verdant truncation operation"
+
+[[id]]
+id = "VT-127"
+level = "build"
+suite = "native-backend"
+statement = "Prism contracts hyperconnection channels through Verdant with optional per-element sigmoid gates"
