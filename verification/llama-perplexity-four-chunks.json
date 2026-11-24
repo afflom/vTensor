@@ -64,5 +64,22 @@
       "top_token_agreement_percent": 95.968
     }
   },
-  "diagnosis": "In layer 1 of the third chunk, 10 of 30 scalar key scores differed. Replaying the original rounded dots through the same Verdant weighted mean matched all 48 original attention values. Exact whole-vector products reproduced all 48 old provider values and differed at 36 coordinates. At the subsequent Q4 projection a single Q8 activation code changed. The generic and optimized CPU profiles also disagree at five top-token positions on this prompt."
+  "diagnosis": "In layer 1 of the third chunk, 10 of 30 scalar key scores differed. Replaying the original rounded dots through the same Verdant weighted mean matched all 48 original attention values. Exact whole-vector products reproduced all 48 old provider values and differed at 36 coordinates. At the subsequent Q4 projection a single Q8 activation code changed. The generic and optimized CPU profiles also disagree at five top-token positions on this prompt.",
+  "floating_weight_control": {
+    "provider_revision": "958230382b485be4ed3fd310e071b3edd977043d",
+    "provider_sha256": "33bc0fc534a54f82d758ab07af2f496dc0ed493f3ab1b33085136859c990c2c3",
+    "model": "stories15M.gguf",
+    "model_sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+    "f32_weight_tensors": 57,
+    "reference_logits_sha256": "7ded00ab2668dfb6ce9c617d434102fb852bd74f90fbd0433c507b8bc00fd9c4",
+    "cpu_perplexity": 13.7393,
+    "provider_vs_optimized": {
+      "perplexity": 13.739181,
+      "mean_kl_divergence": 1e-06,
+      "max_kl_divergence": 4.8e-05,
+      "top_token_agreement_percent": 100.0
+    },
+    "scored_positions": 124,
+    "parameters": "Same executable, prompt, four chunks, microbatch, context, threads and stored-weight options as the mixed-codebook run."
+  }
 }

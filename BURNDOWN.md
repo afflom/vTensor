@@ -5,6 +5,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 ## Remaining work
 
 - [ ] Trace the residual probability drift in stock llama-perplexity against generic GGML. All 124 top tokens match. Mean KL divergence is 0.000179 after correcting scalar dot precision. [Four-chunk replay](verification/llama-perplexity-four-chunks.json)
+- [ ] Match scalar MUL_MAT and indexed MUL_MAT_ID product rounding to the generic GGML CPU on cancellation-sensitive inputs.
 - [ ] Cover the remaining 13,036 binary descriptors involving signed, F64 or packed Q8 activation inputs. Bind each numerical contract to original GGML or SoftFloat before enabling placement.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
@@ -13,6 +14,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Run stock llama-perplexity on all-F32 Stories15M weights. All 124 top tokens matched optimized CPU, with mean KL divergence 0.000001. [Floating-weight control](verification/llama-perplexity-four-chunks.json)
 
 - [x] Match GGML scalar flash-score rounding for F32, F16 and BF16 keys. All 1,536 cancellation-sensitive words matched. The four-chunk llama.cpp mean KL divergence against generic GGML fell from 0.000615 to 0.000179. [VT-185](verification/supplemental-scalar-score-vt185.json)
 
