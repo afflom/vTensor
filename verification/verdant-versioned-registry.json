@@ -1,0 +1,42 @@
+{
+  "authority": "https://github.com/afflom/verdant-engine/releases",
+  "upstream_fix": "https://github.com/afflom/verdant-engine/pull/53",
+  "checks": "Served each original sparse index from a separate version path. Used one Cargo cache. Each consumer ran with --locked and fetched missing archives from the matching official release. Compared every cached registry archive with its lockfile and release manifest.",
+  "releases": [
+    {
+      "release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.0",
+      "index_archive_sha256": "87bfdd5af9c250160b4e9aafd8619d92fb0f8a6c0f72142f9aa799c8d1b1de3b",
+      "download_template": "https://github.com/afflom/verdant-engine/releases/download/v2.21.0/{crate}-{version}.crate",
+      "version": "2.21.0",
+      "registry_packages": 93,
+      "reused": 93,
+      "oracle": "quantize_row_q6_K_ref",
+      "exact_bytes": 210,
+      "encoded_sha256": "988d5d8e5b95d3cc620a232817ed876255020b47526a9535e9a353c8ad52f498",
+      "manifest_sha256": "d390d051c441b0514724658c17897578396383b20a45a0580336f845ce855120"
+    },
+    {
+      "release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.1",
+      "index_archive_sha256": "7ad69d03fbfc072682013c6794c73cfe037ebaabb3776a607d14355c5930f3d5",
+      "download_template": "https://github.com/afflom/verdant-engine/releases/download/v2.21.1/{crate}-{version}.crate",
+      "version": "2.21.1",
+      "registry_packages": 93,
+      "reused": 7,
+      "oracle": "quantize_row_q3_K_ref",
+      "exact_bytes": 110,
+      "encoded_sha256": "227a999441d1b4d92907cf756a88f75f4d076dca2a56e70aa04284f1a128a301",
+      "manifest_sha256": "ff493e4d8c0c6fb106a164f828fc40af7fba8e759fe49e09e4f7b1abb9f6522a"
+    }
+  ],
+  "shared_version_checksum_collisions": 86,
+  "sample": {
+    "package": "verdant_add_f64",
+    "version": "2.9.0",
+    "older_sha256": "48b96bc6154652128ed9e2976d607b29b468fcca368e6db7f9f42e9db00084ca",
+    "newer_sha256": "2ab4737a5f7fc36cf6c18d62b7e3de63427428fcd890aef52fab66eb3ce5fdde",
+    "changed_member": ".cargo_vcs_info.json",
+    "other_members_identical": true
+  },
+  "negative_check": "Writing the v2.21.1 index at the v2.21.0 mirror location failed. Repeating v2.21.0 at its original path passed.",
+  "q3_nonlinear_merge": "770b26a872939df32d1ad7ecdac3cf17633dad68"
+}
