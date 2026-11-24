@@ -1,0 +1,99 @@
+{
+  "requirement": "VT-127",
+  "implementation": "c0a8cf0dd96d7f2188caa068d86fa80e098a1f60",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "prism_attestation": "6a090ad43ad380b3845892f7d0fe32643af833f7954708d17ee2068f614e53ae",
+  "pointwise_lock_sha256": "35178a3ce0f417f08c0e676ff6e682b217dbe218c57aa575dfc68af3fcb4a14a",
+  "provider_sha256": "5b3f2f01c8acd3621311e5e612baa71225a11d5b91398824b3438bdef1000cec",
+  "provider_inputs_sha256": "e8d9f3d05c728c3e93d81c2afb0ef04b15954b4e599d932d3a37afdcba04e577",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "case_ordinals": {
+    "DSV4_HC_PRE": [
+      517,
+      518,
+      519,
+      520,
+      521,
+      522,
+      523,
+      524,
+      525,
+      526,
+      527,
+      528,
+      529,
+      530,
+      531,
+      532,
+      533,
+      534
+    ]
+  },
+  "factory_passed": 18,
+  "contract_transcript_sha256": "1717ce970528ebf3304c209ee47612001041bb09dc150dfc09bc5043e381ae8e",
+  "supplemental": {
+    "reference": "ggml_backend_cpu_set_use_ref(cpu, true)",
+    "input": "GGML_TYPE_F32 input [7, channels, 5] permuted from [channels,5,7] with axes [1,2,0,3]. Element ((x*3+c*11+t*7)%43-21)*0.0625.",
+    "weights": "Transposed [5,channels] for direct weights. Gates are permuted from [5,7,channels] with axes [2,0,1,3]. Element ((x*5+c*17+t*13)%53-26)*0.25, using x=0 for direct weights.",
+    "gated_scale": -0.375,
+    "results": [
+      {
+        "channels": 1,
+        "gated": false,
+        "outputs": 35,
+        "max_abs": 0.0,
+        "nmse": 0.0
+      },
+      {
+        "channels": 1,
+        "gated": true,
+        "outputs": 35,
+        "max_abs": 0.0,
+        "nmse": 0.0
+      },
+      {
+        "channels": 3,
+        "gated": false,
+        "outputs": 35,
+        "max_abs": 0.0,
+        "nmse": 0.0
+      },
+      {
+        "channels": 3,
+        "gated": true,
+        "outputs": 35,
+        "max_abs": 0.0,
+        "nmse": 0.0
+      },
+      {
+        "channels": 65,
+        "gated": false,
+        "outputs": 35,
+        "max_abs": 0.0,
+        "nmse": 0.0
+      },
+      {
+        "channels": 65,
+        "gated": true,
+        "outputs": 35,
+        "max_abs": 0.0,
+        "nmse": 0.0
+      }
+    ],
+    "runner_source_sha256": "701eff080148eb3a89c36e1bd9d4458fea1ee69e09d05b77b543158edce87ed9"
+  },
+  "preallocation_refusals": [
+    "mismatched gated channels",
+    "wrong output token extent",
+    "ungated mode with gated weights",
+    "integer input"
+  ],
+  "mutation": {
+    "change": "Replace Verdant sigmoid with its unchanged input.",
+    "factory_ordinal": 521,
+    "observed_error": 0.795704771,
+    "upstream_limit": 1e-07
+  }
+}

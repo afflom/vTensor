@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **26,988 passed**, **767 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,006 passed**, **749 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -142,7 +142,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass 12 SOFTPLUS, 39 SOFTPLUS_MUL, 10 ADD_SOFTPLUS_MUL and the final 176 TOPK_MOE cases. All 692 TOPK_MOE graphs pass. [VT-89](verification/factory-softplus-vt89.json) · [Compositions](verification/factory-softplus-compositions.json)
 - [x] Pass all 38 TOP_K_MASK graphs, including broadcast masks, optional scores, block maps and extra cells. [VT-92 results](verification/factory-mask-vt92.json)
 - [x] Verify padded and permuted TOP_K_MASK outputs, untouched padding and rejection of overlapping rows. [CPU regression](VTENSOR-VERIFICATION.md#sparse-mask-output-strides)
-- [ ] Verify all 210 LIGHTNING_INDEXER graphs. Implement DSV4_HC_PRE (18), DSV4_HC_POST (11) and DSV4_HC_COMB (11).
+- [x] Pass all 18 DSV4_HC_PRE graphs, including sigmoid gates, and compare permuted inputs and weights. [VT-127](verification/factory-hyperconnection-pre-vt127.json)
+- [ ] Verify all 210 LIGHTNING_INDEXER graphs. Implement DSV4_HC_POST (11) and DSV4_HC_COMB (11).
 - [x] Pass all 2,051 IM2COL_3D factory cases. The 1,539 previous refusals now match the CPU for F32/F16 output, padded and dilated inputs and views. [VT-70 results](verification/factory-image-columns-vt70.json)
 - [x] Pass all 113 IM2COL factory cases, both supplemental F16-input graphs and all nine CONV_1D_DW compositions. [VT-72 evidence](verification/factory-planar-columns-vt72.json)
 - [x] Pass all 2,030 directly CPU-supported CONV_2D cases through the Verdant matrix product. 2,030 pass. [VT-74 results](verification/factory-direct-convolution-vt74.json)
