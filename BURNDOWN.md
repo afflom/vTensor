@@ -146,7 +146,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all 173 ADD graphs, including ordinary and in-place E4M3 + F32. All 427 SUB, MUL and DIV graphs also pass. [E4M3 comparisons](verification/factory-small-float-add-vt120.json) · [Binary arithmetic](verification/factory-checkpoint-vt57.json)
 - [x] Submit and pin Verdant’s binary32 error function. Its 259,460 scalar comparisons passed, and the planted exponential defect failed. [Verdant PR #54](https://github.com/afflom/verdant-engine/pull/54) · [Patch pin](model/verdant-development.json)
 - [x] Pass 12 GELU_ERF and 36 GEGLU_ERF graphs. Verify half-precision gate rounding against two additional CPU graphs. [VT-137 comparisons](verification/factory-gaussian-error-vt137.json)
-- [ ] Pass ELU (12) and XIELU (6).
+- [x] Submit Verdant’s cancellation-safe exponential increment. Across 195,716 binary32 inputs the largest finite difference was one ULP. [Verdant PR #55](https://github.com/afflom/verdant-engine/pull/55)
+- [ ] Pass ELU (12) and XIELU (6) on the upstream patch, then pin its release.
 - [x] Run checksum-pinned F32 and Q4_0 GGUFs. Compare prompt prefill, two decode steps and KV writes to upstream CPU. Confirm every scheduled node used vTensor. [F32](verification/llama-stories15m-float-vt58.json) · [Q4_0](verification/llama-stories15m-vt58.json) · [Node placements](verification/llama-stories15m-vt58-placement.tsv.gz)
 
 ## Finish the arbitrary-provider contract
@@ -220,6 +221,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Restore the dependency license check on the PR #31 pin. VT-87 passed all 95 contracts, then caught two missing clarifications. The upstream records for all four new primitives now pass `just deny`. [Verification](VTENSOR-VERIFICATION.md#verdant-generated-package-licenses)
 - [x] Pass the complete locked-SDK gate at VT-120 on Ubuntu x86-64 and Arm64. [GitHub acceptance run](https://github.com/afflom/vTensor/actions/runs/45276620915)
 - [x] Pass the complete locked-SDK gate at VT-121 on both Linux architectures. [GitHub acceptance run](https://github.com/afflom/vTensor/actions/runs/45282182230)
+- [x] Pass the complete VT-140 gate on Ubuntu x86-64 and Arm64 with released Verdant v2.21.3. [Acceptance run](https://github.com/afflom/vTensor/actions/runs/45376031600)
 - [ ] Pass the complete `just vv` in the locked SDK from a clean checkout with production dependencies. Attach the exact build, proof and oracle evidence to the installable backend and its llama.cpp invocation.
 
 For each implementation batch, register the scenario and failing case first. Export only changed Prism roots, reuse hash-checked oracle objects, and run the affected cases together. Check a representative planted defect before closing the batch. [Repository workflow](AGENTS.md) · [Oracle cache](verification/native-oracle-cache.json)
