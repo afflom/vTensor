@@ -1,0 +1,815 @@
+{
+  "crates": [
+    {
+      "bytes": 19673,
+      "file": "verdant-cli-2.21.3.crate",
+      "indexPath": "ve/rd/verdant-cli",
+      "name": "verdant-cli",
+      "sha256": "8007a0f270ecee61055791af1f80157179647659fe24ed0e374737635a21bddb",
+      "version": "2.21.3"
+    },
+    {
+      "bytes": 429399,
+      "file": "verdant-core-2.21.3.crate",
+      "indexPath": "ve/rd/verdant-core",
+      "name": "verdant-core",
+      "sha256": "f1baadc3b0f294051361992600bcf9eb86e1accf9efea46b9928a1afd2bd01ee",
+      "version": "2.21.3"
+    },
+    {
+      "bytes": 398168,
+      "file": "verdant-tensor-2.21.3.crate",
+      "indexPath": "ve/rd/verdant-tensor",
+      "name": "verdant-tensor",
+      "sha256": "932f39185e086e32e08268cc0fced11a6c12bafb7e4595f13152b49fef58e20e",
+      "version": "2.21.3"
+    },
+    {
+      "bytes": 48581,
+      "file": "verdant-wasm-2.21.3.crate",
+      "indexPath": "ve/rd/verdant-wasm",
+      "name": "verdant-wasm",
+      "sha256": "7128cbbbb8b80d09ebbed30af234c0c90b696b6a85bbfd6fd25c403fc9f2af4b",
+      "version": "2.21.3"
+    }
+  ],
+  "dependencies": [
+    {
+      "bytes": 535930,
+      "file": "uorc-0.6.0.crate",
+      "indexPath": "uo/rc/uorc",
+      "name": "uorc",
+      "sha256": "c79a004cc24288e46d715b7450075d51f183a344387bcb8ce2eb1dae4e72a776",
+      "version": "0.6.0"
+    },
+    {
+      "bytes": 1013630,
+      "file": "uorc_compress-0.1.0.crate",
+      "indexPath": "uo/rc/uorc_compress",
+      "name": "uorc_compress",
+      "sha256": "1afe1a9cf75bec2e57bd67349a8d1df07b9faeccdaec93f9407b498c27ec7f2c",
+      "version": "0.1.0"
+    },
+    {
+      "bytes": 802132,
+      "file": "uorc_decompress-0.1.0.crate",
+      "indexPath": "uo/rc/uorc_decompress",
+      "name": "uorc_decompress",
+      "sha256": "3e624835c03c37a83b51de55e42d6d6b40bc42d2b1389c7f14102e75131149b5",
+      "version": "0.1.0"
+    },
+    {
+      "bytes": 578211,
+      "file": "uorc_search-0.1.0.crate",
+      "indexPath": "uo/rc/uorc_search",
+      "name": "uorc_search",
+      "sha256": "18eb30e58578b398fb1a39929ecde8e6cd681e342fe46f503824391d2bb76a07",
+      "version": "0.1.0"
+    },
+    {
+      "bytes": 34045,
+      "file": "uor-matmul-0.1.0.crate",
+      "indexPath": "uo/r-/uor-matmul",
+      "name": "uor-matmul",
+      "sha256": "50ddc8d99e7707848c0601ceb6544ec9c3c647e1682a209a4c90c0f109d53510",
+      "version": "0.1.0"
+    },
+    {
+      "bytes": 51554,
+      "file": "uor-matmul-codec-0.1.0.crate",
+      "indexPath": "uo/r-/uor-matmul-codec",
+      "name": "uor-matmul-codec",
+      "sha256": "94f42cf9e627b999723f40f03aec7a31a3f4ed2c229160ea69a6184b1c5d2a23",
+      "version": "0.1.0"
+    },
+    {
+      "bytes": 98323,
+      "file": "uor-matmul-core-0.1.0.crate",
+      "indexPath": "uo/r-/uor-matmul-core",
+      "name": "uor-matmul-core",
+      "sha256": "0241ecfcf2723156bc73f595c8ab7bddf9ec679ada0f7adca159b35fc90dcd2b",
+      "version": "0.1.0"
+    },
+    {
+      "bytes": 238701,
+      "file": "uor-matmul-gemm-0.1.0.crate",
+      "indexPath": "uo/r-/uor-matmul-gemm",
+      "name": "uor-matmul-gemm",
+      "sha256": "abda6d335115587d26e68833940e4ef1479bdf915ae623d02474728f4516d485",
+      "version": "0.1.0"
+    },
+    {
+      "bytes": 147366,
+      "file": "uor-matmul-kernels-0.1.0.crate",
+      "indexPath": "uo/r-/uor-matmul-kernels",
+      "name": "uor-matmul-kernels",
+      "sha256": "4f49093aa09e8c48705105c0cf7e7caaba92276485ca4e12b96b8d55be4e4713",
+      "version": "0.1.0"
+    },
+    {
+      "bytes": 3492,
+      "file": "verdant_affine_finite-2.43.0.crate",
+      "indexPath": "ve/rd/verdant_affine_finite",
+      "name": "verdant_affine_finite",
+      "sha256": "6f38b1c74e763f632b63de7795ef2cd1abab4a89cf31605eda7a505139b08ed6",
+      "version": "2.43.0"
+    },
+    {
+      "bytes": 6537,
+      "file": "verdant_affine_fit-2.43.0.crate",
+      "indexPath": "ve/rd/verdant_affine_fit",
+      "name": "verdant_affine_fit",
+      "sha256": "fd0b036a92e4929ac08bff3717d38a480035ea45c33c12c4f83fafb932174282",
+      "version": "2.43.0"
+    },
+    {
+      "bytes": 3809,
+      "file": "verdant_affine_geometry-2.43.0.crate",
+      "indexPath": "ve/rd/verdant_affine_geometry",
+      "name": "verdant_affine_geometry",
+      "sha256": "d411f14f2483acacec2c91360b76577041fa4872e9c30edc0458760f72b7f3a6",
+      "version": "2.43.0"
+    },
+    {
+      "bytes": 3498,
+      "file": "verdant_affine_insert_field-2.43.0.crate",
+      "indexPath": "ve/rd/verdant_affine_insert_field",
+      "name": "verdant_affine_insert_field",
+      "sha256": "fb0a8665715b53fcea73c432ff3c5509f0041c791df30837e6fc33c1c860234d",
+      "version": "2.43.0"
+    },
+    {
+      "bytes": 3426,
+      "file": "verdant_affine_quantized-2.43.0.crate",
+      "indexPath": "ve/rd/verdant_affine_quantized",
+      "name": "verdant_affine_quantized",
+      "sha256": "9bdc06b2cc6bc66e90fd2b4fa7c1e9a257cc8c6712e44635b2a78f3b143479b1",
+      "version": "2.43.0"
+    },
+    {
+      "bytes": 6317,
+      "file": "verdant_affine_weight_fields-2.43.0.crate",
+      "indexPath": "ve/rd/verdant_affine_weight_fields",
+      "name": "verdant_affine_weight_fields",
+      "sha256": "5e431ba7109e59366a131dde00956048669ad7742149ff67372d795b584d5109",
+      "version": "2.43.0"
+    },
+    {
+      "bytes": 17698,
+      "file": "verdant_grouped_six_encoding-2.46.0.crate",
+      "indexPath": "ve/rd/verdant_grouped_six_encoding",
+      "name": "verdant_grouped_six_encoding",
+      "sha256": "ae032703c977f5cef6bb548e16c077a893af5d56208253f9172a5a3920bf48c4",
+      "version": "2.46.0"
+    },
+    {
+      "bytes": 5484,
+      "file": "verdant_signed_truncation-2.44.0.crate",
+      "indexPath": "ve/rd/verdant_signed_truncation",
+      "name": "verdant_signed_truncation",
+      "sha256": "75618abe1310a3204ae50ff8c92099eafd1a913128aedda985e77080c0a3096b",
+      "version": "2.44.0"
+    },
+    {
+      "bytes": 5507,
+      "file": "verdant_add_f64-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_add_f64",
+      "name": "verdant_add_f64",
+      "sha256": "3d4973c4a4830a55b6da470f60a8db254d7d132e99ad4206c33b326f685b6513",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 32482,
+      "file": "verdant_bitpacked_product-2.41.0.crate",
+      "indexPath": "ve/rd/verdant_bitpacked_product",
+      "name": "verdant_bitpacked_product",
+      "sha256": "78bc5f779047ae53db23e253622045b7b2838a8e0c8a90a60cdf1d63b5386ad8",
+      "version": "2.41.0"
+    },
+    {
+      "bytes": 5760,
+      "file": "verdant_circular_magnitudes-2.21.0.crate",
+      "indexPath": "ve/rd/verdant_circular_magnitudes",
+      "name": "verdant_circular_magnitudes",
+      "sha256": "92b0ddb8a15fa73a0e9f11f34069b0fd0939778bc8aa508089785048b95dca33",
+      "version": "2.21.0"
+    },
+    {
+      "bytes": 3911,
+      "file": "verdant_circular_orient-2.21.0.crate",
+      "indexPath": "ve/rd/verdant_circular_orient",
+      "name": "verdant_circular_orient",
+      "sha256": "b932e5a15263b4076afc316bf8507a4ee977671939140430a726b4cb466d6afc",
+      "version": "2.21.0"
+    },
+    {
+      "bytes": 3862,
+      "file": "verdant_circular_prepare-2.21.0.crate",
+      "indexPath": "ve/rd/verdant_circular_prepare",
+      "name": "verdant_circular_prepare",
+      "sha256": "92314c1df7bed4dedd8ebf3e5a998259fd52b783a7c846e5eed4d8f5a33b4f39",
+      "version": "2.21.0"
+    },
+    {
+      "bytes": 5482,
+      "file": "verdant_circular_reduce-2.21.0.crate",
+      "indexPath": "ve/rd/verdant_circular_reduce",
+      "name": "verdant_circular_reduce",
+      "sha256": "631687f3b9298dcc102d54c45ee5790954ed4af3ce6d4f8714c483208e3fdd4a",
+      "version": "2.21.0"
+    },
+    {
+      "bytes": 3896,
+      "file": "verdant_circular_square-2.21.0.crate",
+      "indexPath": "ve/rd/verdant_circular_square",
+      "name": "verdant_circular_square",
+      "sha256": "f5ca27a59088030009dd64c682f488582c5b1685b83ab36573fcece3b109d7b4",
+      "version": "2.21.0"
+    },
+    {
+      "bytes": 5932,
+      "file": "verdant_count_f32-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_count_f32",
+      "name": "verdant_count_f32",
+      "sha256": "ee5950c61edef56d502d7546ac755fdfbc54d0e1b8d86f243b95b4de61496e04",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 4304,
+      "file": "verdant_encoded_word-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_encoded_word",
+      "name": "verdant_encoded_word",
+      "sha256": "8ff7a0cd8a1698879a78bc6177e03242e501d0763685db9241ceb6bd2520cb67",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 11180,
+      "file": "verdant_error_function-2.47.0.crate",
+      "indexPath": "ve/rd/verdant_error_function",
+      "name": "verdant_error_function",
+      "sha256": "f355d935b03a83fe9915b90ce2bb50d8657b50af3c0f9eb927adf52652705f0d",
+      "version": "2.47.0"
+    },
+    {
+      "bytes": 5054,
+      "file": "verdant_exponential_f32-2.19.0.crate",
+      "indexPath": "ve/rd/verdant_exponential_f32",
+      "name": "verdant_exponential_f32",
+      "sha256": "fbcf060d32a9ffc3e564ddcffb11782c0d31b695cd21760f19a22c459c5dd686",
+      "version": "2.19.0"
+    },
+    {
+      "bytes": 4481,
+      "file": "verdant_exponential_scale-2.19.0.crate",
+      "indexPath": "ve/rd/verdant_exponential_scale",
+      "name": "verdant_exponential_scale",
+      "sha256": "140d4e14d119c3f41a58baebde5862392843f28f9d24e897ea4a999d8954d1a7",
+      "version": "2.19.0"
+    },
+    {
+      "bytes": 3860,
+      "file": "verdant_exponential_step-2.19.0.crate",
+      "indexPath": "ve/rd/verdant_exponential_step",
+      "name": "verdant_exponential_step",
+      "sha256": "7d9b831af4e23a40c67a284387e484c5e1c472ee61ec77ffcddd17939d486b0a",
+      "version": "2.19.0"
+    },
+    {
+      "bytes": 9156,
+      "file": "verdant_float_storage-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_float_storage",
+      "name": "verdant_float_storage",
+      "sha256": "5fa8ac4fe1310567eab3938e3384a3dda14385434d379b3f84bfa6df1117d52e",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 22106,
+      "file": "verdant_float_transform-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_float_transform",
+      "name": "verdant_float_transform",
+      "sha256": "05851327948b13d9a48818e8f2e3abfd14178a3ab0a95cab46fcc88a6d03673d",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 19347,
+      "file": "verdant_gelu-2.28.0.crate",
+      "indexPath": "ve/rd/verdant_gelu",
+      "name": "verdant_gelu",
+      "sha256": "8baba0be2f4ef42c7938c6ad1157e5213411f6df7cb0eac1c032f0dd8f1cf5b7",
+      "version": "2.28.0"
+    },
+    {
+      "bytes": 14988,
+      "file": "verdant_grouped_affine-2.40.0.crate",
+      "indexPath": "ve/rd/verdant_grouped_affine",
+      "name": "verdant_grouped_affine",
+      "sha256": "998891e0ec4576138dc8d1046c6311a8fd0765aa05ca4dcdc62b28f92cfc1b1b",
+      "version": "2.40.0"
+    },
+    {
+      "bytes": 5220,
+      "file": "verdant_grouped_dot-2.26.0.crate",
+      "indexPath": "ve/rd/verdant_grouped_dot",
+      "name": "verdant_grouped_dot",
+      "sha256": "9bc0435feabab99ae71039ee3fe3f129b9b015418a35c9ebf74cce4ac49b1d54",
+      "version": "2.26.0"
+    },
+    {
+      "bytes": 5591,
+      "file": "verdant_grouped_q8-2.25.0.crate",
+      "indexPath": "ve/rd/verdant_grouped_q8",
+      "name": "verdant_grouped_q8",
+      "sha256": "4348e1e32ddc3ad1ecb4016e43bb7f3f4d8d54723bda1f524e5602c4ed6ddc5e",
+      "version": "2.25.0"
+    },
+    {
+      "bytes": 3696,
+      "file": "verdant_head_slope-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope",
+      "name": "verdant_head_slope",
+      "sha256": "fe9489cb5eae7865bb895f07914b46acdcac833be5da03cfbd5489d875d25895",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 5840,
+      "file": "verdant_head_slope_base-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_base",
+      "name": "verdant_head_slope_base",
+      "sha256": "e776dd9a06f6c9292cca5fc4d10f080d333e59e2884917a9ad1b2f07f438ff05",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 3471,
+      "file": "verdant_head_slope_digit-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_digit",
+      "name": "verdant_head_slope_digit",
+      "sha256": "322f5677e333aec2be1c8bf50a25ce0f9ad6dd158cdfb8218684df8c82750ad8",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 3593,
+      "file": "verdant_head_slope_exponent-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_exponent",
+      "name": "verdant_head_slope_exponent",
+      "sha256": "6a1e3691adb51f07eb4a2a9d412b9668275d0628928f9688ffcf36ffacfd0fef",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 4465,
+      "file": "verdant_head_slope_group-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_group",
+      "name": "verdant_head_slope_group",
+      "sha256": "accf7f961594c3303b52425cfaee54620d875d65e95a861ac5bb459ed53227cc",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 4167,
+      "file": "verdant_head_slope_index-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_index",
+      "name": "verdant_head_slope_index",
+      "sha256": "8b51775aba4d766dd7ff983b2b3c7f62d1f1a0bd2b6f4fd2f4fa73aa913f3ea9",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 3690,
+      "file": "verdant_head_slope_limbs-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_limbs",
+      "name": "verdant_head_slope_limbs",
+      "sha256": "d8912e577490dbda6bcc11c23095c97ddb3c0435f0654dfc0d83c5edfd18863a",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 3906,
+      "file": "verdant_head_slope_multiply-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_multiply",
+      "name": "verdant_head_slope_multiply",
+      "sha256": "de6c4b646783b92c4897d26117b8148e7d7f61796dceb109390cfe9877f3185f",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 3664,
+      "file": "verdant_head_slope_normalize-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_normalize",
+      "name": "verdant_head_slope_normalize",
+      "sha256": "e941e0f6af56f2d4e1870c1c7e312adc2f3d9c4f01f4eba487d4163348ef6376",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 5326,
+      "file": "verdant_head_slope_power-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_power",
+      "name": "verdant_head_slope_power",
+      "sha256": "4c2ab9c8ecfd14f77b872eac8c991ba106e710ed1a9a1780dd70deb4289139d6",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 3887,
+      "file": "verdant_head_slope_term-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_term",
+      "name": "verdant_head_slope_term",
+      "sha256": "eb1cfb7883dc9293fbc96e08a055f2d9f65d5502383479938cf108a6e6f73252",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 4455,
+      "file": "verdant_head_slope_word-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_head_slope_word",
+      "name": "verdant_head_slope_word",
+      "sha256": "a9d2c5019eded6061801ec4f5db2105e3c9bf4eac66e0a4a197174e560f92c00",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 3722,
+      "file": "verdant_high_f64-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_high_f64",
+      "name": "verdant_high_f64",
+      "sha256": "f7d6bec3e8b616c4585eeac348167aac1f8dea454e1cfb465871c9dee408e3e8",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 4885,
+      "file": "verdant_integer_f32-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_integer_f32",
+      "name": "verdant_integer_f32",
+      "sha256": "fc84b93a99ca3ccceb57e778347a9475ba5e02f9f3eccfffd4bba4439a61a035",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 3478,
+      "file": "verdant_logarithmic_admit-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_logarithmic_admit",
+      "name": "verdant_logarithmic_admit",
+      "sha256": "4302ed136874ee322e57d4d0a8142d9e92f85701cae64d3a1206ea1204f6f102",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 4944,
+      "file": "verdant_logarithmic_inverse-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_logarithmic_inverse",
+      "name": "verdant_logarithmic_inverse",
+      "sha256": "32140d58b85ffd1c7efb0465924961e8b561030deeaba0a863e8af4ad040221b",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 6049,
+      "file": "verdant_logarithmic_prepare-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_logarithmic_prepare",
+      "name": "verdant_logarithmic_prepare",
+      "sha256": "770377bd1fcb9e68de91daa5a4343e04df8437606b96b5b83ed4f4b03a9f4cf7",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 4143,
+      "file": "verdant_logarithmic_product-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_logarithmic_product",
+      "name": "verdant_logarithmic_product",
+      "sha256": "0ce65422c6ecb871edd741360586ead885a91b17e692ff32f90cbd12fb9b0296",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 4490,
+      "file": "verdant_logarithmic_scale-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_logarithmic_scale",
+      "name": "verdant_logarithmic_scale",
+      "sha256": "0f4d4b202e40c934fe183a5d9c469429084cdcf9560e5a3fed518851585c8a87",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 4476,
+      "file": "verdant_logarithmic_series-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_logarithmic_series",
+      "name": "verdant_logarithmic_series",
+      "sha256": "5c401ba966bbaea020e71270354db2330fe9b5ede3e14aa9559a5194bfae038a",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 3811,
+      "file": "verdant_logarithmic_term-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_logarithmic_term",
+      "name": "verdant_logarithmic_term",
+      "sha256": "8c0f30f7e81a3eacaaf2cf1c9262e3b40f9286067d5f1fa0772da30e75d633a8",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 5069,
+      "file": "verdant_logarithmic_word-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_logarithmic_word",
+      "name": "verdant_logarithmic_word",
+      "sha256": "f7e4fdbabd3eeb65dc3f91d0bfcf69e3b14cff191c7eaece155b940fb5152086",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 3933,
+      "file": "verdant_logistic-2.24.0.crate",
+      "indexPath": "ve/rd/verdant_logistic",
+      "name": "verdant_logistic",
+      "sha256": "fa6616b2dfcae0dc18fb8db863b34c24d99cafdcedeb9643acebd526ce98897a",
+      "version": "2.24.0"
+    },
+    {
+      "bytes": 3339,
+      "file": "verdant_low_f64-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_low_f64",
+      "name": "verdant_low_f64",
+      "sha256": "65cf0cbb787bf8507ca983a472647aa4ada909a51e116abe590feaa8f46b8278",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 3562,
+      "file": "verdant_matrix_shape-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_matrix_shape",
+      "name": "verdant_matrix_shape",
+      "sha256": "75dad9f714885792f153f878a006295875d22694c5f5ee9b6bdb796c41278ea1",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 5238,
+      "file": "verdant_narrow_f64-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_narrow_f64",
+      "name": "verdant_narrow_f64",
+      "sha256": "02d3fb7faccf19d09e582403e50cf03e3beb873d71cebacf2e491387eb18c9f6",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 5470,
+      "file": "verdant_normalize_f64-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_normalize_f64",
+      "name": "verdant_normalize_f64",
+      "sha256": "f8ab1f41645fad4639f4c204ed4d7fcf8115e60766b3ae14f9546e9aa31d4b93",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 18318,
+      "file": "verdant_normalized_exponential-2.30.0.crate",
+      "indexPath": "ve/rd/verdant_normalized_exponential",
+      "name": "verdant_normalized_exponential",
+      "sha256": "3c33e0280d885d46245d0f70bd94e01af2c089fccf3b89a1e1484bf19d7a36c4",
+      "version": "2.30.0"
+    },
+    {
+      "bytes": 4264,
+      "file": "verdant_pack_plan_f64-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_pack_plan_f64",
+      "name": "verdant_pack_plan_f64",
+      "sha256": "2860667479ccf26f3bc1f2517e3e5b20aef90e5aa332943652bc066b99d8c00e",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 4570,
+      "file": "verdant_packed_dot-2.18.0.crate",
+      "indexPath": "ve/rd/verdant_packed_dot",
+      "name": "verdant_packed_dot",
+      "sha256": "a1e200fa8a8f2cab7aee1b3a20dd49d367eb3efc9aa49282d2ccaf09ae7093a9",
+      "version": "2.18.0"
+    },
+    {
+      "bytes": 3629,
+      "file": "verdant_packed_field-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_packed_field",
+      "name": "verdant_packed_field",
+      "sha256": "87bdf7ade8bd233f209451d91971a3849a0bca844df8a7fbea5998d9e7386305",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 4567,
+      "file": "verdant_rotation_geometry-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_rotation_geometry",
+      "name": "verdant_rotation_geometry",
+      "sha256": "f6337265ebb900efa44df1de5289a17b8d346a01ded00ed670f54dc4be8ca3b7",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 5771,
+      "file": "verdant_rotation_limit-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_rotation_limit",
+      "name": "verdant_rotation_limit",
+      "sha256": "bdb307f2e2da57e9e5efcb43f50febc4ee0854ae9e154d158a45e29db9831e5f",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 3542,
+      "file": "verdant_rotation_signed-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_rotation_signed",
+      "name": "verdant_rotation_signed",
+      "sha256": "cc82e47fa10569bf1dc2b74e489fb7ce4ac47e9af7505f3be6937378ca65d8d1",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 6756,
+      "file": "verdant_rotation_step-2.22.0.crate",
+      "indexPath": "ve/rd/verdant_rotation_step",
+      "name": "verdant_rotation_step",
+      "sha256": "e177d363b7fce0d1c82030f499f596a96c0a34537ad9d6df413c6713c702be94",
+      "version": "2.22.0"
+    },
+    {
+      "bytes": 3681,
+      "file": "verdant_round_mantissa_f64-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_round_mantissa_f64",
+      "name": "verdant_round_mantissa_f64",
+      "sha256": "67d663111201ccaa94a3b2e98ae1bf98b7b2f0d75a92b7224cc3d3d62b22a93d",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 4209,
+      "file": "verdant_row_ranking-2.29.0.crate",
+      "indexPath": "ve/rd/verdant_row_ranking",
+      "name": "verdant_row_ranking",
+      "sha256": "9dc2bdb2081bfff739577462f458a3c2632ddc2bc99fe5c8b1e2a3ce52bc6a88",
+      "version": "2.29.0"
+    },
+    {
+      "bytes": 26936,
+      "file": "verdant_scalar_f32-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_scalar_f32",
+      "name": "verdant_scalar_f32",
+      "sha256": "a87b4b484eea1740d5628bc9124381264934ca960ab8769e823773f418da40f1",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 7576,
+      "file": "verdant_small_float-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_small_float",
+      "name": "verdant_small_float",
+      "sha256": "38d1ff32348e3e30c95b826b435751c3367426f9e94fce27e1b23803f7be269b",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 20757,
+      "file": "verdant_softplus-2.32.0.crate",
+      "indexPath": "ve/rd/verdant_softplus",
+      "name": "verdant_softplus",
+      "sha256": "1df4498ac01ee7d415b769e0ad6100b1c67e05f3441e811545e2256f53fa9d9b",
+      "version": "2.32.0"
+    },
+    {
+      "bytes": 40889,
+      "file": "verdant_storage_block-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_storage_block",
+      "name": "verdant_storage_block",
+      "sha256": "5691fe0230c974c000e7bcdee37c6ae9032e466abf914775b69631f8a63ed32e",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 3526,
+      "file": "verdant_storage_transfer-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_storage_transfer",
+      "name": "verdant_storage_transfer",
+      "sha256": "fa68625535f604d447a266d551d14bc8b3787cdcc8bdbc74cfd74cffdb4f6048",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 22593,
+      "file": "verdant_symmetric_dot-2.17.0.crate",
+      "indexPath": "ve/rd/verdant_symmetric_dot",
+      "name": "verdant_symmetric_dot",
+      "sha256": "ccdbfeac815cf9889f499ecb4e3ad49f18d7244470babd565adf1a6c3eb6d6f4",
+      "version": "2.17.0"
+    },
+    {
+      "bytes": 3580,
+      "file": "verdant_symmetric_dot_layout-2.17.0.crate",
+      "indexPath": "ve/rd/verdant_symmetric_dot_layout",
+      "name": "verdant_symmetric_dot_layout",
+      "sha256": "93c359dd9c4b0e2425d85c86706b87056def9ea21f5a99cf84f939819aca44db",
+      "version": "2.17.0"
+    },
+    {
+      "bytes": 26404,
+      "file": "verdant_symmetric_q8-2.17.0.crate",
+      "indexPath": "ve/rd/verdant_symmetric_q8",
+      "name": "verdant_symmetric_q8",
+      "sha256": "7241609278b798ed962eabcc7c23c35c52bc329fb649ec2c5d2dee153cad6021",
+      "version": "2.17.0"
+    },
+    {
+      "bytes": 22628,
+      "file": "verdant_tanh-2.27.0.crate",
+      "indexPath": "ve/rd/verdant_tanh",
+      "name": "verdant_tanh",
+      "sha256": "da15ae7b15c5279345efbd65e20ec9f67ff1302bf76d1e1c90af9e6e2cd73841",
+      "version": "2.27.0"
+    },
+    {
+      "bytes": 21789,
+      "file": "verdant_unary_activate-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_unary_activate",
+      "name": "verdant_unary_activate",
+      "sha256": "39e3dc9904603b8f89c7b703a11670a4d55a950ff3f653b2d9b9dd27998a5a7e",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 9946,
+      "file": "verdant_unary_plan-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_unary_plan",
+      "name": "verdant_unary_plan",
+      "sha256": "4a2ebd738f3a577114faa02b86e231ab6765643c27919e70adf78a1520519815",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 6051,
+      "file": "verdant_unary_round-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_unary_round",
+      "name": "verdant_unary_round",
+      "sha256": "2d5952d006f5c64b83f20a19eaf0a8d7eb331d6c41843c6051e7f494f7e6c96c",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 6013,
+      "file": "verdant_unary_select-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_unary_select",
+      "name": "verdant_unary_select",
+      "sha256": "28a631cacba5070ce0889d22e3084d37ee5bb86acfcdd06898951f84e2db8d69",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 19349,
+      "file": "verdant_weighted_blend-2.23.0.crate",
+      "indexPath": "ve/rd/verdant_weighted_blend",
+      "name": "verdant_weighted_blend",
+      "sha256": "7b44c1d4d55296409bb7477c7db445dfd950094e20d13d76ca84746c1a141bd1",
+      "version": "2.23.0"
+    },
+    {
+      "bytes": 17943,
+      "file": "verdant_weighted_pivot-2.23.0.crate",
+      "indexPath": "ve/rd/verdant_weighted_pivot",
+      "name": "verdant_weighted_pivot",
+      "sha256": "2d49815eed2dc69a5d8371177b78c7884827268bb918dd2efbb4e0f4f57302ce",
+      "version": "2.23.0"
+    },
+    {
+      "bytes": 17345,
+      "file": "verdant_weighted_reciprocal-2.23.0.crate",
+      "indexPath": "ve/rd/verdant_weighted_reciprocal",
+      "name": "verdant_weighted_reciprocal",
+      "sha256": "5b21765c25e6f1d8108c188358c25ddfc2349cd99b9da95d0d2b220c80df4633",
+      "version": "2.23.0"
+    },
+    {
+      "bytes": 3597,
+      "file": "verdant_wide_mode-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_wide_mode",
+      "name": "verdant_wide_mode",
+      "sha256": "2b4d4363d7ff59b07d68e4abfe9229e3e35fc58d32ad1c00d59d9e6e83ea727c",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 5360,
+      "file": "verdant_widen_f32-2.9.0.crate",
+      "indexPath": "ve/rd/verdant_widen_f32",
+      "name": "verdant_widen_f32",
+      "sha256": "d4d237fedeeda38f285e8be56f9a0c274b115d3ed39e2a640b05ab47a066a584",
+      "version": "2.9.0"
+    },
+    {
+      "bytes": 5540,
+      "file": "verdant_count_f64-2.12.0.crate",
+      "indexPath": "ve/rd/verdant_count_f64",
+      "name": "verdant_count_f64",
+      "sha256": "ded5e3e5c199faea3dbb4cb3b83e0f57d5a62fb62adf96c6bdcd55ded7cba5d4",
+      "version": "2.12.0"
+    },
+    {
+      "bytes": 4506,
+      "file": "verdant_division_class-2.12.0.crate",
+      "indexPath": "ve/rd/verdant_division_class",
+      "name": "verdant_division_class",
+      "sha256": "84e86688556dd6c1ad2ba2ce4d8e0d30b80fa5a97a1b1f928035050f80c5f9c2",
+      "version": "2.12.0"
+    },
+    {
+      "bytes": 5185,
+      "file": "verdant_division_finish-2.12.0.crate",
+      "indexPath": "ve/rd/verdant_division_finish",
+      "name": "verdant_division_finish",
+      "sha256": "86a6a52c0b43e07d18e045a44e7e28eba10fe0c301222298efe9861d3a6323dd",
+      "version": "2.12.0"
+    },
+    {
+      "bytes": 4780,
+      "file": "verdant_division_norm-2.12.0.crate",
+      "indexPath": "ve/rd/verdant_division_norm",
+      "name": "verdant_division_norm",
+      "sha256": "845fff70b6e7919de24d588775fc75c954e598d387b34bcd4bb0db1865b2c581",
+      "version": "2.12.0"
+    },
+    {
+      "bytes": 4814,
+      "file": "verdant_quotient_f64-2.12.0.crate",
+      "indexPath": "ve/rd/verdant_quotient_f64",
+      "name": "verdant_quotient_f64",
+      "sha256": "12fe34b7e789d7a1e56d4a55c748655ab1f7b1bbc2e38666f10809392ac1442f",
+      "version": "2.12.0"
+    },
+    {
+      "bytes": 3576,
+      "file": "verdant_quotient_route-2.12.0.crate",
+      "indexPath": "ve/rd/verdant_quotient_route",
+      "name": "verdant_quotient_route",
+      "sha256": "756b460461c49d5372612791f6841ee8230015924aaf78f1b7908aa187459b70",
+      "version": "2.12.0"
+    }
+  ],
+  "spec": "verdant/rust-crates-sparse/1"
+}

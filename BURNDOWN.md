@@ -32,7 +32,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Verify the published v2.21.2 index at an immutable mirror commit. All 93 resolved archives match the manifest and both IQ4 encoders match GGML byte-for-byte. [Release comparison](verification/verdant-versioned-registry.json)
 - [x] Pass provider VT-02 against the published v2.21.2 registry and reject moving branch pins. [Dependency gate](Justfile) · [Evidence](verification/verdant-versioned-registry.json)
 - [x] Confirm Verdant merged the Gaussian error function. [VTK-54 merge](https://github.com/afflom/verdant-engine/commit/c62d0ffcb0af11fa6ad7f9535f5aad4c282bbbcc)
-- [ ] Pin the published Verdant crates through a release-specific sparse index once it includes VTK-53 and VTK-54. Pass VT-02. [Verdant registry fix](https://github.com/afflom/verdant-engine/pull/53) · [Current patch pin](model/verdant-development.json)
+- [x] Pin Verdant v2.21.3 from its immutable release index. All 94 resolved archives match the release manifest. VT-02, VT-45 and VT-137 pass. [Release evidence](verification/verdant-versioned-registry.json) · [Production pin](model/verdant-development.json)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)

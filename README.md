@@ -333,9 +333,10 @@ artifacts fit stricter M20 ceilings; no budget was raised. Exact evidence is in
 Verdant's native packager now includes the certified production dependency
 closure (36 crates), with exact registry versions and preserved SDK provenance.
 Its registry check requires a successful real Cargo consumer build and rejects
-missing or unresolvable dependencies. Production publication remains open.
+missing or unresolvable dependencies. vTensor now consumes the published v2.21.3
+release. Its 94 resolved archives match the [release manifest](vendor/verdant-crates-manifest.json).
 
-The current Verdant extension adds certified packed-scale and F8 word primitives
+The earlier Verdant extension added certified packed-scale and F8 word primitives
 for the remaining row-gathering work. Its 244,492 imported GGML comparisons pass;
 all twenty previous numerical libraries remain byte-identical. Full packed-block
 decoding and GET_ROWS graph support are still under development.

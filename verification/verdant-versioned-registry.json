@@ -58,5 +58,16 @@
       }
     ],
     "provider_check": "VT-02 passed against the published 2.21.2 archives. Replacing the pinned mirror commit with the moving branch name failed the source gate. Restoring the commit passed."
+  },
+  "published_v2_21_3": {
+    "release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.3",
+    "registry": "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/f07ae161a6b065a15a859aa89a84a7b8615e6f04/v2.21.3/crates/index/",
+    "manifest_sha256": "28b47705b5c8e936042ecc87ba8881c266e32f789e9ab02bf626aa76352fbcaa",
+    "resolved_registry_archives": 94,
+    "provider_checks": [
+      "VT-02 dependency and GGML imports",
+      "VT-45 quotient and normalization regression",
+      "VT-137 all 48 GELU_ERF and GEGLU_ERF factory graphs and the two rounding probes"
+    ]
   }
 }
