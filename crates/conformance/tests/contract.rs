@@ -70,6 +70,7 @@ ggml_batches! {
     fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
+    fn e4m3_add_repeats_vt_175() { "e4m3-repeat", 12, ["typed"] }
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
@@ -2165,6 +2166,32 @@ int main(int argc, char **argv) {
             }
         }
         return finish(compared);
+    }
+    if (!strcmp(argv[3],"e4m3-repeat")) {
+        size_t cases=0;
+        for (int period : {1,8,16}) for (int padded : {0,1}) for (int inplace : {0,1}) {
+            std::vector<unsigned char> expected;
+            for (auto selected : {reference,backend}) {
+                graph_fixture ctx(8); CHECK(ctx);
+                auto x=ggml_new_tensor_4d(ctx,GGML_TYPE_F8_E4M3,16,4,4,2);
+                auto storage=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,period+2*padded,2,2,1);
+                auto y=ggml_view_4d(ctx,storage,period,2,2,1,storage->nb[1],storage->nb[2],storage->nb[3],padded*sizeof(float));
+                auto rhs=selected==reference?ggml_repeat_4d(ctx,y,16,4,4,2):y;
+                auto out=inplace?ggml_add_inplace(ctx,x,rhs):ggml_add(ctx,x,rhs);
+                auto graph=ctx.build(out);
+                if (selected==backend) CHECK(ggml_backend_supports_op(backend,out) && ctx.placed(graph,backend));
+                ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,selected)); CHECK(ctx.storage);
+                std::vector<unsigned char> bytes(ggml_nbytes(x));
+                for (size_t i=0;i<bytes.size();++i) bytes[i]=uint8_t((i%2?128:0)+(19*i+3)%112);
+                ggml_backend_tensor_set(x,bytes.data(),0,bytes.size());
+                for (int i=0;i<ggml_nelements(storage);++i) ggml_set_f32_1d(storage,i,float((13*i+7)%29-14)/8.f);
+                CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
+                if (selected==reference) expected=tensor_bytes(out);
+                else CHECK(tensor_bytes(out)==expected);
+            }
+            ++cases;
+        }
+        return finish(cases);
     }
     const bool lane_repeat=!strcmp(argv[3],"packed-lanes");
     const bool broadcast_add=lane_repeat || !strcmp(argv[3],"packed-broadcast");

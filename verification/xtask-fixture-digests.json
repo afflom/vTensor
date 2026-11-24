@@ -1,0 +1,12 @@
+{
+  "authority-pin-controls": "c584ef665bea4bdc6a3e2c159d700791259656e80e35bfddd944ce6fa2dd241e",
+  "native-workflow-controls": "d7901e2ebf9354e15b8be41f29e781b4996ca635f7f49870f7352d43d56785fb",
+  "proof-reuse-documents": "838d9933dbd95cb9b8a89c26f6e52ae2f6fe6ab4b8dd2786c3550a7ed9235499",
+  "proof-reuse-observations": "3e9ef5b1daecc5dae3ed9e692ae9449f4c72b61ce6f4acb6df58976e73ddbfcb",
+  "repository-gate-fixtures": "c72231192e8d2e034efef570ddd3f719d54a0562815a58b924e202f5034ba8d5",
+  "scaffold-invalid-arguments": "fc93df63dedd481e217c462b7ccf7b46cdfca33829ca1dd06b87a6a1268882bf",
+  "sdk-identity-controls": "606032aa9bbdf32796eb4e4ab07083851e56f3978174080dfdc90e6c1b54e352",
+  "sdk-platform-inventory-controls": "78410957e2a7e8e8b2d0ef1d80d658559873788b9752b6d884ce5c29854d4eb2",
+  "source-budget-controls": "5a2936c3574b36636a36d00c0530b8c0492930faa82bf56347808bd7af5c3de3",
+  "workflow-contract-fixtures": "2c368019d757aac0e7e4fa3e2019e446b4d61f7a958b9a977a499b8b90205860"
+}

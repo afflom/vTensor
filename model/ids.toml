@@ -1116,3 +1116,9 @@ id = "VT-174"
 level = "build"
 suite = "native-backend"
 statement = "Copied and in-place packed GGML addition repeats scalar and partial-width addends across all four axes"
+
+[[id]]
+id = "VT-175"
+level = "build"
+suite = "native-backend"
+statement = "F8_E4M3 addition repeats dense and offset padded F32 addends across all four axes"

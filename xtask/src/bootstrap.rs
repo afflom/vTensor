@@ -192,12 +192,8 @@ struct WorkflowContract {
     docker_mounts: WorkflowTerms,
     docker_workflow: WorkflowTerms,
 }
-static WORKFLOW: std::sync::LazyLock<WorkflowContract> = std::sync::LazyLock::new(|| {
-    pinned_fixture!(
-        "workflow-contract-fixtures",
-        "2c368019d757aac0e7e4fa3e2019e446b4d61f7a958b9a977a499b8b90205860"
-    )
-});
+static WORKFLOW: std::sync::LazyLock<WorkflowContract> =
+    std::sync::LazyLock::new(|| pinned_fixture!("workflow-contract-fixtures"));
 
 /// A run may reuse a kept proof only when nothing it would prove has changed.
 /// The cache key finds a candidate and names every proof input; the event and
@@ -692,12 +688,8 @@ mod tests {
         accepts: impl Fn(&str) -> bool,
     ) {
         type Controls = std::collections::BTreeMap<String, Vec<Vec<[String; 2]>>>;
-        static CONTROLS: std::sync::LazyLock<Controls> = std::sync::LazyLock::new(|| {
-            pinned_fixture!(
-                "native-workflow-controls",
-                "d7901e2ebf9354e15b8be41f29e781b4996ca635f7f49870f7352d43d56785fb"
-            )
-        });
+        static CONTROLS: std::sync::LazyLock<Controls> =
+            std::sync::LazyLock::new(|| pinned_fixture!("native-workflow-controls"));
         let cases = &CONTROLS[group];
         assert_eq!(cases.len(), count);
         for edits in cases {
@@ -803,25 +795,29 @@ mod tests {
 
     #[test]
     fn authority_pins_name_each_dependency_once() {
-        let cases: [(repo_model::Authorities, Option<Vec<String>>); 5] = pinned_fixture!(
-            "authority-pin-controls",
-            "c584ef665bea4bdc6a3e2c159d700791259656e80e35bfddd944ce6fa2dd241e"
-        );
+        let cases: [(repo_model::Authorities, Option<Vec<String>>); 5] =
+            pinned_fixture!("authority-pin-controls");
         for (authorities, expected) in cases {
             assert_eq!(upstream_pins(&authorities), expected);
         }
     }
 
-    #[test]
-    fn sha256_identity_retains_canonical_lowercase_bytes() {
-        assert_eq!(
-            sha256(b""),
-            "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        );
-        assert_eq!(
-            sha256(b"abc"),
-            "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
-        );
+    macro_rules! identity_controls {
+        ($($test:ident, $field:literal, $cases:ty, |$input:ident| $observed:expr);+) => { $(
+            #[test]
+            fn $test() {
+                let fixture: serde_json::Value = pinned_fixture!("sdk-identity-controls");
+                let cases: $cases = serde::Deserialize::deserialize(&fixture[$field]).unwrap();
+                for ($input, expected) in cases {
+                    assert_eq!($observed, expected, "{}", $input);
+                }
+            }
+        )+ };
+    }
+    identity_controls! {
+        sha256_identity_retains_canonical_lowercase_bytes, "hashes", [(&str, &str); 2], |input| sha256(input.as_bytes());
+        floating_action_plant_is_rejected, "action_pins", [(&str, bool); 3], |input| action_reference_is_pinned(input);
+        mutable_sdk_plant_is_rejected, "immutable_images", [(&str, bool); 4], |input| immutable_image(input)
     }
 
     fn run_node_suite(suite: &str) {
@@ -848,10 +844,7 @@ mod tests {
 
     #[test]
     fn native_platform_inventory_rejects_swaps_missing_platforms_and_legacy_drift() {
-        let fixture: serde_json::Value = pinned_fixture!(
-            "sdk-platform-inventory-controls",
-            "78410957e2a7e8e8b2d0ef1d80d658559873788b9752b6d884ce5c29854d4eb2"
-        );
+        let fixture: serde_json::Value = pinned_fixture!("sdk-platform-inventory-controls");
         let amd64 = fixture["amd64"].as_str().unwrap().as_bytes();
         let arm64 = fixture["arm64"].as_str().unwrap().as_bytes();
         let lock = &fixture["lock"];
@@ -869,17 +862,6 @@ mod tests {
         assert!(super::compare_sdk_inventory(legacy, arm64, "linux/arm64").is_err());
     }
 
-    #[test]
-    fn floating_action_plant_is_rejected() {
-        assert!(!action_reference_is_pinned("uses: actions/checkout@v4"));
-        assert!(action_reference_is_pinned(
-            "uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-        ));
-        assert!(!action_reference_is_pinned(
-            "uses: ./.github/actions/prismpm"
-        ));
-    }
-
     macro_rules! workflow_tests {
         ($(fn $name:ident() { $file:literal, $controls:literal, $count:literal, $accept:ident })+) => { $(
             #[test]
@@ -894,20 +876,6 @@ mod tests {
         fn shallow_checkout_plant_is_rejected() { "prismpm.yml", "history", 2, workflow_history_is_complete }
         fn project_overwrite_plant_is_rejected() { "template-update.yml", "template_update", 5, update_preserves_project_content }
         fn incomplete_release_lifecycle_plant_is_rejected() { "prismpm.yml", "lifecycle", 5, pipeline_lifecycle_is_complete }
-    }
-
-    #[test]
-    fn mutable_sdk_plant_is_rejected() {
-        let digest = sha256(b"test SDK");
-        let github = "ghcr.io/uor-foundation/prismpm-sdk";
-        assert!(!immutable_image(&format!("{github}:latest")));
-        assert!(immutable_image(&format!("{github}@{digest}")));
-        assert!(immutable_image(&format!(
-            "localhost:5000/prismpm-sdk@{digest}"
-        )));
-        assert!(!immutable_image(&format!(
-            "localhost:65536/prismpm-sdk@{digest}"
-        )));
     }
 
     #[test]

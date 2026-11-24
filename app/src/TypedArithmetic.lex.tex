@@ -206,7 +206,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Bool,
-  body: (if ((project left ty) =? 43) then (((((((kind =? 0) && ((project rhs ty) =? 0)) && (((project output ty) =? 0) || ((project output ty) =? 43))) && (NormPlan::sameShape left rhs)) && ((project rhs s0) =? 4)) && (((project output s0) <=? (project output s1)) && (((project output s1) <=? (project output s2)) && ((project output s2) <=? (project output s3))))) && ((prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat) <=? 2147483647)) else ((repeatValid left rhs) && (storageTuple (project left ty) (project rhs ty) (project output ty)))),
+  body: (if ((project left ty) =? 43) then (((((((kind =? 0) && ((project rhs ty) =? 0)) && (((project output ty) =? 0) || ((project output ty) =? 43))) && (if ((project output ty) =? 43) then (repeatValid left rhs) else (NormPlan::sameShape left rhs))) && ((project rhs s0) =? 4)) && (((project output s0) <=? (project output s1)) && (((project output s1) <=? (project output s2)) && ((project output s2) <=? (project output s3))))) && ((prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat) <=? 2147483647)) else ((repeatValid left rhs) && (storageTuple (project left ty) (project rhs ty) (project output ty)))),
   executable: true
 }
 

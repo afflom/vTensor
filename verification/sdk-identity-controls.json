@@ -1,0 +1,44 @@
+{
+  "hashes": [
+    [
+      "",
+      "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "abc",
+      "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    ]
+  ],
+  "immutable_images": [
+    [
+      "ghcr.io/uor-foundation/prismpm-sdk:latest",
+      false
+    ],
+    [
+      "ghcr.io/uor-foundation/prismpm-sdk@sha256:4635e6d887553f51cafed8d2055b9bd3223e76beafa844ecf52c9e864ad3e259",
+      true
+    ],
+    [
+      "localhost:5000/prismpm-sdk@sha256:4635e6d887553f51cafed8d2055b9bd3223e76beafa844ecf52c9e864ad3e259",
+      true
+    ],
+    [
+      "localhost:65536/prismpm-sdk@sha256:4635e6d887553f51cafed8d2055b9bd3223e76beafa844ecf52c9e864ad3e259",
+      false
+    ]
+  ],
+  "action_pins": [
+    [
+      "uses: actions/checkout@v4",
+      false
+    ],
+    [
+      "uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      true
+    ],
+    [
+      "uses: ./.github/actions/prismpm",
+      false
+    ]
+  ]
+}

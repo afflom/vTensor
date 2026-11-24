@@ -262,6 +262,7 @@ model does not sanction.
 | `VT-172` | `build` | Ordinary F16 and indexed BF16 matrix products consume BF16 activation rows at their stored precision |
 | `VT-173` | `build` | Packed addition broadcasts repeated rows along three GGML axes before encoding or updating the destination |
 | `VT-174` | `build` | Copied and in-place packed GGML addition repeats scalar and partial-width addends across all four axes |
+| `VT-175` | `build` | F8_E4M3 addition repeats dense and offset padded F32 addends across all four axes |
 
 ## normalization-graphs
 

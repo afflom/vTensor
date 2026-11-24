@@ -4,16 +4,18 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Implement F8_E4M3 addition with four-axis F32 broadcasts and verify offset, padded addends.
+- [ ] Implement packed ADD for the seven remaining codebook destinations. Compare GGML CPU F32 sums encoded by the original codebook quantizers.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,090 non-Prism lines** (12,639 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,080 non-Prism lines** (12,629 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Switch the signed-conversion and narrowing patches to the Verdant registry when released. [PR #63](https://github.com/afflom/verdant-engine/pull/63) · [PR #64](https://github.com/afflom/verdant-engine/pull/64)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
 
+- [x] Verify copied and in-place E4M3 ADD on 12 four-axis broadcasts with dense and offset, padded F32 addends. Compare all 6,144 output bytes. [VT-175](verification/supplemental-e4m3-add-vt175.json)
+- [x] Confirm both Verdant conversion patches merged into upstream main. VT-02 passes with all 101 Verdant crates locked at the reviewed patch. [Upstream merge](https://github.com/afflom/verdant-engine/commit/0b101c469bbb39b0e28549665b067c88f3727fbc)
 - [x] Broadcast scalar and half-width addends across all four axes in each of the 18 encodable same-type packed ADD paths. Compare 72 copied and in-place graphs with GGML CPU. [VT-174](verification/supplemental-packed-lanes-vt174.json)
 - [x] Broadcast F32 rows along axes 1–3 in packed addition across 625 storage pairs. Restore swapped GLU execution and replay all five affected suites. [VT-173](verification/supplemental-packed-broadcast-vt173.json)
 - [x] Link each of the 100 public opcodes to its original CPU dispatch, factory graph signatures and supplemental evidence. [Opcode index](verification/ggml-operation-evidence.tsv)

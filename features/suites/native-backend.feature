@@ -710,3 +710,9 @@ Feature: native-backend
     Given 18 CPU-encodable packed GGML weight formats and finite F32 addends of one or half a row
     When the unmodified scheduler places each copied and in-place four-axis broadcast on vTensor
     Then every stored byte in 72 graphs matches the original CPU repeat and addition kernels
+
+  @VT-175 @build
+  Scenario: F8_E4M3 addition repeats dense and offset padded F32 addends across all four axes
+    Given finite E4M3 rows and F32 addends of one, eight or sixteen lanes in dense or padded views
+    When the GGML scheduler places copied and in-place additions on vTensor
+    Then every stored byte in 12 graphs matches the original CPU repeat and addition kernels

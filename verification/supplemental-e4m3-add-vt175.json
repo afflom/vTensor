@@ -1,0 +1,33 @@
+{
+  "requirement": "VT-175",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "semantic_id": "7463fcf67c7128acb3b0a0b3e8c108bfcfb9fd8f7af0aca143cc63e2193b3943",
+  "attestation": "4f89f50c91a10809efa561ec7eabbee0d52f2fba90c2809c966acc37424be00a",
+  "provider_sha256": "ac413dfe84e898f9e72c2fca6512263044057a5646eac3d6bede1ca3fad13f0c",
+  "oracle": "Original GGML CPU REPEAT materializes the F32 operand and original CPU ADD or ADD_INPLACE produces the E4M3 result.",
+  "left_shape": [
+    16,
+    4,
+    4,
+    2
+  ],
+  "rhs_shape": [
+    "period",
+    2,
+    2,
+    1
+  ],
+  "periods": [
+    1,
+    8,
+    16
+  ],
+  "rhs_views": [
+    "dense",
+    "four-byte offset with two padding words per row"
+  ],
+  "graphs": 12,
+  "stored_bytes_compared": 6144,
+  "negative_control": "Forcing the provider to fetch every F32 addend from offset zero failed tensor_bytes(out)==expected. The restored provider passed.",
+  "source_lines": 12629
+}

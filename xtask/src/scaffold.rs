@@ -265,10 +265,7 @@ mod tests {
         let root = &fixture.root;
         let register = || std::fs::read_to_string(root.join("model/ids.toml")).unwrap();
         let ids = register();
-        let invalid: [Vec<String>; 9] = pinned_fixture!(
-            "scaffold-invalid-arguments",
-            "fc93df63dedd481e217c462b7ccf7b46cdfca33829ca1dd06b87a6a1268882bf"
-        );
+        let invalid: [Vec<String>; 9] = pinned_fixture!("scaffold-invalid-arguments");
         for arguments in invalid {
             assert!(
                 new_capability(root, &arguments).is_err(),

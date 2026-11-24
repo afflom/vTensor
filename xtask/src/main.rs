@@ -12,12 +12,26 @@ use repo_model::{codegen, Model};
 
 // A compiled fixture carries its reviewed digest, including in focused gate runs.
 macro_rules! pinned_fixture {
-    ($name:literal, $digest:literal) => {{
+    ($name:literal) => {{
         let bytes = include_bytes!(concat!("../../verification/", $name, ".json"));
-        assert_eq!(repo_model::artifact::sha256_hex(bytes), $digest, $name);
+        assert_eq!(
+            repo_model::artifact::sha256_hex(bytes),
+            crate::FIXTURE_DIGESTS[$name],
+            $name
+        );
         serde_json::from_slice(bytes).expect($name)
     }};
 }
+
+static FIXTURE_DIGESTS: std::sync::LazyLock<std::collections::BTreeMap<&str, &str>> =
+    std::sync::LazyLock::new(|| {
+        let bytes = include_bytes!("../../verification/xtask-fixture-digests.json");
+        assert_eq!(
+            repo_model::artifact::sha256_hex(bytes),
+            "3a063983fdeaeb4cd5cc1d98038df2e94bff2502a79cdd755e4f99849dc3b75f"
+        );
+        serde_json::from_slice(bytes).expect("pinned xtask fixture digests")
+    });
 
 mod audit;
 mod bootstrap;
@@ -194,12 +208,7 @@ mod test_repo {
         check: impl Fn(&TestRepo) -> Result<(), super::Fail>,
     ) {
         static SUITES: std::sync::LazyLock<std::collections::BTreeMap<String, Suite>> =
-            std::sync::LazyLock::new(|| {
-                pinned_fixture!(
-                    "repository-gate-fixtures",
-                    "c72231192e8d2e034efef570ddd3f719d54a0562815a58b924e202f5034ba8d5"
-                )
-            });
+            std::sync::LazyLock::new(|| pinned_fixture!("repository-gate-fixtures"));
         let suite = &SUITES[suite];
         let cases = &suite.cases[name];
         assert_eq!(cases.len(), count);

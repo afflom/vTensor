@@ -316,10 +316,7 @@ mod tests {
         "sdk ghcr.io/uor-foundation/prismpm-sdk-candidate@sha256:cd3b\nprismpm 0.3.0\n";
 
     fn proof() -> serde_json::Value {
-        pinned_fixture!(
-            "proof-reuse-documents",
-            "838d9933dbd95cb9b8a89c26f6e52ae2f6fe6ab4b8dd2786c3550a7ed9235499"
-        )
+        pinned_fixture!("proof-reuse-documents")
     }
 
     /// Seals a proof the way `prismpm verify` does: the manifest hashes the
@@ -344,12 +341,8 @@ mod tests {
         }
     }
 
-    static OBSERVATIONS: std::sync::LazyLock<serde_json::Value> = std::sync::LazyLock::new(|| {
-        pinned_fixture!(
-            "proof-reuse-observations",
-            "3e9ef5b1daecc5dae3ed9e692ae9449f4c72b61ce6f4acb6df58976e73ddbfcb"
-        )
-    });
+    static OBSERVATIONS: std::sync::LazyLock<serde_json::Value> =
+        std::sync::LazyLock::new(|| pinned_fixture!("proof-reuse-observations"));
     fn observed() -> Observed {
         serde_json::from_value(OBSERVATIONS["baseline"].clone()).unwrap()
     }

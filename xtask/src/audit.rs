@@ -826,12 +826,7 @@ pub mod prism {
         }
         fn compare_budget_cases(name: &str, count: usize) {
             static CASES: std::sync::LazyLock<BTreeMap<&str, Vec<BudgetCase>>> =
-                std::sync::LazyLock::new(|| {
-                    pinned_fixture!(
-                        "source-budget-controls",
-                        "5a2936c3574b36636a36d00c0530b8c0492930faa82bf56347808bd7af5c3de3"
-                    )
-                });
+                std::sync::LazyLock::new(|| pinned_fixture!("source-budget-controls"));
             let cases = &CASES[name];
             assert_eq!(cases.len(), count);
             let snapshot = |files: &BTreeMap<&str, String>| {
