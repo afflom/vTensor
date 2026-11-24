@@ -67,6 +67,8 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn numeric_input_binary_vt_187() { "numeric-input-binary", 1319, ["typed", "pointwise"] }
+    fn numeric_input_cast_vt_187() { "numeric-input-cast", 4725, ["typed", "pointwise"] }
     fn scalar_matrix_rounding_vt_186() { "matrix-rounding", 8, ["matrix"] }
     fn bfloat_products_vt_172() { "bfloat-products", 8, ["matrix"] }
     fn prepacked_precision_vt_171() { "prepacked-precision", 1150, ["matrix"] }
@@ -1274,7 +1276,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a6349f4c55766e0698893cb0f789d14c8f65f4e6e894dedb32f2f8639d257fed",
+            "59e15e032d08cc80198f4254da7906e198b7f87c913a02603eae83af1843cca5",
         )
     });
 
@@ -2336,48 +2338,28 @@ int main(int argc, char **argv) {
     }
     const bool integer_rows=!strcmp(argv[3],"integer-rows");
     if (integer_rows || !strcmp(argv[3],"activation-q8")) {
-        size_t cases=0;
-        for (auto to : {GGML_TYPE_Q8_1,GGML_TYPE_Q8_K,GGML_TYPE_I32}) for (auto from : {GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16}) {
-            if (integer_rows!=(to==GGML_TYPE_I32) || (integer_rows && from==GGML_TYPE_BF16)) continue;
-            const auto width=integer_rows?8:ggml_blck_size(to);
-            for (int variant=integer_rows?2:0;variant<(integer_rows?6:from==GGML_TYPE_BF16?2:4);++variant) {
-                const bool padded=variant==1 || variant>=4;
-                std::vector<unsigned char> expected;
-                for (auto selected : {reference,backend}) {
-                    graph_fixture ctx(12); CHECK(ctx);
-                    auto src=ggml_new_tensor_2d(ctx,from,width,2);
-                    auto dst=ggml_new_tensor_2d(ctx,to,padded?2*width:width,3);
-                    auto view=ggml_view_2d(ctx,dst,width,variant>=4?3:2,dst->nb[1],padded?ggml_type_size(to):0);
-                    auto idx=ggml_new_tensor_1d(ctx,variant%2?GGML_TYPE_I64:GGML_TYPE_I32,2);
-                    auto out=variant>=2?ggml_set_rows(ctx,variant>=4?view:dst,src,idx):variant==1 && selected==backend?ggml_cpy(ctx,src,view):ggml_cast(ctx,src,to);
-                    auto graph=ctx.allocate(out,selected,selected==backend); CHECK(graph);
-                    ggml_backend_buffer_clear(ctx.storage.get(),0xa5);
-                    for (int i=0;i<2*width;++i) ggml_set_f32_1d(src,i,float((i*13)%31-15)/8);
-                    if (integer_rows) {
-                        ggml_set_f32_1d(src,0,from==GGML_TYPE_F16?65504.f:2147483520.f);
-                        ggml_set_f32_1d(src,1,from==GGML_TYPE_F16?-65504.f:-2147483648.f);
-                    }
-                    set_scalar_word(idx,0,2); set_scalar_word(idx,1,0);
-                    CHECK(ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-                    auto storage=variant==0?out:dst;
-                    if (selected==reference) {
-                        expected=tensor_bytes(storage);
-                        if (variant==1) for (int row=0;row<2;++row)
-                            ggml_backend_tensor_get(out,expected.data()+view->view_offs+row*view->nb[1],row*out->nb[1],out->nb[1]);
-                    }
-                    else {
-                        CHECK(tensor_bytes(storage)==expected);
-                        if (integer_rows) {
-                            set_scalar_word(idx,1,3);
-                            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(storage)==expected);
-                            set_scalar_word(idx,1,0);
-                        }
-                        ggml_set_f32_1d(src,2*width-1,NAN);
-                        CHECK(refuses_poisoned_output(backend,graph,storage));
-                    }
-                }
-                ++cases;
+        size_t cases=0; int from,to,width,variant;
+        while(scanf("%d%d%d%d",&from,&to,&width,&variant)==4) {
+            const bool padded=variant==1 || variant>=4;
+            graph_fixture ctx(12); CHECK(ctx);
+            auto src=ggml_new_tensor_2d(ctx,ggml_type(from),width,2);
+            auto dst=ggml_new_tensor_2d(ctx,ggml_type(to),padded?2*width:width,3);
+            auto view=ggml_view_2d(ctx,dst,width,variant>=4?3:2,dst->nb[1],padded?ggml_type_size(ggml_type(to)):0);
+            auto idx=ggml_new_tensor_1d(ctx,variant%2?GGML_TYPE_I64:GGML_TYPE_I32,2);
+            auto out=variant>=2?ggml_set_rows(ctx,variant>=4?view:dst,src,idx):variant==1?ggml_cpy(ctx,src,view):ggml_cast(ctx,src,ggml_type(to));
+            auto graph=ctx.allocate(out,backend,true); CHECK(graph);
+            ggml_backend_buffer_clear(ctx.storage.get(),0xa5);
+            CHECK(load_tensor_bytes(src) && load_tensor_bytes(idx));
+            auto storage=variant==0?out:dst; auto expected=read_hex_bytes(ggml_nbytes(storage)); CHECK(!expected.empty());
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS && tensor_bytes(storage)==expected);
+            if (integer_rows) {
+                set_scalar_word(idx,1,3);
+                CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(storage)==expected);
+                set_scalar_word(idx,1,0);
             }
+            ggml_set_f32_1d(src,2*width-1,NAN);
+            CHECK(refuses_poisoned_output(backend,graph,storage));
+            ++cases;
         }
         return finish(cases);
     }

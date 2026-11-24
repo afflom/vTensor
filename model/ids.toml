@@ -1188,3 +1188,9 @@ id = "VT-186"
 level = "build"
 suite = "native-backend"
 statement = "Scalar matrix and expert products follow GGML multiplication and accumulation rounding"
+
+[[id]]
+id = "VT-187"
+level = "build"
+suite = "native-backend"
+statement = "Signed and binary64 right operands participate in decoded GGML row arithmetic"

@@ -274,6 +274,7 @@ model does not sanction.
 | `VT-184` | `build` | GGML ADD_CAST stores bounded signed integers and binary64 results from decoded rows |
 | `VT-185` | `build` | Scalar flash attention rounds each product to binary32 and accumulates in binary64 order |
 | `VT-186` | `build` | Scalar matrix and expert products follow GGML multiplication and accumulation rounding |
+| `VT-187` | `build` | Signed and binary64 right operands participate in decoded GGML row arithmetic |
 
 ## normalization-graphs
 

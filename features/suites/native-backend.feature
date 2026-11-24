@@ -782,3 +782,9 @@ Feature: native-backend
     Given scalar matrix rows with cancellation in the product and the running sum
     When ordinary and indexed graphs are placed and executed
     Then every F32 word matches the original generic GGML CPU
+
+  @VT-187 @build
+  Scenario: Signed and binary64 right operands participate in decoded GGML row arithmetic
+    Given a floating or packed left operand and a signed or binary64 right operand
+    When the scheduler places ordinary, in-place and ADD_CAST graphs
+    Then every stored row matches the original GGML and SoftFloat conversion and arithmetic oracles

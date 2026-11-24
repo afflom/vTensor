@@ -547,8 +547,8 @@ definition{
   result: Bool,
   body: (let ty : Nat := (project rhs ty);
     (if ((left =? output) || ((kind =? 0) && (((ty =? 0) || (packedTarget output)) || (rowScalarOutput output)))) then
-      ((((0 <? (binaryWordBytes ty)) || ((packedTarget ty) && (if ((ty =? 9) || (ty =? 15)) then false else true))) &&
-        ((project rhs s0) =? (rowTargetWidth ty))) && ((prim remainder (project rhs n0) (storeBlockLanes ty) 1 : Nat) =? 0))
+      ((((rowScalarOutput ty) || ((packedTarget ty) && (if ((ty =? 9) || (ty =? 15)) then false else true))) &&
+        ((project rhs s0) =? (rowResultWidth ty))) && ((prim remainder (project rhs n0) (storeBlockLanes ty) 1 : Nat) =? 0))
       else false)),
   executable: true
 }

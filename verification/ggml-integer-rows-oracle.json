@@ -1,0 +1,10 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "build": "The unmodified pinned CPU was compiled by the repository conformance recipe with GGML_CPU_GENERIC, -ffp-contract=off and one worker.",
+  "graphs": 8,
+  "words_sha256": "a9d174dc92bb5b61e45ef74008f8e24f0e0ad8d4f371617e5d2bdfde4298e6aa",
+  "compression": "gzip",
+  "reference": "Replay each original VT-167/168 GGML reference constructor from de94625 once, preserving its exact floating input, both indices and complete initialized destination bytes. For the strided Q8 copy place the original GGML CAST rows at the old oracle view offsets. Every provider graph repeats its allocation, placement, bounds and late-failure checks."
+}

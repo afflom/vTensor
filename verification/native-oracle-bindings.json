@@ -455,7 +455,11 @@
     "ggml-matrix-rounding-oracle": "a648dba3aa19a406d087c5a336b2a880da6f6381f120a97a8e38b3434f1125f7",
     "ggml-pool-gradients-oracle": "d618c480f3bbc04c6ada027470fb7415aabca29c443d15340719b7dbbf93b67e",
     "ggml-column-gradients-oracle": "da0a12e03f60239144ed1991237561431759a9de579ce1087bbab9a91cc6d2fa",
-    "ggml-e4m3-repeat-oracle": "ee19733d632857b93d6ba1047121b9afa2ce8b6130a9728b26f93db7c026941f"
+    "ggml-e4m3-repeat-oracle": "ee19733d632857b93d6ba1047121b9afa2ce8b6130a9728b26f93db7c026941f",
+    "ggml-numeric-input-binary-oracle": "52e30b4f0789c7facb1b2e749fd5e421e08888267295d694cff16c142bf2a813",
+    "ggml-numeric-input-cast-oracle": "7697d53bacfce5501fe5585da6c881fc05f904c7bf94d8a83623b70c34e10c29",
+    "ggml-integer-rows-oracle": "8da1882d1737393b1d7d81924bf219791483d99b8e2e4c2df70fafba3a03c90a",
+    "ggml-activation-q8-oracle": "b69551f8f44bad6c2d01c6406055259b76d7172e75fbf0a2e98d8dfd05ad43dd"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -661,7 +665,11 @@
     "matrix-rounding": "ggml-matrix-rounding",
     "pool-gradients": "ggml-pool-gradients",
     "column-gradients": "ggml-column-gradients",
-    "e4m3-repeat": "ggml-e4m3-repeat"
+    "e4m3-repeat": "ggml-e4m3-repeat",
+    "numeric-input-binary": "ggml-numeric-input-binary",
+    "numeric-input-cast": "ggml-numeric-input-cast",
+    "integer-rows": "ggml-integer-rows",
+    "activation-q8": "ggml-activation-q8"
   },
   "drivers": {
     "binary-widths": "scalar-casts",
@@ -671,6 +679,8 @@
     "wide-staged": "scalar-casts",
     "integer-widths": "scalar-casts",
     "integer-floats": "scalar-casts",
-    "octet-integers": "scalar-casts"
+    "octet-integers": "scalar-casts",
+    "numeric-input-binary": "scalar-binary",
+    "numeric-input-cast": "mixed-cast"
   }
 }

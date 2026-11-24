@@ -1,0 +1,40 @@
+{
+  "requirement": "VT-187",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracles": [
+    "ggml-numeric-input-binary-oracle.json",
+    "ggml-numeric-input-cast-oracle.json"
+  ],
+  "attestations": {
+    "typed": "f472f3124f86439986476c31cf2012bb540291a424bdf6a7ea70af43c3377802",
+    "pointwise": "b32685d53dcca0011a7f49e46235e670e48f02206980a9e4670ede821898dac1"
+  },
+  "provider_sha256": "e336d112ee0d5fe6385d6970eca26ff42e214186152ee4e143401783bd2b6134",
+  "new_placements_by_constructor": {
+    "add": 145,
+    "add_inplace": 145,
+    "sub": 145,
+    "sub_inplace": 145,
+    "mul": 145,
+    "mul_inplace": 145,
+    "div": 145,
+    "div_inplace": 145,
+    "add_cast": 4860
+  },
+  "new_placements_by_right_operand": {
+    "i8": 1204,
+    "i16": 1204,
+    "i32": 1204,
+    "i64": 1204,
+    "f64": 1204
+  },
+  "shared_original_cpu_arithmetic_graphs": 116,
+  "additional_original_boundary_graphs": 12,
+  "ordinary_and_in_place_scheduled_graphs": 1160,
+  "distinct_cast_graphs": 4725,
+  "identical_add_cast_descriptors": 135,
+  "additional_boundary_executions": 24,
+  "stored_values_compared": 3014656,
+  "negative_control": "The previous provider refused both graph families at placement. Reversing the decoded I64 sign bit failed the I64 right-operand oracle. Restoring the conversion reproduced the passing plugin digest.",
+  "non_prism_lines": 12541
+}

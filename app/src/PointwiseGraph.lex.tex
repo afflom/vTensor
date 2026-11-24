@@ -345,7 +345,7 @@ inductive{
       fields: [Nat, IndexContext, IndexContext, CopyMode, Nat, Nat, Nat, Nat, Nat, Nat, Nat]
     },
     {name: emptyRow, fields: [Nat, Nat, Nat, Nat]},
-    {name: rowScalarStore, fields: [Nat]}
+    {name: rowScalarConversion, fields: [Nat, Nat]}
   ]
 }
 
@@ -3357,14 +3357,18 @@ definition{
 }
 
 definition{
-  name: rowScalarStore,
-  parameters: [destination : Nat],
+  name: rowScalarConversion,
+  parameters: [source : Nat, destination : Nat],
   result: GraphResponse,
-  body: (if ((24 <=? destination) && (destination <=? 28)) then
-    (let stages : Nat := (wideCastStages 0 destination);
-      (ctor GraphResponse.scalarStore (wideCastStep 0 destination 0 stages)
-        (if (stages =? 1) then (ctor Option.none [WordOperation]) else (ctor Option.some [WordOperation] (wideCastStep 0 destination 1 stages)))))
-    else (ctor GraphResponse.scalarStore (castWord 0 destination) (ctor Option.none [WordOperation]))),
+  body: (let storage : Nat := (if (source =? 0) then destination else source);
+    (if ((source =? 0) || (destination =? 0)) then (if ((24 <=? storage) && (storage <=? 28)) then
+    (let stages : Nat := (wideCastStages source destination);
+      (ctor GraphResponse.scalarStore (wideCastStep source destination 0 stages)
+        (if (stages =? 1) then (ctor Option.none [WordOperation]) else (ctor Option.some [WordOperation] (wideCastStep source destination 1 stages)))))
+    else (if (copyFloatType storage) then (ctor GraphResponse.scalarStore (castWord source destination) (ctor Option.none [WordOperation]))
+      else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))))
+    else (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape)))),
+
   executable: true
 }
 
@@ -3656,7 +3660,7 @@ definition{
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
     | GraphRequest.executionStep index source destination mode flag auxiliary bytes x0 x1 x2 x3 => (executionStep index source destination mode flag auxiliary true bytes x0 x1 x2 x3)
     | GraphRequest.bindings mode => (sourceBindings mode)
-    | GraphRequest.rowScalarStore destination => (rowScalarStore destination)
+    | GraphRequest.rowScalarConversion source destination => (rowScalarConversion source destination)
     | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}

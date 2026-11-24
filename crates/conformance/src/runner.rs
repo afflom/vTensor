@@ -959,7 +959,24 @@ fn float_bytes(values: &mut [f32]) -> &mut [u8] {
     }
 }
 
+struct ScalarCast(WordOperation, Option<WordOperation>);
+impl ScalarCast {
+    fn new(source: c_int, destination: c_int) -> Result<Self, BackendError> {
+        let reply = pointwise(GraphRequest::C8(source as u64, destination as u64))?;
+        tensor_fields!(GraphResponse::C12(stage, tail) = reply);
+        Ok(Self(stage, tail))
+    }
+
+    fn apply(&self, input: u64) -> Result<u64, BackendError> {
+        let first = word_value(self.0.clone(), input, 0)?;
+        self.1
+            .as_ref()
+            .map_or(Ok(first), |next| word_value(next.clone(), first, 0))
+    }
+}
+
 struct TensorInput<'a> {
+    scalar_read: Option<ScalarCast>,
     block_lanes: usize,
     block_bytes: usize,
     bytes: &'a [u8],
@@ -979,6 +996,7 @@ impl<'a> TensorInput<'a> {
             unsafe { std::slice::from_raw_parts(graph_tensor_region(t, span)?, span) }
         };
         Ok(Self {
+            scalar_read: None,
             bytes,
             block_lanes,
             block_bytes,
@@ -1436,10 +1454,13 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     // Word instructions can update their input in place. Only staged row conversion
     // retains an immutable input slice throughout the instruction loop.
     let source = (*width != 0).then(|| TensorInput::new(left)).transpose()?;
-    let right = secondary
+    let mut right = secondary
         .filter(|_| *row_arithmetic)
         .map(TensorInput::new)
         .transpose()?;
+    if let Some(input) = right.as_mut().filter(|input| (24..=28).contains(&input.ty)) {
+        input.scalar_read = Some(ScalarCast::new(input.ty, 0)?);
+    }
     let pointer = |tensor, input: Option<&TensorInput>| match input {
         Some(input) => Ok(input.bytes.as_ptr().cast_mut()),
         None => graph_tensor_data(tensor),
@@ -1452,13 +1473,9 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let mut offsets = Vec::new();
     let mut encoded = Vec::new();
     let (TensorDescriptor::C0(.., span, _), lanes, block_bytes) = tensor_layout(tensor)?;
-    let scalar_store = if source.is_some() && lanes == 1 {
-        let reply = pointwise(GraphRequest::C8(tensor.ty as u64))?;
-        tensor_fields!(GraphResponse::C12(stage, tail) = reply);
-        Some((stage, tail))
-    } else {
-        None
-    };
+    let scalar_store = (source.is_some() && lanes == 1)
+        .then(|| ScalarCast::new(0, tensor.ty))
+        .transpose()?;
     let uniform = importance
         .map(|word| workspace(lanes as u64, f32::from_bits(word as u32)))
         .transpose()?;
@@ -1505,12 +1522,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                             encoded.extend(row.codes.map(|code| code as u8));
                             encoded.extend(row.sums.into_iter().flat_map(i16::to_ne_bytes));
                         }
-                        (_, Some((stage, tail))) => {
-                            let bits = u64::from(block_values[0].to_bits());
-                            let mut word = word_value(stage.clone(), bits, 0)?;
-                            if let Some(next) = tail {
-                                word = word_value(next.clone(), word, 0)?;
-                            }
+                        (_, Some(cast)) => {
+                            let word = cast.apply(block_values[0].to_bits().into())?;
                             encoded.resize(start + block_bytes, 0);
                             // SAFETY: the appended scratch block contains exactly block_bytes bytes.
                             unsafe {
@@ -2347,12 +2360,20 @@ mod attention {
                     at = at.checked_add(self.nb[0] as u64).ok_or(Overflow)?;
                 }
                 let encoded = self.region(at, self.block_bytes)?;
-                decode_block(
-                    self.ty as u64,
-                    encoded,
-                    float_bytes(block),
-                    size_of::<f32>(),
-                )?;
+                if let Some(cast) = &self.scalar_read {
+                    // SAFETY: the checked scalar slice contains one full stored word.
+                    let raw = unsafe {
+                        super::scalar_word(encoded.as_ptr().cast_mut(), encoded.len() as u64, None)?
+                    };
+                    block[0] = f32::from_bits(cast.apply(raw)? as u32);
+                } else {
+                    decode_block(
+                        self.ty as u64,
+                        encoded,
+                        float_bytes(block),
+                        size_of::<f32>(),
+                    )?;
+                }
             }
             Ok(())
         }
