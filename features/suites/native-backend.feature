@@ -536,3 +536,9 @@ Feature: native-backend
     Given four source pixels around a GGML sample position
     When vTensor interpolates with half-pixel or aligned-corner coordinates
     Then its outputs agree with the pinned CPU backend
+
+  @VT-146 @build
+  Scenario: Prism models GGML bicubic convolution weights and strided sampling through Verdant against the pinned CPU
+    Given a strided four-dimensional GGML input
+    When GGML selects bicubic interpolation with either corner convention
+    Then vTensor matches the four-by-four CPU convolution at each output sample
