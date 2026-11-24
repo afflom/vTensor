@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,218 passed**, **537 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,220 passed**, **535 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -166,7 +166,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5), RWKV_WKV6 (4), RWKV_WKV7 (5), GATED_LINEAR_ATTN (4) and SOLVE_TRI (26).
 - [x] Pass all 48 SOFT_MAX_BACK graphs at both scales. The GGML CPU verified 24 zero-bias cases and GGML Vulkan verified 24 positive-bias cases. [Oracle comparisons](verification/factory-softmax-gradients-vt121.json)
 - [x] Pass SILU_BACK and compare 132 gradients on independently padded views with GGML CPU. [VT-124](verification/factory-silu-gradient-vt124.json)
-- [ ] Pass cross-entropy forward (2) and backward (2), SGD (1) and AdamW (1). Verify gradients and parameter updates.
+- [ ] Pass both cross-entropy forward cases and both backward cases. Verify the logit gradients.
+- [x] Pass SGD and AdamW. Compare 3,264 weights, moments, gradients and padding words through three repeated updates. [VT-131](verification/factory-optimizer-updates-vt131.json)
 - [x] Import the pinned llama.cpp scheduler-delay oracle. Its four CPU controls passed timing, buffer aliasing and byte identity, including a chain of four delays. [Upstream timing test](vendor/llama.cpp-oracle/tests/test-sleep.cpp)
 - [x] Verify all three SLEEP factory cases and chained scheduler timing, aliasing and byte preservation. [VT-123](verification/factory-scheduler-delay-vt123.json)
 - [ ] Implement MAP_CUSTOM1/2/3 and CUSTOM. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.

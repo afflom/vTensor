@@ -1,0 +1,99 @@
+{
+  "requirement": "VT-131",
+  "implementation": "ea4fc79e62bba5a36c88dbe29f63896ea71f19c5",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "verdant_revision": "73a30d7262e75c068a84001412f4fbfb8915cc29",
+  "prism_attestation": "068699d543e993ced66b699f004a167253eccedb3afb1d4c4b5307e987f4d835",
+  "pointwise_lock_sha256": "ed61a1fbf476364a04106d443c7df789a717355ca73cc59911cca9e623703ba7",
+  "provider_sha256": "356b4c1e63005b67f79bc95d3d3625f9939ed077b97109eb38587f0df2903ed7",
+  "provider_inputs_sha256": "0e72d8f2b8e6fe4ad00c3e166b120143a1492825dc9a32de63572e32e7a4d617",
+  "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
+  "case_ordinals": {
+    "OPT_STEP_ADAMW": [
+      25021
+    ],
+    "OPT_STEP_SGD": [
+      25022
+    ]
+  },
+  "factory_passed": 2,
+  "transcript_sha256": "13ca8582bd6196b71400e5a8ad879e8c69a2b7d15c0f0abd43e3ca592bf69b00",
+  "supplemental": {
+    "reference": "ggml_opt_step_adamw and ggml_opt_step_sgd on the pinned GGML CPU backend in reference mode",
+    "fixture": "7 columns, 4 rows, three successive updates. Padded cases use offset views with 10 floats per physical row. Compare weights, first and second moments, gradients and padding after each update.",
+    "admission_refusals": [
+      "unexpected sixth source",
+      "missing parameter tensor",
+      "wrong hyperparameter count",
+      "unflagged weight",
+      "incorrect output view offset",
+      "mismatched gradient extent"
+    ],
+    "runner_sha256": "fc0d1689d27997efc82c8371283584e9317d72ef66a71f219f5f0856a731b099",
+    "results": [
+      {
+        "optimizer": "SGD",
+        "row_padding": 0,
+        "zero_learning_rate": false,
+        "words": 336,
+        "max_abs": 2.98023224e-08
+      },
+      {
+        "optimizer": "SGD",
+        "row_padding": 0,
+        "zero_learning_rate": true,
+        "words": 336,
+        "max_abs": 0.0
+      },
+      {
+        "optimizer": "SGD",
+        "row_padding": 3,
+        "zero_learning_rate": false,
+        "words": 480,
+        "max_abs": 2.98023224e-08
+      },
+      {
+        "optimizer": "SGD",
+        "row_padding": 3,
+        "zero_learning_rate": true,
+        "words": 480,
+        "max_abs": 0.0
+      },
+      {
+        "optimizer": "AdamW",
+        "row_padding": 0,
+        "zero_learning_rate": false,
+        "words": 336,
+        "max_abs": 1.1920929e-07
+      },
+      {
+        "optimizer": "AdamW",
+        "row_padding": 0,
+        "zero_learning_rate": true,
+        "words": 336,
+        "max_abs": 0.0
+      },
+      {
+        "optimizer": "AdamW",
+        "row_padding": 3,
+        "zero_learning_rate": false,
+        "words": 480,
+        "max_abs": 1.1920929e-07
+      },
+      {
+        "optimizer": "AdamW",
+        "row_padding": 3,
+        "zero_learning_rate": true,
+        "words": 480,
+        "max_abs": 0.0
+      }
+    ]
+  },
+  "mutation": {
+    "change": "Redirect writes to the second moment into the first moment.",
+    "ordinal": 25021,
+    "observed_nmse": 0.014920799,
+    "upstream_limit": 1e-07
+  }
+}
