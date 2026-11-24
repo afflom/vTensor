@@ -1,6 +1,6 @@
 # vTensor completion checklist
 
-Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,590 passed**, **165 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
+Target the complete backend contract at llama.cpp `9a080f44`. Close each box with a commit and evidence link. Track remaining **contract variants**, **factory cases without a verdict**, and **release blockers** separately. The upstream factory lists 27,755 cases under 154 labels. The direct and supplemental GGML oracle records show **27,605 passed**, **150 refused** and **0 untested**. [GGML pin](vendor/llama.cpp-oracle/upstream.toml) · [Factory inventory](verification/ggml-factory-inventory.json) · [Standalone oracle verdicts](verification/factory-standalone-vt59.json) · [Existing component evidence](README.md#current-evidence)
 
 ## Establish coverage and unblock release
 
@@ -201,8 +201,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Freeze 37,760 GGML CPU output words for 72 gated delta graphs, including 11,840 untouched snapshot words. Add 18 zero-token CPU graphs. [Oracle corpus](verification/ggml-gated-delta-oracle.json)
 - [x] Certify gated delta operand admission, token addressing and newest-first snapshot placement. [Prism export](generated/attention/result.json)
 - [x] Submit the Verdant delta rule. Match 34,218 scores and state values against GGML CPU. [Verdant PR #57](https://github.com/afflom/verdant-engine/pull/57)
-- [x] Implement gated-delta state and cache fusion. Pass 33 original graphs and preserve 18,944 untouched words in 90 supplemental graphs. [VT-149](verification/factory-gated-delta-state-vt149.json)
-- [ ] Finish the remaining 15 gated-delta factory comparisons.
+- [x] Implement gated-delta state and cache fusion. Pass all 43 original scans and five cache fusions, and preserve 18,944 untouched words in 90 supplemental graphs. [VT-149](verification/factory-gated-delta-state-vt149.json)
 - [x] Pass all 26 SOLVE_TRI graphs and 1,392 exact batched solution words. Reject surplus inputs before allocation. [VT-134 comparisons](verification/factory-triangular-solve-vt134.json)
 - [x] Pass all 48 SOFT_MAX_BACK graphs at both scales. The GGML CPU verified 24 zero-bias cases and GGML Vulkan verified 24 positive-bias cases. [Oracle comparisons](verification/factory-softmax-gradients-vt121.json)
 - [x] Pass SILU_BACK and compare 132 gradients on independently padded views with GGML CPU. [VT-124](verification/factory-silu-gradient-vt124.json)
