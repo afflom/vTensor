@@ -1778,7 +1778,7 @@ mod attention {
     };
     use vtensor_attention::{
         Adt0 as Request, Adt1 as Descriptor, Adt2 as Plan, Adt3 as SoftmaxPlan, Adt4 as SparsePlan,
-        Adt5 as IndexerPlan, Adt6 as Response,
+        Adt5 as IndexerPlan, Adt7 as Response,
     };
     use BackendError::{InvalidTensor, Overflow};
 

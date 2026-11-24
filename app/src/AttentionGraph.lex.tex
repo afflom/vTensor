@@ -67,6 +67,21 @@ structure{
   ]
 }
 
+structure{
+  name: DeltaPlan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: query, type: NormPlan::TensorDescriptor},
+    {name: key, type: NormPlan::TensorDescriptor},
+    {name: value, type: NormPlan::TensorDescriptor},
+    {name: gate, type: NormPlan::TensorDescriptor},
+    {name: gain, type: NormPlan::TensorDescriptor},
+    {name: state, type: NormPlan::TensorDescriptor},
+    {name: slots, type: Nat}
+  ]
+}
+
 inductive{
   name: Request,
   type_parameters: [],
@@ -154,7 +169,9 @@ inductive{
       ]
     },
     {name: cacheIndex, fields: [Nat, Nat]},
-    {name: indexerRow, fields: [IndexerPlan, Nat, Nat, Nat, Nat]}
+    {name: indexerRow, fields: [IndexerPlan, Nat, Nat, Nat, Nat]},
+    {name: deltaStart, fields: [DeltaPlan, Nat, Nat]},
+    {name: deltaToken, fields: [DeltaPlan, Nat, Nat, Nat]}
   ]
 }
 
@@ -174,7 +191,10 @@ inductive{
     {name: skip, fields: []},
     {name: cacheCell, fields: [Nat]},
     {name: indexerPlan, fields: [IndexerPlan]},
-    {name: indexerRows, fields: [Nat, Nat, Nat, Nat, Nat]}
+    {name: indexerRows, fields: [Nat, Nat, Nat, Nat, Nat]},
+    {name: deltaPlan, fields: [DeltaPlan]},
+    {name: initialState, fields: [Nat, (Option Nat)]},
+    {name: deltaOffsets, fields: [Nat, Nat, Nat, Nat, Nat, Nat, (Option Nat)]}
   ]
 }
 
@@ -563,13 +583,96 @@ definition{
 }
 
 definition{
+  name: deltaOperand,
+  parameters: [operand : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: ((((project operand ty) =? 0) && (((project operand n0) =? 1) || ((project operand s0) =? 4))) && (NormPlan::separateTensors operand output)),
+  executable: true
+}
+
+definition{
+  name: deltaChannels,
+  parameters: [operand : NormPlan::TensorDescriptor, value : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: (((((project operand n0) =? (project value n0)) && ((project operand n2) =? (project value n2))) && (0 <? (project operand n1))) && (multiple (project value n3) (project operand n3))),
+  executable: true
+}
+
+definition{
+  name: deltaGraph,
+  parameters: [slots : Nat, query : NormPlan::TensorDescriptor, key : NormPlan::TensorDescriptor, value : NormPlan::TensorDescriptor, gate : NormPlan::TensorDescriptor, gain : NormPlan::TensorDescriptor, state : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
+  result: Response,
+  body: (let width : Nat := (project value n0);
+      (let heads : Nat := (project value n1);
+      (let tokens : Nat := (project value n2);
+      (let batches : Nat := (project value n3);
+      (if (((((((((((((((((((((((0 <? width) && (0 <? heads)) && (0 <? batches)) && (0 <? slots)) && (slots <=? 2147483647)) && (deltaOperand query output)) && (deltaOperand key output)) && (deltaOperand value output)) && (deltaOperand gate output)) && (deltaOperand gain output)) && (deltaOperand state output)) && (deltaChannels query value)) && (deltaChannels key value)) && (((project gate n0) =? 1) || ((project gate n0) =? width))) && (((((project gate n0) =? (project gate n0)) && ((project gate n1) =? heads)) && ((project gate n2) =? tokens)) && ((project gate n3) =? batches))) && (((((project gain n0) =? 1) && ((project gain n1) =? heads)) && ((project gain n2) =? tokens)) && ((project gain n3) =? batches))) && (((((project state n0) =? width) && ((project state n1) =? width)) && ((project state n2) =? heads)) && ((project state n3) =? batches))) && (((((project output n0) =? (prim multiply width heads : Nat)) && ((project output n1) =? ((prim multiply tokens batches : Nat) + (prim multiply (prim multiply slots width : Nat) batches : Nat)))) && ((project output n2) =? 1)) && ((project output n3) =? 1))) && ((project output ty) =? 0)) && (contiguousScalar gate 4)) && (contiguousScalar gain 4)) && (contiguousScalar state 4)) && (contiguousScalar output 4)) then (ctor Response.deltaPlan (record DeltaPlan {query := query, key := key, value := value, gate := gate, gain := gain, state := state, slots := slots})) else (ctor Response.invalid)))))),
+  executable: true
+}
+
+definition{
+  name: deltaPlacement,
+  parameters: [trailing : Bool, slots : Nat, querySlot : (Option NormPlan::TensorDescriptor), keySlot : (Option NormPlan::TensorDescriptor), valueSlot : (Option NormPlan::TensorDescriptor), gateSlot : (Option NormPlan::TensorDescriptor), gainSlot : (Option NormPlan::TensorDescriptor), stateSlot : (Option NormPlan::TensorDescriptor), output : NormPlan::TensorDescriptor],
+  result: Response,
+  body: (if trailing then (ctor Response.invalid) else (match querySlot
+    | Option.none => (ctor Response.invalid)
+    | Option.some query => (match keySlot
+    | Option.none => (ctor Response.invalid)
+    | Option.some key => (match valueSlot
+    | Option.none => (ctor Response.invalid)
+    | Option.some value => (match gateSlot
+    | Option.none => (ctor Response.invalid)
+    | Option.some gate => (match gainSlot
+    | Option.none => (ctor Response.invalid)
+    | Option.some gain => (match stateSlot
+    | Option.none => (ctor Response.invalid)
+    | Option.some state => (deltaGraph slots query key value gate gain state output)))))))),
+  executable: true
+}
+
+definition{
+  name: deltaSnapshot,
+  parameters: [value : NormPlan::TensorDescriptor, head : Nat, batch : Nat, slot : Nat],
+  result: Nat,
+  body: (let width : Nat := (project value n0);
+      (let heads : Nat := (project value n1);
+      (let tokens : Nat := (project value n2);
+      (let batches : Nat := (project value n3);
+      (prim multiply 4 ((prim multiply (prim multiply width heads : Nat) (prim multiply tokens batches : Nat) : Nat) + (prim multiply (prim multiply width width : Nat) (head + (prim multiply heads (batch + (prim multiply batches slot : Nat)) : Nat)) : Nat)) : Nat))))),
+  executable: true
+}
+
+definition{
+  name: deltaStart,
+  parameters: [plan : DeltaPlan, head : Nat, batch : Nat],
+  result: Response,
+  body: (let value : NormPlan::TensorDescriptor := (project plan value);
+      (if ((head <? (project value n1)) && (batch <? (project value n3))) then (ctor Response.initialState (rowOffset (project plan state) 0 head batch) (if (((project value n2) =? 0) && ((project plan slots) =? 1)) then (ctor Option.some [Nat] (deltaSnapshot value head batch 0)) else (ctor Option.none [Nat]))) else (ctor Response.invalid))),
+  executable: true
+}
+
+definition{
+  name: deltaToken,
+  parameters: [plan : DeltaPlan, head : Nat, batch : Nat, token : Nat],
+  result: Response,
+  body: (let query : NormPlan::TensorDescriptor := (project plan query);
+      (let key : NormPlan::TensorDescriptor := (project plan key);
+      (let value : NormPlan::TensorDescriptor := (project plan value);
+      (if (((head <? (project value n1)) && (batch <? (project value n3))) && (token <? (project value n2))) then (let slot : Nat := (prim subtract (project value n2) (token + 1) : Nat);
+      (ctor Response.deltaOffsets (rowOffset query (prim remainder head (project query n1) 0 : Nat) token (prim quotient batch (prim quotient (project value n3) (project query n3) 0 : Nat) 0 : Nat)) (rowOffset key (prim remainder head (project key n1) 0 : Nat) token (prim quotient batch (prim quotient (project value n3) (project key n3) 0 : Nat) 0 : Nat)) (rowOffset value head token batch) (rowOffset (project plan gate) head token batch) (rowOffset (project plan gain) head token batch) (prim multiply 4 (prim multiply (project value n0) (head + (prim multiply (project value n1) (token + (prim multiply (project value n2) batch : Nat)) : Nat)) : Nat) : Nat) (if (slot <? (project plan slots)) then (ctor Option.some [Nat] (deltaSnapshot value head batch slot)) else (ctor Option.none [Nat])))) else (ctor Response.invalid))))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
   body: (match request
     | Request.indexerRow plan token head stream key => (indexerRows plan token head stream key)
     | Request.cacheIndex raw cells => (if (raw <? 2147483648) then (if (raw <? cells) then (ctor Response.cacheCell raw) else (ctor Response.invalid)) else (if (raw <? 4294967296) then (ctor Response.skip) else (ctor Response.invalid)))
-    | Request.cachePlacement op trailing p0 p1 p2 p3 a b c d e rows out => (match rows
+    | Request.deltaStart plan head batch => (deltaStart plan head batch)
+    | Request.deltaToken plan head batch token => (deltaToken plan head batch token)
+    | Request.cachePlacement op trailing p0 p1 p2 p3 a b c d e rows out => (if (op =? 83) then (deltaPlacement trailing p0 a b c d e rows out) else (match rows
       | Option.none => (placement op trailing p0 p1 p2 p3 a b c d e out)
       | Option.some indices => (match a
         | Option.none => (ctor Response.invalid)
@@ -577,7 +680,7 @@ definition{
           | Option.none => (ctor Response.invalid)
           | Option.some k => (match c
             | Option.none => (ctor Response.invalid)
-            | Option.some v => (graphPlan op trailing p1 p2 p3 q k v d e rows out)))))
+            | Option.some v => (graphPlan op trailing p1 p2 p3 q k v d e rows out))))))
     | Request.placement op trailing p0 p1 p2 p3 a b c d e out => (placement op trailing p0 p1 p2 p3 a b c d e out)
     | Request.graph opcode extra bias softcap precision query key value mask sink output => (graphPlan opcode extra bias softcap precision query key value mask sink (ctor Option.none [NormPlan::TensorDescriptor]) output)
     | Request.sparse op trailing mask top score blocks extra out => (sparseGraph op trailing mask top score blocks extra out)
