@@ -1,0 +1,31 @@
+{
+  "requirement": "VT-164",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "pairs": [
+    "I64 -> F64",
+    "F64 -> I64",
+    "I64 -> F32"
+  ],
+  "test": "signed64_floats_vt_164",
+  "oracle": "ggml-signed64-float-oracle.json",
+  "words": "ggml-signed64-float-words.tsv",
+  "reference_words": 192,
+  "contiguous_graphs": 3,
+  "padded_reshaped_graphs": 3,
+  "compared_result_words": 384,
+  "compared_destination_bytes": 3200,
+  "invalid_truncations_preserving_destination": 12,
+  "admission_and_placement": "Before allocation the stock scheduler assigned every graph node to the sole vTensor provider. Each result was also admitted after allocation.",
+  "regressions": "The same scheduler checks passed the two binary-width graphs and all 12 signed integer width graphs.",
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "semantic_id": "8c50c1da9f8b878b209e061ad8c5302244c7de99ff9508d64c983e1ee4ded9a5",
+  "attestation": "a3f19de73c56a7902270d1c54f8ee9753f0d65679ed864ea29bfe24adfea53aa",
+  "verdant_revision": "f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac",
+  "verdant_patch": "https://github.com/afflom/verdant-engine/pull/63",
+  "numeric_api": "linear::evaluate_wide modes 7, 8, 9",
+  "missing_behavior": "Before implementation the device refused the first contiguous graph before allocation.",
+  "numeric_plant": "Dropping the upper 32 magnitude bits in Verdant failed its independent SoftFloat comparison at signed input 0x0000000100000000.",
+  "dependency_plant": "Substituting identical local source for verdant_count_f32 failed VT-02. Restoring the patch pinned all 100 Verdant crates to the upstream commit.",
+  "handwritten_lines": 12700,
+  "provider_plant": "Dispatching the I64-to-F64 graph as I64-to-F32 failed the frozen result word comparison. Restoring its Prism-selected operation passed."
+}

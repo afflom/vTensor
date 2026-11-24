@@ -276,8 +276,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "uor-matmul"
 version = "0.1.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "50ddc8d99e7707848c0601ceb6544ec9c3c647e1682a209a4c90c0f109d53510"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#c00aa3bb34bdc7e8b0348879b5c32b4e842b1c4a"
 dependencies = [
  "uor-matmul-codec",
  "uor-matmul-core",
@@ -288,8 +287,7 @@ dependencies = [
 [[package]]
 name = "uor-matmul-codec"
 version = "0.1.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "94f42cf9e627b999723f40f03aec7a31a3f4ed2c229160ea69a6184b1c5d2a23"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#c00aa3bb34bdc7e8b0348879b5c32b4e842b1c4a"
 dependencies = [
  "bytemuck",
  "uor-matmul-core",
@@ -298,8 +296,7 @@ dependencies = [
 [[package]]
 name = "uor-matmul-core"
 version = "0.1.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0241ecfcf2723156bc73f595c8ab7bddf9ec679ada0f7adca159b35fc90dcd2b"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#c00aa3bb34bdc7e8b0348879b5c32b4e842b1c4a"
 dependencies = [
  "bytemuck",
 ]
@@ -307,8 +304,7 @@ dependencies = [
 [[package]]
 name = "uor-matmul-gemm"
 version = "0.1.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "abda6d335115587d26e68833940e4ef1479bdf915ae623d02474728f4516d485"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#c00aa3bb34bdc7e8b0348879b5c32b4e842b1c4a"
 dependencies = [
  "bytemuck",
  "uor-matmul-codec",
@@ -319,8 +315,7 @@ dependencies = [
 [[package]]
 name = "uor-matmul-kernels"
 version = "0.1.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "4f49093aa09e8c48705105c0cf7e7caaba92276485ca4e12b96b8d55be4e4713"
+source = "git+https://github.com/UOR-Foundation/uor-matmul?branch=main#c00aa3bb34bdc7e8b0348879b5c32b4e842b1c4a"
 dependencies = [
  "bytemuck",
  "uor-matmul-core",
@@ -329,8 +324,7 @@ dependencies = [
 [[package]]
 name = "verdant-tensor"
 version = "2.21.7"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0694b73c219fa1d49c9ee15929f62e48b431b1103793085268034be22f455801"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 dependencies = [
  "serde",
  "uor-matmul",
@@ -413,6 +407,7 @@ dependencies = [
  "verdant_round_mantissa_f64",
  "verdant_row_ranking",
  "verdant_scalar_f32",
+ "verdant_signed64_conversion",
  "verdant_signed_truncation",
  "verdant_small_float",
  "verdant_softplus",
@@ -437,590 +432,497 @@ dependencies = [
 [[package]]
 name = "verdant_add_f64"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "bf09983c0d20842144d17bd739e3472ed1adc0fad59fb32f9a42b06274b2012c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_affine_finite"
 version = "2.43.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "4b7b04bf41afbe61c5aa880e812c8aef3f0f40998fd362b7672f71e763eab99c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_affine_fit"
 version = "2.43.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0f284216f1f4c39da19571f2f98d671645e7cc7b1b1fb5c439fec06fe5565369"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_affine_geometry"
 version = "2.43.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "aef24d6b2cb50ae9e0edf35b965e98068c83230e5af8e17e32f68ceb74160f94"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_affine_insert_field"
 version = "2.43.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "479051d3a5b1175553da46558e74b5f571cc8227c0ce47df3af908e1200fc9ae"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_affine_quantized"
 version = "2.43.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "28a1db625aab7247fe3a5700ca28fbabaa312acd4c2d6bc62bb8806dcf860e93"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_affine_weight_fields"
 version = "2.43.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "1cead138998fe5fd18e43faae20ee4b7b3bf00e83a472c49ab1a64a6f3fade6c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_bitpacked_product"
 version = "2.41.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "5e7c95ecf6927f6987f8900436266b14204e8263e05cabfa309ad65c9f908ead"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_circular_magnitudes"
 version = "2.21.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "cd5a6b3c8bc7afe0f131388d711b694d4c645c3e65fbf7f3617d2b7c4d3b0c48"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_circular_orient"
 version = "2.21.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "62e07c4763348f606ce20f1e46e21708855f289d118974799444809522a06e2e"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_circular_prepare"
 version = "2.21.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "9be2ebf96b86f2e0eb84f574585331464cafbbc018023842ff5348884b6ce459"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_circular_reduce"
 version = "2.21.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "fef8b0a24a9358fb4a4de5df8c4fad8befc76226694d46312aefaabab2972501"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_circular_square"
 version = "2.21.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "651e13015b2049d432fc874c1b4d661287303873a6a7019ea890a1cc8e158f6d"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_count_f32"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "9161e2485fec88c59de8740b2089cdbbfc7a8b1ad4de0f79637064e18122ca7c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_count_f64"
 version = "2.12.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0ec55ac7eee8579323a56b6e88076ef85a48de25d742f5bd0370f77212e4b21a"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_delta_rule"
 version = "2.50.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "6d1e14d8f440564601c933bf42b6cf47128e85d7c5b7d93ea577ea453950a59e"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_division_class"
 version = "2.12.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "14e72666c6e4cc50db296cc44312e09558e8b1596207f1837888eb41dcc064a4"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_division_finish"
 version = "2.12.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "ad41a371dee47057cdd51d91aa1a5a46ec9a1bea3b3664a4fa70815caa3b82af"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_division_norm"
 version = "2.12.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "97b14c0ddc33b39c60a6569c9f05785d5eb09c1840df1cdbc7e0043c7401176c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_encoded_word"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "44cbad6d91d1e0dd2b381649b7940d86a60ab97613bf9b877107b9569a37a1e9"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_error_function"
 version = "2.47.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "7074b19dedc21c4e97845823c931ac4a9485f6acf68ace719f98fc87b674013b"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_exponential_f32"
 version = "2.19.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "11bd5cc5a256a3b1708e626ac3ff59069ae57fed426acc3c817bdf4086d3b897"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_exponential_increment"
 version = "2.48.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "25a2f7652633e0f76c4d9ae4c16b527c02e65c79276dd05c02a15292745b6701"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_exponential_scale"
 version = "2.19.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "b730719650798239b8b77329aedbca2b113128f22f88a334e0f3e33712283cb2"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_exponential_step"
 version = "2.19.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "5427e9e7894a99c239af8301fd0784220577f707b24e566696a33dc9a6b1d777"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_float_storage"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "da70a09984056f73ff42f2a57b148a212e7b7decb539dcbaa66dc24d22c8d1be"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_float_transform"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "a488e44d04deb87980d60ab48ae181cf64e7a8e820e76858e8a026d024aa0efd"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_gelu"
 version = "2.28.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "3f2e11e39d7c4a200ba3b10df9b156af296ee20e4de6e532485ff52f3e0f8e09"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_grouped_affine"
 version = "2.40.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "910b6465d96458d64ad327092038a29e5a79993e7550c91871a11f6e6451270c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_grouped_dot"
 version = "2.26.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "7c49d5a1e00f4af37298202066eb44e659f2eaca1d57c19143fcbdafadc878b0"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_grouped_q8"
 version = "2.25.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "122661a23b5819923f5d673528e01633777d6bd5d407544fb9e80c03c0832fce"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_grouped_six_encoding"
 version = "2.46.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "8016f482d3cf5c642c2343de44c6b824a0329a73cf8dc1ad88f7d36d02a9a818"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "12e8047d015a01d14fa7530398590748e78627f500952905a6eabb5322ce667e"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_base"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "9bae4c3e52c6cf898edab1019542f451585700f6433a1ade72b8caa04dd61010"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_digit"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "ab378080b6fb6b7babd7c7547d236bd0d618c887fe97d86893ae6ab3ecaec86b"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_exponent"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0e22023dc2007cfaad9934da5027b4b69e9c87631c765c14a10187844fc36e48"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_group"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "eef4f5efed66081d64dc257704869c31ad92a8c688e5bd95427ba0f7f8b73478"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_index"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "cca9b5d1fe2a62966e15fe170ac625e2c0b6e740eac70a3eb19e6a4a9d16a0e1"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_limbs"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0e0bc4a561ce1d703b57ddcc698e875c06fb7bc8ea261a03fdb6c5b3148ad8ca"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_multiply"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "d2deca82f61e4d8f4a0f9e1e8848bdabd11b1ae3063d208653c185153573a1cc"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_normalize"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "ba9b890cba8382269f5cc64975c7c8596852e70c2180308b4fb1543b7d7119ab"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_power"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "d987548d1f9d273918aa8c163e63ecc4669ae555294fb5cecf3d4f07c17577f2"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_term"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "7a76aae8cd718453ad78e40d28257a89feeb69d17975390ea6d50985e1b806b4"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_head_slope_word"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "934b22b92a67c51de43016069136c58d6bf34e878c2209a5bcf6f9636f524918"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_high_f64"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "1bcc72b2247a04b2a31d33c22c2ac4b7dece350e9e8a35929d7084861e151302"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_importance_grid"
 version = "2.49.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "4c94cba919a738fe9a15298fa60fb9a5729149ff30959b6043f7346c85b3f91d"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_increment_pack"
 version = "2.48.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0ef7aa7c655d7d7630846d2a04098a22222bc29e4c4e2eb7a2ce223696892fbf"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_increment_term"
 version = "2.48.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "c36e24041c0fae871433cc6a27be14c337ad458993b94aac52b93713d2b468c4"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_integer_f32"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "1af54e6282de8bfab7d48c8dda295583ca40de4b9bf415edddd4a97f8e7c4b94"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_iq3_fit"
 version = "2.49.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "66f5028314c0ca67aa10f3da4136a166543222d38b3376f21472fe6fb9492a0d"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_iq3_level"
 version = "2.49.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "b4e35589c7b0faab195331179a0561c7189a488a3514cbb09c5ab9a92012549b"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_iq3_scale"
 version = "2.49.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0e7cf0662a8483272c3e24c21b58ec67889fb1b7890b1c1f342dcbfd10f7424d"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_iq3_score"
 version = "2.49.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "376667ef7c1230beffa5d185f75db1d18791cdb9d764f027d43b29ea8f1d98c4"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logarithmic_admit"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "db7404659a389fdb68317f2da00aa72a809760b8af1d25e9b8ed7f3624dd0cbf"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logarithmic_inverse"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "3b20e4f0c08208fb29baa2bf03b3cefef31b64942069cb67c88540d1ba044f76"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logarithmic_prepare"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "830fa40adcc7b75773134c3d947769695c48b52755f3ade1411fa437a1ae7dcc"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logarithmic_product"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "5c7e06dc8b6ebb633f4664fcf6dfa89b09d8b503bb5eedbe6eaa603c78ba5d27"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logarithmic_scale"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "4306ee9d973ffbf2ea5fa9b09fabedbc8c6258eb93da798190a2475e2a723eaa"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logarithmic_series"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "037bc1032a2991f41687723ed6a9e0fb63eea7b1e983374c4434c2615502aaff"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logarithmic_term"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "18c692bac54cd09866a3243eab1c2f3dd6432466ef16996c1bb0c2e3024fbb7c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logarithmic_word"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "c2ed8455a6b137475b2d2ad276dfb128fbbfc261d453643b0a3c10806f9de291"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_logistic"
 version = "2.24.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "a4edb80683adc6747227493b2d314ae0a5b9bd392ddff878d079ed54beb5848c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_low_f64"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "2f2269e4e5c2239c798d79967d5f52b4fc28090cb6be31d632655fb00363b36b"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_matrix_shape"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "22e3195cc3faabbeca446fba41f233e8a217d6c7e215df1f209dd5f0bad1f8ed"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_narrow_f64"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "c69cdfea3151dc99cf55dce6a797b0d70d5d0c7eacaf5e8ed8e0590ed599e16e"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_normalize_f64"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "c42dffde894ec8fdd581f24ac1b6b7cc526e46a514405dfb35e06429424ff5e3"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_normalized_exponential"
 version = "2.30.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "125fac1f3ad1d639921ac5aa550947b11d32556621175aaa3edf64f4baac6649"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_pack_plan_f64"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "042bbd07553532ea8df3a333da2528064ffdc6be1d58fa23f40fcfc91ae11e7d"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_packed_dot"
 version = "2.18.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "8b3de2f67a8e7cad81340da104aa11dce01aa4a2e3e390f670003dbb21a92dc5"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_packed_field"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "e263901d73d12a3efcc15656ae288cac1b957fefda11e6e5ee7d99778d455f19"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_quotient_f64"
 version = "2.12.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "72cc9f379d95316e4229c8fee746730549e00e0e6a94feb44fa3f1ef056e01a6"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_quotient_route"
 version = "2.12.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "efb7bc419b1fdd0fb3b73b1222017a4cfca7a45157e6de27fad078ad13b90729"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_rotation_geometry"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "51d8a6a570f55baabbc63e7182c2f44fd8dc0dad9a39a34026d2b06413f682e1"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_rotation_limit"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "198406ea6e036fbddc35ba6c327d15994d1637905287e6066cd1f17520981fb7"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_rotation_signed"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "6134c989c55f5a9a2903fde7ed2800e6d78a208469a7bdffe92107253faaa35f"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_rotation_step"
 version = "2.22.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "43a81b4205d0e803416329f9ea9d5d74dde37cc8ecb09f9e327350feadf20fbf"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_round_mantissa_f64"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "c28e06c56d28360622097f6ca9721c711e8f091e77924ff3dcf86f486c3d56d6"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_row_ranking"
 version = "2.29.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "69c42234713a38d364e89c8687936f26522c5414cf7d3f0564bcf1d032d9e1f3"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_scalar_f32"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "7dc924dab6e408fced5b6ac55752af65993f70b7d7bcfcde6154733a8d8692c3"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
+
+[[package]]
+name = "verdant_signed64_conversion"
+version = "2.21.8"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_signed_truncation"
 version = "2.44.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "09c20f6ade80e308fce7fecd9c5cb4ff3b1e19dbd907581a0967ecfb50676b53"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_small_float"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "ac62a934fb5e59576b639b4f2b6705776c332f2d6faff2c9245c0b1c3e78f39e"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_softplus"
 version = "2.32.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "50e575e09f18fb5fbd4b2ccbbd4fcbca94e7968c9fa61d7122d47c04610b7c00"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_storage_block"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "3e3bc1d41e7e90b17a05f1c23e41a8115bf546551136e4f0c51324fbafa3df51"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_storage_transfer"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "be4fc30ad3691b926f71f82f0de55c03de352a8f61e438c0b548a742283de9b9"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_symmetric_dot"
 version = "2.17.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "aba50e7d1eb7d052275925a0a555edd86efb860e92d2bb8ef96bbd1979a0164c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_symmetric_dot_layout"
 version = "2.17.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "e09aeb9e0f45097abb19d055b24af0e87021cc1a529d6a13c548aee74ddd3f44"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_symmetric_q8"
 version = "2.17.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "888ce77fa06bf55aa9d0ea6d29275672bd62cf72faba579b58d9a65974ce3465"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_tanh"
 version = "2.27.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "892812565699e741cac5e40064baea500f066ff58cb8e57eb87a657ce242c41c"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_unary_activate"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "4fc45a6a51457a8ccae84eb9fcc067aeb4019a8649d319bcc909c066fd927b9a"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_unary_dispatch"
 version = "2.48.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "e6bb017c6f5b97c898a003a9332c6c167f82d29db72d27695aa819ca0c82f5d7"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_unary_plan"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "e7aceb10487bd38cc12be44a96eede5410c724da4ea0a2d7778ba4686d0ad698"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_unary_round"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "96456b6925e98834420b38a8b356b1207dcd45d6f8e68293be01f230556e9c79"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_unary_select"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "015a915611a91a46e6520c9147bdbe45550f1d8ad02f6b49efb5cb557149daff"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_weighted_blend"
 version = "2.23.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "37791d0a6d6a330d6a118526f8e5289f3c2a364ead80d4170e1e519b4e2e6279"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_weighted_pivot"
 version = "2.23.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "5207143d69360022dd08fe7c5e39457110e36be22f3c414cdb3e8a270a184a63"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_weighted_reciprocal"
 version = "2.23.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "0309d501ebb7dedb13b012f2630ef0fceb85e8e048461e0eef010cfb19b70883"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_wide_mode"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "7962896a56b743f50a22f64f396d3ddaf96cf7dc46e02d1202bb47a8a1c60061"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "verdant_widen_f32"
 version = "2.9.0"
-source = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"
-checksum = "03e2626b171f82466a05d2e93318ae014ff14e64fe52537489003a3466c7cd42"
+source = "git+https://github.com/afflom/verdant-engine?rev=f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac#f0ce06c08b3b3e122a3d5065de5f6b032ca1a4ac"
 
 [[package]]
 name = "vtensor-backend"

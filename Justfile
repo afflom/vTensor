@@ -71,7 +71,12 @@ verdant-source-check:
         require(pin["spec"], "vtensor/verdant-patch/1", "Verdant dependency kind")
         rev = pin["commit"]
         require(authority["citation"], f"{upstream}/tree/{rev}", "registered Verdant patch authority")
-        require(engine["source"], f"git+https://github.com/afflom/verdant-engine?rev={rev}#{rev}", "Verdant patch")
+        require(engine["source"], f"git+{upstream}?rev={rev}#{rev}", "Verdant patch")
+        require(authority.get("artifact"), "model/verdant-development.json", "registered Verdant patch record")
+        require(digest(Path(authority["artifact"]).read_bytes()), authority["checksum"], "registered Verdant patch checksum")
+    for item in metadata["packages"]:
+        if item["name"].startswith("verdant"):
+            require(item["source"], engine["source"], item["name"])
     binding = json.loads(Path("verification/native-oracle-bindings.json").read_bytes())["verdant_quotient"]
     archive = Path("vendor/verdant-quotient.tar.gz")
     require(digest(archive.read_bytes()), binding["archive_sha256"], archive)
@@ -86,7 +91,6 @@ verdant-source-check:
             for output in root["outputs"]:
                 name = output["package"]["name"]
                 package = packages[name]
-                require(package["source"], engine["source"], name)
                 installed = Path(package["manifest_path"]).parent / "src/lib.rs"
                 certified = contents(f"generated/tensor-quotient/packages/rust-core/{name}/src/lib.rs")
                 require(digest(installed.read_bytes()), digest(certified), installed)

@@ -381,14 +381,11 @@ fn compare_sdk_inventory(
         let platforms = lock["platforms"]
             .as_array()
             .ok_or("SDK platform inventory is absent")?;
-        let matching = platforms
-            .iter()
-            .filter(|row| row["platform"] == platform)
-            .collect::<Vec<_>>();
-        if matching.len() != 1 || platforms.len() != 2 {
+        let mut matching = platforms.iter().filter(|row| row["platform"] == platform);
+        let selected = matching.next().ok_or("SDK platform inventory is missing")?;
+        if platforms.len() != 2 || matching.next().is_some() {
             return Err("SDK platform inventory is missing or duplicated".into());
         }
-        let selected = matching[0];
         if selected["inventory"] != inventory["artifacts"]
             || selected["inventory_digest"] != sha256(inventory_bytes)
         {
@@ -407,12 +404,8 @@ fn compare_sdk_inventory(
     let locked = lock["inventory"]
         .as_array()
         .ok_or("prismpm.lock has no SDK inventory")?;
-    let observed_artifacts = locked
-        .iter()
-        .filter(|row| row["id"] != "sdk-manifest")
-        .cloned()
-        .collect::<Vec<_>>();
-    if observed_artifacts != *artifacts {
+    let observed = locked.iter().filter(|row| row["id"] != "sdk-manifest");
+    if !observed.eq(artifacts) {
         return Err("prismpm.lock artifact inventory disagrees with the running SDK".into());
     }
     let image_digest = lock["sdk_image"]
@@ -567,7 +560,11 @@ pub fn audit(root: &Path, model: &repo_model::Model) -> Result<(), Fail> {
     audit_policy_files(root, &template_lock, &sdk_lock_bytes)?;
     let devcontainer = read(root, ".devcontainer/devcontainer.json")?;
     let devcontainer_value: serde_json::Value = serde_json::from_str(&devcontainer)?;
-    let mounts = devcontainer_value["mounts"].as_array();
+    let contains = |key: &str, item: &str| {
+        devcontainer_value[key]
+            .as_array()
+            .is_some_and(|items| items.iter().any(|value| value == item))
+    };
     if devcontainer_value["image"] != image
         || devcontainer_value.get("build").is_some()
         || devcontainer_value.get("dockerFile").is_some()
@@ -575,24 +572,12 @@ pub fn audit(root: &Path, model: &repo_model::Model) -> Result<(), Fail> {
         || devcontainer_value["containerUser"] != "root"
         || devcontainer_value["remoteUser"] != "vscode"
         || devcontainer_value["overrideCommand"] != false
-        || mounts.is_none_or(|mounts| {
-            !mounts.iter().any(|mount| {
-                mount == "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-            }) || !mounts.iter().any(|mount| {
-                mount
-                == "source=${localEnv:HOME}/.docker/config.json,target=/home/vscode/.docker/config.json,type=bind,readonly"
-            })
-        })
+        || !contains("mounts", "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind")
+        || !contains("mounts", "source=${localEnv:HOME}/.docker/config.json,target=/home/vscode/.docker/config.json,type=bind,readonly")
         || !devcontainer_value["initializeCommand"]
             .as_str()
             .is_some_and(|command| command.contains(".docker/config.json"))
-        || devcontainer_value["runArgs"]
-            .as_array()
-            .is_none_or(|arguments| {
-                !arguments
-                    .iter()
-                    .any(|argument| argument == "prismpm-devcontainer-init")
-            })
+        || !contains("runArgs", "prismpm-devcontainer-init")
         || devcontainer.contains("curl")
         || devcontainer.contains("stable")
     {

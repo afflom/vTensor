@@ -4,11 +4,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Resolve the 22 remaining scalar CAST pairs involving I64 or F64. [Pair-by-pair status](verification/ggml-scalar-cast-coverage.tsv)
+- [ ] Resolve the 19 remaining scalar CAST pairs involving I64 or F64. [Pair-by-pair status](verification/ggml-scalar-cast-coverage.tsv)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,154 non-Prism lines** (12,703 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,151 non-Prism lines** (12,700 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Replace the signed I64 Verdant patch with its published registry release. [Upstream PR #63](https://github.com/afflom/verdant-engine/pull/63)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
@@ -19,6 +20,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Attribute all 27,755 factory verdicts to their evidence groups. Use `just factory-remaining evidence` to join any ordinal to its receipt and graph signatures. [Index](verification/ggml-factory-evidence-index.json)
 - [x] Map 31,264 supplemental copy, repeat, concat, fill and cast cases by type pair, variant, extent and stride. All 36 storage types have same-type DUP/CONT/CPY and four-axis CONCAT coverage. [Ordinal map](verification/ggml-storage-variant-map.json)
 - [x] Implement all six width conversions among I8, I16 and I32. Compare 192 results and padding bytes in contiguous casts and reshaped offset copies. [VT-159](verification/supplemental-integer-casts-vt159.json)
+- [x] Verify I64 → F32 and I64 ↔ F64 against SoftFloat across six sole-provider graphs. Compare 384 words and 12 atomic refusals. VT-02 verifies all 100 Verdant crates at the upstream pin. [VT-164](verification/supplemental-signed64-floats-vt164.json) · [Verdant patch](https://github.com/afflom/verdant-engine/pull/63)
 - [x] Compare I64 ↔ I8/I16/I32 in 12 contiguous and padded graphs against 384 signed-width oracle words. Check all 768 results and destination padding. [VT-163](verification/supplemental-signed64-widths-vt163.json)
 - [x] Compare F32 ↔ F64 against 128 Berkeley SoftFloat words and all six E4M3 ↔ signed-width conversions against GGML. Check 192 E4M3 results and six atomic refusals. [VT-161 and VT-162](verification/supplemental-scalar-casts-vt161-vt162.json)
 - [x] Cover all 18 conversions between I8/I16/I32 and F16/BF16/F32. Compare 576 results and verify 66 invalid casts preserve every destination byte. [VT-160](verification/supplemental-integer-float-casts-vt160.json)

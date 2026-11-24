@@ -644,3 +644,9 @@ Feature: native-backend
     Given signed integer words near representation boundaries and seeded raw words
     When GGML constructs a cast or a copy between offset views
     Then the complete destination matches the signed conversion from the pinned Lean runtime
+
+  @VT-164 @build
+  Scenario: Prism routes signed I64 conversions to F32 and F64 and representable F64 truncations to I64 through Verdant against Berkeley SoftFloat
+    Given signed extremes, precision boundaries, fractional values and invalid binary64 encodings
+    When GGML constructs contiguous casts and reshaped copies into offset views
+    Then the output matches SoftFloat and an invalid truncation preserves the destination

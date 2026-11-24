@@ -1050,3 +1050,9 @@ id = "VT-163"
 level = "build"
 suite = "native-backend"
 statement = "Prism and Verdant convert between I64 and each narrower signed GGML storage width against the imported Lean signed word conversions"
+
+[[id]]
+id = "VT-164"
+level = "build"
+suite = "native-backend"
+statement = "Prism routes signed I64 conversions to F32 and F64 and representable F64 truncations to I64 through Verdant against Berkeley SoftFloat"

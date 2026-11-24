@@ -44,13 +44,13 @@ I32	I64	verified	supplemental-signed64-widths-vt163.json
 I32	F64	open	
 I32	BF16	verified	supplemental-integer-float-casts-vt160.json
 I32	F8_E4M3	verified	supplemental-scalar-casts-vt161-vt162.json
-I64	F32	open	
+I64	F32	verified	supplemental-signed64-floats-vt164.json
 I64	F16	open	
 I64	I8	verified	supplemental-signed64-widths-vt163.json
 I64	I16	verified	supplemental-signed64-widths-vt163.json
 I64	I32	verified	supplemental-signed64-widths-vt163.json
 I64	I64	verified	ggml-scalar-cast-matrix.tsv
-I64	F64	open	
+I64	F64	verified	supplemental-signed64-floats-vt164.json
 I64	BF16	open	
 I64	F8_E4M3	open	
 F64	F32	verified	supplemental-scalar-casts-vt161-vt162.json
@@ -58,7 +58,7 @@ F64	F16	open
 F64	I8	open	
 F64	I16	open	
 F64	I32	open	
-F64	I64	open	
+F64	I64	verified	supplemental-signed64-floats-vt164.json
 F64	F64	verified	ggml-scalar-cast-matrix.tsv
 F64	BF16	open	
 F64	F8_E4M3	open	

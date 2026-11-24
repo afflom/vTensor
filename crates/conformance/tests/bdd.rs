@@ -7,30 +7,26 @@
 
 use repo_model::repo_root as root;
 use std::collections::BTreeSet;
+use std::sync::{LazyLock, Once};
 
 use repo_model::conformance::{check_honesty, scenarios_in, workspace_test_names};
 use repo_model::{Level, Model};
+
+static MODEL: LazyLock<Model> =
+    LazyLock::new(|| Model::load(&root().join("model")).expect("model loads"));
+static COMPLETE: Once = Once::new();
 
 /// `CM-02`: every registered ID has a scenario and a test, and every scenario
 /// and test names a registered ID.
 #[test]
 fn every_id_has_a_scenario_and_a_test_cm_02() {
-    let root = root();
-    let tests = workspace_test_names(&root);
-    assert!(!tests.is_empty(), "the test list must not be empty");
-
-    let report = check_honesty(&root, &tests).expect("the meta-gate runs");
-    assert!(
-        report.is_clean(),
-        "the honesty meta-gate failed:\n\n{}",
-        report.violations.join("\n\n")
-    );
-    eprintln!(
-        "CM-02: {} registered IDs, {} scenarios, {} test names",
-        report.ids_checked,
-        report.scenarios_checked,
-        tests.len()
-    );
+    COMPLETE.call_once(|| {
+        let root = root();
+        let tests = workspace_test_names(&root);
+        assert!(!tests.is_empty(), "the test list must not be empty");
+        let report = check_honesty(&root, &tests).expect("the meta-gate runs");
+        assert!(report.is_clean(), "{}", report.violations.join("\n\n"));
+    });
 }
 
 /// R3: there are no pending or skipped steps.
@@ -42,7 +38,7 @@ fn every_id_has_a_scenario_and_a_test_cm_02() {
 /// re-arms the moment the first row is added to `model/ids.toml`.
 #[test]
 fn no_scenario_is_pending_cm_02() {
-    let model = Model::load(&root().join("model")).expect("model loads");
+    let model = &*MODEL;
     let suites = scenarios_in(&root().join("features/suites")).expect("suites read");
     assert!(
         model.ids.id.is_empty() || suites.files >= 1,
@@ -67,7 +63,7 @@ fn no_scenario_is_pending_cm_02() {
 /// it, or a stated reason for its absence.
 #[test]
 fn every_some_true_claim_cites_an_authority_cm_03() {
-    let model = Model::load(&root().join("model")).expect("model loads");
+    let model = &*MODEL;
     model.check().expect("the model is consistent");
     model
         .check_artifacts(&root())
@@ -104,8 +100,7 @@ fn the_meta_gate_is_falsifiable_cm_02() {
     // test from, so the plant has nothing to plant and the check is skipped ---
     // stated here rather than silently passing, because a falsifiability test
     // that cannot falsify is the exact thing this test exists to rule out.
-    let model = Model::load(&root.join("model")).expect("model loads");
-    if model.ids.id.is_empty() {
+    if MODEL.ids.id.is_empty() {
         eprintln!("CM-02: register empty, so there is no ID whose test can be removed");
     } else {
         let empty = BTreeSet::new();
@@ -121,6 +116,5 @@ fn the_meta_gate_is_falsifiable_cm_02() {
     }
 
     // A test list that covers everything passes, which is the control.
-    let full = workspace_test_names(&root);
-    assert!(check_honesty(&root, &full).expect("runs").is_clean());
+    every_id_has_a_scenario_and_a_test_cm_02();
 }

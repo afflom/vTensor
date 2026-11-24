@@ -1811,8 +1811,8 @@ definition{
   name: signedCopyPair,
   parameters: [source : Nat, destination : Nat],
   result: Bool,
-  body: (if (source =? 27) then (castSignedInteger destination) else
-    (if (destination =? 27) then (castSignedInteger source) else ((((source =? 0) && (destination =? 28)) || ((source =? 28) && (destination =? 0))) || (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((copyFloatType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((copyFloatType source) && (castSignedInteger destination)))))),
+  body: (if (source =? 27) then (((destination =? 0) || (destination =? 28)) || (castSignedInteger destination)) else
+    (if (destination =? 27) then ((source =? 28) || (castSignedInteger source)) else ((((source =? 0) && (destination =? 28)) || ((source =? 28) && (destination =? 0))) || (if (castSignedInteger source) then (if (castSignedInteger destination) then (if (source =? destination) then false else true) else ((copyFloatType destination) && (if ((source =? 26) && (destination =? 0)) then false else true))) else ((copyFloatType source) && (castSignedInteger destination)))))),
   executable: true
 }
 
@@ -3297,10 +3297,13 @@ definition{
   name: signed64WidthOperation,
   parameters: [source : Nat, destination : Nat],
   result: WordOperation,
-  body: (if (source =? 27) then (ctor WordOperation.signedField 1 0 (signedFieldModulus destination)) else
+  body: (if (destination =? 28) then (ctor WordOperation.wide 7) else
+    (if (source =? 28) then (ctor WordOperation.wide 8) else
+    (if (destination =? 0) then (ctor WordOperation.wide 9) else
+    (if (source =? 27) then (ctor WordOperation.signedField 1 0 (signedFieldModulus destination)) else
     (let modulus : Nat := (signedFieldModulus source);
       (let extension : Nat := (prim subtract 18446744073709551615 (prim subtract modulus 1 : Nat) : Nat);
-        (ctor WordOperation.signedField (prim quotient modulus 2 0 : Nat) extension 18446744073709551615)))),
+        (ctor WordOperation.signedField (prim quotient modulus 2 0 : Nat) extension 18446744073709551615))))))),
   executable: true
 }
 

@@ -36,7 +36,8 @@ deny = []
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-allow-registry = ["https://github.com/rust-lang/crates.io-index", "https://raw.githubusercontent.com/afflom/verdant-engine/242db3614a39ee66d7280f804d86a3032b645ab9/v2.21.7/crates/index/"]
+allow-git = ["https://github.com/afflom/verdant-engine", "https://github.com/UOR-Foundation/uor-matmul"]
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 
 # The certified renderer omits package licensing metadata. The repository
 # LICENSE-MIT and LICENSE-APACHE apply to this generated code. Bind the
@@ -107,7 +108,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x7d6e6676 }]
+license-files = [{ path = "src/lib.rs", hash = 0x5cd5e0c6 }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -849,3 +850,9 @@ name = "verdant_delta_rule"
 version = "=2.50.0"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x4055dbcb }]
+
+[[licenses.clarify]]
+name = "verdant_signed64_conversion"
+version = "=2.21.8"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x4e2a2aaf }]
