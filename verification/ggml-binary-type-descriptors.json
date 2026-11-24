@@ -5,17 +5,17 @@
   "casts": 37584,
   "direct_cpu_descriptors_placed": 709,
   "composed_codebook_descriptors_placed": 189,
-  "all_provider_placements": 31026,
+  "all_provider_placements": 34916,
   "compared_scalar_graphs": 48,
   "compared_scalar_words": 24576,
   "reused_packed_results": 661,
-  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results and VT-179 for half and bfloat inputs with packed outputs. VT-180 compares the newly placed packed binary forms to original GGML row decoding, F32 graphs and row encoding. VT-181 checks each newly placed mixed cast graph against original decoded F32 arithmetic and destination storage. VT-182 checks each newly placed scalar binary graph against original decoded F32 arithmetic and destination storage. Unclassified denotes no identified direct or composed oracle in this survey.",
+  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results and VT-179 for half and bfloat inputs with packed outputs. VT-180 compares the newly placed packed binary forms to original GGML row decoding, F32 graphs and row encoding. VT-181 checks each newly placed mixed cast graph against original decoded F32 arithmetic and destination storage. VT-182 checks each newly placed scalar binary graph against original decoded F32 arithmetic and destination storage. VT-184 compares signed integer and binary64 destinations against original GGML storage and Berkeley SoftFloat. Unclassified denotes no identified direct or composed oracle in this survey.",
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "291fd4965bec8f1db079c7cd58a8d58702467eccb28aadaa2fc787225baaf379",
+  "provider_sha256": "33bc0fc534a54f82d758ab07af2f496dc0ed493f3ab1b33085136859c990c2c3",
   "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "table": "ggml-binary-type-descriptors.tsv.gz",
-  "table_sha256": "3aa47f4ca2c530cf455d8d86f16932ae14042e4919ab35745ceac2664ab524ed",
-  "uncompressed_sha256": "721b1305b1240f1c7e78ad9ec7f6449dff4ca675f6cf16745e6df90697962a31",
+  "table_sha256": "5979697875877e3c5d8a0bed5149235d77d08a84ff8f11846c889936afb2c9a6",
+  "uncompressed_sha256": "2e692d53ce8e4636e0c0ed28fed1bdaf53a010cb7c144baccabd02be64c0d067",
   "constructor_source_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
   "composed_half_input_descriptors_placed": 54,
@@ -27,6 +27,8 @@
     "encodable_floating_or_packed_destinations": 31,
     "normal_and_in_place_descriptors_placed": 6728,
     "add_cast_descriptors_placed": 24273,
-    "additional_packed_to_i32_descriptors": 25
-  }
+    "all_destination_types": 36,
+    "add_cast_descriptors_placed_across_all_destinations": 28188
+  },
+  "composed_numeric_results_descriptors_placed": 3890
 }

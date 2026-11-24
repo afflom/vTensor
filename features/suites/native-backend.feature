@@ -764,3 +764,9 @@ Feature: native-backend
     Given offset views with padded strides and an independently repeatable right operand on every axis
     When the public scheduler places each copied or in-place binary graph
     Then every logical result matches original GGML and all guard and read-only bytes are preserved
+
+  @VT-184 @build
+  Scenario: GGML ADD_CAST stores bounded signed integers and binary64 results from decoded rows
+    Given mixed original GGML source rows and a signed integer or binary64 destination
+    When the scheduler places the graph and computes the decoded F32 sum
+    Then the output matches original GGML or SoftFloat and invalid signed conversions preserve the destination

@@ -1170,3 +1170,9 @@ id = "VT-183"
 level = "build"
 suite = "native-backend"
 statement = "Four-axis packed binary broadcasts preserve offset views and in-place storage"
+
+[[id]]
+id = "VT-184"
+level = "build"
+suite = "native-backend"
+statement = "GGML ADD_CAST stores bounded signed integers and binary64 results from decoded rows"

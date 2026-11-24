@@ -344,7 +344,8 @@ inductive{
       name: executionStep,
       fields: [Nat, IndexContext, IndexContext, CopyMode, Nat, Nat, Nat, Nat, Nat, Nat, Nat]
     },
-    {name: emptyRow, fields: [Nat, Nat, Nat, Nat]}
+    {name: emptyRow, fields: [Nat, Nat, Nat, Nat]},
+    {name: rowScalarStore, fields: [Nat]}
   ]
 }
 
@@ -410,7 +411,8 @@ inductive{
     {name: sample, fields: [(Option Nat)]},
     {name: tableResult, fields: [(Option Nat)]},
     {name: accumulateBlock, fields: [Nat, Nat, Nat, Nat, Nat, Nat]},
-    {name: nextIndex, fields: [Nat]}
+    {name: nextIndex, fields: [Nat]},
+    {name: scalarStore, fields: [WordOperation, (Option WordOperation)]}
   ]
 }
 
@@ -3170,6 +3172,7 @@ definition{
   body: (match response
     | GraphResponse.sample address => (ctor GraphResponse.sample address)
     | GraphResponse.tableResult word => (ctor GraphResponse.tableResult word)
+    | GraphResponse.scalarStore stage tailStage => (ctor GraphResponse.scalarStore stage tailStage)
     | GraphResponse.nextIndex target => (ctor GraphResponse.nextIndex target)
     | GraphResponse.accumulateBlock kind from bytes to lanes stride => (ctor GraphResponse.accumulateBlock kind from bytes to lanes stride)
     | GraphResponse.planned decision => (ctor GraphResponse.planned decision)
@@ -3350,6 +3353,18 @@ definition{
       (if ((stage + 1) =? stages) then (ctor WordOperation.wide 8) else
       (if ((stage + 2) =? stages) then (ctor WordOperation.wide 1) else (castWord source 0)))
     else (if (stage =? 0) then (ctor WordOperation.wide 9) else (castWord 0 destination)))))),
+  executable: true
+}
+
+definition{
+  name: rowScalarStore,
+  parameters: [destination : Nat],
+  result: GraphResponse,
+  body: (if ((24 <=? destination) && (destination <=? 28)) then
+    (let stages : Nat := (wideCastStages 0 destination);
+      (ctor GraphResponse.scalarStore (wideCastStep 0 destination 0 stages)
+        (if (stages =? 1) then (ctor Option.none [WordOperation]) else (ctor Option.some [WordOperation] (wideCastStep 0 destination 1 stages)))))
+    else (ctor GraphResponse.scalarStore (castWord 0 destination) (ctor Option.none [WordOperation]))),
   executable: true
 }
 
@@ -3641,6 +3656,7 @@ definition{
     | GraphRequest.stateful index source destination mode flag => (statefulOffsets index source destination mode flag)
     | GraphRequest.executionStep index source destination mode flag auxiliary bytes x0 x1 x2 x3 => (executionStep index source destination mode flag auxiliary true bytes x0 x1 x2 x3)
     | GraphRequest.bindings mode => (sourceBindings mode)
+    | GraphRequest.rowScalarStore destination => (rowScalarStore destination)
     | GraphRequest.machineWord typed family operation source destination left from right at target to readBytes writeBytes => (machineWord typed family operation source destination left from right at target to readBytes writeBytes)),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}

@@ -1,0 +1,27 @@
+{
+  "requirement": "VT-184",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-numeric-results-oracle.json",
+  "attestations": {
+    "typed": "025c76a0d6157d93a1165ec13a2fab577b14c00ad9c9197f6c344ced60ac9d1b",
+    "pointwise": "7b16cfd598e8774a518293130fc43d9630e0ff47fec72e64862bb7e9a10b8e5e"
+  },
+  "provider_sha256": "33bc0fc534a54f82d758ab07af2f496dc0ed493f3ab1b33085136859c990c2c3",
+  "previously_refused_descriptors": 3890,
+  "new_placements_by_output": {
+    "i8": 783,
+    "i16": 783,
+    "i32": 758,
+    "i64": 783,
+    "f64": 783
+  },
+  "original_cpu_f32_sum_graphs": 783,
+  "scheduled_graphs": 3890,
+  "encoded_rows_compared": 7780,
+  "encoded_values_compared": 1991680,
+  "encoded_bytes_compared": 9169408,
+  "atomic_signed_conversion_refusals": 16,
+  "refusal_oracle": "Original Berkeley SoftFloat f32_to_i32_r_minMag raised invalid for NaN, +Inf, -Inf and +2^31. Original f32_to_i64_r_minMag raised invalid for the same nonfinite words and +2^63. The F16/F32 graph supplied each at its final lane, after finite work, for I8, I16, I32 and I64. All destination bytes retained their poison value.",
+  "negative_control": "The previous provider refused placement before allocation. Flipping the low bit of each I8 store failed the first F16/F32 -> I8 comparison. Restoring the store reproduced the checked plugin bytes and passed 3,906 cases.",
+  "non_prism_lines": 12546
+}

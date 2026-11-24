@@ -903,15 +903,20 @@ fn decode_block(
     output: &mut [u8],
     stride: usize,
 ) -> Result<(), BackendError> {
-    if kind == 26 {
-        let word = source.try_into().map_err(BackendError::invalid)?;
-        let lane = output
-            .first_chunk_mut::<4>()
-            .ok_or(BackendError::OutOfBounds)?;
-        *lane = linear::signed_word_f32(i32::from_ne_bytes(word))?.to_ne_bytes();
-        return Ok(());
-    }
-    Ok(linear::decode_storage_block(kind, source, output, stride)?)
+    let value = match kind {
+        0 | 1 | 30 | 43 => {
+            // SAFETY: scalar_word reads exactly the supplied slice length and checks its width.
+            let bits =
+                unsafe { scalar_word(source.as_ptr().cast_mut(), source.len() as u64, None)? };
+            decode_float(kind, bits)?
+        }
+        26 => linear::signed_word_f32(i32::from_ne_bytes(
+            source.try_into().map_err(BackendError::invalid)?,
+        ))?,
+        _ => return Ok(linear::decode_storage_block(kind, source, output, stride)?),
+    };
+    *output.first_chunk_mut().ok_or(BackendError::OutOfBounds)? = value.to_ne_bytes();
+    Ok(())
 }
 
 fn float_bytes(values: &mut [f32]) -> &mut [u8] {
@@ -1043,9 +1048,7 @@ fn affine_activation(mut bytes: &[u8]) -> Result<linear::AffineQ8Block<32>, Back
 fn grouped_activation(mut bytes: &[u8]) -> Result<linear::GroupedQ8Block, BackendError> {
     let scale = f32::from_ne_bytes(block_field(&mut bytes)?);
     let codes = block_field(&mut bytes)?.map(|byte| byte as i8);
-    let (words, []) = bytes.as_chunks::<2>() else {
-        return Err(BackendError::InvalidTensor);
-    };
+    tensor_fields!((words, []) = bytes.as_chunks::<2>());
     let sums: &[[u8; 2]; 16] = words.try_into().map_err(BackendError::invalid)?;
     Ok(linear::GroupedQ8Block {
         scale,
@@ -1263,23 +1266,87 @@ fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32,
     Ok(linear::evaluate_f32_scalar(2, activation, gate)?)
 }
 
-fn signed_field(
-    a: u64,
-    sign_bit: u64,
-    extension: u64,
-    limit: u64,
-) -> Result<Option<u64>, BackendError> {
-    use BackendError::InvalidTensor;
+fn checked_word<E>(value: Result<Option<u64>, E>) -> Result<u64, BackendError> {
+    value.ok().flatten().ok_or(BackendError::InvalidTensor)
+}
+
+fn signed_field(a: u64, sign_bit: u64, extension: u64, limit: u64) -> Result<u64, BackendError> {
     let field = |word, factor, divisor, modulus| {
-        linear::extract_packed_field(word, factor, divisor, modulus).map_err(BackendError::invalid)
+        checked_word(linear::extract_packed_field(word, factor, divisor, modulus))
     };
     if extension == 0 {
         field(a, 1, 1, limit)
     } else {
-        let sign = field(a, 1, sign_bit, 2)?.ok_or(InvalidTensor)?;
-        let high = field(sign, extension, 1, limit)?.ok_or(InvalidTensor)?;
-        linear::evaluate_encoded_word(2, a, high).map_err(BackendError::invalid)
+        let sign = field(a, 1, sign_bit, 2)?;
+        let high = field(sign, extension, 1, limit)?;
+        checked_word(linear::evaluate_encoded_word(2, a, high))
     }
+}
+
+fn word_value(operation: WordOperation, a: u64, b: u64) -> Result<u64, BackendError> {
+    use BackendError::InvalidTensor;
+    let failure = |overflow| {
+        if overflow {
+            BackendError::Overflow
+        } else {
+            InvalidTensor
+        }
+    };
+    let float = |word: u64| f32::from_bits(word as u32);
+    match operation {
+        WordOperation::C0(kind) => linear::evaluate_wide(kind, a, b)?,
+        WordOperation::C1(kind) => Some(u64::from(
+            linear::evaluate_f32_scalar(kind, float(a), float(b))?.to_bits(),
+        )),
+        WordOperation::C2(source, destination, overflow) => {
+            linear::convert_float_storage(source, destination, a).map_err(|_| failure(overflow))?
+        }
+        WordOperation::C3(source, destination, overflow) => {
+            linear::evaluate_float_unary(b, source, destination, a)
+                .map_err(|_| failure(overflow))?
+        }
+        WordOperation::C4(kind, storage, first, second) => {
+            linear::transform_float_storage(kind, storage, a, first, second)
+                .map_err(BackendError::overflow)?
+        }
+        WordOperation::C5(kind) => return checked_word(linear::evaluate_encoded_word(kind, a, b)),
+        WordOperation::C8(kind) => return checked_word(linear::evaluate_small_float(kind, a)),
+        WordOperation::C9 => return checked_word(linear::truncate_signed_word_f32(a)),
+        WordOperation::C10(sign_bit, extension, limit) => {
+            return signed_field(a, sign_bit, extension, limit)
+        }
+        WordOperation::C11(source, limit) => {
+            let value = checked_word(linear::truncate_signed_word_f32(convert(source, 0, a)?))?;
+            return checked_word(linear::extract_packed_field(value, 1, 1, limit));
+        }
+        WordOperation::C12(sign_bit, extension, destination) => {
+            let word = signed_field(a, sign_bit, extension, 1_u64 << 32)?;
+            let value = linear::signed_word_f32(word as i32)?;
+            Some(convert(0, destination, u64::from(value.to_bits()))?)
+        }
+        WordOperation::C6 => return Err(InvalidTensor),
+        WordOperation::C7(kind, source, destination) => {
+            let input = decode_float(source, a)?;
+            let result = match kind {
+                13 => linear::natural_log_f32(input),
+                14 => linear::sin_cos_f32(input).map(|pair| pair.0),
+                15 => linear::sin_cos_f32(input).map(|pair| pair.1),
+                16 => linear::exponential_f32(input),
+                17 => linear::sigmoid_f32(input),
+                18 => linear::silu_f32(input),
+                19 => linear::tanh_f32(input),
+                20 if source == 0 => Ok(gaussian_table(a)?.unwrap_or_default()),
+                20 => linear::gelu_f32(input),
+                21 => linear::gelu_quick_f32(input),
+                22 => linear::softplus_f32(input),
+                24 => linear::gaussian_error_f32(input, true),
+                _ => return Err(InvalidTensor),
+            }
+            .map_err(BackendError::overflow)?;
+            Some(convert(0, destination, u64::from(result.to_bits()))?)
+        }
+    }
+    .ok_or(InvalidTensor)
 }
 
 fn execute_word(
@@ -1306,75 +1373,7 @@ fn execute_word(
         // SAFETY: Prism bounds the selected source or output word and its byte width.
         unsafe { scalar_word(pointer.add(offset as usize), read_bytes, None) }
     };
-    let (a, b) = (read(left)?, read(right)?);
-    let failure = |overflow| {
-        if overflow {
-            BackendError::Overflow
-        } else {
-            InvalidTensor
-        }
-    };
-    let float = |word: u64| f32::from_bits(word as u32);
-    let value = match operation {
-        WordOperation::C0(kind) => linear::evaluate_wide(kind, a, b)?,
-        WordOperation::C1(kind) => Some(u64::from(
-            linear::evaluate_f32_scalar(kind, float(a), float(b))?.to_bits(),
-        )),
-        WordOperation::C2(source, destination, overflow) => {
-            linear::convert_float_storage(source, destination, a).map_err(|_| failure(overflow))?
-        }
-        WordOperation::C3(source, destination, overflow) => {
-            linear::evaluate_float_unary(b, source, destination, a)
-                .map_err(|_| failure(overflow))?
-        }
-        WordOperation::C4(kind, storage, first, second) => {
-            linear::transform_float_storage(kind, storage, a, first, second)
-                .map_err(BackendError::overflow)?
-        }
-        WordOperation::C5(kind) => {
-            linear::evaluate_encoded_word(kind, a, b).map_err(BackendError::invalid)?
-        }
-        WordOperation::C8(kind) => {
-            linear::evaluate_small_float(kind, a).map_err(BackendError::invalid)?
-        }
-        WordOperation::C9 => linear::truncate_signed_word_f32(a).map_err(BackendError::invalid)?,
-        WordOperation::C10(sign_bit, extension, limit) => {
-            signed_field(a, sign_bit, extension, limit)?
-        }
-        WordOperation::C11(source, limit) => {
-            let value = linear::truncate_signed_word_f32(convert(source, 0, a)?)
-                .map_err(BackendError::invalid)?
-                .ok_or(InvalidTensor)?;
-            linear::extract_packed_field(value, 1, 1, limit).map_err(BackendError::invalid)?
-        }
-        WordOperation::C12(sign_bit, extension, destination) => {
-            let word = signed_field(a, sign_bit, extension, 1_u64 << 32)?.ok_or(InvalidTensor)?;
-            let value = linear::signed_word_f32(word as i32)?;
-            Some(convert(0, destination, u64::from(value.to_bits()))?)
-        }
-        WordOperation::C6 => return Err(InvalidTensor),
-        WordOperation::C7(kind, source, destination) => {
-            let input = decode_float(source, a)?;
-            let result = match kind {
-                13 => linear::natural_log_f32(input),
-                14 => linear::sin_cos_f32(input).map(|pair| pair.0),
-                15 => linear::sin_cos_f32(input).map(|pair| pair.1),
-                16 => linear::exponential_f32(input),
-                17 => linear::sigmoid_f32(input),
-                18 => linear::silu_f32(input),
-                19 => linear::tanh_f32(input),
-                20 if source == 0 => Ok(gaussian_table(a)?.unwrap_or_default()),
-                20 => linear::gelu_f32(input),
-                21 => linear::gelu_quick_f32(input),
-                22 => linear::softplus_f32(input),
-                24 => linear::gaussian_error_f32(input, true),
-                _ => return Err(InvalidTensor),
-            }
-            .map_err(BackendError::overflow)?;
-            Some(convert(0, destination, u64::from(result.to_bits()))?)
-        }
-    }
-    .ok_or(InvalidTensor)?;
+    let value = word_value(operation, read(left)?, read(right)?)?;
     let (pointer, offset) = match target {
         WordTarget::C0(index) => {
             *words.get_mut(index as usize).ok_or(InvalidTensor)? = value;
@@ -1392,19 +1391,15 @@ fn execute_word(
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
     use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as BinaryRow};
     use BackendError::InvalidTensor;
-    let vtensor_typed::Adt2::C0(count, capacity, importance, operation, .., row_arithmetic) = &plan;
+    let vtensor_typed::Adt2::C0(count, capacity, importance, operation, .., row_arithmetic, width) =
+        &plan;
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
     let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
     use linear::RowRankingF32;
-    let kind = weight_encoder(tensor.ty);
-    let staged = *row_arithmetic
-        || kind.is_some()
-        || matches!(tensor.ty, 9 | 15)
-        || (*operation == 41 && tensor.ty == 26);
     // Word instructions can update their input in place. Only staged row conversion
     // retains an immutable input slice throughout the instruction loop.
-    let source = staged.then(|| TensorInput::new(left)).transpose()?;
+    let source = (*width != 0).then(|| TensorInput::new(left)).transpose()?;
     let right = secondary
         .filter(|_| *row_arithmetic)
         .map(TensorInput::new)
@@ -1421,16 +1416,19 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let mut offsets = Vec::new();
     let mut encoded = Vec::new();
     let (TensorDescriptor::C0(.., span, _), lanes, block_bytes) = tensor_layout(tensor)?;
+    let scalar_store = if source.is_some() && lanes == 1 {
+        let reply = pointwise(GraphRequest::C8(tensor.ty as u64))?;
+        tensor_fields!(GraphResponse::C12(stage, tail) = reply);
+        Some((stage, tail))
+    } else {
+        None
+    };
     let uniform = importance
         .map(|word| workspace(lanes as u64, f32::from_bits(word as u32)))
         .transpose()?;
     let output = graph_tensor_region(tensor, span as usize)?;
-    let width = match (&source, *row_arithmetic) {
-        (None, _) => 0,
-        (Some(_), true) => tensor.ne[0] as u64,
-        (Some(_), false) => lanes as u64,
-    };
-    let mut values = workspace(width, 0.0)?;
+    let kind = weight_encoder(tensor.ty);
+    let mut values = workspace(*width, 0.0)?;
     let mut right_values = workspace(right.as_ref().map_or(0, |input| input.ne[0] as u64), 0.0)?;
     for index in 0..*count {
         let instruction =
@@ -1447,15 +1445,15 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                         *value = linear::evaluate_f32_scalar(*operation, *value, *rhs)?;
                     }
                 }
-                for (index, block_values) in values.chunks_exact(lanes).enumerate() {
-                    let displacement = index
-                        .checked_mul(tensor.nb[0])
-                        .ok_or(BackendError::Overflow)?
-                        as u64;
+                let row_start = encoded.len();
+                let row_bytes = (values.len() / lanes)
+                    .checked_mul(tensor.nb[0])
+                    .ok_or(BackendError::Overflow)?;
+                encoded.try_reserve(row_bytes)?;
+                for block_values in values.chunks_exact(lanes) {
                     let start = encoded.len();
-                    encoded.try_reserve(tensor.nb[0])?;
-                    match tensor.ty {
-                        9 => {
+                    match (tensor.ty, &scalar_store) {
+                        (9, _) => {
                             let row = linear::encode_affine_q8_block::<32>(
                                 block_values.try_into().map_err(|_| InvalidTensor)?,
                             )?;
@@ -1463,7 +1461,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                             encoded.extend(row.scaled_sum.to_ne_bytes());
                             encoded.extend(row.symmetric.codes.map(|code| code as u8));
                         }
-                        15 => {
+                        (15, _) => {
                             let row = linear::encode_grouped_q8_block(
                                 block_values.try_into().map_err(|_| InvalidTensor)?,
                             )?;
@@ -1471,21 +1469,21 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                             encoded.extend(row.codes.map(|code| code as u8));
                             encoded.extend(row.sums.into_iter().flat_map(i16::to_ne_bytes));
                         }
-                        0 | 1 | 26 | 30 | 43 => {
+                        (_, Some((stage, tail))) => {
                             let bits = u64::from(block_values[0].to_bits());
-                            let word = if tensor.ty == 26 {
-                                linear::truncate_signed_word_f32(bits)
-                                    .map_err(BackendError::invalid)?
-                                    .ok_or(InvalidTensor)?
-                            } else {
-                                convert(0, tensor.ty as u64, bits)?
-                            };
-                            let mut native = [0; 8];
-                            // SAFETY: scalar_word accepts only 1, 2, 4 or 8 unaligned bytes.
+                            let mut word = word_value(stage.clone(), bits, 0)?;
+                            if let Some(next) = tail {
+                                word = word_value(next.clone(), word, 0)?;
+                            }
+                            encoded.resize(start + block_bytes, 0);
+                            // SAFETY: the appended scratch block contains exactly block_bytes bytes.
                             unsafe {
-                                scalar_word(native.as_mut_ptr(), block_bytes as u64, Some(word))?
+                                scalar_word(
+                                    encoded[start..].as_mut_ptr(),
+                                    block_bytes as u64,
+                                    Some(word),
+                                )?
                             };
-                            encoded.extend_from_slice(&native[..block_bytes]);
                         }
                         _ => {
                             let kind = kind.ok_or(InvalidTensor)?;
@@ -1506,9 +1504,9 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                     if encoded.len() - start != tensor.nb[0] {
                         return Err(InvalidTensor);
                     }
-                    offsets.try_reserve(1)?;
-                    offsets.push(to.checked_add(displacement).ok_or(BackendError::Overflow)?);
                 }
+                offsets.try_reserve(1)?;
+                offsets.push((to, row_start..encoded.len()));
             }
             Rank(from, to, width, count, descending) => {
                 let (width, count) = (width as usize, count as usize);
@@ -1544,10 +1542,10 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
             _ => return Err(InvalidTensor),
         }
     }
-    for (offset, block) in offsets.into_iter().zip(encoded.chunks(tensor.nb[0].max(1))) {
+    for (offset, range) in offsets {
         // SAFETY: Prism bounded each complete block in the destination. All reads and
         // numerical conversions have finished, including any overlapping source views.
-        unsafe { write_row(output.add(offset as usize), block) };
+        unsafe { write_row(output.add(offset as usize), &encoded[range]) };
     }
     Ok(())
 }
@@ -2314,20 +2312,12 @@ mod attention {
                     at = at.checked_add(self.nb[0] as u64).ok_or(Overflow)?;
                 }
                 let encoded = self.region(at, self.block_bytes)?;
-                if matches!(self.ty, 0 | 1 | 30 | 43) {
-                    // SAFETY: the type catalog and region bound the complete unaligned scalar.
-                    let bits = unsafe {
-                        super::scalar_word(encoded.as_ptr().cast_mut(), encoded.len() as u64, None)?
-                    };
-                    block[0] = super::decode_float(self.ty as u64, bits)?;
-                } else {
-                    decode_block(
-                        self.ty as u64,
-                        encoded,
-                        float_bytes(block),
-                        size_of::<f32>(),
-                    )?;
-                }
+                decode_block(
+                    self.ty as u64,
+                    encoded,
+                    float_bytes(block),
+                    size_of::<f32>(),
+                )?;
             }
             Ok(())
         }

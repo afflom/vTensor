@@ -271,6 +271,7 @@ model does not sanction.
 | `VT-181` | `build` | GGML ADD_CAST decodes mixed input rows and encodes all floating and packed destinations |
 | `VT-182` | `build` | GGML scalar-left binary graphs consume all decodable mixed right operands |
 | `VT-183` | `build` | Four-axis packed binary broadcasts preserve offset views and in-place storage |
+| `VT-184` | `build` | GGML ADD_CAST stores bounded signed integers and binary64 results from decoded rows |
 
 ## normalization-graphs
 

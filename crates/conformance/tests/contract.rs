@@ -72,6 +72,7 @@ ggml_batches! {
     fn prepacked_products_vt_170() { "prepacked-products", 50, ["matrix"] }
     fn flash_accumulators_vt_178() { "flash-precision", 4205, ["attention"] }
     fn flash_storage_pairs_vt_177() { "flash-storage", 697, ["attention"] }
+    fn numeric_row_results_vt_184() { "numeric-results", 3906, ["typed", "pointwise"] }
     fn packed_binary_views_vt_183() { "row-repeat", 232, ["typed"] }
     fn scalar_binary_rows_vt_182() { "scalar-binary", 778, ["typed"] }
     fn mixed_row_casts_vt_181() { "mixed-cast", 22846, ["typed"] }
@@ -1271,7 +1272,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "aa931f2703d8dc2b7c2e008ac414a8bc38d6f230574f27954f1977211dccd808",
+            "29ca7e8a52848098a861fe9562b52dd9bba073a850446b6fd87b0d52697fea24",
         )
     });
 
@@ -2261,7 +2262,8 @@ int main(int argc, char **argv) {
     const bool cast_add=!strcmp(argv[3],"codebook-add") || !strcmp(argv[3],"half-add");
     const bool views=!strcmp(argv[3],"row-repeat");
     const bool row_binary=views || !strcmp(argv[3],"scalar-binary") || !strcmp(argv[3],"packed-binary");
-    const bool mixed_cast=!strcmp(argv[3],"mixed-cast");
+    const bool numeric_results=!strcmp(argv[3],"numeric-results");
+    const bool mixed_cast=numeric_results || !strcmp(argv[3],"mixed-cast");
     const bool paired=row_binary || mixed_cast;
     if (paired || cast_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
@@ -2329,6 +2331,12 @@ int main(int argc, char **argv) {
                     if (oracle) {expected=tensor_bytes(out);continue;}
                     if (views) CHECK(tensor_bytes(x->view_src)==left_backing && tensor_bytes(y->view_src)==right_backing);
                     if (!(views && inplace) && tensor_bytes(out)!=expected) {fprintf(stderr,"packed addition differs for %d -> %d inplace %d right %d operation %d\n",from,to,inplace,right_type,kind);return 2;}
+                    if (numeric_results && from==GGML_TYPE_F16 && right_type==GGML_TYPE_F32 && to>=GGML_TYPE_I8 && to<=GGML_TYPE_I64) {
+                        for (float invalid : {NAN,INFINITY,-INFINITY,to==GGML_TYPE_I64?0x1p63f:0x1p31f}) {
+                            ggml_set_f32_1d(y,ggml_nelements(y)-1,invalid);
+                            CHECK(refuses_poisoned_output(backend,graph,out)); ++cases;
+                        }
+                    }
                     ++cases;
                 }
             }

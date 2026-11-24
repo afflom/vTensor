@@ -4,14 +4,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Implement the 3,890 remaining ADD_CAST outputs to I8, I16, I32, I64 and F64 for decodable inputs. Verify bounded conversions and atomic refusals against original GGML and Berkeley SoftFloat.
+- [ ] Trace and close the stock llama-perplexity discrepancy on four 64-token chunks of Stories15M mixed-codebook weights. The upstream CPU self-replay matched all 124 top tokens. vTensor matched 119.
+- [ ] Cover the remaining 13,036 binary descriptors involving signed, F64 or packed Q8 activation inputs. Bind each numerical contract to original GGML or SoftFloat before enabling placement.
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **2,001 non-Prism lines** (12,550 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,997 non-Prism lines** (12,546 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all 3,890 missing signed integer and F64 ADD_CAST destinations. All 1,991,680 values matched original GGML or SoftFloat. All 16 late invalid conversions preserved the output. [VT-184](verification/supplemental-numeric-results-vt184.json)
 
 - [x] Check 232 four-axis repeated binary graphs with offset, padded inputs. All 902,144 output bytes matched GGML, and all read-only and guard bytes were preserved. [VT-183](verification/supplemental-binary-views-vt183.json)
 
