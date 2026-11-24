@@ -202,32 +202,6 @@ impl BufferContext {
             size,
         })
     }
-
-    fn region(
-        &self,
-        tensor: &Tensor,
-        span: usize,
-        offset: usize,
-        size: usize,
-    ) -> Result<*mut u8, BackendError> {
-        use vtensor_buffer_region::Adt0 as Region;
-        let decision = vtensor_buffer_region::run(
-            self.base as usize as u64,
-            self.size as u64,
-            tensor.data as usize as u64,
-            span as u64,
-            offset as u64,
-            size as u64,
-        )
-        .map_err(BackendError::overflow)?;
-        match decision {
-            Region::C0 => Ok(null_mut()),
-            Region::C1 => Err(BackendError::InvalidTensor),
-            Region::C2 => Err(BackendError::OutOfBounds),
-            // SAFETY: Prism bounded the whole tensor and requested range inside this backing allocation.
-            Region::C3(at) => Ok(unsafe { self.base.add(at as usize) }),
-        }
-    }
 }
 
 fn tensor_metadata(tensor: &Tensor) -> Result<TensorDescriptor, BackendError> {
@@ -290,7 +264,15 @@ configuration_queries! {
     buffer_type(Dev) -> Buft = state().buft.get();
     alignment_of(Buft) -> usize = state().alignment;
     is_host(Buft) -> bool = true;
-    supports_buffer_type(Dev, buft: Buft) -> bool = buft == state().buft.get();
+}
+
+unsafe extern "C" fn supports_buffer_type(_: Dev, buft: Buft) -> bool {
+    // SAFETY: GGML retains the type during the callback. Its host predicate guarantees standard layout.
+    !buft.is_null()
+        && vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C6(
+            buft == state().buft.get(),
+            unsafe { ggml_backend_buft_is_host(buft) },
+        ))
 }
 
 unsafe extern "C" fn device_at(_: Reg, index: usize) -> Dev {
@@ -388,14 +370,11 @@ unsafe extern "C" fn buffer_base(buffer: Buf) -> *mut c_void {
 }
 
 unsafe extern "C" fn tensor_init(buffer: Buf, tensor: TensorPtr) -> c_int {
-    // SAFETY: GGML provides live buffer/tensor objects; the region checker
-    // validates their byte relationship without dereferencing tensor data.
-    let result = unsafe {
-        let tensor = &*tensor;
-        let context = &*(*buffer).context.cast::<BufferContext>();
-        tensor_span(tensor).and_then(|size| context.region(tensor, size, 0, size))
-    };
-    result.map_or(GGML_STATUS_FAILED, |_| GGML_STATUS_SUCCESS)
+    // SAFETY: GGML retains the descriptor and the supplied backing buffer during initialization.
+    let tensor = unsafe { &*tensor };
+    tensor_span(tensor)
+        .and_then(|size| host_region(buffer, tensor, size, 0, size))
+        .map_or(GGML_STATUS_FAILED, |_| GGML_STATUS_SUCCESS)
 }
 
 unsafe extern "C" fn buffer_clear(buffer: Buf, value: u8) {
@@ -424,9 +403,8 @@ macro_rules! transfer_callbacks {
             // SAFETY: GGML retains these descriptors and the external region;
             // certified admissions bound the tensor region. Copy permits aliases.
             unsafe {
-                let context = &*(*buffer).context.cast::<BufferContext>();
                 let tensor = &*tensor;
-                let region = require(context.region(tensor, require(tensor_span(tensor)), offset, size));
+                let region = require(host_region(buffer, tensor, require(tensor_span(tensor)), offset, size));
                 ($effect)(region, external, size);
             }
         }
@@ -446,23 +424,22 @@ unsafe extern "C" fn tensor_copy(
     // SAFETY: GGML provides live tensors. Only directly accessible host sources
     // are copied; false is returned before mutation for every unsupported source.
     unsafe {
-        let source = &*source;
-        let source_buffer = source.view_src.as_ref().unwrap_or(source).buffer;
-        if source_buffer.is_null() || !ggml_backend_buffer_is_host(source_buffer) {
-            return false;
-        }
-        let Ok(size) = tensor_span(source) else {
+        let (source, destination) = (&*source, &*destination);
+        let (Ok(size), Ok(target_size)) = (tensor_span(source), tensor_span(destination)) else {
             return false;
         };
-        if tensor_span(&*destination) != Ok(size) || (size != 0 && source.data.is_null()) {
+        if size != target_size {
             return false;
         }
-        let context = &*(*buffer).context.cast::<BufferContext>();
-        let Ok(target) = context.region(&*destination, size, 0, size) else {
+        let origin = source.view_src.as_ref().unwrap_or(source).buffer;
+        let (Ok(from), Ok(to)) = (
+            host_region(origin, source, size, 0, size),
+            host_region(buffer, destination, size, 0, size),
+        ) else {
             return false;
         };
         if size != 0 {
-            ptr::copy(source.data.cast::<u8>(), target, size);
+            ptr::copy(from, to, size);
         }
         true
     }
@@ -771,14 +748,43 @@ fn graph_tensor_region(tensor: &Tensor, span: usize) -> Result<*mut u8, BackendE
     if span == 0 {
         return Ok(null_mut());
     }
-    // SAFETY: a nonempty graph tensor must have a live native buffer. Foreign
-    // buffer contexts are refused before interpreting our private context type.
-    unsafe {
-        if tensor.buffer.is_null() || (*tensor.buffer).buft != state().buft.get() {
-            return Err(BackendError::InvalidTensor);
-        }
-        let context = &*(*tensor.buffer).context.cast::<BufferContext>();
-        context.region(tensor, span, 0, span)
+    host_region(tensor.buffer, tensor, span, 0, span)
+}
+
+fn host_region(
+    handle: Buf,
+    tensor: &Tensor,
+    span: usize,
+    offset: usize,
+    size: usize,
+) -> Result<*mut u8, BackendError> {
+    use vtensor_buffer_region::Adt0 as Region;
+    // SAFETY: GGML retains the buffer for this call. Only ordinary host layouts reach get_base.
+    let buffer = unsafe { handle.as_ref() }.ok_or(BackendError::InvalidTensor)?;
+    // SAFETY: a live GGML buffer retains its type descriptor for the same lifetime.
+    if !unsafe { supports_buffer_type(state().dev.get(), buffer.buft) } {
+        return Err(BackendError::InvalidTensor);
+    }
+    let base = match buffer.iface.get_base {
+        // SAFETY: the callback belongs to this live host buffer. Prism bounds the returned address.
+        Some(get) if span != 0 => unsafe { get(handle) }.cast::<u8>(),
+        _ => null_mut(),
+    };
+    let decision = vtensor_buffer_region::run(
+        base as usize as u64,
+        buffer.size as u64,
+        tensor.data as usize as u64,
+        span as u64,
+        offset as u64,
+        size as u64,
+    )
+    .map_err(BackendError::overflow)?;
+    match decision {
+        Region::C0 => Ok(null_mut()),
+        Region::C1 => Err(BackendError::InvalidTensor),
+        Region::C2 => Err(BackendError::OutOfBounds),
+        // SAFETY: Prism bounded the whole tensor and requested range inside this backing allocation.
+        Region::C3(at) => Ok(unsafe { base.add(at as usize) }),
     }
 }
 
@@ -1520,6 +1526,10 @@ unsafe extern "C" fn supports_operation(_: Dev, tensor: *const Tensor) -> bool {
 }
 
 unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
+    execute_graph(backend, graph).map_or(GGML_STATUS_FAILED, |_| GGML_STATUS_SUCCESS)
+}
+
+fn execute_graph(backend: BackendPtr, graph: Graph) -> Result<(), BackendError> {
     let mut plans = Vec::new();
     let mut has_callbacks = false;
     // SAFETY: GGML retains this graph and all descriptors for the synchronous
@@ -1531,18 +1541,13 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
             if !vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C2(flags)) {
                 continue;
             }
-            match plan_operation(&*tensor) {
-                Ok(Some(plan)) if plans.try_reserve(1).is_ok() => {
-                    has_callbacks |= matches!(plan, ExecutionPlan::Callback(_));
-                    plans.push((tensor, plan));
-                }
-                Ok(None) => {}
-                Ok(Some(_)) | Err(_) => return GGML_STATUS_FAILED,
+            if let Some(plan) = plan_operation(&*tensor)? {
+                plans.try_reserve(1)?;
+                has_callbacks |= matches!(plan, ExecutionPlan::Callback(_));
+                plans.push((tensor, plan));
             }
         }
-        let Ok(execution) = threadpool::execution(backend, has_callbacks) else {
-            return GGML_STATUS_FAILED;
-        };
+        let execution = threadpool::execution(backend, has_callbacks)?;
         let mut callback_width = 1;
         if has_callbacks {
             // The pinned CPU plans one team for the whole graph, including nodes that
@@ -1551,14 +1556,12 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                 if callback_width == execution.threads {
                     break;
                 }
-                let Ok(n) = graph_node_tasks(&*ggml_graph_node(graph, i), execution.threads) else {
-                    return GGML_STATUS_FAILED;
-                };
+                let n = graph_node_tasks(&*ggml_graph_node(graph, i), execution.threads)?;
                 callback_width = callback_width.max(n);
             }
         }
         for (tensor, plan) in plans {
-            let result = match plan {
+            match plan {
                 ExecutionPlan::Callback(callback) => {
                     callback.invoke(tensor, callback_width, &execution)
                 }
@@ -1580,13 +1583,10 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
                 ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
                 ExecutionPlan::RowProduct(plan) => execute_row_products(&execution, &*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),
-            };
-            if result.is_err() {
-                return GGML_STATUS_FAILED;
-            }
+            }?;
         }
     }
-    GGML_STATUS_SUCCESS
+    Ok(())
 }
 
 mod rotary {

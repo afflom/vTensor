@@ -144,7 +144,7 @@
   "allowed_ggml_host_imports": [
     "ggml_abort",
     "ggml_backend_buffer_init",
-    "ggml_backend_buffer_is_host",
+    "ggml_backend_buft_is_host",
     "ggml_graph_n_nodes",
     "ggml_graph_node"
   ],

@@ -635,6 +635,7 @@ pub enum Adt0 {
     C3(u64, u64, u64),
     C4(u64, u64, bool, bool),
     C5(u64, u64, u64, bool, bool, bool),
+    C6(bool, bool),
 }
 
 #[derive(Clone)]
@@ -645,8 +646,8 @@ pub enum Adt1 {
 pub fn f0(v0: Adt0) -> bool {
     let m1 = v0;
     match m1 {
-        Adt0::C0(v7) => {
-            let a26 = v7;
+        Adt0::C0(v9) => {
+            let a26 = v9;
             let a27 = {
                 let m25 = f1();
                 match m25 {
@@ -657,99 +658,99 @@ pub fn f0(v0: Adt0) -> bool {
             };
             nat_lt(a26, a27)
         }
-        Adt0::C1(v8, v9) => {
-            let a28 = v9;
+        Adt0::C1(v10, v11) => {
+            let a28 = v11;
             let a29 = 0u64;
             if nat_eq(a28, a29) {
                 true
             } else {
-                let a30 = v8;
+                let a30 = v10;
                 let a31 = 0u64;
                 if if if if nat_eq(a30, a31) {
                     true
                 } else {
-                    let a32 = v8;
+                    let a32 = v10;
                     let a33 = 35u64;
                     nat_eq(a32, a33)
                 } {
                     true
                 } else {
-                    let a34 = v8;
+                    let a34 = v10;
                     let a35 = 36u64;
                     nat_eq(a34, a35)
                 } {
                     true
                 } else {
-                    let a36 = v8;
+                    let a36 = v10;
                     let a37 = 37u64;
                     nat_eq(a36, a37)
                 } {
                     true
                 } else {
-                    let a38 = v8;
+                    let a38 = v10;
                     let a39 = 38u64;
                     nat_eq(a38, a39)
                 }
             }
         }
-        Adt0::C2(v10) => {
+        Adt0::C2(v12) => {
             let a43 = 16u64;
             let a44 = {
-                let a40 = v10;
+                let a40 = v12;
                 let a41 = 32u64;
                 let a42 = 0u64;
                 nat_rem(a40, a41, a42)
             };
             nat_le(a43, a44)
         }
-        Adt0::C3(v11, v12, v13) => {
+        Adt0::C3(v13, v14, v15) => {
             let a45 = 0u64;
-            let a46 = v11;
+            let a46 = v13;
             if if if nat_lt(a45, a46) {
-                let a47 = v11;
+                let a47 = v13;
                 let a48 = 512u64;
                 nat_le(a47, a48)
             } else {
                 false
             } {
-                let a49 = v12;
+                let a49 = v14;
                 let a50 = 4u64;
                 nat_le(a49, a50)
             } else {
                 false
             } {
-                let a51 = v13;
+                let a51 = v15;
                 let a52 = 100u64;
                 nat_le(a51, a52)
             } else {
                 false
             }
         }
-        Adt0::C4(v14, v15, v16, v17) => {
-            let a53 = v14;
+        Adt0::C4(v16, v17, v18, v19) => {
+            let a53 = v16;
             let a54 = 99u64;
             if if if nat_eq(a53, a54) {
-                let a55 = v15;
+                let a55 = v17;
                 let a56 = 2147483648u64;
                 nat_lt(a55, a56)
             } else {
                 false
             } {
-                v16
+                v18
             } else {
                 false
             } {
-                v17
+                v19
             } else {
                 false
             }
         }
-        Adt0::C5(v1, v2, v3, v4, v5, v6) => {
-            if v4 {
+        Adt0::C5(v3, v4, v5, v6, v7, v8) => {
+            if v6 {
                 let a2 = 0u64;
-                let a3 = v3;
+                let a3 = v5;
                 if if if nat_lt(a2, a3) {
-                    let a4 = v3;
+                    let a4 = v5;
                     let a5 = 2147483648u64;
                     nat_lt(a4, a5)
                 } else {
@@ -757,18 +758,18 @@ pub fn f0(v0: Adt0) -> bool {
                 } {
                     true
                 } else {
-                    let a6 = v3;
+                    let a6 = v5;
                     let a7 = 4294967295u64;
                     nat_eq(a6, a7)
                 } {
-                    let a8 = v1;
+                    let a8 = v3;
                     let a9 = 93u64;
                     if nat_eq(a8, a9) {
-                        let a10 = v2;
+                        let a10 = v4;
                         let a11 = 512u64;
                         if nat_lt(a10, a11) {
-                            if v5 {
-                                v6
+                            if v7 {
+                                v8
                             } else {
                                 true
                             }
@@ -776,11 +777,11 @@ pub fn f0(v0: Adt0) -> bool {
                             false
                         }
                     } else {
-                        if v6 {
-                            let a12 = v1;
+                        if v8 {
+                            let a12 = v3;
                             let a13 = 90u64;
                             if if nat_eq(a12, a13) {
-                                let a14 = v2;
+                                let a14 = v4;
                                 let a15 = 1u64;
                                 nat_eq(a14, a15)
                             } else {
@@ -788,10 +789,10 @@ pub fn f0(v0: Adt0) -> bool {
                             } {
                                 true
                             } else {
-                                let a16 = v1;
+                                let a16 = v3;
                                 let a17 = 91u64;
                                 if if nat_eq(a16, a17) {
-                                    let a18 = v2;
+                                    let a18 = v4;
                                     let a19 = 3u64;
                                     nat_eq(a18, a19)
                                 } else {
@@ -799,10 +800,10 @@ pub fn f0(v0: Adt0) -> bool {
                                 } {
                                     true
                                 } else {
-                                    let a20 = v1;
+                                    let a20 = v3;
                                     let a21 = 92u64;
                                     if nat_eq(a20, a21) {
-                                        let a22 = v2;
+                                        let a22 = v4;
                                         let a23 = 7u64;
                                         nat_eq(a22, a23)
                                     } else {
@@ -819,6 +820,13 @@ pub fn f0(v0: Adt0) -> bool {
                 }
             } else {
                 false
+            }
+        }
+        Adt0::C6(v1, v2) => {
+            if v1 {
+                true
+            } else {
+                v2
             }
         }
     }

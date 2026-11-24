@@ -1,0 +1,74 @@
+{
+  "requirement": "VT-156",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "contract": "ggml/src/ggml-backend-impl.h, ggml_backend_buffer_type_i.is_host: CPU-addressable memory in standard GGML tensor layout.",
+  "native_semantic_id": "4f7ae201fc932abcda628d1b0334ee678b492482932cb32443ebc89f452fa8f0",
+  "native_attestation": "6f1152a44379179565f479eda812be0008fbf73308a1065a6f461eb801acc008",
+  "prism_roots": [
+    "PrismTemplateContract.NativeBackend.decideNative",
+    "PrismTemplateContract.BufferTransfer.locateTransfer"
+  ],
+  "continuous": "shared_host_storage_vt_156 compares an IQ2_XXS copy executed by vTensor on original CPU-owned buffers with the GGML CPU kernel. matrix_graphs_vt_12 refuses a CPU allocation one byte too short before changing the destination.",
+  "host_provider_sha256": "5a8f93190bd6c43b0d1cfcd4d31e0141faaba236019d96e051021a3408ae40b5",
+  "provider_inputs_sha256": "e1362675e6ed44dc586f48b4fb7591880da708f562f8e5e9f2f086396db11334",
+  "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "scheduler_sha256": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+  "probe_source_sha256": "6fbb551b860cfbb5c8c12bbcd43803a2dd482d8719a91fabaa029c51d2313f4f",
+  "probe_sha256": "0a09c977b528893f0b15c3cf6c4e280538517d99d11fb263622c40a94c3c28a9",
+  "procedure": "Call unchanged make_test_cases_eval. Build each original graph with no tensor allocation and retain the original weight context and sentinels. Query vTensor support for every graph node. Ask ggml_backend_sched_split_graph to assign the graph and read each assignment with ggml_backend_sched_get_tensor_backend. Reset the scheduler between graphs. Match every case label and parameter string to the frozen factory transcript.",
+  "cases": 27755,
+  "nodes": 86647,
+  "admitted": 86647,
+  "single_provider_placements": 86647,
+  "mixed_provider_order": [
+    "vTensor",
+    "GGML CPU"
+  ],
+  "mixed_vtensor_before": 86631,
+  "mixed_vtensor_after": 86639,
+  "mixed_cpu_after": [
+    {
+      "ordinal": 19018,
+      "node": 5,
+      "op": "CPY"
+    },
+    {
+      "ordinal": 19018,
+      "node": 6,
+      "op": "RESHAPE"
+    },
+    {
+      "ordinal": 19019,
+      "node": 5,
+      "op": "CPY"
+    },
+    {
+      "ordinal": 19019,
+      "node": 6,
+      "op": "RESHAPE"
+    },
+    {
+      "ordinal": 19020,
+      "node": 5,
+      "op": "CPY"
+    },
+    {
+      "ordinal": 19020,
+      "node": 6,
+      "op": "RESHAPE"
+    },
+    {
+      "ordinal": 19021,
+      "node": 5,
+      "op": "CPY"
+    },
+    {
+      "ordinal": 19021,
+      "node": 6,
+      "op": "RESHAPE"
+    }
+  ],
+  "placement_table": "ggml-factory-placement.tsv.gz",
+  "uncompressed_table_sha256": "6881013b405bd887aef0f982b118447527bc23ec5c438d2d78efc1c14a5bc2ae",
+  "mutation": "Removing external standard-host admission failed the actual CPU buffer-type query. The restored provider passed the host copy, matrix, graph callbacks, allocation, transfer and Verdant dependency checks."
+}

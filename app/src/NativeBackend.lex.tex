@@ -81,7 +81,8 @@ inductive{
     {name: computeNode, fields: [Nat]},
     {name: threadpool, fields: [Nat, Nat, Nat]},
     {name: synchronousDelay, fields: [Nat, Nat, Bool, Bool]},
-    {name: customAdmission, fields: [Nat, Nat, Nat, Bool, Bool, Bool]}
+    {name: customAdmission, fields: [Nat, Nat, Nat, Bool, Bool, Bool]},
+    {name: hostStorage, fields: [Bool, Bool]}
   ]
 }
 
@@ -90,6 +91,7 @@ definition{
   parameters: [request : PredicateRequest],
   result: Bool,
   body: (match request
+    | PredicateRequest.hostStorage owned standardHost => (owned || standardHost)
     | PredicateRequest.customAdmission operation mask requested callable hasView compatible => (callable && ((((0 <? requested) && (requested <? 2147483648)) || (requested =? 4294967295)) && (if (operation =? 93) then ((mask <? 512) && (if hasView then compatible else true)) else (compatible && (((operation =? 90) && (mask =? 1)) || (((operation =? 91) && (mask =? 3)) || ((operation =? 92) && (mask =? 7))))))))
     | PredicateRequest.deviceIndex index => (index <? (project (configuration) deviceCount))
     | PredicateRequest.metadataOperation operation span => ((span =? 0) || (((((operation =? 0) || (operation =? 35)) || (operation =? 36)) || (operation =? 37)) || (operation =? 38)))
@@ -98,6 +100,20 @@ definition{
     | PredicateRequest.synchronousDelay operation micros sameLayout sameView => ((((operation =? 99) && (micros <? 2147483648)) && sameLayout) && sameView)),
   executable: true,
   production: {effects: [], targets: [rust-core]}
+}
+
+theorem{
+  name: ordinaryHostStorageIsAccessible,
+  parameters: [],
+  statement: ((decideNative (ctor PredicateRequest.hostStorage false true)) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: devicePrivateStorageIsInaccessible,
+  parameters: [],
+  statement: ((decideNative (ctor PredicateRequest.hostStorage false false)) = false),
+  proof: reflexivity{}
 }
 
 theorem{

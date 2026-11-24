@@ -208,7 +208,7 @@ unsafe extern "C" {
         context: *mut c_void,
         size: usize,
     ) -> Buf;
-    pub(crate) fn ggml_backend_buffer_is_host(buffer: Buf) -> bool;
+    pub(crate) fn ggml_backend_buft_is_host(buft: Buft) -> bool;
     pub(crate) fn ggml_graph_n_nodes(graph: Graph) -> c_int;
     pub(crate) fn ggml_graph_node(graph: Graph, index: c_int) -> TensorPtr;
     pub(crate) fn ggml_abort(file: *const c_char, line: c_int, fmt: *const c_char, ...) -> !;

@@ -596,3 +596,9 @@ Feature: native-backend
     Given an original GGML repeat graph on an admitted scalar or packed tensor
     When vTensor tiles the tensor along one axis or all four axes
     Then the entire output matches the pinned GGML CPU concatenation of the same bytes
+
+  @VT-156 @build
+  Scenario: Prism admits ordinary GGML host buffers for graph execution and bounds foreign tensor views before Verdant accesses their contents
+    Given an original GGML CPU host buffer with a complete or truncated tensor extent
+    When a vTensor graph uses that buffer
+    Then complete host tensors execute against the GGML CPU reference and invalid ranges preserve the destination

@@ -56,6 +56,7 @@ ggml_batches! {
     /// `VT-16`: Prism models four-axis REPEAT addressing and Verdant preserves encoded values for every type admitted by the imported GGML CPU repeat oracle
     fn repeat_graphs_vt_16() { "repeat", 160, [] }
     fn storage_repeats_vt_155() { "storage-repeat", 180, ["pointwise"] }
+    fn shared_host_storage_vt_156() { "shared-host-storage", 1, ["native"] }
     /// `VT-17`: Prism selects and addresses CONCAT source blocks on every axis and Verdant execution matches the imported GGML CPU oracle across all live storage types
     fn concat_graphs_vt_17() { "concat", 10368, [] }
     /// `VT-18`: Prism defines F32 zero and circular padding, reflected padding and signed four-axis roll addressing and Verdant execution matches the imported GGML CPU oracle
@@ -1263,7 +1264,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a24485a05fb4e3516b9d221e68458b7494ac5ff61be81ea3d516e1ada6bb3169",
+            "d6bea504d5476272bf14a4578aeb6311d4ca8b3c283149db04743d1909a75137",
         )
     });
 
@@ -2068,8 +2069,10 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
-    const bool identity_copy=!strcmp(argv[3],"iq2-identity-copy");
+    const bool shared_host=!strcmp(argv[3],"shared-host-storage");
+    const bool identity_copy=shared_host || !strcmp(argv[3],"iq2-identity-copy");
     if (identity_copy || !strcmp(argv[3],"storage-repeat")) {
+      if (shared_host) CHECK(ggml_backend_supports_buft(backend,ggml_backend_get_default_buffer_type(reference)));
       size_t cases=0;
       int kind;
       while (scanf("%d",&kind)==1) {
@@ -2092,7 +2095,7 @@ int main(int argc, char **argv) {
             }
             const bool cpu_identity=identity_copy && selected==reference; // GGML executes this copy despite its device query.
             CHECK(cpu_identity || ggml_backend_supports_op(selected,out));
-            auto graph=ctx.allocate(out,selected); CHECK(graph && (cpu_identity || ggml_backend_supports_op(selected,out)));
+            auto graph=ctx.allocate(out,shared_host ? reference : selected); CHECK(graph && (cpu_identity || ggml_backend_supports_op(selected,out)));
             std::vector<uint8_t> data(ggml_nbytes(src));
             for(size_t i=0;i<data.size();++i) data[i]=uint8_t(i*197+19);
             ggml_backend_tensor_set(src,data.data(),0,data.size());
@@ -2982,7 +2985,7 @@ int main(int argc, char **argv) {
           CHECK(refuses_change(backend,dev,graph,result,result->ne[0],result->ne[0]+1));
           CHECK(refuses_change(backend,dev,graph,result,result->src[0],nullptr));
           CHECK(refuses_change(backend,dev,graph,result,result->buffer,nullptr,false));
-          ggml_backend_buffer_t foreign=ggml_backend_cpu_buffer_from_ptr(left->data,ggml_nbytes(left)); CHECK(foreign);
+          ggml_backend_buffer_t foreign=ggml_backend_cpu_buffer_from_ptr(left->data,ggml_nbytes(left)-1); CHECK(foreign);
           CHECK(refuses_change(backend,dev,graph,result,left->buffer,foreign,false)); ggml_backend_buffer_free(foreign);
           ggml_tensor *unsupported=ggml_dup(ctx,result);
           ggml_cgraph *bad_graph=ggml_new_graph(ctx); ggml_build_forward_expand(bad_graph,unsupported);
