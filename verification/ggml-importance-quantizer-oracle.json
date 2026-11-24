@@ -1,0 +1,413 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "authority_files": [
+    "ggml/src/ggml.c",
+    "ggml/src/ggml-quants.c"
+  ],
+  "entry_points": [
+    "ggml_quantize_requires_imatrix",
+    "ggml_quantize_chunk",
+    "ggml_get_type_traits(type)->to_float"
+  ],
+  "sdk": "ghcr.io/afflom/prismpm-sdk-patched@sha256:3dfa5f7284ace57c08bfe8d2effe2e08ab41da1a53f5820d48cccd498bd528c3",
+  "upstream_core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "portable_oracle_sha256": "37e7003b8a026348d8243f29089cdf8c1eb3f306d0a90d961f01197109ceddcc",
+  "baseline_provider_commit": "253641a17615493a82129c11309eb8db60f7fa8d",
+  "factory_verdict": "All 210 indexed writes and copies below are refused in the baseline. The frozen values are upstream encoder results.",
+  "fixture": {
+    "width": 256,
+    "rows": 12,
+    "input": "For row r and lane k use (((k*(2*r+1)+7*r)%83)-41)/16. Override row 0 with alternating +0/-0, row 1 with +1, row 2 with zero except alternating +8/-8 at multiples of 31 (negative at even k), and row 3 with (k%7) negated at odd k.",
+    "importance_modes": {
+      "0": "null, only for formats where ggml_quantize_requires_imatrix returns false",
+      "1": "all 1",
+      "2": "(1+((k*11)%31))/8 at lane k"
+    },
+    "checks": "For each format and supported importance mode, encode 12 contiguous rows, then encode each row using its start offset into a buffer with different initial bytes. Require exact equality and finite values from the pinned decoder for every lane. The portable SDK build and the independent x86-64 GGML shared-library build produced identical bytes."
+  },
+  "transcript": {
+    "file": "ggml-importance-quantizer-words.tsv.gz",
+    "columns": "type importance_mode row encoded_bytes_hex",
+    "uncompressed_sha256": "0ce732e63f6be27f506d6d520c62ada2d6af95e84137cd8efec416b4e118ccbc",
+    "blocks": 216,
+    "encoded_bytes": 17016
+  },
+  "formats": {
+    "iq2_xxs": {
+      "requires_importance": true,
+      "block_bytes": 66,
+      "blocks": 24,
+      "rows_changed_by_nonuniform_weights": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "unresolved_factory_ordinals": {
+        "SET_ROWS": [
+          1400,
+          1401,
+          1402,
+          1403,
+          1404,
+          1405,
+          1406,
+          1407,
+          1408,
+          1409,
+          1410,
+          1411,
+          1780,
+          1781,
+          1782,
+          1783,
+          1784,
+          1785,
+          1786,
+          1787,
+          1788,
+          1789,
+          1790,
+          1791
+        ],
+        "CPY": [
+          8489,
+          8490,
+          8547,
+          8548,
+          8605,
+          8606
+        ]
+      }
+    },
+    "iq2_xs": {
+      "requires_importance": true,
+      "block_bytes": 74,
+      "blocks": 24,
+      "rows_changed_by_nonuniform_weights": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "unresolved_factory_ordinals": {
+        "SET_ROWS": [
+          1412,
+          1413,
+          1414,
+          1415,
+          1416,
+          1417,
+          1418,
+          1419,
+          1420,
+          1421,
+          1422,
+          1423,
+          1792,
+          1793,
+          1794,
+          1795,
+          1796,
+          1797,
+          1798,
+          1799,
+          1800,
+          1801,
+          1802,
+          1803
+        ],
+        "CPY": [
+          8491,
+          8492,
+          8549,
+          8550,
+          8607,
+          8608
+        ]
+      }
+    },
+    "iq1_s": {
+      "requires_importance": true,
+      "block_bytes": 50,
+      "blocks": 24,
+      "rows_changed_by_nonuniform_weights": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "unresolved_factory_ordinals": {
+        "SET_ROWS": [
+          1448,
+          1449,
+          1450,
+          1451,
+          1452,
+          1453,
+          1454,
+          1455,
+          1456,
+          1457,
+          1458,
+          1459,
+          1828,
+          1829,
+          1830,
+          1831,
+          1832,
+          1833,
+          1834,
+          1835,
+          1836,
+          1837,
+          1838,
+          1839
+        ],
+        "CPY": [
+          8497,
+          8498,
+          8555,
+          8556,
+          8613,
+          8614
+        ]
+      }
+    },
+    "iq2_s": {
+      "requires_importance": false,
+      "block_bytes": 82,
+      "blocks": 36,
+      "rows_changed_by_nonuniform_weights": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "unresolved_factory_ordinals": {
+        "SET_ROWS": [
+          1424,
+          1425,
+          1426,
+          1427,
+          1428,
+          1429,
+          1430,
+          1431,
+          1432,
+          1433,
+          1434,
+          1435,
+          1804,
+          1805,
+          1806,
+          1807,
+          1808,
+          1809,
+          1810,
+          1811,
+          1812,
+          1813,
+          1814,
+          1815
+        ],
+        "CPY": [
+          8493,
+          8494,
+          8551,
+          8552,
+          8609,
+          8610
+        ]
+      }
+    },
+    "iq3_xxs": {
+      "requires_importance": false,
+      "block_bytes": 98,
+      "blocks": 36,
+      "rows_changed_by_nonuniform_weights": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "unresolved_factory_ordinals": {
+        "SET_ROWS": [
+          1436,
+          1437,
+          1438,
+          1439,
+          1440,
+          1441,
+          1442,
+          1443,
+          1444,
+          1445,
+          1446,
+          1447,
+          1816,
+          1817,
+          1818,
+          1819,
+          1820,
+          1821,
+          1822,
+          1823,
+          1824,
+          1825,
+          1826,
+          1827
+        ],
+        "CPY": [
+          8495,
+          8496,
+          8553,
+          8554,
+          8611,
+          8612
+        ]
+      }
+    },
+    "iq3_s": {
+      "requires_importance": false,
+      "block_bytes": 110,
+      "blocks": 36,
+      "rows_changed_by_nonuniform_weights": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "unresolved_factory_ordinals": {
+        "SET_ROWS": [
+          1484,
+          1485,
+          1486,
+          1487,
+          1488,
+          1489,
+          1490,
+          1491,
+          1492,
+          1493,
+          1494,
+          1495,
+          1864,
+          1865,
+          1866,
+          1867,
+          1868,
+          1869,
+          1870,
+          1871,
+          1872,
+          1873,
+          1874,
+          1875
+        ],
+        "CPY": [
+          8503,
+          8504,
+          8561,
+          8562,
+          8619,
+          8620
+        ]
+      }
+    },
+    "iq1_m": {
+      "requires_importance": false,
+      "block_bytes": 56,
+      "blocks": 36,
+      "rows_changed_by_nonuniform_weights": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "unresolved_factory_ordinals": {
+        "SET_ROWS": [
+          1460,
+          1461,
+          1462,
+          1463,
+          1464,
+          1465,
+          1466,
+          1467,
+          1468,
+          1469,
+          1470,
+          1471,
+          1840,
+          1841,
+          1842,
+          1843,
+          1844,
+          1845,
+          1846,
+          1847,
+          1848,
+          1849,
+          1850,
+          1851
+        ],
+        "CPY": [
+          8499,
+          8500,
+          8557,
+          8558,
+          8615,
+          8616
+        ]
+      }
+    }
+  }
+}
