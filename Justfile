@@ -319,10 +319,10 @@ verdant-prepare:
     cargo fetch --locked
 
 # Reconcile the existing GGML transcripts without executing cases again. Print
-# unresolved ordinals on stdout and the measured totals on stderr.
-factory-remaining:
+# unresolved ordinals on stdout, or request evidence for every factory ordinal.
+factory-remaining $view="remaining":
     #!/usr/bin/env python3
-    import csv, gzip, hashlib, io, json, sys
+    import csv, gzip, hashlib, io, json, os, sys
     from collections import Counter
     from pathlib import Path
 
@@ -335,6 +335,9 @@ factory-remaining:
             raise ValueError(f"transcript digest mismatch: {path}")
         return io.StringIO(raw.decode())
 
+    view = os.environ["view"]
+    if view not in {"remaining", "evidence"}:
+        sys.exit("expected remaining or evidence")
     directory = Path("verification")
     inventory = read(directory / "ggml-factory-inventory.json")
     ledger = inventory["factory_verdicts"]
@@ -348,10 +351,10 @@ factory-remaining:
         raise ValueError("factory count changed")
 
     verdicts = {}
-    def record(ordinal, verdict):
+    def record(ordinal, verdict, group, source):
         if ordinal not in cases or ordinal in verdicts:
             raise ValueError(f"invalid or duplicate original verdict: {ordinal}")
-        verdicts[ordinal] = verdict
+        verdicts[ordinal] = (verdict, group, source)
 
     def receipt(entry):
         path = entry if isinstance(entry, str) else entry["evidence"]
@@ -363,36 +366,48 @@ factory-remaining:
     standalone = receipt(ledger["standalone_evidence"])
     rows = transcript(directory / standalone["verdict_table"], standalone["uncompressed_verdicts_sha256"])
     for row in csv.DictReader(rows, delimiter="\t"):
-        record(int(row["ordinal"]), row["verdict"])
+        record(int(row["ordinal"]), row["verdict"], "standalone", ledger["standalone_evidence"])
 
     updates = {**ledger["superseded_standalone_verdicts"], **ledger["superseded_factory_verdicts"]}
-    labels = {label for req, group in ledger["passed_by_requirement"].items() if req not in updates for label in group}
+    labels = {}
+    for requirement, group in ledger["passed_by_requirement"].items():
+        if requirement in updates:
+            continue
+        for label in group:
+            if label in labels:
+                raise ValueError(f"ambiguous original label: {label}")
+            labels[label] = requirement
     for ordinal, (label, parameters) in cases.items():
-        matched = label in labels
-        for group in ledger["passed_parameter_groups"].values():
+        if label in labels:
+            record(ordinal, "passed", labels[label], ledger["source"])
+        for requirement, group in ledger["passed_parameter_groups"].items():
             if group["label"] == label:
                 prefixes = group.get("parameters_prefixes", [])
                 if "parameters_prefix" in group:
                     prefixes = [group["parameters_prefix"]]
-                matched |= ordinal in group.get("ordinals", []) or parameters.startswith(tuple(prefixes))
-        if matched:
-            record(ordinal, "passed")
+                if ordinal in group.get("ordinals", []) or parameters.startswith(tuple(prefixes)):
+                    record(ordinal, "passed", requirement, ledger["source"])
     for ordinal in ledger["refused_ordinals"]:
-        record(int(ordinal), "refused")
+        record(int(ordinal), "refused", "factory", "verification/ggml-factory-inventory.json")
 
-    for entry in updates.values():
+    for requirement, entry in updates.items():
         for label, ordinals in receipt(entry)["case_ordinals"].items():
             for ordinal in ordinals:
                 if ordinal not in verdicts or cases[ordinal][0] != label:
                     raise ValueError(f"receipt disagrees with original verdict: {label} {ordinal}")
-                verdicts[ordinal] = "passed"
+                source = entry if isinstance(entry, str) else entry["evidence"]
+                verdicts[ordinal] = ("passed", requirement, source)
 
-    counts = Counter(verdicts.values())
+    counts = Counter(verdict for verdict, _, _ in verdicts.values())
     counts["untested"] += len(cases) - len(verdicts)
     if counts != Counter({name: ledger[name] for name in ("passed", "refused", "failed", "untested")}):
         raise ValueError(f"factory totals disagree with the receipts: {counts}")
     print(f'{counts["passed"]} passed, {counts["refused"]} refused, {counts["failed"]} failed, {counts["untested"]} untested', file=sys.stderr)
+    if view == "evidence":
+        print("ordinal", "verdict", "group", "evidence", "label", "parameters", sep="\t")
     for ordinal, (label, parameters) in cases.items():
-        verdict = verdicts.get(ordinal, "untested")
-        if verdict != "passed":
+        verdict, group, source = verdicts.get(ordinal, ("untested", "", ""))
+        if view == "evidence":
+            print(ordinal, verdict, group, source, label, parameters, sep="\t")
+        elif verdict != "passed":
             print(ordinal, verdict, label, parameters, sep="\t")

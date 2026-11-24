@@ -1020,3 +1020,9 @@ id = "VT-158"
 level = "build"
 suite = "native-backend"
 statement = "Reusable GGML graph plans preserve the planned topology and execute current tensor data and compute flags through the certified graph planner"
+
+[[id]]
+id = "VT-159"
+level = "build"
+suite = "native-backend"
+statement = "Prism plans signed integer width conversions and Verdant reproduces the upstream GGML typed accessor bytes"

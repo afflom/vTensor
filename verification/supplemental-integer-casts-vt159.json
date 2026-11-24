@@ -1,0 +1,63 @@
+{
+  "requirement": "VT-159",
+  "authority": "ggml-org/llama.cpp",
+  "revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "constructors": [
+    "ggml/src/ggml.c#L3598-L3623",
+    "ggml/src/ggml.c#L3625-L3636"
+  ],
+  "numeric_reference": [
+    "ggml/src/ggml-cpu/ggml-cpu.c#L896",
+    "ggml/src/ggml-cpu/ggml-cpu.c#L940"
+  ],
+  "prism_root": "PrismTemplateContract.PointwiseGraph.evaluate",
+  "semantic_id": "6299c988f9f0c747f822a745c0d055bb350852a83533d4d0cf99de15155dac59",
+  "attestation_id": "15d61113885b0b7568c9b7dae08a7b90a879110283edb0806bd4d781e447f09c",
+  "verdant_release": "v2.21.7",
+  "verdant_numerics": [
+    "verdant_tensor::linear::extract_packed_field",
+    "verdant_tensor::linear::evaluate_encoded_word"
+  ],
+  "test": "signed_integer_widths_vt_159",
+  "pairs": [
+    "I8 -> I16",
+    "I8 -> I32",
+    "I16 -> I8",
+    "I16 -> I32",
+    "I32 -> I8",
+    "I32 -> I16"
+  ],
+  "shapes": [
+    "ggml_cast on a contiguous 8 by 2 tensor",
+    "ggml_cpy from an 8 by 2 offset view with row pitch 10 to a 4 by 4 offset view with row pitch 6"
+  ],
+  "logical_input_i32": [
+    -2147483648,
+    2147483647,
+    -32769,
+    -32768,
+    32767,
+    32768,
+    -129,
+    -128,
+    127,
+    128,
+    -1,
+    0,
+    1,
+    255,
+    65535,
+    305419896
+  ],
+  "cases": 12,
+  "result_scalars": 192,
+  "total_compared_bytes": 560,
+  "admission": "Original public ggml_cast and ggml_cpy descriptors before and after allocation",
+  "oracle": "Read each source element through ggml_get_i32_1d, write it to the corresponding destination through ggml_set_i32_1d, and compare the entire allocation including 0xa5 row padding.",
+  "negative_controls": [
+    "The former provider refused the first legal width conversion before allocation.",
+    "Discarding every high sign-extension bit failed comparison against the original typed accessors. The restored provider passed."
+  ],
+  "provider_sha256": "5634f6981219aed4c18398f5371ccb6c9249b0b13445b9e9c5638ca75833792b",
+  "native_lines": 12721
+}

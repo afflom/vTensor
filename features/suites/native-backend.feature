@@ -614,3 +614,9 @@ Feature: native-backend
     Given an allocated graph and an unchanged original CPU plan for the same operations
     When a caller creates a plan and submits three different inputs with changing compute flags
     Then every intermediate and output matches the CPU and the caller can release its plan
+
+  @VT-159 @build
+  Scenario: Prism plans signed integer width conversions and Verdant reproduces the upstream GGML typed accessor bytes
+    Given signed I8, I16 and I32 tensors with extrema and discarded high bits
+    When an application casts or copies each pair of different widths into a reshaped offset view
+    Then each output and padding byte matches values written through the original GGML integer accessors

@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn signed_integer_widths_vt_159() { "integer-widths", 12, ["pointwise"] }
     fn scalar_diagonals_vt_157() { "scalar-diagonal", 36, ["pointwise"] }
     /// `VT-22`: Prism defines all four TRI variants and Verdant preserves retained encodings and zeroes masked elements for every type supported by the imported GGML CPU oracle
     fn triangular_graphs_vt_22() { "triangular", 1920, [] }
@@ -2070,6 +2071,34 @@ int main(int argc, char **argv) {
 
         }
         return finish(expected.size());
+    }
+    if (!strcmp(argv[3],"integer-widths")) {
+        size_t cases=0;
+        const int32_t values[]={INT32_MIN,INT32_MAX,-32769,-32768,32767,32768,-129,-128,127,128,-1,0,1,255,65535,0x12345678};
+        for (auto from : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32})
+        for (auto to : {GGML_TYPE_I8,GGML_TYPE_I16,GGML_TYPE_I32}) if (from!=to)
+        for (bool padded : {false,true}) {
+            graph_fixture target(9), cpu(4); CHECK(target && cpu);
+            auto backing=ggml_new_tensor_2d(target,from,padded?10:8,2);
+            auto input=padded?ggml_view_2d(target,backing,8,2,backing->nb[1],ggml_type_size(from)):backing;
+            auto destination=ggml_new_tensor_2d(target,to,6,4);
+            auto view=ggml_view_2d(target,destination,4,4,destination->nb[1],ggml_type_size(to));
+            auto result=padded?ggml_cpy(target,input,view):ggml_cast(target,input,to);
+            auto expected=ggml_new_tensor_2d(cpu,to,padded?6:8,padded?4:2);
+            auto logical=padded?ggml_view_2d(cpu,expected,4,4,expected->nb[1],ggml_type_size(to)):expected;
+            CHECK(ggml_backend_supports_op(backend,result));
+            auto graph=target.allocate(result,backend); CHECK(graph && cpu.allocate(logical,reference));
+            CHECK(ggml_backend_supports_op(backend,result));
+            ggml_backend_buffer_clear(target.storage.get(),0xa5); ggml_backend_buffer_clear(cpu.storage.get(),0xa5);
+            for (int i=0;i<16;++i) {
+                ggml_set_i32_1d(input,i,values[i]);
+                ggml_set_i32_1d(logical,i,ggml_get_i32_1d(input,i));
+            }
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+            CHECK(tensor_bytes(padded?destination:result)==tensor_bytes(expected));
+            ++cases;
+        }
+        return finish(cases);
     }
     if (!strcmp(argv[3],"scalar-diagonal")) {
         size_t cases=0;

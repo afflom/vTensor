@@ -153,7 +153,7 @@ inductive{
     {name: softmaxGradient, fields: [Nat]},
     {name: siluGradient, fields: [IndexContext]},
     {name: depthwise, fields: [IndexContext, ColumnAxis, ColumnAxis, Nat]},
-    {name: signedCopy, fields: [Nat]},
+    {name: signedCopy, fields: [Nat, Nat, Nat]},
     {name: hyperconnectionPre, fields: [IndexContext, Bool, Nat]},
     {name: hyperconnectionPost, fields: [IndexContext, IndexContext, (Option IndexContext)]},
     {name: hyperconnectionCombination, fields: [IndexContext, IndexContext, Nat, Nat]},
@@ -362,7 +362,8 @@ inductive{
     {name: invalid, fields: []},
     {name: elementary, fields: [Nat, Nat, Nat]},
     {name: smallFloat, fields: [Nat]},
-    {name: signedTruncation, fields: []}
+    {name: signedTruncation, fields: []},
+    {name: signedField, fields: [Nat, Nat, Nat]}
   ]
 }
 
@@ -1771,10 +1772,36 @@ definition{
 }
 
 definition{
+  name: wordBytes,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (match (TensorTypes::tensorTypeStorage storage)
+    | TensorTypes::TypeStorageDecision.unknownType => 0
+    | TensorTypes::TypeStorageDecision.knownType spec => (if (((project spec blockSize) =? 1) && (((((project spec typeSize) =? 1) || ((project spec typeSize) =? 2)) || ((project spec typeSize) =? 4)) || ((project spec typeSize) =? 8))) then (project spec typeSize) else 0)),
+  executable: true
+}
+
+definition{
+  name: scalarCopySpan,
+  parameters: [tensor : TensorDescriptor, count : Nat, bytes : Nat],
+  result: Bool,
+  body: ((count =? 0) || (((blockOffset (prim subtract count 1 : Nat) (indexContext tensor 1)) + bytes) <=? (project tensor span))),
+  executable: true
+}
+
+definition{
   name: signedCopySpan,
   parameters: [tensor : TensorDescriptor, count : Nat],
   result: Bool,
-  body: ((count =? 0) || (((blockOffset (prim subtract count 1 : Nat) (indexContext tensor 1)) + 4) <=? (project tensor span))),
+  body: (scalarCopySpan tensor count 4),
+  executable: true
+}
+
+definition{
+  name: signedCopyPair,
+  parameters: [source : Nat, destination : Nat],
+  result: Bool,
+  body: (((source =? 0) && (destination =? 26)) || (((((24 <=? source) && (source <=? 26)) && (24 <=? destination)) && (destination <=? 26)) && (if (source =? destination) then false else true))),
   executable: true
 }
 
@@ -1782,7 +1809,7 @@ definition{
   name: planSignedCopy,
   parameters: [left : TensorDescriptor, base : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (let count : Nat := (blockCount left 1); (if (((((sameWordView base output) && (count =? (blockCount output 1))) && (signedCopySpan left count)) && (signedCopySpan output count)) && ((count =? 0) || (4 <=? (project output s0)))) then (ctor PointwiseDecision.copyBlocks (prim multiply 2 count : Nat) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.signedCopy count)) else (ctor PointwiseDecision.invalidShape))),
+  body: (let readWidth : Nat := (wordBytes (project left ty)); (let writeWidth : Nat := (wordBytes (project output ty)); (let count : Nat := (blockCount left 1); (if (((((sameWordView base output) && (count =? (blockCount output 1))) && (scalarCopySpan left count readWidth)) && (scalarCopySpan output count writeWidth)) && ((count =? 0) || (writeWidth <=? (project output s0)))) then (ctor PointwiseDecision.copyBlocks (prim multiply 2 count : Nat) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.signedCopy count (project left ty) (project output ty))) else (ctor PointwiseDecision.invalidShape))))),
   executable: true
 }
 
@@ -1818,15 +1845,6 @@ definition{
   executable: true
 }
 
-definition{
-  name: wordBytes,
-  parameters: [storage : Nat],
-  result: Nat,
-  body: (match (TensorTypes::tensorTypeStorage storage)
-    | TensorTypes::TypeStorageDecision.unknownType => 0
-    | TensorTypes::TypeStorageDecision.knownType spec => (if (((project spec blockSize) =? 1) && (((((project spec typeSize) =? 1) || ((project spec typeSize) =? 2)) || ((project spec typeSize) =? 4)) || ((project spec typeSize) =? 8))) then (project spec typeSize) else 0)),
-  executable: true
-}
 
 definition{
   name: exponentialDifferenceStep,
@@ -2294,7 +2312,7 @@ definition{
     | CopyMode.columnGradient x y => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.exponentialUnit extended sourceType destinationType options => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.triangularSolve => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-    | CopyMode.signedCopy count => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.signedCopy count sourceKind destinationKind => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
@@ -2804,7 +2822,7 @@ definition{
     | Option.none => (ctor PointwiseDecision.invalidShape)
     | Option.some x => (planSiluGradient left x output)) else (if (operation =? 44) then (planSoftmaxGradient options left right output) else (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right
     | Option.none => (planPool false (operation =? 58) options left output)
-    | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns false options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (if (((operation =? 33) && ((project left ty) =? 0)) && ((project output ty) =? 26)) then (match right
+    | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns false options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (if ((operation =? 33) && (signedCopyPair (project left ty) (project output ty))) then (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
     | Option.some base => (planSignedCopy left base output)) else (if (((operation =? 33) && ((project output ty) =? 0)) && (decodedCopyType (project left ty))) then (planDecodedCopy left right output) else (planStorage operation left (match right
     | Option.none => false
@@ -2867,7 +2885,7 @@ definition{
     | CopyMode.columnGradient x y => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.exponentialUnit extended sourceType destinationType options => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.triangularSolve => (ctor GraphResponse.bindings 3 0 0 false 3)
-    | CopyMode.signedCopy count => (ctor GraphResponse.bindings 1 0 0 false count)
+    | CopyMode.signedCopy count sourceKind destinationKind => (ctor GraphResponse.bindings 1 0 0 false count)
     | CopyMode.depthwise image x y storage => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.windowed reverse size nx => (ctor GraphResponse.bindings 1 0 0 false 3)
@@ -2927,7 +2945,7 @@ definition{
     | CopyMode.columnGradient x y => 0
     | CopyMode.exponentialUnit extended sourceType destinationType options => 0
     | CopyMode.triangularSolve => 0
-    | CopyMode.signedCopy count => 0
+    | CopyMode.signedCopy count sourceKind destinationKind => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
@@ -3011,7 +3029,7 @@ definition{
     | CopyMode.columnGradient x y => (ctor WordOperation.invalid)
     | CopyMode.exponentialUnit extended sourceType destinationType options => (ctor WordOperation.invalid)
     | CopyMode.triangularSolve => (ctor WordOperation.invalid)
-    | CopyMode.signedCopy count => (ctor WordOperation.invalid)
+    | CopyMode.signedCopy count sourceKind destinationKind => (ctor WordOperation.invalid)
     | CopyMode.depthwise image x y storage => (ctor WordOperation.invalid)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.windowed reverse size nx => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -3071,7 +3089,7 @@ definition{
     | CopyMode.columnGradient x y => 0
     | CopyMode.exponentialUnit extended sourceType destinationType options => 0
     | CopyMode.triangularSolve => 0
-    | CopyMode.signedCopy count => 0
+    | CopyMode.signedCopy count sourceKind destinationKind => 0
     | CopyMode.depthwise image x y storage => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
@@ -3257,10 +3275,26 @@ definition{
 }
 
 definition{
+  name: signedFieldModulus,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (if (storage =? 24) then 256 else (if (storage =? 25) then 65536 else 4294967296)),
+  executable: true
+}
+
+definition{
+  name: signedCopyOperation,
+  parameters: [source : Nat, destination : Nat],
+  result: WordOperation,
+  body: (if (source =? 0) then (ctor WordOperation.signedTruncation) else (let sourceLimit : Nat := (signedFieldModulus source); (let destinationLimit : Nat := (signedFieldModulus destination); (ctor WordOperation.signedField (prim quotient sourceLimit 2 0 : Nat) (prim subtract destinationLimit sourceLimit : Nat) destinationLimit)))),
+  executable: true
+}
+
+definition{
   name: signedCopyStep,
-  parameters: [index : Nat, count : Nat, source : IndexContext, destination : IndexContext],
+  parameters: [index : Nat, count : Nat, sourceKind : Nat, destinationKind : Nat, source : IndexContext, destination : IndexContext],
   result: GraphResponse,
-  body: (if (index <? count) then (ctor GraphResponse.instruction (ctor WordOperation.signedTruncation) (ctor WordOperand.source 0 (blockOffset index source)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch index) 4 4) else (let element : Nat := (prim subtract index count : Nat); (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch element) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset element destination)) 4 4))),
+  body: (if (index <? count) then (ctor GraphResponse.instruction (signedCopyOperation sourceKind destinationKind) (ctor WordOperand.source 0 (blockOffset index source)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch index) (wordBytes sourceKind) 4) else (let element : Nat := (prim subtract index count : Nat); (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch element) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset element destination)) 4 (wordBytes destinationKind)))),
   executable: true
 }
 
@@ -3440,7 +3474,7 @@ definition{
     | CopyMode.columnGradient x y => (columnGradientStep index source destination x y)
     | CopyMode.exponentialUnit extended sourceType destinationType options => (exponentialUnitStep index source destination extended sourceType destinationType options flag)
     | CopyMode.triangularSolve => (triangularSolveStep index source destination flag)
-    | CopyMode.signedCopy count => (signedCopyStep index count source destination)
+    | CopyMode.signedCopy count sourceKind destinationKind => (signedCopyStep index count sourceKind destinationKind source destination)
     | CopyMode.depthwise image x y storage => (depthwiseStep index source image destination x y storage)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
     | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)

@@ -1263,6 +1263,19 @@ fn execute_word(
             linear::evaluate_small_float(kind, a).map_err(BackendError::invalid)?
         }
         WordOperation::C9 => linear::truncate_signed_word_f32(a).map_err(BackendError::invalid)?,
+        WordOperation::C10(sign_bit, extension, limit) => {
+            let field = |word, factor, divisor, modulus| {
+                linear::extract_packed_field(word, factor, divisor, modulus)
+                    .map_err(BackendError::invalid)
+            };
+            if extension == 0 {
+                field(a, 1, 1, limit)?
+            } else {
+                let sign = field(a, 1, sign_bit, 2)?.ok_or(InvalidTensor)?;
+                let high = field(sign, extension, 1, limit)?.ok_or(InvalidTensor)?;
+                linear::evaluate_encoded_word(2, a, high).map_err(BackendError::invalid)?
+            }
+        }
         WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
             let input = decode_float(source, a)?;

@@ -819,45 +819,43 @@ mod tests {
         assert!(!script.contains("rm -rf -- \"$HOME\""));
     }
 
+    fn check_workflow_controls(
+        group: &str,
+        count: usize,
+        source: &str,
+        accepts: impl Fn(&str) -> bool,
+    ) {
+        type Controls = std::collections::BTreeMap<String, Vec<Vec<[String; 2]>>>;
+        static CONTROLS: std::sync::LazyLock<Controls> = std::sync::LazyLock::new(|| {
+            let bytes = include_bytes!("../../verification/native-workflow-controls.json");
+            assert_eq!(
+                repo_model::artifact::sha256_hex(bytes),
+                "24a0d8b477091dbd442ae4462a261e7ef6620da0fd65b37772a35f7a0cda59f8"
+            );
+            serde_json::from_slice(bytes).unwrap()
+        });
+        let cases = &CONTROLS[group];
+        assert_eq!(cases.len(), count);
+        for edits in cases {
+            let mut changed = source.to_string();
+            for [before, after] in edits {
+                if before.is_empty() {
+                    changed.push_str(after);
+                } else {
+                    assert!(changed.contains(before), "missing workflow input {before}");
+                    changed = changed.replace(before, after);
+                }
+            }
+            assert_ne!(changed, source);
+            assert!(!accepts(&changed), "{group} accepted {edits:?}");
+        }
+    }
+
     #[test]
     fn dropped_native_coverage_plant_is_rejected() {
         let bootstrap = include_str!("../../.github/workflows/bootstrap.yml");
         assert!(native_coverage_is_complete(bootstrap));
-        let matrix = r#"'["ubuntu-24.04"]' || '["ubuntu-24.04", "ubuntu-24.04-arm"]'"#;
-        let plants = [
-            // Main and tags lose the arm64 leg.
-            bootstrap.replace(matrix, r#"'["ubuntu-24.04"]' || '["ubuntu-24.04"]'"#),
-            // The legs are swapped: pull requests get both, main gets one.
-            bootstrap.replace(matrix, r#"'["ubuntu-24.04", "ubuntu-24.04-arm"]' || '["ubuntu-24.04"]'"#),
-            // Tags stop running the gate.
-            bootstrap.replace("    tags: ['**']\n", ""),
-            // A main run becomes cancellable by its successor.
-            bootstrap.replace(
-                "cancel-in-progress: ${{ github.event_name == 'pull_request' }}",
-                "cancel-in-progress: true",
-            ),
-            // Main runs share one group, so a queued commit is replaced unverified.
-            bootstrap.replace("format('bootstrap-run-{0}', github.run_id)", "github.ref"),
-            // A path filter skips main for some commits.
-            bootstrap.replace(
-                "    branches: [main]\n",
-                "    branches: [main]\n    paths-ignore: ['**.md']\n",
-            ),
-            // A job condition skips the arm64 leg.
-            bootstrap.replace(
-                "    runs-on: ${{ matrix.runner }}\n",
-                "    runs-on: ${{ matrix.runner }}\n    if: matrix.runner == 'ubuntu-24.04'\n",
-            ),
-            // A matrix exclusion removes the arm64 leg.
-            bootstrap.replace(
-                "    runs-on: ${{ matrix.runner }}\n",
-                "        exclude:\n          - runner: ubuntu-24.04-arm\n    runs-on: ${{ matrix.runner }}\n",
-            ),
-        ];
-        for plant in &plants {
-            assert_ne!(plant, bootstrap, "every plant must change the workflow");
-            assert!(!native_coverage_is_complete(plant));
-        }
+        check_workflow_controls("native", 8, bootstrap, native_coverage_is_complete);
         // Running both architectures on every event, without concurrency, is
         // stronger than the policy and stays admissible.
         let mut unconditional = bootstrap.replace(
@@ -1146,29 +1144,12 @@ mod tests {
     fn project_overwrite_plant_is_rejected() {
         let workflow = include_str!("../../.github/workflows/template-update.yml");
         assert!(update_preserves_project_content(workflow));
-        for (original, replacement) in [
-            (
-                "for path in AGENTS.md",
-                "for path in bootstrap/render.sh AGENTS.md",
-            ),
-            ("prismpm.lock standards.lock", "prismpm.lock"),
-            (
-                "/template-policy/bootstrap/render.mjs",
-                "bootstrap/render.mjs",
-            ),
-            (
-                "$PWD/.template-policy:/template-policy:ro",
-                "$PWD/.template-policy:/template-policy",
-            ),
-        ] {
-            assert!(
-                !update_preserves_project_content(&workflow.replace(original, replacement)),
-                "{original}"
-            );
-        }
-        assert!(!update_preserves_project_content(&format!(
-            "{workflow}\n          rm -f .github/workflows/honesty.yml\n"
-        )));
+        check_workflow_controls(
+            "template_update",
+            5,
+            workflow,
+            update_preserves_project_content,
+        );
     }
 
     #[test]
@@ -1201,44 +1182,9 @@ mod tests {
             &devcontainer.replace("/.docker/config.json,target", "/.docker,target"),
             bootstrap,
         ));
-        for changed in [
-            bootstrap.replace("$docker_config", "$HOME/.docker"),
-            bootstrap.replace(
-                "docker buildx version",
-                "umask 022\n              docker buildx version",
-            ),
-            bootstrap.replace("              umask 077\n", "").replace(
-                "docker buildx inspect --bootstrap",
-                "docker buildx inspect --bootstrap\n              umask 077",
-            ),
-            bootstrap.replace("--env BUILDX_CONFIG=/tmp/prismpm-buildx", ""),
-            bootstrap.replace(
-                "--env BUILDX_CONFIG=/tmp/prismpm-buildx",
-                "--env BUILDX_CONFIG=/tmp/prismpm-home/.docker/buildx",
-            ),
-            bootstrap.replace(
-                "--env BUILDX_CONFIG=/tmp/prismpm-buildx",
-                "--env BUILDX_CONFIG=/tmp/prismpm-home/buildx",
-            ),
-            bootstrap.replace("--volume \"$scratch:/tmp\" \\\n", ""),
-            bootstrap.replace(
-                "--volume \"$scratch:/tmp\"",
-                "--tmpfs /tmp:rw,exec,nosuid,size=2g",
-            ),
-            bootstrap.replace(
-                "--volume \"$scratch:/tmp\" \\\n",
-                "--volume \"$scratch:/tmp\" \\\n--tmpfs /tmp:rw,exec,nosuid,size=2g \\\n",
-            ),
-            bootstrap.replace("scratch=$(mktemp -d)", "scratch=/tmp/shared"),
-            bootstrap.replace(
-                "trap 'rm -rf \"$docker_config\" \"$scratch\"' EXIT",
-                "trap 'rm -rf \"$docker_config\"' EXIT",
-            ),
-            bootstrap.replace("umask 077", "umask 022"),
-            format!("{bootstrap}\n--env BUILDX_CONFIG=/tmp/other \\\n"),
-        ] {
-            assert!(!docker_credentials_are_confined(devcontainer, &changed));
-        }
+        check_workflow_controls("docker", 13, bootstrap, |changed| {
+            docker_credentials_are_confined(devcontainer, changed)
+        });
     }
 
     #[test]
