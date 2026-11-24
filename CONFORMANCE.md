@@ -226,6 +226,7 @@ model does not sanction.
 | `VT-136` | `build` | Custom GGML callbacks retain their tensor descriptors, user data, task indices and synchronous graph completion |
 | `VT-137` | `build` | Prism schedules GELU_ERF and GEGLU_ERF using the Verdant binary32 Gaussian error function |
 | `VT-139` | `build` | Prism accumulates one- and two-dimensional image-column gradients in GGML kernel order using Verdant binary32 addition |
+| `VT-140` | `build` | Prism scatters average and first-maximum pooling gradients through Verdant in upstream GGML window order |
 
 ## normalization-graphs
 

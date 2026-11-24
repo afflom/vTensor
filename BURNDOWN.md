@@ -12,7 +12,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Replay masked and unmasked FLASH_ATTN_BACK construction. The pinned GGML public API aborts both calls before backend dispatch. [Constructor evidence](verification/ggml-flash-back-constructor.json)
 - [x] Freeze the pinned CPU gradients for 96 IM2COL_BACK and POOL_2D_BACK graphs. All 11,088 output words have a reference. [Gradient oracle](verification/ggml-spatial-gradient-oracle.json)
 - [x] Pass all 64 IM2COL_BACK graphs. All 6,048 gradient words match GGML CPU, including padded, strided and dilated 1D and 2D kernels. [VT-139](verification/ggml-spatial-gradient-oracle.json)
-- [ ] Pass the 32 POOL_2D_BACK average and maximum gradient graphs. [Gradient oracle](verification/ggml-spatial-gradient-oracle.json)
+- [x] Match all 5,040 GGML CPU words across 32 POOL_2D_BACK graphs. Five additional comparisons cover F16 average pooling and exceptional max inputs. [VT-140](verification/ggml-spatial-gradient-oracle.json)
 - [ ] Cover legal variants outside the factory with the imported CPU or another pinned authoritative oracle. Track the aborting `ggml_flash_attn_back` constructor until an authoritative verdict exists. [Pinned constructor](https://github.com/ggml-org/llama.cpp/blob/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5/ggml/src/ggml.c#L5529)
 - [x] Submit Verdant's IQ2_XXS, IQ2_XS and IQ2_S row products. All 294 rows matched the imported GGML CPU vector products bit-for-bit. [Verdant PR #36](https://github.com/afflom/verdant-engine/pull/36)
 - [x] Pin Verdant PR #36 at `f9ff0862` and pass VT-02. All 437 IQ2_XXS, IQ2_XS and IQ2_S matrix cases pass across ordinary, expert and fused graphs. [Factory comparisons](verification/factory-codebook-products-vt103.json) · [Patch record](model/verdant-development.json)
@@ -37,7 +37,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,231 non-Prism lines** (12,780 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,228 non-Prism lines** (12,777 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -178,7 +178,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass all eight CONV_TRANSPOSE_2D cases with F32 and F16 kernels, multiple batches and both strides. [VT-107 evidence](verification/factory-transpose-plane-vt107.json)
 - [x] Pass all eight CONV_2D_DW graphs. Compare both channel layouts with asymmetric strides, dilations, padding and two batches. [VT-125](verification/factory-depthwise-spatial-vt125.json)
 - [ ] Pass UPSCALE (24) and TIMESTEP_EMBEDDING (6). [Case inventory](verification/ggml-factory-inventory.json)
-- [ ] Compare IM2COL_BACK and POOL_2D_BACK gradients with the pinned GGML CPU using original forward inputs, padding and overlapping windows. [Imported declarations](model/ggml-declarations.toml)
+- [x] Match all 11,088 frozen words for IM2COL_BACK and POOL_2D_BACK, including padding and overlapping windows. [CPU and provider transcripts](verification/ggml-spatial-gradient-oracle.json)
 - [x] Pass all 75 state convolution graphs and 120 compositions with SiLU and optional bias. 195 pass. [VT-81 results](verification/factory-state-convolution-vt81.json)
 - [ ] Pass SSM_SCAN (17), cache fusion (9) and rollback (2).
 - [ ] Pass GATED_DELTA_NET (43) and its cache fusion (5), RWKV_WKV6 (4), RWKV_WKV7 (5) and GATED_LINEAR_ATTN (4).

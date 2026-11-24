@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn pool_gradients_vt_140() { "pool-gradients", 37, ["pointwise"] }
     fn column_gradients_vt_139() { "column-gradients", 64, ["pointwise"] }
     fn gaussian_error_graphs_vt_137() { "upstream-GAUSSIAN_ERROR", 48, ["typed", "pointwise"] }
     fn gaussian_graphs_vt_75() { "upstream-GELU_FAMILIES", 64, ["pointwise"] }
@@ -562,6 +563,25 @@ mod ggml_oracle {
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()))
     }
 
+    pub(super) static UPSTREAM: std::sync::LazyLock<toml::Value> = std::sync::LazyLock::new(|| {
+        let artifact = super::root().join("vendor/llama.cpp-oracle");
+        // The frozen manifest binds the exact upstream revision, archive selection,
+        // order, filenames and digests. Check the bytes of every listed artifact.
+        let manifest = read_bytes(&artifact.join("upstream.toml"));
+        let pin = &super::native_backend_oracle::ORACLE_BINDINGS["ggml_source_manifest_sha256"];
+        let digest = repo_model::artifact::sha256_hex(&manifest);
+        assert_eq!(pin, &digest, "GGML source manifest changed");
+        let lock: toml::Value = toml::from_slice(&manifest).expect("GGML source manifest");
+        let files = lock["file"].as_array().expect("pinned GGML files");
+        let archives = lock["archive"].as_array().expect("pinned GGML archive");
+        for entry in files.iter().chain(archives) {
+            let path = entry["path"].as_str().expect("artifact path");
+            let expected = entry["sha256"].as_str().expect("artifact digest");
+            assert_eq!(file_digest(artifact.join(path)), expected, "{path}");
+        }
+        lock
+    });
+
     pub(super) fn publish_file(candidate: &Path, destination: &Path) {
         std::fs::write(destination.with_extension("sha256"), file_digest(candidate)).expect("cache digest");
         std::fs::rename(candidate, destination).expect("publish built oracle");
@@ -613,9 +633,7 @@ host:
     }
 
     pub(super) fn run(command: &mut Command) -> Vec<u8> {
-        let output = command
-            .output()
-            .expect("oracle build tool available in SDK");
+        let output = command.output().expect("oracle build tool available in SDK");
         checked_output(command, output)
     }
 
@@ -647,23 +665,12 @@ host:
             .output()
             .expect("compare imported oracle");
         let differences = std::str::from_utf8(&result.stdout).unwrap();
-        assert!(
-            result.stderr.is_empty(),
-            "{}",
-            String::from_utf8_lossy(&result.stderr)
-        );
-        assert_eq!(
-            result.status.code(),
-            Some(i32::from(!differences.is_empty()))
-        );
+        let expected_status = Some(i32::from(!differences.is_empty()));
+        assert!(result.stderr.is_empty() && result.status.code() == expected_status, "{result:?}");
         for line in differences.lines() {
-            assert!(
-                matches!(
-                    line.rsplit_once(": ").map(|(_, reason)| reason),
-                    Some("Uid differs" | "Gid differs" | "Mode differs" | "Mod time differs")
-                ),
-                "cached GGML reference differs from its pinned archive: {line}"
-            );
+            let reason = line.rsplit_once(": ").map(|(_, reason)| reason);
+            let metadata = matches!(reason, Some("Uid differs" | "Gid differs" | "Mode differs" | "Mod time differs"));
+            assert!(metadata, "cached GGML reference differs from its pinned archive: {line}");
         }
     }
 
@@ -677,12 +684,8 @@ host:
 
     fn build_storage_oracle(root: &Path) -> PathBuf {
         let imported = root.join("vendor/llama.cpp-oracle");
-        let lock = read_toml(imported.join("upstream.toml"));
-        let archive_digest = file_digest(imported.join("source.tar.gz"));
-        assert_eq!(
-            archive_digest,
-            lock["archive"][0]["sha256"].as_str().expect("archive pin")
-        );
+        let lock = &*UPSTREAM;
+        let archive_digest = lock["archive"][0]["sha256"].as_str().expect("archive pin");
         let mut identity = Sha256::new();
         for input in [
             archive_digest.as_bytes(),
@@ -930,31 +933,32 @@ int main(int argc, char **argv) {
 
 mod ggml_inventory {
 
-    pub(super) static STORAGE_TYPES: std::sync::LazyLock<Vec<u64>> =
-        std::sync::LazyLock::new(|| {
-            let inventory =
-                super::ggml_oracle::read_toml(super::root().join("model/ggml-declarations.toml"));
-            inventory["tensor_type"]
-                .as_array()
-                .expect("types")
-                .iter()
-                .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
-                .map(|row| {
-                    u64::try_from(row["value"].as_integer().expect("numeric type"))
-                        .expect("positive type")
-                })
-                .collect()
-        });
+    use std::sync::LazyLock;
+
+    static INVENTORY: LazyLock<toml::Value> = LazyLock::new(|| {
+        super::ggml_oracle::read_toml(super::root().join("model/ggml-declarations.toml"))
+    });
+    pub(super) static STORAGE_TYPES: LazyLock<Vec<u64>> = LazyLock::new(|| {
+        let types = INVENTORY["tensor_type"].as_array().expect("types");
+        types
+            .iter()
+            .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
+            .map(|row| {
+                row["value"]
+                    .as_integer()
+                    .expect("numeric type")
+                    .try_into()
+                    .expect("positive type")
+            })
+            .collect()
+    });
 
     /// `VT-04`: The imported GGML operation and tensor type declarations are inventoried exactly without implementation claims
     #[test]
     fn ggml_inventory_vt_04() {
-        let root = super::root();
         let compiled: toml::Value =
             toml::from_str(&super::ggml_oracle::query("declarations", "")).unwrap();
-        let lock =
-            super::ggml_oracle::read_toml(root.join("vendor/llama.cpp-oracle/upstream.toml"));
-        let inventory = super::ggml_oracle::read_toml(root.join("model/ggml-declarations.toml"));
+        let inventory = &*INVENTORY;
         for (key, expected) in [
             ("spec", "vtensor/ggml-declarations/1"),
             ("authority", "LLAMA-CPP-GGML-BACKEND"),
@@ -962,7 +966,10 @@ mod ggml_inventory {
         ] {
             assert_eq!(inventory[key].as_str(), Some(expected), "{key}");
         }
-        assert_eq!(inventory["revision"], lock["commit"]);
+        assert_eq!(
+            inventory["revision"],
+            super::ggml_oracle::UPSTREAM["commit"]
+        );
         for key in ["operation", "tensor_type", "unary", "glu"] {
             let expected = compiled[key].as_array().expect("upstream C enumerators");
             let original = inventory[key].as_array().expect("declarations");
@@ -1027,7 +1034,7 @@ mod ggml_storage_oracle {
 
 mod oracle_import {
 
-    use super::{ggml_oracle::file_digest, root};
+    use super::root;
 
     use repo_model::Model;
 
@@ -1036,22 +1043,8 @@ mod oracle_import {
     fn oracle_import_vt_01() {
         let root = root();
         let directory = "vendor/llama.cpp-oracle";
-        let artifact = root.join(directory);
-        // The frozen manifest binds the exact upstream revision, archive selection,
-        // order, filenames and digests. Check the bytes of every listed artifact.
-        let manifest = std::fs::read(artifact.join("upstream.toml")).expect("GGML source manifest");
-        let pin = &super::native_backend_oracle::ORACLE_BINDINGS["ggml_source_manifest_sha256"];
-        let digest = repo_model::artifact::sha256_hex(&manifest);
-        assert_eq!(pin, &digest, "GGML source manifest changed");
-        let lock: toml::Value = toml::from_slice(&manifest).expect("GGML source manifest");
+        let lock = &*super::ggml_oracle::UPSTREAM;
         let files = lock["file"].as_array().expect("pinned GGML files");
-        let archives = lock["archive"].as_array().expect("pinned GGML archive");
-        for entry in files.iter().chain(archives) {
-            let path = entry["path"].as_str().expect("artifact path");
-            let expected = entry["sha256"].as_str().expect("artifact digest");
-            assert_eq!(file_digest(artifact.join(path)), expected, "{path}");
-        }
-
         let exemption = super::ggml_oracle::read_json(root.join("oracle-import.lock"));
         let expected_files: Vec<_> = files.iter().map(|file| serde_json::json!({"path": format!("{directory}/{}", file["path"].as_str().expect("path")), "sha256": file["sha256"].as_str().expect("digest")})).collect();
         let origin = &exemption["source"];
@@ -1201,24 +1194,20 @@ mod tensor_layout {
 
 mod verdant_api {
 
+    use super::ggml_oracle::tool_json;
     use prism_kernel::supportsF64Matmul4;
     use verdant_tensor::linear::multiply_mat4_cols_exact;
     use verdant_tensor::{verified_unified_tensor_kernels, TensorComputeError};
 
     use std::sync::LazyLock;
 
-    static SOURCE: LazyLock<serde_json::Value> = LazyLock::new(|| {
-        super::ggml_oracle::tool_json(&super::root(), "just", &["verdant-source-check"])
-    });
+    static SOURCE: LazyLock<serde_json::Value> =
+        LazyLock::new(|| tool_json(&super::root(), "just", &["verdant-source-check"]));
 
     pub(super) fn verify_quotient() {
         let binding = &super::native_backend_oracle::ORACLE_BINDINGS["verdant_quotient"];
         let image = binding["sdk"].as_str().expect("pinned Verdant compiler");
-        let check = super::ggml_oracle::tool_json(
-            &super::root(),
-            "just",
-            &["verdant-quotient-check", image],
-        );
+        let check = tool_json(&super::root(), "just", &["verdant-quotient-check", image]);
         super::assert_model_identity("Verdant quotient", &check, &SOURCE);
     }
 
@@ -1942,21 +1931,30 @@ int main(int argc, char **argv) {
         printf("RESULT cases %zu\n", cases);
         return 0;
     };
-    if (!strcmp(argv[3],"column-gradients")) {
+    const bool pooling_gradient=!strcmp(argv[3],"pool-gradients");
+    if (pooling_gradient || !strcmp(argv[3],"column-gradients")) {
       size_t cases=0;
-      for (bool plane : {false,true}) for (int v=0;v<32;++v) {
+      for (bool second : {false,true}) for (int v=0;v<(pooling_gradient?(second?20:17):32);++v) {
+        bool plane=pooling_gradient || second;
+        auto mode=second?GGML_OP_POOL_MAX:GGML_OP_POOL_AVG;
         int sx=1+(v&1), sy=plane?3-sx:0, px=(v>>1)&1, py=plane?px:0;
-        int dx=1+((v>>2)&1), dy=plane?1:0, batches=1+((v>>3)&1);
+        int dx=1+((v>>2)&1), dy=plane?1:0, batches=1+((v>>(pooling_gradient?2:3))&1);
         std::vector<float> expected;
         for (auto selected : {reference,backend}) {
           graph_fixture ctx(6); CHECK(ctx);
-          auto x=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,7,plane?5:3,plane?3:batches,plane?batches:1);
+          auto input_type=pooling_gradient && !second && v==16 ? GGML_TYPE_F16 : GGML_TYPE_F32;
+          auto x=ggml_new_tensor_4d(ctx,input_type,7,plane?5:3,plane?3:batches,plane?batches:1);
           auto k=ggml_new_tensor_4d(ctx,(v&16)?GGML_TYPE_F16:GGML_TYPE_F32,3,plane?2:3,plane?3:2,plane?2:1);
-          auto forward=ggml_im2col(ctx,k,x,sx,sy,px,py,dx,dy,plane,GGML_TYPE_F32);
+          auto forward=pooling_gradient ? ggml_pool_2d(ctx,x,mode,2,2,sx,sy,px,py) : ggml_im2col(ctx,k,x,sx,sy,px,py,dx,dy,plane,GGML_TYPE_F32);
           auto grad=ggml_dup_tensor(ctx,forward);
-          auto out=ggml_im2col_back(ctx,grad,k,x->ne,sx,sy,px,py,dx,dy,plane);
+          auto out=pooling_gradient ? ggml_pool_2d_back(ctx,grad,x,mode,2,2,sx,sy,px,py) : ggml_im2col_back(ctx,grad,k,x->ne,sx,sy,px,py,dx,dy,plane);
           CHECK(ggml_backend_supports_op(selected,out));
           auto graph=ctx.allocate(out,selected); CHECK(graph);
+          if(pooling_gradient) for(int i=0;i<ggml_nelements(x);++i) {
+            float value=(v&8)?1.f:float((i*7)%23-11)/4;
+            const float edge[]={-std::numeric_limits<float>::max(), i%3==1?NAN:value, i%3?INFINITY:-INFINITY, i%2?-0.f:0.f};
+            ggml_set_f32_1d(x,i,second && v>=16 ? edge[v-16] : value);
+          }
           for(int i=0;i<ggml_nelements(grad);++i) ggml_set_f32_1d(grad,i,float((i*5)%17-8)/8);
           std::vector<float> actual(ggml_nelements(out),13.f);
           ggml_backend_tensor_set(out,actual.data(),0,ggml_nbytes(out));
@@ -1966,7 +1964,7 @@ int main(int argc, char **argv) {
           else {
             CHECK(!std::memcmp(expected.data(),actual.data(),ggml_nbytes(out)));
             CHECK(refuses_change(backend,dev,graph,out,out->src[2],x));
-            CHECK(refuses_change(backend,dev,graph,out,out->op_params[0],int32_t(0)));
+            CHECK(refuses_change(backend,dev,graph,out,out->op_params[pooling_gradient?3:0],int32_t(0)));
           }
         }
         ++cases;

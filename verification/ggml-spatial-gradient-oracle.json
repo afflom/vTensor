@@ -70,5 +70,28 @@
     "provider_sha256": "dab833b063b3eddba0f5881e757c11819e812465bca0d0c8bb931fc6ec8ad19e",
     "refusal_checks": "Each restored provider graph rejects an extra source and zero x stride without changing output bytes.",
     "mutation": "Clearing scratch accumulator 0 before each column-gradient instruction failed the exact output comparison. Restoring accumulation reproduced all 6,048 frozen words."
+  },
+  "VT-140": {
+    "mode": "pool-gradients",
+    "graphs": 32,
+    "exact_binary32_words": 5040,
+    "family_ids": [
+      2,
+      3
+    ],
+    "transcript_sha256": "8ac38fc03b5facb1da74ab9c05b63163eade5c461f1f02ba28246c5e4334e992",
+    "production_verdant": "2.21.3",
+    "pointwise_result": "9998b3f58ea65003f1c01f366cd152dd9cc0395eb53e76984c6fcf70dbf4b6b6",
+    "provider_sha256": "b786f575a6eba745f6bc44c145b074d416ab146a46b1c8a86624863c4278139a",
+    "combined_96_graph_sha256": "8e5e404d8476794a9c87f7531caaf73bc3d121934cf255f950cfa8e4c97d5bb6",
+    "supplemental_cpu_graphs": [
+      "average with original F16 data",
+      "max with every input equal to -FLT_MAX",
+      "max with interleaved NaNs",
+      "max with repeated positive and negative infinities",
+      "max with signed-zero ties"
+    ],
+    "refusal_checks": "For each of the 37 pooling graphs the provider refuses an extra source and zero x stride before changing the destination.",
+    "mutation": "Treating equal max candidates as greater made the byte-for-byte GGML comparison fail."
   }
 }

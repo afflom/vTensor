@@ -900,3 +900,9 @@ id = "VT-139"
 level = "build"
 suite = "native-backend"
 statement = "Prism accumulates one- and two-dimensional image-column gradients in GGML kernel order using Verdant binary32 addition"
+
+[[id]]
+id = "VT-140"
+level = "build"
+suite = "native-backend"
+statement = "Prism scatters average and first-maximum pooling gradients through Verdant in upstream GGML window order"

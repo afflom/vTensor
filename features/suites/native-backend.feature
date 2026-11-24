@@ -494,3 +494,9 @@ Feature: native-backend
     Given an image-column gradient with a padded, strided or dilated kernel
     When vTensor computes the input gradient
     Then each ordered binary32 sum agrees with the GGML CPU backward graph
+
+  @VT-140 @build
+  Scenario: Prism scatters average and first-maximum pooling gradients through Verdant in upstream GGML window order
+    Given an incoming pooling gradient and the original input across overlapping windows
+    When vTensor accumulates each average or winning gradient
+    Then every destination word agrees with the GGML CPU backend
