@@ -1,0 +1,137 @@
+{
+  "requirement": "VT-145",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "case_ordinals": {
+    "UPSCALE": [
+      19026,
+      19027,
+      19028,
+      19029,
+      19038,
+      19039,
+      19040,
+      19041
+    ]
+  },
+  "passed": 8,
+  "factory_transcript_sha256": "6ac116954356ec8b3e78b74e08c01f9775d3d22141fff317a560018e905f7dd7",
+  "factory_build": {
+    "pointwise_result": "8ce439e56565ffcd97d3fb1582171c733398b3acd5762274b85bc41b09e72370",
+    "verdant_patch": "2586327cadf8fa57ab8e2df5b4347f1a2b0e891f",
+    "provider_sha256": "9f024fd2afaacfd21d070479b8c8e0c1253811dc3c965fc67a322b51745aeadc",
+    "provider_inputs_sha256": "8c6f6d1f11ef8d4fd3cac6239f673f4166c42152a372b3797b3ced70f34de17a",
+    "oracle_sha256": "1c402c7d222455c56491e14431f751d00d789691735c4538527aaaa0c9562fdb",
+    "continuous_factory_ordinals": [
+      19028,
+      19029,
+      19038,
+      19039,
+      19040
+    ]
+  },
+  "supplemental": {
+    "graphs": 52,
+    "compared_output_words": 5804,
+    "bit_identical_non_nan_words": 5556,
+    "matching_nan_classifications": 248,
+    "cpu_transcript_sha256": "6b860c14a8ccd3af4cafcb6ae293347d86c64c312906bfdec86fe6106bbc7c1f",
+    "oracle": "Pinned GGML CPU objects from the imported portable oracle with contraction disabled.",
+    "oracle_sha256": "6958b9755d23f1bd0169116cc7c24402734797f81b2320c06cfbb714845dd100",
+    "source_and_target_shapes": [
+      [
+        [
+          14,
+          5,
+          3,
+          2
+        ],
+        [
+          2,
+          7,
+          2,
+          3
+        ]
+      ],
+      [
+        [
+          2,
+          7,
+          2,
+          3
+        ],
+        [
+          14,
+          5,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          1,
+          4,
+          3,
+          2
+        ],
+        [
+          2,
+          8,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          4,
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          1,
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          5,
+          4,
+          14,
+          3
+        ],
+        [
+          7,
+          1,
+          2,
+          5
+        ]
+      ],
+      [
+        [
+          3,
+          5,
+          1,
+          14
+        ],
+        [
+          4,
+          2,
+          2,
+          2
+        ]
+      ]
+    ],
+    "views": "Run all six shapes on ordinary and transposed one-word offset views with half-pixel or aligned corners, each with two input distributions.",
+    "input": "For backing index i use (((13*i+11)%41)-20)/2^(i%6). In the exceptional distribution replace i%37=0 with negative infinity, otherwise i%31=0 with negative zero, otherwise i%29=0 with a quiet NaN.",
+    "broadcast": "Four inputs [(1<<k)+14,3,1,1] for k in {31,40,49,56} use zero X stride and source words [0x80000000,0x40400000,0x3f200000]. The output shape is [7,5,1,1].",
+    "refusals": "Surplus source and invalid flag words 255, 512 and 768 refuse admission and graph execution and preserve all output bytes.",
+    "native_fma": {
+      "oracle": "Same pinned GGML CPU source compiled with x86 FMA enabled.",
+      "different_finite_words": 384,
+      "maximum_absolute_error": 9.53674316406e-07
+    }
+  },
+  "mutation": "Reading source byte zero for every sample fails the continuous upstream bilinear comparison: [UPSCALE] ERR = 1.635677796 > 0.000000100."
+}

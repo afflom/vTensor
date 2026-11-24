@@ -530,3 +530,9 @@ Feature: native-backend
     Given a strided F32 tensor and GGML target extents
     When the provider selects the nearest input coordinate on each axis
     Then every output word matches the imported GGML CPU
+
+  @VT-145 @build
+  Scenario: Prism models GGML bilinear interpolation on strided tensors with Verdant binary32 pixel weights
+    Given four source pixels around a GGML sample position
+    When vTensor interpolates with half-pixel or aligned-corner coordinates
+    Then its outputs agree with the pinned CPU backend

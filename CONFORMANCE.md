@@ -232,6 +232,7 @@ model does not sanction.
 | `VT-142` | `build` | Prism models gated linear attention state updates and ordered output accumulation through Verdant for the imported GGML CPU |
 | `VT-143` | `build` | Prism models RWKV6 and RWKV7 recurrent state and output accumulation through Verdant against the imported GGML CPU |
 | `VT-144` | `build` | Prism models GGML nearest-neighbor resampling on four strided axes with Verdant binary32 coordinates |
+| `VT-145` | `build` | Prism models GGML bilinear interpolation on strided tensors with Verdant binary32 pixel weights |
 
 ## normalization-graphs
 

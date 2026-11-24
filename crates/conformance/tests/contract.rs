@@ -157,6 +157,7 @@ ggml_batches! {
 
     fn direct_convolution_vt_74() { "upstream-CONV_2D_DIRECT", 5, ["pointwise"] }
 
+    fn bilinear_resampling_vt_145() { "upstream-UPSCALE_BILINEAR", 5, ["pointwise"] }
     fn nearest_resampling_vt_144() { "upstream-UPSCALE_NEAREST", 2, ["pointwise"] }
     fn recurrent_weighted_keys_vt_143() { "upstream-RWKV_BOUNDARIES", 2, ["pointwise"] }
     fn gated_linear_attention_vt_142() { "upstream-GATED_LINEAR_ATTN_BOUNDARIES", 1, ["pointwise"] }
@@ -1295,7 +1296,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "6bed93202723ecb4d52db196badc00d15904d31df30ab34ebcc7e5e48d349f95",
+            "5c8c26045c3d685a7c7522195d64ce5e15a4a67d2298a084e671e4ef103192b9",
         )
     });
 
@@ -1590,24 +1591,22 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
     if (!target || !reference) return false;
     ggml_tensor * out=test.build_graph(target.get());
     if (out->op!=op || ggml_backend_dev_supports_op(ggml_backend_get_device(cpu),out)) return false;
+    auto original=op==GGML_OP_OUT_PROD ? nullptr : test.build_graph(reference.get());
     ggml_tensor * expected;
     if (op==GGML_OP_OUT_PROD) {
         auto a=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
         auto b=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[1]->ne);
         expected=ggml_out_prod(reference.get(),a,b);
     } else if (op==GGML_OP_GET_ROWS_BACK) {
-        auto original=test.build_graph(reference.get());
         auto decoded=ggml_new_tensor(reference.get(),GGML_TYPE_F32,4,out->src[0]->ne);
         expected=ggml_get_rows_back(reference.get(),decoded,original->src[1],original);
     } else if (op==GGML_OP_MUL_MAT) {
-        auto original=test.build_graph(reference.get());
         if (original->src[1]->type!=GGML_TYPE_F16) return false;
         auto activation=ggml_cast(reference.get(),original->src[1],GGML_TYPE_F32);
         if (!ggml_backend_supports_op(cpu,activation)) return false;
         expected=ggml_mul_mat(reference.get(),original->src[0],activation);
         memcpy(expected->op_params,original->op_params,sizeof(expected->op_params));
     } else {
-        auto original=test.build_graph(reference.get());
         auto kernel=ggml_cont(reference.get(),original->src[0]);
         auto image=ggml_cont(reference.get(),original->src[1]);
         auto p=original->op_params;
@@ -1651,8 +1650,9 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
 }
 size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, const char *op) {
     vtensor_observation observed;size_t cases=0;
-    if (!strcmp(op,"UPSCALE_NEAREST")) {
-      test_interpolate rounding(GGML_TYPE_F32,{14,5,3,2},{2,7,2,3});
+    const bool bilinear=!strcmp(op,"UPSCALE_BILINEAR");
+    if (bilinear || !strcmp(op,"UPSCALE_NEAREST")) {
+      test_interpolate rounding(GGML_TYPE_F32,{14,5,3,2},{2,7,2,3},bilinear ? GGML_SCALE_MODE_BILINEAR : GGML_SCALE_MODE_NEAREST);
       vtensor_observation control;
       if (rounding.eval(backend,reference,nullptr,&control)!=test_status_t::OK || control.bad || control.records!=1) return SIZE_MAX;
     }
