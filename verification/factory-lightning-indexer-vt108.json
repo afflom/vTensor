@@ -11,7 +11,7 @@
   "provider_inputs_sha256": "6653ce1d27802d6ae6272027f599a8f96cee55d5fe1d1ae35f7fe70bb54069a0",
   "oracle_sha256": "1d79917c1496606ef52321182d782d9f54287d146396dfc85fe2012670f59f8f",
   "factory_total": 210,
-  "factory_passed": 202,
+  "factory_passed": 206,
   "case_ordinals": {
     "LIGHTNING_INDEXER": [
       27545,
@@ -168,6 +168,10 @@
       27696,
       27697,
       27698,
+      27699,
+      27700,
+      27701,
+      27702,
       27707,
       27708,
       27709,
@@ -219,16 +223,12 @@
     ]
   },
   "remaining_ordinals": [
-    27699,
-    27700,
-    27701,
-    27702,
     27703,
     27704,
     27705,
     27706
   ],
-  "accepted_transcript_sha256": "9e415f42269a14d059f4a996d057940e726fa085593363cad1dc3ddf4515ad18",
+  "accepted_transcript_sha256": "b94218a6ffdb947459c22c966e56bd2d4f4651ae43d4a844224aa2a128324c91",
   "complete_input_transcript_sha256": "456b68f1892259b75bd23f6368390f67e60e49798a401907ede4cee466e9efe6",
   "continuous_regression": {
     "case_ordinals": [
