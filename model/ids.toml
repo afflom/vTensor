@@ -1014,3 +1014,9 @@ id = "VT-157"
 level = "build"
 suite = "native-backend"
 statement = "Prism constructs diagonals for every scalar storage type with Verdant byte transfers against the GGML CPU diagonal kernel"
+
+[[id]]
+id = "VT-158"
+level = "build"
+suite = "native-backend"
+statement = "Reusable GGML graph plans preserve the planned topology and execute current tensor data and compute flags through the certified graph planner"

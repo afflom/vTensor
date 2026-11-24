@@ -124,6 +124,7 @@ ggml_batches! {
     fn synchronous_delay_vt_123() { "upstream-SLEEP", 3, ["native"] }
 
     fn scheduled_compute_flags_vt_52() { "scheduled-flags", 3, ["native"] }
+    fn reusable_graph_plans_vt_158() { "graph-plans", 3, ["native"] }
     /// `VT-53`: The upstream factory evaluates all Q8_0 by F32 matrix cases.
     fn symmetric_matrix_graphs_vt_53() { "upstream-MUL_MAT_Q8_0_F32", 122, ["matrix"] }
     /// `VT-54`: The upstream factory evaluates all Q4_0 by F32 matrix cases.
@@ -1265,7 +1266,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "d6bea504d5476272bf14a4578aeb6311d4ca8b3c283149db04743d1909a75137",
+            "aad7f40e0401eaf90a9ad76ab7dd62310cbb5112642d4367de6b52814f938eb7",
         )
     });
 
@@ -2145,7 +2146,8 @@ int main(int argc, char **argv) {
       }
       return finish(cases);
     }
-    if (!strcmp(argv[3],"scheduled-flags")) {
+    const bool planned=!strcmp(argv[3],"graph-plans");
+    if (planned || !strcmp(argv[3],"scheduled-flags")) {
         std::array<std::array<float,2>,3> expected{};
         for (auto selected : {reference, backend}) {
             graph_fixture ctx(3); CHECK(ctx);
@@ -2158,13 +2160,19 @@ int main(int argc, char **argv) {
             ggml_backend_sched_ptr sched(ggml_backend_sched_new(&selected, nullptr, 1, GGML_DEFAULT_GRAPH_SIZE, false, true)); CHECK(sched);
             CHECK(ggml_backend_sched_alloc_graph(sched.get(), graph));
             for (auto node : {intermediate,result}) CHECK(ggml_backend_sched_get_tensor_backend(sched.get(),node)==selected);
+            ggml_backend_graph_plan_t plan=nullptr;
+            if (planned) {
+                CHECK(selected->iface.graph_plan_create && selected->iface.graph_plan_compute && selected->iface.graph_plan_free);
+                plan=ggml_backend_graph_plan_create(selected,graph); CHECK(plan);
+                ggml_graph_clear(graph); // Both plans retain the submitted topology.
+            }
             for (size_t pass=0; pass<expected.size(); ++pass) {
                 const float value = float(pass+3), canary = -17.0f;
                 if (pass==1) intermediate->flags &= ~GGML_TENSOR_FLAG_COMPUTE;
                 else intermediate->flags |= GGML_TENSOR_FLAG_COMPUTE;
                 ggml_backend_tensor_set(input,&value,0,sizeof(value));
                 ggml_backend_tensor_set(intermediate,&canary,0,sizeof(canary));
-                CHECK(ggml_backend_sched_graph_compute(sched.get(),graph)==GGML_STATUS_SUCCESS);
+                CHECK((planned ? ggml_backend_graph_plan_compute(selected,plan) : ggml_backend_sched_graph_compute(sched.get(),graph))==GGML_STATUS_SUCCESS);
                 ggml_backend_sched_synchronize(sched.get());
                 std::array<float,2> observed;
                 ggml_backend_tensor_get(intermediate,&observed[0],0,sizeof(float));
@@ -2172,6 +2180,21 @@ int main(int argc, char **argv) {
                 if (selected==reference) {
                     CHECK((observed[0]==canary)==(pass==1)); expected[pass]=observed;
                 } else CHECK(observed==expected[pass]);
+            }
+            if (planned) {
+                if (selected==backend) {
+                    ggml_backend_tensor_memset(intermediate,0x75,0,ggml_nbytes(intermediate));
+                    const auto initial=tensor_bytes(intermediate);
+                    auto saved=result->op; result->op=GGML_OP_COUNT;
+                    CHECK(ggml_backend_graph_plan_compute(selected,plan)==GGML_STATUS_FAILED && tensor_bytes(intermediate)==initial);
+                    result->op=saved;
+                    CHECK(ggml_backend_graph_plan_compute(selected,nullptr)==GGML_STATUS_FAILED);
+                    ggml_backend_graph_plan_free(selected,nullptr);
+                }
+                ggml_backend_graph_plan_free(selected,plan);
+                plan=ggml_backend_graph_plan_create(selected,graph);
+                CHECK(plan && ggml_backend_graph_plan_compute(selected,plan)==GGML_STATUS_SUCCESS);
+                ggml_backend_graph_plan_free(selected,plan);
             }
         }
         return finish(expected.size());

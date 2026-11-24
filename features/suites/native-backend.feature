@@ -608,3 +608,9 @@ Feature: native-backend
     Given a batched integer, binary64 or F8_E4M3 scalar vector in ordinary or offset storage
     When GGML constructs its diagonal matrix
     Then each output byte matches the upstream diagonal of the corresponding input byte plane
+
+  @VT-158 @build
+  Scenario: Reusable GGML graph plans preserve the planned topology and execute current tensor data and compute flags through the certified graph planner
+    Given an allocated graph and an unchanged original CPU plan for the same operations
+    When a caller creates a plan and submits three different inputs with changing compute flags
+    Then every intermediate and output matches the CPU and the caller can release its plan

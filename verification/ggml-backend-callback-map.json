@@ -1,0 +1,445 @@
+{
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "authority_header": "vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h",
+  "header_sha256": "7693def12dcc79a10dd2152e7cb659278756dba7622ebe41937f951dc94944e3",
+  "abi_implementation": "crates/conformance/src/meta.rs",
+  "fields": [
+    "authority header line",
+    "provider binding (null selects the upstream contract for an absent slot)",
+    "evidence family"
+  ],
+  "observed_slots": 57,
+  "provider_bindings": 33,
+  "absent_slots": 24,
+  "prism_roots": "native/configuration: NativeBackend.configuration; native/predicates: NativeBackend.decideNative; native/memory: NativeBackend.planMemory; layout/span: TensorLayout.tensorByteSpan; layout/transfer: BufferTransfer.locateTransfer.",
+  "family_fields": [
+    "requirement IDs",
+    "Prism roots used",
+    "execution"
+  ],
+  "families": {
+    "lifecycle": [
+      [
+        "VT-11"
+      ],
+      [
+        "native/configuration"
+      ],
+      "GGML lifecycle, registry metadata and host memory effects."
+    ],
+    "procedures": [
+      [
+        "VT-59",
+        "VT-136"
+      ],
+      [
+        "native/predicates",
+        "native/memory"
+      ],
+      "CPU threadpool and host callback procedures."
+    ],
+    "host_storage": [
+      [
+        "VT-156"
+      ],
+      [
+        "native/predicates"
+      ],
+      "GGML standard host buffer admission."
+    ],
+    "allocation": [
+      [
+        "VT-10",
+        "VT-11"
+      ],
+      [
+        "native/memory",
+        "layout/span"
+      ],
+      "Allocate or borrow host storage and report tensor size."
+    ],
+    "tensor_transfer": [
+      [
+        "VT-09",
+        "VT-11",
+        "VT-156"
+      ],
+      [
+        "layout/span",
+        "layout/transfer"
+      ],
+      "Bounded host-memory transfers and tensor initialization."
+    ],
+    "graph": [
+      [
+        "VT-52",
+        "VT-136"
+      ],
+      [
+        "native/predicates"
+      ],
+      "Per-operation Prism plans dispatch the applicable Verdant arithmetic or storage primitive; metadata and host callbacks use native effects."
+    ],
+    "reusable_plan": [
+      [
+        "VT-158"
+      ],
+      [
+        "native/predicates"
+      ],
+      "Capture the ordered node list. Public plan computation uses the same Prism graph admission and Verdant execution as direct submission."
+    ],
+    "transfer_defaults": [
+      [
+        "VT-11",
+        "VT-52"
+      ],
+      [],
+      "The original GGML public wrappers select synchronous or individual transfer fallbacks."
+    ],
+    "allocation_defaults": [
+      [
+        "VT-10",
+        "VT-11"
+      ],
+      [],
+      "GGML provides maximum size and per-tensor list sizing/allocation defaults."
+    ],
+    "device_defaults": [
+      [
+        "VT-11"
+      ],
+      [],
+      "GGML returns the documented null host buffer type or false offload preference."
+    ],
+    "events": [
+      [
+        "VT-11"
+      ],
+      [
+        "native/configuration"
+      ],
+      "Synchronous device. GGML returns null for event creation."
+    ],
+    "synchronous_defaults": [
+      [
+        "VT-11",
+        "VT-52"
+      ],
+      [],
+      "GGML skips absent reset, optimizer and synchronization hooks."
+    ],
+    "unused_plan_update": [
+      [
+        "VT-158"
+      ],
+      [],
+      "The pinned public GGML API offers plan create, free and compute. Its CPU implementation also leaves the internal plan update slot null."
+    ]
+  },
+  "interfaces": {
+    "ggml_backend_buffer_type_i": {
+      "get_name": [
+        18,
+        "buft_name",
+        "lifecycle"
+      ],
+      "alloc_buffer": [
+        20,
+        "buffer_allocate",
+        "allocation"
+      ],
+      "alloc_buffer_n": [
+        22,
+        null,
+        "allocation_defaults"
+      ],
+      "get_alignment": [
+        24,
+        "alignment_of",
+        "lifecycle"
+      ],
+      "get_max_size": [
+        26,
+        null,
+        "allocation_defaults"
+      ],
+      "get_alloc_size": [
+        28,
+        "allocation_size",
+        "allocation"
+      ],
+      "get_alloc_size_n": [
+        30,
+        null,
+        "allocation_defaults"
+      ],
+      "is_host": [
+        32,
+        "is_host",
+        "lifecycle"
+      ]
+    },
+    "ggml_backend_buffer_i": {
+      "free_buffer": [
+        55,
+        "buffer_free",
+        "lifecycle"
+      ],
+      "get_base": [
+        57,
+        "buffer_base",
+        "lifecycle"
+      ],
+      "init_tensor": [
+        59,
+        "tensor_init",
+        "tensor_transfer"
+      ],
+      "memset_tensor": [
+        61,
+        "tensor_memset",
+        "tensor_transfer"
+      ],
+      "set_tensor": [
+        62,
+        "tensor_set",
+        "tensor_transfer"
+      ],
+      "get_tensor": [
+        63,
+        "tensor_get",
+        "tensor_transfer"
+      ],
+      "set_tensor_2d": [
+        65,
+        null,
+        "transfer_defaults"
+      ],
+      "get_tensor_2d": [
+        66,
+        null,
+        "transfer_defaults"
+      ],
+      "cpy_tensor": [
+        69,
+        "tensor_copy",
+        "tensor_transfer"
+      ],
+      "clear": [
+        71,
+        "buffer_clear",
+        "lifecycle"
+      ],
+      "reset": [
+        73,
+        null,
+        "synchronous_defaults"
+      ],
+      "set_tensor_n": [
+        75,
+        null,
+        "transfer_defaults"
+      ],
+      "get_tensor_n": [
+        76,
+        null,
+        "transfer_defaults"
+      ],
+      "cpy_tensor_n": [
+        78,
+        null,
+        "transfer_defaults"
+      ]
+    },
+    "ggml_backend_i": {
+      "get_name": [
+        131,
+        "backend_name",
+        "lifecycle"
+      ],
+      "free": [
+        133,
+        "backend_free",
+        "lifecycle"
+      ],
+      "set_tensor_async": [
+        136,
+        null,
+        "transfer_defaults"
+      ],
+      "get_tensor_async": [
+        137,
+        null,
+        "transfer_defaults"
+      ],
+      "set_tensor_2d_async": [
+        138,
+        null,
+        "transfer_defaults"
+      ],
+      "get_tensor_2d_async": [
+        139,
+        null,
+        "transfer_defaults"
+      ],
+      "cpy_tensor_async": [
+        140,
+        null,
+        "transfer_defaults"
+      ],
+      "synchronize": [
+        143,
+        null,
+        "synchronous_defaults"
+      ],
+      "graph_plan_create": [
+        147,
+        "graph_plan_create",
+        "reusable_plan"
+      ],
+      "graph_plan_free": [
+        148,
+        "graph_plan_free",
+        "reusable_plan"
+      ],
+      "graph_plan_update": [
+        150,
+        null,
+        "unused_plan_update"
+      ],
+      "graph_plan_compute": [
+        152,
+        "graph_plan_compute",
+        "reusable_plan"
+      ],
+      "graph_compute": [
+        155,
+        "graph_compute",
+        "graph"
+      ],
+      "event_record": [
+        159,
+        null,
+        "events"
+      ],
+      "event_wait": [
+        161,
+        null,
+        "events"
+      ],
+      "graph_optimize": [
+        164,
+        null,
+        "synchronous_defaults"
+      ]
+    },
+    "ggml_backend_device_i": {
+      "get_name": [
+        187,
+        "device_name",
+        "lifecycle"
+      ],
+      "get_description": [
+        190,
+        "description_name",
+        "lifecycle"
+      ],
+      "get_memory": [
+        193,
+        "memory",
+        "lifecycle"
+      ],
+      "get_type": [
+        196,
+        "device_type",
+        "lifecycle"
+      ],
+      "get_props": [
+        199,
+        "properties",
+        "lifecycle"
+      ],
+      "init_backend": [
+        202,
+        "backend_new",
+        "lifecycle"
+      ],
+      "get_buffer_type": [
+        205,
+        "buffer_type",
+        "lifecycle"
+      ],
+      "get_host_buffer_type": [
+        208,
+        null,
+        "device_defaults"
+      ],
+      "buffer_from_host_ptr": [
+        211,
+        "from_host",
+        "allocation"
+      ],
+      "supports_op": [
+        214,
+        "supports_operation",
+        "graph"
+      ],
+      "supports_buft": [
+        217,
+        "supports_buffer_type",
+        "host_storage"
+      ],
+      "offload_op": [
+        221,
+        null,
+        "device_defaults"
+      ],
+      "event_new": [
+        224,
+        null,
+        "events"
+      ],
+      "event_free": [
+        225,
+        null,
+        "events"
+      ],
+      "event_synchronize": [
+        226,
+        null,
+        "events"
+      ]
+    },
+    "ggml_backend_reg_i": {
+      "get_name": [
+        240,
+        "reg_name",
+        "lifecycle"
+      ],
+      "get_device_count": [
+        243,
+        "device_count",
+        "lifecycle"
+      ],
+      "get_device": [
+        244,
+        "device_at",
+        "lifecycle"
+      ],
+      "get_proc_address": [
+        248,
+        "threadpool::lookup",
+        "procedures"
+      ]
+    }
+  },
+  "oracle": [
+    "verification/ggml-backend-callbacks.json",
+    "verification/shared-host-storage-vt156.json",
+    "verification/ggml-reusable-plans-vt158.json"
+  ],
+  "probe_source_sha256": "5a55f6d76dd6cf2d939d1c899e7b9f4b1c6254108e5e8ec8eedf48857cc497a9",
+  "probe_sha256": "1bb8c5cf7cf26529aa0aea8a2da67a8d0805d6783de004d6c85ad24075f976fc",
+  "provider_sha256": "2096f3c99c373ff2215d634b380e7542073144d94225f5098ff8117cf15e7af9"
+}

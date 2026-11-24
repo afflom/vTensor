@@ -879,118 +879,34 @@ mod tests {
         let bootstrap = include_str!("../../.github/workflows/bootstrap.yml");
         let justfile = include_str!("../../Justfile");
         assert!(proof_reuse_is_confined(bootstrap, justfile));
-        let mut plants: Vec<(&str, String, String)> = Vec::new();
-        let plant_bootstrap = |defect, from: &str, to: &str| {
-            assert!(bootstrap.contains(from), "{defect}: {from}");
-            (
-                defect,
-                bootstrap.replacen(from, to, 1),
-                justfile.to_string(),
-            )
-        };
-        let plant_justfile = |defect, from: &str, to: &str| {
-            assert!(justfile.contains(from), "{defect}: {from}");
-            (
-                defect,
-                bootstrap.to_string(),
-                justfile.replacen(from, to, 1),
-            )
-        };
-        // A key that omits any one proof input would find a proof of other inputs.
-        let key = PROOF_KEY.trim_start_matches("key: ");
-        for input in [
-            "-${{ runner.os }}",
-            "-${{ runner.arch }}",
-            "-sdk-${{ steps.proof-inputs.outputs.sdk }}",
-            "-lean-${{ steps.proof-inputs.outputs.lean }}",
-            "'app/**', ",
-            "'prismpm.lock', ",
-            "'Justfile', ",
-            ", 'rust-toolchain.toml'",
-        ] {
-            assert!(key.contains(input), "{input}");
-            plants.push(plant_bootstrap(
-                "a key that omits one proof input",
-                key,
-                &key.replacen(input, "", 1),
-            ));
-        }
-        plants.extend([
-            plant_bootstrap(
-                "the SDK digest named by a constant",
-                r#"sdk=$(sed -n 's/.*"sdk_image":"[^"@]*@sha256:\([0-9a-f]\{64\}\)".*/\1/p' prismpm.lock)"#,
-                "sdk=pinned",
-            ),
-            plant_bootstrap(
-                "the Lean toolchain read from elsewhere",
-                "app/lean-toolchain)",
-                "rust-toolchain.toml)",
-            ),
-            plant_bootstrap(
-                "the ref spliced into the script",
-                r"--env PRISM_PROOF_EVENT \",
-                r"--env PRISM_PROOF_EVENT=${{ github.event_name }}:${{ github.ref }} \",
-            ),
-            plant_bootstrap(
-                "the ref dropped, so a tag looks like main",
-                "PRISM_PROOF_EVENT: ${{ github.event_name }}:${{ github.ref }}",
-                "PRISM_PROOF_EVENT: ${{ github.event_name }}:refs/heads/main",
-            ),
-            plant_bootstrap(
-                "the event never reaches the recipe",
-                "            --env PRISM_PROOF_EVENT \\\n",
-                "",
-            ),
-            plant_justfile(
-                "a tag reuses",
-                "push:refs/heads/main)",
-                "push:*)",
-            ),
-            plant_justfile(
-                "any event reuses",
-                "pull_request:*|merge_group:*|push:refs/heads/main)",
-                "*)",
-            ),
-            plant_justfile(
-                "reuse without the read-time check",
-                "if cargo run -q --locked -p xtask -- proof-reuse; then",
-                "if [[ -s .prism-proof/attestation ]]; then",
-            ),
-            plant_justfile(
-                "a stale kept proof survives a full proof",
-                "    rm -rf .prism-proof\n",
-                "",
-            ),
-            plant_justfile(
-                "the recipe stops proving",
-                "prismpm --project app verify | tee",
-                "true | tee",
-            ),
-            plant_justfile(
-                "a proof kept without its inputs",
-                r#"cargo run -q --locked -p xtask -- proof-keep "$attestation""#,
-                "mkdir -p .prism-proof",
-            ),
-            plant_justfile(
-                "a second, unconfined use of the event",
-                "    rm -rf .prism-proof\n",
-                "    [[ $PRISM_PROOF_EVENT == push* ]] && exit 0\n    rm -rf .prism-proof\n",
-            ),
-            plant_justfile(
-                "an early exit before the case",
-                "    case \"${PRISM_PROOF_EVENT:-}\" in\n",
-                "    [[ -d .prism-proof ]] && exit 0\n    case \"${PRISM_PROOF_EVENT:-}\" in\n",
-            ),
-        ]);
-        for (defect, plant_bootstrap, plant_justfile) in &plants {
-            assert!(
-                plant_bootstrap != bootstrap || plant_justfile != justfile,
-                "{defect}: every plant must change an input"
-            );
-            assert!(
-                !proof_reuse_is_confined(plant_bootstrap, plant_justfile),
-                "{defect} was accepted"
-            );
+        // Replay each frozen input mutation immediately so the gate retains only the changed file.
+        let corpus = include_bytes!("../../verification/proof-reuse-controls.json");
+        assert_eq!(
+            repo_model::artifact::sha256_hex(corpus),
+            "e5209c6578b979b215dd7cc6d9bfed25658d646b8a1fbf0f15fd3c4435b19549"
+        );
+        let controls: Vec<[String; 4]> =
+            serde_json::from_slice(corpus).expect("proof reuse controls");
+        assert_eq!(controls.len(), 21);
+        for [target, defect, from, to] in &controls {
+            let target = target.as_str();
+            let source = match target {
+                "key" => PROOF_KEY.trim_start_matches("key: "),
+                "bootstrap" => bootstrap,
+                "justfile" => justfile,
+                _ => panic!("unknown proof control target {target}"),
+            };
+            assert!(source.contains(from), "{defect}: {from}");
+            let changed = source.replacen(from, to, 1);
+            assert_ne!(changed, source, "{defect}: unchanged input");
+            let accepted = match target {
+                "key" => {
+                    proof_reuse_is_confined(&bootstrap.replacen(source, &changed, 1), justfile)
+                }
+                "bootstrap" => proof_reuse_is_confined(&changed, justfile),
+                _ => proof_reuse_is_confined(bootstrap, &changed),
+            };
+            assert!(!accepted, "{defect} was accepted");
         }
         // The merge queue trigger is part of the fixed trigger block: dropping it is refused.
         assert!(!native_coverage_is_complete(

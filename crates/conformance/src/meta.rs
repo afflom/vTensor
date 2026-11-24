@@ -124,10 +124,10 @@ interface! { BackendInterface => backend_interface "ggml_backend_i" {
     get_tensor_2d_async(BackendPtr, *const Tensor, *mut c_void, usize, usize, usize, usize, usize) -> () => None;
     cpy_tensor_async(BackendPtr, BackendPtr, *const Tensor, TensorPtr) -> bool => None;
     synchronize(BackendPtr) -> () => None;
-    graph_plan_create(BackendPtr, *const c_void) -> Plan => None;
-    graph_plan_free(BackendPtr, Plan) -> () => None;
+    graph_plan_create(BackendPtr, *const c_void) -> Plan => Some(graph_plan_create);
+    graph_plan_free(BackendPtr, Plan) -> () => Some(graph_plan_free);
     graph_plan_update(BackendPtr, Plan, *const c_void) -> () => None;
-    graph_plan_compute(BackendPtr, Plan) -> c_int => None;
+    graph_plan_compute(BackendPtr, Plan) -> c_int => Some(graph_plan_compute);
     graph_compute(BackendPtr, Graph) -> c_int => Some(graph_compute);
     event_record(BackendPtr, Event) -> () => None;
     event_wait(BackendPtr, Event) -> () => None;
@@ -215,6 +215,6 @@ unsafe extern "C" {
     ) -> Buf;
     pub(crate) fn ggml_backend_buft_is_host(buft: Buft) -> bool;
     pub(crate) fn ggml_graph_n_nodes(graph: Graph) -> c_int;
-    pub(crate) fn ggml_graph_node(graph: Graph, index: c_int) -> TensorPtr;
+    pub(crate) fn ggml_graph_nodes(graph: Graph) -> *const TensorPtr;
     pub(crate) fn ggml_abort(file: *const c_char, line: c_int, fmt: *const c_char, ...) -> !;
 }

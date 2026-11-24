@@ -6,7 +6,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [x] Index the graph signatures of all 27,755 upstream constructors. The 2,293 observed signatures cover 89 of 100 opcodes, all 22 unary and seven GLU variants and 33 of 36 storage types. [Declaration gaps](verification/ggml-factory-signatures.json) · [Ordinal map](verification/ggml-factory-signatures.tsv.gz)
 - [x] Trace 236 public tensor constructors to all 100 GGML operation declarations and their source guards. Index the 13 public calls that retrieve or modify an existing tensor. [Constructor map](verification/ggml-constructor-contracts.json)
-- [ ] Map legal type tuples, flags, views, in-place forms and backend callbacks to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
+- [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [x] Map all 288 same-type DUP, CONT and CPY comparisons for Q8_1, Q8_K and F64 to their Prism roots, Verdant byte transfer and GGML CPU oracle. [Supplemental ordinal map](verification/supplemental-copy-storage-map.json)
 - [x] Admit and repeat all 36 live storage types before allocation. Compare each axis and the four-axis combination with independent GGML CPU concatenation. [180 supplemental cases](verification/supplemental-storage-repeat-vt155.json)
 - [x] Cover DIAG on all nine scalar types. Compare six additional types, including F64 and F8_E4M3, against the original CPU diagonal kernel across contiguous and offset views. [36 supplemental cases](verification/supplemental-scalar-diag-vt157.json)
@@ -40,7 +40,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
 - [x] Move normalization instruction selection into the certified Prism graph. [Normalization execution](VTENSOR-VERIFICATION.md#normalization-execution)
-- [ ] Recover **2,212 non-Prism lines** (12,761 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **2,177 non-Prism lines** (12,726 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 
 ## Bring up a real llama.cpp consumer
 
@@ -50,6 +50,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Run mixed-quantized GPT-2 in unmodified llama-simple. Match eight greedy tokens, 301,542 two-sequence logits and 4,096 cache values against CPU. [Host comparison](verification/llama-gpt2-decode.json)
 - [x] Run two-sequence Mamba decode in pinned llama.cpp with VT-150. Match 192,000 logits, 14,464 convolution, scan and cache words, and eight greedy tokens. [CPU comparison](verification/llama-mamba-decode.json)
 - [x] Match the upstream scheduler's compute-bit selection and reuse an allocated two-operation graph across active, inactive and reactivated runs (VT-52). [Oracle evidence](VTENSOR-VERIFICATION.md#scheduled-graph-selection)
+- [x] Map all 57 callback slots to their upstream declarations, provider bindings, defaults and conformance IDs. [Callback map](verification/ggml-backend-callback-map.json)
+- [x] Implement public graph plan creation, repeated compute and release. Verify changed inputs, compute flags, cleared builders, empty plans and atomic refusal. [VT-158](verification/ggml-reusable-plans-vt158.json)
 - [x] Inventory all 57 compiled backend callbacks. Compare two-way CPU/vTensor graph splits, views, batched transfers and synchronization with public GGML. [Host replay](verification/ggml-backend-callbacks.json)
 - [x] Admit all 86,647 factory nodes before allocation and place each through stock GGML with vTensor as the sole provider. Verify standard CPU buffers and mixed-backend placement. [VT-156](verification/shared-host-storage-vt156.json)
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)

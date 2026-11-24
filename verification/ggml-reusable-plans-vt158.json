@@ -1,0 +1,22 @@
+{
+  "requirement": "VT-158",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "public_api": "ggml/src/ggml-backend.cpp#L778-L796",
+  "cpu_reference": "ggml/src/ggml-cpu/ggml-cpu.cpp#L130-L171",
+  "verdant_release": "https://github.com/afflom/verdant-engine/releases/tag/v2.21.7",
+  "provider_sha256": "2096f3c99c373ff2215d634b380e7542073144d94225f5098ff8117cf15e7af9",
+  "model": "NativeBackend.decideNative selects active nodes; all per-operation Prism plans and Verdant calls are shared with direct graph_compute.",
+  "test": "reusable_graph_plans_vt_158",
+  "setup": "The original scheduler allocates SCALE and ADD. The CPU and vTensor each create a plan. Clear the graph builder and submit three different input values, disabling the intermediate compute flag on the second pass.",
+  "comparisons": "All three pairs of intermediate and final scalar values agreed, including the preserved canary. An independently created empty plan succeeded on both devices.",
+  "refusals": "A malformed final node failed preflight and left the intermediate canary untouched. The provider returns failure on a null plan and accepts null release.",
+  "negative": "The missing callbacks failed before the first submission. Omitting the final node from the snapshot failed the comparison with CPU. Restoring it passed.",
+  "host_replay": "Freshly observed 57 ABI slots from the compiled plugin. Both directions of a mixed scheduler split matched 42 output words. Strided and batched transfer controls passed.",
+  "callback_map": "verification/ggml-backend-callback-map.json",
+  "verification_efficiency": {
+    "data": "verification/proof-reuse-controls.json",
+    "proof_reuse_mutations": 21,
+    "check": "All 21 original pairs of mutated workflow and recipe bytes were identical when replayed individually. Changing a corpus entry failed the digest check.",
+    "source_lines": 12726
+  }
+}

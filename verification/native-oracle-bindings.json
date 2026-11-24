@@ -146,7 +146,7 @@
     "ggml_backend_buffer_init",
     "ggml_backend_buft_is_host",
     "ggml_graph_n_nodes",
-    "ggml_graph_node"
+    "ggml_graph_nodes"
   ],
   "factory_inputs": {
     "upstream-AFFINE_WEIGHT_ROWS": "13468 13472 14115 14117 19542 19544 19974 19976",

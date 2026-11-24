@@ -1482,18 +1482,56 @@ unsafe extern "C" fn supports_operation(_: Dev, tensor: *const Tensor) -> bool {
     plan_operation(unsafe { &*tensor }).is_ok()
 }
 
-unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
-    execute_graph(backend, graph).map_or(GGML_STATUS_FAILED, |_| GGML_STATUS_SUCCESS)
+// GGML retains the node array for the call. A persistent plan copies the array and
+// borrows its tensors, so clearing the graph builder cannot change the captured topology.
+unsafe fn graph_nodes<'a>(graph: Graph) -> &'a [TensorPtr] {
+    // SAFETY: the caller retains a valid GGML graph for the returned borrow.
+    let count = unsafe { ggml_graph_n_nodes(graph) } as usize;
+    if count == 0 {
+        return &[];
+    }
+    // SAFETY: a nonempty GGML graph exposes count initialized entries for its retained lifetime.
+    unsafe { std::slice::from_raw_parts(ggml_graph_nodes(graph), count) }
 }
 
-fn execute_graph(backend: BackendPtr, graph: Graph) -> Result<(), BackendError> {
+unsafe extern "C" fn graph_plan_create(_: BackendPtr, graph: *const c_void) -> Plan {
+    // SAFETY: the caller supplies the live source graph and retains the tensors until plan release.
+    let nodes = unsafe { graph_nodes(graph.cast_mut()) };
+    let Ok(mut owned) = reserved(nodes.len()) else {
+        return null_mut();
+    };
+    owned.extend_from_slice(nodes);
+    Box::into_raw(Box::new(owned)).cast()
+}
+
+unsafe extern "C" fn graph_plan_free(_: BackendPtr, plan: Plan) {
+    if !plan.is_null() {
+        // SAFETY: a non-null handle is the live allocation returned by create.
+        unsafe { drop(Box::from_raw(plan.cast::<Vec<TensorPtr>>())) };
+    }
+}
+
+unsafe extern "C" fn graph_plan_compute(backend: BackendPtr, plan: Plan) -> c_int {
+    // SAFETY: the handle and its tensors live for this synchronous submission.
+    let Some(nodes) = (unsafe { plan.cast::<Vec<TensorPtr>>().as_ref() }) else {
+        return GGML_STATUS_FAILED;
+    };
+    execute_graph(backend, nodes).map_or(GGML_STATUS_FAILED, |_| GGML_STATUS_SUCCESS)
+}
+
+unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
+    // SAFETY: GGML retains the graph and its tensors until this call returns.
+    execute_graph(backend, unsafe { graph_nodes(graph) })
+        .map_or(GGML_STATUS_FAILED, |_| GGML_STATUS_SUCCESS)
+}
+
+fn execute_graph(backend: BackendPtr, nodes: &[TensorPtr]) -> Result<(), BackendError> {
     let mut plans = Vec::new();
     let mut has_callbacks = false;
     // SAFETY: GGML retains this graph and all descriptors for the synchronous
     // call. Preflight plans every numerical node once before any computation.
     unsafe {
-        for index in 0..ggml_graph_n_nodes(graph) {
-            let tensor = ggml_graph_node(graph, index);
+        for &tensor in nodes {
             let flags = u64::from((*tensor).flags as u32);
             if !vtensor_native_predicates::run(vtensor_native_predicates::Adt0::C2(flags)) {
                 continue;
@@ -1509,11 +1547,11 @@ fn execute_graph(backend: BackendPtr, graph: Graph) -> Result<(), BackendError> 
         if has_callbacks {
             // The pinned CPU plans one team for the whole graph, including nodes that
             // request more tasks than a callback. Width only matters for host callbacks.
-            for i in 0..ggml_graph_n_nodes(graph) {
+            for &node in nodes {
                 if callback_width == execution.threads {
                     break;
                 }
-                let n = graph_node_tasks(&*ggml_graph_node(graph, i), execution.threads)?;
+                let n = graph_node_tasks(&*node, execution.threads)?;
                 callback_width = callback_width.max(n);
             }
         }

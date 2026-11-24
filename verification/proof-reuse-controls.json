@@ -1,0 +1,128 @@
+[
+  [
+    "key",
+    "a key that omits one proof input",
+    "-${{ runner.os }}",
+    ""
+  ],
+  [
+    "key",
+    "a key that omits one proof input",
+    "-${{ runner.arch }}",
+    ""
+  ],
+  [
+    "key",
+    "a key that omits one proof input",
+    "-sdk-${{ steps.proof-inputs.outputs.sdk }}",
+    ""
+  ],
+  [
+    "key",
+    "a key that omits one proof input",
+    "-lean-${{ steps.proof-inputs.outputs.lean }}",
+    ""
+  ],
+  [
+    "key",
+    "a key that omits one proof input",
+    "'app/**', ",
+    ""
+  ],
+  [
+    "key",
+    "a key that omits one proof input",
+    "'prismpm.lock', ",
+    ""
+  ],
+  [
+    "key",
+    "a key that omits one proof input",
+    "'Justfile', ",
+    ""
+  ],
+  [
+    "key",
+    "a key that omits one proof input",
+    ", 'rust-toolchain.toml'",
+    ""
+  ],
+  [
+    "bootstrap",
+    "the SDK digest named by a constant",
+    "sdk=$(sed -n 's/.*\"sdk_image\":\"[^\"@]*@sha256:\\([0-9a-f]\\{64\\}\\)\".*/\\1/p' prismpm.lock)",
+    "sdk=pinned"
+  ],
+  [
+    "bootstrap",
+    "the Lean toolchain read from elsewhere",
+    "app/lean-toolchain)",
+    "rust-toolchain.toml)"
+  ],
+  [
+    "bootstrap",
+    "the ref spliced into the script",
+    "--env PRISM_PROOF_EVENT \\",
+    "--env PRISM_PROOF_EVENT=${{ github.event_name }}:${{ github.ref }} \\"
+  ],
+  [
+    "bootstrap",
+    "the ref dropped, so a tag looks like main",
+    "PRISM_PROOF_EVENT: ${{ github.event_name }}:${{ github.ref }}",
+    "PRISM_PROOF_EVENT: ${{ github.event_name }}:refs/heads/main"
+  ],
+  [
+    "bootstrap",
+    "the event never reaches the recipe",
+    "            --env PRISM_PROOF_EVENT \\\n",
+    ""
+  ],
+  [
+    "justfile",
+    "a tag reuses",
+    "push:refs/heads/main)",
+    "push:*)"
+  ],
+  [
+    "justfile",
+    "any event reuses",
+    "pull_request:*|merge_group:*|push:refs/heads/main)",
+    "*)"
+  ],
+  [
+    "justfile",
+    "reuse without the read-time check",
+    "if cargo run -q --locked -p xtask -- proof-reuse; then",
+    "if [[ -s .prism-proof/attestation ]]; then"
+  ],
+  [
+    "justfile",
+    "a stale kept proof survives a full proof",
+    "    rm -rf .prism-proof\n",
+    ""
+  ],
+  [
+    "justfile",
+    "the recipe stops proving",
+    "prismpm --project app verify | tee",
+    "true | tee"
+  ],
+  [
+    "justfile",
+    "a proof kept without its inputs",
+    "cargo run -q --locked -p xtask -- proof-keep \"$attestation\"",
+    "mkdir -p .prism-proof"
+  ],
+  [
+    "justfile",
+    "a second, unconfined use of the event",
+    "    rm -rf .prism-proof\n",
+    "    [[ $PRISM_PROOF_EVENT == push* ]] && exit 0\n    rm -rf .prism-proof\n"
+  ],
+  [
+    "justfile",
+    "an early exit before the case",
+    "    case \"${PRISM_PROOF_EVENT:-}\" in\n",
+    "    [[ -d .prism-proof ]] && exit 0\n    case \"${PRISM_PROOF_EVENT:-}\" in\n"
+  ]
+]
