@@ -398,3 +398,9 @@ Feature: native-backend
     Given an original GGML sleep graph with an aliased input
     When the graph runs on the CPU oracle and vTensor
     Then both preserve the input bytes and wait for the requested duration
+
+  @VT-124 @build
+  Scenario: Prism schedules the binary32 SiLU derivative with Verdant arithmetic
+    Given upstream binary32 activation values and independent incoming gradients
+    When the backend multiplies each incoming gradient by the SiLU derivative
+    Then the result agrees with the original GGML CPU graph

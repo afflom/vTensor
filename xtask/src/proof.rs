@@ -91,12 +91,11 @@ fn workspace_paths(lexlean: &Value) -> Result<Vec<String>, String> {
 /// keeps `browser_timing`, a per-run measurement, out of it: the manifest
 /// hashes the canonical JSON of the acceptance without that field (sorted
 /// keys, no whitespace), so two runs of one build share an attestation ID.
-fn acceptance_digest(acceptance: &Value) -> Result<String, String> {
-    let mut comparable = acceptance.clone();
-    if let Some(object) = comparable.as_object_mut() {
+fn acceptance_digest(acceptance: &mut Value) -> Result<String, String> {
+    if let Some(object) = acceptance.as_object_mut() {
         object.remove("browser_timing");
     }
-    serde_json::to_vec(&comparable)
+    serde_json::to_vec(acceptance)
         .map(|bytes| hex(&bytes))
         .map_err(|error| format!("application-acceptance.json: {error}"))
 }
@@ -118,7 +117,7 @@ fn binds(
     };
     let manifest = parse(&kept.manifest, "manifest.json")?;
     let lexlean = parse(&kept.lexlean, "lexlean-attestation.json")?;
-    let acceptance = parse(&kept.acceptance, "application-acceptance.json")?;
+    let mut acceptance = parse(&kept.acceptance, "application-acceptance.json")?;
     let check_field =
         |doc: &Value, path: &str, expected: &str| same(path, text(doc, path)?, expected);
     let schema = "prismpm/application-verification-manifest/2";
@@ -129,11 +128,9 @@ fn binds(
     if serde_json::to_vec(&acceptance).ok().as_deref() != Some(kept.acceptance.as_slice()) {
         return Err("the application acceptance is not canonical JSON".into());
     }
-    same(
-        "the application acceptance",
-        text(&manifest, "/acceptance_sha256")?,
-        &acceptance_digest(&acceptance)?,
-    )?;
+    let sealed = text(&manifest, "/acceptance_sha256")?;
+    let measured = acceptance_digest(&mut acceptance)?;
+    same("the application acceptance", sealed, &measured)?;
     for (label, document) in [
         ("the LexLean status", &lexlean),
         ("the acceptance status", &acceptance),
@@ -367,7 +364,7 @@ mod tests {
         let lexlean = serde_json::to_vec(&proof.lexlean).unwrap();
         let acceptance = serde_json::to_vec(&proof.acceptance).unwrap();
         let manifest = serde_json::to_vec(&json!({
-            "acceptance_sha256": acceptance_digest(&proof.acceptance).unwrap(),
+            "acceptance_sha256": acceptance_digest(&mut proof.acceptance.clone()).unwrap(),
             "build_id": "2".repeat(64),
             "lexlean_attestation_sha256": hex(&lexlean),
             "schema": "prismpm/application-verification-manifest/2"
@@ -410,7 +407,7 @@ mod tests {
         let kept = seal(&timed);
         assert_ne!(
             hex(&kept.acceptance),
-            acceptance_digest(&timed.acceptance).unwrap()
+            acceptance_digest(&mut timed.acceptance.clone()).unwrap()
         );
         assert_eq!(binds(&kept, &observed()), Ok(()));
 

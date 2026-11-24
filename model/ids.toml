@@ -804,3 +804,9 @@ id = "VT-123"
 level = "build"
 suite = "native-backend"
 statement = "Prism admits GGML scheduler delays that preserve their input view and complete before graph return"
+
+[[id]]
+id = "VT-124"
+level = "build"
+suite = "native-backend"
+statement = "Prism schedules the binary32 SiLU derivative with Verdant arithmetic"

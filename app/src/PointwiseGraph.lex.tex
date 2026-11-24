@@ -149,7 +149,8 @@ inductive{
     {name: stateConvolution, fields: [IndexContext]},
     {name: columnOverlap, fields: [ColumnAxis, Nat]},
     {name: smallFloatCast, fields: [Nat, Nat]},
-    {name: softmaxGradient, fields: [Nat]}
+    {name: softmaxGradient, fields: [Nat]},
+    {name: siluGradient, fields: [IndexContext]}
   ]
 }
 
@@ -1793,6 +1794,7 @@ definition{
     | CopyMode.arithmetic kind unary right => (arithmeticOffsets index source destination kind unary right)
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
+    | CopyMode.siluGradient activation => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.converted sourceType destinationType => (convertedCopyOffsets index source destination sourceType destinationType)
     | CopyMode.windowed reverse size nx => (windowOffsets index source destination reverse size nx)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
@@ -1846,6 +1848,22 @@ definition{
 }
 
 definition{
+  name: siluGradientLayout,
+  parameters: [tensor : TensorDescriptor],
+  result: Bool,
+  body: (let rows : Nat := (prim multiply (project tensor n1) (prim multiply (project tensor n2) (project tensor n3) : Nat) : Nat); (let count : Nat := (blockCount tensor 1); (((((((((project tensor ty) =? 0) && ((project tensor n0) <=? 2147483647)) && (rows <=? 2147483647)) && (((project tensor n0) =? 1) || ((project tensor s0) =? 4))) && ((rows <=? 1) || ((prim multiply (project tensor n0) 4 : Nat) <=? (project tensor s1)))) && (((project tensor n2) =? 1) || ((project tensor s2) =? (prim multiply (project tensor n1) (project tensor s1) : Nat)))) && (((project tensor n3) =? 1) || ((project tensor s3) =? (prim multiply (project tensor n2) (prim multiply (project tensor n1) (project tensor s1) : Nat) : Nat)))) && ((count =? 0) || (((blockOffset (prim subtract count 1 : Nat) (indexContext tensor 1)) + 4) <=? (project tensor span)))))),
+  executable: true
+}
+
+definition{
+  name: planSiluGradient,
+  parameters: [dy : TensorDescriptor, x : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if (((((((sameShape dy x) && (sameShape dy output)) && (siluGradientLayout dy)) && (siluGradientLayout x)) && (siluGradientLayout output)) && ((separateTensors dy output) || (sameWordView dy output))) && ((separateTensors x output) || (sameWordView x output))) then (ctor PointwiseDecision.copyBlocks (prim multiply 6 (blockCount dy 1) : Nat) 2 (indexContext dy 1) (indexContext output 1) (ctor CopyMode.siluGradient (indexContext x 1))) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
   name: planTwoSources,
   parameters: [
     operation : Nat,
@@ -1855,13 +1873,15 @@ definition{
     output : TensorDescriptor
   ],
   result: GraphResponse,
-  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 44) then (planSoftmaxGradient options left right output) else (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right
+  body: (let variant : Nat := (project options p0); (ctor GraphResponse.planned (if (operation =? 22) then (match right
+    | Option.none => (ctor PointwiseDecision.invalidShape)
+    | Option.some x => (planSiluGradient left x output)) else (if (operation =? 44) then (planSoftmaxGradient options left right output) else (if (operation =? 52) then (planColumnOverlap options left output) else (if (operation =? 73) then (planStateConvolution left right output) else (if ((operation =? 57) || (operation =? 58)) then (match right
     | Option.none => (planPool (operation =? 58) options left output)
     | Option.some extra => (ctor PointwiseDecision.invalidShape)) else (if (operation =? 49) then (planPlanarColumns options left right output) else (if (operation =? 51) then (planImageColumns options left right output) else (if (operation =? 39) then (planGather left right output) else (if (operation =? 77) then (planRelativePosition left output) else (if (operation =? 40) then (planRowGradient left right output) else (if (copyOperation operation) then (if (((operation =? 33) && ((project output ty) =? 0)) && (decodedCopyType (project left ty))) then (planDecodedCopy left right output) else (planStorage operation left (match right
     | Option.none => false
     | Option.some value => true) output)) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
-    | Option.some kind => (planUnary kind left output)))))))))))))))))))))))))))),
+    | Option.some kind => (planUnary kind left output))))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -1899,6 +1919,7 @@ definition{
     | CopyMode.arithmetic kind unary right => (ctor GraphResponse.bindings (if unary then 1 else 3) 0 0 false)
     | CopyMode.smallFloatCast sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.softmaxGradient scale => (ctor GraphResponse.bindings 3 0 0 false)
+    | CopyMode.siluGradient activation => (ctor GraphResponse.bindings 3 0 0 false)
     | CopyMode.converted sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.windowed reverse size nx => (ctor GraphResponse.bindings 1 0 0 false)
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false)
@@ -1940,6 +1961,7 @@ definition{
     | CopyMode.arithmetic kind unary right => 0
     | CopyMode.smallFloatCast sourceType destinationType => 0
     | CopyMode.softmaxGradient scale => 0
+    | CopyMode.siluGradient activation => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
     | CopyMode.transformed kind storage a b => 0
@@ -2005,6 +2027,7 @@ definition{
     | CopyMode.arithmetic kind unary right => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.smallFloatCast sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.softmaxGradient scale => (ctor WordOperation.invalid)
+    | CopyMode.siluGradient activation => (ctor WordOperation.invalid)
     | CopyMode.converted sourceType destinationType => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.windowed reverse size nx => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.transformed kind storage a b => (ctor WordOperation.transformed kind storage a b)
@@ -2046,6 +2069,7 @@ definition{
     | CopyMode.arithmetic kind unary right => 0
     | CopyMode.smallFloatCast sourceType destinationType => 0
     | CopyMode.softmaxGradient scale => 0
+    | CopyMode.siluGradient activation => 0
     | CopyMode.converted sourceType destinationType => 0
     | CopyMode.windowed reverse size nx => 0
     | CopyMode.transformed kind storage a b => 0
@@ -2209,6 +2233,14 @@ definition{
 }
 
 definition{
+  name: siluGradientStep,
+  parameters: [index : Nat, gradient : IndexContext, activation : IndexContext, destination : IndexContext],
+  result: GraphResponse,
+  body: (let element : Nat := (prim quotient index 6 0 : Nat); (let phase : Nat := (prim remainder index 6 0 : Nat); (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.elementary 17 0 0) (ctor WordOperand.source 1 (blockOffset element activation)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4) else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 1) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 1) 4 4) else (if (phase =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 1 (blockOffset element activation)) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 1) 4 4) else (if (phase =? 3) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.immediate 1065353216) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 1) 4 4) else (if (phase =? 4) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.source 0 (blockOffset element gradient)) (ctor WordOperand.scratch 0) (ctor WordTarget.scratch 0) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (ctor WordTarget.output (blockOffset element destination)) 4 4)))))))),
+  executable: true
+}
+
+definition{
   name: softmaxGradientStep,
   parameters: [index : Nat, width : Nat, scale : Nat],
   result: GraphResponse,
@@ -2246,6 +2278,7 @@ definition{
     | CopyMode.arithmetic kind unary right => (copyOffsets index source destination mode)
     | CopyMode.smallFloatCast sourceType destinationType => (smallFloatCastStep index source destination sourceType destinationType)
     | CopyMode.softmaxGradient scale => (softmaxGradientStep index (project source u0) scale)
+    | CopyMode.siluGradient activation => (siluGradientStep index source activation destination)
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
     | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)
     | CopyMode.transformed kind storage a b => (copyOffsets index source destination mode)

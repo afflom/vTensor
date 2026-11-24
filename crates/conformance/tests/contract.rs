@@ -361,6 +361,8 @@ ggml_batches! {
     #[test]
     fn softmax_gradient_vt_121() { "upstream-SOFTMAX_GRADIENT", 2, ["pointwise"] }
     #[test]
+    fn silu_gradient_vt_124() { "upstream-SILU_GRADIENT", 1, ["pointwise"] }
+    #[test]
     fn small_float_add_vt_120() { "upstream-SMALL_FLOAT_ADD", 6, ["typed", "pointwise"] }
     #[test]
     fn exponential_difference_vt_118() { "upstream-EXPM1", 12, ["pointwise"] }
@@ -1498,7 +1500,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "48108516ab9e27e40e35ad805bf372ab87e19822b93cc8f6e673ae0070758287",
+            "fc2c4475bdb252287ea87e009c06a428bf41fbefa216431b15be8bb8b10bd2a7",
         )
     });
 
@@ -1688,7 +1690,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 linker.arg(compiled_object(common, &input));
             }
             linker.arg(cache.join("driver.o"));
-            linker.arg(common.join(super::ggml_oracle::GGML_CORE));
+            let core = common.join(super::ggml_oracle::GGML_CORE);
+            verify_file(&core, core.with_extension("sha256"));
+            linker.arg(core);
             linker.args(
                 frontend
                     .into_iter()
@@ -1714,8 +1718,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let oracle = storage_oracle(root);
         let common = oracle.parent().unwrap();
-        let core = common.join(super::ggml_oracle::GGML_CORE);
-        verify_file(&core, core.with_extension("sha256"));
         let library = super::provider_library();
         static HOSTS: [std::sync::OnceLock<std::path::PathBuf>; 2] =
             [const { std::sync::OnceLock::new() }; 2];
