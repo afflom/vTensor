@@ -1,0 +1,56 @@
+{
+  "authority": "https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "upstream_files": [
+    "ggml/src/ggml.c",
+    "ggml/src/ggml-cpu/ops.cpp",
+    "ggml/src/ggml-cpu/ggml-cpu.c",
+    "ggml/include/ggml.h"
+  ],
+  "constructors": [
+    "ggml_map_custom1",
+    "ggml_map_custom2",
+    "ggml_map_custom3",
+    "ggml_map_custom1_inplace",
+    "ggml_map_custom2_inplace",
+    "ggml_map_custom3_inplace",
+    "ggml_custom_4d",
+    "ggml_custom_inplace"
+  ],
+  "thread_limits": [
+    "unconfigured",
+    1,
+    2,
+    4
+  ],
+  "task_requests": [
+    1,
+    2,
+    5,
+    -1
+  ],
+  "companion": [
+    "absent",
+    "ADD"
+  ],
+  "custom_arities": [
+    0,
+    1,
+    5,
+    9
+  ],
+  "cases": 416,
+  "result_words": 7072,
+  "task_transcript_columns": [
+    "family",
+    "arity",
+    "in_place",
+    "requested_tasks",
+    "limit_or_zero_for_default",
+    "parallel_add",
+    "observed_width",
+    "completed_worker_mask"
+  ],
+  "cpu_transcript_sha256": "0f013fed0de8e3d9b510c2ef2b7386adbb64abd1ff11e1e4274f25aaa909af39",
+  "example": "A single-task callback following ADD receives ith=0,1,2,3 and nth=4 at the default CPU setting. The same callback alone receives ith=0,nth=1.",
+  "initial_provider": "The provider at 01f852a refused the callback at preallocation. A candidate using one unconfigured worker diverged at transcript row 14."
+}

@@ -25,6 +25,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Bind all 93 resolved Verdant v2.21.0 archives to the release manifest. Match its six quotient packages to the producing certificate and reject a changed checksum. [Release comparison](verification/verdant-registry-closure.json)
 - [x] Verify the v2.21.0 and v2.21.1 releases in one Cargo cache using distinct index paths. All 93 archives per release matched. Q6_K and Q3_K matched GGML. [Release comparison](verification/verdant-versioned-registry.json)
 - [x] Confirm Verdant merged VTK-53. [Upstream merge](https://github.com/afflom/verdant-engine/commit/770b26a872939df32d1ad7ecdac3cf17633dad68)
+- [x] Merge the release-specific Cargo index publisher into Verdant. [Upstream integration](https://github.com/afflom/verdant-engine/commit/47ba77b62d75584e34533d6dbd2a6b9369c47cb7)
 - [ ] Pin the published VTK-53 crates through a release-specific sparse index and pass VT-02. [Verdant registry fix](https://github.com/afflom/verdant-engine/pull/53) · [Current patch pin](model/verdant-development.json)
 - [x] Move the 864 allocation inputs, 1,024 transfer inputs and 40 fixture queries to Prism. [Certificate and oracle results](VTENSOR-VERIFICATION.md#fixture-probes)
 - [x] Generate all 1,872 layout requests in Prism and retain the original input digest and independent GGML byte-span oracle. [VT-06 fixture evidence](VTENSOR-VERIFICATION.md#vt-06-layout-fixtures)
@@ -179,6 +180,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [x] Pass SGD and AdamW. Compare 3,264 weights, moments, gradients and padding words through three repeated updates. [VT-131](verification/factory-optimizer-updates-vt131.json)
 - [x] Import the pinned llama.cpp scheduler-delay oracle. Its four CPU controls passed timing, buffer aliasing and byte identity, including a chain of four delays. [Upstream timing test](vendor/llama.cpp-oracle/tests/test-sleep.cpp)
 - [x] Verify all three SLEEP factory cases and chained scheduler timing, aliasing and byte preservation. [VT-123](verification/factory-scheduler-delay-vt123.json)
+- [x] Measure callback task width on the pinned CPU across 416 graphs, including default threads, mixed graphs and all eight constructors. [Oracle record](verification/ggml-custom-callback-oracle.json)
 - [ ] Implement MAP_CUSTOM1/2/3 and CUSTOM. Verify callback inputs, task indices, user data, aliasing and observable completion against upstream.
 - [ ] Close every residual legal variant in the ledger, including partial families from VT-01–51. Cover strides, empty axes, broadcasting, overlapping views, precision and typed failures where applicable.
 
