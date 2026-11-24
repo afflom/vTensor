@@ -1,0 +1,108 @@
+{
+  "requirement": "VT-152",
+  "authority_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "case_ordinals": {
+    "SET_ROWS": [
+      1412,
+      1413,
+      1414,
+      1415,
+      1416,
+      1417,
+      1418,
+      1419,
+      1420,
+      1421,
+      1422,
+      1423,
+      1792,
+      1793,
+      1794,
+      1795,
+      1796,
+      1797,
+      1798,
+      1799,
+      1800,
+      1801,
+      1802,
+      1803
+    ],
+    "CPY": [
+      8491,
+      8492,
+      8549,
+      8550,
+      8607,
+      8608
+    ]
+  },
+  "passed": 30,
+  "verdant_revision": "957ea60b71eb84dd796112c9908d609c3f7462a1",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/60",
+  "typed_semantic_id": "4d4fce717f7856464da7ca39f436d177c3767a6bd4a00db2287d24dc5bad763a",
+  "oracle": "The pinned GGML factory constructs the graph and initializes all operands. GGML decodes the source. For SET_ROWS, the imported CPU scatters row numbers through the original indices. For each written row, ggml_quantize_chunk supplies the expected IQ2_XS bytes using explicit unit importance for every lane. The comparison includes untouched rows and padding.",
+  "factory_transcript_sha256": "03b69090fc056bce536a253254be5f668aa7f4a5d27f3b7bd222019dccc6cbad",
+  "continuous": {
+    "ordinals": [
+      1412,
+      8491
+    ],
+    "transcript_sha256": "1c74982925338e31dd25296d7425b95fad699c6aec4ed7c55e467fea8f476fe0",
+    "atomic_refusals": "A bad second index and a nonfinite second source row preserve the destination with I32 and I64 indices."
+  },
+  "additional_batches": [
+    {
+      "count": 10,
+      "transcript_sha256": "1e5999b9d55036cfecbb678a81228c487d4cdf4eae19276f95f5361c91a5b4a9",
+      "ordinals": [
+        1413,
+        1416,
+        1419,
+        1422,
+        1793,
+        1796,
+        1799,
+        1802,
+        8549,
+        8608
+      ]
+    },
+    {
+      "count": 9,
+      "transcript_sha256": "70e8fd31c72735e1b7f000d92405216e10f5c12c41865418c0e4b386c984290a",
+      "ordinals": [
+        1414,
+        1417,
+        1420,
+        1423,
+        1794,
+        1797,
+        1800,
+        1803,
+        8550
+      ]
+    },
+    {
+      "count": 9,
+      "transcript_sha256": "8e2dea338a04dba819454c73f87e1b98e226c00842b24718e8256323398ddb6d",
+      "ordinals": [
+        1415,
+        1418,
+        1421,
+        1792,
+        1795,
+        1798,
+        1801,
+        8492,
+        8607
+      ]
+    }
+  ],
+  "sweep_build": {
+    "provider_sha256": "7e44253ec399f9d547d4ce55416b0108437edb509ca758f147a77942931e8f4e",
+    "provider_sources_sha256": "fc5e52558292ae9b802a66c6f4514f70a6ff472d58e669f678f9a940f74cf102",
+    "oracle_sha256": "f3f639bf77164e9b102ddbd8c5b71a9e4f478cf38612ee0d1ea6114934e87b11"
+  },
+  "mutation": "Flipping a packed sign bit in each IQ2_XS block failed the original comparison. oracle mismatch type=17 width=256 rows=5 byte=3 actual=110 expected=108. The restored provider passed VT-152."
+}

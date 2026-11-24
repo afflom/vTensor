@@ -1040,7 +1040,7 @@ packed_formats! {
     13 => Grouped(GroupedFormat::AffineFive), GroupedAffineFive;
     14 => Grouped(GroupedFormat::SignedSix), GroupedSignedSix;
     16 => Grouped(GroupedFormat::Codebook(IndexedSigns));
-    17 => Grouped(GroupedFormat::Codebook(ExtendedIndex));
+    17 => Grouped(GroupedFormat::Codebook(ExtendedIndex)), ImportanceTwoParity;
     18 => Grouped(GroupedFormat::Codebook(FourLaneIndexedSigns)), ImportanceThreeCompact;
     19 => Grouped(GroupedFormat::Codebook(ShiftedGrid));
     20 => Symmetric(|w, a| linear::dot_encoded_symmetric_row(w, a, NonlinearFour)), NonlinearFour;
@@ -1340,7 +1340,7 @@ fn execute_word(
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
     use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode};
     use BackendError::InvalidTensor;
-    let vtensor_typed::Adt2::C0(count, capacity, ..) = &plan;
+    let vtensor_typed::Adt2::C0(count, capacity, importance, ..) = &plan;
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
     let (left, secondary) = (tensor.source(0).ok_or(InvalidTensor)?, tensor.source(1));
@@ -1357,6 +1357,9 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     let mut offsets = Vec::new();
     let mut encoded = Vec::new();
     let (TensorDescriptor::C0(.., span, _), lanes, _) = tensor_layout(tensor)?;
+    let uniform = importance
+        .map(|word| workspace(lanes as u64, f32::from_bits(word as u32)))
+        .transpose()?;
     let output = graph_tensor_region(tensor, span as usize)?;
     let mut values = workspace(if kind.is_some() { lanes as u64 } else { 0 }, 0.0)?;
     for index in 0..*count {
@@ -1370,7 +1373,12 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 let start = encoded.len();
                 encoded.try_reserve(tensor.nb[0])?;
                 encoded.resize(start + tensor.nb[0], 0);
-                linear::encode_weight_block(values.as_slice(), kind, &mut encoded[start..])?;
+                let block = &mut encoded[start..];
+                if let Some(weights) = uniform.as_deref() {
+                    linear::encode_importance_weight_block(&values, Some(weights), kind, block)?;
+                } else {
+                    linear::encode_weight_block(&values, kind, block)?;
+                }
                 offsets.try_reserve(1)?;
                 offsets.push(to);
             }

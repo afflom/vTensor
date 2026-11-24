@@ -240,7 +240,8 @@
     "upstream-IMPORTANCE_THREE_STORAGE": "1436 1484 8495 8503",
     "upstream-GATED_DELTA_BOUNDARIES": "27498 27499 27535 27540",
     "upstream-SSM_SCAN_BOUNDARIES": "10454 10462 10468 10474",
-    "upstream-IMPORTANCE_TWO_STORAGE": "1424 8493"
+    "upstream-IMPORTANCE_TWO_STORAGE": "1424 8493",
+    "upstream-PARITY_GRID_STORAGE": "1412 8491"
   },
   "factory_transcripts": {
     "upstream-AFFINE_WEIGHT_ROWS": "68508ede9e210dbd20d9b8f0aded72c6293510e32ccba50dded95ad82434c5a6",
@@ -334,7 +335,8 @@
     "upstream-IMPORTANCE_THREE_STORAGE": "50db803a4060a12556ef05b0c2c2f72571cf43324e476814605db223919e9efd",
     "upstream-GATED_DELTA_BOUNDARIES": "f55781416ef868c6e88b705e946c7b480d978b96466a9cd8fecd67a974081658",
     "upstream-SSM_SCAN_BOUNDARIES": "921d26fbd7df6b584b1a43c7a9b1507e2db56c7495a513fab3207fc73ea7b602",
-    "upstream-IMPORTANCE_TWO_STORAGE": "0d797c5a7ca97c3ff0c11f34d7523865958cd6a7fd00447ec01cb01ca9f34cdc"
+    "upstream-IMPORTANCE_TWO_STORAGE": "0d797c5a7ca97c3ff0c11f34d7523865958cd6a7fd00447ec01cb01ca9f34cdc",
+    "upstream-PARITY_GRID_STORAGE": "1c74982925338e31dd25296d7425b95fad699c6aec4ed7c55e467fea8f476fe0"
   },
   "fixed_matrix": {
     "columns": [
@@ -549,5 +551,49 @@
       "quotient-kernel.lock": "caf36e768a17d2f3f4dbbac79a9a1c5604e028cb1705f6dbb4f7900d493bdfcc"
     },
     "upstream_revision": "9712ac5f168a87508ff37f786294060487e8fed2"
+  },
+  "atomic_store_types": {
+    "SET_ROWS_SCALAR": [
+      1
+    ],
+    "Q8_STORAGE_WRITES": [
+      8
+    ],
+    "PARITY_GRID_STORAGE": [
+      17
+    ],
+    "IMPORTANCE_TWO_STORAGE": [
+      22
+    ],
+    "IMPORTANCE_THREE_STORAGE": [
+      18,
+      21
+    ],
+    "SIGN_WEIGHT_WRITES": [
+      41,
+      42
+    ],
+    "LOW_BIT_WRITES": [
+      2,
+      3,
+      6,
+      7
+    ],
+    "GROUPED_AFFINE_WRITES": [
+      10,
+      12,
+      13
+    ],
+    "GROUPED_SIX_WRITES": [
+      14
+    ],
+    "COMPACT_FLOAT_WRITES": [
+      39,
+      40
+    ],
+    "TERNARY_WEIGHT_WRITES": [
+      34,
+      35
+    ]
   }
 }

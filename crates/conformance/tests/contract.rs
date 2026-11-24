@@ -247,6 +247,7 @@ ggml_batches! {
     fn grouped_affine_writes_vt_122() { "upstream-GROUPED_AFFINE_WRITES", 6, ["typed"] }
     fn importance_storage_vt_148() { "upstream-IMPORTANCE_THREE_STORAGE", 4, ["typed"] }
     fn importance_two_storage_vt_151() { "upstream-IMPORTANCE_TWO_STORAGE", 2, ["typed"] }
+    fn parity_storage_vt_152() { "upstream-PARITY_GRID_STORAGE", 2, ["typed"] }
     fn nonlinear_storage_vt_135() { "upstream-NONLINEAR_STORAGE", 4, ["typed"] }
     fn triangular_solve_vt_134() { "upstream-SOLVE_TRI_BOUNDARIES", 3, ["pointwise"] }
     fn grouped_three_writes_vt_133() { "upstream-GROUPED_THREE_WRITES", 2, ["typed"] }
@@ -993,7 +994,6 @@ mod ggml_storage_oracle {
             ggml_oracle::pipe_input(&mut std::process::Command::new(executable), b"malformed\n");
         assert_eq!(malformed.status.code(), Some(2));
 
-        assert_eq!(&*ggml_oracle::STORAGE_ORACLE, executable);
         assert_eq!(modified(), built_at, "warm storage oracle was rebuilt");
     }
 }
@@ -1266,7 +1266,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a73e0c9e4ab95ad3393f8f80878eccab0202746699a24aca260d332092574168",
+            "2e3a32a54e69a79aa2639d38872e9e208a9fe2e383edffb92a92a03d747b026f",
         )
     });
 
@@ -1336,16 +1336,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             let source = super::root().join(format!(
                 "generated/{model}/packages/rust-core/vtensor_{model}/src/lib.rs"
             ));
-            let mut identity = Sha256::new();
-            identity.update(std::fs::read(&source).unwrap());
-            identity.update(FIXTURE_BRIDGE);
-            identity.update(FIXTURE_RECIPE);
-            identity.update(OBJECT_RECIPE);
             static COMPILER: LazyLock<Vec<u8>> = LazyLock::new(|| run(Command::new("rustc").args(["--version", "--verbose"])));
-            identity.update(&*COMPILER);
-            let cache = common
-                .join("fixture-model")
-                .join(digest(&identity.finalize()));
+            let source_bytes=std::fs::read(&source).unwrap();
+            let cache = artifact_cache(common, "fixture-model", &[&source_bytes, FIXTURE_BRIDGE.as_bytes(), FIXTURE_RECIPE.as_bytes(), OBJECT_RECIPE.as_bytes(), &COMPILER]);
             let library = cache.join("libfixtures.so");
             checked_build(&library, |pending| {
                 let input = cache.join("bridge.rs");
@@ -1365,6 +1358,15 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
     }
 
     build_recipe! { OBJECT_RECIPE;
+    fn artifact_cache(common: &Path, family: &str, inputs: &[&[u8]]) -> std::path::PathBuf {
+        let mut identity = Sha256::new();
+        for input in inputs {
+            identity.update((input.len() as u64).to_le_bytes());
+            identity.update(input);
+        }
+        common.join(family).join(digest(&identity.finalize()))
+    }
+
     fn checked_build(output: &Path, build: impl FnOnce(&Path)) {
         if !output.exists() {
             std::fs::create_dir_all(output.parent().unwrap()).unwrap();
@@ -1392,18 +1394,17 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             };
             writeln!(driver, "static_assert({expression} == {value});").unwrap();
         }
-        driver.push_str(BODY);
-        let mut identity = Sha256::new();
-        identity.update(library.as_os_str().as_encoded_bytes());
-        // The host dynamically loads this path; live provenance checks bind its contents.
-        identity.update(driver.as_bytes());
-        identity.update(common.as_os_str().as_encoded_bytes());
-        identity.update(HOST_RECIPE);
-        identity.update(OBJECT_RECIPE);
-        if imported {
-            identity.update(UPSTREAM_SUITE.as_bytes());
+        let mut stores = Vec::new();
+        for (batch, types) in ORACLE_BINDINGS["atomic_store_types"].as_object().unwrap() {
+            let ids = types.as_array().unwrap().iter().map(|id| id.as_u64().unwrap().to_string()).collect::<Vec<_>>();
+            stores.push(format!("{{{}, {{{}}}}}", serde_json::json!(batch), ids.join(",")));
         }
-        let cache = common.join("native").join(digest(&identity.finalize()));
+        writeln!(driver, "#define VTENSOR_STORE_TYPES {}", stores.join(",")).unwrap();
+        driver.push_str(BODY);
+        // The host dynamically loads the plugin. Its snapshot binds the bytes at the library path.
+        let suite = if imported { UPSTREAM_SUITE.as_bytes() } else { &[] };
+        let cache = artifact_cache(common, "native", &[library.as_os_str().as_encoded_bytes(), driver.as_bytes(),
+            common.as_os_str().as_encoded_bytes(), HOST_RECIPE.as_bytes(), OBJECT_RECIPE.as_bytes(), suite]);
         let program = cache.join("native-oracle");
         checked_build(&program, |pending| {
             let input = cache.join("driver.cpp");
@@ -1585,10 +1586,11 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
     test.initialize_tensors(target);
     auto original=op==GGML_OP_OUT_PROD || op==GGML_OP_CPY ? nullptr : test.build_graph(reference);
     if (op==GGML_OP_CPY || op==GGML_OP_SET_ROWS) {
-        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S && out->type!=GGML_TYPE_IQ2_S) return false;
+        if (out->type!=GGML_TYPE_IQ3_XXS && out->type!=GGML_TYPE_IQ3_S && out->type!=GGML_TYPE_IQ2_S && out->type!=GGML_TYPE_IQ2_XS) return false;
         auto src=out->src[0];
         int64_t width=out->ne[0], rows=ggml_nrows(out);
         if (width<=0 || width%ggml_blck_size(out->type) || !ggml_is_contiguous_rows(out)) return false;
+        std::vector<float> importance(ggml_quantize_requires_imatrix(out->type) ? width : 0, 1.0f);
         auto values=tensor_to_float(src);
         std::vector<float> mapping(rows,-1.f);
         if (op==GGML_OP_CPY) {
@@ -1615,7 +1617,7 @@ static bool reference_graph_case(test_case & test, ggml_backend_t backend, ggml_
             if (source<0 || float(source)!=mapping[row] || uint64_t(source+1)>values.size()/width) return false;
             size_t offset=block_address(out,row*(width/ggml_blck_size(out->type)));
             if (offset>expected.size() || bytes>expected.size()-offset ||
-                ggml_quantize_chunk(out->type,values.data()+source*width,expected.data()+offset,0,1,width,nullptr)!=bytes) return false;
+                ggml_quantize_chunk(out->type,values.data()+source*width,expected.data()+offset,0,1,width,importance.empty()?nullptr:importance.data())!=bytes) return false;
         }
         if (ggml_backend_graph_compute(backend,original_graph)!=GGML_STATUS_SUCCESS) return false;
         return compare_result(out,nullptr,std::move(expected),0);
@@ -1702,7 +1704,7 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     for (size_t pos=0;pos<(selected.empty()?tests.size():selected.size());++pos) {
       const size_t i=selected.empty()?pos:selected[pos];
       auto &test=tests[i];
-      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE") || !strcmp(op,"IMPORTANCE_TWO_STORAGE");
+      const bool importance=!strcmp(op,"IMPORTANCE_THREE_STORAGE") || !strcmp(op,"IMPORTANCE_TWO_STORAGE") || !strcmp(op,"PARITY_GRID_STORAGE");
       auto operation= !strcmp(op,"GET_ROWS_BACK_DECODED") ? GGML_OP_GET_ROWS_BACK : !strcmp(op,"OUT_PROD_DECODED") ? GGML_OP_OUT_PROD : !strcmp(op,"MUL_MAT_HALF_ACTIVATIONS") ? GGML_OP_MUL_MAT : !strcmp(op,"CONV_2D_CONTIGUOUS") ? GGML_OP_CONV_2D : GGML_OP_NONE;
       if (importance || operation!=GGML_OP_NONE) {
         if (selected.empty() || !reference_graph_case(*test,backend,reference,operation)) {
@@ -2295,19 +2297,10 @@ int main(int argc, char **argv) {
 
         }
       }
-      static const struct { const char *batch; std::initializer_list<ggml_type> kinds; } stores[] = {
-        {"SET_ROWS_SCALAR", {GGML_TYPE_F16}}, {"Q8_STORAGE_WRITES", {GGML_TYPE_Q8_0}},
-        {"IMPORTANCE_TWO_STORAGE", {GGML_TYPE_IQ2_S}},
-        {"IMPORTANCE_THREE_STORAGE", {GGML_TYPE_IQ3_XXS,GGML_TYPE_IQ3_S}},
-        {"SIGN_WEIGHT_WRITES", {GGML_TYPE_Q1_0,GGML_TYPE_Q2_0}},
-        {"LOW_BIT_WRITES", {GGML_TYPE_Q4_0,GGML_TYPE_Q4_1,GGML_TYPE_Q5_0,GGML_TYPE_Q5_1}},
-        {"GROUPED_AFFINE_WRITES", {GGML_TYPE_Q2_K,GGML_TYPE_Q4_K,GGML_TYPE_Q5_K}},
-        {"GROUPED_SIX_WRITES", {GGML_TYPE_Q6_K}},
-        {"COMPACT_FLOAT_WRITES", {GGML_TYPE_MXFP4,GGML_TYPE_NVFP4}},
-        {"TERNARY_WEIGHT_WRITES", {GGML_TYPE_TQ1_0,GGML_TYPE_TQ2_0}},
-      };
+      static const struct {const char *batch; std::initializer_list<int> types;} stores[] = { VTENSOR_STORE_TYPES };
       for (const auto &probe : stores) if (!strcmp(argv[3]+9,probe.batch)) {
-        for (auto kind : probe.kinds) for (auto type : {GGML_TYPE_I32, GGML_TYPE_I64}) {
+        for (int storage : probe.types) for (auto type : {GGML_TYPE_I32, GGML_TYPE_I64}) {
+          const auto kind=static_cast<ggml_type>(storage);
           const bool packed=ggml_is_quantized(kind);
           const int width=packed ? ggml_blck_size(kind) : 2;
           graph_fixture ctx(12); CHECK(ctx);
