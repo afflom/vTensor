@@ -114,7 +114,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x72d62ffe }]
+license-files = [{ path = "src/lib.rs", hash = 0x31d629cd }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"

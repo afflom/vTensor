@@ -1,0 +1,25 @@
+{
+  "requirement": "VT-209",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "595cb612ebd80eaa1dbfd52fe52b64a54c50b5f7",
+  "provider_sha256": "b18ff6e2faa19727e0ebc053212d0a0c026791f318fb86640d9a5f3bc8c42673",
+  "pointwise_attestation": "5dfc45c990198f5878468c3327cbcb4a475ad43c9f4aaee88006c7b8dd354225",
+  "semantic_id": "f0f6a3549bea35a7c369c58f600908295e18d920d75b6dccb848060079ec8f7f",
+  "oracle": "ggml-double-sums-oracle.json",
+  "placements": "ggml-reduction-placements.json",
+  "prior_placements": 5354,
+  "new_placements": 4,
+  "placed": 5358,
+  "unplaced": 8,
+  "recurring_graphs": 12,
+  "logical_outputs_compared": 30,
+  "comparison": "Compile the original OpenVINO reference ReduceSum<double> and original coordinate iterators. Check compensated sums across all axes and the innermost axis on dense and padded layouts, including cancellation at 2^53, subnormals, both zeros and infinities.",
+  "additional_axes": {
+    "graphs": 6,
+    "output_values": 15,
+    "table_sha256": "d3195ee4287cc78f4e219700078699738c50b8cfa405f4cc83b22bc395b1ae72",
+    "comparison": "Original OpenVINO compensated double reduction on empty columns, empty rows and nonempty two-plane inputs."
+  },
+  "negative_control": "The prior provider refused the first F64 SUM. Disabling binary64 sign inversion failed the external reference comparison. Restoring it passed.",
+  "non_prism_lines": 12521
+}

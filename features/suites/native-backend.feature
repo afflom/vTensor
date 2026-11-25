@@ -914,3 +914,9 @@ Feature: native-backend
     Given the pinned SoftFloat extended-precision equality and original GGML integer tally
     When either tensor stores signed I32, signed I64 or binary64 on dense or padded rows
     Then all 64-bit counts match the reference including adjacent integers above two to the fifty-third power
+
+  @VT-209 @build
+  Scenario: Accumulate binary64 tensor reductions with compensation
+    Given the imported OpenVINO reference, binary64 cancellation, subnormal values and infinities
+    When GGML requests SUM or SUM_ROWS on dense and offset padded tensors
+    Then every stored result matches the original reference over the same axes

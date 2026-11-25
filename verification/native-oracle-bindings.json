@@ -484,6 +484,7 @@
     "ggml-packed-log-oracle": "9f9503f322a0955d65a1d0208c51fc4c69ee51da07119dab69333412de3858d0",
     "ggml-wide-equality-oracle": "f04f162fe00271280b1eb77c8c37e9cf6c96653cc7c7b93d90415da69165d4ad",
     "ggml-stored-equality-oracle": "9981c81295e10c10f611b9dc16e4b92b435d63eda5b729c85c769cdc6279af68",
+    "ggml-double-sums-oracle": "329309232ab55df9dfb2521d5cd7f0ffe7cd4d1c39cea391ea5d509daf5854b3",
     "ggml-signed-sums-oracle": "477dafc506d93aa644d5ff4bd43378519b55fa9b505cfda94dc30b571a816314",
     "ggml-stored-reductions-oracle": "b02abeea20d6971a5e8adb36cc6e8a2a620cee3340e8818d0fa025ebea50d533"
   },
@@ -723,10 +724,12 @@
     "packed-log": "ggml-packed-log",
     "wide-equality": "ggml-wide-equality",
     "stored-equality": "ggml-stored-equality",
+    "double-sums": "ggml-double-sums",
     "signed-sums": "ggml-signed-sums",
     "stored-reductions": "ggml-stored-reductions"
   },
   "drivers": {
+    "double-sums": "stored-reductions",
     "signed-sums": "stored-reductions",
     "binary-widths": "scalar-casts",
     "signed64-widths": "scalar-casts",

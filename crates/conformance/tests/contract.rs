@@ -97,6 +97,7 @@ ggml_batches! {
     fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
     fn wide_equality_vt_208() { "wide-equality", 56, ["pointwise"] }
     fn stored_equality_vt_207() { "stored-equality", 132, ["pointwise"] }
+    fn double_sums_vt_209() { "double-sums", 12, ["pointwise"] }
     fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
@@ -1283,7 +1284,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "9423f5dd8bcb9a60a94f4e1e5925263c8b9fd72c0434bbda8b3618fcabaeafff",
+            "5af3a21c8b5a96729f9e41909634d9a5c4a8ed4b201a70afc672aa269493161a",
         )
     });
 
@@ -1465,8 +1466,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 &words
             }
             ("update", _) => &[],
-            _ if imported => ORACLE_BINDINGS["factory_inputs"][mode]
-                .as_str()
+            _ if imported => binding::<Option<&str>>(&["factory_inputs", mode])
                 .unwrap_or("")
                 .as_bytes(),
             _ => STORAGE_TYPES.as_bytes(),
