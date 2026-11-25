@@ -283,6 +283,7 @@ model does not sanction.
 | `VT-193` | `build` | The provider places every public GGML CAST storage pair and preserves the original conversion words |
 | `VT-194` | `build` | All GGML indexed row store types place on the provider and preserve selected rows and guard bytes |
 | `VT-195` | `build` | All registered GGML row gather storage types execute against the original selection and conversion oracles |
+| `VT-196` | `build` | Reshaped GGML copies preserve logical values and untouched backing storage across differing source and destination block widths |
 
 ## normalization-graphs
 

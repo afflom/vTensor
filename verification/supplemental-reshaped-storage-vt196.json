@@ -1,0 +1,20 @@
+{
+  "requirement": "VT-196",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-reshaped-storage-oracle.json",
+  "provider_sha256": "c6f0a1d856154de492178ac888c51538fdc08091417dcaecf6f0c63693a2028b",
+  "typed_attestation": "335ea9f5dc7f59f13d429caf5ccf548575f1c347bd886f8cd97cc2afaf166150",
+  "pointwise_attestation": "f4da89236011a92858f75de747196ac8cd094f8e6fec658ac938f176f3ddadf8",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "previous_placement_revision": "d160efa",
+  "previous_placement_report_revision": "4569ad1",
+  "previous_placements": 241,
+  "placed_descriptors": 2592,
+  "executed_new_graphs": 2351,
+  "logical_values_compared": 7222272,
+  "destination_bytes_compared": 12156144,
+  "recurring_graphs": 32,
+  "full_oracle_stream_sha256": "36ffd089b8d964700bcba3c0c9ad1440397621d2e396d9a2067082641194f281",
+  "negative_control": "Forcing each decoded source window to read from offset zero failed the destination backing-storage comparison. The restored provider passed all 2,351 previously unplaced cases and preserved every source allocation and destination guard.",
+  "non_prism_lines": 12538
+}

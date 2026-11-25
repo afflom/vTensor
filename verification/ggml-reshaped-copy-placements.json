@@ -1,12 +1,12 @@
 {
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_revision": "d160efa",
-  "provider_sha256": "49d2b6458cf0a5206b0625b94a9bbebb77b5faf7e8e21eb8da11028037eb0484",
+  "provider_sha256": "c6f0a1d856154de492178ac888c51538fdc08091417dcaecf6f0c63693a2028b",
   "scope": "GGML CPY over 3,072 elements, at three source blocks per row and two destination blocks per row. Each of the 36 by 36 storage pairs uses both dense operands and offset padded views. The original GGML scheduler splits each admitted graph before allocation on its sole vTensor backend.",
   "table": "ggml-reshaped-copy-placements.tsv.gz",
-  "table_sha256": "a1a6b1daa26ba5d28d616b4600d10202290ca3713fa7c680d3a6e0b517293c7a",
-  "uncompressed_sha256": "42cc05f5821e4bb48cf1598a400367d8e2c4abdcea217490c9988cb7f436b127",
+  "table_sha256": "0cc6e2d8c044b3f9521c29bac3067758a397ebf5c8677734939a853a995dad4c",
+  "uncompressed_sha256": "0c56508f1418c813e4a48e808266e19cb17ca160e1ec940c7b260f5b218343ab",
   "descriptors": 2592,
-  "placed": 241,
-  "unplaced": 2351
+  "placed": 2592,
+  "unplaced": 0,
+  "execution": "supplemental-reshaped-storage-vt196.json"
 }

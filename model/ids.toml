@@ -1242,3 +1242,9 @@ id = "VT-195"
 level = "build"
 suite = "native-backend"
 statement = "All registered GGML row gather storage types execute against the original selection and conversion oracles"
+
+[[id]]
+id = "VT-196"
+level = "build"
+suite = "native-backend"
+statement = "Reshaped GGML copies preserve logical values and untouched backing storage across differing source and destination block widths"

@@ -468,7 +468,8 @@
     "ggml-wide-native-binary-oracle": "a03e4848be37bcd595902f0e7037df5a7bdff22d24fe58b4046ff1d7f9918807",
     "ggml-staged-storage-cast-oracle": "cd18528f651f44b0938b257269e9017bda96e3fb8c61c6a64a616357e24493b1",
     "ggml-indexed-numeric-oracle": "ba6f7e35cc7ac0558d995d6efab7002a6c31bf58080d72545795879b82b2374e",
-    "ggml-numeric-gather-oracle": "b2944cbc33a18ed2a8850f99c25d24d54d4c50104cfe6fba596ba4f164d3dfd9"
+    "ggml-numeric-gather-oracle": "b2944cbc33a18ed2a8850f99c25d24d54d4c50104cfe6fba596ba4f164d3dfd9",
+    "ggml-reshaped-storage-oracle": "c6692804ae8146ab11be1b3035de1d62bbcc8125ad0c038fe43d37831be3ddcb"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -687,7 +688,8 @@
     "wide-native-binary": "ggml-wide-native-binary",
     "storage-cast": "ggml-staged-storage-cast",
     "indexed-numeric": "ggml-indexed-numeric",
-    "numeric-gather": "ggml-numeric-gather"
+    "numeric-gather": "ggml-numeric-gather",
+    "reshaped-storage": "ggml-reshaped-storage"
   },
   "drivers": {
     "binary-widths": "scalar-casts",

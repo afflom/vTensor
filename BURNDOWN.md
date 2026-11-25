@@ -4,15 +4,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Place the remaining 2,351 reshaped CPY descriptors and verify cross-row conversions and view guards. [Reshaped copies](verification/ggml-reshaped-copy-placements.json)
+- [ ] Place and oracle-check the remaining 3,988 OUT_PROD descriptors. [Outer-product survey](verification/ggml-outer-product-descriptors.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,990 non-Prism lines** (12,539 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,989 non-Prism lines** (12,538 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Adopt the Verdant release containing Q8 decoding and wide-word arithmetic. [Combined patch](https://github.com/afflom/verdant-engine/pull/67)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all **2,592** surveyed reshaped CPY descriptors. The final 2,351 graphs matched 12,156,144 destination bytes and preserved every source and view guard. [VT-196](verification/supplemental-reshaped-storage-vt196.json)
 
 - [x] Place all **36** GET_ROWS source types and all **180** indexed read/write tuples. The final six source types matched 12,288 gathered words across dense and padded views, including repeated indices. Matrix and attention certificates bind the same row model. [VT-195](verification/supplemental-numeric-gather-vt195.json)
 

@@ -938,9 +938,17 @@ fn decode_block(
 ) -> Result<(), BackendError> {
     let value = match kind {
         0 | 1 | 30 | 43 => decode_float(kind, load_word(source)?)?,
-        26 => linear::signed_word_f32(i32::from_ne_bytes(
-            source.try_into().map_err(BackendError::invalid)?,
-        ))?,
+        24..=28 => {
+            static READERS: [OnceLock<Result<ScalarCast, BackendError>>; 5] =
+                [const { OnceLock::new() }; 5];
+            let cast =
+                READERS[(kind - 24) as usize].get_or_init(|| ScalarCast::new(kind as c_int, 0));
+            f32::from_bits(
+                cast.as_ref()
+                    .map_err(|error| *error)?
+                    .apply(load_word(source)?)? as u32,
+            )
+        }
         _ => return Ok(linear::decode_storage_block(kind, source, output, stride)?),
     };
     *output.first_chunk_mut().ok_or(BackendError::OutOfBounds)? = value.to_ne_bytes();
@@ -971,7 +979,6 @@ impl ScalarCast {
 }
 
 struct TensorInput<'a> {
-    scalar_read: Option<ScalarCast>,
     block_lanes: usize,
     block_bytes: usize,
     bytes: &'a [u8],
@@ -991,7 +998,6 @@ impl<'a> TensorInput<'a> {
             unsafe { std::slice::from_raw_parts(graph_tensor_region(t, span)?, span) }
         };
         Ok(Self {
-            scalar_read: None,
             bytes,
             block_lanes,
             block_bytes,
@@ -1183,12 +1189,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = reserved(usize::try_from(visits).map_err(BackendError::overflow)?)?;
-    if !LANES.is_multiple_of(activations.block_lanes) {
-        return Err(InvalidTensor);
-    }
-    let stride = (LANES / activations.block_lanes)
-        .checked_mul(activations.nb[0])
-        .ok_or(Overflow)? as u64;
+    let stride = activations.block_stride(LANES)? as u64;
     let mut lanes = [0.0; LANES];
     let mut prepared = reserved(usize::try_from(blocks).map_err(BackendError::overflow)?)?;
     for (column, values) in (0..visits).zip(results.chunks_exact_mut(rows as usize)) {
@@ -1476,7 +1477,10 @@ fn execute_word(
 }
 
 fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
-    use vtensor_typed::Adt3::{C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as BinaryRow};
+    use vtensor_typed::Adt3::{
+        C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as BinaryRow, C8 as DecodeWindow,
+        C9 as EncodeWindow,
+    };
     use BackendError::InvalidTensor;
     let vtensor_typed::Adt2::C0(count, capacity, importance, operation, .., row_arithmetic, width) =
         &plan;
@@ -1486,16 +1490,11 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     use linear::RowRankingF32;
     // Word instructions can update their input in place. Only staged row conversion
     // retains an immutable input slice throughout the instruction loop.
-    let mut source = (*width != 0).then(|| TensorInput::new(left)).transpose()?;
-    let mut right = secondary
+    let source = (*width != 0).then(|| TensorInput::new(left)).transpose()?;
+    let right = secondary
         .filter(|_| *row_arithmetic)
         .map(TensorInput::new)
         .transpose()?;
-    for input in [&mut source, &mut right].into_iter().flatten() {
-        if (24..=28).contains(&input.ty) {
-            input.scalar_read = Some(ScalarCast::new(input.ty, 0)?);
-        }
-    }
     let pointer = |tensor, input: Option<&TensorInput>| match input {
         Some(input) => Ok(input.bytes.as_ptr().cast_mut()),
         None => graph_tensor_data(tensor),
@@ -1522,10 +1521,20 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         let instruction =
             vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
                 .map_err(BackendError::overflow)?;
+        let values = match instruction {
+            DecodeWindow(_, start, len) | EncodeWindow(start, _, len) => {
+                let end = start.checked_add(len).ok_or(BackendError::Overflow)?;
+                let end = usize::try_from(end).map_err(BackendError::overflow)?;
+                values.get_mut(start as usize..end).ok_or(InvalidTensor)?
+            }
+            _ => &mut values[..],
+        };
         match instruction {
-            Encode(from, to) | BinaryRow(from, _, to) => {
-                let source = source.as_ref().ok_or(InvalidTensor)?;
-                source.decode(from, &mut values)?;
+            DecodeWindow(from, ..) => source.as_ref().ok_or(InvalidTensor)?.decode(from, values)?,
+            Encode(from, to) | BinaryRow(from, _, to) | EncodeWindow(from, to, _) => {
+                if !matches!(instruction, EncodeWindow(..)) {
+                    source.as_ref().ok_or(InvalidTensor)?.decode(from, values)?;
+                }
                 if let BinaryRow(_, offset, _) = instruction {
                     let right = right.as_ref().ok_or(InvalidTensor)?;
                     right.decode(offset, &mut right_values)?;
@@ -1535,7 +1544,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 }
                 let row_start = encoded.len();
                 let row_bytes = (values.len() / lanes)
-                    .checked_mul(tensor.nb[0])
+                    .checked_mul(block_bytes)
                     .ok_or(BackendError::Overflow)?;
                 encoded.try_reserve(row_bytes)?;
                 for block_values in values.chunks_exact(lanes) {
@@ -1564,7 +1573,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                         }
                         _ => {
                             let kind = kind.ok_or(InvalidTensor)?;
-                            encoded.resize(start + tensor.nb[0], 0);
+                            encoded.resize(start + block_bytes, 0);
                             let block = &mut encoded[start..];
                             if let Some(weights) = uniform.as_deref() {
                                 linear::encode_importance_weight_block(
@@ -1578,7 +1587,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                             }
                         }
                     }
-                    if encoded.len() - start != tensor.nb[0] {
+                    if encoded.len() - start != block_bytes {
                         return Err(InvalidTensor);
                     }
                 }
@@ -2360,14 +2369,17 @@ mod attention {
             Ok(self.region(offset, N)?.try_into().unwrap())
         }
 
-        fn blocks(&self, offset: u64, lanes: usize) -> Result<&[u8], BackendError> {
+        pub(super) fn block_stride(&self, lanes: usize) -> Result<usize, BackendError> {
             if !lanes.is_multiple_of(self.block_lanes) {
                 return Err(InvalidTensor);
             }
-            let bytes = (lanes / self.block_lanes)
+            (lanes / self.block_lanes)
                 .checked_mul(self.nb[0])
-                .ok_or(Overflow)?;
-            self.region(offset, bytes)
+                .ok_or(Overflow)
+        }
+
+        fn blocks(&self, offset: u64, lanes: usize) -> Result<&[u8], BackendError> {
+            self.region(offset, self.block_stride(lanes)?)
         }
 
         pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {
@@ -2379,22 +2391,18 @@ mod attention {
             if !out.len().is_multiple_of(self.block_lanes) {
                 return Err(InvalidTensor);
             }
-            let mut at = offset;
             for (index, block) in out.chunks_exact_mut(self.block_lanes).enumerate() {
-                if index > 0 {
-                    at = at.checked_add(self.nb[0] as u64).ok_or(Overflow)?;
-                }
-                let encoded = self.region(at, self.block_bytes)?;
-                if let Some(cast) = &self.scalar_read {
-                    block[0] = f32::from_bits(cast.apply(super::load_word(encoded)?)? as u32);
-                } else {
-                    decode_block(
-                        self.ty as u64,
-                        encoded,
-                        float_bytes(block),
-                        size_of::<f32>(),
-                    )?;
-                }
+                let relative = index.checked_mul(self.nb[0]).ok_or(Overflow)?;
+                let encoded = self.region(
+                    offset.checked_add(relative as u64).ok_or(Overflow)?,
+                    self.block_bytes,
+                )?;
+                decode_block(
+                    self.ty as u64,
+                    encoded,
+                    float_bytes(block),
+                    size_of::<f32>(),
+                )?;
             }
             Ok(())
         }

@@ -836,3 +836,9 @@ Feature: native-backend
     Given dense or offset padded Q8, narrow signed, I64 and F64 source rows
     When GGML gathers repeated and permuted indices
     Then every floating output word matches the external oracle and an invalid late index preserves all output
+
+  @VT-196 @build
+  Scenario: Convert across incompatible logical row boundaries
+    Given dense or offset source and destination views with different row widths
+    When GGML copies mixed scalar and packed storage
+    Then every physical destination byte matches the external conversion and the source is preserved

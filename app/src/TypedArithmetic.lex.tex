@@ -39,7 +39,9 @@ inductive{
     {name: gated, fields: [Nat, Nat, Nat, Nat, Nat]},
     {name: rankRow, fields: [Nat, Nat, Nat, Nat, Bool]},
     {name: encodeBlock, fields: [Nat, Nat]},
-    {name: binaryRow, fields: [Nat, Nat, Nat]}
+    {name: binaryRow, fields: [Nat, Nat, Nat]},
+    {name: decodeWindow, fields: [Nat, Nat, Nat]},
+    {name: encodeWindow, fields: [Nat, Nat, Nat]}
   ]
 }
 
@@ -545,13 +547,54 @@ definition{
 }
 
 definition{
+  name: storedOffset,
+  parameters: [start : Nat, tensor : NormPlan::TensorDescriptor],
+  result: Nat,
+  body: (let row : Nat := (prim quotient start (project tensor n0) 0 : Nat);
+    (let batch : Nat := (prim quotient row (project tensor n1) 0 : Nat);
+    (let block : Nat := (prim quotient (prim remainder start (project tensor n0) 0 : Nat) (storeBlockLanes (project tensor ty)) 0 : Nat);
+    (TensorIndex::elementOffset block (prim remainder row (project tensor n1) 0 : Nat) (prim remainder batch (project tensor n2) 0 : Nat) (prim quotient batch (project tensor n2) 0 : Nat) (project tensor s0) (project tensor s1) (project tensor s2) (project tensor s3))))),
+  executable: true
+}
+
+definition{
+  name: castStorageLayout,
+  parameters: [tensor : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: (let kind : Nat := (project tensor ty);
+    (((0 <? (rowTargetWidth kind)) && ((rowTargetWidth kind) <=? (project tensor s0))) &&
+     ((prim remainder (project tensor n0) (storeBlockLanes kind) 1 : Nat) =? 0))),
+  executable: true
+}
+
+definition{
+  name: castOutputGroup,
+  parameters: [output : NormPlan::TensorDescriptor],
+  result: Nat,
+  body: (if ((project output s0) =? (rowTargetWidth (project output ty))) then (project output n0) else (storeBlockLanes (project output ty))),
+  executable: true
+}
+
+definition{
+  name: directCastWidth,
+  parameters: [left : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
+  result: Nat,
+  body: (if ((project output s0) =? (rowTargetWidth (project output ty))) then (castRowWidth left output) else 0),
+  executable: true
+}
+
+definition{
   name: blockCopyPlan,
   parameters: [left : NormPlan::TensorDescriptor, base : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
   result: Response,
-  body: (let width : Nat := (castRowWidth left output);
-    (if (((((destinationView base output) && (0 <? width)) && ((project left s0) =? (rowTargetWidth (project left ty)))) && ((project output s0) =? (rowTargetWidth (project output ty)))) && ((elements left) =? (elements output)))
-    then (ctor Response.planned (record Plan {steps := (prim quotient (elements left) width 0 : Nat), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := 33, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := base, output := output, rowArithmetic := false, stagedWidth := width}))
-    else (ctor Response.invalid))),
+  body: (let width : Nat := (directCastWidth left output);
+    (let size : Nat := (elements left);
+    (if (((((destinationView base output) && (size =? (elements output))) && (castStorageLayout left)) && (castStorageLayout output)) &&
+      ((packedTarget (project left ty)) || (packedTarget (project output ty))))
+    then (let count : Nat := (if (0 <? width) then (prim quotient size width 0 : Nat) else
+      ((prim quotient size (project left n0) 0 : Nat) + (prim quotient size (castOutputGroup output) 0 : Nat)));
+      (ctor Response.planned (record Plan {steps := count, capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := 33, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := base, output := output, rowArithmetic := false, stagedWidth := (if (0 <? width) then width else size)})))
+    else (ctor Response.invalid)))),
   executable: true
 }
 
@@ -559,15 +602,18 @@ definition{
   name: blockCopyStep,
   parameters: [index : Nat, execution : Plan],
   result: Response,
-  body: (if (index <? (project execution steps)) then
+  body: (let left : NormPlan::TensorDescriptor := (project execution left);
     (let output : NormPlan::TensorDescriptor := (project execution output);
-    (let start : Nat := (prim multiply index (project execution stagedWidth) : Nat);
-    (let row : Nat := (prim quotient start (project output n0) 0 : Nat);
-    (let batch : Nat := (prim quotient row (project output n1) 0 : Nat);
-    (let block : Nat := (prim quotient (prim remainder start (project output n0) 0 : Nat) (storeBlockLanes (project output ty)) 0 : Nat);
-    (ctor Response.encodeBlock (offset start (project execution left))
-      (TensorIndex::elementOffset block (prim remainder row (project output n1) 0 : Nat) (prim remainder batch (project output n2) 0 : Nat) (prim quotient batch (project output n2) 0 : Nat) (project output s0) (project output s1) (project output s2) (project output s3))))))))
-    else (ctor Response.invalid)),
+    (if (index <? (project execution steps)) then (let width : Nat := (directCastWidth left output);
+      (if (0 <? width) then (let start : Nat := (prim multiply index width : Nat);
+          (ctor Response.encodeBlock (storedOffset start left) (storedOffset start output))) else
+        (let rows : Nat := (prim quotient (project execution stagedWidth) (project left n0) 0 : Nat);
+        (if (index <? rows) then (let start : Nat := (prim multiply index (project left n0) : Nat);
+          (ctor Response.decodeWindow (storedOffset start left) start (project left n0))) else
+          (let group : Nat := (castOutputGroup output);
+          (let start : Nat := (prim multiply (prim subtract index rows : Nat) group : Nat);
+            (ctor Response.encodeWindow start (storedOffset start output) group)))))))
+    else (ctor Response.invalid)))),
   executable: true
 }
 
