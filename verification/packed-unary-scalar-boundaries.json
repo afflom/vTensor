@@ -1,0 +1,37 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "base_library_sha256": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+  "unary_source_sha256": "57a73a81b91473945040054a03bd921f1f77656d217e205cf8fd7f1e0acae7ad",
+  "vector_source_sha256": "7ad7cf31d4787fa9c112e087b929fff456761b97bd4e523d60d5a01ceb2409af",
+  "softfloat": {
+    "repository": "https://github.com/ucb-bar/berkeley-softfloat-3",
+    "commit": "07ebd29db0cfb55723a79fbbffe99103ef38e305",
+    "archive_sha256": "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34",
+    "format": "git-archive-tar-gzip",
+    "prefix": "softfloat/",
+    "specialization": "8086-SSE",
+    "rounding": "softfloat_round_near_even"
+  },
+  "reference": "The original CPU decoder produces each F32 input, the original GGML F32 graph produces each expected output, and the original encoder stores it. The table preserves the ten input and output row pairs whose existing stored results exceeded the GGML error limit.",
+  "scalar_comparison": {
+    "logarithm": "Arm optimized-routines portable scalar logf, compiled with -ffp-contract=off",
+    "arm_commit": "90f7e628875789235c1d97c3e2a738b9448c5424",
+    "arm_source": "https://github.com/ARM-software/optimized-routines/tree/90f7e628875789235c1d97c3e2a738b9448c5424/math",
+    "arm_library_sha256": "2433bfe4572d5d58a072a363daa8e82b8b54ba632e91e216eda088de69edaadf",
+    "other_operations": "System tanhf, nonpositive expm1f for ELU, log1pf(expf(x)) up to the softplus cutoff at 20, and sinf",
+    "libm_sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0",
+    "platform": "x86_64 glibc 2.39",
+    "operation_storage_pairs": 165,
+    "words_per_pair": 1024,
+    "compared_f32_words": 168960,
+    "different_f32_words": 0,
+    "different_encoded_buffers": 0
+  },
+  "table": "packed-unary-scalar-boundaries.tsv.gz",
+  "table_sha256": "f91c81c84a76dcfd782a1e4273d8183e92b0b978bd7d35e519edb1c76ccc47ed",
+  "uncompressed_sha256": "3a2c96fee6b2c09fdd30674299f50ddaab5b28a9eca14f5b81d40f003dee571b",
+  "full_rows_sha256": "9a8146c9c79676e47d4853d59370cceebfe33b26caf9fdca8fd04a3b45505df5",
+  "table_cases": 10,
+  "format": "Hexadecimal IEEE binary32 words in logical row order, eight digits per word. Variant numbers are the 22 GGML unary variants followed by SQR, SQRT, LOG, SIN and COS."
+}
