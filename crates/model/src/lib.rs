@@ -506,12 +506,11 @@ pub mod conformance {
             tests: &BTreeSet<String>,
         ) -> std::io::Result<HonestyReport> {
             let mut report = HonestyReport::default();
+            let issues = &mut report.violations;
             let model = match Model::load(&root.join("model")) {
                 Ok(m) => m,
                 Err(e) => {
-                    report
-                        .violations
-                        .push(format!("R1: the model does not load: {e}"));
+                    issues.push(format!("R1: the model does not load: {e}"));
                     return Ok(report);
                 }
             };
@@ -521,50 +520,42 @@ pub mod conformance {
             report.ids_checked = model.ids.id.len();
 
             let scenario_ids = suites.ids();
+            let by_id: std::collections::BTreeMap<_, _> =
+                model.ids.id.iter().map(|r| (r.id.as_str(), r)).collect();
 
             // R3, CM-02: every registered ID has a scenario, and a test named for it.
             for row in &model.ids.id {
-                if !scenario_ids.contains(row.id.as_str()) {
-                    report.violations.push(format!(
-                        "R3: {} is registered but has no scenario in features/suites/. Every \
-                 capability begins as a Gherkin scenario.",
-                        row.id
-                    ));
+                let id = &row.id;
+                if !scenario_ids.contains(id.as_str()) {
+                    issues.push(format!("R3: {id} has no scenario in features/suites/."));
                 }
-                let slug = row.id.to_lowercase().replace('-', "_");
+                let slug = id.to_lowercase().replace('-', "_");
                 if !tests.iter().any(|t| t.ends_with(&slug)) {
-                    report.violations.push(format!(
-                        "CM-02: {} is registered but no test name ends in `{slug}`. A claim with \
-                 no test is an assertion.",
-                        row.id
-                    ));
+                    issues.push(format!("CM-02: {id} has no test name ending in `{slug}`."));
                 }
             }
 
             // CM-02, the other direction: every scenario names a registered ID.
             for s in &suites.scenarios {
-                if model.ids.get(&s.id).is_none() {
-                    report.violations.push(format!(
-                        "CM-02: scenario `{}` in {} names `{}`, which is not in the register.",
-                        s.statement, s.suite, s.id
-                    ));
+                let id = &s.id;
+                let location = format!("scenario `{}` in {}", s.statement, s.suite);
+                match by_id.get(id.as_str()).map(|row| row.level.as_str()) {
+                    None => issues.push(format!("CM-02: {location} names unregistered ID `{id}`.")),
+                    Some(level) if level != s.level => {
+                        let tag = &s.level;
+                        issues.push(format!(
+                            "R2: {location} tags {id} as `{tag}`, registered as `{level}`."
+                        ));
+                    }
+                    _ => {}
                 }
                 if s.steps.is_empty() {
-                    report.violations.push(format!(
-                        "R3: scenario `{}` in {} has no steps. There are no pending steps.",
-                        s.statement, s.suite
-                    ));
+                    issues.push(format!("R3: {location} has no steps."));
                 }
-                // R2: the scenario's tag must agree with the register.
-                if let Some(row) = model.ids.get(&s.id) {
-                    if s.level != row.level.as_str() {
-                        report.violations.push(format!(
-                            "R2: {} is tagged `{}` in {} but `{}` in the register.",
-                            s.id,
-                            s.level,
-                            s.suite,
-                            row.level.as_str()
-                        ));
+                for step in &s.steps {
+                    let lower = step.to_lowercase();
+                    if lower.contains("pending") || lower.contains("todo") {
+                        issues.push(format!("R3: {location} has pending step `{step}`."));
                     }
                 }
             }
@@ -579,41 +570,36 @@ pub mod conformance {
             // by a name and by nothing else.
             //
             // Only prefixes the register already uses are checked, so a test whose name
-            // merely happens to end in two letters and two digits is not a claim.
-            let prefixes: BTreeSet<String> = model
-                .ids
-                .id
-                .iter()
-                .filter_map(|r| r.id.split('-').next().map(str::to_lowercase))
+            // merely happens to end in a suffix resembling a requirement is not a claim.
+            let prefixes: BTreeSet<_> = by_id
+                .keys()
+                .filter_map(|id| id.split_once('-').map(|(prefix, _)| prefix))
                 .collect();
             for name in tests {
-                let Some(tail) = name.rsplit("::").next() else {
+                let tail = name.rsplit("::").next().unwrap_or(name);
+                let mut parts = tail.rsplitn(3, '_');
+                let (Some(digits), Some(letters), Some(_)) =
+                    (parts.next(), parts.next(), parts.next())
+                else {
                     continue;
                 };
-                let parts: Vec<&str> = tail.rsplitn(3, '_').collect();
-                if parts.len() < 3 {
-                    continue;
-                }
-                let (digits, letters) = (parts[0], parts[1]);
-                if digits.len() != 2 || !digits.bytes().all(|b| b.is_ascii_digit()) {
-                    continue;
-                }
-                if letters.len() != 2 || !prefixes.contains(letters) {
+                if digits.len() < 2
+                    || !digits.bytes().all(|b| b.is_ascii_digit())
+                    || !prefixes.contains(letters.to_uppercase().as_str())
+                {
                     continue;
                 }
                 let id = format!("{}-{digits}", letters.to_uppercase());
-                if model.ids.get(&id).is_none() {
-                    report.violations.push(format!(
-                "CM-02: test `{name}` names `{id}`, which is not in the register. An ID                  that exists only in a test name has no scenario and no row in                  CONFORMANCE.md."
-            ));
+                if !by_id.contains_key(id.as_str()) {
+                    issues.push(format!(
+                        "CM-02: test `{name}` names `{id}`, which is not in the register."
+                    ));
                 }
             }
 
             // R2: an `open` claim must not be asserted as established, anywhere.
-            let open_ids: Vec<&str> = model
-                .ids
-                .id
-                .iter()
+            let open_ids: Vec<&str> = by_id
+                .values()
                 .filter(|r| r.level == Level::Open)
                 .map(|r| r.id.as_str())
                 .collect();
@@ -634,14 +620,14 @@ pub mod conformance {
                     };
                     let location = format!("R2: {doc}:{}", index + 1);
                     for id in open_ids.iter().filter(|id| line.contains(**id)) {
-                        report.violations.push(format!(
+                        issues.push(format!(
                             "{location}: `{id}` is an `open` claim --- measured and reported, never asserted --- but this line says `{word}`.\n    {}", line.trim()
                         ));
                     }
                     if checks_authorities {
                         for authority in &model.authorities.authority {
                             if line.contains(&authority.id) {
-                                report.violations.push(format!(
+                                issues.push(format!(
                                     "{location}: `{}` is cited, not established here, but this line says `{word}`.\n    {}", authority.id, line.trim()
                                 ));
                             }

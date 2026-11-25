@@ -902,3 +902,9 @@ Feature: native-backend
     Given the original OpenVINO ReduceSum for GGML's all-axis and row-axis translations
     When signed integer values cross their storage-width boundary in dense or padded views
     Then the sum matches the reference bytes and the input storage and padding are preserved
+
+  @VT-207 @build
+  Scenario: Count equal values across independently stored tensor rows
+    Given original GGML row decoders and the Berkeley SoftFloat equality oracle
+    When two independently padded tensors encode signed zeros, infinities, NaNs and repeated values
+    Then COUNT_EQUAL matches the original GGML tally and preserves both input buffers

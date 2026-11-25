@@ -6,15 +6,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Place and oracle-check the remaining 432 packed nonlinear unary descriptors. [Unary placements](verification/ggml-unary-provider-placements.json)
 - [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining nine measured packed nonlinear pairs (36 layouts) above the GGML error limit. [Packed outputs](verification/unary-quantization-boundaries.json) · [CPU arithmetic before encoding](verification/packed-unary-scalar-boundaries.json)
-- [ ] Place and oracle-check 5,192 remaining reduction and comparison descriptors (4 SUM, 8 SUM_ROWS and 5,180 COUNT_EQUAL). [Reduction survey](verification/ggml-reduction-placements.json)
+- [ ] Place and oracle-check 836 remaining reduction and comparison descriptors (4 SUM, 8 SUM_ROWS and 824 COUNT_EQUAL). [Reduction survey](verification/ggml-reduction-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,975 non-Prism lines** (12,524 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,974 non-Prism lines** (12,523 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Adopt the Verdant release containing the reference logarithm. v2.22.1 released the Q8 decoding and wide-word arithmetic. [Merged arithmetic](https://github.com/afflom/verdant-engine/commit/7167ed29e80ed0297a593eef01fc403249a0a674) · [Logarithm patch](https://github.com/afflom/verdant-engine/pull/68)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place mixed-storage **COUNT_EQUAL** across 33 types and four layouts. All 4,356 graphs matched the imported oracle across 4,460,544 element pairs. Keep 132 graphs in the recurring suite. [VT-207](verification/supplemental-stored-equality-vt207.json)
 
 - [x] Pin the logarithm to Verdant’s unified quotient certificate. VT-02 and VT-45 share one verification of the installed source and proof. [Upstream patch](https://github.com/afflom/verdant-engine/commit/69e23221ccbb85e4178ce883589a07f1fc066eeb)
 

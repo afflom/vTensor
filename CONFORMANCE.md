@@ -294,6 +294,7 @@ model does not sanction.
 | `VT-203` | `build` | Packed LOG executes through certified row projection and matches original GGML CPU logarithm and quantization |
 | `VT-205` | `build` | Stored MEAN and ARGMAX reduce independently decoded rows with the original GGML mean and last-maximum semantics |
 | `VT-206` | `build` | Signed integer SUM and SUM_ROWS preserve the declared storage width and match the original OpenVINO reduction selected by GGML |
+| `VT-207` | `build` | COUNT_EQUAL compares independently stored tensors with lossless binary32 operands and counts equal lanes using the imported GGML and SoftFloat oracles |
 
 ## normalization-graphs
 

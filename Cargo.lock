@@ -989,6 +989,7 @@ name = "vtensor-backend"
 version = "0.1.0"
 dependencies = [
  "repo-model",
+ "serde",
  "serde_json",
  "sha2",
  "toml",

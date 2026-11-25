@@ -211,7 +211,8 @@ inductive{
     {name: fullPrecisionProduct, fields: []},
     {name: invalidPrecision, fields: []},
     {name: storedUnary, fields: [Nat, IndexContext, CopyMode]},
-    {name: storedReduction, fields: [Nat, Nat, IndexContext, IndexContext, Nat, IndexContext, CopyMode]}
+    {name: storedReduction, fields: [Nat, Nat, IndexContext, IndexContext, Nat, IndexContext, CopyMode]},
+    {name: storedEquality, fields: [Nat, Nat, IndexContext, IndexContext, Nat, IndexContext, CopyMode]}
   ]
 }
 
@@ -934,6 +935,21 @@ definition{
 }
 
 definition{
+  name: equalRowInstruction,
+  parameters: [index : Nat, source : IndexContext],
+  result: GraphResponse,
+  body: (if (index =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.output 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 8 8)
+    else (if (index =? (1 + (prim multiply 3 (project source u0) : Nat))) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output 0) 8 8)
+    else (let lane : Nat := (prim subtract index 1 : Nat);
+      (let phase : Nat := (prim remainder lane 3 0 : Nat);
+      (let offset : Nat := (blockOffset (prim quotient lane 3 0 : Nat) source);
+        (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 0) (ctor WordOperand.source 0 offset) (ctor WordOperand.source 1 offset) (ctor WordTarget.scratch 1) 4 4)
+         else (if (phase =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 1) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 1) (ctor WordTarget.scratch 1) 4 4)
+               else (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 0) 8 8)))))))),
+  executable: true
+}
+
+definition{
   name: reducedOffsets,
   parameters: [
     index : Nat,
@@ -943,7 +959,7 @@ definition{
     storage : Nat
   ],
   result: GraphResponse,
-  body: (if (signedSumStorage storage) then (signedSumInstruction index source destination operation storage) else (if (operation =? 13) then (sumOffsets index source storage) else (let stride : Nat := (reductionRowSteps (project source u0) (operation =? 16)); (let row : Nat := (prim quotient index stride 0 : Nat); (let phase : Nat := (prim remainder index stride 0 : Nat); (let end : Nat := (1 + (prim multiply (project source u0) 2 : Nat)); (if (phase <? end) then (reductionRowInstruction phase row source 0) else (let target : Nat := (blockOffset row destination); (if (operation =? 14) then (ctor GraphResponse.word 2 1 1 2 0 3 target) else (if (phase =? end) then (ctor GraphResponse.word 2 1 1 2 0 1 1) else (if (phase =? (end + 1)) then (ctor GraphResponse.word 3 2 (project source u0) 2 0 1 2) else (ctor GraphResponse.word 5 1 1 1 2 3 target)))))))))))),
+  body: (if (operation =? 18) then (equalRowInstruction index source) else (if (signedSumStorage storage) then (signedSumInstruction index source destination operation storage) else (if (operation =? 13) then (sumOffsets index source storage) else (let stride : Nat := (reductionRowSteps (project source u0) (operation =? 16)); (let row : Nat := (prim quotient index stride 0 : Nat); (let phase : Nat := (prim remainder index stride 0 : Nat); (let end : Nat := (1 + (prim multiply (project source u0) 2 : Nat)); (if (phase <? end) then (reductionRowInstruction phase row source 0) else (let target : Nat := (blockOffset row destination); (if (operation =? 14) then (ctor GraphResponse.word 2 1 1 2 0 3 target) else (if (phase =? end) then (ctor GraphResponse.word 2 1 1 2 0 1 1) else (if (phase =? (end + 1)) then (ctor GraphResponse.word 3 2 (project source u0) 2 0 1 2) else (ctor GraphResponse.word 5 1 1 1 2 3 target))))))))))))),
   executable: true
 }
 
@@ -980,18 +996,46 @@ definition{
 }
 
 definition{
+  name: canonicalUnaryRow,
+  parameters: [width : Nat],
+  result: TensorDescriptor,
+  body: (let span : Nat := (prim multiply width 4 : Nat);
+    (record TensorDescriptor {ty := 0, n0 := width, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := span, s2 := span, s3 := span, span := span, address := 0})),
+  executable: true
+}
+
+
+definition{
+  name: losslessBinary32Storage,
+  parameters: [storage : Nat],
+  result: Bool,
+  body: (match (TensorTypes::tensorTypeStorage storage)
+    | TensorTypes::TypeStorageDecision.unknownType => false
+    | TensorTypes::TypeStorageDecision.knownType spec => (if ((26 <=? storage) && (storage <=? 28)) then false else true)),
+  executable: true
+}
+
+definition{
   name: planCountEqual,
-  parameters: [
-    left : TensorDescriptor,
-    right : (Option TensorDescriptor),
-    output : TensorDescriptor
-  ],
+  parameters: [left : TensorDescriptor, right : (Option TensorDescriptor), output : TensorDescriptor],
   result: PointwiseDecision,
   body: (match right
     | Option.none => (ctor PointwiseDecision.invalidShape)
-    | Option.some other => (let elements : Nat := (sourceElements (indexContext left 1)); (if ((((project left ty) =? 26) && ((project other ty) =? 26)) && ((project output ty) =? 27)) then (if ((((((sameShape left other) && ((project output n0) =? 1)) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) && (elements <? 9223372036854775808)) then (ctor PointwiseDecision.copyBlocks (2 + (prim multiply elements 2 : Nat)) 8 (indexContext left 1) (indexContext output 1) (ctor CopyMode.counted elements (indexContext other 1))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)))),
+    | Option.some other =>
+      (let integers : Bool := (((project left ty) =? 26) && ((project other ty) =? 26));
+      (let elements : Nat := (sourceElements (indexContext left 1));
+      (if (((project output ty) =? 27) && (integers || ((losslessBinary32Storage (project left ty)) && (losslessBinary32Storage (project other ty))))) then
+        (if ((((((sameShape left other) && ((project output n0) =? 1)) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) && (elements <? 9223372036854775808)) then
+          (if integers then (ctor PointwiseDecision.copyBlocks (2 + (prim multiply elements 2 : Nat)) 8 (indexContext left 1) (indexContext output 1) (ctor CopyMode.counted elements (indexContext other 1)))
+           else (let width : Nat := (project left n0);
+            (let rows : Nat := (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat);
+             (ctor PointwiseDecision.storedEquality rows width (indexContext left width) (indexContext other width)
+               (2 + (prim multiply 3 width : Nat)) (indexContext (canonicalUnaryRow width) 1) (ctor CopyMode.reduced 18 0)))))
+         else (ctor PointwiseDecision.invalidShape))
+       else (ctor PointwiseDecision.unsupported))))),
   executable: true
 }
+
 
 definition{
   name: countEqualOffsets,
@@ -1058,15 +1102,6 @@ definition{
   body: (if (((fillWordValid (project left ty) bits) && ((project left ty) =? (project output ty))) && (((((project left n0) =? (project output n0)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3)))) then (match (TensorTypes::tensorTypeStorage (project left ty))
     | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
     | TensorTypes::TypeStorageDecision.knownType spec => (ctor PointwiseDecision.copyBlocks (blockCount output 1) (project spec typeSize) (indexContext left 1) (indexContext output 1) (ctor CopyMode.constant (project left ty) bits))) else (ctor PointwiseDecision.invalidShape)),
-  executable: true
-}
-
-definition{
-  name: canonicalUnaryRow,
-  parameters: [width : Nat],
-  result: TensorDescriptor,
-  body: (let span : Nat := (prim multiply width 4 : Nat);
-    (record TensorDescriptor {ty := 0, n0 := width, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := span, s2 := span, s3 := span, span := span, address := 0})),
   executable: true
 }
 
@@ -1198,6 +1233,7 @@ definition{
     | PointwiseDecision.fullPrecisionProduct => (ctor PointwiseDecision.fullPrecisionProduct)
     | PointwiseDecision.invalidPrecision => (ctor PointwiseDecision.invalidPrecision)
     | PointwiseDecision.storedReduction rows width src dst steps row mode => (ctor PointwiseDecision.storedReduction rows width src dst steps row mode)
+    | PointwiseDecision.storedEquality rows width src dst steps row mode => (ctor PointwiseDecision.storedEquality rows width src dst steps row mode)
     | PointwiseDecision.storedUnary count row mode => (ctor PointwiseDecision.storedUnary count row mode)
     | PointwiseDecision.unsupported => (ctor PointwiseDecision.unsupported)
     | PointwiseDecision.convolution geometry => (ctor PointwiseDecision.convolution geometry)
@@ -5333,6 +5369,20 @@ theorem{
   name: emptySignedSumStillStoresZero,
   parameters: [],
   statement: (let row : IndexContext := (indexContext (canonicalUnaryRow 0) 1); ((signedSumSteps 13 row) = 2)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: equalityUsesTheSecondDecodedRow,
+  parameters: [],
+  statement: (let source : IndexContext := (indexContext (canonicalUnaryRow 2) 1); ((equalRowInstruction 4 source) = (ctor GraphResponse.instruction (ctor WordOperation.encoded 0) (ctor WordOperand.source 0 4) (ctor WordOperand.source 1 4) (ctor WordTarget.scratch 1) 4 4))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: equalityFinishesAnEmptyRowWithItsStartingCount,
+  parameters: [],
+  statement: (let source : IndexContext := (indexContext (canonicalUnaryRow 0) 1); ((equalRowInstruction 1 source) = (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output 0) 8 8))),
   proof: reflexivity{}
 }
 

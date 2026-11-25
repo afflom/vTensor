@@ -665,6 +665,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 Some(Box::new(RowProgram::Unary(program))),
             )
         }
+        GraphResponse::C0(plan @ GraphPlan::C11(..)) if !has_source_from(2) => {
+            Ok(Some(ExecutionPlan::Standard(plan)))
+        }
         GraphResponse::C0(plan @ GraphPlan::C10(..)) if !has_source_from(1) => {
             Ok(Some(ExecutionPlan::Standard(plan)))
         }
@@ -1596,7 +1599,7 @@ fn execute_typed(
                 }
                 if let Some(RowProgram::Unary(program)) = projection {
                     let row = values.as_mut_ptr().cast();
-                    project_words(program, row, row)?;
+                    project_words(program, &[row], row)?;
                 }
                 if let BinaryRow(_, offset, _) = instruction {
                     let right = right.as_ref().ok_or(InvalidTensor)?;
@@ -1690,35 +1693,56 @@ fn execute_typed(
 
 fn project_words(
     program: &GraphPlan,
-    source: *mut u8,
+    sources: &[*mut u8],
     output: *mut u8,
 ) -> Result<(), BackendError> {
     copy_steps(program, [0; 4], &mut [0; 3], |step, words| {
-        execute_word(step, &[source], output, words)
+        execute_word(step, sources, output, words)
     })
 }
 
 fn execute_stored_reduction(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     use BackendError::InvalidTensor;
-    tensor_fields!(GraphPlan::C10(rows, width, source, target, steps, row, mode) = plan);
+    use GraphPlan::{C10 as PerRow, C11 as Equal};
+    tensor_fields!(
+        (PerRow(rows, width, source, target, steps, row, mode)
+            | Equal(rows, width, source, target, steps, row, mode)) = plan
+    );
+    tensor_fields!([Some(left), right] = tensor.inputs()?);
+    let pair = right.is_some();
     let outer = GraphPlan::C4(rows, 4, source, target, CopyMode::C0);
     let inner = GraphPlan::C4(steps, 4, row.clone(), row, mode);
-    let input = TensorInput::new(tensor.source(0).ok_or(InvalidTensor)?)?;
     let output = graph_tensor_data(tensor)?;
-    let mut values = workspace(width, 0.0_f32)?;
-    let mut results = reserved(usize::try_from(rows).map_err(BackendError::overflow)?)?;
+    let lanes = if rows == 0 { 0 } else { width };
+    let mut values = workspace(lanes, 0.0_f32)?;
+    let mut rhs = workspace(if pair { lanes } else { 0 }, 0.0_f32)?;
+    let pointers = [values.as_mut_ptr().cast(), rhs.as_mut_ptr().cast()];
+    let count = if pair { 1 } else { rows };
+    let mut results = workspace(count, (0_u64, [0_u8; 8]))?;
+    let mut staged = results.iter_mut();
+    let mut total = [0_u8; 8];
     copy_steps(&outer, [0; 4], &mut [0; 3], |step, _| {
         tensor_fields!(GraphResponse::C1(false, from, to) = step);
-        input.decode(from, &mut values)?;
-        let mut word = 0_u32;
-        let result = ptr::from_mut(&mut word).cast();
-        project_words(&inner, values.as_mut_ptr().cast(), result)?;
-        results.push((to, word));
-        Ok(())
+        left.decode(from, &mut values)?;
+        let word = if let Some(input) = &right {
+            input.decode(to, &mut rhs)?;
+            &mut total
+        } else {
+            let (offset, word) = staged.next().ok_or(InvalidTensor)?;
+            *offset = to;
+            word
+        };
+        project_words(&inner, &pointers, word.as_mut_ptr())
     })?;
+    if pair {
+        results[0].1 = total;
+    }
     for (to, word) in results {
-        // SAFETY: Prism bounded each four-byte result and all reads have finished.
-        unsafe { output.add(to as usize).cast::<u32>().write_unaligned(word) };
+        let encoded = if pair { &word[..] } else { &word[..4] };
+        // SAFETY: all inputs have been read and Prism bounds the scalar or per-row result.
+        unsafe {
+            ptr::copy_nonoverlapping(encoded.as_ptr(), output.add(to as usize), encoded.len())
+        };
     }
     Ok(())
 }
@@ -1912,7 +1936,7 @@ fn execute_graph(backend: BackendPtr, nodes: &[TensorPtr]) -> Result<(), Backend
                 }
                 ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
-                ExecutionPlan::Standard(plan @ GraphPlan::C10(..)) => {
+                ExecutionPlan::Standard(plan @ (GraphPlan::C10(..) | GraphPlan::C11(..))) => {
                     execute_stored_reduction(&*tensor, plan)
                 }
                 ExecutionPlan::Standard(GraphPlan::C6(geometry)) => {

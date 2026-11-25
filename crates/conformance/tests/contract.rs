@@ -95,6 +95,7 @@ ggml_batches! {
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
+    fn stored_equality_vt_207() { "stored-equality", 132, ["pointwise"] }
     fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
@@ -384,9 +385,7 @@ fn buffer_allocation_vt_10() {
         vtensor_probes::Adt0::C2(c, o, s, a) => [c, o, s, a],
         _ => panic!("missing allocation case"),
     });
-    let edges: [([u64; 4], [u64; 4]); 10] =
-        serde_json::from_value(native_backend_oracle::ORACLE_BINDINGS["allocation_edges"].clone())
-            .unwrap();
+    let edges: [([u64; 4], [u64; 4]); 10] = native_backend_oracle::binding(&["allocation_edges"]);
     for ([capacity, offset, size, alignment], expected) in rows.chain(edges) {
         let actual = match vtensor_allocation::run(capacity, offset, size, alignment) {
             Ok(C3(at, padded, next)) => [0, at, padded, next],
@@ -1008,7 +1007,7 @@ mod ggml_storage_oracle {
         let executable = &*ggml_oracle::STORAGE_ORACLE;
         let fixture = &super::native_backend_oracle::ORACLE_BINDINGS["storage_probe"];
         let expected: [[u64; 3]; 6] =
-            serde_json::from_value(fixture["span_block_bytes"].clone()).unwrap();
+            super::native_backend_oracle::binding(&["storage_probe", "span_block_bytes"]);
         let modified = || std::fs::metadata(executable).unwrap().modified().unwrap();
         let built_at = modified();
         // Send the fixed probes and a duplex batch larger than the pipe capacity through one oracle process.
@@ -1200,13 +1199,12 @@ mod verdant_api {
                 .args(["-D", "--undefined-only", "--format=just-symbols"])
                 .arg(super::provider_library()),
         );
-        let allowed = super::native_backend_oracle::ORACLE_BINDINGS["allowed_ggml_host_imports"]
-            .as_array()
-            .expect("GGML host imports");
+        let allowed: std::collections::BTreeSet<&str> =
+            super::native_backend_oracle::binding(&["allowed_ggml_host_imports"]);
         let symbols = std::str::from_utf8(&listing).unwrap().lines();
         for symbol in symbols.filter(|s| s.starts_with("ggml_") || s.starts_with("gguf_")) {
             assert!(
-                allowed.iter().any(|s| s == symbol),
+                allowed.contains(symbol),
                 "unexpected provider import {symbol}"
             );
         }
@@ -1220,10 +1218,8 @@ mod verdant_api {
             assert_eq!(supportsF64Matmul4(f64_type, left_4x4, right_4x4), bits == 7);
         }
 
-        let [lhs, rhs, expected]: [[[f64; 4]; 4]; 3] = serde_json::from_value(
-            super::native_backend_oracle::ORACLE_BINDINGS["fixed_matrix"]["columns"].clone(),
-        )
-        .expect("pinned column-major GGML CPU fixture");
+        let [lhs, rhs, expected]: [[[f64; 4]; 4]; 3] =
+            super::native_backend_oracle::binding(&["fixed_matrix", "columns"]);
         assert_eq!(
             multiply_mat4_cols_exact(&lhs, &rhs).expect("Verdant matrix multiplication"),
             expected
@@ -1256,9 +1252,7 @@ fn buffer_transfer_vt_09() {
         _ => panic!("missing transfer case"),
     });
     // The imported unsigned-add guard can wrap. Preserve typed refusals at those boundaries.
-    let extremes: [([u64; 6], [u64; 1]); 4] =
-        serde_json::from_value(native_backend_oracle::ORACLE_BINDINGS["transfer_edges"].clone())
-            .unwrap();
+    let extremes: [([u64; 6], [u64; 1]); 4] = native_backend_oracle::binding(&["transfer_edges"]);
     for ([_, buffer, data, capacity, offset, size], [expected]) in rows.chain(extremes) {
         let decision = vtensor_transfer::run(buffer != 0, data != 0, capacity, offset, size);
         assert_eq!(outcome(decision), expected);
@@ -1272,6 +1266,11 @@ mod native_backend_oracle {
     use std::path::Path;
     use std::process::Command;
 
+    pub(super) fn binding<T: serde::Deserialize<'static>>(keys: &[&str]) -> T {
+        let value = keys.iter().fold(&*ORACLE_BINDINGS, |v, key| &v[*key]);
+        T::deserialize(value).unwrap()
+    }
+
     pub(super) fn frozen_json(name: &str, expected: &str) -> serde_json::Value {
         let bytes = std::fs::read(super::root().join(format!("verification/{name}.json"))).unwrap();
         assert_eq!(sha256_hex(&bytes), expected, "frozen {name} changed");
@@ -1283,7 +1282,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "dd46f7721c9aff1f7298ca94562a517bc074fc9f408324a3df9a260e743d9d17",
+            "0a1df075764d57fc161191347c98d145a0fb7ca8f3b65f1ba408babffa709f4c",
         )
     });
 
@@ -2003,12 +2002,19 @@ int main(int argc, char **argv) {
     return true;
 };
 
+    const bool equality=!strcmp(argv[3],"stored-equality");
     auto fixture_graph=[&](graph_fixture &ctx,ggml_tensor *out,std::initializer_list<ggml_tensor *> sources,bool check_placement=false) -> ggml_cgraph * {
         auto graph=ctx.allocate(out,backend,check_placement);
         if (!graph || (!check_placement && !ggml_backend_supports_op(backend,out))) return nullptr;
-        for(auto source:sources) if(source && !load_tensor_bytes(source)) return nullptr;
+        std::vector<std::vector<unsigned char>> saved;
+        for(auto source:sources) if(source){
+            if(!load_tensor_bytes(source)) return nullptr;
+            if(equality)saved.push_back(tensor_bytes(source));
+        }
         if(check_placement) ggml_backend_tensor_memset(out,0xff,0,ggml_nbytes(out));
-        return ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS?graph:nullptr;
+        if(ggml_backend_graph_compute(backend,graph)!=GGML_STATUS_SUCCESS)return nullptr;
+        if(equality && !std::equal(sources.begin(),sources.end(),saved.begin(),[](auto t,const auto &bytes){return tensor_bytes(t)==bytes;}))return nullptr;
+        return graph;
     };
     auto frozen_f32=[&](graph_fixture &ctx,ggml_tensor *out,std::initializer_list<ggml_tensor *> sources,bool exact) -> ggml_cgraph * {
         auto graph=fixture_graph(ctx,out,sources,true);
@@ -2017,12 +2023,18 @@ int main(int argc, char **argv) {
         return (exact?actual==expected:finite_f32_matches(actual,expected,false,false))?graph:nullptr;
     };
     const bool outer=!strcmp(argv[3],"mixed-outer");
-    if (outer || !strcmp(argv[3],"vector-swiglu")) {
+    if (outer || equality || !strcmp(argv[3],"vector-swiglu")) {
         int first,second,variant;
         while(scanf("%d%d%d",&first,&second,&variant)==3) {
             graph_fixture ctx(8);
             ggml_tensor *x,*y,*out;
-            if(outer) {
+            if(equality){
+                auto operand=[&](int kind,int pad,ggml_tensor *&base){
+                    const auto type=ggml_type(kind);base=ggml_new_tensor_2d(ctx,type,256+2*pad*ggml_blck_size(type),4);
+                    return pad?ggml_view_2d(ctx,base,256,4,base->nb[1],ggml_type_size(type)):base;
+                };
+                auto left=operand(first,variant&1,x),right=operand(second,variant>>1,y);out=ggml_count_equal(ctx,left,right);
+            } else if(outer) {
                 const int m=ggml_blck_size(ggml_type(first)),n=ggml_blck_size(ggml_type(second));
                 bool pad=variant==2,trans=variant==3,batch=variant==1;
                 x=ggml_new_tensor_4d(ctx,ggml_type(first),pad?2*m:m,3,2,1);

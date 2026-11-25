@@ -1308,3 +1308,9 @@ id = "VT-206"
 level = "build"
 suite = "native-backend"
 statement = "Signed integer SUM and SUM_ROWS preserve the declared storage width and match the original OpenVINO reduction selected by GGML"
+
+[[id]]
+id = "VT-207"
+level = "build"
+suite = "native-backend"
+statement = "COUNT_EQUAL compares independently stored tensors with lossless binary32 operands and counts equal lanes using the imported GGML and SoftFloat oracles"

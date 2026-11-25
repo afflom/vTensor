@@ -1,6 +1,6 @@
 {
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "e1cb6ca64269db31f05ae61c331f712d39c7d095db23023e7462382d69aacdf4",
+  "provider_sha256": "00e90a6416e2913c54460174cc673a6e607f360f7aa5b5e9ccb22f5674cd8f3f",
   "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
@@ -39,20 +39,21 @@
     },
     "COUNT_EQUAL": {
       "descriptors": 5184,
-      "placed": 4,
+      "placed": 4360,
       "direct_cpu": 4,
       "output_values_compared": 4
     }
   },
   "descriptors": 5366,
-  "placed": 174,
-  "unplaced": 5192,
+  "placed": 4530,
+  "unplaced": 836,
   "output_values_compared": 2082,
   "reference": "Call each original GGML constructor before allocation. Query both devices and split supported graphs using a vTensor-only GGML scheduler. For shapes and types supported by the original CPU kernel, compare all output bytes after execution on each backend.",
   "table": "ggml-reduction-placements.tsv.gz",
-  "table_sha256": "9cb544e77c1fad0058e351cd99936403bfc9f193b8d0f3f4d1efe89a60221c7a",
-  "uncompressed_sha256": "a84ef2ddae384a17f8847ea19388f15be15062fef3041ef7133b40762c38e587",
-  "provider_pointwise_attestation": "1162418c956af19d24b356cf5c67455a05785c6c66851a2f07f08d764b788c63",
+  "table_sha256": "a170974aed14719f42a925a9bfd2f1952fb6d3e500b4c6cbebb5a7a5bb2563d7",
+  "uncompressed_sha256": "f557dca17bb58a0192120ef7940eb63586416b394e7d0a5f9276ee6d3c5295ca",
+  "provider_pointwise_attestation": "f2d7d551b68e5c71d9f99b197a2bfae2a6433b4059dbc2de7c1be74fbba62ef7",
   "stored_outputs": "supplemental-stored-reductions-vt205.json",
-  "signed_sums": "supplemental-signed-sums-vt206.json"
+  "signed_sums": "supplemental-signed-sums-vt206.json",
+  "stored_equality": "supplemental-stored-equality-vt207.json"
 }

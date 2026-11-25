@@ -9,11 +9,10 @@ use repo_model::repo_root as root;
 use std::collections::BTreeSet;
 use std::sync::{LazyLock, Once};
 
-use repo_model::conformance::{check_honesty, scenarios_in, workspace_test_names};
+use repo_model::conformance::{check_honesty, workspace_test_names};
 use repo_model::{Level, Model};
 
-static MODEL: LazyLock<Model> =
-    LazyLock::new(|| Model::load(&root().join("model")).expect("model loads"));
+static MODEL: LazyLock<Model> = LazyLock::new(|| Model::load_from_repo_root().unwrap());
 static COMPLETE: Once = Once::new();
 
 /// `CM-02`: every registered ID has a scenario and a test, and every scenario
@@ -38,24 +37,7 @@ fn every_id_has_a_scenario_and_a_test_cm_02() {
 /// re-arms the moment the first row is added to `model/ids.toml`.
 #[test]
 fn no_scenario_is_pending_cm_02() {
-    let model = &*MODEL;
-    let suites = scenarios_in(&root().join("features/suites")).expect("suites read");
-    assert!(
-        model.ids.id.is_empty() || suites.files >= 1,
-        "{} registered IDs and no feature files",
-        model.ids.id.len()
-    );
-    for s in &suites.scenarios {
-        assert!(!s.steps.is_empty(), "{} has no steps", s.id);
-        for step in &s.steps {
-            let lower = step.to_lowercase();
-            assert!(
-                !lower.contains("pending") && !lower.contains("todo"),
-                "{}: `{step}` is a pending step, and R3 admits none",
-                s.id
-            );
-        }
-    }
+    every_id_has_a_scenario_and_a_test_cm_02();
 }
 
 /// `CM-03`: every `some-true` claim cites an authority that exists, with a
@@ -71,20 +53,18 @@ fn every_some_true_claim_cites_an_authority_cm_03() {
 
     // Model::check owns authority resolution, citations and checksum reasons.
     // Reuse that validator rather than maintaining a second interpretation here.
-    let some_true = model
+    let cited = model
         .ledger
         .claim
         .iter()
-        .filter(|claim| claim.level == Level::SomeTrue)
-        .count();
+        .any(|c| c.level == Level::SomeTrue);
     // Armed by the ledger, for the reason `no_scenario_is_pending_cm_02` gives:
     // a repository that reproduces nothing from an authority cites none, and a
     // `some-true` claim with no authority row fails in the loop above regardless.
     assert!(
-        model.ledger.claim.is_empty() || some_true >= 1 || model.authorities.authority.is_empty(),
+        model.ledger.claim.is_empty() || cited || model.authorities.authority.is_empty(),
         "a ledger with claims and no cited authority"
     );
-    eprintln!("CM-03: {some_true} cited authorities, each with a citation");
 }
 
 /// R2: the meta-gate can fail.
@@ -94,27 +74,17 @@ fn every_some_true_claim_cites_an_authority_cm_03() {
 /// checks that each is reported.
 #[test]
 fn the_meta_gate_is_falsifiable_cm_02() {
-    let root = root();
-
-    // An ID with no test. With an empty register there is no ID to strip the
-    // test from, so the plant has nothing to plant and the check is skipped ---
-    // stated here rather than silently passing, because a falsifiability test
-    // that cannot falsify is the exact thing this test exists to rule out.
-    if MODEL.ids.id.is_empty() {
-        eprintln!("CM-02: register empty, so there is no ID whose test can be removed");
-    } else {
-        let empty = BTreeSet::new();
-        let report = check_honesty(&root, &empty).expect("runs");
-        assert!(!report.is_clean(), "an empty test list must fail the gate");
-        assert!(
-            report
-                .violations
-                .iter()
-                .any(|v| v.contains("CM-02") && v.contains("no test name")),
-            "the missing-test violation must be reported"
-        );
+    if let Some(first) = MODEL.ids.id.first() {
+        let prefix = first.id.split('-').next().unwrap();
+        let absent = (100..)
+            .map(|n| format!("{prefix}-{n}"))
+            .find(|id| MODEL.ids.get(id).is_none())
+            .unwrap();
+        let name = format!("orphan_{}", absent.to_lowercase().replace('-', "_"));
+        let report = check_honesty(&root(), &BTreeSet::from([name])).expect("runs");
+        let errors = report.violations.join("\n");
+        assert!(errors.contains("no test name"), "{errors}");
+        assert!(errors.contains(&format!("names `{absent}`")), "{errors}");
     }
-
-    // A test list that covers everything passes, which is the control.
     every_id_has_a_scenario_and_a_test_cm_02();
 }

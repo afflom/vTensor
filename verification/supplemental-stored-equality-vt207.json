@@ -1,0 +1,30 @@
+{
+  "requirement": "VT-207",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "69e23221ccbb85e4178ce883589a07f1fc066eeb",
+  "provider_sha256": "00e90a6416e2913c54460174cc673a6e607f360f7aa5b5e9ccb22f5674cd8f3f",
+  "pointwise_attestation": "f2d7d551b68e5c71d9f99b197a2bfae2a6433b4059dbc2de7c1be74fbba62ef7",
+  "semantic_id": "ee1a79408c23d013ece697161cecc007afc88f003f5d864aec920ae90c3a74e8",
+  "oracle": "ggml-stored-equality-oracle.json",
+  "placements": "ggml-reduction-placements.json",
+  "prior_placements": 174,
+  "new_placements": 4356,
+  "placed": 4530,
+  "unplaced": 836,
+  "storage_pairs": 1089,
+  "layouts_per_pair": 4,
+  "logical_element_pairs": 4460544,
+  "recurring_graphs": 132,
+  "comparison": "The loaded provider matched all signed 64-bit counts. Input bytes and padding were preserved on both operands.",
+  "negative_controls": [
+    "The previous provider refused mixed storage. Substituting binary32 bit equality for numerical equality failed the external counts.",
+    "Reinstating two-digit-only registration matching missed a planted three-digit VT test and failed the registration regression."
+  ],
+  "stock_llama_perplexity": {
+    "fixture": "llama-perplexity-four-chunks.json",
+    "same_top_percent": 100,
+    "maximum_kld": 2.6e-05,
+    "log_sha256": "49c995cb468d105db37cca1028bdb2ff3fb987ccc5dbf29684bf6e441c7ded98"
+  },
+  "non_prism_lines": 12523
+}
