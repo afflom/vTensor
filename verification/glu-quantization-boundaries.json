@@ -1,0 +1,32 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "99767c459adb397fe5093fbec3a2978afcb8e26c",
+  "provider_sha256": "4e41d696390038308b73622e8a72fe0e912f5db782bfc52ac501293251d56dd9",
+  "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "base_library_sha256": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+  "softfloat_commit": "07ebd29db0cfb55723a79fbbffe99103ef38e305",
+  "softfloat_library_sha256": "72130c9f797fe79ba878c368bcf62dfc6e4e3e057103717da09db150dd2df48f",
+  "reference": "Decode original stored inputs through the GGML CPU codecs and SoftFloat scalar conversions, apply the original GGML F32 GLU graph, and encode the result with the original CPU storage codec. Independently run the same decoded F32 graph on vTensor and pass its results through the same original encoder and decoder to isolate arithmetic differences.",
+  "storage_operation_forms": 759,
+  "outputs_per_row": {
+    "concatenated": 256,
+    "split": 512
+  },
+  "rows_per_graph": 4,
+  "above_decoded_nmse_limit": 8,
+  "operation": "GGML_GLU_OP_GEGLU_QUICK",
+  "nmse_limit": 1e-07,
+  "maximum_nmse": 0.00375708824508,
+  "columns": [
+    "ggml_type",
+    "glu_op",
+    "form",
+    "left_bytes",
+    "right_bytes_or_dash",
+    "original_cpu_output_bytes",
+    "decoded_nmse"
+  ],
+  "table": "glu-quantization-boundaries.tsv.gz",
+  "table_sha256": "96a4912650f939d1f9e1e0dbfe994b2a1eb04ff6693b7577afb2f6c09960a089",
+  "uncompressed_sha256": "e9b316fec20bb736dfbdfe3367e2bec22ceff779fb14ff5ac0c312acdb30b2b0"
+}
