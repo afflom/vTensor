@@ -824,3 +824,9 @@ Feature: native-backend
     Given a source row from each live GGML storage type
     When a sole provider casts the rows to every remaining destination type
     Then the result matches the imported numerical decoders and destination encoders
+
+  @VT-194 @build
+  Scenario: Indexed stores convert F32 or F16 rows to the remaining scalar targets
+    Given I32 or I64 indices into dense storage or an offset padded view
+    When GGML scatters rows into signed or binary64 storage
+    Then the complete backing storage matches the imported scatter and conversion oracles

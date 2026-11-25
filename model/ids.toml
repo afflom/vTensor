@@ -1230,3 +1230,9 @@ id = "VT-193"
 level = "build"
 suite = "native-backend"
 statement = "The provider places every public GGML CAST storage pair and preserves the original conversion words"
+
+[[id]]
+id = "VT-194"
+level = "build"
+suite = "native-backend"
+statement = "All GGML indexed row store types place on the provider and preserve selected rows and guard bytes"

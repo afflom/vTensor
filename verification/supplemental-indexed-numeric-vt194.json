@@ -1,0 +1,24 @@
+{
+  "requirement": "VT-194",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "49d2b6458cf0a5206b0625b94a9bbebb77b5faf7e8e21eb8da11028037eb0484",
+  "typed_attestation": "b8bae9956fe9145f4bc47f25c8d33df0dbe1746637d03520305a57b76d36a6b7",
+  "pointwise_attestation": "ed17e3bfede1eae141e7fb42cc29591ed53ced8030aa56331e2b3590c630ab39",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "oracle": "ggml-indexed-numeric-oracle.json",
+  "survey": {
+    "table": "ggml-row-provider-placements.tsv",
+    "sha256": "54e674e2a03fd1259866201d5af5695a8b968edc85be96ba3476fb839ce6838c",
+    "indexed_store_placements": 144,
+    "indexed_gather_placements": 30
+  },
+  "new_store_tuples": 16,
+  "scheduler_graphs": 32,
+  "dense_graphs": 16,
+  "offset_padded_graphs": 16,
+  "stored_bytes_compared": 5472,
+  "late_index_refusals": 32,
+  "late_invalid_numeric_refusals": 24,
+  "negative_control": "The previous plugin refused graph admission. Flipping the low bit of I8 writes failed the external byte comparison. The restored plugin passed.",
+  "non_prism_lines": 12539
+}

@@ -281,6 +281,7 @@ model does not sanction.
 | `VT-191` | `build` | Wide mixed binary operands and wide division follow GGML binary32 promotion |
 | `VT-192` | `build` | Matching I64 and F64 binary operands retain native precision in sums differences and products |
 | `VT-193` | `build` | The provider places every public GGML CAST storage pair and preserves the original conversion words |
+| `VT-194` | `build` | All GGML indexed row store types place on the provider and preserve selected rows and guard bytes |
 
 ## normalization-graphs
 

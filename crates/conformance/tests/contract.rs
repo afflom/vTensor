@@ -94,6 +94,7 @@ ggml_batches! {
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
+    fn numeric_indexed_rows_vt_194() { "indexed-numeric", 32, ["typed", "pointwise"] }
     fn signed_indexed_rows_vt_168() { "integer-rows", 8, ["typed"] }
     fn activation_q8_stores_vt_167() { "activation-q8", 20, ["typed"] }
     fn narrow_wide_casts_vt_166() { "wide-narrow", 944, ["pointwise"] }
@@ -1283,7 +1284,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "2f72409970e418c4489b7d7059a6b322ae3ed1f39eaace8b5958680a51ee10a8",
+            "c386d2052685e0674d6d7db7f065bff9851683fcd7c6dfcc067ace805b72a0c4",
         )
     });
 
@@ -1898,8 +1899,7 @@ size_t block_address(const ggml_tensor *tensor, size_t ordinal) {
 }
 static std::vector<unsigned char> read_hex_bytes(size_t count) {
     std::vector<unsigned char> bytes(count);
-    const auto read=[](unsigned char &byte){return scanf("%2hhx",&byte)==1;};
-    if (!std::all_of(bytes.begin(),bytes.end(),read)) return {};
+    if (!std::all_of(bytes.begin(),bytes.end(),[](unsigned char &b){return scanf("%2hhx",&b)==1;})) return {};
     return bytes;
 }
 static bool load_tensor_bytes(ggml_tensor *tensor) {
@@ -2357,7 +2357,7 @@ int main(int argc, char **argv) {
         }
         return finish(cases);
     }
-    const bool integer_rows=!strcmp(argv[3],"integer-rows");
+    const bool integer_rows=!strcmp(argv[3],"integer-rows") || !strcmp(argv[3],"indexed-numeric");
     if (integer_rows || !strcmp(argv[3],"activation-q8")) {
         size_t cases=0; int from,to,width,variant;
         while(scanf("%d%d%d%d",&from,&to,&width,&variant)==4) {
@@ -2378,8 +2378,10 @@ int main(int argc, char **argv) {
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(storage)==expected);
                 set_scalar_word(idx,1,0);
             }
-            ggml_set_f32_1d(src,2*width-1,NAN);
-            CHECK(refuses_poisoned_output(backend,graph,storage));
+            if (to!=GGML_TYPE_F64) {
+                ggml_set_f32_1d(src,2*width-1,NAN);
+                CHECK(refuses_poisoned_output(backend,graph,storage));
+            }
             ++cases;
         }
         return finish(cases);
@@ -2404,7 +2406,6 @@ int main(int argc, char **argv) {
                 for (size_t i=0;i<inputs.size();++i) set_scalar_word(input,i,inputs[i]);
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
                 auto actual=tensor_bytes(out);
-                std::vector<uint8_t> oracle(actual.size(),0xa5);
                 for (size_t i=0;i<expected.size();++i) {
                     size_t offset=(padded?ggml_type_size(ggml_type(to)):0)+block_address(result,i);
                     uint64_t word=0;
@@ -2412,9 +2413,9 @@ int main(int argc, char **argv) {
                     const uint64_t magnitude=UINT64_MAX >> (65-8*result->nb[0]);
                     const auto nan=[&](uint64_t bits) {return infinity && (bits&magnitude)>infinity;};
                     CHECK(word==expected[i] || (nan(word) && nan(expected[i])));
-                    for (size_t j=0;j<result->nb[0];++j) oracle.at(offset+j)=actual.at(offset+j);
+                    std::fill_n(actual.begin()+offset,result->nb[0],0xa5);
                 }
-                CHECK(oracle==actual);
+                CHECK(std::all_of(actual.begin(),actual.end(),[](uint8_t byte){return byte==0xa5;}));
                 for (uint64_t word:invalid) {
                     set_scalar_word(input,inputs.size()-1,word);
                     CHECK(refuses_poisoned_output(backend,graph,out));
@@ -2957,12 +2958,11 @@ int main(int argc, char **argv) {
             }
             if (ggml_blck_size(type)>1) refusal_check(refuses_change(backend,dev,graph,result,input->nb[0],ggml_type_size(type)-1),"short-block-stride");
             }
-            const std::vector<unsigned char> untouched(expected.size(),0xA5);
             for (int32_t bad : {indexed?-2:-1,3}) {
               ggml_backend_tensor_memset(result,0xA5,0,expected.size());
               ggml_backend_tensor_set(indices,&bad,indexed?2*indices->nb[0]+indices->nb[1]:ggml_nbytes(indices)-4,4);
               refusal_check(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED,"late-invalid-index");
-              refusal_check(compare_result(result,nullptr,untouched,0),"atomic-index-refusal");
+              refusal_check(tensor_bytes(result)==expected,"atomic-index-refusal");
             }
           }
           cases++;

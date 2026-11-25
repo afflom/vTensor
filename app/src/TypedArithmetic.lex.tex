@@ -490,9 +490,9 @@ definition{
   name: rowTargetWidth,
   parameters: [kind : Nat],
   result: Nat,
-  body: (if (packedTarget kind) then (match (TensorTypes::tensorTypeStorage kind)
+  body: (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.knownType spec => (project spec typeSize)
-    | TensorTypes::TypeStorageDecision.unknownType => 0) else (if (kind =? 26) then 4 else (binaryWordBytes kind))),
+    | TensorTypes::TypeStorageDecision.unknownType => 0),
   executable: true
 }
 
@@ -529,16 +529,6 @@ definition{
 }
 
 definition{
-  name: rowResultWidth,
-  parameters: [ty : Nat],
-  result: Nat,
-  body: (if ((24 <=? ty) && (ty <=? 28)) then (match (TensorTypes::tensorTypeStorage ty)
-    | TensorTypes::TypeStorageDecision.knownType spec => (project spec typeSize)
-    | TensorTypes::TypeStorageDecision.unknownType => 0) else (rowTargetWidth ty)),
-  executable: true
-}
-
-definition{
   name: castRowWidth,
   parameters: [left : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
   result: Nat,
@@ -559,7 +549,7 @@ definition{
   parameters: [left : NormPlan::TensorDescriptor, base : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
   result: Response,
   body: (let width : Nat := (castRowWidth left output);
-    (if (((((destinationView base output) && (0 <? width)) && ((project left s0) =? (rowResultWidth (project left ty)))) && ((project output s0) =? (rowResultWidth (project output ty)))) && ((elements left) =? (elements output)))
+    (if (((((destinationView base output) && (0 <? width)) && ((project left s0) =? (rowTargetWidth (project left ty)))) && ((project output s0) =? (rowTargetWidth (project output ty)))) && ((elements left) =? (elements output)))
     then (ctor Response.planned (record Plan {steps := (prim quotient (elements left) width 0 : Nat), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := 33, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := base, output := output, rowArithmetic := false, stagedWidth := width}))
     else (ctor Response.invalid))),
   executable: true
@@ -585,7 +575,7 @@ definition{
   name: indexedStoreWidth,
   parameters: [kind : Nat],
   result: Nat,
-  body: (if ((packedTarget kind) || (kind =? 26)) then (storeBlockLanes kind) else 0),
+  body: (if ((packedTarget kind) || ((24 <=? kind) && (kind <=? 28))) then (storeBlockLanes kind) else 0),
   executable: true
 }
 
@@ -719,7 +709,7 @@ definition{
   body: (let ty : Nat := (project rhs ty);
     (if ((left =? output) || ((kind =? 0) && (((ty =? 0) || (packedTarget output)) || (rowScalarOutput output)))) then
       ((((rowScalarOutput ty) || (packedTarget ty)) &&
-        ((project rhs s0) =? (rowResultWidth ty))) && ((prim remainder (project rhs n0) (storeBlockLanes ty) 1 : Nat) =? 0))
+        ((project rhs s0) =? (rowTargetWidth ty))) && ((prim remainder (project rhs n0) (storeBlockLanes ty) 1 : Nat) =? 0))
       else false)),
   executable: true
 }
@@ -739,7 +729,7 @@ definition{
   name: rowArithmeticPlan,
   parameters: [kind : Nat, left : NormPlan::TensorDescriptor, rhs : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
   result: Response,
-  body: (if (((((((((((((((project left n0) =? (project rhs n0)) || ((project left ty) =? (project output ty))) && (repeatValid left rhs)) && (NormPlan::sameShape left output)) && (rightRowAdmitted kind (project left ty) rhs (project output ty))) && (rowSourceStorage (project left ty) (project output ty))) && (0 <? (rowResultWidth (project output ty)))) && ((project left s0) =? (rowResultWidth (project left ty)))) && ((project output s0) =? (rowResultWidth (project output ty)))) && ((prim remainder (project left n0) (storeBlockLanes (project left ty)) 1 : Nat) =? 0)) && ((prim remainder (project output n0) (storeBlockLanes (project output ty)) 1 : Nat) =? 0)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) && (RmsNormalization::nestedRows (prim multiply (prim quotient (project output n0) (storeBlockLanes (project output ty)) 0 : Nat) (project output s0) : Nat) (project output n1) (project output n2) (project output n3) (project output s1) (project output s2) (project output s3))) then
+  body: (if (((((((((((((((project left n0) =? (project rhs n0)) || ((project left ty) =? (project output ty))) && (repeatValid left rhs)) && (NormPlan::sameShape left output)) && (rightRowAdmitted kind (project left ty) rhs (project output ty))) && (rowSourceStorage (project left ty) (project output ty))) && (0 <? (rowTargetWidth (project output ty)))) && ((project left s0) =? (rowTargetWidth (project left ty)))) && ((project output s0) =? (rowTargetWidth (project output ty)))) && ((prim remainder (project left n0) (storeBlockLanes (project left ty)) 1 : Nat) =? 0)) && ((prim remainder (project output n0) (storeBlockLanes (project output ty)) 1 : Nat) =? 0)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) && (RmsNormalization::nestedRows (prim multiply (prim quotient (project output n0) (storeBlockLanes (project output ty)) 0 : Nat) (project output s0) : Nat) (project output n1) (project output n2) (project output n3) (project output s1) (project output s2) (project output s3))) then
     (ctor Response.planned (record Plan {steps := (if (empty left) then 0 else (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat)), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := kind, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := rhs, output := output, rowArithmetic := true, stagedWidth := (project left n0)}))
     else (ctor Response.invalid)),
   executable: true
@@ -1183,6 +1173,13 @@ theorem{
   name: wideToPackedStagesOneLogicalRow,
   parameters: [],
   statement: ((castRowWidth (record NormPlan::TensorDescriptor {ty := 27, n0 := 256, n1 := 2, n2 := 1, n3 := 1, s0 := 8, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0}) (record NormPlan::TensorDescriptor {ty := 15, n0 := 256, n1 := 2, n2 := 1, n3 := 1, s0 := 292, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0})) = 256),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: indexedWideAndNarrowStoresUseTheirDeclaredWordWidths,
+  parameters: [],
+  statement: ((((((rowTargetWidth 24) =? 1) && ((rowTargetWidth 25) =? 2)) && (((rowTargetWidth 27) =? 8) && ((rowTargetWidth 28) =? 8))) && ((indexedStoreWidth 28) =? 1)) = true),
   proof: reflexivity{}
 }
 

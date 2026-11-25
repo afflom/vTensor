@@ -1,0 +1,19 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "softfloat": {
+    "repository": "https://github.com/ucb-bar/berkeley-softfloat-3",
+    "commit": "07ebd29db0cfb55723a79fbbffe99103ef38e305",
+    "archive_sha256": "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34",
+    "format": "git-archive-tar-gzip",
+    "prefix": "softfloat/",
+    "specialization": "8086-SSE",
+    "rounding": "softfloat_round_near_even"
+  },
+  "softfloat_library_sha256": "72130c9f797fe79ba878c368bcf62dfc6e4e3e057103717da09db150dd2df48f",
+  "words_sha256": "75eb9e9467437889aca431c542f1bb253b8ef9474c7522fb1b9e13604f959842",
+  "compression": "gzip",
+  "graphs": 32,
+  "reference": "Original GGML CPU SET_ROWS scatters exact lane identifiers into aligned or offset F32 storage with I32 or I64 indices. Read stored F16 and F32 source values with GGML and substitute the corresponding SoftFloat conversion at each selected destination. Unselected bytes retain their original sentinel."
+}
