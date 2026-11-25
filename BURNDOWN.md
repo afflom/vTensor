@@ -5,6 +5,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 ## Remaining work
 
 - [ ] Place the final 12 binary descriptors. Preserve native precision for matching I64 and F64 ADD, SUB and MUL, including in-place execution. [Descriptor map](verification/ggml-binary-type-descriptors.json)
+- [ ] Implement and oracle-check the remaining 1,082 public CAST pairs. A sole vTensor scheduler places 214 of 1,296 pairs. [CAST placements](verification/ggml-cast-provider-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
