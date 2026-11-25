@@ -665,6 +665,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 Some(Box::new(RowProgram::Unary(program))),
             )
         }
+        GraphResponse::C0(plan @ GraphPlan::C10(..)) if !has_source_from(1) => {
+            Ok(Some(ExecutionPlan::Standard(plan)))
+        }
         GraphResponse::C0(GraphPlan::C8) => Err(InvalidTensor),
         GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..) | GraphPlan::C6(..))) => {
             Ok(Some(ExecutionPlan::Standard(plan)))
@@ -1593,9 +1596,7 @@ fn execute_typed(
                 }
                 if let Some(RowProgram::Unary(program)) = projection {
                     let row = values.as_mut_ptr().cast();
-                    copy_steps(program, [0; 4], &mut [0; 3], |step, words| {
-                        execute_word(step, &[row], row, words)
-                    })?;
+                    project_words(program, row, row)?;
                 }
                 if let BinaryRow(_, offset, _) = instruction {
                     let right = right.as_ref().ok_or(InvalidTensor)?;
@@ -1683,6 +1684,41 @@ fn execute_typed(
         // SAFETY: Prism bounded each complete block in the destination. All reads and
         // numerical conversions have finished, including any overlapping source views.
         unsafe { write_row(output.add(offset as usize), &encoded[range]) };
+    }
+    Ok(())
+}
+
+fn project_words(
+    program: &GraphPlan,
+    source: *mut u8,
+    output: *mut u8,
+) -> Result<(), BackendError> {
+    copy_steps(program, [0; 4], &mut [0; 3], |step, words| {
+        execute_word(step, &[source], output, words)
+    })
+}
+
+fn execute_stored_reduction(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
+    use BackendError::InvalidTensor;
+    tensor_fields!(GraphPlan::C10(rows, width, source, target, steps, row, mode) = plan);
+    let outer = GraphPlan::C4(rows, 4, source, target, CopyMode::C0);
+    let inner = GraphPlan::C4(steps, 4, row.clone(), row, mode);
+    let input = TensorInput::new(tensor.source(0).ok_or(InvalidTensor)?)?;
+    let output = graph_tensor_data(tensor)?;
+    let mut values = workspace(width, 0.0_f32)?;
+    let mut results = reserved(usize::try_from(rows).map_err(BackendError::overflow)?)?;
+    copy_steps(&outer, [0; 4], &mut [0; 3], |step, _| {
+        tensor_fields!(GraphResponse::C1(false, from, to) = step);
+        input.decode(from, &mut values)?;
+        let mut word = 0_u32;
+        let result = ptr::from_mut(&mut word).cast();
+        project_words(&inner, values.as_mut_ptr().cast(), result)?;
+        results.push((to, word));
+        Ok(())
+    })?;
+    for (to, word) in results {
+        // SAFETY: Prism bounded each four-byte result and all reads have finished.
+        unsafe { output.add(to as usize).cast::<u32>().write_unaligned(word) };
     }
     Ok(())
 }
@@ -1876,6 +1912,9 @@ fn execute_graph(backend: BackendPtr, nodes: &[TensorPtr]) -> Result<(), Backend
                 }
                 ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
                 ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
+                ExecutionPlan::Standard(plan @ GraphPlan::C10(..)) => {
+                    execute_stored_reduction(&*tensor, plan)
+                }
                 ExecutionPlan::Standard(GraphPlan::C6(geometry)) => {
                     execute_convolution(&*tensor, geometry)
                 }
@@ -2656,27 +2695,16 @@ mod threadpool {
                 unsafe { sched_setscheduler(0, policy, &priority) };
             }
         }
-        let enabled = || {
-            params
-                .cpumask
-                .iter()
-                .enumerate()
-                .filter_map(|(i, &on)| on.then_some(i))
-        };
-        let count = enabled().count();
+        let enabled = params.cpumask.iter().enumerate().filter(|(_, on)| **on);
+        let count = enabled.clone().count();
         if count == 0 {
             return;
         }
         let mut mask = [0usize; 512 / usize::BITS as usize];
-        let mut select = |cpu: usize| {
-            mask[cpu / usize::BITS as usize] |= 1 << (cpu % usize::BITS as usize);
-        };
-        if params.strict_cpu {
-            if let Some(cpu) = enabled().nth(placement % count) {
-                select(cpu);
+        for (ordinal, (cpu, _)) in enabled.enumerate() {
+            if !params.strict_cpu || ordinal == placement % count {
+                mask[cpu / usize::BITS as usize] |= 1 << (cpu % usize::BITS as usize);
             }
-        } else {
-            enabled().for_each(select);
         }
         // SAFETY: the kernel reads exactly the supplied number of mask bytes.
         unsafe { sched_setaffinity(0, std::mem::size_of_val(&mask), mask.as_ptr()) };

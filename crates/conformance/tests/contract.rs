@@ -95,6 +95,7 @@ ggml_batches! {
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
+    fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
     fn stored_glu_vt_202() { "stored-glu", 82, ["pointwise", "typed"] }
     fn packed_logarithm_vt_203() { "packed-log", 4, ["pointwise", "typed"] }
@@ -787,11 +788,9 @@ host:
         query(mode, input)
             .lines()
             .map(|line| {
-                let mut values = line
-                    .split_whitespace()
-                    .map(|v| v.parse::<u64>().expect("oracle integer"));
-                let row = std::array::from_fn(|_| values.next().expect("oracle column count"));
-                assert!(values.next().is_none(), "oracle column count");
+                let mut fields = line.split_whitespace();
+                let row = std::array::from_fn(|_| fields.next().expect("oracle column count").parse().expect("oracle integer"));
+                assert!(fields.next().is_none(), "oracle column count");
                 row
             })
             .collect()
@@ -1285,7 +1284,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "ed2010581ef9eb08bca27e4690aa7a4f2b2aaa1050d46f0bf6b34a3e1a42e776",
+            "718160bdcd89573b761363463b199c93b4472cd4c1d98d13526b1dc906e0c361",
         )
     });
 
@@ -1399,12 +1398,18 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             };
             writeln!(driver, "static_assert({expression} == {value});").unwrap();
         }
-        let mut stores = Vec::new();
-        for (batch, types) in ORACLE_BINDINGS["atomic_store_types"].as_object().unwrap() {
-            let ids = types.as_array().unwrap().iter().map(|id| id.as_u64().unwrap().to_string()).collect::<Vec<_>>();
-            stores.push(format!("{{{}, {{{}}}}}", serde_json::json!(batch), ids.join(",")));
+        // Both frozen tables contain C++ aggregate data (strings, integers and booleans).
+        fn initializer(value: &serde_json::Value) -> String {
+            if let Some(items) = value.as_array() {
+                return format!("{{{}}}", items.iter().map(initializer).collect::<Vec<_>>().join(","));
+            }
+            assert!(value.is_string() || value.is_number() || value.is_boolean());
+            value.to_string()
         }
-        writeln!(driver, "#define VTENSOR_STORE_TYPES {}", stores.join(",")).unwrap();
+        for (name, table) in [("VTENSOR_STORE_TYPES","atomic_store_types"), ("VTENSOR_REFUSALS","refusal_fields")] {
+            let groups = ORACLE_BINDINGS[table].as_object().unwrap().iter().map(|(group,rows)| initializer(&serde_json::json!([group,rows]))).collect::<Vec<_>>();
+            writeln!(driver, "#define {name} {}", groups.join(",")).unwrap();
+        }
         driver.push_str(BODY);
         // The host dynamically loads the plugin. Its snapshot binds the bytes at the library path.
         let suite = if imported { UPSTREAM_SUITE.as_bytes() } else { &[] };
@@ -1798,6 +1803,7 @@ bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, con
 #include <numeric>
 #include <map>
 #include <set>
+#include <string_view>
 #include <vector>
 #include <dlfcn.h>
 #include <sys/wait.h>
@@ -1981,6 +1987,23 @@ int main(int argc, char **argv) {
         return 0;
     };
     size_t cases=0;
+    auto probe_fields=[&](const char *group, ggml_cgraph *graph, std::initializer_list<ggml_tensor *> bound) {
+    struct probe { const char *field; size_t tensor, axis; int64_t value; bool capability; };
+    static const std::map<std::string_view,std::vector<probe>> groups={ VTENSOR_REFUSALS };
+    auto found=groups.find(group);if(found==groups.end() || found->second.size()==0)return false;
+    for(const auto &p : found->second) {
+        if(p.tensor>=bound.size() || p.axis>=GGML_MAX_DIMS) return false;
+        auto t=bound.begin()[p.tensor]; auto change=[&](auto &field,auto bad){return refuses_change(backend,dev,graph,*bound.begin(),field,bad,p.capability);};
+        std::string_view f=p.field; const auto a=p.axis; const auto v=p.value;
+        bool ok=f=="extent"?change(t->ne[a],v):f=="extend"?change(t->ne[a],t->ne[a]+v):
+            f=="stride"?change(t->nb[a],size_t(v)):f=="type"?change(t->type,ggml_type(v)):
+            f=="parameter"?change(t->op_params[a],int32_t(v)):f=="missing"?change(t->src[a],nullptr):
+            f=="null_data"?change(t->data,nullptr):f=="alias" && a<bound.size() && change(t->data,static_cast<char *>(bound.begin()[a]->data)+v);
+        if(!ok){fprintf(stderr,"%s refusal: tensor %zu field %s axis %zu\n",group,p.tensor,p.field,a);return false;}
+    }
+    return true;
+};
+
     auto fixture_graph=[&](graph_fixture &ctx,ggml_tensor *out,std::initializer_list<ggml_tensor *> sources,bool check_placement=false) -> ggml_cgraph * {
         auto graph=ctx.allocate(out,backend,check_placement);
         if (!graph || (!check_placement && !ggml_backend_supports_op(backend,out))) return nullptr;
@@ -2242,11 +2265,12 @@ int main(int argc, char **argv) {
         if(op==2)return (inplace?ggml_clamp_inplace:ggml_clamp)(ctx,src,a,b);
         return ggml_leaky_relu(ctx,src,a,inplace);
     };
+    const bool reductions=!strcmp(argv[3],"stored-reductions");
     const bool stored_transforms=!strcmp(argv[3],"stored-transforms");
     const bool stored_unary=!strcmp(argv[3],"stored-unary"),scalar_diag=!strcmp(argv[3],"scalar-diagonal");
     const bool repeat_e4=!strcmp(argv[3],"e4m3-repeat");
     const bool glu=!strcmp(argv[3],"stored-glu");
-    if (stored_unary || stored_transforms || scalar_diag || repeat_e4 || glu) {
+    if (reductions || stored_unary || stored_transforms || scalar_diag || repeat_e4 || glu) {
         int first,second;
         while(scanf("%d%d",&first,&second)==2){
             auto type=repeat_e4?GGML_TYPE_F8_E4M3:ggml_type(first);
@@ -2254,12 +2278,13 @@ int main(int argc, char **argv) {
             int width=scalar_diag?second:repeat_e4?16:glu?512:256,rows=scalar_diag?6:repeat_e4?32:4;
             size_t row=ggml_row_size(type,width),block=ggml_type_size(type);
             auto input=read_hex_bytes(rows*row),rhs=glu && form>=2?read_hex_bytes(rows*row):repeat_e4?read_hex_bytes((first+2*second)*4*sizeof(float)):std::vector<unsigned char>{};
-            auto expected=read_hex_bytes(rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
-            for(int pad=0;pad<=!repeat_e4;++pad)for(int ip=0;ip<=(!scalar_diag && !glu);++ip){
-                graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:repeat_e4?4:2,repeat_e4?4:2,scalar_diag?3:repeat_e4?2:1);
+            auto expected=read_hex_bytes(reductions?rows*sizeof(uint32_t):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
+            for(int pad=0;pad<=!repeat_e4;++pad)for(int ip=0;ip<=(!scalar_diag && !glu && !reductions);++ip){
+                graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:(reductions||repeat_e4)?4:2,reductions?1:repeat_e4?4:2,scalar_diag?3:repeat_e4?2:1);
                 auto src=pad?ggml_view_4d(ctx,base,width,base->ne[1],base->ne[2],base->ne[3],base->nb[1],base->nb[2],base->nb[3],block):base;
                 ggml_tensor *out,*right=nullptr;
-                if(stored_transforms){CHECK(second>=0 && second<4);out=transform(ctx,src,second,ip,second<2?-1.25f:second==2?-0.8125f:0.1875f,second==2?1.1875f:0.375f);}
+                if(reductions){CHECK(second==0 || second==1);out=second?ggml_argmax(ctx,src):ggml_mean(ctx,src);}
+                else if(stored_transforms){CHECK(second>=0 && second<4);out=transform(ctx,src,second,ip,second<2?-1.25f:second==2?-0.8125f:0.1875f,second==2?1.1875f:0.375f);}
                 else if(scalar_diag)out=ggml_diag(ctx,src);
                 else if(repeat_e4){
                     right=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,first+2*second,2,2,1);
@@ -2593,9 +2618,7 @@ int main(int argc, char **argv) {
         out->nb[2]=8*sizeof(uint32_t); out->nb[1]=2*out->nb[2]; out->nb[3]=2*out->nb[1];
         auto graph=fixture_graph(ctx,out,{mask,top,scores,extra,out});
         CHECK(graph && tensor_bytes(out)==read_hex_bytes(ggml_nbytes(out)));
-        CHECK(refuses_change(backend,dev,graph,out,out->nb[1],size_t(4)));
-        CHECK(refuses_change(backend,dev,graph,out,top->type,GGML_TYPE_F32));
-        CHECK(refuses_change(backend,dev,graph,out,scores->ne[1],int64_t(3)));
+        CHECK(probe_fields("top_mask",graph,{out,top,scores}));
         CHECK(refuses_change(backend,dev,graph,out,out->src[5],extra));
       }
       const bool units=!strcmp(argv[3]+9,"EXPONENTIAL_UNITS"), erf=!strcmp(argv[3]+9,"GAUSSIAN_ERROR");
@@ -2618,9 +2641,7 @@ int main(int argc, char **argv) {
         scores->nb[2]+=4; mask->nb[3]+=8; sink->nb[0]=16;
         auto out=ggml_soft_max_ext_inplace(ctx,scores,mask,0.5f,2.0f); ggml_soft_max_add_sinks(out,sink);
         auto graph=fixture_graph(ctx,out,{scores,mask,sink}); CHECK(graph && within_reference(out));
-        CHECK(refuses_change(backend,dev,graph,out,out->src[1],static_cast<ggml_tensor*>(nullptr)));
-        CHECK(refuses_change(backend,dev,graph,out,mask->type,GGML_TYPE_I32));
-        CHECK(refuses_change(backend,dev,graph,out,sink->ne[0],int64_t(2)));
+        CHECK(probe_fields("row_softmax",graph,{out,mask,sink}));
         CHECK(refuses_change(backend,dev,graph,out,out->src[3],mask));
       }
       if(!strcmp(argv[3]+9,"ROW_RANKING")) for(bool partial:{false,true}) {
@@ -2744,16 +2765,10 @@ int main(int argc, char **argv) {
               ggml_backend_tensor_set(result,&saved,36,4);CHECK(compare_result(result,control,std::vector<unsigned char>(ggml_nbytes(result),0xA5),3));++tail_probes;
             }
           }
-          for(int slot:{0,1,2})CHECK(refuses_change(backend,dev,graph,result,result->src[slot],nullptr));
-          for(auto t:{result,a,pw,ph})CHECK(refuses_change(backend,dev,graph,result,t->type,GGML_TYPE_I32));
-          CHECK(refuses_change(backend,dev,graph,result,result->ne[3],int64_t(1)));
-          CHECK(refuses_change(backend,dev,graph,result,ph->ne[0],int64_t(2)));
-          for(auto t:{a,pw,ph,result})CHECK(refuses_change(backend,dev,graph,result,t->nb[0],size_t(8)));
-          CHECK(refuses_change(backend,dev,graph,result,result->data,static_cast<char *>(a->data)+4));
+          CHECK(probe_fields("relative_add",graph,{result,a,pw,ph}));
           if(inplace)CHECK(refuses_change(backend,dev,graph,result,result->data,ar->data));
           else CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(1)));
-          CHECK(refuses_change(backend,dev,graph,result,a->ne[0],int64_t(-1)));
-          for(auto t:{pw,result})CHECK(refuses_change(backend,dev,graph,result,t->nb[0],SIZE_MAX));
+          CHECK(probe_fields("relative_add_tail",graph,{result,a,pw}));
           auto saved_height=result->src[2];result->src[2]=pw;
           for(int axis:{0,1,3})CHECK(refuses_change(backend,dev,graph,result,pw->ne[axis],int64_t(2)));
           result->src[2]=saved_height;
@@ -2776,16 +2791,7 @@ int main(int argc, char **argv) {
         auto result=ggml_arange(ctx,0.0f,10.0f,1.0f);
         auto graph=ctx.allocate(result,backend); CHECK(graph);
         ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
-        for(uint32_t bad:{0u,0x80000000u,0xbf800000u,0x7f800000u,0xff800000u,0x7fc00001u})
-          CHECK(refuses_change(backend,dev,graph,result,result->op_params[2],int32_t(bad)));
-        for(int slot:{0,1}) for(uint32_t bad:{0x7f800000u,0xff800000u,0x7fc00001u})
-          CHECK(refuses_change(backend,dev,graph,result,result->op_params[slot],int32_t(bad)));
-        CHECK(refuses_change(backend,dev,graph,result,result->op_params[2],int32_t(1),false));
-        for(uint32_t start:{0x41200000u,0x41a00000u})
-          CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(start),false));
-        for(int64_t count:{9,11}) CHECK(refuses_change(backend,dev,graph,result,result->ne[0],count,false));
-        CHECK(refuses_change(backend,dev,graph,result,result->nb[0],size_t(8)));
-        CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_I32));CHECK(refusal_probes==19);
+        CHECK(probe_fields("arange",graph,{result})); CHECK(refusal_probes==19);
         result->ne[0]=0;result->op_params[2]=int32_t(0x7fc00001u);
         CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
         CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
@@ -2825,14 +2831,7 @@ int main(int argc, char **argv) {
             CHECK(ggml_backend_dev_supports_op(dev,inplace) && ggml_backend_graph_compute(backend,inplace_graph)==GGML_STATUS_SUCCESS);
             CHECK(compare_result(inplace,reference_inplace,std::vector<unsigned char>(ggml_nbytes(inplace),fill),1));++cases;
           }
-          for(uint32_t bad:{0xbf800000u,0xff800000u,0x7fc00001u,0x7f800001u})
-            CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(bad)));
-          for (auto t : {result,left}) CHECK(refuses_change(backend,dev,graph,result,t->type,GGML_TYPE_I32));
-          CHECK(refuses_change(backend,dev,graph,result,result->src[0],nullptr));
-          CHECK(refuses_change(backend,dev,graph,result,result->ne[0],int64_t(2)));
-          CHECK(refuses_change(backend,dev,graph,result,result->data,static_cast<char *>(left->data)+4));
-          CHECK(refuses_change(backend,dev,graph,result,left->ne[0],int64_t(-1)));
-          for (auto t : {result,left}) CHECK(refuses_change(backend,dev,graph,result,t->nb[0],SIZE_MAX));
+          CHECK(probe_fields("l2_norm",graph,{result,left}));
           CHECK(refuses_change(backend,dev,inplace_graph,inplace,inplace->data,static_cast<char *>(left->data)+4));
           CHECK(refuses_change(backend,dev,inplace_graph,inplace,inplace->nb[0],inplace->nb[0]+4));
           for(auto node:{result,inplace}) {
@@ -2912,8 +2911,7 @@ int main(int argc, char **argv) {
         if(gradient){
           const auto width=input->ne[0],rows=indices->ne[0],output_rows=result->ne[1];
         if(type==GGML_TYPE_F32 && width==1 && rows==1 && output_rows==1 && layout==0 && pattern==0) {
-          CHECK(refuses_change(backend,dev,graph,result,indices->type,GGML_TYPE_I64));
-          CHECK(refuses_change(backend,dev,graph,result,input->ne[1],int64_t(0)) && refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_F16) && refuses_change(backend,dev,graph,result,result->data,input->data));
+          CHECK(probe_fields("row_gradient",graph,{result,indices,input}));
         }
         const bool invalid=width && output_rows && rows && pattern>=5;
         if(!invalid) {
@@ -2930,20 +2928,7 @@ int main(int argc, char **argv) {
           if (filled && pattern==0) {
             auto refusal_check=[&](bool ok,const char *label) {if(!ok){fprintf(stderr,"row-gather refusal kind=%d %s\n",kind,label);complete=false;}};
             if (layout==0) {
-            refusal_check(refuses_change(backend,dev,graph,result,indices->type,GGML_TYPE_I64),"index-type");
-            if(!indexed) refusal_check(refuses_change(backend,dev,graph,result,indices->ne[3],int64_t(2)),"index-batch");
-            refusal_check(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_F16),"output-type");
-            refusal_check(refuses_change(backend,dev,graph,result,result->data,input->data),"source-alias");
-            refusal_check(refuses_change(backend,dev,graph,result,result->data,indices->data),"index-alias");
-            if(indexed) {
-              for (int slot : {0,1,2}) refusal_check(refuses_change(backend,dev,graph,result,result->src[slot],nullptr),"missing-operand");
-              for (auto t : {left,input,indices,result}) refusal_check(refuses_change(backend,dev,graph,result,t->nb[0],size_t(1)),"short-word-stride");
-              refusal_check(refuses_change(backend,dev,graph,result,left->type,GGML_TYPE_F16),"value-type");
-              refusal_check(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32),"table-type");
-              refusal_check(refuses_change(backend,dev,graph,result,left->ne[1],left->ne[1]+1),"value-rows");
-              refusal_check(refuses_change(backend,dev,graph,result,result->data,left->data),"value-alias");
-              refusal_check(refuses_change(backend,dev,graph,result,indices->ne[1],indices->ne[1]+1),"index-planes");
-            }
+            refusal_check(probe_fields(indexed?"indexed_add":"gather",graph,{result,indices,input,left}),"bound tensor fields");
             if (ggml_blck_size(type)>1) refusal_check(refuses_change(backend,dev,graph,result,input->nb[0],ggml_type_size(type)-1),"short-block-stride");
             }
             for (int32_t bad : {indexed?-2:-1,3}) {
@@ -3117,19 +3102,13 @@ int main(int argc, char **argv) {
         if((grouping || backward || typing) && !output.empty())ggml_backend_tensor_set(expected_tensor,output.data(),0,output.size());
         CHECK(ggml_backend_graph_compute(reference,build_graph(ctx,expected_tensor))==GGML_STATUS_SUCCESS);
         if(typing && cases==0) {
-          CHECK(refuses_change(backend,dev,graph,result,result->src[0],nullptr));CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
-          CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,right->type,GGML_TYPE_F16));
+          CHECK(probe_fields("typed_inputs",graph,{result,input,right}));
           CHECK(refuses_change(backend,dev,graph,result,input->nb[0],2*bytes));CHECK(refuses_change(backend,dev,graph,result,result->nb[0],2*output_bytes));CHECK(refuses_change(backend,dev,graph,result,right->nb[0],size_t(1)));
-          CHECK(refuses_change(backend,dev,graph,result,result->ne[1],result->ne[1]+1));CHECK(refuses_change(backend,dev,graph,result,right->ne[0],right->ne[0]+1));
-          CHECK(refuses_change(backend,dev,graph,result,right->data,nullptr,false));CHECK(refuses_change(backend,dev,graph,result,result->data,(char *)input->data+bytes));CHECK(refusal_probes==12);
+          CHECK(probe_fields("typed_extents",graph,{result,right}));
+CHECK(refuses_change(backend,dev,graph,result,result->data,(char *)input->data+bytes));CHECK(refusal_probes==12);
         }
         if(backward && cases==0) {
-          CHECK(refuses_change(backend,dev,graph,result,result->src[0],nullptr));CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
-          CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_I32));
-          CHECK(refuses_change(backend,dev,graph,result,input->nb[0],size_t(8)));CHECK(refuses_change(backend,dev,graph,result,right->nb[0],size_t(8)));
-          for(int axis=0;axis<4;++axis)CHECK(refuses_change(backend,dev,graph,result,right->ne[axis],right->ne[axis]+1));
-          CHECK(refuses_change(backend,dev,graph,result,right->data,nullptr,false));CHECK(refuses_change(backend,dev,graph,result,result->data,(char *)input->data+4));
-          CHECK(refusal_probes==12);
+          CHECK(probe_fields("rms_backward",graph,{result,input,right})); CHECK(refusal_probes==12);
         }
         if((kind==0 || unarying || selecting || relative) && pattern==0 && units==(spatial && operation?2:repeating?3:1) && rows==(spatial && operation?2:1) && batches==(spatial && operation==2?2:1) && layout==0) {
           CHECK(refuses_change(backend,dev,graph,result,result->ne[0],result->ne[0]+(repeating?1:block)));
@@ -3139,20 +3118,23 @@ int main(int argc, char **argv) {
             CHECK(refuses_change(backend,dev,graph,result,right->type,GGML_TYPE_F16));
             CHECK(refuses_change(backend,dev,graph,result,right->ne[(operation+1)%4],right->ne[(operation+1)%4]+1));
           }
-          if(relative) {
-            CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32));
-            CHECK(refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_BF16));
-            CHECK(refuses_change(backend,dev,graph,result,input->ne[1],input->ne[1]+1));
-            CHECK(refuses_change(backend,dev,graph,result,result->ne[2],result->ne[2]+1));
-            CHECK(refuses_change(backend,dev,graph,result,result->ne[3],int64_t(2)));
-            CHECK(refuses_change(backend,dev,graph,result,result->data,input->data));
-            CHECK(refuses_change(backend,dev,graph,result,input->ne[2],int64_t(0)));
-            for (auto t : {input,result}) CHECK(refuses_change(backend,dev,graph,result,t->nb[0],size_t(1)));
-            CHECK(refuses_change(backend,dev,graph,result,input->data,nullptr,false));
-          }
+          if(relative) CHECK(probe_fields("relative_position",graph,{result,input}));
           if(windowing) {CHECK(refuses_change(backend,dev,graph,result,result->op_params[operation?0:2],int32_t(0)));CHECK(refuses_change(backend,dev,graph,result,result->op_params[operation?0:2],int32_t(-1)));CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_F16));if(!operation)CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(0)));}
           if(unarying) {CHECK(refuses_change(backend,dev,graph,result,result->type,type==GGML_TYPE_F32?GGML_TYPE_F16:type==GGML_TYPE_F16?GGML_TYPE_BF16:GGML_TYPE_F16));if(result->op==GGML_OP_UNARY) {CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(GGML_UNARY_OP_COUNT)));CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(-1)));}}
-          if(wordwise) {CHECK(refuses_change(backend,dev,graph,result,input->type,selecting && operation?GGML_TYPE_F32:GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,result->type,selecting?GGML_TYPE_F32:GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,input->data,nullptr,false));}
+          if(wordwise) {
+            if(result->op==GGML_OP_MEAN || result->op==GGML_OP_ARGMAX) {
+              const auto saved=tensor_bytes(result);input->type=GGML_TYPE_I32;recipe_state(1);
+              graph_fixture check(2);CHECK(check);
+              auto decoded=ggml_new_tensor(check,GGML_TYPE_F32,4,input->ne);
+              auto reference_out=result->op==GGML_OP_MEAN?ggml_mean(check,decoded):ggml_argmax(check,decoded);
+              auto cpu_graph=check.allocate(reference_out,reference);CHECK(cpu_graph);
+              for(int i=0;i<ggml_nelements(input);++i)ggml_set_f32_1d(decoded,i,ggml_get_f32_1d(input,i));
+              CHECK(ggml_backend_graph_compute(reference,cpu_graph)==GGML_STATUS_SUCCESS);
+              CHECK(ggml_backend_dev_supports_op(dev,result) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+              CHECK(compare_result(result,reference_out,saved,0));++converted_descriptors;
+              input->type=type;ggml_backend_tensor_set(result,saved.data(),0,saved.size());
+            } else CHECK(refuses_change(backend,dev,graph,result,input->type,selecting && operation?GGML_TYPE_F32:GGML_TYPE_I32));
+            CHECK(refuses_change(backend,dev,graph,result,result->type,selecting?GGML_TYPE_F32:GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,input->data,nullptr,false));}
           if(selecting) {CHECK(refuses_change(backend,dev,graph,result,input->ne[2],int64_t(3)));if(operation) {CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));CHECK(refuses_change(backend,dev,graph,result,right->type,GGML_TYPE_F32));}else {CHECK(refuses_change(backend,dev,graph,result,input->ne[3],int64_t(2)));CHECK(refuses_change(backend,dev,graph,result,input->ne[0],int64_t(INT32_MAX)+1));}}
           if (casting) {
             CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
@@ -3256,19 +3238,14 @@ int main(int argc, char **argv) {
         ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend));
         CHECK(ctx.storage || (matrix && !ggml_nbytes(left) && !ggml_nbytes(right) && !ggml_nbytes(result)));
         CHECK(bind_fixture_words(left,right,header[3])==0);
-        if (matrix) {
-          const uint64_t fields[]={uint64_t(left->ne[1]),uint64_t(right->ne[1]),uint64_t(left->ne[0]),fixture[3],uint64_t(left->ne[2]),uint64_t(left->ne[3]),uint64_t(right->ne[2]),uint64_t(right->ne[3]),
-              left->nb[0],left->nb[1],left->nb[2],left->nb[3],right->nb[0],right->nb[1],right->nb[2],right->nb[3],result->nb[0],result->nb[1],result->nb[2],result->nb[3],
-              uint64_t(ggml_nelements(left)),uint64_t(ggml_nelements(right)),uint64_t(fixture[22]!=0),ordinal};
-          observe_fixture(trace,fields,left,right);
-        } else {
-          const uint64_t fields[]={uint64_t(kind),uint64_t(result->op),uint64_t(kind>=6?ggml_get_unary_op(result):0),fixture[3],
-            uint64_t(left->ne[0]),uint64_t(left->ne[1]),uint64_t(left->ne[2]),uint64_t(left->ne[3]),
-            uint64_t(right?right->ne[0]:0),uint64_t(right?right->ne[1]:0),uint64_t(right?right->ne[2]:0),uint64_t(right?right->ne[3]:0),
-            left->nb[0],left->nb[1],left->nb[2],left->nb[3],right?right->nb[0]:0,right?right->nb[1]:0,right?right->nb[2]:0,right?right->nb[3]:0,
-            uint64_t(ggml_nelements(left)),uint64_t(right?ggml_nelements(right):0),fixture[22],ordinal};
-          observe_fixture(trace,fields,left,right);
-        }
+        uint64_t fields[24]={kind,matrix?uint64_t(right->ne[1]):uint64_t(result->op),matrix?uint64_t(left->ne[0]):uint64_t(kind>=6?ggml_get_unary_op(result):0),fixture[3]};
+        if(matrix) {fields[0]=left->ne[1];fields[4]=left->ne[2];fields[5]=left->ne[3];fields[6]=right->ne[2];fields[7]=right->ne[3];}
+        else for(size_t axis=0;axis<4;++axis) {fields[4+axis]=left->ne[axis];fields[8+axis]=right?right->ne[axis]:0;}
+        auto strides=fields+(matrix?8:12);
+        std::copy_n(left->nb,4,strides);if(right)std::copy_n(right->nb,4,strides+4);
+        if(matrix)std::copy_n(result->nb,4,strides+8);
+        fields[20]=ggml_nelements(left);fields[21]=right?ggml_nelements(right):0;fields[22]=matrix?uint64_t(fixture[22]!=0):fixture[22];fields[23]=ordinal;
+        observe_fixture(trace,fields,left,right);
         auto graph=build_graph(ctx,result);
         auto reference_graph=build_graph(ctx,oracle);
         CHECK(ggml_backend_dev_supports_op(dev,result));
@@ -3279,8 +3256,7 @@ int main(int argc, char **argv) {
         if (matrix && fixture[22]) {
           CHECK(!matrix_refusals_checked && ggml_nbytes(result) && ggml_nbytes(left));
           matrix_refusals_checked = true;
-          CHECK(refuses_change(backend,dev,graph,result,result->ne[0],result->ne[0]+1));
-          CHECK(refuses_change(backend,dev,graph,result,result->src[0],nullptr));
+          CHECK(probe_fields("matrix",graph,{result}));
           CHECK(refuses_change(backend,dev,graph,result,result->buffer,nullptr,false));
           ggml_backend_buffer_t foreign=ggml_backend_cpu_buffer_from_ptr(left->data,ggml_nbytes(left)-1); CHECK(foreign);
           CHECK(refuses_change(backend,dev,graph,result,left->buffer,foreign,false)); ggml_backend_buffer_free(foreign);
@@ -3325,10 +3301,10 @@ int main(int argc, char **argv) {
         CHECK(ggml_tallocr_alloc(&allocator, &tensor) == GGML_STATUS_SUCCESS);
         CHECK(tensor.buffer == buffer && (uintptr_t)tensor.data % align == 0);
         std::vector<unsigned char> expected(size), output(size), input(size);
-        ggml_backend_tensor_get(&tensor, output.data(), 0, size);
-        CHECK(output == expected);
+        auto read_matches=[&](ggml_tensor *t) {ggml_backend_tensor_get(t,output.data(),0,size);return output==expected;};
+        CHECK(read_matches(&tensor));
         ggml_backend_buffer_clear(buffer, 0x41); std::fill(expected.begin(), expected.end(), 0x41);
-        ggml_backend_tensor_get(&tensor, output.data(), 0, size); CHECK(output == expected);
+        CHECK(read_matches(&tensor));
         for (size_t i=0; i<size; i++) input[i] = (i*37 + cases) % 256;
         ggml_backend_tensor_set(&tensor, input.data(), 0, size); expected = input;
         if (size) {
@@ -3354,13 +3330,13 @@ int main(int argc, char **argv) {
           ggml_backend_tensor_set(&view, viewed.data(), 0, viewed.size());
           std::copy(viewed.begin(), viewed.end(), expected.begin()+1);
         }
-        ggml_backend_tensor_get(&tensor, output.data(), 0, size); CHECK(output == expected);
+        CHECK(read_matches(&tensor));
         ggml_tensor copy = tensor; copy.buffer = nullptr; copy.data = nullptr;
         ggml_backend_buffer_t other = ggml_backend_alloc_buffer(backend, size+align); CHECK(other);
         ggml_tallocr second = ggml_tallocr_new(other);
         CHECK(ggml_tallocr_alloc(&second, &copy) == GGML_STATUS_SUCCESS);
         ggml_backend_tensor_copy(&tensor, &copy);
-        ggml_backend_tensor_get(&copy, output.data(), 0, size); CHECK(output == expected);
+        CHECK(read_matches(&copy));
         std::vector<unsigned char> host(size ? size : 1, 0x29);
         ggml_backend_buffer_t borrowed = ggml_backend_dev_buffer_from_host_ptr(dev, host.data(), size, size); CHECK(borrowed);
         ggml_tensor mapped = tensor; mapped.buffer = nullptr; mapped.data = nullptr;

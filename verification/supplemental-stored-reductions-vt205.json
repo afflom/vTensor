@@ -1,0 +1,26 @@
+{
+  "requirement": "VT-205",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "ecdaef6c3875afedd47ac0ebad84d9c22d2197a9",
+  "provider_sha256": "eac7d32318d48c57987febe046ccd78a0cedd99e45b6d8106ad835d654f28925",
+  "pointwise_attestation": "f4ea0ba74e18042574227a85c0251a8ae13ba2d53603bcf4cdddd205363d610b",
+  "semantic_id": "6afe72e8f6bb8c4028de2388a3f10737fc1a467404c0b7d12c2a7cd05bc4a42e",
+  "oracle": "ggml-stored-reductions-oracle.json",
+  "placements": "ggml-reduction-placements.json",
+  "prior_placements": 18,
+  "new_placements": 140,
+  "placed": 158,
+  "unplaced": 5208,
+  "stored_types_added": 35,
+  "logical_outputs_compared": 560,
+  "recurring_graphs": 140,
+  "comparison": "Decode four independent 256-value stored rows with the original GGML decoder or SoftFloat integer/binary64 conversion. The pinned generic GGML F32 MEAN and ARGMAX kernels supply all expected four-word outputs, including ties. Exercise both dense and block-offset row-padded inputs for each of 35 source types.",
+  "empty_axes": {
+    "graphs": 144,
+    "table_sha256": "f7af4c8196d82bd2883808e8f7b7d75bdf20c0459464cd9b20c7bf938a772f39",
+    "comparison": "Original F32 CPU versus each of 36 storage types with zero columns or rows. ARGMAX indices compare exactly. Zero-width MEAN returns a quiet NaN on both devices, with architecture-dependent sign."
+  },
+  "negative_control": "The previous provider refused the first stored descriptor. Flipping the low bit of the staged output failed the native byte comparison.",
+  "legacy_controls": "The original VT-29/30 I32 type mutations now compute against a fresh GGML CPU F32 graph. Their frozen mutation transcripts are unchanged.",
+  "non_prism_lines": 12524
+}

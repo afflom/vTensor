@@ -292,6 +292,7 @@ model does not sanction.
 | `VT-202` | `build` | GLU constructors execute certified split or concatenated gate rows over registered storage and reproduce independently encoded GGML CPU results |
 | `VT-204` | `build` | Scale, scale with bias, clamp and leaky ReLU project stored rows through certified binary32 transforms and reproduce GGML CPU storage |
 | `VT-203` | `build` | Packed LOG executes through certified row projection and matches original GGML CPU logarithm and quantization |
+| `VT-205` | `build` | Stored MEAN and ARGMAX reduce independently decoded rows with the original GGML mean and last-maximum semantics |
 
 ## normalization-graphs
 

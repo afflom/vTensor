@@ -890,3 +890,9 @@ Feature: native-backend
     Given positive values decoded independently from packed GGML rows
     When the provider computes LOG on dense and padded views
     Then copied and in-place outputs match the original CPU logarithm and storage encoder
+
+  @VT-205 @build
+  Scenario: Reduce a stored row to its mean or maximum index
+    Given original GGML encoded rows with multiple equal maxima
+    When a provider computes the mean or maximum index on dense and offset inputs
+    Then the output matches the original CPU operation and the input guards retain their bytes

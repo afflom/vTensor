@@ -210,7 +210,8 @@ inductive{
     {name: convolution, fields: [ConvolutionGeometry]},
     {name: fullPrecisionProduct, fields: []},
     {name: invalidPrecision, fields: []},
-    {name: storedUnary, fields: [Nat, IndexContext, CopyMode]}
+    {name: storedUnary, fields: [Nat, IndexContext, CopyMode]},
+    {name: storedReduction, fields: [Nat, Nat, IndexContext, IndexContext, Nat, IndexContext, CopyMode]}
   ]
 }
 
@@ -822,10 +823,18 @@ definition{
 }
 
 definition{
+  name: rowReductionShape,
+  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  result: Bool,
+  body: (((((project output n0) =? 1) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))),
+  executable: true
+}
+
+definition{
   name: planReduction,
   parameters: [operation : Nat, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (let storage : Nat := (project left ty); (if ((storage =? 0) || ((operation =? 13) && ((storage =? 1) || (storage =? 30)))) then (if ((storage =? (project output ty)) && (if (operation =? 13) then (((((project output n0) =? 1) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) else (((((project output n0) =? 1) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))))) then (let source : IndexContext := (indexContext left 1); (ctor PointwiseDecision.copyBlocks (reductionSteps source operation storage) (if (storage =? 0) then 4 else 2) source (indexContext output 1) (ctor CopyMode.reduced operation storage))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported))),
+  body: (let storage : Nat := (project left ty); (if ((storage =? 0) || ((operation =? 13) && ((storage =? 1) || (storage =? 30)))) then (if ((storage =? (project output ty)) && (if (operation =? 13) then (((((project output n0) =? 1) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) else (rowReductionShape left output))) then (let source : IndexContext := (indexContext left 1); (ctor PointwiseDecision.copyBlocks (reductionSteps source operation storage) (if (storage =? 0) then 4 else 2) source (indexContext output 1) (ctor CopyMode.reduced operation storage))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported))),
   executable: true
 }
 
@@ -884,10 +893,18 @@ definition{
 }
 
 definition{
+  name: maximumIndexShape,
+  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  result: Bool,
+  body: ((((((((project left n2) =? 1) && ((project left n3) =? 1)) && ((project left n0) <=? 2147483647)) && ((project output n0) =? (project left n1))) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)),
+  executable: true
+}
+
+definition{
   name: planArgmax,
   parameters: [left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (if (((project left ty) =? 0) && ((project output ty) =? 26)) then (if ((((((((project left n2) =? 1) && ((project left n3) =? 1)) && ((project left n0) <=? 2147483647)) && ((project output n0) =? (project left n1))) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) then (ctor PointwiseDecision.copyBlocks (prim multiply (project left n1) (argmaxStride (project left n0)) : Nat) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.argmaxRow)) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
+  body: (if (((project left ty) =? 0) && ((project output ty) =? 26)) then (if (maximumIndexShape left output) then (ctor PointwiseDecision.copyBlocks (prim multiply (project left n1) (argmaxStride (project left n0)) : Nat) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.argmaxRow)) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported)),
   executable: true
 }
 
@@ -987,6 +1004,28 @@ definition{
   result: TensorDescriptor,
   body: (let span : Nat := (prim multiply width 4 : Nat);
     (record TensorDescriptor {ty := 0, n0 := width, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := span, s2 := span, s3 := span, span := span, address := 0})),
+  executable: true
+}
+
+definition{
+  name: planStoredReduction,
+  parameters: [operation : Nat, left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if ((project left ty) =? 0) then
+    (if (operation =? 17) then (planArgmax left output) else (planReduction operation left output))
+   else (match (TensorTypes::tensorTypeStorage (project left ty))
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.unsupported)
+    | TensorTypes::TypeStorageDecision.knownType spec =>
+      (let maximum : Bool := (operation =? 17);
+      (if (if maximum then (((project output ty) =? 26) && (maximumIndexShape left output))
+          else (((project output ty) =? 0) && (rowReductionShape left output))) then
+        (let width : Nat := (project left n0);
+         (let source : IndexContext := (indexContext (canonicalUnaryRow width) 1);
+         (let rows : Nat := (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat);
+          (ctor PointwiseDecision.storedReduction rows width (indexContext left width) (indexContext output 1)
+            (if maximum then (argmaxStride width) else (reductionSteps source operation 0))
+            source (if maximum then (ctor CopyMode.argmaxRow) else (ctor CopyMode.reduced operation 0))))))
+       else (ctor PointwiseDecision.invalidShape))))),
   executable: true
 }
 
@@ -1095,6 +1134,7 @@ definition{
   body: (match (numericDecision operation variant left right output)
     | PointwiseDecision.fullPrecisionProduct => (ctor PointwiseDecision.fullPrecisionProduct)
     | PointwiseDecision.invalidPrecision => (ctor PointwiseDecision.invalidPrecision)
+    | PointwiseDecision.storedReduction rows width src dst steps row mode => (ctor PointwiseDecision.storedReduction rows width src dst steps row mode)
     | PointwiseDecision.storedUnary count row mode => (ctor PointwiseDecision.storedUnary count row mode)
     | PointwiseDecision.unsupported => (ctor PointwiseDecision.unsupported)
     | PointwiseDecision.convolution geometry => (ctor PointwiseDecision.convolution geometry)
@@ -2920,7 +2960,7 @@ definition{
     | Option.none => (ctor PointwiseDecision.invalidShape)
     | Option.some base => (planSignedCopy left base output)) else (if (((operation =? 33) && ((project output ty) =? 0)) && (decodedCopyType (project left ty))) then (planDecodedCopy left right output) else (planStorage operation left (match right
     | Option.none => false
-    | Option.some value => true) output))) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if (operation =? 17) then (planArgmax left output) else (if (operation =? 18) then (planCountEqual left right output) else (if (((operation =? 13) || (operation =? 14)) || (operation =? 16)) then (planReduction operation left output) else (match (unaryKind operation variant)
+    | Option.some value => true) output))) else (if (operation =? 19) then (planRepeat left output) else (if (operation =? 21) then (planConcat variant left right output) else (if (((operation =? 61) || (operation =? 62)) || (operation =? 63)) then (planSpatial operation options left output) else (if ((operation =? 4) || (operation =? 32)) then (planUpdate operation options left right output) else (if (operation =? 20) then (planFold left output) else (if (operation =? 42) then (planSelection 4 left output) else (if (operation =? 69) then (if (variant <? 4) then (planSelection variant left output) else (ctor PointwiseDecision.invalidShape)) else (if (operation =? 70) then (planFill variant left output) else (if ((operation =? 75) || (operation =? 76)) then (planWindow (operation =? 76) options left output) else (if (((operation =? 31) || (operation =? 47)) || (operation =? 68)) then (planTransform operation options left output) else (if (operation =? 15) then (planScan left output) else (if ((operation =? 17) || (operation =? 16)) then (planStoredReduction operation left output) else (if (operation =? 18) then (planCountEqual left right output) else (if ((operation =? 13) || (operation =? 14)) then (planReduction operation left output) else (match (unaryKind operation variant)
     | Option.none => (numericPlan operation variant left right output)
     | Option.some kind => (planUnary kind options left output))))))))))))))))))))))))))))))))))),
   executable: true
@@ -5220,6 +5260,20 @@ theorem{
   name: packedLogarithmUsesRowProjection,
   parameters: [],
   statement: ((unaryProjectionAdmitted 13 19) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: storedMeanReducesOneRowAtATime,
+  parameters: [],
+  statement: (let left : TensorDescriptor := (record TensorDescriptor {ty := 1, n0 := 256, n1 := 4, n2 := 1, n3 := 1, s0 := 2, s1 := 520, s2 := 2072, s3 := 2072, span := 2072, address := 0}); (let output : TensorDescriptor := (record TensorDescriptor {ty := 0, n0 := 1, n1 := 4, n2 := 1, n3 := 1, s0 := 4, s1 := 4, s2 := 16, s3 := 16, span := 16, address := 0}); (let row : IndexContext := (indexContext (canonicalUnaryRow 256) 1); ((planStoredReduction 16 left output) = (ctor PointwiseDecision.storedReduction 4 256 (indexContext left 256) (indexContext output 1) (reductionSteps row 16 0) row (ctor CopyMode.reduced 16 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: storedMaximumIndexUsesTheLastMaximum,
+  parameters: [],
+  statement: (let left : TensorDescriptor := (record TensorDescriptor {ty := 1, n0 := 256, n1 := 4, n2 := 1, n3 := 1, s0 := 2, s1 := 520, s2 := 2072, s3 := 2072, span := 2072, address := 0}); (let output : TensorDescriptor := (record TensorDescriptor {ty := 26, n0 := 4, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 16, s2 := 16, s3 := 16, span := 16, address := 0}); (let row : IndexContext := (indexContext (canonicalUnaryRow 256) 1); ((planStoredReduction 17 left output) = (ctor PointwiseDecision.storedReduction 4 256 (indexContext left 256) (indexContext output 1) (argmaxStride 256) row (ctor CopyMode.argmaxRow)))))),
   proof: reflexivity{}
 }
 

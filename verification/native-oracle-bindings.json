@@ -481,7 +481,8 @@
     "ggml-index-fixtures-row-gradient-oracle": "82821e5460f96df0ea4567c63b72f525ba8c012c354650048f53b897d8800d07",
     "ggml-index-fixtures-row-gradient-bf16-oracle": "b8fc54b4dacbe2e36297cde64386908a7ad57360cfa9b3d4e4d2a6093e2cbe2d",
     "ggml-stored-transforms-oracle": "8d13300443334ee583a077ff1198f8077bdfd5031a8a02cd22f7542d79c3506d",
-    "ggml-packed-log-oracle": "9f9503f322a0955d65a1d0208c51fc4c69ee51da07119dab69333412de3858d0"
+    "ggml-packed-log-oracle": "9f9503f322a0955d65a1d0208c51fc4c69ee51da07119dab69333412de3858d0",
+    "ggml-stored-reductions-oracle": "b02abeea20d6971a5e8adb36cc6e8a2a620cee3340e8818d0fa025ebea50d533"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -720,7 +721,8 @@
     "row-gradient": "ggml-index-fixtures-row-gradient",
     "row-gradient-bf16": "ggml-index-fixtures-row-gradient-bf16",
     "stored-transforms": "ggml-stored-transforms",
-    "packed-log": "ggml-packed-log"
+    "packed-log": "ggml-packed-log",
+    "stored-reductions": "ggml-stored-reductions"
   },
   "drivers": {
     "binary-widths": "scalar-casts",
@@ -740,5 +742,153 @@
     "wide-native-binary": "scalar-binary",
     "vector-unary": "stored-unary",
     "packed-log": "stored-unary"
+  },
+  "refusal_field_columns": [
+    "field",
+    "tensor",
+    "axis",
+    "replacement",
+    "require_capability_refusal"
+  ],
+  "refusal_fields": {
+    "arange": [
+      ["parameter", 0, 2, 0, true],
+      ["parameter", 0, 2, 2147483648, true],
+      ["parameter", 0, 2, 3212836864, true],
+      ["parameter", 0, 2, 2139095040, true],
+      ["parameter", 0, 2, 4286578688, true],
+      ["parameter", 0, 2, 2143289345, true],
+      ["parameter", 0, 0, 2139095040, true],
+      ["parameter", 0, 0, 4286578688, true],
+      ["parameter", 0, 0, 2143289345, true],
+      ["parameter", 0, 1, 2139095040, true],
+      ["parameter", 0, 1, 4286578688, true],
+      ["parameter", 0, 1, 2143289345, true],
+      ["parameter", 0, 2, 1, false],
+      ["parameter", 0, 0, 1092616192, false],
+      ["parameter", 0, 0, 1101004800, false],
+      ["extent", 0, 0, 9, false],
+      ["extent", 0, 0, 11, false],
+      ["stride", 0, 0, 8, true],
+      ["type", 0, 0, 26, true]
+    ],
+    "gather": [
+      ["type", 1, 0, 27, true],
+      ["extent", 1, 3, 2, true],
+      ["type", 0, 0, 1, true],
+      ["alias", 0, 2, 0, true],
+      ["alias", 0, 1, 0, true]
+    ],
+    "indexed_add": [
+      ["type", 1, 0, 27, true],
+      ["type", 0, 0, 1, true],
+      ["alias", 0, 2, 0, true],
+      ["alias", 0, 1, 0, true],
+      ["missing", 0, 0, 0, true],
+      ["missing", 0, 1, 0, true],
+      ["missing", 0, 2, 0, true],
+      ["stride", 3, 0, 1, true],
+      ["stride", 2, 0, 1, true],
+      ["stride", 1, 0, 1, true],
+      ["stride", 0, 0, 1, true],
+      ["type", 3, 0, 1, true],
+      ["type", 2, 0, 26, true],
+      ["extend", 3, 1, 1, true],
+      ["alias", 0, 3, 0, true],
+      ["extend", 1, 1, 1, true]
+    ],
+    "l2_norm": [
+      ["parameter", 0, 0, 3212836864, true],
+      ["parameter", 0, 0, 4286578688, true],
+      ["parameter", 0, 0, 2143289345, true],
+      ["parameter", 0, 0, 2139095041, true],
+      ["type", 0, 0, 26, true],
+      ["type", 1, 0, 26, true],
+      ["missing", 0, 0, 0, true],
+      ["extent", 0, 0, 2, true],
+      ["alias", 0, 1, 4, true],
+      ["extent", 1, 0, -1, true],
+      ["stride", 0, 0, -1, true],
+      ["stride", 1, 0, -1, true]
+    ],
+    "matrix": [
+      ["extend", 0, 0, 1, true],
+      ["missing", 0, 0, 0, true]
+    ],
+    "relative_add": [
+      ["missing", 0, 0, 0, true],
+      ["missing", 0, 1, 0, true],
+      ["missing", 0, 2, 0, true],
+      ["type", 0, 0, 26, true],
+      ["type", 1, 0, 26, true],
+      ["type", 2, 0, 26, true],
+      ["type", 3, 0, 26, true],
+      ["extent", 0, 3, 1, true],
+      ["extent", 3, 0, 2, true],
+      ["stride", 1, 0, 8, true],
+      ["stride", 2, 0, 8, true],
+      ["stride", 3, 0, 8, true],
+      ["stride", 0, 0, 8, true],
+      ["alias", 0, 1, 4, true]
+    ],
+    "relative_add_tail": [
+      ["extent", 1, 0, -1, true],
+      ["stride", 2, 0, -1, true],
+      ["stride", 0, 0, -1, true]
+    ],
+    "relative_position": [
+      ["type", 1, 0, 26, true],
+      ["type", 0, 0, 30, true],
+      ["extend", 1, 1, 1, true],
+      ["extend", 0, 2, 1, true],
+      ["extent", 0, 3, 2, true],
+      ["alias", 0, 1, 0, true],
+      ["extent", 1, 2, 0, true],
+      ["stride", 1, 0, 1, true],
+      ["stride", 0, 0, 1, true],
+      ["null_data", 1, 0, 0, false]
+    ],
+    "rms_backward": [
+      ["missing", 0, 0, 0, true],
+      ["missing", 0, 1, 0, true],
+      ["type", 1, 0, 26, true],
+      ["type", 0, 0, 26, true],
+      ["stride", 1, 0, 8, true],
+      ["stride", 2, 0, 8, true],
+      ["extend", 2, 0, 1, true],
+      ["extend", 2, 1, 1, true],
+      ["extend", 2, 2, 1, true],
+      ["extend", 2, 3, 1, true],
+      ["null_data", 2, 0, 0, false],
+      ["alias", 0, 1, 4, true]
+    ],
+    "row_gradient": [
+      ["type", 1, 0, 27, true],
+      ["extent", 2, 1, 0, true],
+      ["type", 0, 0, 1, true],
+      ["alias", 0, 2, 0, true]
+    ],
+    "row_softmax": [
+      ["missing", 0, 1, 0, true],
+      ["type", 1, 0, 26, true],
+      ["extent", 2, 0, 2, true]
+    ],
+    "top_mask": [
+      ["stride", 0, 1, 4, true],
+      ["type", 1, 0, 0, true],
+      ["extent", 2, 1, 3, true]
+    ],
+    "typed_extents": [
+      ["extend", 0, 1, 1, true],
+      ["extend", 1, 0, 1, true],
+      ["null_data", 1, 0, 0, false]
+    ],
+    "typed_inputs": [
+      ["missing", 0, 0, 0, true],
+      ["missing", 0, 1, 0, true],
+      ["type", 1, 0, 26, true],
+      ["type", 0, 0, 26, true],
+      ["type", 2, 0, 1, true]
+    ]
   }
 }
