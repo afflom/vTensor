@@ -5,17 +5,17 @@
   "casts": 37584,
   "direct_cpu_descriptors_placed": 709,
   "composed_codebook_descriptors_placed": 189,
-  "all_provider_placements": 47940,
+  "all_provider_placements": 47952,
   "compared_scalar_graphs": 48,
   "compared_scalar_words": 24576,
   "reused_packed_results": 661,
-  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results and VT-179 for half and bfloat inputs with packed outputs. VT-180 compares the newly placed packed binary forms to original GGML row decoding, F32 graphs and row encoding. VT-181 checks each newly placed mixed cast graph against original decoded F32 arithmetic and destination storage. VT-182 checks each newly placed scalar binary graph against original decoded F32 arithmetic and destination storage. VT-184 compares signed integer and binary64 destinations against original GGML storage and Berkeley SoftFloat. VT-187 checks signed integer and binary64 right operands against original GGML and SoftFloat. VT-188 replays both activation formats using original GGML lane values and destination encoders. VT-190 compares I8, I16 and I32 left operands with GGML CPU and exercises the original SYCL binary kernel on signed boundary values. VT-191 checks wide mixed arithmetic and wide division using the pinned OpenVINO promotion expressions, original F32 GGML computation and original SoftFloat conversions. Unclassified denotes no identified direct or composed oracle in this survey.",
+  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results and VT-179 for half and bfloat inputs with packed outputs. VT-180 compares the newly placed packed binary forms to original GGML row decoding, F32 graphs and row encoding. VT-181 checks each newly placed mixed cast graph against original decoded F32 arithmetic and destination storage. VT-182 checks each newly placed scalar binary graph against original decoded F32 arithmetic and destination storage. VT-184 compares signed integer and binary64 destinations against original GGML storage and Berkeley SoftFloat. VT-187 checks signed integer and binary64 right operands against original GGML and SoftFloat. VT-188 replays both activation formats using original GGML lane values and destination encoders. VT-190 compares I8, I16 and I32 left operands with GGML CPU and exercises the original SYCL binary kernel on signed boundary values. VT-191 checks wide mixed arithmetic and wide division using the pinned OpenVINO promotion expressions, original F32 GGML computation and original SoftFloat conversions. VT-192 compares matching I64 and F64 sums, differences and products against original OpenVINO and SoftFloat. Unclassified denotes no identified direct or composed oracle in this survey.",
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "a3f8f4e9773dda4982c6c6f0e1037ee7122b6f385ef5bf116ba2ffa720183922",
+  "provider_sha256": "d2552e24843ac399d349b1075667a6c331b74d82e1caecc7fa8e1e114c685bfb",
   "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "table": "ggml-binary-type-descriptors.tsv.gz",
-  "table_sha256": "34b87375b751af3d4f52b7668bec4f35a41c2976a0f57eeecc6ad1c8ba845039",
-  "uncompressed_sha256": "7f607df3bb1d721fca561ac3a9882875b12cbc954de53b99143bd311d0ab94d7",
+  "table_sha256": "9a01c49915b607ed6db6a832c32da0a83acdda790de6eae0a1772aa70af9e8d5",
+  "uncompressed_sha256": "96f5676c0fd111ada725205ed6b1beb0ca6866e308eaeb0981514ee49bc91007",
   "constructor_source_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
   "composed_half_input_descriptors_placed": 54,
@@ -57,9 +57,7 @@
     }
   },
   "composed_narrow_left_descriptors_placed": 864,
-  "remaining_by_left_type": {
-    "i64": 6,
-    "f64": 6
-  },
-  "composed_wide_promotion_descriptors_placed": 564
+  "remaining_by_left_type": {},
+  "composed_wide_promotion_descriptors_placed": 564,
+  "native_wide_descriptors_placed": 12
 }

@@ -21,7 +21,7 @@ repo-model = { version = "0.1.0", path = "crates/model" }
 # `cargo deny` refuses those (`wildcards = "deny"`). Every internal dependency
 # carries both.
 vtensor-backend = { version = "0.1.0", path = "crates/conformance" }
-verdant-tensor = { version = "=2.22.0", git = "https://github.com/afflom/verdant-engine", rev = "00d8893ff2a443b91171421ef2df5aa4876a78b8" }
+verdant-tensor = { version = "=2.22.0", git = "https://github.com/afflom/verdant-engine", rev = "603a50866eaf31aabdc95612657d3e900ef0c0a8" }
 
 [workspace.lints.rust]
 missing_docs = "deny"

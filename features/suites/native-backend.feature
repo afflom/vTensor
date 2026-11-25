@@ -812,3 +812,9 @@ Feature: native-backend
     Given I64 and F64 left operands paired with a different right type or division
     When a sole provider executes the ordinary and in-place graphs
     Then the stored output matches the GGML and OpenVINO promotion and conversion oracles
+
+  @VT-192 @build
+  Scenario: Matching wide arithmetic keeps all source bits
+    Given I64 and F64 operands with low-word carries and binary64 rounding boundaries
+    When a sole provider executes ADD SUB and MUL on copied and aliased outputs
+    Then every stored word matches the pinned OpenVINO and SoftFloat arithmetic oracles

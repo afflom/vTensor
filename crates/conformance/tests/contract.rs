@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn wide_native_binary_vt_192() { "wide-native-binary", 12, ["typed", "pointwise"] }
     fn wide_mixed_binary_vt_191() { "wide-mixed-binary", 584, ["typed", "pointwise"] }
     fn narrow_left_binary_vt_190() { "narrow-left-binary", 880, ["typed", "pointwise"] }
     fn q8_activation_binary_vt_188() { "q8-activation-binary", 1166, ["typed"] }
@@ -1281,7 +1282,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a7fdb085f68bf0e230f012aeaf3b45405fb93a16d3ca1fef3b0a31a610d254ed",
+            "97f048139487aab5c2e7fe0ef61e3ffb99a3123398a48197fe9168b648b5f63b",
         )
     });
 
@@ -1486,16 +1487,14 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let scratch = cache.join(std::str::from_utf8(&unique).unwrap().trim_end());
         let expected_snapshot = scratch.join("inputs.snapshot");
         std::fs::write(&expected_snapshot, vtensor_backend::source_snapshot()).unwrap();
-        let recipe = if imported {
-            None
-        } else if mode == "typed-binary" {
-            Some(&*TYPED_BINARY)
-        } else {
-            NATIVE_FIXTURES["mode"]
+        let recipe = match (imported, mode) {
+            (true, _) => None,
+            (_, "typed-binary") => Some(&*TYPED_BINARY),
+            _ => NATIVE_FIXTURES["mode"]
                 .as_array()
                 .unwrap()
                 .iter()
-                .find(|row| row["name"] == mode)
+                .find(|row| row["name"] == mode),
         };
         let trace = |suffix: &str| expected_snapshot.with_extension(format!("snapshot.{suffix}"));
         let mut recipes = Vec::new();

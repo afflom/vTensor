@@ -37,10 +37,10 @@ realized_by = []
 [[authority]]
 id = "VERDANT-ENGINE-TENSOR"
 name = "Verdant Engine tensor API"
-citation = "https://github.com/afflom/verdant-engine/tree/00d8893ff2a443b91171421ef2df5aa4876a78b8"
-checksum = "8da1f3fd0f9433ff2628ffcbb186c4264abedbf0c8bf2b02f906858934182cd2"
+citation = "https://github.com/afflom/verdant-engine/tree/603a50866eaf31aabdc95612657d3e900ef0c0a8"
+checksum = "b2a71e7efef966084815997a3caf1ca77335c41736f5ff40f1303543cc4c75c5"
 artifact = "model/verdant-development.json"
-statement = "The upstream Verdant patch supplies the certified storage decoder for signed Q8 activation blocks."
+statement = "The production Verdant API and certified upstream storage and wide-word arithmetic kernels."
 realized_by = ["VT-02"]
 
 [[authority]]

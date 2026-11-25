@@ -464,7 +464,8 @@
     "ggml-q8-activation-cast-oracle": "26713fd4b71972915ceaed4aeef280590ab08fb33bf4a238b5ce9418adc4c52a",
     "ggml-vector-swiglu-oracle": "e7e9535d141d27d086a1072cc63049d9c7f0d55068d7b004eefc1e224dca4a35",
     "ggml-narrow-left-binary-oracle": "15bc5514fffccc3c08d0b628bc7532791bdfd02876c4a06fa4a0c0028550aab3",
-    "ggml-wide-mixed-binary-oracle": "24b0e9c2298354bae7a43c12370c70dfe2421511ff68b8ca3c606b08f67d63bd"
+    "ggml-wide-mixed-binary-oracle": "24b0e9c2298354bae7a43c12370c70dfe2421511ff68b8ca3c606b08f67d63bd",
+    "ggml-wide-native-binary-oracle": "a03e4848be37bcd595902f0e7037df5a7bdff22d24fe58b4046ff1d7f9918807"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -580,15 +581,15 @@
     ]
   ],
   "verdant_quotient": {
-    "archive_sha256": "084511a7acad578fa846bb4949ee9d49e92b72176e4fcd1919734ba732dfb16a",
+    "archive_sha256": "dea35b95148f1d596e43988c5641c7c7b24d63ada4f406598ed5c0a882a45c56",
     "sdk": "ghcr.io/uor-foundation/lexlean@sha256:d391bfedd4eb97dc25c218628f94cd081436589c348797ebf13c47ab13d4ef30",
     "sha256": {
-      "app/quotient-production.json": "f194b6774bc0e6e8464bfb79ec42ca7407d23e309bbe47cd03a1362c5a99aa9b",
+      "app/quotient-production.json": "9eb5285e804ab9eaf2a20779e0b5cb8ed42b31b55397dc7a1a4ed29bfe092eb6",
       "app/quotient.lexlean.lock": "e75936c9fe696c45b03cff856aa44ff321dc2a449051f5550dbb6710f6cead2f",
-      "generated/tensor-quotient/result.json": "100db522f1b6eb52c26c43de3fc22410e91263d53e94498a2c3aa3f0c4678d41",
-      "quotient-kernel.lock": "ded72cd53f6bef81daf4eda2219c8424f0bc5bb2b15fbab3edab94c3cac43a43"
+      "generated/tensor-quotient/result.json": "371cf2e06fa635d729344b0fcbb7cfcdb13ec1398644f94aac344e1a3b7ddd4d",
+      "quotient-kernel.lock": "b88b8a7391780e749520541aea4524283f66f2166ffd5f6936e41fd916b6340d"
     },
-    "upstream_revision": "042d18eab3862b44d4d9de0817e33d888a4d6560"
+    "upstream_revision": "603a50866eaf31aabdc95612657d3e900ef0c0a8"
   },
   "atomic_store_types": {
     "SET_ROWS_SCALAR": [
@@ -679,7 +680,8 @@
     "q8-activation-cast": "ggml-q8-activation-cast",
     "vector-swiglu": "ggml-vector-swiglu",
     "narrow-left-binary": "ggml-narrow-left-binary",
-    "wide-mixed-binary": "ggml-wide-mixed-binary"
+    "wide-mixed-binary": "ggml-wide-mixed-binary",
+    "wide-native-binary": "ggml-wide-native-binary"
   },
   "drivers": {
     "binary-widths": "scalar-casts",
@@ -695,6 +697,7 @@
     "q8-activation-binary": "scalar-binary",
     "q8-activation-cast": "mixed-cast",
     "narrow-left-binary": "scalar-binary",
-    "wide-mixed-binary": "scalar-binary"
+    "wide-mixed-binary": "scalar-binary",
+    "wide-native-binary": "scalar-binary"
   }
 }

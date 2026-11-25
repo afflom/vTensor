@@ -1218,3 +1218,9 @@ id = "VT-191"
 level = "build"
 suite = "native-backend"
 statement = "Wide mixed binary operands and wide division follow GGML binary32 promotion"
+
+[[id]]
+id = "VT-192"
+level = "build"
+suite = "native-backend"
+statement = "Matching I64 and F64 binary operands retain native precision in sums differences and products"

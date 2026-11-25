@@ -1,0 +1,24 @@
+{
+  "requirement": "VT-192",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-wide-native-binary-oracle.json",
+  "provider_sha256": "d2552e24843ac399d349b1075667a6c331b74d82e1caecc7fa8e1e114c685bfb",
+  "typed_attestation": "66aea0219a3236ce0bc4e91e5944b932330a4e665d12e002b70d80fa5fb6f116",
+  "pointwise_attestation": "ed17e3bfede1eae141e7fb42cc29591ed53ced8030aa56331e2b3590c630ab39",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "upstream_patch": "https://github.com/afflom/verdant-engine/pull/67",
+  "new_placements_by_constructor": {
+    "add": 2,
+    "add_inplace": 2,
+    "sub": 2,
+    "sub_inplace": 2,
+    "mul": 2,
+    "mul_inplace": 2
+  },
+  "scheduled_graphs": 12,
+  "stored_words_compared": 6144,
+  "unique_external_reference_words": 3072,
+  "negative_control": "The previous provider refused the new fixtures before allocation. Sending I64 products to the wide addition operation failed the first signed product. Restoring the operation reproduced the passing plugin byte for byte.",
+  "consumer": "llama-perplexity-four-chunks.json",
+  "non_prism_lines": 12540
+}

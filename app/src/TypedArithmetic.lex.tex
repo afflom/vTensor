@@ -111,6 +111,22 @@ definition{
 }
 
 definition{
+  name: wideWordType,
+  parameters: [ty : Nat],
+  result: Bool,
+  body: ((ty =? 27) || (ty =? 28)),
+  executable: true
+}
+
+definition{
+  name: binaryLayoutWidth,
+  parameters: [ty : Nat],
+  result: Nat,
+  body: (if (wideWordType ty) then 8 else (binaryWordBytes ty)),
+  executable: true
+}
+
+definition{
   name: storageTuple,
   parameters: [left : Nat, rhs : Nat, output : Nat],
   result: Bool,
@@ -146,7 +162,7 @@ definition{
   name: aligned,
   parameters: [tensor : NormPlan::TensorDescriptor],
   result: Bool,
-  body: (let size : Nat := (binaryWordBytes (project tensor ty)); ((((prim remainder (project tensor address) size 1 : Nat) =? 0) && (RmsNormalization::axisAligned (project tensor n0) (project tensor s0) size)) && (RmsNormalization::alignedRows (project tensor n1) (project tensor n2) (project tensor n3) (project tensor s1) (project tensor s2) (project tensor s3) size))),
+  body: (let size : Nat := (binaryLayoutWidth (project tensor ty)); ((((prim remainder (project tensor address) size 1 : Nat) =? 0) && (RmsNormalization::axisAligned (project tensor n0) (project tensor s0) size)) && (RmsNormalization::alignedRows (project tensor n1) (project tensor n2) (project tensor n3) (project tensor s1) (project tensor s2) (project tensor s3) size))),
   executable: true
 }
 
@@ -154,7 +170,7 @@ definition{
   name: nested,
   parameters: [tensor : NormPlan::TensorDescriptor],
   result: Bool,
-  body: (RmsNormalization::nestedRows (prim multiply (project tensor n0) (binaryWordBytes (project tensor ty)) : Nat) (project tensor n1) (project tensor n2) (project tensor n3) (project tensor s1) (project tensor s2) (project tensor s3)),
+  body: (RmsNormalization::nestedRows (prim multiply (project tensor n0) (binaryLayoutWidth (project tensor ty)) : Nat) (project tensor n1) (project tensor n2) (project tensor n3) (project tensor s1) (project tensor s2) (project tensor s3)),
   executable: true
 }
 
@@ -191,6 +207,22 @@ definition{
 }
 
 definition{
+  name: widePhases,
+  parameters: [kind : Nat, ty : Nat],
+  result: Nat,
+  body: (if ((ty =? 28) && (kind =? 1)) then 2 else 1),
+  executable: true
+}
+
+definition{
+  name: binaryPhases,
+  parameters: [kind : Nat, left : Nat, rhs : Nat, output : Nat],
+  result: Nat,
+  body: (if (wideWordType left) then (widePhases kind left) else (elementSteps left rhs output)),
+  executable: true
+}
+
+definition{
   name: steps,
   parameters: [count : Nat, slots : Nat, phases : Nat],
   result: Nat,
@@ -207,7 +239,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Bool,
-  body: (if ((project left ty) =? 43) then (((((((kind =? 0) && ((project rhs ty) =? 0)) && (((project output ty) =? 0) || ((project output ty) =? 43))) && (if ((project output ty) =? 43) then (repeatValid left rhs) else (NormPlan::sameShape left rhs))) && ((project rhs s0) =? 4)) && (((project output s0) <=? (project output s1)) && (((project output s1) <=? (project output s2)) && ((project output s2) <=? (project output s3))))) && ((prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat) <=? 2147483647)) else ((repeatValid left rhs) && (storageTuple (project left ty) (project rhs ty) (project output ty)))),
+  body: (if ((project left ty) =? 43) then (((((((kind =? 0) && ((project rhs ty) =? 0)) && (((project output ty) =? 0) || ((project output ty) =? 43))) && (if ((project output ty) =? 43) then (repeatValid left rhs) else (NormPlan::sameShape left rhs))) && ((project rhs s0) =? 4)) && (((project output s0) <=? (project output s1)) && (((project output s1) <=? (project output s2)) && ((project output s2) <=? (project output s3))))) && ((prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat) <=? 2147483647)) else ((repeatValid left rhs) && ((storageTuple (project left ty) (project rhs ty) (project output ty)) || (((((kind <? 3) && (wideWordType (project left ty))) && ((project left ty) =? (project rhs ty))) && ((project left ty) =? (project output ty))) && ((project rhs s0) =? 8))))),
   executable: true
 }
 
@@ -220,7 +252,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if (((NormPlan::sameShape left output) && (binaryLayout kind left rhs output)) && (if (empty left) then true else (((((((((project left s0) =? (binaryWordBytes (project left ty))) && ((project output s0) =? (binaryWordBytes (project output ty)))) && (aligned left)) && (aligned rhs)) && (aligned output)) && (countersAdmitted left rhs)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)))) then (let slots : Nat := (if ((empty left) || (nested output)) then 0 else (prim quotient (project output span) (binaryWordBytes (project output ty)) 0 : Nat)); (ctor Response.planned (record Plan {steps := (steps (elements left) slots (elementSteps (project left ty) (project rhs ty) (project output ty))), capacity := (3 + slots), uniformImportance := (ctor Option.none [Nat]), operation := kind, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := rhs, output := output, rowArithmetic := false, stagedWidth := 0}))) else (ctor Response.invalid)),
+  body: (if (((NormPlan::sameShape left output) && (binaryLayout kind left rhs output)) && (if (empty left) then true else (((((((((project left s0) =? (binaryLayoutWidth (project left ty))) && ((project output s0) =? (binaryLayoutWidth (project output ty)))) && (aligned left)) && (aligned rhs)) && (aligned output)) && (countersAdmitted left rhs)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)))) then (let slots : Nat := (if ((empty left) || (nested output)) then 0 else (prim quotient (project output span) (binaryLayoutWidth (project output ty)) 0 : Nat)); (ctor Response.planned (record Plan {steps := (steps (elements left) slots (binaryPhases kind (project left ty) (project rhs ty) (project output ty))), capacity := (3 + slots), uniformImportance := (ctor Option.none [Nat]), operation := kind, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := rhs, output := output, rowArithmetic := false, stagedWidth := 0}))) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -568,10 +600,28 @@ definition{
 }
 
 definition{
+  name: wideBinaryStep,
+  parameters: [index : Nat, execution : Plan],
+  result: Response,
+  body: (let left : NormPlan::TensorDescriptor := (project execution left);
+    (let rhs : NormPlan::TensorDescriptor := (project execution rhs);
+    (let output : NormPlan::TensorDescriptor := (project execution output);
+    (let kind : Nat := (project execution operation);
+    (let phases : Nat := (widePhases kind (project left ty));
+    (let item : Nat := (prim quotient index phases 0 : Nat);
+    (let rightAt : Nat := (rightOffset item left rhs);
+    (if ((phases =? 2) && ((prim remainder index phases 0 : Nat) =? 0)) then
+      (ctor Response.instruction 6 15 0 0 4 rightAt 2 9223372036854775808 0 0 8 8) else
+      (let code : Nat := (if ((project left ty) =? 27) then (15 + kind) else (if (kind =? 2) then 14 else 0));
+      (ctor Response.instruction 6 code 0 0 0 (offset item left) (if (phases =? 2) then 1 else 4) (if (phases =? 2) then 0 else rightAt) 3 (offset item output) 8 8)))))))))),
+  executable: true
+}
+
+definition{
   name: step,
   parameters: [index : Nat, execution : Plan, flag : Nat],
   result: Response,
-  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let rhs : NormPlan::TensorDescriptor := (project execution rhs); (let output : NormPlan::TensorDescriptor := (project execution output); (let marks : Nat := (if ((project execution capacity) =? 3) then 0 else (prim multiply (elements left) 2 : Nat)); (if ((project execution steps) <=? index) then (ctor Response.invalid) else (if (index <? marks) then (let ordinal : Nat := (prim quotient index 2 0 : Nat); (let slot : Nat := (3 + (prim quotient (offset ordinal output) (binaryWordBytes (project output ty)) 0 : Nat)); (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor Response.instruction 2 3 0 0 1 slot 2 0 0 2 8 8) else (if (flag =? 0) then (ctor Response.instruction 2 3 0 0 2 1 2 0 0 slot 8 8) else (ctor Response.invalid))))) else (let relative : Nat := (prim subtract index marks : Nat); (let phases : Nat := (elementSteps (project left ty) (project rhs ty) (project output ty)); (let ordinal : Nat := (prim quotient relative phases 0 : Nat); (let phase : Nat := (prim remainder relative phases 0 : Nat); (let ld : Nat := (if ((project left ty) =? 0) then 0 else 1); (let rd : Nat := (if ((project rhs ty) =? 0) then 0 else 1); (if (phase <? ld) then (ctor Response.instruction 0 0 (project left ty) 0 0 (offset ordinal left) 2 0 0 0 (binaryWordBytes (project left ty)) 4) else (if (phase <? (ld + rd)) then (ctor Response.instruction 0 0 (project rhs ty) 0 4 (rightOffset ordinal left rhs) 2 0 0 1 (binaryWordBytes (project rhs ty)) 4) else (if (phase =? (ld + rd)) then (ctor Response.instruction 1 (project execution operation) 0 0 (if (ld =? 0) then 0 else 1) (if (ld =? 0) then (offset ordinal left) else 0) (if (rd =? 0) then 4 else 1) (if (rd =? 0) then (rightOffset ordinal left rhs) else 1) (if ((project output ty) =? 0) then 3 else 0) (if ((project output ty) =? 0) then (offset ordinal output) else 0) 4 4) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 (offset ordinal output) 4 (binaryWordBytes (project output ty)))))))))))))))))),
+  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let rhs : NormPlan::TensorDescriptor := (project execution rhs); (let output : NormPlan::TensorDescriptor := (project execution output); (let marks : Nat := (if ((project execution capacity) =? 3) then 0 else (prim multiply (elements left) 2 : Nat)); (if ((project execution steps) <=? index) then (ctor Response.invalid) else (if (index <? marks) then (let ordinal : Nat := (prim quotient index 2 0 : Nat); (let slot : Nat := (3 + (prim quotient (offset ordinal output) (binaryLayoutWidth (project output ty)) 0 : Nat)); (if ((prim remainder index 2 0 : Nat) =? 0) then (ctor Response.instruction 2 3 0 0 1 slot 2 0 0 2 8 8) else (if (flag =? 0) then (ctor Response.instruction 2 3 0 0 2 1 2 0 0 slot 8 8) else (ctor Response.invalid))))) else (let relative : Nat := (prim subtract index marks : Nat); (if (wideWordType (project left ty)) then (wideBinaryStep relative execution) else (let phases : Nat := (elementSteps (project left ty) (project rhs ty) (project output ty)); (let ordinal : Nat := (prim quotient relative phases 0 : Nat); (let phase : Nat := (prim remainder relative phases 0 : Nat); (let ld : Nat := (if ((project left ty) =? 0) then 0 else 1); (let rd : Nat := (if ((project rhs ty) =? 0) then 0 else 1); (if (phase <? ld) then (ctor Response.instruction 0 0 (project left ty) 0 0 (offset ordinal left) 2 0 0 0 (binaryLayoutWidth (project left ty)) 4) else (if (phase <? (ld + rd)) then (ctor Response.instruction 0 0 (project rhs ty) 0 4 (rightOffset ordinal left rhs) 2 0 0 1 (binaryLayoutWidth (project rhs ty)) 4) else (if (phase =? (ld + rd)) then (ctor Response.instruction 1 (project execution operation) 0 0 (if (ld =? 0) then 0 else 1) (if (ld =? 0) then (offset ordinal left) else 0) (if (rd =? 0) then 4 else 1) (if (rd =? 0) then (rightOffset ordinal left rhs) else 1) (if ((project output ty) =? 0) then 3 else 0) (if ((project output ty) =? 0) then (offset ordinal output) else 0) 4 4) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 (offset ordinal output) 4 (binaryLayoutWidth (project output ty))))))))))))))))))),
   executable: true
 }
 
@@ -1075,6 +1125,27 @@ theorem{
   name: matchingWideSumKeepsPrecision,
   parameters: [],
   statement: ((rowArithmeticRequired 0 27 27 27) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: wideProductUsesOneInstruction,
+  parameters: [],
+  statement: ((widePhases 2 28) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: storedWideDifferenceNegatesTheSubtrahend,
+  parameters: [],
+  statement: ((widePhases 1 28) = 2),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: signedWideDifferenceUsesOneInstruction,
+  parameters: [],
+  statement: ((widePhases 1 27) = 1),
   proof: reflexivity{}
 }
 

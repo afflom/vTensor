@@ -114,7 +114,7 @@ license-files = [{ path = "src/lib.rs", hash = 0x6c232fe6 }]
 name = "vtensor_pointwise"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xcb08a3da }]
+license-files = [{ path = "src/lib.rs", hash = 0xf737e431 }]
 
 [[licenses.clarify]]
 name = "vtensor_repeat_offset"
@@ -315,9 +315,9 @@ license-files = [{ path = "src/lib.rs", hash = 0xf1e15a93 }]
 
 [[licenses.clarify]]
 name = "verdant_quotient_route"
-version = "=2.12.0"
+version = "=2.22.2"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x824c1aca }]
+license-files = [{ path = "src/lib.rs", hash = 0xfcf7307c }]
 
 [[licenses.clarify]]
 name = "vtensor_spatial"
@@ -371,7 +371,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xa383fc92 }]
+license-files = [{ path = "src/lib.rs", hash = 0xdac2e8e8 }]
 
 [[licenses.clarify]]
 name = "vtensor_vector_swiglu"
@@ -874,3 +874,15 @@ name = "verdant_wide_narrowing"
 version = "=2.21.8"
 expression = "MIT OR Apache-2.0"
 license-files = [{ path = "src/lib.rs", hash = 0x17934949 }]
+
+[[licenses.clarify]]
+name = "verdant_product_f64"
+version = "=2.22.1"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x8bace896 }]
+
+[[licenses.clarify]]
+name = "verdant_modular_word64"
+version = "=2.22.2"
+expression = "MIT OR Apache-2.0"
+license-files = [{ path = "src/lib.rs", hash = 0x491141c1 }]

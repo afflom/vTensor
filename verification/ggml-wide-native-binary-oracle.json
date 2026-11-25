@@ -1,0 +1,39 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "softfloat": {
+    "repository": "https://github.com/ucb-bar/berkeley-softfloat-3",
+    "commit": "07ebd29db0cfb55723a79fbbffe99103ef38e305",
+    "archive_sha256": "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34",
+    "format": "git-archive-tar-gzip",
+    "prefix": "softfloat/",
+    "specialization": "8086-SSE",
+    "rounding": "softfloat_round_near_even"
+  },
+  "softfloat_library_sha256": "72130c9f797fe79ba878c368bcf62dfc6e4e3e057103717da09db150dd2df48f",
+  "openvino": {
+    "version": "2026.4.1.22982.07f9c262b05",
+    "package": "openvino-2026.4.1-22982-cp312-cp312-manylinux_2_28_x86_64.whl",
+    "archive_sha256": "6b4375c17ddcac83a5180349e2e2bb811185c261066e2a920659892d58ef0e3b",
+    "library_sha256": "9b9a80ac1f18e07b13ed54459d9a865bcfe9dc170dbf8fe740c2974b85ecedc1",
+    "translator_sources_sha256": {
+      "ggml/src/ggml-openvino/openvino/op/add.cpp": "b6f40e9c5010b07180231d8f610ec6298d985211d5385d749aa70b21a1f41aa1",
+      "ggml/src/ggml-openvino/openvino/utils.h": "e84ae47c06d08cd9c8f3e4940ff6f8c61604f156141ac433196bacd7d4a763cb",
+      "ggml/src/ggml-openvino/openvino/op/div.cpp": "f8c4abb01357825052d10fcf5729b9b6f508d1b6f89eb2e5336daad473ffcca3"
+    }
+  },
+  "words_sha256": "0d75a984fd198bcce7878d3fa650f9534d5c6737b979bdf66b7f139ac3db7a61",
+  "compression": "gzip",
+  "openvino_repository": "https://github.com/openvinotoolkit/openvino",
+  "openvino_reference_commit": "e213a14725769a6a2bf86fc86650aa78a9c05d3e",
+  "openvino_headers": {
+    "openvino/reference/multiply.hpp": "30bfa67deb9e6b67a91cfc91df9631dbad60efa8bd85ad1eafb696674c525cda",
+    "openvino/reference/autobroadcast_binop.hpp": "f08435172a341394aa8cd5cf23ab855aeec2cf7e335c572c86a2ebdf2d5a3faf",
+    "openvino/reference/utils/coordinate_transform.hpp": "c01f08bf38f27fde0d45f50def3a2b3ff8ff4c711ee558fb0da22655900cbd44",
+    "openvino/reference/utils/coordinate_index.hpp": "af9c5d6a1e7eb8a3b274b84120f66e12006234292ac1898a58e14350bd67b309",
+    "openvino/core/shape_util.hpp": "fc8dd9537d4404600d732ae876ef4c75a30a19e86ba217e9e2b47c39cfaf54de",
+    "openvino/reference/subtract.hpp": "5efdc9eb8d5838b8a0f2fa3ae6f2d66ca08e87a7e668b97a4f159dcfb5149b01",
+    "openvino/reference/add.hpp": "bc8e3d81e13c160ee970d39b747de2be63a29140fd2624bc2afa162d9d39f0f6"
+  },
+  "fixture_records": 6,
+  "reference": "The ordinary pinned GGML OpenVINO translators retain I64 and F64 on matching ADD, SUB and MUL. Compile the original OpenVINO 2026.4.1 reference Add, Subtract and Multiply templates with wrapping signed arithmetic and floating-point contraction disabled. The 1,536 I64 outputs also match the original OpenVINO runtime evaluator. All 3,072 outputs independently match the pinned SoftFloat f64_add, f64_sub, f64_mul and the low words of its add128, sub128 and mul64To128 primitives. The F64 source is finite and includes both signed zeros, subnormal inputs, halfway neighbors and the maximum finite magnitude."
+}
