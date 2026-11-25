@@ -7,11 +7,11 @@ opcode	operation	constructor_count	cpu_dispatch_line	cpu_entry	cpu_definition	fa
 5	GGML_OP_SUB	2	1789	ggml_compute_forward_sub	binary-ops.cpp:144	142	VT-51	144	149	4	VT-150,VT-51	-	verification/supplemental-packed-binary-vt180.json,verification/supplemental-scalar-binary-vt182.json,verification/supplemental-numeric-inputs-vt187.json,verification/supplemental-activation-binary-vt188.json,verification/supplemental-narrow-left-vt190.json,verification/supplemental-wide-promotion-vt191.json,verification/supplemental-native-wide-vt192.json	graph
 6	GGML_OP_MUL	2	1793	ggml_compute_forward_mul	binary-ops.cpp:148	1533	VT-103,VT-51,VT-57,VT-61,VT-75,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	2075	364	5	VT-103,VT-49,VT-51,VT-57,VT-61,VT-64/67/68-compositions,VT-75,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-compositions,VT-89-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	verification/supplemental-packed-binary-vt180.json,verification/supplemental-scalar-binary-vt182.json,verification/supplemental-numeric-inputs-vt187.json,verification/supplemental-activation-binary-vt188.json,verification/supplemental-narrow-left-vt190.json,verification/supplemental-wide-promotion-vt191.json,verification/supplemental-native-wide-vt192.json	graph
 7	GGML_OP_DIV	2	1797	ggml_compute_forward_div	binary-ops.cpp:152	142	VT-51	498	157	4	VT-51,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	verification/supplemental-packed-binary-vt180.json,verification/supplemental-scalar-binary-vt182.json,verification/supplemental-numeric-inputs-vt187.json,verification/supplemental-activation-binary-vt188.json,verification/supplemental-narrow-left-vt190.json,verification/supplemental-wide-promotion-vt191.json	graph
-8	GGML_OP_SQR	2	1801	ggml_compute_forward_sqr	unary-ops.cpp:281	13	VT-27,standalone	39	39	3	VT-150,VT-27,VT-64/67/68-compositions,standalone	-	-	graph
-9	GGML_OP_SQRT	2	1805	ggml_compute_forward_sqrt	unary-ops.cpp:285	9	VT-27	185	27	3	VT-27,VT-89-compositions	-	-	graph
-10	GGML_OP_LOG	2	1809	ggml_compute_forward_log	unary-ops.cpp:297	9	VT-60	9	9	3	VT-60	-	-	graph
-11	GGML_OP_SIN	2	1813	ggml_compute_forward_sin	unary-ops.cpp:289	9	VT-60	33	33	3	VT-60,VT-64/67/68-compositions	-	-	graph
-12	GGML_OP_COS	2	1817	ggml_compute_forward_cos	unary-ops.cpp:293	9	VT-60	9	9	3	VT-60	-	-	graph
+8	GGML_OP_SQR	2	1801	ggml_compute_forward_sqr	unary-ops.cpp:281	13	VT-27,standalone	39	39	3	VT-150,VT-27,VT-64/67/68-compositions,standalone	-	-,verification/supplemental-stored-unary-vt200.json	graph
+9	GGML_OP_SQRT	2	1805	ggml_compute_forward_sqrt	unary-ops.cpp:285	9	VT-27	185	27	3	VT-27,VT-89-compositions	-	-,verification/supplemental-stored-unary-vt200.json	graph
+10	GGML_OP_LOG	2	1809	ggml_compute_forward_log	unary-ops.cpp:297	9	VT-60	9	9	3	VT-60	-	-,verification/supplemental-stored-unary-vt200.json	graph
+11	GGML_OP_SIN	2	1813	ggml_compute_forward_sin	unary-ops.cpp:289	9	VT-60	33	33	3	VT-60,VT-64/67/68-compositions	-	-,verification/supplemental-stored-unary-vt200.json	graph
+12	GGML_OP_COS	2	1817	ggml_compute_forward_cos	unary-ops.cpp:293	9	VT-60	9	9	3	VT-60	-	-,verification/supplemental-stored-unary-vt200.json	graph
 13	GGML_OP_SUM	1	1821	ggml_compute_forward_sum	ops.cpp:1412	26	VT-149,VT-150,VT-29	28	23	1	VT-149,VT-150,VT-29	-	-	graph
 14	GGML_OP_SUM_ROWS	1	1825	ggml_compute_forward_sum_rows	ops.cpp:1523	11	VT-29	447	30	1	VT-29,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
 15	GGML_OP_CUMSUM	1	1829	ggml_compute_forward_cumsum	ops.cpp:1470	15	VT-28	15	15	1	VT-28	-	-	graph
@@ -88,7 +88,7 @@ opcode	operation	constructor_count	cpu_dispatch_line	cpu_entry	cpu_definition	fa
 86	GGML_OP_DSV4_HC_PRE	2	2112	ggml_compute_forward_dsv4_hc_pre	ops.cpp:11516	18	VT-127	18	18	1	VT-127	-	-	graph
 87	GGML_OP_DSV4_HC_POST	1	2116	ggml_compute_forward_dsv4_hc_post	ops.cpp:11610	11	VT-129	11	11	2	VT-129	-	-	graph
 88	GGML_OP_TOP_K_MASK	1	2120	ggml_compute_forward_top_k_mask	ops.cpp:11629	38	VT-92	38	38	16	VT-92	-	-	attention
-89	GGML_OP_UNARY	43	2068	ggml_compute_forward_unary	ops.cpp:10344	414	VT-118,VT-137,VT-138,VT-27,VT-60,VT-61,VT-68,VT-75,VT-81,VT-89	997	452	3	VT-118,VT-129,VT-137,VT-138,VT-27,VT-60,VT-61,VT-68,VT-75,VT-81,VT-86-compositions,VT-89,VT-89-compositions,standalone	-	-	graph
+89	GGML_OP_UNARY	43	2068	ggml_compute_forward_unary	ops.cpp:10344	414	VT-118,VT-137,VT-138,VT-27,VT-60,VT-61,VT-68,VT-75,VT-81,VT-89	997	452	3	VT-118,VT-129,VT-137,VT-138,VT-27,VT-60,VT-61,VT-68,VT-75,VT-81,VT-86-compositions,VT-89,VT-89-compositions,standalone	-	-,verification/supplemental-stored-unary-vt200.json	graph
 90	GGML_OP_MAP_CUSTOM1	2	2124	ggml_compute_forward_map_custom1	ops.cpp:11932	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json	callback
 91	GGML_OP_MAP_CUSTOM2	2	2129	ggml_compute_forward_map_custom2	ops.cpp:11946	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json	callback
 92	GGML_OP_MAP_CUSTOM3	2	2134	ggml_compute_forward_map_custom3	ops.cpp:11961	0	-	0	0	0	-	VT-136	verification/native-custom-callbacks-vt136.json	callback

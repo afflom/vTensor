@@ -435,14 +435,10 @@ enum ExecutionPlan {
     Callback(CallbackParams),
     Delay(std::time::Duration),
     Standard(GraphPlan),
-    Typed(vtensor_typed::Adt2),
+    Typed(vtensor_typed::Adt2, Option<Box<GraphPlan>>),
     RowProduct(RowProductPlan),
     Rotary(vtensor_rotary::Adt3),
-    Attention(Box<vtensor_attention::Adt2>),
-    Softmax(Box<vtensor_attention::Adt3>),
-    SparseMask(Box<vtensor_attention::Adt4>),
-    Indexer(Box<vtensor_attention::Adt5>),
-    Recurrent(Box<vtensor_attention::Adt6>),
+    Attention(Box<vtensor_attention::Adt7>),
 }
 
 // Each certified graph bundle renders its own type for the same GGML metadata.
@@ -645,12 +641,22 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
         output.clone(),
     ))?;
     let metadata = descriptor_for!(vtensor_typed::Adt1::C0);
-    let typed_plan = |request| match vtensor_typed::run(request).map_err(BackendError::overflow)? {
-        vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan))),
-        _ => Err(InvalidTensor),
-    };
+    let with_projection =
+        |request, projection| match vtensor_typed::run(request).map_err(BackendError::overflow)? {
+            vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan, projection))),
+            _ => Err(InvalidTensor),
+        };
+    let typed_plan = |request| with_projection(request, None);
     let full = matches!(response, GraphResponse::C0(GraphPlan::C7));
     match response {
+        GraphResponse::C0(GraphPlan::C9(count, row, mode)) if !has_source_from(1) => {
+            let input = metadata(primary.ok_or(InvalidTensor)?);
+            let program = GraphPlan::C4(count, 4, row.clone(), row, mode);
+            with_projection(
+                vtensor_typed::Adt0::C4(input, metadata(output)),
+                Some(Box::new(program)),
+            )
+        }
         GraphResponse::C0(GraphPlan::C8) => Err(InvalidTensor),
         GraphResponse::C0(plan @ (GraphPlan::C3(..) | GraphPlan::C4(..) | GraphPlan::C6(..))) => {
             Ok(Some(ExecutionPlan::Standard(plan)))
@@ -814,12 +820,7 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
                 let value = &mut values[at as usize];
                 if writing {
                     // SAFETY: the certified output offset spans one potentially unaligned F32 word.
-                    unsafe {
-                        output
-                            .add(offset as usize)
-                            .cast::<f32>()
-                            .write_unaligned(*value)
-                    };
+                    unsafe { write_row(output.add(offset as usize), std::slice::from_ref(value)) };
                 } else {
                     *value = f32::from_ne_bytes(inputs[slot as usize].0.word(offset)?);
                 }
@@ -1474,7 +1475,11 @@ fn execute_word(
     Ok(())
 }
 
-fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), BackendError> {
+fn execute_typed(
+    tensor: &Tensor,
+    plan: vtensor_typed::Adt2,
+    projection: Option<&GraphPlan>,
+) -> Result<(), BackendError> {
     use vtensor_typed::Adt3::{
         C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as BinaryRow, C8 as DecodeWindow,
         C9 as EncodeWindow,
@@ -1533,6 +1538,12 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 if !matches!(instruction, EncodeWindow(..)) {
                     source.as_ref().ok_or(InvalidTensor)?.decode(from, values)?;
                 }
+                if let Some(program) = projection {
+                    let row = values.as_mut_ptr().cast();
+                    copy_steps(program, [0; 4], &mut [0; 3], |step, words| {
+                        execute_word(step, &[row], row, words)
+                    })?;
+                }
                 if let BinaryRow(_, offset, _) = instruction {
                     let right = right.as_ref().ok_or(InvalidTensor)?;
                     right.decode(offset, &mut right_values)?;
@@ -1547,8 +1558,8 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 encoded.try_reserve(row_bytes)?;
                 for block_values in values.chunks_exact(lanes) {
                     let start = encoded.len();
-                    match (tensor.ty, &scalar_store) {
-                        (9, _) => {
+                    match tensor.ty {
+                        9 => {
                             let row = linear::encode_affine_q8_block::<32>(
                                 block_values.try_into().map_err(|_| InvalidTensor)?,
                             )?;
@@ -1556,7 +1567,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                             encoded.extend(row.scaled_sum.to_ne_bytes());
                             encoded.extend(row.symmetric.codes.map(|code| code as u8));
                         }
-                        (15, _) => {
+                        15 => {
                             let row = linear::encode_grouped_q8_block(
                                 block_values.try_into().map_err(|_| InvalidTensor)?,
                             )?;
@@ -1564,24 +1575,22 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                             encoded.extend(row.codes.map(|code| code as u8));
                             encoded.extend(row.sums.into_iter().flat_map(i16::to_ne_bytes));
                         }
-                        (_, Some(cast)) => {
-                            let word = cast.apply(block_values[0].to_bits().into())?;
-                            encoded.resize(start + block_bytes, 0);
-                            store_word(&mut encoded[start..], word)?;
-                        }
                         _ => {
-                            let kind = kind.ok_or(InvalidTensor)?;
                             encoded.resize(start + block_bytes, 0);
                             let block = &mut encoded[start..];
-                            if let Some(weights) = uniform.as_deref() {
-                                linear::encode_importance_weight_block(
-                                    block_values,
-                                    Some(weights),
-                                    kind,
-                                    block,
-                                )?;
+                            if let Some(cast) = &scalar_store {
+                                store_word(block, cast.apply(block_values[0].to_bits().into())?)?;
                             } else {
-                                linear::encode_weight_block(block_values, kind, block)?;
+                                let kind = kind.ok_or(InvalidTensor)?;
+                                match uniform.as_deref() {
+                                    Some(weights) => linear::encode_importance_weight_block(
+                                        block_values,
+                                        Some(weights),
+                                        kind,
+                                        block,
+                                    )?,
+                                    None => linear::encode_weight_block(block_values, kind, block)?,
+                                }
                             }
                         }
                     }
@@ -1606,13 +1615,10 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                 unsafe { write_row(output.add(to as usize), indices) };
             }
             Gate(variant, storage, first, second, target) => {
-                let operand = |slot: u64| {
-                    words
-                        .get(slot as usize)
-                        .map(|word| f32::from_bits(*word as u32))
-                        .ok_or(InvalidTensor)
-                };
-                let value = gated_value(variant, storage, operand(first)?, operand(second)?)?;
+                let operand = |slot: u64| words.get(slot as usize).copied().ok_or(InvalidTensor);
+                let [input, gate] =
+                    [operand(first)?, operand(second)?].map(|w| f32::from_bits(w as u32));
+                let value = gated_value(variant, storage, input, gate)?;
                 *words.get_mut(target as usize).ok_or(InvalidTensor)? = u64::from(value.to_bits());
             }
             // The typed planner and the pointwise interpreter export separate Rust enums
@@ -1636,16 +1642,13 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
 
 fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     use BackendError::InvalidTensor;
-    tensor_fields!(GraphPlan::C4(count, bytes, source, destination, mode) = plan);
+    tensor_fields!(GraphPlan::C4(_, bytes, _, _, ref mode) = plan);
     let reply = pointwise(GraphRequest::C2(mode.clone()))?;
     tensor_fields!(GraphResponse::C6(mask, literal_type, bits, constant, capacity) = reply);
     let mut literal = [0_u8; 8];
     if constant {
-        let value = convert(0, literal_type, bits)?;
-        store_word(
-            literal.get_mut(..bytes as usize).ok_or(InvalidTensor)?,
-            value,
-        )?;
+        let target = literal.get_mut(..bytes as usize).ok_or(InvalidTensor)?;
+        store_word(target, convert(0, literal_type, bits)?)?;
     }
     let mut pointers = tensor.src.map(|_| literal.as_mut_ptr());
     if mask >> pointers.len() != 0 {
@@ -1668,27 +1671,12 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         .then(|| workspace(capacity, 0_u64))
         .transpose()?;
     let words = dynamic.as_deref_mut().unwrap_or(&mut fixed);
-    let [x0, x1, x2, x3] = match mode {
+    let strides = match mode {
         CopyMode::C26(66, ..) => tensor.source(1).ok_or(InvalidTensor)?.nb.map(|v| v as u64),
         _ => [0; 4],
     };
-    let mut steps = 0..count;
-    while let Some(index) = steps.next() {
-        let response = pointwise(GraphRequest::C6(
-            index,
-            source.clone(),
-            destination.clone(),
-            mode.clone(),
-            words[2],
-            words[1],
-            bytes,
-            x0,
-            x1,
-            x2,
-            x3,
-        ))?;
+    copy_steps(&plan, strides, words, |response, words| {
         match response {
-            GraphResponse::C11(next) if (steps.start..=count).contains(&next) => steps.start = next,
             GraphResponse::C7(..) => execute_word(response, &pointers, destination_data, words)?,
             // SAFETY: Prism preflights every index and bounds the complete block and output lanes.
             GraphResponse::C10(kind, from, width, to, lanes, stride) => unsafe {
@@ -1719,6 +1707,38 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
                 verdant_tensor::memory::copy_storage_block(&block, target)?;
             },
             _ => return Err(InvalidTensor),
+        }
+        Ok(())
+    })
+}
+
+fn copy_steps(
+    plan: &GraphPlan,
+    [x0, x1, x2, x3]: [u64; 4],
+    words: &mut [u64],
+    mut perform: impl FnMut(GraphResponse, &mut [u64]) -> Result<(), BackendError>,
+) -> Result<(), BackendError> {
+    tensor_fields!(GraphPlan::C4(count, bytes, source, destination, mode) = plan);
+    let mut steps = 0..*count;
+    while let Some(index) = steps.next() {
+        let response = pointwise(GraphRequest::C6(
+            index,
+            source.clone(),
+            destination.clone(),
+            mode.clone(),
+            words[2],
+            words[1],
+            *bytes,
+            x0,
+            x1,
+            x2,
+            x3,
+        ))?;
+        match response {
+            GraphResponse::C11(next) if (steps.start..=*count).contains(&next) => {
+                steps.start = next
+            }
+            other => perform(other, words)?,
         }
     }
     Ok(())
@@ -1816,13 +1836,21 @@ fn execute_graph(backend: BackendPtr, nodes: &[TensorPtr]) -> Result<(), Backend
                     std::thread::sleep(duration);
                     Ok(())
                 }
-                ExecutionPlan::Recurrent(plan) => attention::recurrent(&execution, &*tensor, *plan),
-                ExecutionPlan::Indexer(plan) => attention::indexer(&*tensor, *plan),
-                ExecutionPlan::SparseMask(plan) => attention::sparse_mask(&*tensor, *plan),
-                ExecutionPlan::Softmax(plan) => attention::softmax(&*tensor, *plan),
-                ExecutionPlan::Attention(plan) => attention::execute(&*tensor, *plan),
+                ExecutionPlan::Attention(reply) => {
+                    use vtensor_attention::Adt7::*;
+                    match *reply {
+                        C1(plan) => attention::execute(&*tensor, plan),
+                        C3(plan) => attention::softmax(&*tensor, plan),
+                        C5(plan) => attention::sparse_mask(&*tensor, plan),
+                        C10(plan) => attention::indexer(&*tensor, plan),
+                        C12(plan) => attention::recurrent(&execution, &*tensor, plan),
+                        _ => Err(BackendError::InvalidTensor),
+                    }
+                }
                 ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
-                ExecutionPlan::Typed(plan) => execute_typed(&*tensor, plan),
+                ExecutionPlan::Typed(plan, projection) => {
+                    execute_typed(&*tensor, plan, projection.as_deref())
+                }
                 ExecutionPlan::RowProduct(plan) => execute_row_products(&execution, &*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),
             }?;
@@ -1892,15 +1920,14 @@ mod rotary {
 
     pub(super) fn execute(tensor: &Tensor, plan: Plan) -> Result<(), BackendError> {
         let Plan::C0(width, pairs, channels, heads, tokens, batches, layout, _, _) = &plan;
-        // SAFETY: graph admission requires data and positions and validates the optional factor descriptor.
-        let (source, positions, factors) =
-            unsafe { (&*tensor.src[0], &*tensor.src[1], tensor.src[2].as_ref()) };
+        let source = tensor.source(0).ok_or(BackendError::InvalidTensor)?;
+        tensor_fields!(
+            [Some(positions), factors] = tensor.map_sources(1, super::TensorInput::new)?
+        );
         let (input, output) = (graph_tensor_data(source)?, graph_tensor_data(tensor)?);
         let axis_count = (positions.ne[0] as u64)
             .checked_div(*tokens)
             .ok_or(BackendError::InvalidTensor)? as usize;
-        let positions = graph_tensor_data(positions)?;
-        let factors = factors.map(graph_tensor_data).transpose()?;
         let spectrum = spectrum(tensor)?;
         let format = source.ty as u64;
         let mut coefficients = workspace(*pairs, (0_f32, 0_f32))?;
@@ -1908,11 +1935,8 @@ mod rotary {
         for (lane, slot) in schedule.iter_mut().enumerate() {
             let reply = request(Request::C3(layout.clone(), lane as u64))?;
             tensor_fields!(Response::C6(axis, reset) = reply);
-            let factor = match factors {
-                Some(pointer) => {
-                    // SAFETY: Prism admitted this contiguous F32 factor word.
-                    f32::from_bits(unsafe { scalar_word(pointer.add(lane * 4), 4, None)? } as u32)
-                }
+            let factor = match &factors {
+                Some(table) => f32::from_ne_bytes(table.word((lane * 4) as u64)?),
                 None => 1.0,
             };
             *slot = (
@@ -1932,15 +1956,8 @@ mod rotary {
         for token in 0..*tokens {
             let mut base = [0.0; 4];
             for (axis, value) in base.iter_mut().enumerate().take(axis_count) {
-                // SAFETY: Prism bounded the contiguous position vector for every admitted axis.
-                let word = unsafe {
-                    scalar_word(
-                        positions.add((axis * *tokens as usize + token as usize) * 4),
-                        4,
-                        None,
-                    )?
-                };
-                *value = signed_word_f32(word as i32)?;
+                let at = (axis as u64 * tokens + token) * 4;
+                *value = signed_word_f32(i32::from_ne_bytes(positions.word(at)?))?;
             }
             let mut phase = base;
             for (lane, (weight, &(axis, reset, factor))) in
@@ -2203,33 +2220,27 @@ mod attention {
                     copy_storage_block(&template, target)?;
                     let mut keep = |index| -> Result<(), BackendError> {
                         if let Some(at) = offset(4, index, 0)? {
-                            let src = mask.region(
-                                mask_row.checked_add(at).ok_or(Overflow)?,
-                                width as usize,
-                            )?;
+                            let size = width as usize;
+                            let source = mask_row.checked_add(at).ok_or(Overflow)?;
                             let start = at as usize;
-                            copy_storage_block(
-                                src,
-                                target
-                                    .get_mut(start..start + width as usize)
-                                    .ok_or(InvalidTensor)?,
-                            )?;
+                            let dest = target.get_mut(start..start + size).ok_or(InvalidTensor)?;
+                            copy_storage_block(mask.region(source, size)?, dest)?;
                         }
                         Ok(())
                     };
+                    let cell = |t: &TensorInput, base, role, index, lane| {
+                        read(t, base, offset(role, index, lane)?.ok_or(InvalidTensor)?)
+                    };
                     for j in 0..top.ne[0] as u64 {
-                        let pick = read(&top, top_row, offset(0, j, 0)?.ok_or(InvalidTensor)?)?;
-                        let Some(score_at) = offset(2, pick, 0)? else {
+                        let pick = cell(&top, top_row, 0, j, 0)?;
+                        let Some(at) = offset(2, pick, 0)? else {
                             continue;
                         };
                         if let Some(scores) = &score {
-                            let value = read(scores, score_row, score_at)?;
-                            if linear::evaluate_encoded_word(
-                                0,
-                                value,
-                                u64::from(f32::NEG_INFINITY.to_bits()),
-                            )
-                            .map_err(BackendError::overflow)?
+                            let value = read(scores, score_row, at)?;
+                            let excluded = u64::from(f32::NEG_INFINITY.to_bits());
+                            if linear::evaluate_encoded_word(0, value, excluded)
+                                .map_err(BackendError::overflow)?
                                 != Some(2)
                             {
                                 continue;
@@ -2237,11 +2248,7 @@ mod attention {
                         }
                         if let Some(cells) = &blocks {
                             for lane in 0..cells.ne[0] as u64 {
-                                keep(read(
-                                    cells,
-                                    0,
-                                    offset(3, pick, lane)?.ok_or(InvalidTensor)?,
-                                )?)?;
+                                keep(cell(cells, 0, 3, pick, lane)?)?;
                             }
                         } else {
                             keep(pick)?;
@@ -2249,11 +2256,7 @@ mod attention {
                     }
                     if let Some(cells) = &extra {
                         for j in 0..cells.ne[0] as u64 {
-                            keep(read(
-                                cells,
-                                extra_row,
-                                offset(1, j, 0)?.ok_or(InvalidTensor)?,
-                            )?)?;
+                            keep(cell(cells, extra_row, 1, j, 0)?)?;
                         }
                     }
                 }
@@ -2336,14 +2339,15 @@ mod attention {
             let [a, b, c, d, e, f] = slots;
             Request::C8(op, trailing, p0, p1, p2, p3, a, b, c, d, e, f, output)
         };
-        Ok(Some(match request(query)? {
-            Response::C1(p) => ExecutionPlan::Attention(Box::new(p)),
-            Response::C3(p) => ExecutionPlan::Softmax(Box::new(p)),
-            Response::C5(p) => ExecutionPlan::SparseMask(Box::new(p)),
-            Response::C10(p) => ExecutionPlan::Indexer(Box::new(p)),
-            Response::C12(p) => ExecutionPlan::Recurrent(Box::new(p)),
-            _ => return Err(InvalidTensor),
-        }))
+        let reply = request(query)?;
+        match reply {
+            Response::C1(_)
+            | Response::C3(_)
+            | Response::C5(_)
+            | Response::C10(_)
+            | Response::C12(_) => Ok(Some(ExecutionPlan::Attention(Box::new(reply)))),
+            _ => Err(InvalidTensor),
+        }
     }
 
     impl TensorInput<'_> {
@@ -2391,10 +2395,8 @@ mod attention {
             }
             for (index, block) in out.chunks_exact_mut(self.block_lanes).enumerate() {
                 let relative = index.checked_mul(self.nb[0]).ok_or(Overflow)?;
-                let encoded = self.region(
-                    offset.checked_add(relative as u64).ok_or(Overflow)?,
-                    self.block_bytes,
-                )?;
+                let at = offset.checked_add(relative as u64).ok_or(Overflow)?;
+                let encoded = self.region(at, self.block_bytes)?;
                 decode_block(
                     self.ty as u64,
                     encoded,

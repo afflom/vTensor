@@ -860,3 +860,9 @@ Feature: native-backend
     Given GGML activation blocks or signed and binary64 storage in either cache
     When the sole provider executes flash attention
     Then all scores and value reductions agree at the output with the pinned CPU attention oracle
+
+  @VT-200 @build
+  Scenario: Execute unary operations over stored rows
+    Given a GGML unary constructor on registered storage in a dense or offset view
+    When the sole provider evaluates a copied or in-place result
+    Then the stored output agrees with the original CPU operation on the decoded rows and preserves surrounding bytes

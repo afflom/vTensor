@@ -84,7 +84,8 @@ inductive{
         (Option NormPlan::TensorDescriptor),
         NormPlan::TensorDescriptor
       ]
-    }
+    },
+    {name: projectedRows, fields: [NormPlan::TensorDescriptor, NormPlan::TensorDescriptor]}
   ]
 }
 
@@ -604,7 +605,7 @@ definition{
   result: Response,
   body: (let left : NormPlan::TensorDescriptor := (project execution left);
     (let output : NormPlan::TensorDescriptor := (project execution output);
-    (if (index <? (project execution steps)) then (let width : Nat := (directCastWidth left output);
+    (if (index <? (project execution steps)) then (let width : Nat := (if ((project execution operation) =? 89) then (project left n0) else (directCastWidth left output));
       (if (0 <? width) then (let start : Nat := (prim multiply index width : Nat);
           (ctor Response.encodeBlock (storedOffset start left) (storedOffset start output))) else
         (let rows : Nat := (prim quotient (project execution stagedWidth) (project left n0) 0 : Nat);
@@ -804,6 +805,10 @@ definition{
         | Option.some left => (match secondary
           | Option.none => (ctor Response.invalid)
           | Option.some rhs => (if (rowArithmeticRequired kind (project left ty) (project rhs ty) (project output ty)) then (rowArithmeticPlan kind left rhs output) else (plan kind left rhs output)))))
+    | Request.projectedRows left output => (let width : Nat := (project left n0);
+      (if ((((((NormPlan::sameShape left output) && ((project left ty) =? (project output ty))) && (castStorageLayout left)) && (castStorageLayout output)) && ((project output s0) =? (rowTargetWidth (project output ty)))) && (aliasAdmitted left output))
+      then (ctor Response.planned (record Plan {steps := (prim quotient (elements left) width 0 : Nat), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := 89, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := left, output := output, rowArithmetic := false, stagedWidth := width}))
+      else (ctor Response.invalid)))
     | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
     | Request.gate operation variant swapped alpha limit extra left secondary output => (if (operation =? 33) then (if extra then (ctor Response.invalid) else (match secondary
       | Option.none => (ctor Response.invalid)
@@ -812,7 +817,7 @@ definition{
       | Option.some unused => (ctor Response.invalid))) else (if (operation =? 98) then (if ((admittedGate variant) && (if extra then false else true)) then (match secondary
       | Option.none => (gatePlan variant false swapped alpha limit left left output)
       | Option.some rhs => (gatePlan variant true swapped alpha limit left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))))
-    | Request.step index execution flag => (if (project execution rowArithmetic) then (rowArithmeticStep index execution) else (if ((project execution operation) =? 33) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if (boundedGate (project execution gateVariant)) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag))))))),
+    | Request.step index execution flag => (if (project execution rowArithmetic) then (rowArithmeticStep index execution) else (if (((project execution operation) =? 33) || ((project execution operation) =? 89)) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if (boundedGate (project execution gateVariant)) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag))))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }

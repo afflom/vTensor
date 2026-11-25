@@ -209,7 +209,8 @@ inductive{
     {name: delegated, fields: [Nat]},
     {name: convolution, fields: [ConvolutionGeometry]},
     {name: fullPrecisionProduct, fields: []},
-    {name: invalidPrecision, fields: []}
+    {name: invalidPrecision, fields: []},
+    {name: storedUnary, fields: [Nat, IndexContext, CopyMode]}
   ]
 }
 
@@ -1018,10 +1019,53 @@ definition{
 }
 
 definition{
+  name: unarySteps,
+  parameters: [kind : Nat, output : TensorDescriptor],
+  result: Nat,
+  body: (prim multiply (blockCount output 1) (if (25 <=? kind) then (exponentialUnitPhases (kind =? 26) (project output ty)) else (differencePhases kind (project output ty))) : Nat),
+  executable: true
+}
+
+definition{
+  name: unaryMode,
+  parameters: [kind : Nat, options : OperationParameters, left : TensorDescriptor, output : TensorDescriptor],
+  result: CopyMode,
+  body: (if (25 <=? kind) then (ctor CopyMode.exponentialUnit (kind =? 26) (project left ty) (project output ty) options) else (ctor CopyMode.unaryWord kind (project left ty) (project output ty))),
+  executable: true
+}
+
+definition{
+  name: planUnaryWords,
+  parameters: [kind : Nat, options : OperationParameters, left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (if ((((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) && (((project left ty) =? (project output ty)) || ((project output ty) =? 0))) && (sameShape left output)) then (ctor PointwiseDecision.copyBlocks (unarySteps kind output) (if ((project output ty) =? 0) then 4 else 2) (indexContext left 1) (indexContext output 1) (unaryMode kind options left output)) else (ctor PointwiseDecision.invalidShape)),
+  executable: true
+}
+
+definition{
+  name: unaryProjectionAdmitted,
+  parameters: [kind : Nat, storage : Nat],
+  result: Bool,
+  body: (match (TensorTypes::tensorTypeStorage storage)
+    | TensorTypes::TypeStorageDecision.unknownType => false
+    | TensorTypes::TypeStorageDecision.knownType spec =>
+      (if ((project spec blockSize) =? 1) then true else
+        (if (((((((kind =? 13) || (kind =? 14)) || (kind =? 18)) || (kind =? 19)) || (kind =? 21)) || (kind =? 22)) || (kind =? 25)) then false else true))),
+  executable: true
+}
+
+definition{
   name: planUnary,
   parameters: [kind : Nat, options : OperationParameters, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (if ((((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) && (((project left ty) =? (project output ty)) || ((project output ty) =? 0))) && (sameShape left output)) then (ctor PointwiseDecision.copyBlocks (prim multiply (blockCount output 1) (if (25 <=? kind) then (exponentialUnitPhases (kind =? 26) (project output ty)) else (differencePhases kind (project output ty))) : Nat) (if ((project output ty) =? 0) then 4 else 2) (indexContext left 1) (indexContext output 1) (if (25 <=? kind) then (ctor CopyMode.exponentialUnit (kind =? 26) (project left ty) (project output ty) options) else (ctor CopyMode.unaryWord kind (project left ty) (project output ty)))) else (ctor PointwiseDecision.invalidShape)),
+  body: (if ((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30))
+    then (planUnaryWords kind options left output) else
+    (if ((((project left ty) =? (project output ty)) && (sameShape left output)) && (unaryProjectionAdmitted kind (project left ty))) then
+      (let width : Nat := (project left n0);
+      (let span : Nat := (prim multiply width 4 : Nat);
+      (let row : TensorDescriptor := (record TensorDescriptor {ty := 0, n0 := width, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := span, s2 := span, s3 := span, span := span, address := 0});
+      (ctor PointwiseDecision.storedUnary (unarySteps kind row) (indexContext row 1) (unaryMode kind options row row)))))
+    else (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
 
@@ -1038,6 +1082,7 @@ definition{
   body: (match (numericDecision operation variant left right output)
     | PointwiseDecision.fullPrecisionProduct => (ctor PointwiseDecision.fullPrecisionProduct)
     | PointwiseDecision.invalidPrecision => (ctor PointwiseDecision.invalidPrecision)
+    | PointwiseDecision.storedUnary count row mode => (ctor PointwiseDecision.storedUnary count row mode)
     | PointwiseDecision.unsupported => (ctor PointwiseDecision.unsupported)
     | PointwiseDecision.convolution geometry => (ctor PointwiseDecision.convolution geometry)
     | PointwiseDecision.delegated kernel => (ctor PointwiseDecision.delegated kernel)
@@ -5109,6 +5154,20 @@ theorem{
   name: typedWideProductUsesThePublicWideOperation,
   parameters: [],
   statement: ((machineOperation true 6 14 0 0) = (ctor WordOperation.wide 14)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: packedTanhAwaitsExactProjection,
+  parameters: [],
+  statement: ((unaryProjectionAdmitted 19 16) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: packedRectificationProjectsRows,
+  parameters: [],
+  statement: ((unaryProjectionAdmitted 4 16) = true),
   proof: reflexivity{}
 }
 

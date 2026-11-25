@@ -1,0 +1,25 @@
+{
+  "requirement": "VT-200",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "4e41d696390038308b73622e8a72fe0e912f5db782bfc52ac501293251d56dd9",
+  "oracle": "ggml-stored-unary-oracle.json",
+  "attestations": {
+    "typed": "bc400bffb1bea12901e0e8d0f58ae021f766925caf74abdd8c901cd45ec775a8",
+    "pointwise": "0837d4ebaf964abeece32cc205d0c7b1562b6d51889f722342ce5c396af20f6e"
+  },
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "previous_placements": 324,
+  "new_placements": 2808,
+  "placements": 3132,
+  "storage_pairs_executed": 702,
+  "outputs_per_graph": 1024,
+  "output_values_compared": 2875392,
+  "full_oracle_stream_sha256": "89d3f412b6f6084e2ed84017d767cd169a8415ebf3995d969a1ad526c5ad4fd6",
+  "recurring_graphs": 156,
+  "recurring_output_values": 159744,
+  "comparison": "Compare independently encoded GGML CPU outputs byte for byte, preserve copied inputs and in-place surrounding storage. Binary64 uses a per-value tolerance of 1e-6 times max(1, abs(reference)). The zero-scale IQ4_NL output uses zero coefficients after checking the upstream scale.",
+  "negative_control": "The previous provider refused the registered Q4_0 ABS descriptor. Bypassing arithmetic on the first projected row failed the stored output comparison.",
+  "open_packed_nonlinear_graphs": 756,
+  "open_numeric_counterexamples": "unary-quantization-boundaries.json",
+  "non_prism_lines": 12537
+}

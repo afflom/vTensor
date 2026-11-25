@@ -1266,3 +1266,9 @@ id = "VT-199"
 level = "build"
 suite = "native-backend"
 statement = "Flash attention accepts all registered GGML key and value storage combinations and matches the original CPU attention operation"
+
+[[id]]
+id = "VT-200"
+level = "build"
+suite = "native-backend"
+statement = "Certified unary operation and storage pairs project rows through binary32 and reproduce the original GGML CPU result after storage conversion"
