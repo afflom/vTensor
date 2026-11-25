@@ -14,7 +14,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Establish coverage and unblock release
 
-- [x] Place all **36** GET_ROWS source types and all **180** indexed read/write tuples. The final six source types matched 12,288 gathered words across dense and padded views, including repeated indices. [VT-195](verification/supplemental-numeric-gather-vt195.json)
+- [x] Place all **36** GET_ROWS source types and all **180** indexed read/write tuples. The final six source types matched 12,288 gathered words across dense and padded views, including repeated indices. Matrix and attention certificates bind the same row model. [VT-195](verification/supplemental-numeric-gather-vt195.json)
 
 - [x] Place all **144** public SET_ROWS tuples. The final 16 matched 5,472 bytes under dense and offset writes. All 32 late invalid indices and 24 invalid integer conversions preserved storage. [VT-194](verification/supplemental-indexed-numeric-vt194.json)
 

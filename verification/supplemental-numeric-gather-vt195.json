@@ -21,5 +21,18 @@
   "f32_words_compared": 12288,
   "late_index_refusals": 12,
   "negative_control": "The preceding provider refused before allocation. Forcing binary64-to-binary32 conversion to return zero failed the oracle comparison. Restoring the numerical operation passed.",
-  "non_prism_lines": 12539
+  "non_prism_lines": 12539,
+  "dependent_certificates": {
+    "attestations": {
+      "matrix": "f803d6d73b3c581e09e1ed1771fefd615797eda4ff9f763a01228f27ac4e0538",
+      "attention": "fd8325dfc107bb3ea07fdccd8a04f1b6a38e99dc5dab1413ef7e978493837b1e"
+    },
+    "verified_graphs": [
+      "scalar_matrix_rounding_vt_186",
+      "scalar_score_rounding_vt_185",
+      "numeric_gather_vt_195"
+    ],
+    "provider_sha256": "fe27b9e497fb82828da5de2771bfe655e7aa6b366160c95e3cad8a089b13d021",
+    "kernel_source": "The generated matrix and attention Rust implementations are byte-identical to the previous revision. The certificates bind the updated shared RowGather input."
+  }
 }
