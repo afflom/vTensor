@@ -97,5 +97,5 @@ opcode	operation	constructor_count	cpu_dispatch_line	cpu_entry	cpu_definition	fa
 95	GGML_OP_CROSS_ENTROPY_LOSS_BACK	1	2149	ggml_compute_forward_cross_entropy_loss_back	ops.cpp:12148	2	VT-132	2	2	1	VT-132	-	-	graph
 96	GGML_OP_OPT_STEP_ADAMW	1	2154	ggml_compute_forward_opt_step_adamw	ops.cpp:12233	1	VT-131	1	1	1	VT-131	-	-	graph
 97	GGML_OP_OPT_STEP_SGD	1	2159	ggml_compute_forward_opt_step_sgd	ops.cpp:12295	1	VT-131	1	1	1	VT-131	-	-	graph
-98	GGML_OP_GLU	19	2072	ggml_compute_forward_glu	ops.cpp:10448	216	VT-111,VT-137,VT-56,VT-77,VT-93	1756	280	6	VT-103,VT-110,VT-111,VT-112,VT-137,VT-56,VT-64,VT-64/65/77-fusions,VT-77,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-SHARED,VT-88-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	-	graph
+98	GGML_OP_GLU	19	2072	ggml_compute_forward_glu	ops.cpp:10448	216	VT-111,VT-137,VT-56,VT-77,VT-93	1756	280	6	VT-103,VT-110,VT-111,VT-112,VT-137,VT-56,VT-64,VT-64/65/77-fusions,VT-77,VT-83-compositions,VT-84-compositions,VT-85-compositions,VT-88-SHARED,VT-88-compositions,VT-91-compositions,VT-93,VT-95,VT-99,standalone	-	-,verification/supplemental-vector-swiglu-vt189.json	graph
 99	GGML_OP_SLEEP	1	2037	ggml_compute_forward_sleep	ops.cpp:2243	3	VT-123	3	3	2	VT-123	-	-	delay

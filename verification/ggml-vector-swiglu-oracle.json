@@ -1,0 +1,10 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+  "core_object_sha256": "e005cb6fb05ac355dcf37940717c598d5171fde105c07dde3a7221f8c4a7be44",
+  "words_sha256": "f69de1ccb7cc1100407e5b8ad5e38ccfb2eb8d5f89079492d8518df45bef616b",
+  "compression": "gzip",
+  "graphs": 18,
+  "output_words": 4986,
+  "reference": "Pinned x86-64 generic GGML CPU ggml_vec_swiglu_f32 with SSE2 and no FMA. Compare separate gate tensors and both orders of concatenated gate rows. Exercise nonzero scalar tails, full vectors, exponent scaling thresholds, signed zero and both activation signs."
+}

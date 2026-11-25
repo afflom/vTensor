@@ -157,5 +157,26 @@
       "different_coefficients_out_of_768": 13,
       "note": "A one-hot replay recovered each backend\u2019s phase coefficients. Separate F32 multiply/add/subtract reproduced all 4,608 outputs for each backend using its own coefficients."
     }
+  },
+  "certified_swiglu_replay": {
+    "provider_sha256": "f4439e4d3aa86b568a9b5c6935ff31bd7999a510c04f19505c33fd59816980ec",
+    "implementation": "VT-189",
+    "reference": "Unmodified llama-perplexity, scored against the original saved logits from both CPU plugins using the same model, text and host arguments as above.",
+    "generic": {
+      "scored_positions": 124,
+      "matching_top_tokens": 124,
+      "perplexity": 79.15844,
+      "mean_kl_divergence": -2e-06,
+      "max_kl_divergence": 2.6e-05,
+      "log_sha256": "79364ebe3e385e551d9524d9ebc21ed697a93c5dfc3f0e3be0e7de79f0e7207a"
+    },
+    "optimized": {
+      "scored_positions": 124,
+      "matching_top_tokens": 119,
+      "perplexity": 79.15844,
+      "mean_kl_divergence": 0.002571,
+      "max_kl_divergence": 0.011699,
+      "log_sha256": "82fc8c542b92784d1eeca9b5598044bf76fb5e89c1d02daefbbf4159e4aa9172"
+    }
   }
 }

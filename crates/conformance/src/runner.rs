@@ -1301,6 +1301,32 @@ fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
     }
 }
 
+fn vector_swiglu(input: f32, gate: f32) -> Result<f32, BackendError> {
+    use vtensor_vector_swiglu::Adt0::{C0 as Arithmetic, C1 as Literal, C2 as ResultSlot};
+    let mut slots = [0u64; 30];
+    slots[0] = input.to_bits().into();
+    slots[1] = gate.to_bits().into();
+    for stage in 0..slots.len() {
+        let step = vtensor_vector_swiglu::run(stage as u64, slots[5], slots[6], slots[25])
+            .map_err(BackendError::overflow)?;
+        let read = |operand: u64| slots.get(operand as usize).copied().unwrap_or(operand);
+        let word = match step {
+            Arithmetic(kind, a, b) => word_value(WordOperation::C1(kind), read(a), read(b))?,
+            Literal(word) => word,
+            ResultSlot(slot) => {
+                return slots
+                    .get(slot as usize)
+                    .map(|word| f32::from_bits(*word as u32))
+                    .ok_or(BackendError::InvalidTensor)
+            }
+        };
+        *slots
+            .get_mut(stage + 3)
+            .ok_or(BackendError::InvalidTensor)? = word;
+    }
+    Err(BackendError::InvalidTensor)
+}
+
 fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32, BackendError> {
     let word = u64::from(input.to_bits());
     let activation = match variant {
@@ -1312,6 +1338,7 @@ fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32,
         },
         1 => linear::gelu_f32(input)?,
         2 => return Ok(linear::swiglu_f32(input, gate)?),
+        7 => return vector_swiglu(input, gate),
         4 => linear::gaussian_error_f32(input, true)?,
         5 => linear::gelu_quick_f32(input)?,
         _ => return Err(BackendError::InvalidTensor),

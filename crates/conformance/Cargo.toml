@@ -15,6 +15,7 @@ vtensor_attention_mask = { version = "=0.1.0", path = "../../generated/attention
 vtensor_matrix_q8 = { version = "=0.1.0", path = "../../generated/matrix/packages/rust-core/vtensor_matrix_q8" }
 vtensor_rotary = { path = "../../generated/rotary/packages/rust-core/vtensor_rotary", version = "=0.1.0" }
 vtensor_typed = { path = "../../generated/typed/packages/rust-core/vtensor_typed", version = "=0.1.0" }
+vtensor_vector_swiglu = { path = "../../generated/typed/packages/rust-core/vtensor_vector_swiglu", version = "=0.1.0" }
 vtensor_matrix_execution = { version = "0.1.0", path = "../../generated/matrix/packages/rust-core/vtensor_matrix_execution" }
 vtensor_pointwise = { version = "0.1.0", path = "../../generated/pointwise/packages/rust-core/vtensor_pointwise" }
 vtensor_repeat_offset = { version = "0.1.0", path = "../../generated/pointwise/packages/rust-core/vtensor_repeat_offset" }

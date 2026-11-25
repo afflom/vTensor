@@ -167,6 +167,7 @@ ggml_batches! {
     /// `VT-55`: Indexed scalar row writes match the independent CPU.
     fn scalar_set_rows_vt_55() { "upstream-SET_ROWS_SCALAR", 126, ["typed"] }
     /// `VT-56`: The imported CPU checks all split, combined and swapped SWIGLU rows.
+    fn vector_swiglu_vt_189() { "vector-swiglu", 18, ["typed"] }
     fn swiglu_rows_vt_56() { "upstream-SWIGLU", 36, ["typed"] }
     /// `VT-57`: Exercise the upstream rotary-position graph factory on the provider.
     fn rotary_graphs_vt_57() { "upstream-ROPE", 510, ["rotary"] }
@@ -1278,7 +1279,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "14a44c1c9b8e4ee58c3ec372b0dc4e7c0cf8d2b4b22032377cfa54f18b7a5701",
+            "20047780f4c860055a8089649e40a19a3478e748b931e332b580447df530f98b",
         )
     });
 
@@ -1707,7 +1708,8 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
       tests=make_test_cases_eval();
       size_t id;
       while (std::scanf("%zu", &id)==1) selected.push_back(id);
-      if (!std::feof(stdin)) return SIZE_MAX;
+      // The marker separates original factory ordinals from frozen supplemental graph words.
+      if (!std::feof(stdin) && std::getc(stdin)!='@') return SIZE_MAX;
     }
     std::vector<bool> seen(selected.empty()?0:tests.size());
     for (size_t i:selected) {
@@ -1994,6 +1996,22 @@ int main(int argc, char **argv) {
         printf("RESULT cases %zu\n", cases);
         return 0;
     };
+    if (!strcmp(argv[3],"vector-swiglu")) {
+        int width,rows,variant;size_t cases=0;
+        while(scanf("%d%d%d",&width,&rows,&variant)==3) {
+            graph_fixture ctx(8);
+            auto input=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,variant?2*width:width,rows);
+            auto gate=variant?nullptr:ggml_dup_tensor(ctx,input);
+            auto out=gate?ggml_swiglu_split(ctx,input,gate):variant==1?ggml_swiglu(ctx,input):ggml_swiglu_swapped(ctx,input);
+            auto graph=ctx.allocate(out,backend,true);
+            CHECK(graph && load_tensor_bytes(input) && (!gate || load_tensor_bytes(gate)));
+            auto expected=read_hex_bytes(ggml_nbytes(out));
+            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+            if (tensor_bytes(out)!=expected) {fprintf(stderr,"SwiGLU vector mismatch width %d variant %d\n",width,variant);return 2;}
+            ++cases;
+        }
+        return finish(cases);
+    }
     const bool pooling_gradient=!strcmp(argv[3],"pool-gradients");
     if (pooling_gradient || !strcmp(argv[3],"column-gradients")) {
       size_t cases=0;
@@ -2532,123 +2550,77 @@ int main(int argc, char **argv) {
       }
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
+      auto edge_graph=[&](graph_fixture &ctx,ggml_tensor *out,std::initializer_list<ggml_tensor *> inputs) {
+        auto graph=ctx.allocate(out,backend);
+        for(auto input:inputs) if(!graph || !load_tensor_bytes(input)) return (ggml_cgraph *)nullptr;
+        return ggml_backend_supports_op(backend,out) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS?graph:nullptr;
+      };
+      auto within_reference=[&](ggml_tensor *out) {
+        for(int i=0;i<ggml_nelements(out);++i) {
+          uint32_t low,high,word;
+          if(scanf("%u%u",&low,&high)!=2)return false;
+          float actual=ggml_get_f32_1d(out,i);memcpy(&word,&actual,4);
+          const uint32_t key=word^(word>>31?UINT32_MAX:0x80000000u);
+          if(low>high?!std::isnan(actual):key<low || key>high)return false;
+        }
+        return true;
+      };
       if (!strcmp(argv[3]+9,"TOP_K_MASK_VARIANTS")) {
-        std::array<uint32_t,28> expected{};
-        for(auto selected : {reference,backend}) {
-          graph_fixture ctx(12); CHECK(ctx);
-          auto mask=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,4);
-          auto top=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,7,2,2);
-          auto scores=ggml_new_tensor_3d(ctx,GGML_TYPE_F32,4,2,2);
-          auto extra=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,3,2,2);
-          auto out=ggml_top_k_mask(ctx,mask,top,scores,nullptr,extra);
-          out->nb[2]=8*sizeof(uint32_t); out->nb[1]=2*out->nb[2]; out->nb[3]=2*out->nb[1];
-          auto graph=ctx.allocate(out,selected); CHECK(graph);
-          const uint32_t words[]={0x3f800000,0x80000000,0x7fc01234,1};
-          const uint32_t gates[]={0xff800000,0x7f800000,0x7fc01234,0x80000000,0,0xff800000,0xff800000,0xff800000};
-          const int32_t picks[]={0,1,2,3,-1,99,1,0,1,2,3,-1,99,1}, extras[]={-1,99,2,-1,99,3};
-          ggml_backend_tensor_set(mask,words,0,sizeof(words)); for(size_t h=0;h<2;++h) ggml_backend_tensor_set(scores,gates,h*scores->nb[2],sizeof(gates));
-          for(size_t h=0;h<2;++h) { ggml_backend_tensor_set(top,picks,h*top->nb[2],sizeof(picks)); ggml_backend_tensor_set(extra,extras,h*extra->nb[2],sizeof(extras)); }
-          std::array<uint32_t,28> initial{};initial.fill(0xdeadbeef);ggml_backend_tensor_set(out,initial.data(),0,sizeof(initial));
-          CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-          std::array<uint32_t,28> actual{}; ggml_backend_tensor_get(out,actual.data(),0,sizeof(actual));
-          if(selected==reference) expected=actual;
-          else {
-            CHECK(actual==expected && actual[4]==0xdeadbeef && actual[7]==0xdeadbeef && actual[20]==0xdeadbeef);
-            CHECK(refuses_change(backend,dev,graph,out,out->nb[1],size_t(4)));
-            CHECK(refuses_change(backend,dev,graph,out,top->type,GGML_TYPE_F32));
-            CHECK(refuses_change(backend,dev,graph,out,scores->ne[1],int64_t(3)));
-            CHECK(refuses_change(backend,dev,graph,out,out->src[5],extra));
-          }
-
+        graph_fixture ctx(12);
+        auto mask=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,4);
+        auto top=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,7,2,2);
+        auto scores=ggml_new_tensor_3d(ctx,GGML_TYPE_F32,4,2,2);
+        auto extra=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,3,2,2);
+        auto out=ggml_top_k_mask(ctx,mask,top,scores,nullptr,extra);
+        out->nb[2]=8*sizeof(uint32_t); out->nb[1]=2*out->nb[2]; out->nb[3]=2*out->nb[1];
+        auto graph=edge_graph(ctx,out,{mask,top,scores,extra,out});
+        CHECK(graph && tensor_bytes(out)==read_hex_bytes(ggml_nbytes(out)));
+        CHECK(refuses_change(backend,dev,graph,out,out->nb[1],size_t(4)));
+        CHECK(refuses_change(backend,dev,graph,out,top->type,GGML_TYPE_F32));
+        CHECK(refuses_change(backend,dev,graph,out,scores->ne[1],int64_t(3)));
+        CHECK(refuses_change(backend,dev,graph,out,out->src[5],extra));
+      }
+      const bool units=!strcmp(argv[3]+9,"EXPONENTIAL_UNITS"), erf=!strcmp(argv[3]+9,"GAUSSIAN_ERROR");
+      const bool parameterized=!strcmp(argv[3]+9,"SWIGLU_OAI_VARIANTS");
+      if(units || erf || parameterized || !strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
+        for(int variant=0;variant<(units?4:2);++variant) {
+          graph_fixture ctx(4);
+          auto x=ggml_new_tensor_1d(ctx,erf?GGML_TYPE_F16:GGML_TYPE_F32,12);
+          auto out=units?(variant==0?ggml_elu(ctx,x):ggml_xielu(ctx,x,-0.75f,1.25f,0.5f,variant==1?-0.125f:variant==2?-0.f:NAN))
+              :erf?ggml_geglu_erf(ctx,x):parameterized?ggml_swiglu_oai(ctx,x,nullptr,-0.5f,2.f):ggml_swiglu_clamp(ctx,x,nullptr,2.f);
+          if(!units)out->op_params[1]=variant;
+          auto graph=edge_graph(ctx,out,{x}); CHECK(graph && within_reference(out));
+          if(!units)CHECK(refuses_change(backend,dev,graph,out,out->op_params[1],int32_t(2)));
         }
       }
-      const bool units = !strcmp(argv[3]+9,"EXPONENTIAL_UNITS");
-      const bool parameterized = !strcmp(argv[3]+9,"SWIGLU_OAI_VARIANTS");
-      const bool erf = !strcmp(argv[3]+9,"GAUSSIAN_ERROR");
-      if (units || erf || parameterized || !strcmp(argv[3]+9,"SWIGLU_CLAMP_VARIANTS")) {
-        const std::array<float,12> inputs=units
-          ? std::array<float,12>{-0.f,0.f,-0x1p-149f,-0x1p-28f,-0x1p-25f,-0.25f,-0.5f,-1.25f,0.25f,1.f,NAN,-8.f}
-          : std::array<float,12>{erf?1.25f:8.f,-8,0,-0.f,2,-2,erf?3.f:-8.f,8,-3,3,0,-0.f};
-        for (int variant=0;variant<(units?4:2);++variant) {
-          std::vector<float> expected;
-          for (auto selected : {reference,backend}) {
-            graph_fixture ctx(4); CHECK(ctx);
-            auto x=ggml_new_tensor_1d(ctx,erf?GGML_TYPE_F16:GGML_TYPE_F32,inputs.size());
-            ggml_tensor *out;
-            if (units) out=variant==0 ? ggml_elu(ctx,x) : ggml_xielu(ctx,x,-0.75f,1.25f,0.5f,variant==1?-0.125f:variant==2?-0.f:NAN);
-            else {
-              out=erf ? ggml_geglu_erf(ctx,x) : parameterized ? ggml_swiglu_oai(ctx,x,nullptr,-0.5f,2.f) : ggml_swiglu_clamp(ctx,x,nullptr,2.f);
-              out->op_params[1]=variant;
-            }
-            auto graph=ctx.allocate(out,selected); CHECK(graph);
-            for (size_t i=0;i<inputs.size();++i) ggml_set_f32_1d(x,i,inputs[i]);
-            CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-            for (int64_t i=0;i<ggml_nelements(out);++i) {
-              float actual=ggml_get_f32_1d(out,i);
-              if (selected==reference) { expected.push_back(actual); continue; }
-              float want=expected.at(i);
-              if (std::isnan(want)) { CHECK(std::isnan(actual)); continue; }
-              CHECK(std::signbit(actual)==std::signbit(want));
-              if (units) {
-                uint32_t a,b; std::memcpy(&a,&actual,4); std::memcpy(&b,&want,4);
-                CHECK(std::max(a,b)-std::min(a,b)<=(i<5 && variant==0 ? 0u : 3u));
-              } else CHECK(std::fabs(actual-want)<=1e-6f);
-            }
-            if (!units && selected==backend) CHECK(refuses_change(backend,dev,graph,out,out->op_params[1],int32_t(2)));
-          }
-        }
+      if(!strcmp(argv[3]+9,"ROW_SOFTMAX")) {
+        graph_fixture ctx(12);
+        auto scores=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,4,2), mask=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,4,3);
+        auto sink=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,1);
+        scores->nb[2]+=4; mask->nb[3]+=8; sink->nb[0]=16;
+        auto out=ggml_soft_max_ext_inplace(ctx,scores,mask,0.5f,2.0f); ggml_soft_max_add_sinks(out,sink);
+        auto graph=edge_graph(ctx,out,{scores,mask,sink}); CHECK(graph && within_reference(out));
+        CHECK(refuses_change(backend,dev,graph,out,out->src[1],static_cast<ggml_tensor*>(nullptr)));
+        CHECK(refuses_change(backend,dev,graph,out,mask->type,GGML_TYPE_I32));
+        CHECK(refuses_change(backend,dev,graph,out,sink->ne[0],int64_t(2)));
+        CHECK(refuses_change(backend,dev,graph,out,out->src[3],mask));
       }
-      if (!strcmp(argv[3]+9,"ROW_SOFTMAX")) {
-        std::vector<float> expected;
-        for (auto selected : {reference,backend}) {
-          graph_fixture ctx(12); CHECK(ctx);
-          auto scores=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,4,2);
-          auto mask=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,4,3);
-          auto sink=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,1);
-          scores->nb[2]+=4; mask->nb[3]+=8; sink->nb[0]=16;
-          auto out=ggml_soft_max_ext_inplace(ctx,scores,mask,0.5f,2.0f); ggml_soft_max_add_sinks(out,sink);
-          auto graph=ctx.allocate(out,selected); CHECK(graph);
-          const float inputs[]={1,2,3,-4,9,3,-2,1}, weights[]={0,-INFINITY,1,-2,1,2,-INFINITY,0,91,92,93,94}, extra[]={1};
-          ggml_backend_tensor_set(scores,inputs,0,sizeof(inputs)); ggml_backend_tensor_set(mask,weights,0,sizeof(weights)); ggml_backend_tensor_set(sink,extra,0,sizeof(extra));
-          CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-          std::vector<float> actual(8); ggml_backend_tensor_get(out,actual.data(),0,ggml_nbytes(out));
-          if(selected==reference) expected=actual;
-          else {
-            for(size_t i=0;i<actual.size();++i) CHECK(std::abs(actual[i]-expected[i])<1e-6f);
-            CHECK(refuses_change(backend,dev,graph,out,out->src[1],static_cast<ggml_tensor*>(nullptr)));
-            CHECK(refuses_change(backend,dev,graph,out,mask->type,GGML_TYPE_I32));
-            CHECK(refuses_change(backend,dev,graph,out,sink->ne[0],int64_t(2)));
-            CHECK(refuses_change(backend,dev,graph,out,out->src[3],mask));
-          }
-
+      if(!strcmp(argv[3]+9,"ROW_RANKING")) for(bool partial:{false,true}) {
+        graph_fixture ctx(12); auto base=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,8,2);
+        auto source=ggml_view_2d(ctx,base,4,2,base->nb[1],sizeof(float));
+        auto out=partial?ggml_top_k(ctx,source,2):ggml_argsort(ctx,source,GGML_SORT_ORDER_DESC);
+        auto graph=edge_graph(ctx,out,{base}); CHECK(graph);
+        auto actual=tensor_bytes(out),expected=read_hex_bytes(ggml_nbytes(out)); CHECK(actual.size()==expected.size());
+        if(partial) for(auto bytes:{&actual,&expected}) for(size_t i=0;i<bytes->size();i+=8) {
+          int32_t pair[2];memcpy(pair,bytes->data()+i,8);std::sort(pair,pair+2);memcpy(bytes->data()+i,pair,8);
         }
+        CHECK(actual==expected);
+        CHECK(refuses_change(backend,dev,graph,out,source->nb[0],size_t(8)));
+        CHECK(refuses_change(backend,dev,graph,out,out->type,GGML_TYPE_F32));
+        if(!partial)CHECK(refuses_change(backend,dev,graph,out,out->op_params[0],int32_t(2)));
       }
-      if (!strcmp(argv[3]+9,"ROW_RANKING")) {
-        for (bool partial : {false,true}) {
-          std::vector<int32_t> expected;
-          for (auto selected : {reference,backend}) {
-            graph_fixture ctx(12); CHECK(ctx);
-            auto base=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,8,2);
-            auto source=ggml_view_2d(ctx,base,4,2,base->nb[1],sizeof(float));
-            auto out=partial?ggml_top_k(ctx,source,2):ggml_argsort(ctx,source,GGML_SORT_ORDER_DESC);
-            auto graph=ctx.allocate(out,selected); CHECK(graph);
-            const float values[]={99,1,3,4,2,99,99,99,99,-2,-5,0,1,99,99,99};
-            ggml_backend_tensor_set(base,values,0,sizeof(values));
-            CHECK(ggml_backend_supports_op(selected,out) && ggml_backend_graph_compute(selected,graph)==GGML_STATUS_SUCCESS);
-            std::vector<int32_t> actual(ggml_nelements(out));
-            ggml_backend_tensor_get(out,actual.data(),0,ggml_nbytes(out));
-            if(partial) for(size_t start=0;start<actual.size();start+=2) std::sort(actual.begin()+start,actual.begin()+start+2);
-            if(selected==reference) expected=actual;
-            else {
-              CHECK(actual==expected);
-              CHECK(refuses_change(backend,dev,graph,out,source->nb[0],size_t(8)));
-              CHECK(refuses_change(backend,dev,graph,out,out->type,GGML_TYPE_F32));
-              if(!partial) CHECK(refuses_change(backend,dev,graph,out,out->op_params[0],int32_t(2)));
-            }
-
-          }
-        }
-      }
+      char trailing;
+      CHECK(scanf(" %c",&trailing)==EOF);
       if (!strcmp(argv[3]+9,"SCALAR_MUL_MAT_ID")) {
         for (auto kind : {GGML_TYPE_F32, GGML_TYPE_Q4_0}) {
           graph_fixture ctx(12); CHECK(ctx);

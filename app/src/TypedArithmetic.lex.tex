@@ -290,10 +290,100 @@ definition{
 }
 
 definition{
+  name: vectorScaleBias,
+  parameters: [n : Nat],
+  result: Nat,
+  body: (if (n <? 2147483648) then (if (1123811328 <? n) then 0 else 127)
+    else (if (3271294976 <? n) then 252 else 127)),
+  executable: true
+}
+
+definition{
+  name: vectorExponent,
+  parameters: [z : Nat, n : Nat],
+  result: Nat,
+  body: (prim multiply (prim remainder ((prim remainder z 512 0 : Nat) + (vectorScaleBias n)) 512 0 : Nat) 8388608 : Nat),
+  executable: true
+}
+
+inductive{
+  name: VectorInstruction,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: vectorArithmetic, fields: [Nat, Nat, Nat]},
+    {name: vectorWord, fields: [Nat]},
+    {name: vectorResult, fields: [Nat]}
+  ]
+}
+
+definition{
+  name: vectorSiluStep,
+  parameters: [stage : Nat, z : Nat, n : Nat, scaled : Nat],
+  result: VectorInstruction,
+  body: (if (stage <? 14) then (if (stage <? 7) then (if (stage <? 3) then (if (stage <? 1) then (ctor VectorInstruction.vectorArithmetic 1 2 0) else
+    (if (stage <? 2) then (ctor VectorInstruction.vectorArithmetic 2 3 1069066811) else
+    (ctor VectorInstruction.vectorArithmetic 0 4 1262485504))) else
+    (if (stage <? 5) then (if (stage <? 4) then (ctor VectorInstruction.vectorArithmetic 1 5 1262485504) else
+    (ctor VectorInstruction.vectorArithmetic 2 6 1060205056)) else
+    (if (stage <? 6) then (ctor VectorInstruction.vectorArithmetic 1 3 7) else
+    (ctor VectorInstruction.vectorArithmetic 2 6 901758606)))) else
+    (if (stage <? 10) then (if (stage <? 8) then (ctor VectorInstruction.vectorArithmetic 1 8 9) else
+    (if (stage <? 9) then (ctor VectorInstruction.vectorArithmetic 2 10 10) else
+    (ctor VectorInstruction.vectorArithmetic 2 1007099920 10))) else
+    (if (stage <? 12) then (if (stage <? 11) then (ctor VectorInstruction.vectorArithmetic 0 12 1026268951) else
+    (ctor VectorInstruction.vectorArithmetic 2 13 11)) else
+    (if (stage <? 13) then (ctor VectorInstruction.vectorArithmetic 2 1042984755 10) else
+    (ctor VectorInstruction.vectorArithmetic 0 15 1056964315))))) else
+    (if (stage <? 21) then (if (stage <? 17) then (if (stage <? 15) then (ctor VectorInstruction.vectorArithmetic 0 14 16) else
+    (if (stage <? 16) then (ctor VectorInstruction.vectorArithmetic 2 17 11) else
+    (ctor VectorInstruction.vectorArithmetic 2 1065353206 10))) else
+    (if (stage <? 19) then (if (stage <? 18) then (ctor VectorInstruction.vectorArithmetic 0 18 19) else
+    (ctor VectorInstruction.vectorWord (vectorExponent z n))) else
+    (if (stage <? 20) then (ctor VectorInstruction.vectorArithmetic 2 20 21) else
+    (ctor VectorInstruction.vectorArithmetic 0 22 21)))) else
+    (if (stage <? 24) then (if (stage <? 22) then (ctor VectorInstruction.vectorWord (if (1123811328 <? (prim remainder n 2147483648 0 : Nat)) then (if (2147483648 <=? n) then 16777216 else 2130706432) else 1065353216)) else
+    (if (stage <? 23) then (ctor VectorInstruction.vectorArithmetic 2 23 24) else
+    (ctor VectorInstruction.vectorWord (if (1128267776 <? (prim remainder n 2147483648 0 : Nat)) then (if (2147483648 <=? n) then 0 else 2139095040) else scaled)))) else
+    (if (stage <? 26) then (if (stage <? 25) then (ctor VectorInstruction.vectorArithmetic 0 1065353216 26) else
+    (ctor VectorInstruction.vectorArithmetic 3 0 27)) else
+    (if (stage <? 27) then (ctor VectorInstruction.vectorArithmetic 2 28 1) else
+    (ctor VectorInstruction.vectorResult 29)))))),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core]}
+}
+
+definition{
+  name: gateLaneVariant,
+  parameters: [variant : Nat, output : NormPlan::TensorDescriptor, item : Nat],
+  result: Nat,
+  body: (if ((variant =? 2) && (((project output ty) =? 0) && ((prim remainder item (project output n0) 0 : Nat) <? (prim subtract (project output n0) (prim remainder (project output n0) 4 0 : Nat) : Nat)))) then 7 else variant),
+  executable: true
+}
+
+definition{
+  name: gateRowPhase,
+  parameters: [phase : Nat, item : Nat, execution : Plan],
+  result: Response,
+  body: (let left : NormPlan::TensorDescriptor := (project execution left);
+    (let rhs : NormPlan::TensorDescriptor := (project execution rhs);
+    (let output : NormPlan::TensorDescriptor := (project execution output);
+    (let mode : Nat := (project execution operation);
+    (let row : Nat := (prim quotient item (project output n0) 0 : Nat);
+    (let width : Nat := (bytes (project output ty));
+    (let column : Nat := (prim multiply (prim remainder item (project output n0) 0 : Nat) width : Nat);
+    (let half : Nat := (prim multiply (project output n0) width : Nat);
+    (if (phase =? 0) then (ctor Response.instruction 0 0 (project left ty) 0 0 (((prim multiply row (project left s1) : Nat) + column) + (if (mode =? 100) then half else 0)) 2 0 0 0 width 4) else (if (phase =? 1) then (ctor Response.instruction 0 0 (project rhs ty) 0 (if (mode =? 98) then 4 else 0) (((prim multiply row (project rhs s1) : Nat) + column) + (if (mode =? 99) then half else 0)) 2 0 0 1 width 4) else (if (phase =? 2) then (ctor Response.gated (gateLaneVariant (project execution gateVariant) output item) (project output ty) 0 1 0) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 ((prim multiply row (project output s1) : Nat) + column) 4 width)))))))))))),
+  executable: true
+}
+
+definition{
   name: gateStep,
   parameters: [index : Nat, execution : Plan],
   result: Response,
-  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let rhs : NormPlan::TensorDescriptor := (project execution rhs); (let output : NormPlan::TensorDescriptor := (project execution output); (let mode : Nat := (project execution operation); (let phase : Nat := (prim remainder index 4 0 : Nat); (let item : Nat := (prim quotient index 4 0 : Nat); (let row : Nat := (prim quotient item (project output n0) 0 : Nat); (let width : Nat := (bytes (project output ty)); (let column : Nat := (prim multiply (prim remainder item (project output n0) 0 : Nat) width : Nat); (let half : Nat := (prim multiply (project output n0) width : Nat); (if (index <? (project execution steps)) then (if (phase =? 0) then (ctor Response.instruction 0 0 (project left ty) 0 0 (((prim multiply row (project left s1) : Nat) + column) + (if (mode =? 100) then half else 0)) 2 0 0 0 width 4) else (if (phase =? 1) then (ctor Response.instruction 0 0 (project rhs ty) 0 (if (mode =? 98) then 4 else 0) (((prim multiply row (project rhs s1) : Nat) + column) + (if (mode =? 99) then half else 0)) 2 0 0 1 width 4) else (if (phase =? 2) then (ctor Response.gated (project execution gateVariant) (project output ty) 0 1 0) else (ctor Response.instruction 0 0 0 (project output ty) 1 0 2 0 3 ((prim multiply row (project output s1) : Nat) + column) 4 width)))) else (ctor Response.invalid)))))))))))),
+  body: (if (index <? (project execution steps)) then
+    (gateRowPhase (prim remainder index 4 0 : Nat) (prim quotient index 4 0 : Nat) execution)
+    else (ctor Response.invalid)),
   executable: true
 }
 
@@ -945,5 +1035,12 @@ theorem{
   statement: ((((((storeBlockLanes 41) =? 128) && ((rowTargetWidth 41) =? 18)) && ((storeBlockLanes 42) =? 64)) && ((rowTargetWidth 42) =? 18)) = true),
   proof: reflexivity{}
 }
+theorem{
+  name: vectorUnitExponent,
+  parameters: [],
+  statement: ((vectorExponent 1262485504 0) = 1065353216),
+  proof: reflexivity{}
+}
+
 \end{semanticmodule}
 \end{lexlean}

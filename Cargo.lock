@@ -962,6 +962,7 @@ dependencies = [
  "vtensor_transfer",
  "vtensor_typed",
  "vtensor_types",
+ "vtensor_vector_swiglu",
 ]
 
 [[package]]
@@ -1098,6 +1099,10 @@ version = "0.1.0"
 
 [[package]]
 name = "vtensor_types"
+version = "0.1.0"
+
+[[package]]
+name = "vtensor_vector_swiglu"
 version = "0.1.0"
 
 [[package]]

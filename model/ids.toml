@@ -1200,3 +1200,9 @@ id = "VT-188"
 level = "build"
 suite = "native-backend"
 statement = "Q8 activation rows participate in binary arithmetic and explicit result casts"
+
+[[id]]
+id = "VT-189"
+level = "build"
+suite = "native-backend"
+statement = "Complete F32 SwiGLU vectors follow the original GGML rounded exponential profile"

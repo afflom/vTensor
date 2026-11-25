@@ -1,0 +1,42 @@
+{
+  "requirement": "VT-189",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-vector-swiglu-oracle.json",
+  "provider_sha256": "f4439e4d3aa86b568a9b5c6935ff31bd7999a510c04f19505c33fd59816980ec",
+  "typed_attestation": "8012e8ac5da070f9e9725b25091e9d840f438550ff5cca2b5db22722c4707f47",
+  "source": "ggml/src/ggml-cpu/vec.cpp and ggml/src/ggml-cpu/vec.h",
+  "widths": [
+    3,
+    4,
+    7,
+    17,
+    32,
+    768
+  ],
+  "rows_per_graph": 2,
+  "forms": [
+    "separate",
+    "concatenated",
+    "swapped"
+  ],
+  "graphs": 18,
+  "compared_binary32_words": 4986,
+  "negative_control": "Using scalar SwiGLU on complete vectors fails the separate-input graph at width four. Restoring the certified vector path passes all 18 graphs.",
+  "consumer": "llama-perplexity-four-chunks.json",
+  "factory_edges": {
+    "reference_revision": "4755606",
+    "cpu_object_sha256": "88879ec441d835e5b5f36ca2ad51586de982a9acf8fe33f3c5fb17698371759f",
+    "capture": "The original pinned generic GGML CPU ran the supplemental edge graphs with reference mode enabled. The binding carries their original input bytes and exact output words or inclusive monotone binary32 word intervals derived from each pre-existing tolerance. NaN, signed zero, destination guards and invalid graph probes retain their original checks.",
+    "captured_hex_tensors": 34,
+    "captured_stream_sha256": {
+      "EXPONENTIAL_UNITS": "dcab6b56b24b0d6884cf4da0ecd9e9ff62ee6f687d8be29aa86d9cebfab6854e",
+      "GAUSSIAN_ERROR": "ac8b83918f967c6131676f2194f8910683ba585f508f46570f13dd27b443b91a",
+      "ROW_RANKING": "b0d57548bf15b5e2187f3a88714437bab46fc3826f11959dbe423863b9b54702",
+      "ROW_SOFTMAX": "b17e8749f53206f428fcd8f93411fd9df85034bbc2e5a4869038933c3036f0ff",
+      "SWIGLU_CLAMP_VARIANTS": "4bf1934b9de00a382dd07e967e8df22dbfc2921175943fac5aa666efd1365b65",
+      "SWIGLU_OAI_VARIANTS": "e8d5681c81270364478ceaf4ca0caf36edd6d1452dccbd4ede6d121c18e9f33e",
+      "TOP_K_MASK_VARIANTS": "c33bd66bf56d8cf80310600ccc688483ef264999e3632b58ac294880cd42319f"
+    }
+  },
+  "non_prism_lines": 12541
+}
