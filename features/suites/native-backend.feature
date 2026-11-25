@@ -932,3 +932,9 @@ Feature: native-backend
     Given signed integer storage, overflowing sums and the original OpenVINO ReduceSum reference
     When a GGML consumer requests REPEAT_BACK on dense or padded repeated axes
     Then the stored integer sums and the read-only input bytes match the external reference
+
+  @VT-213 @build
+  Scenario: Fold repeated encoded rows on every tensor axis
+    Given original GGML stored inputs, CPU repeat-back sums and encoded outputs
+    When a GGML consumer schedules REPEAT_BACK on dense or padded input rows
+    Then every output block and every source guard byte matches the external reference

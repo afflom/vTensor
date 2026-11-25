@@ -488,7 +488,8 @@
     "ggml-small-sums-oracle": "f430abde919da692a9ada2b836527f98b9353b91efc758eeea4a5a6f8ac27193",
     "ggml-signed-sums-oracle": "477dafc506d93aa644d5ff4bd43378519b55fa9b505cfda94dc30b571a816314",
     "ggml-stored-reductions-oracle": "b02abeea20d6971a5e8adb36cc6e8a2a620cee3340e8818d0fa025ebea50d533",
-    "ggml-signed-fold-oracle": "ada43d8ba1190205de808cd71db1f11394c15fd0219c1dea3d745961a684394c"
+    "ggml-signed-fold-oracle": "ada43d8ba1190205de808cd71db1f11394c15fd0219c1dea3d745961a684394c",
+    "ggml-stored-fold-oracle": "46e359d68dbce02c9755884d045417f52ac7401915c9c6c995ff917eebaaa139"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -730,7 +731,8 @@
     "small-sums": "ggml-small-sums",
     "signed-sums": "ggml-signed-sums",
     "stored-reductions": "ggml-stored-reductions",
-    "signed-fold": "ggml-signed-fold"
+    "signed-fold": "ggml-signed-fold",
+    "stored-fold": "ggml-stored-fold"
   },
   "drivers": {
     "double-sums": "stored-reductions",
@@ -753,7 +755,8 @@
     "wide-native-binary": "scalar-binary",
     "vector-unary": "stored-unary",
     "packed-log": "stored-unary",
-    "signed-fold": "stored-reductions"
+    "signed-fold": "stored-reductions",
+    "stored-fold": "stored-reductions"
   },
   "refusal_field_columns": [
     "field",

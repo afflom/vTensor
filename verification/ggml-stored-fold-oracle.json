@@ -1,0 +1,11 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "cpu_kernel_source_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "base_library_sha256": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+  "compression": "gzip",
+  "words_sha256": "9d13348e4ae9af4505fefe5f1dbe001105b2c32d81a0a228f78bdf80c18f942a",
+  "graphs": 12,
+  "logical_output_values": 6144,
+  "reference": "Original GGML storage decoding, F32 CPU REPEAT_BACK and destination encoding. Six stored types double each of four axes. Both dense and padded input views preserve all source bytes."
+}

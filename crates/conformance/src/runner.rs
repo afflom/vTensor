@@ -64,6 +64,10 @@ macro_rules! tensor_fields {
     };
 }
 
+fn require_tensor(condition: bool) -> Result<(), BackendError> {
+    condition.then_some(()).ok_or(BackendError::InvalidTensor)
+}
+
 struct State {
     reg: UnsafeCell<Registry>,
     dev: UnsafeCell<Device>,
@@ -176,9 +180,7 @@ impl BufferContext {
     }
 
     fn borrowed(base: *mut c_void, size: usize) -> Result<Self, BackendError> {
-        if size != 0 && base.is_null() {
-            return Err(BackendError::InvalidTensor);
-        }
+        require_tensor(size == 0 || !base.is_null())?;
         Ok(Self {
             _owned: None,
             base: base.cast(),
@@ -740,9 +742,7 @@ fn host_region(
     // SAFETY: GGML retains the buffer for this call. Only ordinary host layouts reach get_base.
     let buffer = unsafe { handle.as_ref() }.ok_or(BackendError::InvalidTensor)?;
     // SAFETY: a live GGML buffer retains its type descriptor for the same lifetime.
-    if !unsafe { supports_buffer_type(state().dev.get(), buffer.buft) } {
-        return Err(BackendError::InvalidTensor);
-    }
+    require_tensor(unsafe { supports_buffer_type(state().dev.get(), buffer.buft) })?;
     let base = match buffer.iface.get_base {
         // SAFETY: the callback belongs to this live host buffer. Prism bounds the returned address.
         Some(get) if span != 0 => unsafe { get(handle) }.cast::<u8>(),
@@ -1541,7 +1541,8 @@ fn execute_typed(
     projection: Option<&RowProgram>,
 ) -> Result<(), BackendError> {
     use vtensor_typed::Adt3::{
-        C5 as Rank, C6 as Encode, C7 as BinaryRow, C8 as DecodeWindow, C9 as EncodeWindow,
+        C11 as FoldRow, C5 as Rank, C6 as Encode, C7 as BinaryRow, C8 as DecodeWindow,
+        C9 as EncodeWindow,
     };
     use BackendError::InvalidTensor;
     let vtensor_typed::Adt2::C0(_, capacity, importance, operation, .., row_arithmetic, width) =
@@ -1554,10 +1555,13 @@ fn execute_typed(
     // retains an immutable input slice throughout the instruction loop.
     let source = (*width != 0).then(|| TensorInput::new(left)).transpose()?;
     let right = secondary
-        .or(Some(left))
         .filter(|_| *row_arithmetic)
         .map(TensorInput::new)
         .transpose()?;
+    let rhs = right
+        .as_ref()
+        .or(source.as_ref())
+        .filter(|_| *row_arithmetic);
     let pointer = |tensor, input: Option<&TensorInput>| match input {
         Some(input) => Ok(input.bytes.as_ptr().cast_mut()),
         None => graph_tensor_data(tensor),
@@ -1579,12 +1583,9 @@ fn execute_typed(
     let output = graph_tensor_region(tensor, span as usize)?;
     let kind = weight_encoder(tensor.ty);
     let mut values = workspace(*width, 0.0)?;
-    let mut right_values = workspace(
-        right
-            .as_ref()
-            .map_or(0, |input| (*width).min(input.ne[0] as u64)),
-        0.0,
-    )?;
+    let rhs_width = rhs.map_or(0, |input| (*width).min(input.ne[0] as u64));
+    let mut right_values = workspace(rhs_width, 0.0)?;
+    let decode = |from, row: &mut [f32]| source.as_ref().ok_or(InvalidTensor)?.decode(from, row);
     typed_steps(&plan, &mut words, |instruction, words| {
         let values = match instruction {
             DecodeWindow(_, start, len) | EncodeWindow(start, _, len) => {
@@ -1595,18 +1596,25 @@ fn execute_typed(
             _ => &mut values[..],
         };
         match instruction {
-            DecodeWindow(from, ..) => source.as_ref().ok_or(InvalidTensor)?.decode(from, values)?,
+            FoldRow(None) => values.fill(0.0),
+            FoldRow(Some(from)) => {
+                decode(from, &mut right_values)?;
+                for (value, rhs) in values.iter_mut().zip(&right_values) {
+                    *value = linear::evaluate_f32_scalar(0, *value, *rhs)?;
+                }
+            }
+            DecodeWindow(from, ..) => decode(from, values)?,
             Encode(from, to) | BinaryRow(from, _, to) | EncodeWindow(from, to, _) => {
                 if !matches!(instruction, EncodeWindow(..)) {
-                    source.as_ref().ok_or(InvalidTensor)?.decode(from, values)?;
+                    decode(from, values)?;
                 }
                 if let Some(RowProgram::Unary(program)) = projection {
                     let row = values.as_mut_ptr().cast();
                     project_words(program, &[row], row)?;
                 }
                 if let BinaryRow(_, offset, _) = instruction {
-                    let right = right.as_ref().ok_or(InvalidTensor)?;
-                    right.decode(offset, &mut right_values)?;
+                    rhs.ok_or(InvalidTensor)?
+                        .decode(offset, &mut right_values)?;
                     if let Some(RowProgram::Gate(program)) = projection {
                         let row = values.as_mut_ptr().cast();
                         let inputs = [row, right_values.as_mut_ptr().cast()];
@@ -1662,9 +1670,7 @@ fn execute_typed(
                             }
                         }
                     }
-                    if encoded.len() - start != block_bytes {
-                        return Err(InvalidTensor);
-                    }
+                    require_tensor(encoded.len() - start == block_bytes)?;
                 }
                 offsets.try_reserve(1)?;
                 offsets.push((to, row_start..encoded.len()));
@@ -1759,9 +1765,7 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
         store_word(target, convert(0, literal_type, bits)?)?;
     }
     let mut pointers = tensor.src.map(|_| literal.as_mut_ptr());
-    if mask >> pointers.len() != 0 {
-        return Err(InvalidTensor);
-    }
+    require_tensor(mask >> pointers.len() == 0)?;
     for (slot, pointer) in pointers.iter_mut().enumerate() {
         if mask & (1 << slot) != 0 {
             let source = tensor.source(slot).ok_or(InvalidTensor)?;
@@ -2483,9 +2487,7 @@ mod attention {
         }
 
         pub(super) fn block_stride(&self, lanes: usize) -> Result<usize, BackendError> {
-            if !lanes.is_multiple_of(self.block_lanes) {
-                return Err(InvalidTensor);
-            }
+            super::require_tensor(lanes.is_multiple_of(self.block_lanes))?;
             (lanes / self.block_lanes)
                 .checked_mul(self.nb[0])
                 .ok_or(Overflow)
@@ -2518,9 +2520,7 @@ mod attention {
                 float_bytes(out).copy_from_slice(bytes);
                 return Ok(());
             }
-            if !out.len().is_multiple_of(self.block_lanes) {
-                return Err(InvalidTensor);
-            }
+            super::require_tensor(out.len().is_multiple_of(self.block_lanes))?;
             for (index, block) in out.chunks_exact_mut(self.block_lanes).enumerate() {
                 let relative = index.checked_mul(self.nb[0]).ok_or(Overflow)?;
                 let at = offset.checked_add(relative as u64).ok_or(Overflow)?;
@@ -2568,9 +2568,9 @@ mod attention {
         let cells = indices
             .map(|indices| {
                 let (words, tail) = indices.bytes.as_chunks::<4>();
-                if !tail.is_empty() || Some(words.len()) != columns.checked_mul(shape[3] as usize) {
-                    return Err(InvalidTensor);
-                }
+                super::require_tensor(
+                    tail.is_empty() && Some(words.len()) == columns.checked_mul(shape[3] as usize),
+                )?;
                 let mut cells = super::reserved(words.len())?;
                 for &word in words {
                     let raw = u32::from_ne_bytes(word);
@@ -2762,9 +2762,7 @@ mod threadpool {
                 (i64::from(params.prio) + 1) as u64,
                 u64::from(params.poll),
             );
-            if !vtensor_native_predicates::run(valid) {
-                return Err(BackendError::InvalidTensor);
-            }
+            super::require_tensor(vtensor_native_predicates::run(valid))?;
             let mut workers = Vec::new();
             let paused = Arc::new(AtomicBool::new(params.paused));
             for index in 0..params.n_threads as usize - 1 {

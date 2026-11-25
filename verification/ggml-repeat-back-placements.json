@@ -1,7 +1,7 @@
 {
   "operation": "GGML_OP_REPEAT_BACK",
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "6526505cdc1ce54f8d5697c1e5a34677c82df26294edafc33906bed55657b954",
+  "provider_sha256": "cadb0885ee8592915f101348b683279fbe25b62f01e425d60f0727303d4f4039",
   "pointwise_attestation": "b3954092d562023fe2d4d1f95b5c5c3a4a11c8d21bedaef680abd9ad7a7eb419",
   "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
@@ -9,15 +9,17 @@
   "original_driver_sha256": "90ed90ac9bc58a18873a429004e8511c7a45f09d14b030ce52b87dfd7a83a2f3",
   "scope": "Call the original GGML constructor and query the backend before allocation. Split each admitted graph on a vTensor-only scheduler. Each of 36 storage types has a dense and block-offset, padded source for doubling each axis alone or all four axes together. The target extents are [256,2,1,1].",
   "descriptors": 360,
-  "placed": 50,
-  "unplaced": 310,
+  "placed": 350,
+  "unplaced": 10,
   "direct_cpu_graphs": 10,
   "direct_cpu_words": 5120,
   "direct_cpu": "The pinned GGML CPU implementation dispatches REPEAT_BACK only for F32. Each of its ten outputs matched vTensor byte for byte.",
   "requirement": "VT-20",
   "prism": "PointwiseGraph.foldedOffsets",
   "table": "ggml-repeat-back-placements.tsv.gz",
-  "table_sha256": "b1b877b4072fb65a0b5eaca7d7230b6708c7ba261835bde972b1ce683ed95e0f",
-  "uncompressed_sha256": "f0e64bc54ccff9284018e789f2b42cda2c2723fc89429543fcec239674315eca",
-  "signed_folds": "supplemental-signed-fold-vt212.json"
+  "table_sha256": "6e3d6c3ace5d12cab0c9ceb2a074f22c44c4fa04998fa9d1e86ed951dfcf9dc8",
+  "uncompressed_sha256": "0327e42a2a571b6ca325fbd65c734c67a86479f4baceb4c371bf6ddee49b190b",
+  "signed_folds": "supplemental-signed-fold-vt212.json",
+  "typed_attestation": "419ecdde55e3d9b66d0da70f6f501bb3467dc6ef48f8f6a61682fdb2a3fc0617",
+  "stored_folds": "supplemental-stored-fold-vt213.json"
 }

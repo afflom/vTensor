@@ -42,7 +42,8 @@ inductive{
     {name: binaryRow, fields: [Nat, Nat, Nat]},
     {name: decodeWindow, fields: [Nat, Nat, Nat]},
     {name: encodeWindow, fields: [Nat, Nat, Nat]},
-    {name: projectedGate, fields: [Plan, Plan]}
+    {name: projectedGate, fields: [Plan, Plan]},
+    {name: foldRow, fields: [(Option Nat)]}
   ]
 }
 
@@ -853,6 +854,68 @@ definition{
 }
 
 definition{
+  name: foldSourceOffset,
+  parameters: [row : Nat, repeat : Nat, source : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
+  result: Nat,
+  body: (let r0 : Nat := (prim quotient (project source n0) (project output n0) 0 : Nat);
+    (let r1 : Nat := (prim quotient (project source n1) (project output n1) 0 : Nat);
+    (let r2 : Nat := (prim quotient (project source n2) (project output n2) 0 : Nat);
+    (let i1 : Nat := (prim quotient repeat r0 0 : Nat);
+    (let i2 : Nat := (prim quotient i1 r1 0 : Nat);
+    (let batch : Nat := (prim quotient row (project output n1) 0 : Nat);
+    (TensorIndex::elementOffset
+      (prim quotient (prim multiply (prim remainder repeat r0 0 : Nat) (project output n0) : Nat) (storeBlockLanes (project source ty)) 0 : Nat)
+      ((prim multiply (prim remainder i1 r1 0 : Nat) (project output n1) : Nat) + (prim remainder row (project output n1) 0 : Nat))
+      ((prim multiply (prim remainder i2 r2 0 : Nat) (project output n2) : Nat) + (prim remainder batch (project output n2) 0 : Nat))
+      ((prim multiply (prim quotient i2 r2 0 : Nat) (project output n3) : Nat) + (prim quotient batch (project output n2) 0 : Nat))
+      (project source s0) (project source s1) (project source s2) (project source s3)))))))),
+  executable: true
+}
+
+definition{
+  name: storedFoldPhases,
+  parameters: [repeats : Nat, output : NormPlan::TensorDescriptor],
+  result: Nat,
+  body: ((1 + repeats) + (prim quotient (project output n0) (castOutputGroup output) 0 : Nat)),
+  executable: true
+}
+
+definition{
+  name: storedFoldPlan,
+  parameters: [left : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
+  result: Response,
+  body: (let kind : Nat := (project output ty);
+    (let width : Nat := (project output n0);
+    (let blocks : Nat := (prim quotient width (storeBlockLanes kind) 0 : Nat);
+    (let span : Nat := ((prim multiply (prim subtract blocks 1 : Nat) (project output s0) : Nat) + (rowTargetWidth kind));
+    (if ((((((((kind =? (project left ty)) && (0 <? kind)) && ((kind <? 24) || (28 <? kind))) && (repeatValid left output)) && (castStorageLayout left)) && (castStorageLayout output)) && (NormPlan::separateTensors left output)) && (if (empty output) then true else (RmsNormalization::nestedRows span (project output n1) (project output n2) (project output n3) (project output s1) (project output s2) (project output s3)))) then
+    (let size : Nat := (elements output);
+    (let repeats : Nat := (prim quotient (elements left) size 0 : Nat);
+    (ctor Response.planned (record Plan {steps := (prim multiply (prim quotient size width 0 : Nat) (storedFoldPhases repeats output) : Nat), capacity := 3, uniformImportance := (writeImportance kind), operation := 20, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := left, output := output, rowArithmetic := true, stagedWidth := width}))))
+    else (ctor Response.invalid)))))),
+  executable: true
+}
+
+definition{
+  name: storedFoldStep,
+  parameters: [index : Nat, execution : Plan],
+  result: Response,
+  body: (let left : NormPlan::TensorDescriptor := (project execution left);
+    (let output : NormPlan::TensorDescriptor := (project execution output);
+    (let repeats : Nat := (prim quotient (elements left) (elements output) 0 : Nat);
+    (let stride : Nat := (storedFoldPhases repeats output);
+    (let row : Nat := (prim quotient index stride 0 : Nat);
+    (let phase : Nat := (prim remainder index stride 0 : Nat);
+    (if (index <? (project execution steps)) then
+      (if (phase =? 0) then (ctor Response.foldRow (ctor Option.none [Nat])) else
+       (if (phase <=? repeats) then (ctor Response.foldRow (ctor Option.some [Nat] (foldSourceOffset row (prim subtract phase 1 : Nat) left output))) else
+        (let group : Nat := (castOutputGroup output);
+         (let start : Nat := (prim multiply (prim subtract phase (1 + repeats) : Nat) group : Nat);
+          (ctor Response.encodeWindow start (storedOffset ((prim multiply row (project output n0) : Nat) + start) output) group))))) else (ctor Response.invalid)))))))),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
@@ -869,14 +932,16 @@ definition{
       then (ctor Response.planned (record Plan {steps := (prim quotient (elements left) width 0 : Nat), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := 89, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := left, output := output, rowArithmetic := false, stagedWidth := width}))
       else (ctor Response.invalid)))
     | Request.indexed operation extra left ids base output => (if (operation =? 41) then (if extra then (ctor Response.invalid) else (rowPlan left ids base output)) else (ctor Response.unsupported))
-    | Request.gate operation variant swapped alpha limit extra left secondary output => (if (operation =? 33) then (if extra then (ctor Response.invalid) else (match secondary
+    | Request.gate operation variant swapped alpha limit extra left secondary output => (if (operation =? 20) then (if extra then (ctor Response.invalid) else (match secondary
+      | Option.none => (storedFoldPlan left output)
+      | Option.some unused => (ctor Response.invalid))) else (if (operation =? 33) then (if extra then (ctor Response.invalid) else (match secondary
       | Option.none => (ctor Response.invalid)
       | Option.some base => (blockCopyPlan left base output))) else (if ((operation =? 66) || (operation =? 67)) then (if extra then (ctor Response.invalid) else (match secondary
       | Option.none => (rankPlan operation variant left output)
       | Option.some unused => (ctor Response.invalid))) else (if (operation =? 98) then (if ((admittedGate variant) && (if extra then false else true)) then (match secondary
       | Option.none => (storageGatePlan variant false swapped alpha limit left left output)
-      | Option.some rhs => (storageGatePlan variant true swapped alpha limit left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))))
-    | Request.step index execution flag => (if (project execution rowArithmetic) then (if (98 <=? (project execution operation)) then (storedGateStep index execution) else (rowArithmeticStep index execution)) else (if (((project execution operation) =? 33) || ((project execution operation) =? 89)) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if (boundedGate (project execution gateVariant)) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag))))))),
+      | Option.some rhs => (storageGatePlan variant true swapped alpha limit left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported)))))
+    | Request.step index execution flag => (if (project execution rowArithmetic) then (if ((project execution operation) =? 20) then (storedFoldStep index execution) else (if (98 <=? (project execution operation)) then (storedGateStep index execution) else (rowArithmeticStep index execution))) else (if (((project execution operation) =? 33) || ((project execution operation) =? 89)) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if (boundedGate (project execution gateVariant)) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag))))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }

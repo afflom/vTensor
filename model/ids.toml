@@ -1338,3 +1338,9 @@ id = "VT-212"
 level = "build"
 suite = "native-backend"
 statement = "Integer repeat-back accumulates residues over four repeated axes and matches the original OpenVINO signed reduction across widths"
+
+[[id]]
+id = "VT-213"
+level = "build"
+suite = "native-backend"
+statement = "Stored repeat-back decodes repeated blocks, folds binary32 rows in GGML order and encodes the resulting tensor with its original storage"

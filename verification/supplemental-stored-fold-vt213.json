@@ -1,0 +1,20 @@
+{
+  "requirement": "VT-213",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_release": "2.22.3",
+  "provider_sha256": "cadb0885ee8592915f101348b683279fbe25b62f01e425d60f0727303d4f4039",
+  "typed_attestation": "419ecdde55e3d9b66d0da70f6f501bb3467dc6ef48f8f6a61682fdb2a3fc0617",
+  "semantic_id": "9cbdecb93c88929548704faee257fad2e9656fe67605ae19d7d4fe3a88c32fba",
+  "oracle": "ggml-stored-fold-oracle.json",
+  "placements": "ggml-repeat-back-placements.json",
+  "new_placements": 300,
+  "placed": 350,
+  "unplaced": 10,
+  "oracle_values": 153600,
+  "full_reference_sha256": "3a40ce26092da8d2675d8c5c761c655334168761aee853f69ff69f07d3f8f4dd",
+  "execution_sha256": "027a7f65c9dfcfe3ba1b7160b5cca97c6de64732189c89384d934071cc0db947",
+  "recurring_graphs": 12,
+  "recurring_values": 6144,
+  "comparison": "Every encoded output byte and every source guard matched the original GGML decoder, F32 CPU REPEAT_BACK and encoder across 30 storage types, five repeat masks and dense or padded sources.",
+  "negative_control": "The former provider refused the new layouts. Substituting subtraction for addition failed the recurring stored comparison. Restoring addition passed."
+}

@@ -99,6 +99,7 @@ ggml_batches! {
     fn stored_equality_vt_207() { "stored-equality", 132, ["pointwise"] }
     fn double_sums_vt_209() { "double-sums", 12, ["pointwise"] }
     fn small_sums_vt_210() { "small-sums", 32, ["pointwise"] }
+    fn stored_fold_vt_213() { "stored-fold", 12, ["typed"] }
     fn signed_fold_vt_212() { "signed-fold", 8, ["pointwise"] }
     fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
@@ -1285,7 +1286,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "a61f11cec06edae415ce41221400efceb0e31eed507f3ca3f4e6c69b9fa16bcf",
+            "2c850c97e1b9ec741999b3c54003e83e600c4a622ab536345807098d8a610c3a",
         )
     });
 
@@ -2277,18 +2278,18 @@ int main(int argc, char **argv) {
         int first,second;
         while(scanf("%d%d",&first,&second)==2){
             auto type=repeat_e4?GGML_TYPE_F8_E4M3:ggml_type(first);
-            const bool fold=reductions && second==4;
+            const bool fold=reductions && (second==4 || second==5),stored_fold=fold && second==5;
             int form=0;if(glu)CHECK(scanf("%d",&form)==1 && form>=0 && form<=3 && second>=0 && second<GGML_GLU_OP_COUNT);
-            int width=fold?32:scalar_diag?second:repeat_e4?16:glu?512:256,rows=fold?8:scalar_diag?6:repeat_e4?32:4;
+            int width=stored_fold?512:fold?32:scalar_diag?second:repeat_e4?16:glu?512:256,rows=stored_fold?16:fold?8:scalar_diag?6:repeat_e4?32:4;
             size_t row=ggml_row_size(type,width),block=ggml_type_size(type);
             auto input=read_hex_bytes(rows*row),rhs=glu && form>=2?read_hex_bytes(rows*row):repeat_e4?read_hex_bytes((first+2*second)*4*sizeof(float)):std::vector<unsigned char>{};
-            const int output_rows=fold || (reductions && second==2)?1:rows;
-            auto expected=read_hex_bytes(fold?16*block:reductions?output_rows*(second>=2?block:sizeof(uint32_t)):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
+            const int output_rows=stored_fold?2:fold || (reductions && second==2)?1:rows;
+            auto expected=read_hex_bytes(stored_fold?2*ggml_row_size(type,256):fold?16*block:reductions?output_rows*(second>=2?block:sizeof(uint32_t)):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
             for(int pad=0;pad<=!repeat_e4;++pad)for(int ip=0;ip<=(!scalar_diag && !glu && !reductions);++ip){
-                graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:fold?2:(reductions||repeat_e4)?4:2,fold?2:reductions?1:repeat_e4?4:2,scalar_diag?3:(fold||repeat_e4)?2:1);
+                graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:stored_fold?4:fold?2:(reductions||repeat_e4)?4:2,fold?2:reductions?1:repeat_e4?4:2,scalar_diag?3:(fold||repeat_e4)?2:1);
                 auto src=pad?ggml_view_4d(ctx,base,width,base->ne[1],base->ne[2],base->ne[3],base->nb[1],base->nb[2],base->nb[3],block):base;
                 ggml_tensor *out,*right=nullptr;
-                if(fold)out=ggml_repeat_back(ctx,src,ggml_new_tensor_1d(ctx,type,16));
+                if(fold)out=ggml_repeat_back(ctx,src,ggml_new_tensor_2d(ctx,type,stored_fold?256:16,output_rows));
                 else if(reductions){static constexpr decltype(&ggml_mean) ops[]={ggml_mean,ggml_argmax,ggml_sum,ggml_sum_rows};CHECK(second>=0 && size_t(second)<std::size(ops));out=ops[second](ctx,src);}
                 else if(stored_transforms){CHECK(second>=0 && second<4);out=transform(ctx,src,second,ip,second<2?-1.25f:second==2?-0.8125f:0.1875f,second==2?1.1875f:0.375f);}
                 else if(scalar_diag)out=ggml_diag(ctx,src);

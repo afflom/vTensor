@@ -299,6 +299,7 @@ model does not sanction.
 | `VT-209` | `build` | Binary64 SUM and SUM_ROWS reproduce compensated OpenVINO reductions over the axes selected by GGML |
 | `VT-210` | `build` | F16 and BF16 row sums reproduce the OpenVINO operator and E4M3 reductions reproduce the original GGML storage conversions and CPU sums |
 | `VT-212` | `build` | Integer repeat-back accumulates residues over four repeated axes and matches the original OpenVINO signed reduction across widths |
+| `VT-213` | `build` | Stored repeat-back decodes repeated blocks, folds binary32 rows in GGML order and encodes the resulting tensor with its original storage |
 
 ## normalization-graphs
 

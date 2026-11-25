@@ -6,14 +6,16 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Place and oracle-check the remaining 432 packed nonlinear unary descriptors. [Unary placements](verification/ggml-unary-provider-placements.json)
 - [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining nine measured packed nonlinear pairs (36 layouts) above the GGML error limit. [Packed outputs](verification/unary-quantization-boundaries.json) · [CPU arithmetic before encoding](verification/packed-unary-scalar-boundaries.json)
-- [ ] Implement and oracle-check 310 remaining `REPEAT_BACK` descriptors across 31 storage types, all four axes and padded inputs. [Placement survey](verification/ggml-repeat-back-placements.json)
+- [ ] Implement and oracle-check 10 remaining binary64 `REPEAT_BACK` descriptors across all four axes and padded inputs. [Placement survey](verification/ggml-repeat-back-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,968 non-Prism lines** (12,517 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,966 non-Prism lines** (12,515 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place 300 stored `REPEAT_BACK` descriptors. All 153,600 outputs matched the original GGML decoder, CPU fold and encoder across 30 types. [VT-213](verification/supplemental-stored-fold-vt213.json)
 
 - [x] Place all 40 signed integer `REPEAT_BACK` descriptors. All 20,480 outputs matched OpenVINO for individual axes and combined four-axis folds, including wraparound. [VT-212](verification/supplemental-signed-fold-vt212.json)
 
