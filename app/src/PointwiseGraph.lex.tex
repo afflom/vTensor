@@ -1050,7 +1050,7 @@ definition{
     | TensorTypes::TypeStorageDecision.unknownType => false
     | TensorTypes::TypeStorageDecision.knownType spec =>
       (if ((project spec blockSize) =? 1) then true else
-        (if (((((((kind =? 13) || (kind =? 14)) || (kind =? 18)) || (kind =? 19)) || (kind =? 21)) || (kind =? 22)) || (kind =? 25)) then false else true))),
+        (if (((((kind =? 13) || (kind =? 14)) || (kind =? 19)) || (kind =? 22)) || (kind =? 25)) then false else true))),
   executable: true
 }
 
@@ -3575,6 +3575,14 @@ definition{
 }
 
 definition{
+  name: vectorUnaryLane,
+  parameters: [kind : Nat, index : Nat, width : Nat],
+  result: Bool,
+  body: (((kind =? 18) || (kind =? 21)) && ((prim remainder index width 0 : Nat) <? (prim subtract width (prim remainder width 4 0 : Nat) : Nat))),
+  executable: true
+}
+
+definition{
   name: executionStep,
   parameters: [
     index : Nat,
@@ -3627,7 +3635,10 @@ definition{
     | CopyMode.converted sourceType destinationType => (copyOffsets index source destination mode)
     | CopyMode.windowed reverse size nx => (copyOffsets index source destination mode)
     | CopyMode.transformed kind storage a b => (copyOffsets index source destination mode)
-    | CopyMode.unaryWord kind sourceType destinationType => (copyOffsets index source destination mode)
+    | CopyMode.unaryWord kind sourceType destinationType =>
+      (if (modeled && (((sourceType =? 0) && (destinationType =? 0)) && (vectorUnaryLane kind index (project source u0)))) then
+        (typedWord (ctor WordOperation.elementary (if (kind =? 18) then 27 else 28) 0 0) 0 0 0 (blockOffset index source) 2 0 3 (blockOffset index destination))
+      else (copyOffsets index source destination mode))
     | CopyMode.scanned => (copyOffsets index source destination mode)
     | CopyMode.reduced operation storage => (copyOffsets index source destination mode)
     | CopyMode.argmaxRow => (argmaxOffsets index source destination flag)
@@ -5168,6 +5179,20 @@ theorem{
   name: packedRectificationProjectsRows,
   parameters: [],
   statement: ((unaryProjectionAdmitted 4 16) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: vectorUnaryKeepsScalarRowTails,
+  parameters: [],
+  statement: ((vectorUnaryLane 18 11 7) = false),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: vectorUnaryRestartsAtEachRow,
+  parameters: [],
+  statement: ((vectorUnaryLane 21 7 7) = true),
   proof: reflexivity{}
 }
 

@@ -353,10 +353,10 @@ inductive{
 }
 
 definition{
-  name: vectorSiluStep,
-  parameters: [stage : Nat, z : Nat, n : Nat, scaled : Nat],
+  name: vectorActivationStep,
+  parameters: [profile : Nat, stage : Nat, z : Nat, n : Nat, scaled : Nat],
   result: VectorInstruction,
-  body: (if (stage <? 14) then (if (stage <? 7) then (if (stage <? 3) then (if (stage <? 1) then (ctor VectorInstruction.vectorArithmetic 1 2 0) else
+  body: (if (stage <? 14) then (if (stage <? 7) then (if (stage <? 3) then (if (stage <? 1) then (if (profile =? 2) then (ctor VectorInstruction.vectorArithmetic 2 0 3218725667) else (ctor VectorInstruction.vectorArithmetic 1 2 0)) else
     (if (stage <? 2) then (ctor VectorInstruction.vectorArithmetic 2 3 1069066811) else
     (ctor VectorInstruction.vectorArithmetic 0 4 1262485504))) else
     (if (stage <? 5) then (if (stage <? 4) then (ctor VectorInstruction.vectorArithmetic 1 5 1262485504) else
@@ -382,8 +382,8 @@ definition{
     (ctor VectorInstruction.vectorWord (if (1128267776 <? (prim remainder n 2147483648 0 : Nat)) then (if (2147483648 <=? n) then 0 else 2139095040) else scaled)))) else
     (if (stage <? 26) then (if (stage <? 25) then (ctor VectorInstruction.vectorArithmetic 0 1065353216 26) else
     (ctor VectorInstruction.vectorArithmetic 3 0 27)) else
-    (if (stage <? 27) then (ctor VectorInstruction.vectorArithmetic 2 28 1) else
-    (ctor VectorInstruction.vectorResult 29)))))),
+    (if (profile =? 0) then (if (stage <? 27) then (ctor VectorInstruction.vectorArithmetic 2 28 1) else
+    (ctor VectorInstruction.vectorResult 29)) else (ctor VectorInstruction.vectorResult 28)))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -1238,6 +1238,20 @@ theorem{
   name: emptyPackedCastHasNoDivisionByZero,
   parameters: [],
   statement: ((castRowWidth (record NormPlan::TensorDescriptor {ty := 2, n0 := 0, n1 := 2, n2 := 1, n3 := 1, s0 := 18, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0}) (record NormPlan::TensorDescriptor {ty := 28, n0 := 0, n1 := 2, n2 := 1, n3 := 1, s0 := 8, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0})) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: quickGeluScalesTheInputBeforeExponentiation,
+  parameters: [],
+  statement: ((vectorActivationStep 2 0 0 0 0) = (ctor VectorInstruction.vectorArithmetic 2 0 3218725667)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: ungatedSiluReturnsTheQuotient,
+  parameters: [],
+  statement: ((vectorActivationStep 1 26 0 0 0) = (ctor VectorInstruction.vectorResult 28)),
   proof: reflexivity{}
 }
 

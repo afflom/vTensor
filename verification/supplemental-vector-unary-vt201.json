@@ -1,0 +1,29 @@
+{
+  "requirement": "VT-201",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "provider_sha256": "4ab3108f13a37b8f8cf5a2415b6e837dba27766505ad574a212023d3db0a5803",
+  "attestations": {
+    "pointwise": "ddfca8df7cfdfe9024fb8b0871b2ef58902dc0b287df147f6c1fe44dd28474ad",
+    "typed": "4564a63b690471cca262423013d453de5f75a0fa105ad64b82913542b54e55d2"
+  },
+  "oracle": "ggml-vector-unary-oracle.json",
+  "prior_placements": 3132,
+  "new_placements": 216,
+  "placed": 3348,
+  "open_packed_nonlinear_graphs": 540,
+  "storage_types": 27,
+  "activations": [
+    "SILU",
+    "GELU_QUICK"
+  ],
+  "layouts_per_pair": 4,
+  "logical_outputs_compared": 221184,
+  "full_oracle_stream_sha256": "e69d51ce7f03acfaefe2188face876c0a56bdff2d4380d9435b2b8152f2c6c8e",
+  "previously_divergent_pairs_repaired": 9,
+  "recurring_graphs": 36,
+  "comparison": "Compare original CPU decoder, F32 unary operation and encoder against the provider stored results byte for byte. Check both copied and in-place logical output and backing padding.",
+  "negative_control": "The previous revision refused the first packed SiLU graph. Replacing the quick GELU exponent scale with SiLU in the restored-admission provider failed the stored output comparison.",
+  "consumer": "llama-perplexity-four-chunks.json#vector_unary_replay",
+  "non_prism_lines": 12536
+}

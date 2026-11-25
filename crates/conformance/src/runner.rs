@@ -1307,30 +1307,27 @@ fn gaussian_table(word: u64) -> Result<Option<f32>, BackendError> {
     }
 }
 
-fn vector_swiglu(input: f32, gate: f32) -> Result<f32, BackendError> {
+fn vector_activation(profile: u64, input: f32, gate: f32) -> Result<f32, BackendError> {
     use vtensor_vector_swiglu::Adt0::{C0 as Arithmetic, C1 as Literal, C2 as ResultSlot};
+    use BackendError::InvalidTensor;
     let mut slots = [0u64; 30];
     slots[0] = input.to_bits().into();
     slots[1] = gate.to_bits().into();
     for stage in 0..slots.len() {
-        let step = vtensor_vector_swiglu::run(stage as u64, slots[5], slots[6], slots[25])
+        let step = vtensor_vector_swiglu::run(profile, stage as u64, slots[5], slots[6], slots[25])
             .map_err(BackendError::overflow)?;
         let read = |operand: u64| slots.get(operand as usize).copied().unwrap_or(operand);
         let word = match step {
             Arithmetic(kind, a, b) => word_value(WordOperation::C1(kind), read(a), read(b))?,
             Literal(word) => word,
             ResultSlot(slot) => {
-                return slots
-                    .get(slot as usize)
-                    .map(|word| f32::from_bits(*word as u32))
-                    .ok_or(BackendError::InvalidTensor)
+                let bits = slots.get(slot as usize).ok_or(InvalidTensor)?;
+                return Ok(f32::from_bits(*bits as u32));
             }
         };
-        *slots
-            .get_mut(stage + 3)
-            .ok_or(BackendError::InvalidTensor)? = word;
+        *slots.get_mut(stage + 3).ok_or(InvalidTensor)? = word;
     }
-    Err(BackendError::InvalidTensor)
+    Err(InvalidTensor)
 }
 
 fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32, BackendError> {
@@ -1344,7 +1341,7 @@ fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32,
         },
         1 => linear::gelu_f32(input)?,
         2 => return Ok(linear::swiglu_f32(input, gate)?),
-        7 => return vector_swiglu(input, gate),
+        7 => return vector_activation(0, input, gate),
         4 => linear::gaussian_error_f32(input, true)?,
         5 => linear::gelu_quick_f32(input)?,
         _ => return Err(BackendError::InvalidTensor),
@@ -1427,6 +1424,7 @@ fn word_value(operation: WordOperation, a: u64, b: u64) -> Result<u64, BackendEr
                 21 => linear::gelu_quick_f32(input),
                 22 => linear::softplus_f32(input),
                 24 => linear::gaussian_error_f32(input, true),
+                27 | 28 => Ok(vector_activation(kind - 26, input, 1.0)?),
                 _ => return Err(InvalidTensor),
             }
             .map_err(BackendError::overflow)?;

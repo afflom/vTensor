@@ -1,15 +1,16 @@
 {
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "4e41d696390038308b73622e8a72fe0e912f5db782bfc52ac501293251d56dd9",
+  "provider_sha256": "4ab3108f13a37b8f8cf5a2415b6e837dba27766505ad574a212023d3db0a5803",
   "operations": "All 22 GGML_UNARY_OP variants, SQR, SQRT, LOG, SIN and COS",
   "layouts": "[256,2,2,1] dense and offset views with padded rows, each copied and in place",
   "direct_cpu_graphs": 324,
   "descriptors": 3888,
-  "placed": 3132,
-  "unplaced": 756,
+  "placed": 3348,
+  "unplaced": 540,
   "original_survey": "ggml-unary-type-descriptors.json",
-  "execution": "supplemental-stored-unary-vt200.json",
+  "execution": "supplemental-vector-unary-vt201.json",
   "table": "ggml-unary-provider-placements.tsv.gz",
-  "table_sha256": "7d1eb304bce273e1bf98da36dc3fbdd5a57319a7987d6a579515801147f7ef60",
-  "uncompressed_sha256": "25b32034b17c95cd8cf8fd83614f5bdbc6959187cd807dc810159a5e1cc26ccd"
+  "table_sha256": "630a91fe2190f50039e2ff94224e617ed3996c8f39f795eb9f0f4f7917e53061",
+  "uncompressed_sha256": "472e50dfcfd01a1471fcdd720f0c1b705d27a9fef21cb0aa13ada60b99486029",
+  "prior_execution": "supplemental-stored-unary-vt200.json"
 }

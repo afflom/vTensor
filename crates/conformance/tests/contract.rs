@@ -94,6 +94,7 @@ ggml_batches! {
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
+    fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
     fn stored_unary_vt_200() { "stored-unary", 156, ["pointwise", "typed"] }
     fn mixed_attention_vt_199() { "mixed-flash", 61, ["attention"] }
     fn mixed_matrix_vt_198() { "mixed-matrix", 86, ["matrix", "pointwise"] }
@@ -1288,7 +1289,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "b28145aa0839fbe7bb93101a410d268a2ef4eeccdee74802e3e4b3ce7b5d9179",
+            "da5011da346fa0e6c564e39f857d19a60acf3d8893ba72e9c4a3d9542faf3069",
         )
     });
 

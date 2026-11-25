@@ -866,3 +866,9 @@ Feature: native-backend
     Given a GGML unary constructor on registered storage in a dense or offset view
     When the sole provider evaluates a copied or in-place result
     Then the stored output agrees with the original CPU operation on the decoded rows and preserves surrounding bytes
+
+  @VT-201 @build
+  Scenario: Preserve quantizer decisions after SiLU and quick GELU
+    Given four GGML rows with independently encoded packed inputs
+    When the provider executes SiLU or quick GELU on a dense or offset view
+    Then copied and in-place results match the original CPU activation and encoder bytes

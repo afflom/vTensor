@@ -473,7 +473,8 @@
     "ggml-mixed-outer-oracle": "fe3ed6fe49c1ceb3cab0d674fa29e3ed3b4b822e64e1205b7f8eab8f08b0acd1",
     "ggml-mixed-matrix-oracle": "2f9c8231532bd962e042dc91933f326ef66ed93b8c20b5fcb6044d39da6300a8",
     "ggml-mixed-attention-oracle": "790801ac1e99ec5951d787b2834e929146ea738c4cb82a63cea09a7e20198501",
-    "ggml-stored-unary-oracle": "68576fcc9dea053d2edcbd7ec075fd460947cc6b3b801917f56048063b587b00"
+    "ggml-stored-unary-oracle": "68576fcc9dea053d2edcbd7ec075fd460947cc6b3b801917f56048063b587b00",
+    "ggml-vector-unary-oracle": "76ced0c8ec885956e07a7af9d6adb921c60a0c41f51e672538472a1dc86d00e8"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -697,7 +698,8 @@
     "mixed-outer": "ggml-mixed-outer",
     "mixed-matrix": "ggml-mixed-matrix",
     "mixed-flash": "ggml-mixed-attention",
-    "stored-unary": "ggml-stored-unary"
+    "stored-unary": "ggml-stored-unary",
+    "vector-unary": "ggml-vector-unary"
   },
   "drivers": {
     "binary-widths": "scalar-casts",
@@ -714,6 +716,7 @@
     "q8-activation-cast": "mixed-cast",
     "narrow-left-binary": "scalar-binary",
     "wide-mixed-binary": "scalar-binary",
-    "wide-native-binary": "scalar-binary"
+    "wide-native-binary": "scalar-binary",
+    "vector-unary": "stored-unary"
   }
 }

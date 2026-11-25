@@ -288,6 +288,7 @@ model does not sanction.
 | `VT-198` | `build` | Ordinary and indexed GGML matrix products contract independently decoded rows across remaining registered storage pairs |
 | `VT-199` | `build` | Flash attention accepts all registered GGML key and value storage combinations and matches the original CPU attention operation |
 | `VT-200` | `build` | Certified unary operation and storage pairs project rows through binary32 and reproduce the original GGML CPU result after storage conversion |
+| `VT-201` | `build` | Packed SiLU and quick GELU reproduce GGML CPU row activation and encoding through the certified vector instruction schedule |
 
 ## normalization-graphs
 

@@ -4,16 +4,18 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Place and oracle-check the remaining 756 packed nonlinear unary and 1,518 GLU descriptors. [Unary placements](verification/ggml-unary-provider-placements.json) · [GLU survey](verification/ggml-glu-type-descriptors.json) · [8 quick GEGLU counterexamples](verification/glu-quantization-boundaries.json)
-- [ ] Match the CPU decoder, unary operation and encoder end to end for the 19 measured packed nonlinear pairs (76 layouts) above the GGML error limit. [Failing inputs and CPU outputs](verification/unary-quantization-boundaries.json)
+- [ ] Place and oracle-check the remaining 540 packed nonlinear unary and 1,518 GLU descriptors. [Unary placements](verification/ggml-unary-provider-placements.json) · [GLU survey](verification/ggml-glu-type-descriptors.json) · [8 quick GEGLU counterexamples](verification/glu-quantization-boundaries.json)
+- [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining 10 measured packed nonlinear pairs (40 layouts) above the GGML error limit. [Failing inputs and CPU outputs](verification/unary-quantization-boundaries.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,988 non-Prism lines** (12,537 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,987 non-Prism lines** (12,536 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Adopt the Verdant release containing Q8 decoding and wide-word arithmetic. [Combined patch](https://github.com/afflom/verdant-engine/pull/67)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place **3,348 of 3,888** surveyed unary descriptors. All 216 additional SiLU and quick GELU graphs matched GGML CPU storage byte for byte, including all nine previous failures for these operations. Stock llama-perplexity matched all 124 top tokens. [VT-201](verification/supplemental-vector-unary-vt201.json)
 
 - [x] Place **3,132 of 3,888** surveyed unary descriptors. The 2,808 newly admitted graphs matched the original GGML CPU operation and storage oracle across 2,875,392 output values. [VT-200](verification/supplemental-stored-unary-vt200.json)
 
