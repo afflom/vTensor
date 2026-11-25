@@ -848,3 +848,9 @@ Feature: native-backend
     Given mixed scalar or packed operands with broadcast batches, offset weights or transposed scalar inputs
     When the sole provider computes the GGML outer product
     Then all result words agree with the pinned CPU outer product on independently decoded operands
+
+  @VT-198 @build
+  Scenario: Multiply ordinary and expert-selected matrices across mixed storage
+    Given registered source types without a matching native GGML dot kernel
+    When vTensor executes ordinary or indexed matrix products on the sole scheduler
+    Then every output matches the original GGML matrix product on independently decoded rows

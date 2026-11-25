@@ -285,6 +285,7 @@ model does not sanction.
 | `VT-195` | `build` | All registered GGML row gather storage types execute against the original selection and conversion oracles |
 | `VT-196` | `build` | Reshaped GGML copies preserve logical values and untouched backing storage across differing source and destination block widths |
 | `VT-197` | `build` | Outer products place and contract both operands across all registered GGML storage types |
+| `VT-198` | `build` | Ordinary and indexed GGML matrix products contract independently decoded rows across remaining registered storage pairs |
 
 ## normalization-graphs
 

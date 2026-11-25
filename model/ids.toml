@@ -1254,3 +1254,9 @@ id = "VT-197"
 level = "build"
 suite = "native-backend"
 statement = "Outer products place and contract both operands across all registered GGML storage types"
+
+[[id]]
+id = "VT-198"
+level = "build"
+suite = "native-backend"
+statement = "Ordinary and indexed GGML matrix products contract independently decoded rows across remaining registered storage pairs"

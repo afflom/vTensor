@@ -691,7 +691,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
                 Product::C0(operation, extra, w, a, out, full)
             };
             match vtensor_matrix_q8::run(request).map_err(BackendError::overflow)? {
-                vtensor_matrix_q8::Adt4::C1(plan) => Ok(Some(ExecutionPlan::RowProduct(plan))),
+                vtensor_matrix_q8::Adt5::C1(plan) => Ok(Some(ExecutionPlan::RowProduct(plan))),
                 _ => Err(InvalidTensor),
             }
         }
@@ -1107,8 +1107,8 @@ fn execute_row_products(
     tensor: &Tensor,
     plan: RowProductPlan,
 ) -> Result<(), BackendError> {
-    use RowProductPlan::C0;
-    let C0(_, weight_bytes, ..) = plan;
+    use vtensor_matrix_q8::Adt4::C0 as Stages;
+    let RowProductPlan::C0(inner, weight_bytes, .., precision, kind, ref arithmetic) = plan;
     macro_rules! packed {
         ($encode:expr, $read:expr, $dot:expr) => {
             execute_block_rows(
@@ -1116,41 +1116,44 @@ fn execute_row_products(
                 0,
                 tensor,
                 plan,
-                |input, at, lanes| {
-                    if input.block_lanes == 1 {
-                        input.decode(at, lanes)?;
-                        Ok($encode(lanes)?)
-                    } else {
-                        $read(input.region(at, input.block_bytes)?)
+                |input, at, prepared| {
+                    prepared.clear();
+                    let mut lanes = [0.0; _];
+                    let stride = input.block_stride(lanes.len())?;
+                    let row = input.blocks(at, input.ne[0] as usize)?;
+                    for (i, block) in row.chunks_exact(stride).enumerate() {
+                        prepared.push(if input.block_lanes == 1 {
+                            input.decode(at + (i * stride) as u64, &mut lanes)?;
+                            $encode(&lanes)?
+                        } else {
+                            $read(block)?
+                        });
                     }
+                    Ok(())
                 },
                 |source, at, a, _| Ok(($dot)(source.region(at, weight_bytes as usize)?, a)?),
             )
         };
     }
-    match plan {
-        C0(inner, .., Some(precision), kind) => {
-            use vtensor_matrix_q8::{Adt0 as Request, Adt4 as Response};
-            let stages = match vtensor_matrix_q8::run(Request::C5(kind))
-                .map_err(BackendError::overflow)?
-            {
-                Response::C6(product, widen, add, narrow) => Some([product, widen, add, narrow]),
-                Response::C0 => None,
-                _ => return Err(BackendError::InvalidTensor),
-            };
+    match precision {
+        Some(precision) => {
+            let stages = arithmetic
+                .as_ref()
+                .map(|&Stages(product, widen, add, narrow)| [product, widen, add, narrow]);
             execute_block_rows(
                 execution,
                 inner,
                 tensor,
                 plan,
-                |input, at, lanes: &mut [f32; 1]| {
-                    input.decode(at, lanes)?;
-                    prepare_float(0, precision, lanes[0].to_bits().into())
+                |input, at, prepared| {
+                    prepared.resize(inner as usize, 0.0);
+                    input.decode(at, prepared)?;
+                    round_activations(prepared, precision)
                 },
                 |source, at, activations, weights| source.dot(at, activations, weights, stages),
             )
         }
-        C0(.., None, kind) => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
+        None => match packed_weight(kind).ok_or(BackendError::InvalidTensor)? {
             PackedWeight::Grouped(kind) => packed!(
                 linear::encode_grouped_q8_block,
                 grouped_activation,
@@ -1166,24 +1169,22 @@ fn execute_row_products(
     }
 }
 
-fn execute_block_rows<const LANES: usize, Block: Sync>(
+fn execute_block_rows<Block: Sync>(
     execution: &threadpool::Execution,
     scratch_width: u64,
     tensor: &Tensor,
     plan: RowProductPlan,
-    prepare: impl Fn(&TensorInput, u64, &mut [f32; LANES]) -> Result<Block, BackendError>,
+    prepare: impl Fn(&TensorInput, u64, &mut Vec<Block>) -> Result<(), BackendError>,
     dot: impl Fn(&TensorInput, u64, &[Block], &mut [f32]) -> Result<f32, BackendError> + Sync,
 ) -> Result<(), BackendError> {
-    use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt4 as Response};
-    use BackendError::{InvalidTensor, Overflow};
+    use vtensor_matrix_q8::{run, Adt0 as Request, Adt2 as Plan, Adt5 as Response};
+    use BackendError::InvalidTensor;
     let Plan::C0(blocks, _, rows, _, _, visits, outputs, ..) = plan;
     tensor_fields!([Some(weights), Some(activations), indices] = tensor.inputs()?);
     let request = |query| run(query).map_err(BackendError::overflow);
     let destination = graph_tensor_data(tensor)?;
     let mut results = workspace(outputs, 0.0f32)?;
     let mut offsets = reserved(usize::try_from(visits).map_err(BackendError::overflow)?)?;
-    let stride = activations.block_stride(LANES)? as u64;
-    let mut lanes = [0.0; LANES];
     let mut prepared = reserved(usize::try_from(blocks).map_err(BackendError::overflow)?)?;
     for (column, values) in (0..visits).zip(results.chunks_exact_mut(rows as usize)) {
         let mut address = request(Request::C1(plan.clone(), column))?;
@@ -1201,12 +1202,7 @@ fn execute_block_rows<const LANES: usize, Block: Sync>(
             _ => return Err(InvalidTensor),
         };
         offsets.push(dest);
-        prepared.clear();
-        let mut from = activation;
-        for _ in 0..blocks {
-            prepared.push(prepare(&activations, from, &mut lanes)?);
-            from = from.checked_add(stride).ok_or(Overflow)?;
-        }
+        prepare(&activations, activation, &mut prepared)?;
         execution.fill(values, |first, chunk| {
             let mut scratch = workspace(scratch_width, 0.0_f32)?;
             for (row, value) in (first..).zip(chunk) {
@@ -1274,6 +1270,15 @@ fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
 
 fn decode_float(storage: u64, word: u64) -> Result<f32, BackendError> {
     convert(storage, 0, word).map(|bits| f32::from_bits(bits as u32))
+}
+
+fn round_activations(values: &mut [f32], precision: u64) -> Result<(), BackendError> {
+    if precision != 0 {
+        for value in values {
+            *value = prepare_float(0, precision, value.to_bits().into())?;
+        }
+    }
+    Ok(())
 }
 
 fn prepare_float(source: u64, dot_type: u64, word: u64) -> Result<f32, BackendError> {
@@ -2371,7 +2376,7 @@ mod attention {
                 .ok_or(Overflow)
         }
 
-        fn blocks(&self, offset: u64, lanes: usize) -> Result<&[u8], BackendError> {
+        pub(super) fn blocks(&self, offset: u64, lanes: usize) -> Result<&[u8], BackendError> {
             self.region(offset, self.block_stride(lanes)?)
         }
 
@@ -2494,11 +2499,8 @@ mod attention {
                         (KeyRows::Grouped(_, blocks), 15) => {
                             prepare_blocks(&query, blocks, linear::encode_grouped_q8_block)?
                         }
-                        (KeyRows::Scalar(..), 0) => {}
-                        (KeyRows::Scalar(..), 30) => {
-                            for word in &mut query {
-                                *word = super::prepare_float(0, dot_type, word.to_bits().into())?;
-                            }
+                        (KeyRows::Scalar(..), 0 | 30) => {
+                            super::round_activations(&mut query, dot_type)?
                         }
                         _ => return Err(InvalidTensor),
                     }

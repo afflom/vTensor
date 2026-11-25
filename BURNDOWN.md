@@ -4,7 +4,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Place and oracle-check the remaining 2,451 MUL_MAT and MUL_MAT_ID storage tuples. [Matrix placements](verification/ggml-matrix-provider-placements.json)
+- [ ] Place and oracle-check the remaining 455 FLASH_ATTN_EXT key/value pairs. [Attention placements](verification/ggml-attention-provider-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -13,6 +13,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all **2,592** surveyed ordinary and indexed matrix products. The final 2,451 matched 14,706 GGML CPU output words within tolerance. Stock llama-perplexity retained all 124 top tokens. [VT-198](verification/supplemental-mixed-matrix-vt198.json)
 
 - [x] Place all **4,212** surveyed outer products. The final 3,988 graphs matched the original GGML CPU within its tolerance across 1,023,049,320 output words. [VT-197](verification/supplemental-mixed-outer-vt197.json)
 

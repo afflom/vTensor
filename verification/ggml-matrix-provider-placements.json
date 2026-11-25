@@ -1,14 +1,15 @@
 {
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "876d8ca308bf8847787b87e5e2388df7bd970af0e1e7696bcd721f22b6af0dc1",
+  "provider_sha256": "010af0a240a96eafde2f8dd6134e34d90caf863f62f3e02ebf4c18e5276568bc",
   "scope": "Default GGML MUL_MAT and MUL_MAT_ID for all 36 by 36 storage pairs. Width is twice the least common multiple of both block sizes. Split the original graph on its sole vTensor scheduler before allocation.",
   "cpu_kernel_evidence": "ggml-matrix-type-descriptors.json",
   "table": "ggml-matrix-provider-placements.tsv.gz",
-  "table_sha256": "142370ad931fd17a6322647646398231dc175ff32b263548b56426ab49987e20",
-  "uncompressed_sha256": "92b6b3abc3dd726da8d0ea73de77d194ea45250a5bab071c3fd5faf70e1b91e3",
+  "table_sha256": "3f94b5cf98bb58cc175e94664247384bfa23a77bf378dd3fefc0420cb637275c",
+  "uncompressed_sha256": "bd305b801064ff764f2610f8aa155dee8c98d73a4fca187025f0abefc5b7285f",
   "descriptors": 2592,
-  "placed": 141,
-  "ordinary_placed": 86,
-  "indexed_placed": 55,
-  "unplaced": 2451
+  "placed": 2592,
+  "ordinary_placed": 1296,
+  "indexed_placed": 1296,
+  "unplaced": 0,
+  "execution": "supplemental-mixed-matrix-vt198.json"
 }

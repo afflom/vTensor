@@ -1,0 +1,12 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "010af0a240a96eafde2f8dd6134e34d90caf863f62f3e02ebf4c18e5276568bc",
+  "scope": "Original GGML FLASH_ATTN_EXT with F32 queries and independently selected key and value storage at head width 256. Split each admitted graph on the sole vTensor backend before allocation.",
+  "cpu_kernel_evidence": "ggml-attention-type-descriptors.json",
+  "table": "ggml-attention-provider-placements.tsv.gz",
+  "table_sha256": "749c64597eae6e3f5e3720248984a4396dab7154dea3692642034ddd1fb57816",
+  "uncompressed_sha256": "4e46a40d21654b05f1eea6d71b7c65663db28274ede197cc2c6374193bd83ec6",
+  "descriptors": 1296,
+  "placed": 841,
+  "unplaced": 455
+}

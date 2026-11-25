@@ -1,0 +1,27 @@
+{
+  "requirement": "VT-198",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-mixed-matrix-oracle.json",
+  "provider_sha256": "010af0a240a96eafde2f8dd6134e34d90caf863f62f3e02ebf4c18e5276568bc",
+  "attestations": {
+    "matrix": "655b4c5aeaafd5a6a54dd0b16946c1d177da3b6afd2792421d51118d99a8889b",
+    "pointwise": "0df6b51cc74ffacc4b6421f6f7f3a7a26a5750dedb3d551829b771468e68768b",
+    "attention": "2b09f20a20fe34f76039859b88d2d92a0136e782526a529bceecc6c963bcce62"
+  },
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "previous_placement_revision": "fa7ff7e",
+  "previous_placements": 141,
+  "ordinary_placements": 1296,
+  "indexed_placements": 1296,
+  "new_ordinary_graphs": 1210,
+  "new_indexed_graphs": 1241,
+  "output_words_compared": 14706,
+  "maximum_nmse": 3.73352140637e-13,
+  "nmse_limit": 1e-07,
+  "whole_oracle_stream_sha256": "26a3262e636237c1fe60d5dbfdf1e65e6b185d2c066955627e6742498309f114",
+  "recurring_graphs": 86,
+  "recurring_output_words": 516,
+  "negative_control": "The prior provider refused admission. Reading every activation column from byte zero failed the CPU output comparison. The two-byte expert weight regressions failed on the intermediate provider and passed after the stride check used physical storage.",
+  "stock_consumer": "llama-perplexity-four-chunks.json",
+  "non_prism_lines": 12538
+}

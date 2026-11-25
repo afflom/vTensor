@@ -94,6 +94,7 @@ ggml_batches! {
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
+    fn mixed_matrix_vt_198() { "mixed-matrix", 86, ["matrix", "pointwise"] }
     fn mixed_outer_vt_197() { "mixed-outer", 15, ["matrix", "pointwise"] }
     fn reshaped_storage_vt_196() { "reshaped-storage", 32, ["typed", "pointwise"] }
     fn numeric_gather_vt_195() { "numeric-gather", 12, ["pointwise"] }
@@ -1285,7 +1286,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "de9fe1fc3f45940c7e9c2596b9ffbbf2559448c33c4ae7dea2da4a4a45f3d2fa",
+            "c79bf9534eaf33cb51b96aaa0d71ce5b1807ae10ec6e9b6a8476ee7aa0f4d3ec",
         )
     });
 
@@ -1350,7 +1351,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         use std::{collections::BTreeMap, path::PathBuf, sync::Mutex};
         static LIBRARIES: Mutex<BTreeMap<&str, PathBuf>> = Mutex::new(BTreeMap::new());
         let mut libraries = LIBRARIES.lock().expect("fixture library cache");
-        let library = libraries.entry(model).or_insert_with(|| {
+        libraries.entry(model).or_insert_with(|| {
             super::tensor_layout::certified_current_model(model);
             let source = super::root().join(format!(
                 "generated/{model}/packages/rust-core/vtensor_{model}/src/lib.rs"
@@ -1368,8 +1369,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
                 run(rustc.arg(input).arg("-o").arg(pending));
             });
             library
-        });
-        library.clone()
+        }).clone()
     }
 
     }
@@ -1902,7 +1902,7 @@ static bool load_tensor_bytes(ggml_tensor *tensor) {
     ggml_backend_tensor_set(tensor,bytes.data(),0,bytes.size());
     return true;
 }
-static bool finite_f32_matches(const std::vector<unsigned char> &actual, const std::vector<unsigned char> &reference, bool exact, bool require_energy) {
+static bool finite_f32_matches(const std::vector<unsigned char> &actual, const std::vector<unsigned char> &reference, bool exact, bool require_energy, double limit=5e-4) {
     if (actual.size()!=reference.size() || actual.size()%sizeof(float)) return false;
     double error=0,energy=0;
     for(size_t i=0;i<actual.size();i+=sizeof(float)) {
@@ -1910,7 +1910,7 @@ static bool finite_f32_matches(const std::vector<unsigned char> &actual, const s
         if (!std::isfinite(value) || !std::isfinite(ref)) return false;
         double delta=double(value)-ref; error+=delta*delta; energy+=double(ref)*ref;
     }
-    return (!exact || actual==reference) && (!require_energy || energy>0) && error<=5e-4*energy;
+    return (!exact || actual==reference) && (!require_energy || energy>0) && error<=limit*energy;
 }
 static void set_scalar_word(ggml_tensor *tensor, size_t element, uint64_t word) {
     std::array<uint8_t,8> bytes{};
@@ -2166,12 +2166,12 @@ int main(int argc, char **argv) {
         }
         return finish(expected.size());
     }
-    const bool scalar_matrices=!strcmp(argv[3],"bfloat-products") || !strcmp(argv[3],"matrix-rounding");
+    const bool mixed_matrix=!strcmp(argv[3],"mixed-matrix");
+    const bool scalar_matrices=mixed_matrix || !strcmp(argv[3],"bfloat-products") || !strcmp(argv[3],"matrix-rounding");
     const bool explicit_precision=!strcmp(argv[3],"prepacked-precision");
     if (explicit_precision || scalar_matrices || !strcmp(argv[3],"prepacked-products")) {
-        int cases; CHECK(scanf("%d",&cases)==1 && cases==(scalar_matrices?8:50));
-        size_t compared=0;
-        for (int i=0;i<cases;++i) {
+        int pairs; CHECK(scanf("%d",&pairs)==1 && pairs==(mixed_matrix?86:scalar_matrices?8:50));
+        for (int i=0;i<pairs;++i) {
             int exact=0,expert,type,activation,width;CHECK(scanf("%d%d%d%d",&expert,&type,&activation,&width)==4);
             if (scalar_matrices) CHECK(scanf("%d",&exact)==1 && (exact==0 || exact==1));
             graph_fixture ctx(8);CHECK(ctx);
@@ -2195,13 +2195,13 @@ int main(int argc, char **argv) {
                         if (!execute) {CHECK(ggml_backend_supports_op(backend,out) && ctx.placed(graph,backend));continue;}
                         ggml_backend_tensor_memset(out,0xff,0,ggml_nbytes(out));
                         CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-                        if (!finite_f32_matches(tensor_bytes(out),expected,exact,false)) {fprintf(stderr,"matrix product differs for %d/%d indexed=%d\n",type,activation,expert);return 2;}
-                        ++compared;
+                        if (!finite_f32_matches(tensor_bytes(out),expected,exact,false,mixed_matrix?1e-7:5e-4)) {fprintf(stderr,"matrix product differs for %d/%d indexed=%d\n",type,activation,expert);return 2;}
+                        ++cases;
                     }
                 }
             }
         }
-        return finish(compared);
+        return finish(cases);
     }
     const bool flash_precision=!strcmp(argv[3],"flash-precision");
     const bool rounded=!strcmp(argv[3],"flash-rounding");
@@ -2405,7 +2405,6 @@ int main(int argc, char **argv) {
     if (!strcmp(argv[3],"scalar-casts")) {
         int pairs,lanes,layouts,per_graph;
         CHECK(scanf("%d%d%d%d",&pairs,&lanes,&layouts,&per_graph)==4 && pairs>0 && (lanes==16 || lanes==64) && (layouts==1 || layouts==2));
-        size_t compared=0;
         for (int pair=0;pair<pairs;++pair) {
             int from,to,invalid_count; uint64_t infinity;
             CHECK(scanf("%d%d%d%" SCNx64,&from,&to,&invalid_count,&infinity)==4 && invalid_count>=0 && invalid_count<=lanes);
@@ -2436,10 +2435,10 @@ int main(int argc, char **argv) {
                     set_scalar_word(input,inputs.size()-1,word);
                     CHECK(refuses_poisoned_output(backend,graph,out));
                 }
-                compared+=per_graph?1:inputs.size()+invalid.size();
+                cases+=per_graph?1:inputs.size()+invalid.size();
             }
         }
-        return finish(compared);
+        return finish(cases);
     }
     if (!strcmp(argv[3],"scalar-diagonal")) {
         int kind,width;
