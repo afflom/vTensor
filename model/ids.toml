@@ -1212,3 +1212,9 @@ id = "VT-190"
 level = "build"
 suite = "native-backend"
 statement = "Signed I8 I16 and I32 left operands follow GGML binary row arithmetic"
+
+[[id]]
+id = "VT-191"
+level = "build"
+suite = "native-backend"
+statement = "Wide mixed binary operands and wide division follow GGML binary32 promotion"

@@ -1,0 +1,23 @@
+{
+  "requirement": "VT-191",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-wide-mixed-binary-oracle.json",
+  "provider_sha256": "a3f8f4e9773dda4982c6c6f0e1037ee7122b6f385ef5bf116ba2ffa720183922",
+  "typed_attestation": "a1bc0c58e3ca517cd51fa1f9131d70abb337f88046b373df8960076b81717999",
+  "new_placements_by_constructor": {
+    "add": 70,
+    "add_inplace": 70,
+    "sub": 70,
+    "sub_inplace": 70,
+    "mul": 70,
+    "mul_inplace": 70,
+    "div": 72,
+    "div_inplace": 72
+  },
+  "scheduled_ordinary_and_in_place_graphs": 584,
+  "stored_values_compared": 289748,
+  "cpu_reference_graphs": 282,
+  "openvino_boundary_graphs": 10,
+  "negative_control": "Replacing F64-left division with multiplication failed the first such graph. Restoring the modeled operation passed all 584 scheduled graphs.",
+  "non_prism_lines": 12541
+}

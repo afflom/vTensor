@@ -806,3 +806,9 @@ Feature: native-backend
     Given ordinary and in-place graphs with signed narrow left operands
     When the scheduler executes all four operators and all supported right types
     Then both placements match original GGML and the signed boundary words match its SYCL kernel
+
+  @VT-191 @build
+  Scenario: Wide mixed binary operands and wide division follow GGML binary32 promotion
+    Given I64 and F64 left operands paired with a different right type or division
+    When a sole provider executes the ordinary and in-place graphs
+    Then the stored output matches the GGML and OpenVINO promotion and conversion oracles

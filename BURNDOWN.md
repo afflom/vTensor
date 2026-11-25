@@ -4,7 +4,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Verify the remaining 576 binary descriptors with I64 or F64 left operands. Cover all 36 right types and all eight ordinary and in-place constructors. [Descriptor map](verification/ggml-binary-type-descriptors.json)
+- [ ] Place the final 12 binary descriptors. Preserve native precision for matching I64 and F64 ADD, SUB and MUL, including in-place execution. [Descriptor map](verification/ggml-binary-type-descriptors.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -13,6 +13,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all 564 wide mixed arithmetic and wide division descriptors. All 289,748 stored values matched GGML, SoftFloat and the pinned OpenVINO evaluator. [VT-191](verification/supplemental-wide-promotion-vt191.json)
 
 - [x] Place all 864 binary descriptors with I8, I16 or I32 left operands. All 442,928 stored values matched the GGML CPU and SYCL arithmetic oracles. [VT-190](verification/supplemental-narrow-left-vt190.json)
 

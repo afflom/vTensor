@@ -623,10 +623,10 @@ definition{
 }
 
 definition{
-  name: binaryLeftWord,
-  parameters: [ty : Nat],
+  name: promotedBinaryLeft,
+  parameters: [kind : Nat, left : Nat, rhs : Nat],
   result: Bool,
-  body: ((0 <? (binaryWordBytes ty)) || ((24 <=? ty) && (ty <=? 26))),
+  body: (if (((left =? 27) || (left =? 28)) && (left =? rhs)) then (kind =? 3) else (rowScalarOutput left)),
   executable: true
 }
 
@@ -635,7 +635,7 @@ definition{
   parameters: [source : Nat, destination : Nat],
   result: Bool,
   body: (if (packedTarget source) then true
-    else (((source =? destination) && (binaryLeftWord source)) || (((bytes source) =? 2) && ((packedTarget destination) || (rowScalarOutput destination))))),
+    else (((source =? destination) && (rowScalarOutput source)) || (((bytes source) =? 2) && ((packedTarget destination) || (rowScalarOutput destination))))),
   executable: true
 }
 
@@ -657,7 +657,7 @@ definition{
   result: Bool,
   body: (if ((packedTarget left) || (packedTarget output)) then true else
     (if ((storageTuple left rhs output) || (((left =? 43) && (kind =? 0)) && (rhs =? 0))) then false else
-      (((left =? output) && (binaryLeftWord left)) ||
+      (((left =? output) && (promotedBinaryLeft kind left rhs)) ||
         (((kind =? 0) && ((bytes left) =? 2)) && (rowScalarOutput output))))),
   executable: true
 }
@@ -1054,6 +1054,27 @@ theorem{
   name: signedLeftArithmeticKeepsStorage,
   parameters: [],
   statement: ((rowSourceStorage 25 25) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: mixedWideProductPromotes,
+  parameters: [],
+  statement: ((rowArithmeticRequired 2 27 28 27) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: matchingWideDivisionPromotes,
+  parameters: [],
+  statement: ((rowArithmeticRequired 3 28 28 28) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: matchingWideSumKeepsPrecision,
+  parameters: [],
+  statement: ((rowArithmeticRequired 0 27 27 27) = false),
   proof: reflexivity{}
 }
 

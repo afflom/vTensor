@@ -463,7 +463,8 @@
     "ggml-q8-activation-binary-oracle": "09269d27a277278b5702b0351ba8994c13b065ce98267b2fbe3052ee2b39986f",
     "ggml-q8-activation-cast-oracle": "26713fd4b71972915ceaed4aeef280590ab08fb33bf4a238b5ce9418adc4c52a",
     "ggml-vector-swiglu-oracle": "e7e9535d141d27d086a1072cc63049d9c7f0d55068d7b004eefc1e224dca4a35",
-    "ggml-narrow-left-binary-oracle": "15bc5514fffccc3c08d0b628bc7532791bdfd02876c4a06fa4a0c0028550aab3"
+    "ggml-narrow-left-binary-oracle": "15bc5514fffccc3c08d0b628bc7532791bdfd02876c4a06fa4a0c0028550aab3",
+    "ggml-wide-mixed-binary-oracle": "24b0e9c2298354bae7a43c12370c70dfe2421511ff68b8ca3c606b08f67d63bd"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -677,7 +678,8 @@
     "q8-activation-binary": "ggml-q8-activation-binary",
     "q8-activation-cast": "ggml-q8-activation-cast",
     "vector-swiglu": "ggml-vector-swiglu",
-    "narrow-left-binary": "ggml-narrow-left-binary"
+    "narrow-left-binary": "ggml-narrow-left-binary",
+    "wide-mixed-binary": "ggml-wide-mixed-binary"
   },
   "drivers": {
     "binary-widths": "scalar-casts",
@@ -692,6 +694,7 @@
     "numeric-input-cast": "mixed-cast",
     "q8-activation-binary": "scalar-binary",
     "q8-activation-cast": "mixed-cast",
-    "narrow-left-binary": "scalar-binary"
+    "narrow-left-binary": "scalar-binary",
+    "wide-mixed-binary": "scalar-binary"
   }
 }
