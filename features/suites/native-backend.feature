@@ -920,3 +920,9 @@ Feature: native-backend
     Given the imported OpenVINO reference, binary64 cancellation, subnormal values and infinities
     When GGML requests SUM or SUM_ROWS on dense and offset padded tensors
     Then every stored result matches the original reference over the same axes
+
+  @VT-210 @build
+  Scenario: Round half and E4M3 reductions at the original operator boundaries
+    Given the original OpenVINO half-precision ReduceSum operator and GGML storage and F32 reduction kernels
+    When GGML requests an F16 or BF16 row sum or an E4M3 scalar or row sum
+    Then dense and padded output words match their upstream references including cancellation

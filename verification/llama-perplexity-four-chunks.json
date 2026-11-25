@@ -223,5 +223,18 @@
     "mean_kl_divergence": -2e-06,
     "max_kl_divergence": 2.6e-05,
     "pointwise_attestation": "d217906b8a766220c4e9e35a543ea7b7c5b07f81aaf20570a8dd3a2a232deabf"
+  },
+  "floating_reductions_replay": {
+    "provider_sha256": "7dd5ec935d1a45ca674f00825b8b049eff2f2ff542e7ca951d192c123b44b19b",
+    "verdant_commit": "595cb612ebd80eaa1dbfd52fe52b64a54c50b5f7",
+    "reference": "Original generic CPU saved logits, same stock host and mixed-weight model",
+    "scored_positions": 124,
+    "matching_top_tokens": 124,
+    "log_sha256": "483755ffe464235801808da6c05f6e845ceaff51ae7bf1bae86040818a92d76e",
+    "perplexity": 79.15844,
+    "mean_kl_divergence": -2e-06,
+    "max_kl_divergence": 2.6e-05,
+    "pointwise_attestation": "3af76c6ebe1712202ee5e03122eb3f6aa50013cba1f6e34880a6d9c046206fc6",
+    "tested_plugin_sha256": "75a6c98ba35bc2312beeb037427f016e25d501cd412b8b5a97fceaabdf5f1da6"
   }
 }

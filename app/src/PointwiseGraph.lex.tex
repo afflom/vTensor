@@ -171,7 +171,7 @@ inductive{
     {name: bicubic, fields: [Bool, Nat, Nat]},
     {name: antialias, fields: [Bool, Nat, Nat]},
     {name: wideEquality, fields: [Nat, Nat, Nat, Nat]},
-    {name: compensatedSum, fields: [Nat]}
+    {name: compensatedSum, fields: [Nat, Nat]}
   ]
 }
 
@@ -866,19 +866,38 @@ definition{
 
 definition{
   name: compensatedRowSteps,
-  parameters: [width : Nat],
+  parameters: [width : Nat, storage : Nat],
   result: Nat,
-  body: (3 + (prim multiply width 11 : Nat)),
+  body: (3 + (prim multiply width (if (storage =? 28) then 11 else 8) : Nat)),
   executable: true
 }
 
 definition{
   name: compensatedSteps,
-  parameters: [operation : Nat, source : IndexContext],
+  parameters: [operation : Nat, source : IndexContext, storage : Nat],
   result: Nat,
   body: (let width : Nat := (signedSumWidth operation source);
     (let rows : Nat := (if (operation =? 13) then 1 else (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat));
-      (prim multiply rows (compensatedRowSteps width) : Nat))),
+      (prim multiply rows (compensatedRowSteps width storage) : Nat))),
+  executable: true
+}
+
+definition{
+  name: byteSumSteps,
+  parameters: [operation : Nat, source : IndexContext],
+  result: Nat,
+  body: (let width : Nat := (project source u0);
+    (let rows : Nat := (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat);
+     (let stride : Nat := ((prim multiply 3 width : Nat) + (if (operation =? 13) then 2 else 3));
+      ((if (operation =? 13) then 3 else 0) + (prim multiply rows stride : Nat))))),
+  executable: true
+}
+
+definition{
+  name: compensatesStorage,
+  parameters: [operation : Nat, storage : Nat],
+  result: Bool,
+  body: ((storage =? 28) || ((operation =? 14) && ((storage =? 1) || (storage =? 30)))),
   executable: true
 }
 
@@ -902,7 +921,7 @@ definition{
   name: planReduction,
   parameters: [operation : Nat, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (let storage : Nat := (project left ty); (if (((storage =? 0) || ((operation =? 13) && ((storage =? 1) || (storage =? 30)))) || ((((signedSumStorage storage) || (storage =? 28)) && ((operation =? 13) || (operation =? 14))) && (separateTensors left output))) then (if ((storage =? (project output ty)) && (if (operation =? 13) then (((((project output n0) =? 1) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) else (rowReductionShape left output))) then (let source : IndexContext := (indexContext left 1); (ctor PointwiseDecision.copyBlocks (if (storage =? 28) then (compensatedSteps operation source) else (reductionSteps source operation storage)) (wordBytes storage) source (indexContext output 1) (if (storage =? 28) then (ctor CopyMode.compensatedSum operation) else (ctor CopyMode.reduced operation storage)))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported))),
+  body: (let storage : Nat := (project left ty); (if (((storage =? 0) || ((operation =? 13) && ((storage =? 1) || (storage =? 30)))) || (((((signedSumStorage storage) || (compensatesStorage operation storage)) || (storage =? 43)) && ((operation =? 13) || (operation =? 14))) && (separateTensors left output))) then (if ((storage =? (project output ty)) && (if (operation =? 13) then (((((project output n0) =? 1) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) else (rowReductionShape left output))) then (let source : IndexContext := (indexContext left 1); (ctor PointwiseDecision.copyBlocks (if (compensatesStorage operation storage) then (compensatedSteps operation source storage) else (if (storage =? 43) then (byteSumSteps operation source) else (reductionSteps source operation storage))) (wordBytes storage) source (indexContext output 1) (if (compensatesStorage operation storage) then (ctor CopyMode.compensatedSum operation storage) else (ctor CopyMode.reduced operation storage)))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported))),
   executable: true
 }
 
@@ -1014,19 +1033,45 @@ definition{
 }
 
 definition{
+  name: halfCompensatedLane,
+  parameters: [phase : Nat, index : Nat, offset : Nat, finite : Bool, storage : Nat],
+  result: GraphResponse,
+  body: (if (phase =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.storage storage 0 true) (ctor WordOperand.source 0 offset) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 4) 2 4)
+      else (if (phase =? 1) then (compensatedRegister (ctor WordOperation.scalar 7) (ctor WordOperand.scratch 4) (ctor WordOperand.immediate 0) 1)
+      else (if (phase =? 2) then (compensatedRegister (ctor WordOperation.scalar 7) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) 2)
+      else (if (phase =? 3) then (if finite then (compensatedRegister (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 4) (ctor WordOperand.scratch 3) 5) else (compensatedRegister (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 4) (ctor WordOperand.scratch 0) 0))
+      else (if (phase =? 4) then (if finite then (compensatedRegister (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 5) 6) else (ctor GraphResponse.nextIndex (index + 4)))
+      else (if (phase =? 5) then (compensatedRegister (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 6) (ctor WordOperand.scratch 0) 7)
+      else (if (phase =? 6) then (compensatedRegister (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 7) (ctor WordOperand.scratch 5) 3)
+      else (compensatedCopy (ctor WordOperand.scratch 6) 0)))))))),
+  executable: true
+}
+
+definition{
+  name: compensatedOutput,
+  parameters: [storage : Nat, offset : Nat],
+  result: GraphResponse,
+  body: (ctor GraphResponse.instruction (if (storage =? 28) then (ctor WordOperation.encoded 3) else (ctor WordOperation.storage 0 storage true)) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output offset) 8 (if (storage =? 28) then 8 else 2)),
+  executable: true
+}
+
+definition{
   name: compensatedSumStep,
-  parameters: [index : Nat, source : IndexContext, destination : IndexContext, operation : Nat, sumMagnitude : Nat, inputMagnitude : Nat],
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, operation : Nat, sumMagnitude : Nat, inputMagnitude : Nat, storage : Nat],
   result: GraphResponse,
   body: (let width : Nat := (signedSumWidth operation source);
-    (let stride : Nat := (compensatedRowSteps width);
+    (let stride : Nat := (compensatedRowSteps width storage);
      (let row : Nat := (prim quotient index stride 0 : Nat);
       (let phase : Nat := (prim remainder index stride 0 : Nat);
        (if (phase <? 2) then (compensatedCopy (ctor WordOperand.immediate 0) (if (phase =? 0) then 0 else 3)) else
-        (if ((phase + 1) =? stride) then (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset row destination)) 8 8) else
+        (if ((phase + 1) =? stride) then (compensatedOutput storage (blockOffset row destination)) else
          (let step : Nat := (prim subtract phase 2 : Nat);
-          (let lane : Nat := ((prim multiply row width : Nat) + (prim quotient step 11 0 : Nat));
-           (compensatedLaneStep (prim remainder step 11 0 : Nat) index (blockOffset lane source)
-             ((sumMagnitude <? 9218868437227405312) && (inputMagnitude <? 9218868437227405312))))))))))),
+          (let phases : Nat := (if (storage =? 28) then 11 else 8);
+           (let lane : Nat := ((prim multiply row width : Nat) + (prim quotient step phases 0 : Nat));
+            (let offset : Nat := (blockOffset lane source);
+             (let lanePhase : Nat := (prim remainder step phases 0 : Nat);
+              (if (storage =? 28) then (compensatedLaneStep lanePhase index offset ((sumMagnitude <? 9218868437227405312) && (inputMagnitude <? 9218868437227405312)))
+               else (halfCompensatedLane lanePhase index offset ((sumMagnitude <? 2139095040) && (inputMagnitude <? 2139095040)) storage))))))))))))),
   executable: true
 }
 
@@ -1096,6 +1141,45 @@ definition{
 }
 
 definition{
+  name: byteSumStore,
+  parameters: [offset : Nat],
+  result: GraphResponse,
+  body: (ctor GraphResponse.instruction (ctor WordOperation.smallFloat 4) (ctor WordOperand.scratch 2) (ctor WordOperand.immediate 0) (ctor WordTarget.output offset) 4 1),
+  executable: true
+}
+
+definition{
+  name: byteSumRow,
+  parameters: [phase : Nat, width : Nat, row : Nat, source : IndexContext, destination : IndexContext, scalar : Bool],
+  result: GraphResponse,
+  body: (if (phase =? 0) then (compensatedCopy (ctor WordOperand.immediate 0) 1) else
+    (let columnStep : Nat := (prim subtract phase 1 : Nat);
+     (let steps : Nat := (prim multiply width 3 : Nat);
+      (if (columnStep <? steps) then (let lane : Nat := ((prim multiply row width : Nat) + (prim quotient columnStep 3 0 : Nat));
+       (let part : Nat := (prim remainder columnStep 3 0 : Nat);
+        (if (part =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.smallFloat 3) (ctor WordOperand.source 0 (blockOffset lane source)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 1 4)
+         else (if (part =? 1) then (compensatedRegister (ctor WordOperation.wide 1) (ctor WordOperand.scratch 2) (ctor WordOperand.immediate 0) 2) else (compensatedAdd 1 2 1))))) else
+       (if scalar then (compensatedAdd 0 1 0) else (if (columnStep =? steps) then (compensatedRegister (ctor WordOperation.wide 2) (ctor WordOperand.scratch 1) (ctor WordOperand.immediate 0) 2) else (byteSumStore (blockOffset row destination)))))))),
+  executable: true
+}
+
+definition{
+  name: byteSumStep,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, operation : Nat],
+  result: GraphResponse,
+  body: (let scalar : Bool := (operation =? 13);
+    (let total : Nat := (byteSumSteps operation source);
+     (if (scalar && (index =? 0)) then (compensatedCopy (ctor WordOperand.immediate 0) 0) else
+      (if (scalar && ((index + 1) =? total)) then (byteSumStore 0) else
+       (if (scalar && ((index + 2) =? total)) then (compensatedRegister (ctor WordOperation.wide 2) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) 2) else
+        (let width : Nat := (project source u0);
+         (let stride : Nat := ((prim multiply width 3 : Nat) + (if scalar then 2 else 3));
+          (let step : Nat := (if scalar then (prim subtract index 1 : Nat) else index);
+           (byteSumRow (prim remainder step stride 0 : Nat) width (prim quotient step stride 0 : Nat) source destination scalar))))))))),
+  executable: true
+}
+
+definition{
   name: reducedOffsets,
   parameters: [
     index : Nat,
@@ -1105,7 +1189,7 @@ definition{
     storage : Nat
   ],
   result: GraphResponse,
-  body: (if (operation =? 18) then (equalRowInstruction index source) else (if (signedSumStorage storage) then (signedSumInstruction index source destination operation storage) else (if (operation =? 13) then (sumOffsets index source storage) else (let stride : Nat := (reductionRowSteps (project source u0) (operation =? 16)); (let row : Nat := (prim quotient index stride 0 : Nat); (let phase : Nat := (prim remainder index stride 0 : Nat); (let end : Nat := (1 + (prim multiply (project source u0) 2 : Nat)); (if (phase <? end) then (reductionRowInstruction phase row source 0) else (let target : Nat := (blockOffset row destination); (if (operation =? 14) then (ctor GraphResponse.word 2 1 1 2 0 3 target) else (if (phase =? end) then (ctor GraphResponse.word 2 1 1 2 0 1 1) else (if (phase =? (end + 1)) then (ctor GraphResponse.word 3 2 (project source u0) 2 0 1 2) else (ctor GraphResponse.word 5 1 1 1 2 3 target))))))))))))),
+  body: (if (storage =? 43) then (byteSumStep index source destination operation) else (if (operation =? 18) then (equalRowInstruction index source) else (if (signedSumStorage storage) then (signedSumInstruction index source destination operation storage) else (if (operation =? 13) then (sumOffsets index source storage) else (let stride : Nat := (reductionRowSteps (project source u0) (operation =? 16)); (let row : Nat := (prim quotient index stride 0 : Nat); (let phase : Nat := (prim remainder index stride 0 : Nat); (let end : Nat := (1 + (prim multiply (project source u0) 2 : Nat)); (if (phase <? end) then (reductionRowInstruction phase row source 0) else (let target : Nat := (blockOffset row destination); (if (operation =? 14) then (ctor GraphResponse.word 2 1 1 2 0 3 target) else (if (phase =? end) then (ctor GraphResponse.word 2 1 1 2 0 1 1) else (if (phase =? (end + 1)) then (ctor GraphResponse.word 3 2 (project source u0) 2 0 1 2) else (ctor GraphResponse.word 5 1 1 1 2 3 target)))))))))))))),
   executable: true
 }
 
@@ -2684,7 +2768,7 @@ definition{
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
     | CopyMode.unaryWord kind sourceType destinationType => (if (kind =? 23) then (exponentialDifferenceStep index source destination sourceType destinationType) else (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination)))
     | CopyMode.scanned => (scannedOffsets index source destination)
-    | CopyMode.compensatedSum operation => (compensatedSumStep index source destination operation 0 0)
+    | CopyMode.compensatedSum operation storage => (compensatedSumStep index source destination operation 0 0 storage)
     | CopyMode.wideEquality lhs rhs lstride rstride => (wideEqualityInstruction index source lhs rhs lstride rstride)
     | CopyMode.reduced operation storage => (reducedOffsets index source destination operation storage)
     | CopyMode.argmaxRow => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
@@ -3259,7 +3343,7 @@ definition{
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.scanned => (ctor GraphResponse.bindings 1 0 0 false 3)
-    | CopyMode.compensatedSum operation => (ctor GraphResponse.bindings 1 0 0 false 8)
+    | CopyMode.compensatedSum operation storage => (ctor GraphResponse.bindings 1 0 0 false 8)
     | CopyMode.wideEquality lhs rhs lstride rstride => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.reduced operation storage => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.argmaxRow => (ctor GraphResponse.bindings 1 0 0 false 3)
@@ -3321,7 +3405,7 @@ definition{
     | CopyMode.transformed kind storage a b => 0
     | CopyMode.unaryWord kind sourceType destinationType => 0
     | CopyMode.scanned => 0
-    | CopyMode.compensatedSum operation => 28
+    | CopyMode.compensatedSum operation storage => storage
     | CopyMode.wideEquality lhs rhs lstride rstride => 0
     | CopyMode.reduced operation storage => storage
     | CopyMode.argmaxRow => 0
@@ -3437,7 +3521,7 @@ definition{
     | CopyMode.transformed kind storage a b => (ctor WordOperation.transformed kind storage a b)
     | CopyMode.unaryWord kind sourceType destinationType => (if (13 <=? kind) then (ctor WordOperation.elementary kind sourceStorage destinationStorage) else (ctor WordOperation.unary sourceStorage destinationStorage true))
     | CopyMode.scanned => (ctor WordOperation.storage sourceStorage destinationStorage true)
-    | CopyMode.compensatedSum operation => (ctor WordOperation.invalid)
+    | CopyMode.compensatedSum operation storage => (ctor WordOperation.invalid)
     | CopyMode.wideEquality lhs rhs lstride rstride => (ctor WordOperation.invalid)
     | CopyMode.reduced operation storage => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.argmaxRow => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -3499,7 +3583,7 @@ definition{
     | CopyMode.transformed kind storage a b => 0
     | CopyMode.unaryWord kind sourceType destinationType => kind
     | CopyMode.scanned => 0
-    | CopyMode.compensatedSum operation => 0
+    | CopyMode.compensatedSum operation storage => 0
     | CopyMode.wideEquality lhs rhs lstride rstride => 0
     | CopyMode.reduced operation storage => 0
     | CopyMode.argmaxRow => 0
@@ -3934,7 +4018,7 @@ definition{
         (typedWord (ctor WordOperation.elementary (if (kind =? 18) then 27 else 28) 0 0) 0 0 0 (blockOffset index source) 2 0 3 (blockOffset index destination))
       else (copyOffsets index source destination mode))
     | CopyMode.scanned => (copyOffsets index source destination mode)
-    | CopyMode.compensatedSum operation => (compensatedSumStep index source destination operation flag auxiliary)
+    | CopyMode.compensatedSum operation storage => (compensatedSumStep index source destination operation flag auxiliary storage)
     | CopyMode.wideEquality lhs rhs lstride rstride => (copyOffsets index source destination mode)
     | CopyMode.reduced operation storage => (copyOffsets index source destination mode)
     | CopyMode.argmaxRow => (argmaxOffsets index source destination flag)
@@ -5579,7 +5663,21 @@ theorem{
 theorem{
   name: emptyDoubleSumStoresZero,
   parameters: [],
-  statement: ((compensatedRowSteps 0) = 3),
+  statement: ((compensatedRowSteps 0 28) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: finiteHalfSubtractsCompensation,
+  parameters: [],
+  statement: ((halfCompensatedLane 3 0 0 true 1) = (compensatedRegister (ctor WordOperation.scalar 1) (ctor WordOperand.scratch 4) (ctor WordOperand.scratch 3) 5)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: byteSumEncodesTheRow,
+  parameters: [],
+  statement: ((byteSumStore 9) = (ctor GraphResponse.instruction (ctor WordOperation.smallFloat 4) (ctor WordOperand.scratch 2) (ctor WordOperand.immediate 0) (ctor WordTarget.output 9) 4 1)),
   proof: reflexivity{}
 }
 

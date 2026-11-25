@@ -77,4 +77,13 @@ citation = "https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf
 checksum = "3b4054ff759bac7531fa6d2d64ffdae078d7461fb146469cbcef0c2f29765adb"
 artifact = "vendor/openvino-reduce-sum.tar.gz"
 statement = "OpenVINO ReduceSum selects integral addition or compensated floating-point accumulation over the axes supplied by its caller."
-realized_by = ["VT-206", "VT-209"]
+realized_by = ["VT-206", "VT-209", "VT-210"]
+
+[[authority]]
+id = "OPENVINO-REDUCE-SUM-OPERATOR"
+name = "OpenVINO ReduceSum operator evaluation"
+citation = "https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf86fc86650aa78a9c05d3e/src/core/src/op/reduce_sum.cpp"
+checksum = "4a5b580cfb48b8067cdb5f7e2421fd43bf5e50fd1ec4d5d54cb180786b28ff83"
+artifact = "vendor/openvino-reduce-sum-operator.tar.gz"
+statement = "The original ReduceSum operator selects F32 for supported floating-point promotion and converts the output to the declared type."
+realized_by = ["VT-210"]

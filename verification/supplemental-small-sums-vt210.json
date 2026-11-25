@@ -1,0 +1,20 @@
+{
+  "requirement": "VT-210",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "595cb612ebd80eaa1dbfd52fe52b64a54c50b5f7",
+  "provider_sha256": "75a6c98ba35bc2312beeb037427f016e25d501cd412b8b5a97fceaabdf5f1da6",
+  "pointwise_attestation": "3af76c6ebe1712202ee5e03122eb3f6aa50013cba1f6e34880a6d9c046206fc6",
+  "semantic_id": "439f1e50daa87a4eaaeef5a4a39bb5109e79fdf9feb9c52d526168f979506e4e",
+  "oracle": "ggml-small-sums-oracle.json",
+  "placements": "ggml-reduction-placements.json",
+  "prior_placements": 5358,
+  "new_placements": 8,
+  "placed": 5366,
+  "unplaced": 0,
+  "recurring_graphs": 32,
+  "logical_outputs_compared": 104,
+  "comparison": "OpenVINO v1::ReduceSum::evaluate on F16 and BF16 input returns the output in the declared storage. For E4M3, use original GGML dequantization, generic CPU SUM and SUM_ROWS on the decoded F32 tensor, and the original E4M3 encoder on the results.",
+  "negative_control": "The prior provider refused the low-precision row reduction. Replacing binary32 subtraction by addition failed the external reference comparison. Restoring subtraction passed.",
+  "non_prism_lines": 12519,
+  "stock_replay": "llama-perplexity-four-chunks.json"
+}

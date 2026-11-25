@@ -6,15 +6,16 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Place and oracle-check the remaining 432 packed nonlinear unary descriptors. [Unary placements](verification/ggml-unary-provider-placements.json)
 - [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining nine measured packed nonlinear pairs (36 layouts) above the GGML error limit. [Packed outputs](verification/unary-quantization-boundaries.json) · [CPU arithmetic before encoding](verification/packed-unary-scalar-boundaries.json)
-- [ ] Place and oracle-check 8 remaining reduction descriptors (2 SUM and 6 SUM_ROWS). [Reduction survey](verification/ggml-reduction-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,972 non-Prism lines** (12,521 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,970 non-Prism lines** (12,519 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Switch to the Verdant release containing exact mixed-word equality. Version 2.22.2 includes the logarithm. [Equality patch](https://github.com/afflom/verdant-engine/pull/69) · [Released logarithm](https://github.com/afflom/verdant-engine/releases/tag/v2.22.2)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Complete all **5,366 surveyed reduction and comparison descriptors**. The final eight placements matched 104 original OpenVINO and GGML results, including cancellation in F16 and BF16. [VT-210](verification/supplemental-small-sums-vt210.json)
 
 - [x] Place F64 **SUM and SUM_ROWS**. All 30 outputs matched the original OpenVINO reference. Six additional graphs covered empty axes and multi-plane inputs. [VT-209](verification/supplemental-double-sums-vt209.json)
 

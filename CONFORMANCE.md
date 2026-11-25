@@ -297,6 +297,7 @@ model does not sanction.
 | `VT-207` | `build` | COUNT_EQUAL compares independently stored tensors with lossless binary32 operands and counts equal lanes using the imported GGML and SoftFloat oracles |
 | `VT-208` | `build` | COUNT_EQUAL preserves signed integer and binary64 precision across mixed GGML storage and independent row layouts |
 | `VT-209` | `build` | Binary64 SUM and SUM_ROWS reproduce compensated OpenVINO reductions over the axes selected by GGML |
+| `VT-210` | `build` | F16 and BF16 row sums reproduce the OpenVINO operator and E4M3 reductions reproduce the original GGML storage conversions and CPU sums |
 
 ## normalization-graphs
 
@@ -424,7 +425,8 @@ An authority is cited, never re-derived, and never gated on: what it states is n
 | `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
 | `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161`, `VT-164`, `VT-165`, `VT-166` |
 | `LEAN-SIGNED-MACHINE-INTEGERS` | https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/Init/Data/SInt/Basic.lean | `VT-163` |
-| `OPENVINO-REFERENCE-REDUCTION` | https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf86fc86650aa78a9c05d3e/src/core/reference/include/openvino/reference/reduce_sum.hpp | `VT-206`, `VT-209` |
+| `OPENVINO-REFERENCE-REDUCTION` | https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf86fc86650aa78a9c05d3e/src/core/reference/include/openvino/reference/reduce_sum.hpp | `VT-206`, `VT-209`, `VT-210` |
+| `OPENVINO-REDUCE-SUM-OPERATOR` | https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf86fc86650aa78a9c05d3e/src/core/src/op/reduce_sum.cpp | `VT-210` |
 
 ## Claims that are not conformance IDs
 

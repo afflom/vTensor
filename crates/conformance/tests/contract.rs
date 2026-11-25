@@ -98,6 +98,7 @@ ggml_batches! {
     fn wide_equality_vt_208() { "wide-equality", 56, ["pointwise"] }
     fn stored_equality_vt_207() { "stored-equality", 132, ["pointwise"] }
     fn double_sums_vt_209() { "double-sums", 12, ["pointwise"] }
+    fn small_sums_vt_210() { "small-sums", 32, ["pointwise"] }
     fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
@@ -1284,7 +1285,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "5af3a21c8b5a96729f9e41909634d9a5c4a8ed4b201a70afc672aa269493161a",
+            "350512d9ccc10d0c9f4e64b64059a8ba455816ff2df056879db407a512d05ec8",
         )
     });
 
@@ -1485,7 +1486,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let mut command = Command::new(program);
         let driver = ORACLE_BINDINGS["drivers"][mode].as_str().unwrap_or(mode);
         command.arg(&library).arg(&expected_snapshot).arg(driver);
-        if let Some(model) = ORACLE_BINDINGS["fixture_libraries"][mode].as_str() {
+        if let Some(model) = binding::<Option<&str>>(&["fixture_libraries", mode]) {
             command.arg(fixture_library(common, model));
         }
         // The verified binaries are immutable. Each concurrent evaluator owns its trace paths.
@@ -1493,12 +1494,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let text = super::ggml_oracle::batch(&mut command, input);
         let footer = format!("RESULT cases {expected_cases}\n");
         let rows = text.strip_suffix(&footer).expect("native case count");
-        if let Some(expected) = ORACLE_BINDINGS["factory_transcripts"][mode].as_str() {
-            assert_eq!(
-                sha256_hex(rows.as_bytes()),
-                expected,
-                "{mode} factory transcript"
-            );
+        if let Some(expected) = binding::<Option<&str>>(&["factory_transcripts", mode]) {
+            let actual = sha256_hex(rows.as_bytes());
+            assert_eq!(actual, expected, "{mode} factory transcript");
         } else {
             assert!(rows.is_empty(), "unexpected native output for {mode}");
         }

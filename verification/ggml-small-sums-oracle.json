@@ -1,0 +1,44 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "openvino_repository": "https://github.com/openvinotoolkit/openvino",
+  "openvino_source": "e213a14725769a6a2bf86fc86650aa78a9c05d3e",
+  "openvino": {
+    "version": "2026.4.1.22982.07f9c262b05",
+    "package": "openvino-2026.4.1-22982-cp312-cp312-manylinux_2_28_x86_64.whl",
+    "archive_sha256": "6b4375c17ddcac83a5180349e2e2bb811185c261066e2a920659892d58ef0e3b",
+    "library_sha256": "9b9a80ac1f18e07b13ed54459d9a865bcfe9dc170dbf8fe740c2974b85ecedc1",
+    "translator_sources_sha256": {
+      "ggml/src/ggml-openvino/openvino/op/sum.cpp": "b4de79c31b351560fee5a2f65679c0510b79a4312656c9fcd300c7156509cec5",
+      "ggml/src/ggml-openvino/openvino/op/sum_rows.cpp": "86cd5b84a15388ba7dfb9e62b2e0e7d27c7989af561284b384a61067786560af"
+    }
+  },
+  "compression": "gzip",
+  "words_sha256": "c9ccae51cb14dcb73fad391a03e795f51b11bee89b01cd283c7b72425aa0dc4c",
+  "graphs": 32,
+  "logical_outputs": 104,
+  "reference": "OpenVINO v1::ReduceSum::evaluate on F16 and BF16 input returns the output in the declared storage. For E4M3, use original GGML dequantization, generic CPU SUM and SUM_ROWS on the decoded F32 tensor, and the original E4M3 encoder on the results.",
+  "source_archive": "vendor/openvino-reduce-sum.tar.gz",
+  "source_archive_sha256": "3b4054ff759bac7531fa6d2d64ffdae078d7461fb146469cbcef0c2f29765adb",
+  "upstream_git_blobs": {
+    "src/core/reference/src/utils/coordinate_index.cpp": "efd0c79b2984c7c329486da5f909ca7353e44063",
+    "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+    "src/core/reference/src/utils/coordinate_transform.cpp": "7769a2ffe9b09a9736d3a09b1b5d70d03df6ceb3",
+    "src/core/reference/include/openvino/reference/reduce_sum.hpp": "2f38faf1a3b1358892760e71eb6d37474e4f0d6d",
+    "src/core/dev_api/openvino/core/shape_util.hpp": "8ad0c779b36737101ab0a2a5aad4e50e1cab971e",
+    "src/core/reference/include/openvino/reference/utils/coordinate_index.hpp": "94daa714c96f2098b4793f50a287e23223c990d3",
+    "src/core/reference/include/openvino/reference/utils/type_util.hpp": "84eabe06cf0ff8cdb105626bd511f836e04747eb",
+    "src/core/reference/include/openvino/reference/utils/coordinate_transform.hpp": "a3d45dab0950f25ae0f6a41373f294dc3448743d"
+  },
+  "operator_git_blob": "a00a7ebcbf2f20bd65f09f7f5a39a7d16433106c",
+  "operator_source_sha256": "63215f5b149d999f0844be2b98e8907a975ef3820cef3f74242387d77c2ecb96",
+  "ggml_cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "ggml_base_library_sha256": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+  "cancellation": "OpenVINO returns zero for the compensated half-precision row [32768, 2^-12, -32768] and bfloat16 row [2^24, 1/8, -2^24]. Widened GGML sums retain the small middle operand.",
+  "operator_archive": "vendor/openvino-reduce-sum-operator.tar.gz",
+  "operator_archive_sha256": "4a5b580cfb48b8067cdb5f7e2421fd43bf5e50fd1ec4d5d54cb180786b28ff83",
+  "operator_git_blobs": {
+    "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+    "src/core/src/op/reduce_sum.cpp": "a00a7ebcbf2f20bd65f09f7f5a39a7d16433106c",
+    "src/core/shape_inference/include/element_visitor.hpp": "59c8e7a1dd157a57ad037fe6492cb3e196b72048"
+  }
+}

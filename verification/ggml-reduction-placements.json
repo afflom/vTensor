@@ -1,6 +1,6 @@
 {
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "b18ff6e2faa19727e0ebc053212d0a0c026791f318fb86640d9a5f3bc8c42673",
+  "provider_sha256": "75a6c98ba35bc2312beeb037427f016e25d501cd412b8b5a97fceaabdf5f1da6",
   "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
@@ -9,13 +9,13 @@
   "operator_counts": {
     "SUM": {
       "descriptors": 18,
-      "placed": 16,
+      "placed": 18,
       "direct_cpu": 6,
       "output_values_compared": 6
     },
     "SUM_ROWS": {
       "descriptors": 18,
-      "placed": 12,
+      "placed": 18,
       "direct_cpu": 2,
       "output_values_compared": 8
     },
@@ -45,17 +45,18 @@
     }
   },
   "descriptors": 5366,
-  "placed": 5358,
-  "unplaced": 8,
+  "placed": 5366,
+  "unplaced": 0,
   "output_values_compared": 2082,
   "reference": "Call each original GGML constructor before allocation. Query both devices and split supported graphs using a vTensor-only GGML scheduler. For shapes and types supported by the original CPU kernel, compare all output bytes after execution on each backend.",
   "table": "ggml-reduction-placements.tsv.gz",
-  "table_sha256": "b98385ff5270de19e032faad12fba99aa3086aef6d45b6383262afc9123b6a4e",
-  "uncompressed_sha256": "8421725b94f3025be6407cd493b33e2974a786aa5c72e5aedc36a7b796c82aa7",
-  "provider_pointwise_attestation": "5dfc45c990198f5878468c3327cbcb4a475ad43c9f4aaee88006c7b8dd354225",
+  "table_sha256": "0c04023d4fea83c21b0915d1dfb00407732c3891d36b860f58f553d8caccfafc",
+  "uncompressed_sha256": "97163bb7161f4d8c835477ba02ca08b85d7a38838ae9e26247678cd80e0f17a7",
+  "provider_pointwise_attestation": "3af76c6ebe1712202ee5e03122eb3f6aa50013cba1f6e34880a6d9c046206fc6",
   "stored_outputs": "supplemental-stored-reductions-vt205.json",
   "signed_sums": "supplemental-signed-sums-vt206.json",
   "stored_equality": "supplemental-stored-equality-vt207.json",
   "wide_equality": "supplemental-wide-equality-vt208.json",
-  "double_sums": "supplemental-double-sums-vt209.json"
+  "double_sums": "supplemental-double-sums-vt209.json",
+  "small_sums": "supplemental-small-sums-vt210.json"
 }
