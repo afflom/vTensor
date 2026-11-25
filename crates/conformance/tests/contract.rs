@@ -95,6 +95,7 @@ ggml_batches! {
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
+    fn stored_glu_vt_202() { "stored-glu", 82, ["pointwise", "typed"] }
     fn stored_unary_vt_200() { "stored-unary", 156, ["pointwise", "typed"] }
     fn mixed_attention_vt_199() { "mixed-flash", 61, ["attention"] }
     fn mixed_matrix_vt_198() { "mixed-matrix", 86, ["matrix", "pointwise"] }
@@ -1289,7 +1290,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "da5011da346fa0e6c564e39f857d19a60acf3d8893ba72e9c4a3d9542faf3069",
+            "b4f3c28eefda30e6b7dfb72b3bf581de9d22ded51f815ac7a000bee92164db45",
         )
     });
 
@@ -1458,12 +1459,13 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let input: &[u8] = match (mode, ORACLE_BINDINGS["cast_word_tables"][mode].as_str()) {
             ("matrix" | "elementwise", _) => fixture_input(u64::from(mode == "elementwise")),
             (_, Some(table)) => {
-                let path = root.join(format!("verification/{table}-words.tsv"));
                 let oracle = fixture_record(&format!("{table}-oracle"));
+                let extension = oracle["encoding"].as_str().unwrap_or("tsv");
+                let path = root.join(format!("verification/{table}-words.{extension}"));
                 words = if oracle["compression"] == "gzip" {
                     run(Command::new("gzip")
                         .arg("-dc")
-                        .arg(path.with_extension("tsv.gz")))
+                        .arg(path.with_extension(format!("{extension}.gz"))))
                 } else {
                     std::fs::read(path).unwrap()
                 };
@@ -2252,15 +2254,17 @@ int main(int argc, char **argv) {
     }
     const bool stored_unary=!strcmp(argv[3],"stored-unary"),scalar_diag=!strcmp(argv[3],"scalar-diagonal");
     const bool repeat_e4=!strcmp(argv[3],"e4m3-repeat");
-    if (stored_unary || scalar_diag || repeat_e4) {
+    const bool glu=!strcmp(argv[3],"stored-glu");
+    if (stored_unary || scalar_diag || repeat_e4 || glu) {
         int first,second;
         while(scanf("%d%d",&first,&second)==2){
             auto type=repeat_e4?GGML_TYPE_F8_E4M3:ggml_type(first);
-            int width=scalar_diag?second:repeat_e4?16:256,rows=scalar_diag?6:repeat_e4?32:4;
+            int form=0;if(glu)CHECK(scanf("%d",&form)==1 && form>=0 && form<=3 && second>=0 && second<GGML_GLU_OP_COUNT);
+            int width=scalar_diag?second:repeat_e4?16:glu?512:256,rows=scalar_diag?6:repeat_e4?32:4;
             size_t row=ggml_row_size(type,width),block=ggml_type_size(type);
-            auto input=read_hex_bytes(rows*row),rhs=repeat_e4?read_hex_bytes((first+2*second)*4*sizeof(float)):std::vector<unsigned char>{};
-            auto expected=read_hex_bytes(rows*row*(scalar_diag?width:1));CHECK(!input.empty() && !expected.empty() && (!repeat_e4 || !rhs.empty()));
-            for(int pad=0;pad<=!repeat_e4;++pad)for(int ip=0;ip<=!scalar_diag;++ip){
+            auto input=read_hex_bytes(rows*row),rhs=glu && form>=2?read_hex_bytes(rows*row):repeat_e4?read_hex_bytes((first+2*second)*4*sizeof(float)):std::vector<unsigned char>{};
+            auto expected=read_hex_bytes(rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
+            for(int pad=0;pad<=!repeat_e4;++pad)for(int ip=0;ip<=(!scalar_diag && !glu);++ip){
                 graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:repeat_e4?4:2,repeat_e4?4:2,scalar_diag?3:repeat_e4?2:1);
                 auto src=pad?ggml_view_4d(ctx,base,width,base->ne[1],base->ne[2],base->ne[3],base->nb[1],base->nb[2],base->nb[3],block):base;
                 ggml_tensor *out,*right=nullptr;
@@ -2269,6 +2273,11 @@ int main(int argc, char **argv) {
                     right=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,first+2*second,2,2,1);
                     auto view=ggml_view_4d(ctx,right,first,2,2,1,right->nb[1],right->nb[2],right->nb[3],second*sizeof(float));
                     out=binary_nodes[0][ip](ctx,src,view);
+                }else if(glu){
+                    if(form>=2)right=ggml_dup_tensor(ctx,base);
+                    auto gate=right && pad?ggml_view_4d(ctx,right,width,2,2,1,right->nb[1],right->nb[2],right->nb[3],block):right;
+                    out=form<2?ggml_glu(ctx,src,ggml_glu_op(second),form==1):form==2?ggml_glu_split(ctx,src,gate,ggml_glu_op(second)):
+                        second==GGML_GLU_OP_SWIGLU_OAI?ggml_swiglu_oai(ctx,src,gate,1.702f,1.5f):ggml_swiglu_clamp(ctx,src,gate,1.5f);
                 }else{
                     const decltype(&ggml_sqr) math[][2]={{ggml_sqr,ggml_sqr_inplace},{ggml_sqrt,ggml_sqrt_inplace},{ggml_log,ggml_log_inplace},{ggml_sin,ggml_sin_inplace},{ggml_cos,ggml_cos_inplace}};
                     CHECK(second>=0 && second<27);out=second<22?(ip?ggml_unary_inplace:ggml_unary)(ctx,src,ggml_unary_op(second)):math[second-22][ip](ctx,src);
@@ -2277,20 +2286,24 @@ int main(int argc, char **argv) {
                 std::vector<unsigned char> backing(ggml_nbytes(base),0xa5);
                 for(int j=0;j<rows;++j)memcpy(backing.data()+j*base->nb[1]+pad*block,input.data()+j*row,row);
                 ggml_backend_tensor_set(base,backing.data(),0,backing.size());
-                if(right)ggml_backend_tensor_set(right,rhs.data(),0,rhs.size());
+                auto gate_backing=rhs;
+                if(glu && right){gate_backing.assign(ggml_nbytes(right),0xa5);for(int j=0;j<rows;++j)memcpy(gate_backing.data()+j*right->nb[1]+pad*block,rhs.data()+j*row,row);}
+                if(right)ggml_backend_tensor_set(right,gate_backing.data(),0,gate_backing.size());
                 if(!ip)ggml_backend_tensor_memset(out,0xff,0,ggml_nbytes(out));
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
                 auto actual=tensor_bytes(out);const auto bytes=expected.size()/rows;
                 for(int j=0;j<rows;++j){
                     auto got=actual.data()+j*(ip?base->nb[1]:bytes),want=expected.data()+j*bytes;
-                    if(stored_unary && type==GGML_TYPE_F64)for(size_t i=0;i<bytes;i+=8){
+                    if((stored_unary || glu) && type==GGML_TYPE_F64)for(size_t i=0;i<bytes;i+=8){
                         double value,ref;memcpy(&value,got+i,8);memcpy(&ref,want+i,8);
                         if(std::isfinite(value) && std::abs(value-ref)<=1e-6*std::max(1.0,std::abs(ref)))memcpy(got+i,want+i,8);
                     }
+                    if(glu && type==GGML_TYPE_IQ4_NL)for(size_t i=0;i<bytes;i+=block)
+                        if(!got[i] && !got[i+1] && !want[i] && !want[i+1])memcpy(got+i+2,want+i+2,block-2);
                     if(memcmp(got,want,bytes)){fprintf(stderr,"stored result differs for %d/%d padded %d in-place %d\n",first,second,pad,ip);return 2;}
                     if(ip)memcpy(backing.data()+j*base->nb[1]+pad*block,static_cast<unsigned char*>(out->data)+j*base->nb[1],bytes);
                 }
-                CHECK(tensor_bytes(base)==backing);++cases;
+                CHECK(tensor_bytes(base)==backing && (!right || tensor_bytes(right)==gate_backing));++cases;
             }
         }
         return finish(cases);
@@ -2878,66 +2891,51 @@ int main(int argc, char **argv) {
       }
       return finish(cases);
     }
-    const bool indexed=!strcmp(argv[3], "indexed-add");
-    if (!strcmp(argv[3], "row-gather") || indexed) {
-      size_t types=0, decoders=0;
-      bool complete=true;
-      for (int kind=0; kind<GGML_TYPE_COUNT; ++kind) {
-        const auto type=ggml_type(kind);
-        if (!ggml_get_type_traits(type)->type_size) continue;
-        const bool numerical=indexed?type==GGML_TYPE_F32:type==GGML_TYPE_F32 || type==GGML_TYPE_I32 || ggml_get_type_traits(type)->to_float;
-        types++; decoders+=numerical;
-        for (int empty_axis : {-1,0,1,2,3}) {
-          if (empty_axis<0 && !numerical) continue;
-          for (int layout=0; layout<(empty_axis<0?4:1); ++layout) for (int pattern=0; pattern<(empty_axis<0?(indexed?5:2):1); ++pattern) {
-          current_kind=type; current_layout=layout;
-          int64_t source_shape[]={2*ggml_blck_size(type),3,2,2}, index_shape[]={3,2,2,1};
-          if(indexed) {const int widths[]={1,3,17,65};if(empty_axis<0)source_shape[0]=widths[layout];index_shape[3]=2;if(pattern==3 && empty_axis<0)source_shape[1]=0;}
-          if (layout>1) {source_shape[3]=3;index_shape[2]=3;}
-          if (empty_axis==0) source_shape[0]=0;
-          if (empty_axis>0) index_shape[empty_axis-1]=0;
-          if (empty_axis>1) source_shape[empty_axis]=0;
-          graph_fixture ctx(32,2); CHECK(ctx);
-          const int64_t physical_shape[]={source_shape[0]+layout*ggml_blck_size(type),4,3,source_shape[3]};
-          ggml_tensor *physical=ggml_new_tensor(ctx,type,4,layout?physical_shape:source_shape);
-          ggml_tensor *input=layout?ggml_view_4d(ctx,physical,source_shape[0],source_shape[1],source_shape[2],source_shape[3],physical->nb[1],physical->nb[2],physical->nb[3],physical->nb[1]+ggml_type_size(type)):physical;
-          ggml_tensor *indices=ggml_new_tensor(ctx,GGML_TYPE_I32,4,index_shape);
-          if (layout) {indices->nb[0]=4*(layout+1);for(int axis=1;axis<4;axis++)indices->nb[axis]=indices->nb[axis-1]*indices->ne[axis-1]+4*layout;}
-          ggml_tensor *left=indexed?ggml_new_tensor_4d(ctx,GGML_TYPE_F32,source_shape[0],index_shape[0],index_shape[1],index_shape[2]):nullptr;
-          if(left && layout) {left->nb[0]=4*(layout+2);for(int axis=1;axis<4;axis++)left->nb[axis]=left->nb[axis-1]*left->ne[axis-1]+4*(layout+1);}
-          ggml_tensor *result=indexed?ggml_add_id(ctx,left,input,indices):ggml_get_rows(ctx,input,indices);
-          ggml_tensor *oracle=indexed?ggml_add_id(ctx,empty_axis<0?canonical_copy(ctx,left):left,empty_axis<0?canonical_copy(ctx,input):input,indices):ggml_get_rows(ctx,input,layout?canonical_copy(ctx,indices):indices);
-          if (layout) {result->nb[0]=4*(layout+1);for(int axis=1;axis<4;axis++)result->nb[axis]=result->nb[axis-1]*result->ne[axis-1]+4*layout;}
-          if (empty_axis<0) {
-            ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend)); CHECK(ctx.storage);
-            std::vector<unsigned char> source(ggml_nbytes(physical));
-            for (int64_t row=0; row<ggml_nrows(physical); ++row) memset(source.data()+row*physical->nb[1],0xA0+row,physical->nb[1]);
-            if(indexed) for(size_t i=0;i<source.size()/4;i++) {const float value=float(int((i*13+7)%47)-23)/8;memcpy(source.data()+i*4,&value,4);}
-            std::vector<unsigned char> selected(ggml_nbytes(indices),0xA5);
-            for (int64_t i=0; i<ggml_nelements(indices); ++i) {
-              const int32_t gathered=((pattern?2-i%3:i%3==1?0:2)+i/3)%3;
-              const int32_t value=indexed?(i>=6?-2:pattern==3 || (pattern==2 && i%2)?-1:pattern==1?2-i%3:i%3):gathered;
-              memcpy(selected.data()+block_address(indices,i),&value,4);
-            }
-            if(left) {
-              static const uint32_t edges[]={0,0x80000000,0x7f800000,0xff800000,0x7fc00001,0x7f800001,0xff800001,1,0x80000001,0x7f7fffff,0xff7fffff,0x00800000};
-              std::vector<unsigned char> values(ggml_nbytes(left),0xA5);
-              for(int64_t i=0;i<ggml_nelements(left);i++) {const int64_t row=i/left->ne[0];const bool copied=pattern==3 || (pattern==2 && row%6%2);const float value=float(int((i*7+3)%47)-23)/8;uint32_t word;memcpy(&word,&value,4);if(copied || pattern==4)word=edges[i%12];memcpy(values.data()+block_address(left,i),&word,4);}
-              ggml_backend_tensor_set(left,values.data(),0,values.size());
-            }
-            ggml_backend_tensor_set(physical,source.data(),0,source.size());
-            ggml_backend_tensor_set(indices,selected.data(),0,selected.size());
-          }
-          ggml_cgraph *graph=build_graph(ctx,result);
+    const bool indexed=!strcmp(argv[3],"indexed-add"),gather_rows=!strcmp(argv[3],"row-gather");
+    const bool gradient=!strcmp(argv[3],"row-gradient") || !strcmp(argv[3],"row-gradient-bf16");
+    if (indexed || gather_rows || gradient) {
+      std::set<int> types,decoders;bool complete=true;int kind,filled,layout,pattern;size_t view_offset;
+      while(scanf("%d%d%d%d%zu",&kind,&filled,&layout,&pattern,&view_offset)==5){
+        struct descriptor {int64_t ne[4];size_t nb[4];} d[5];
+        for(auto &spec:d){for(auto &n:spec.ne)CHECK(scanf("%" SCNd64,&n)==1);for(auto &n:spec.nb)CHECK(scanf("%zu",&n)==1);}
+        CHECK(getchar()==' ' && getchar()=='\n');current_kind=kind;current_layout=layout;
+        const auto type=ggml_type(kind);types.insert(kind);if(filled)decoders.insert(kind);
+        graph_fixture ctx(32,2);CHECK(ctx);
+        auto make=[&](ggml_type ty,const descriptor &spec){auto t=ggml_new_tensor(ctx,ty,4,spec.ne);std::copy_n(spec.nb,4,t->nb);return t;};
+        auto physical=make(type,d[0]), indices=make(GGML_TYPE_I32,d[2]);
+        auto &src=d[1];auto input=!gradient && layout?ggml_view_4d(ctx,physical,src.ne[0],src.ne[1],src.ne[2],src.ne[3],src.nb[1],src.nb[2],src.nb[3],view_offset):physical;
+        auto extra=gather_rows?nullptr:make(GGML_TYPE_F32,d[3]);auto left=indexed?extra:nullptr;
+        auto operation=[&](ggml_tensor *a,ggml_tensor *ids,ggml_tensor *other){return gradient?ggml_get_rows_back(ctx,a,ids,other):indexed?ggml_add_id(ctx,other,a,ids):ggml_get_rows(ctx,a,ids);};
+        auto result=operation(input,indices,extra);
+        auto canonical=(indexed && filled) || (gradient && input->nb[0]!=ggml_type_size(type))?canonical_copy(ctx,input):input;
+        if(gradient && type==GGML_TYPE_BF16)canonical=ggml_cast(ctx,canonical,GGML_TYPE_F32);
+        auto oracle=operation(canonical,!indexed && indices->nb[0]!=4?canonical_copy(ctx,indices):indices,indexed && filled?canonical_copy(ctx,left):extra);
+        CHECK(std::equal(result->ne,result->ne+4,d[4].ne));std::copy_n(d[4].nb,4,result->nb);
+        if(filled){
+          ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend));CHECK(ctx.storage || (!ggml_nbytes(input)&&!ggml_nbytes(indices)&&!ggml_nbytes(result)));
+          for(auto t:{physical,indices,left})if(t && ggml_nbytes(t)){std::vector<unsigned char> data(ggml_nbytes(t));CHECK(fread(data.data(),1,data.size(),stdin)==data.size());ggml_backend_tensor_set(t,data.data(),0,data.size());}
+        }
+        auto graph=build_graph(ctx,result);const std::vector<unsigned char> expected(ggml_nbytes(result),0xa5);
+        if(!expected.empty())ggml_backend_tensor_memset(result,0xa5,0,expected.size());
+        if(gradient){
+          const auto width=input->ne[0],rows=indices->ne[0],output_rows=result->ne[1];
+        if(type==GGML_TYPE_F32 && width==1 && rows==1 && output_rows==1 && layout==0 && pattern==0) {
+          CHECK(refuses_change(backend,dev,graph,result,indices->type,GGML_TYPE_I64));
+          CHECK(refuses_change(backend,dev,graph,result,input->ne[1],int64_t(0)) && refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_F16) && refuses_change(backend,dev,graph,result,result->data,input->data));
+        }
+        const bool invalid=width && output_rows && rows && pattern>=5;
+        if(!invalid) {
           CHECK(ggml_backend_graph_compute(reference,build_graph(ctx,oracle))==GGML_STATUS_SUCCESS);
-          const std::vector<unsigned char> expected(ggml_nbytes(result),0xA5);
-          if (!expected.empty()) ggml_backend_tensor_memset(result,0xA5,0,expected.size());
-          const bool supported=ggml_backend_dev_supports_op(dev,result);
-          const bool computed=ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS;
-          const bool equal=computed && compare_result(result,oracle,expected,indexed && pattern==4?1:0);
-          complete &= supported && computed && equal;
-          if (!supported || !computed || !equal) fprintf(stderr,"row-gather missing kind=%d empty_axis=%d supported=%d computed=%d equal=%d\n",kind,empty_axis,supported,computed,equal);
-          if (empty_axis<0 && pattern==0) {
+        }
+        if(!rows) {input->data=nullptr;input->buffer=nullptr;}
+        CHECK(ggml_backend_dev_supports_op(dev,result));
+        CHECK(ggml_backend_graph_compute(backend,graph)==(invalid?GGML_STATUS_FAILED:GGML_STATUS_SUCCESS));
+        CHECK(compare_result(result,invalid?nullptr:oracle,expected,invalid?0:1));
+        }else{
+          CHECK(ggml_backend_graph_compute(reference,build_graph(ctx,oracle))==GGML_STATUS_SUCCESS);
+          CHECK(ggml_backend_dev_supports_op(dev,result) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
+          CHECK(compare_result(result,oracle,expected,indexed && pattern==4?1:0));
+          if (filled && pattern==0) {
             auto refusal_check=[&](bool ok,const char *label) {if(!ok){fprintf(stderr,"row-gather refusal kind=%d %s\n",kind,label);complete=false;}};
             if (layout==0) {
             refusal_check(refuses_change(backend,dev,graph,result,indices->type,GGML_TYPE_I64),"index-type");
@@ -2963,57 +2961,10 @@ int main(int argc, char **argv) {
               refusal_check(tensor_bytes(result)==expected,"atomic-index-refusal");
             }
           }
-          cases++;
-          }
         }
+        ++cases;
       }
-      CHECK(types==36 && decoders==(indexed?1:30));
-      CHECK(complete);
-      return finish(cases);
-    }
-    const bool bf16_gradient = !strcmp(argv[3], "row-gradient-bf16");
-    if (bf16_gradient || !strcmp(argv[3], "row-gradient")) {
-      const uint32_t edges[]={0,0x80000000,0x3f800000,0xbf800000,0x4b800000,0xcb800000,0x7f800000,0xff800000,0x7fc00001,0x7f800001,1,0x80000001,0x7f7fffff,0x00800000,0x3f000000,0xbf000000};
-      for(auto type : {GGML_TYPE_F32,GGML_TYPE_F16,GGML_TYPE_BF16}) if ((type==GGML_TYPE_BF16)==bf16_gradient) for(int width : {0,1,3,17,65}) for(int rows : {0,1,3,9}) for(int output_rows : {0,1,4,7}) for(int layout=0;layout<3;layout++) for(int pattern=0;pattern<7;pattern++) {
-        graph_fixture ctx(16,2); CHECK(ctx);
-        ggml_tensor *input=ggml_new_tensor_2d(ctx,type,width,rows+(pattern==1?2:pattern==2?1:0)), *indices=ggml_new_tensor_1d(ctx,GGML_TYPE_I32,rows), *shape=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,width,output_rows);
-        const size_t bytes=ggml_type_size(type);
-        input->nb[0]=bytes*(layout==2?2:1);input->nb[1]=input->nb[0]*width+bytes*layout;input->nb[2]=input->nb[3]=input->nb[1]*input->ne[1];
-        indices->nb[0]=4*(layout+1);indices->nb[1]=indices->nb[2]=indices->nb[3]=indices->nb[0]*rows;
-        ggml_tensor *result=ggml_get_rows_back(ctx,input,indices,shape);
-        auto source=input->nb[0]==bytes?input:canonical_copy(ctx,input);
-        if(bf16_gradient) source=ggml_cast(ctx,source,GGML_TYPE_F32);
-        auto oracle=ggml_get_rows_back(ctx,source,indices->nb[0]==4?indices:canonical_copy(ctx,indices),shape);
-        result->nb[0]=4*(layout+1);result->nb[1]=result->nb[0]*width+4*layout;result->nb[2]=result->nb[3]=result->nb[1]*output_rows;
-        ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend));CHECK(ctx.storage || (!ggml_nbytes(input)&&!ggml_nbytes(indices)&&!ggml_nbytes(result)));
-        std::vector<unsigned char> data(ggml_nbytes(input),0xA5), index_data(ggml_nbytes(indices),0xA5), initial(ggml_nbytes(result),0xA5);
-        for(int row=0;row<rows;row++) {
-          int32_t index=output_rows?pattern==0?0:pattern==2?output_rows-1-row%output_rows:pattern==3?(row%2?0:output_rows-1):pattern==4?output_rows-1:row%output_rows:0;
-          if(row==rows-1 && pattern>=5) index=pattern==5?-1:output_rows;
-          memcpy(index_data.data()+row*indices->nb[0],&index,4);
-          for(int column=0;column<width;column++) {
-            const uint32_t bits=edges[(row*width+column+pattern*7)%16];float value;memcpy(&value,&bits,4);const uint16_t half=bf16_gradient?ggml_fp32_to_bf16(value).bits:ggml_fp32_to_fp16(value);
-            memcpy(data.data()+row*input->nb[1]+column*input->nb[0],type==GGML_TYPE_F32?(const void *)&bits:(const void *)&half,bytes);
-          }
-        }
-        if(!data.empty()) ggml_backend_tensor_set(input,data.data(),0,data.size());
-        if(!index_data.empty()) ggml_backend_tensor_set(indices,index_data.data(),0,index_data.size());
-        if(!initial.empty()) ggml_backend_tensor_set(result,initial.data(),0,initial.size());
-        ggml_cgraph *graph=build_graph(ctx,result);
-        if(type==GGML_TYPE_F32 && width==1 && rows==1 && output_rows==1 && layout==0 && pattern==0) {
-          CHECK(refuses_change(backend,dev,graph,result,indices->type,GGML_TYPE_I64));
-          CHECK(refuses_change(backend,dev,graph,result,input->ne[1],int64_t(0)) && refuses_change(backend,dev,graph,result,result->type,GGML_TYPE_F16) && refuses_change(backend,dev,graph,result,result->data,input->data));
-        }
-        const bool invalid=width && output_rows && rows && pattern>=5;
-        if(!invalid) {
-          CHECK(ggml_backend_graph_compute(reference,build_graph(ctx,oracle))==GGML_STATUS_SUCCESS);
-        }
-        if(!rows) {input->data=nullptr;input->buffer=nullptr;}
-        CHECK(ggml_backend_dev_supports_op(dev,result));
-        CHECK(ggml_backend_graph_compute(backend,graph)==(invalid?GGML_STATUS_FAILED:GGML_STATUS_SUCCESS));
-        CHECK(compare_result(result,invalid?nullptr:oracle,initial,invalid?0:1));
-        cases++;
-      }
+      CHECK(feof(stdin) && complete && (gradient || (types.size()==36 && decoders.size()==(indexed?1:30))));
       return finish(cases);
     }
     const bool repeating=!strcmp(argv[3], "repeat"), concatenating=!strcmp(argv[3], "concat");

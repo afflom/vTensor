@@ -872,3 +872,9 @@ Feature: native-backend
     Given four GGML rows with independently encoded packed inputs
     When the provider executes SiLU or quick GELU on a dense or offset view
     Then copied and in-place results match the original CPU activation and encoder bytes
+
+  @VT-202 @build
+  Scenario: Execute GLU across registered storage
+    Given a copied GLU graph with separate or concatenated inputs in either order
+    When the sole provider computes the graph with default or explicit gate parameters
+    Then the stored output agrees with the original CPU decoder, gate operation and encoder and both inputs retain their original bytes

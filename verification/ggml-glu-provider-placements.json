@@ -1,0 +1,15 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "fa77af8aa1e93a9db5781374a41850b09653a418a1ce630af8476857e47abc5d",
+  "operations": "All seven GLU variants",
+  "layouts": "Dense and row-padded offset inputs at width 512 for every type and width 17 for each executable scalar type",
+  "direct_cpu_graphs": 276,
+  "descriptors": 1794,
+  "placed": 1794,
+  "unplaced": 0,
+  "original_survey": "ggml-glu-type-descriptors.json",
+  "execution": "supplemental-stored-glu-vt202.json",
+  "table": "ggml-glu-provider-placements.tsv.gz",
+  "table_sha256": "b2815ee23efb7f4a4f027255281247bfd2aa4ca307ad7e4381be4be6d0aec880",
+  "uncompressed_sha256": "90affbed1c70aadeffc4b38e9ae2ad352e7abb95a58bbfdd26942fe2c5fcf7f1"
+}

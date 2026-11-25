@@ -1278,3 +1278,9 @@ id = "VT-201"
 level = "build"
 suite = "native-backend"
 statement = "Packed SiLU and quick GELU reproduce GGML CPU row activation and encoding through the certified vector instruction schedule"
+
+[[id]]
+id = "VT-202"
+level = "build"
+suite = "native-backend"
+statement = "GLU constructors execute certified split or concatenated gate rows over registered storage and reproduce independently encoded GGML CPU results"

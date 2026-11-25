@@ -1,0 +1,29 @@
+{
+  "requirement": "VT-202",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "provider_sha256": "fa77af8aa1e93a9db5781374a41850b09653a418a1ce630af8476857e47abc5d",
+  "typed_attestation": "ed0cf9c148a980dad0f3db62b39c88325f79d6be1a358a67b628fd15a97366ea",
+  "oracle": "ggml-stored-glu-oracle.json",
+  "prior_placements": 276,
+  "new_placements": 1518,
+  "placed": 1794,
+  "stored_types_added": 33,
+  "operation_and_input_forms": 23,
+  "logical_outputs_compared": 2162688,
+  "full_oracle_stream_sha256": "9766633ca1200df6a566aa696b8984e73d61c9217ae5f7ae1f0fe6ffc9a360c6",
+  "recurring_graphs": 82,
+  "prior_divergent_pairs_repaired": 8,
+  "comparison": "Execute dense and padded graphs with independent input and padding guards. Compare stored output against the original CPU decode, F32 graph and encoder. F64 uses relative tolerance for F32 computation. IQ4_NL ignores unobservable indices in zero-scale blocks.",
+  "negative_control": "The prior provider refused the stored graph. Substituting SiLU for the quick GELU exponential profile failed the stored output assertion.",
+  "indexed_fixture_replay": {
+    "graphs": 5588,
+    "operations": [
+      "GET_ROWS",
+      "ADD_ID",
+      "GET_ROWS_BACK"
+    ],
+    "oracle": "Original GGML CPU computes each expected output at test time from captured input bytes and descriptors."
+  },
+  "non_prism_lines": 12533
+}

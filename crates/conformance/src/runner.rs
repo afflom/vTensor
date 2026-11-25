@@ -431,11 +431,16 @@ unsafe extern "C" fn backend_free(backend: BackendPtr) {
     }
 }
 
+enum RowProgram {
+    Unary(GraphPlan),
+    Gate(vtensor_typed::Adt2),
+}
+
 enum ExecutionPlan {
     Callback(CallbackParams),
     Delay(std::time::Duration),
     Standard(GraphPlan),
-    Typed(vtensor_typed::Adt2, Option<Box<GraphPlan>>),
+    Typed(vtensor_typed::Adt2, Option<Box<RowProgram>>),
     RowProduct(RowProductPlan),
     Rotary(vtensor_rotary::Adt3),
     Attention(Box<vtensor_attention::Adt7>),
@@ -644,6 +649,9 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
     let with_projection =
         |request, projection| match vtensor_typed::run(request).map_err(BackendError::overflow)? {
             vtensor_typed::Adt3::C2(plan) => Ok(Some(ExecutionPlan::Typed(plan, projection))),
+            vtensor_typed::Adt3::C10(physical, row) if projection.is_none() => Ok(Some(
+                ExecutionPlan::Typed(physical, Some(Box::new(RowProgram::Gate(row)))),
+            )),
             _ => Err(InvalidTensor),
         };
     let typed_plan = |request| with_projection(request, None);
@@ -654,7 +662,7 @@ fn plan_operation(tensor: &Tensor) -> Result<Option<ExecutionPlan>, BackendError
             let program = GraphPlan::C4(count, 4, row.clone(), row, mode);
             with_projection(
                 vtensor_typed::Adt0::C4(input, metadata(output)),
-                Some(Box::new(program)),
+                Some(Box::new(RowProgram::Unary(program))),
             )
         }
         GraphResponse::C0(GraphPlan::C8) => Err(InvalidTensor),
@@ -1344,6 +1352,7 @@ fn gated_value(variant: u64, storage: u64, input: f32, gate: f32) -> Result<f32,
         7 => return vector_activation(0, input, gate),
         4 => linear::gaussian_error_f32(input, true)?,
         5 => linear::gelu_quick_f32(input)?,
+        8 => vector_activation(2, input, gate)?,
         _ => return Err(BackendError::InvalidTensor),
     };
     let activation = if storage == 1 && matches!(variant, 1 | 5) {
@@ -1473,17 +1482,60 @@ fn execute_word(
     Ok(())
 }
 
+fn typed_word(
+    instruction: vtensor_typed::Adt3,
+    pointers: &[*mut u8],
+    output: *mut u8,
+    words: &mut [u64],
+) -> Result<(), BackendError> {
+    use vtensor_typed::Adt3::{C3 as Word, C4 as Gate};
+    use BackendError::InvalidTensor;
+    match instruction {
+        Gate(variant, storage, first, second, target) => {
+            let operand = |slot: u64| words.get(slot as usize).copied().ok_or(InvalidTensor);
+            let [input, gate] =
+                [operand(first)?, operand(second)?].map(|w| f32::from_bits(w as u32));
+            let value = gated_value(variant, storage, input, gate)?;
+            *words.get_mut(target as usize).ok_or(InvalidTensor)? = u64::from(value.to_bits());
+        }
+        // The typed planner and the pointwise interpreter export separate Rust enums
+        // for the same word fields. Bind the ordering once across this package boundary.
+        Word(family, op, src, dst, left, from, right, at, target, to, read, write) => {
+            let request = GraphRequest::C3(
+                true, family, op, src, dst, left, from, right, at, target, to, read, write,
+            );
+            execute_word(pointwise(request)?, pointers, output, words)?;
+        }
+        _ => return Err(InvalidTensor),
+    }
+    Ok(())
+}
+
+fn typed_steps(
+    plan: &vtensor_typed::Adt2,
+    words: &mut [u64],
+    mut perform: impl FnMut(vtensor_typed::Adt3, &mut [u64]) -> Result<(), BackendError>,
+) -> Result<(), BackendError> {
+    let vtensor_typed::Adt2::C0(count, ..) = plan;
+    for index in 0..*count {
+        let instruction =
+            vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
+                .map_err(BackendError::overflow)?;
+        perform(instruction, words)?;
+    }
+    Ok(())
+}
+
 fn execute_typed(
     tensor: &Tensor,
     plan: vtensor_typed::Adt2,
-    projection: Option<&GraphPlan>,
+    projection: Option<&RowProgram>,
 ) -> Result<(), BackendError> {
     use vtensor_typed::Adt3::{
-        C3 as Word, C4 as Gate, C5 as Rank, C6 as Encode, C7 as BinaryRow, C8 as DecodeWindow,
-        C9 as EncodeWindow,
+        C5 as Rank, C6 as Encode, C7 as BinaryRow, C8 as DecodeWindow, C9 as EncodeWindow,
     };
     use BackendError::InvalidTensor;
-    let vtensor_typed::Adt2::C0(count, capacity, importance, operation, .., row_arithmetic, width) =
+    let vtensor_typed::Adt2::C0(_, capacity, importance, operation, .., row_arithmetic, width) =
         &plan;
     let mut words = workspace(*capacity, 0_u64)?;
     let mut ranker = None;
@@ -1493,6 +1545,7 @@ fn execute_typed(
     // retains an immutable input slice throughout the instruction loop.
     let source = (*width != 0).then(|| TensorInput::new(left)).transpose()?;
     let right = secondary
+        .or(Some(left))
         .filter(|_| *row_arithmetic)
         .map(TensorInput::new)
         .transpose()?;
@@ -1517,11 +1570,13 @@ fn execute_typed(
     let output = graph_tensor_region(tensor, span as usize)?;
     let kind = weight_encoder(tensor.ty);
     let mut values = workspace(*width, 0.0)?;
-    let mut right_values = workspace(right.as_ref().map_or(0, |input| input.ne[0] as u64), 0.0)?;
-    for index in 0..*count {
-        let instruction =
-            vtensor_typed::run(vtensor_typed::Adt0::C1(index, plan.clone(), words[2]))
-                .map_err(BackendError::overflow)?;
+    let mut right_values = workspace(
+        right
+            .as_ref()
+            .map_or(0, |input| (*width).min(input.ne[0] as u64)),
+        0.0,
+    )?;
+    typed_steps(&plan, &mut words, |instruction, words| {
         let values = match instruction {
             DecodeWindow(_, start, len) | EncodeWindow(start, _, len) => {
                 let end = start.checked_add(len).ok_or(BackendError::Overflow)?;
@@ -1536,7 +1591,7 @@ fn execute_typed(
                 if !matches!(instruction, EncodeWindow(..)) {
                     source.as_ref().ok_or(InvalidTensor)?.decode(from, values)?;
                 }
-                if let Some(program) = projection {
+                if let Some(RowProgram::Unary(program)) = projection {
                     let row = values.as_mut_ptr().cast();
                     copy_steps(program, [0; 4], &mut [0; 3], |step, words| {
                         execute_word(step, &[row], row, words)
@@ -1545,8 +1600,16 @@ fn execute_typed(
                 if let BinaryRow(_, offset, _) = instruction {
                     let right = right.as_ref().ok_or(InvalidTensor)?;
                     right.decode(offset, &mut right_values)?;
-                    for (value, rhs) in values.iter_mut().zip(right_values.iter().cycle()) {
-                        *value = linear::evaluate_f32_scalar(*operation, *value, *rhs)?;
+                    if let Some(RowProgram::Gate(program)) = projection {
+                        let row = values.as_mut_ptr().cast();
+                        let inputs = [row, right_values.as_mut_ptr().cast()];
+                        typed_steps(program, &mut [0; 4], |step, scratch| {
+                            typed_word(step, &inputs, row, scratch)
+                        })?;
+                    } else {
+                        for (value, rhs) in values.iter_mut().zip(right_values.iter().cycle()) {
+                            *value = linear::evaluate_f32_scalar(*operation, *value, *rhs)?;
+                        }
                     }
                 }
                 let row_start = encoded.len();
@@ -1612,24 +1675,10 @@ fn execute_typed(
                 // SAFETY: the selected prefix fits this certified contiguous GGML I32 row.
                 unsafe { write_row(output.add(to as usize), indices) };
             }
-            Gate(variant, storage, first, second, target) => {
-                let operand = |slot: u64| words.get(slot as usize).copied().ok_or(InvalidTensor);
-                let [input, gate] =
-                    [operand(first)?, operand(second)?].map(|w| f32::from_bits(w as u32));
-                let value = gated_value(variant, storage, input, gate)?;
-                *words.get_mut(target as usize).ok_or(InvalidTensor)? = u64::from(value.to_bits());
-            }
-            // The typed planner and the pointwise interpreter export separate Rust enums
-            // for the same word fields. Bind the ordering once across this package boundary.
-            Word(family, op, src, dst, left, from, right, at, target, to, read, write) => {
-                let request = GraphRequest::C3(
-                    true, family, op, src, dst, left, from, right, at, target, to, read, write,
-                );
-                execute_word(pointwise(request)?, &pointers, output, &mut words)?;
-            }
-            _ => return Err(InvalidTensor),
+            other => typed_word(other, &pointers, output, words)?,
         }
-    }
+        Ok(())
+    })?;
     for (offset, range) in offsets {
         // SAFETY: Prism bounded each complete block in the destination. All reads and
         // numerical conversions have finished, including any overlapping source views.

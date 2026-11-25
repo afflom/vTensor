@@ -1,0 +1,10 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "fixture_source_revision": "ba15bae6805d318a689254babf8d57cad60f9b74",
+  "fixture_source": "crates/conformance/tests/contract.rs",
+  "graphs": 164,
+  "encoding": "bin",
+  "compression": "gzip",
+  "words_sha256": "2d85593ba40d6f0c34daa0cc2e855e863e67c150377c235103443dea3f600824",
+  "reference": "Frozen original constructor dimensions, byte strides and input bytes from the previous graph generator on GGML CPU. The pinned independent GGML CPU graph computes expected output at replay."
+}

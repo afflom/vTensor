@@ -41,7 +41,8 @@ inductive{
     {name: encodeBlock, fields: [Nat, Nat]},
     {name: binaryRow, fields: [Nat, Nat, Nat]},
     {name: decodeWindow, fields: [Nat, Nat, Nat]},
-    {name: encodeWindow, fields: [Nat, Nat, Nat]}
+    {name: encodeWindow, fields: [Nat, Nat, Nat]},
+    {name: projectedGate, fields: [Plan, Plan]}
   ]
 }
 
@@ -308,6 +309,23 @@ definition{
 }
 
 definition{
+  name: gateProgram,
+  parameters: [
+    variant : Nat,
+    split : Bool,
+    swapped : Nat,
+    alpha : Nat,
+    limit : Nat,
+    left : NormPlan::TensorDescriptor,
+    rhs : NormPlan::TensorDescriptor,
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Plan,
+  body: (record Plan {steps := (if (boundedGate variant) then (1 + (prim multiply (boundedGatePhases variant) (elements output) : Nat)) else (prim multiply 4 (elements output) : Nat)), capacity := (if (boundedGate variant) then 4 else 3), uniformImportance := (ctor Option.none [Nat]), operation := (if split then 98 else (99 + swapped)), gateVariant := variant, gateAlpha := alpha, gateLimit := limit, left := left, rhs := rhs, output := output, rowArithmetic := false, stagedWidth := 0}),
+  executable: true
+}
+
+definition{
   name: gatePlan,
   parameters: [
     variant : Nat,
@@ -320,7 +338,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if (((((((((((((((swapped <=? 1) && (0 <? (bytes (project left ty)))) && ((project left ty) =? (project rhs ty))) && ((project left ty) =? (project output ty))) && (NormPlan::sameShape left rhs)) && (gateRows left)) && (gateRows rhs)) && (gateRows output)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project output n0) =? (if split then (project left n0) else (prim quotient (project left n0) 2 0 : Nat)))) && ((project output n0) <=? 2147483647)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) then (ctor Response.planned (record Plan {steps := (if (boundedGate variant) then (1 + (prim multiply (boundedGatePhases variant) (elements output) : Nat)) else (prim multiply 4 (elements output) : Nat)), capacity := (if (boundedGate variant) then 4 else 3), uniformImportance := (ctor Option.none [Nat]), operation := (if split then 98 else (99 + swapped)), gateVariant := variant, gateAlpha := alpha, gateLimit := limit, left := left, rhs := rhs, output := output, rowArithmetic := false, stagedWidth := 0})) else (ctor Response.invalid)),
+  body: (if (((((((((((((((swapped <=? 1) && (0 <? (bytes (project left ty)))) && ((project left ty) =? (project rhs ty))) && ((project left ty) =? (project output ty))) && (NormPlan::sameShape left rhs)) && (gateRows left)) && (gateRows rhs)) && (gateRows output)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project output n0) =? (if split then (project left n0) else (prim quotient (project left n0) 2 0 : Nat)))) && ((project output n0) <=? 2147483647)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) then (ctor Response.planned (gateProgram variant split swapped alpha limit left rhs output)) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -392,7 +410,7 @@ definition{
   name: gateLaneVariant,
   parameters: [variant : Nat, output : NormPlan::TensorDescriptor, item : Nat],
   result: Nat,
-  body: (if ((variant =? 2) && (((project output ty) =? 0) && ((prim remainder item (project output n0) 0 : Nat) <? (prim subtract (project output n0) (prim remainder (project output n0) 4 0 : Nat) : Nat)))) then 7 else variant),
+  body: (if (((variant =? 2) || (variant =? 5)) && (((project output ty) =? 0) && ((prim remainder item (project output n0) 0 : Nat) <? (prim subtract (project output n0) (prim remainder (project output n0) 4 0 : Nat) : Nat)))) then (if (variant =? 2) then 7 else 8) else variant),
   executable: true
 }
 
@@ -794,6 +812,47 @@ definition{
 }
 
 definition{
+  name: storageGatePlan,
+  parameters: [
+    variant : Nat,
+    split : Bool,
+    swapped : Nat,
+    alpha : Nat,
+    limit : Nat,
+    left : NormPlan::TensorDescriptor,
+    rhs : NormPlan::TensorDescriptor,
+    output : NormPlan::TensorDescriptor
+  ],
+  result: Response,
+  body: (if (0 <? (bytes (project left ty))) then (gatePlan variant split swapped alpha limit left rhs output) else
+    (if ((((((((((((((((swapped <=? 1) && ((project left ty) =? (project output ty))) && ((project rhs ty) =? (project left ty))) && (NormPlan::sameShape left rhs)) && (castStorageLayout left)) && (castStorageLayout rhs)) && (castStorageLayout output)) && ((project output s0) =? (rowTargetWidth (project output ty)))) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((project output n0) =? (if split then (project left n0) else (prim quotient (project left n0) 2 0 : Nat)))) && ((project output n0) <=? 2147483647)) && (RmsNormalization::nestedRows (prim multiply (prim quotient (project output n0) (storeBlockLanes (project output ty)) 0 : Nat) (project output s0) : Nat) (project output n1) (project output n2) (project output n3) (project output s1) (project output s2) (project output s3))) then
+      (let width : Nat := (project output n0);
+      (let span : Nat := (prim multiply width 4 : Nat);
+      (let row : NormPlan::TensorDescriptor := (record NormPlan::TensorDescriptor {ty := 0, n0 := width, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := span, s2 := span, s3 := span, span := span, address := 0});
+        (ctor Response.projectedGate
+          (record Plan {steps := (prim quotient (elements output) width 0 : Nat), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := (if split then 98 else (99 + swapped)), gateVariant := variant, gateAlpha := alpha, gateLimit := limit, left := left, rhs := rhs, output := output, rowArithmetic := true, stagedWidth := width})
+          (gateProgram variant true 0 alpha limit row row row)))))
+      else (ctor Response.invalid))),
+  executable: true
+}
+
+definition{
+  name: storedGateStep,
+  parameters: [index : Nat, execution : Plan],
+  result: Response,
+  body: (if (index <? (project execution steps)) then
+    (let left : NormPlan::TensorDescriptor := (project execution left);
+    (let width : Nat := (project execution stagedWidth);
+    (let start : Nat := (prim multiply index (project left n0) : Nat);
+    (let mode : Nat := (project execution operation);
+      (ctor Response.binaryRow (storedOffset (start + (if (mode =? 100) then width else 0)) left)
+        (storedOffset (start + (if (mode =? 99) then width else 0)) (project execution rhs))
+        (storedOffset (prim multiply index width : Nat) (project execution output)))))))
+    else (ctor Response.invalid)),
+  executable: true
+}
+
+definition{
   name: evaluate,
   parameters: [request : Request],
   result: Response,
@@ -815,9 +874,9 @@ definition{
       | Option.some base => (blockCopyPlan left base output))) else (if ((operation =? 66) || (operation =? 67)) then (if extra then (ctor Response.invalid) else (match secondary
       | Option.none => (rankPlan operation variant left output)
       | Option.some unused => (ctor Response.invalid))) else (if (operation =? 98) then (if ((admittedGate variant) && (if extra then false else true)) then (match secondary
-      | Option.none => (gatePlan variant false swapped alpha limit left left output)
-      | Option.some rhs => (gatePlan variant true swapped alpha limit left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))))
-    | Request.step index execution flag => (if (project execution rowArithmetic) then (rowArithmeticStep index execution) else (if (((project execution operation) =? 33) || ((project execution operation) =? 89)) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if (boundedGate (project execution gateVariant)) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag))))))),
+      | Option.none => (storageGatePlan variant false swapped alpha limit left left output)
+      | Option.some rhs => (storageGatePlan variant true swapped alpha limit left rhs output)) else (ctor Response.invalid)) else (ctor Response.unsupported))))
+    | Request.step index execution flag => (if (project execution rowArithmetic) then (if (98 <=? (project execution operation)) then (storedGateStep index execution) else (rowArithmeticStep index execution)) else (if (((project execution operation) =? 33) || ((project execution operation) =? 89)) then (blockCopyStep index execution) else (if (((project execution operation) =? 66) || ((project execution operation) =? 67)) then (rankStep index execution) else (if ((project execution operation) =? 41) then (rowStep index execution flag) else (if (98 <=? (project execution operation)) then (if (boundedGate (project execution gateVariant)) then (clampedGateStep index execution flag) else (gateStep index execution)) else (step index execution flag))))))),
   executable: true,
   production: {effects: [overflow], targets: [rust-core]}
 }
@@ -1252,6 +1311,20 @@ theorem{
   name: ungatedSiluReturnsTheQuotient,
   parameters: [],
   statement: ((vectorActivationStep 1 26 0 0 0) = (ctor VectorInstruction.vectorResult 28)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: quickGatedVectorsUseTheScaledExponent,
+  parameters: [],
+  statement: ((gateLaneVariant 5 (record NormPlan::TensorDescriptor {ty := 0, n0 := 7, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 28, s2 := 28, s3 := 28, span := 28, address := 0}) 3) = 8),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: quickGatedTailsUseTheScalarOperation,
+  parameters: [],
+  statement: ((gateLaneVariant 5 (record NormPlan::TensorDescriptor {ty := 0, n0 := 7, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 28, s2 := 28, s3 := 28, span := 28, address := 0}) 4) = 5),
   proof: reflexivity{}
 }
 
