@@ -95,6 +95,7 @@ ggml_batches! {
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
+    fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
     fn stored_glu_vt_202() { "stored-glu", 82, ["pointwise", "typed"] }
     fn stored_unary_vt_200() { "stored-unary", 156, ["pointwise", "typed"] }
     fn mixed_attention_vt_199() { "mixed-flash", 61, ["attention"] }
@@ -941,12 +942,16 @@ mod ggml_inventory {
         types
             .iter()
             .filter(|row| row["symbol"].as_str() != Some("GGML_TYPE_COUNT"))
-            .map(|row| {
-                u64::try_from(row["value"].as_integer().expect("type identifier"))
-                    .expect("nonnegative GGML type")
-            })
+            .map(|row| row["value"].clone().try_into().expect("GGML type ID"))
             .collect()
     });
+
+    pub(super) fn type_rows(fields: &str) -> String {
+        STORAGE_TYPES
+            .iter()
+            .map(|kind| format!("{kind}{fields}\n"))
+            .collect()
+    }
 
     /// `VT-04`: The imported GGML operation and tensor type declarations are inventoried exactly without implementation claims
     #[test]
@@ -1098,13 +1103,9 @@ mod tensor_layout {
 
     static STORAGE_METADATA: std::sync::LazyLock<Vec<[u64; 3]>> = std::sync::LazyLock::new(|| {
         certified_current_model("layout");
-        let kinds = &*super::ggml_inventory::STORAGE_TYPES;
-        let input: String = kinds
-            .iter()
-            .map(|kind| format!("{kind} 0 0 0 0 0 0 0 0\n"))
-            .collect();
-        let metadata = ggml_oracle::rows("storage", &input);
-        assert_eq!(metadata.len(), kinds.len(), "oracle omitted a type");
+        let inputs = super::ggml_inventory::type_rows(" 0 0 0 0 0 0 0 0");
+        let metadata = ggml_oracle::rows("storage", &inputs);
+        assert_eq!(metadata.len(), super::ggml_inventory::STORAGE_TYPES.len());
         metadata
     });
 
@@ -1290,7 +1291,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "b4f3c28eefda30e6b7dfb72b3bf581de9d22ded51f815ac7a000bee92164db45",
+            "b23f04ab6c1db76b2370b358cd2c6f3d803a81a3c1f059c59aca28cf696b3d2f",
         )
     });
 
@@ -1449,12 +1450,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let program =
             HOSTS[usize::from(imported)].get_or_init(|| build_host(common, &library, imported));
         let cache = program.parent().unwrap();
-        static STORAGE_TYPES: LazyLock<String> = LazyLock::new(|| {
-            super::ggml_inventory::STORAGE_TYPES
-                .iter()
-                .map(|kind| format!("{kind}\n"))
-                .collect()
-        });
+        static STORAGE_TYPES: LazyLock<String> =
+            LazyLock::new(|| super::ggml_inventory::type_rows(""));
         let words;
         let input: &[u8] = match (mode, ORACLE_BINDINGS["cast_word_tables"][mode].as_str()) {
             ("matrix" | "elementwise", _) => fixture_input(u64::from(mode == "elementwise")),
@@ -1490,24 +1487,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let scratch = cache.join(std::str::from_utf8(&unique).unwrap().trim_end());
         let expected_snapshot = scratch.join("inputs.snapshot");
         std::fs::write(&expected_snapshot, vtensor_backend::source_snapshot()).unwrap();
-        let recipe = match (imported, mode) {
-            (true, _) => None,
-            (_, "typed-binary") => Some(&*TYPED_BINARY),
-            _ => NATIVE_FIXTURES["mode"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .find(|row| row["name"] == mode),
-        };
-        let trace = |suffix: &str| expected_snapshot.with_extension(format!("snapshot.{suffix}"));
-        let mut recipes = Vec::new();
-        if let Some(recipe) = recipe {
-            assert_eq!(recipe["cases"].as_u64().unwrap() as usize, expected_cases);
-            recipes.push((trace(&format!("{mode}-recipes")), recipe));
-        }
-        if mode == "fill" {
-            recipes.push((trace("fill-source-release"), &*FILL_RELEASE));
-        }
         let mut command = Command::new(program);
         let driver = ORACLE_BINDINGS["drivers"][mode].as_str().unwrap_or(mode);
         command.arg(&library).arg(&expected_snapshot).arg(driver);
@@ -1518,22 +1497,33 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         drop(build_guard);
         let text = super::ggml_oracle::batch(&mut command, input);
         let footer = format!("RESULT cases {expected_cases}\n");
-        if let Some(digest) = ORACLE_BINDINGS["factory_transcripts"][mode].as_str() {
-            let rows = text.strip_suffix(&footer).expect("complete factory count");
+        let rows = text.strip_suffix(&footer).expect("native case count");
+        if let Some(expected) = ORACLE_BINDINGS["factory_transcripts"][mode].as_str() {
             assert_eq!(
                 sha256_hex(rows.as_bytes()),
-                digest,
-                "factory ordinals or parameters differ from the pinned transcript"
+                expected,
+                "{mode} factory transcript"
             );
         } else {
-            assert_eq!(text, footer);
+            assert!(rows.is_empty(), "unexpected native output for {mode}");
         }
-        for (path, recipe) in recipes {
-            let bytes =
-                std::fs::read(&path).expect("this execution must emit its fixture transcript");
+        let trace = |suffix: &str| expected_snapshot.with_extension(format!("snapshot.{suffix}"));
+        let check_trace = |suffix: &str, recipe: &serde_json::Value| {
+            let bytes = std::fs::read(trace(suffix)).expect("native fixture transcript");
+            let digest = sha256_hex(&bytes);
             assert_eq!(recipe["bytes"], bytes.len(), "{mode} fixture length");
-            let hash = sha256_hex(&bytes);
-            assert_eq!(recipe["sha256"], hash, "{mode} fixture digest");
+            assert_eq!(recipe["sha256"], digest, "{mode} fixture digest");
+        };
+        if !imported {
+            let modes = NATIVE_FIXTURES["mode"].as_array().unwrap();
+            let mut recipes = modes.iter().chain(std::iter::once(&*TYPED_BINARY));
+            if let Some(recipe) = recipes.find(|r| r["name"] == mode) {
+                assert_eq!(recipe["cases"], expected_cases);
+                check_trace(&format!("{mode}-recipes"), recipe);
+            }
+            if mode == "fill" {
+                check_trace("fill-source-release", &FILL_RELEASE);
+            }
         }
         if matches!(mode, "matrix" | "elementwise") {
             let path = trace(&format!("{mode}-fixtures"));
@@ -2252,10 +2242,17 @@ int main(int argc, char **argv) {
         }
         return finish(cases);
     }
+    auto transform=[](ggml_context *ctx,ggml_tensor *src,int op,bool inplace,float a,float b) {
+        if(op==0)return (inplace?ggml_scale_inplace:ggml_scale)(ctx,src,a);
+        if(op==1)return (inplace?ggml_scale_bias_inplace:ggml_scale_bias)(ctx,src,a,b);
+        if(op==2)return (inplace?ggml_clamp_inplace:ggml_clamp)(ctx,src,a,b);
+        return ggml_leaky_relu(ctx,src,a,inplace);
+    };
+    const bool stored_transforms=!strcmp(argv[3],"stored-transforms");
     const bool stored_unary=!strcmp(argv[3],"stored-unary"),scalar_diag=!strcmp(argv[3],"scalar-diagonal");
     const bool repeat_e4=!strcmp(argv[3],"e4m3-repeat");
     const bool glu=!strcmp(argv[3],"stored-glu");
-    if (stored_unary || scalar_diag || repeat_e4 || glu) {
+    if (stored_unary || stored_transforms || scalar_diag || repeat_e4 || glu) {
         int first,second;
         while(scanf("%d%d",&first,&second)==2){
             auto type=repeat_e4?GGML_TYPE_F8_E4M3:ggml_type(first);
@@ -2268,7 +2265,8 @@ int main(int argc, char **argv) {
                 graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:repeat_e4?4:2,repeat_e4?4:2,scalar_diag?3:repeat_e4?2:1);
                 auto src=pad?ggml_view_4d(ctx,base,width,base->ne[1],base->ne[2],base->ne[3],base->nb[1],base->nb[2],base->nb[3],block):base;
                 ggml_tensor *out,*right=nullptr;
-                if(scalar_diag)out=ggml_diag(ctx,src);
+                if(stored_transforms){CHECK(second>=0 && second<4);out=transform(ctx,src,second,ip,second<2?-1.25f:second==2?-0.8125f:0.1875f,second==2?1.1875f:0.375f);}
+                else if(scalar_diag)out=ggml_diag(ctx,src);
                 else if(repeat_e4){
                     right=ggml_new_tensor_4d(ctx,GGML_TYPE_F32,first+2*second,2,2,1);
                     auto view=ggml_view_4d(ctx,right,first,2,2,1,right->nb[1],right->nb[2],right->nb[3],second*sizeof(float));
@@ -2294,7 +2292,7 @@ int main(int argc, char **argv) {
                 auto actual=tensor_bytes(out);const auto bytes=expected.size()/rows;
                 for(int j=0;j<rows;++j){
                     auto got=actual.data()+j*(ip?base->nb[1]:bytes),want=expected.data()+j*bytes;
-                    if((stored_unary || glu) && type==GGML_TYPE_F64)for(size_t i=0;i<bytes;i+=8){
+                    if((stored_unary || stored_transforms || glu) && type==GGML_TYPE_F64)for(size_t i=0;i<bytes;i+=8){
                         double value,ref;memcpy(&value,got+i,8);memcpy(&ref,want+i,8);
                         if(std::isfinite(value) && std::abs(value-ref)<=1e-6*std::max(1.0,std::abs(ref)))memcpy(got+i,want+i,8);
                     }
@@ -3039,7 +3037,7 @@ int main(int argc, char **argv) {
             const int which=operation/3;ggml_tensor *node=which==5?(inplace?ggml_sqr_inplace(ctx,a):ggml_sqr(ctx,a)):which==6?(inplace?ggml_sqrt_inplace(ctx,a):ggml_sqrt(ctx,a)):inplace?ggml_unary_inplace(ctx,a,variants[which]):ggml_unary(ctx,a,variants[which]);
             return output_storage(node);
           }
-          return operation<2?(inplace?ggml_scale_inplace(ctx,a,constant):ggml_scale(ctx,a,constant)):operation<4?(inplace?ggml_scale_bias_inplace(ctx,a,constant,bias):ggml_scale_bias(ctx,a,constant,bias)):operation<6?(inplace?ggml_clamp_inplace(ctx,a,constant,bias):ggml_clamp(ctx,a,constant,bias)):ggml_leaky_relu(ctx,a,constant,inplace);};
+          return transform(ctx,a,operation/2,inplace,constant,bias);};
         ggml_tensor *filled=filling?(operation?ggml_fill_inplace(ctx,input,constant):ggml_fill(ctx,input,constant)):wordwise && !selecting?word_operation(input,inplace):nullptr;
         int64_t right_ne[]={input->ne[0],input->ne[1],input->ne[2],input->ne[3]}; if(concatenating) for(int axis=0;axis<4;++axis)right_ne[axis]=fixture(2,cases,2,axis);
         ggml_tensor *right=(concatenating || (selecting && operation))?ggml_new_tensor(ctx,type,4,right_ne):backward_input;

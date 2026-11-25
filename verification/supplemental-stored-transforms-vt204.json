@@ -1,0 +1,25 @@
+{
+  "requirement": "VT-204",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "provider_sha256": "acddbafb8198a78b9e4a27073d66c615898fc4435ffdd986da2e06e95c60cbd3",
+  "pointwise_attestation": "ea86eed7782a82fcc15a48c8561d830d1cadc447dbfb91429cf07d7a000fdff7",
+  "oracle": "ggml-stored-transforms-oracle.json",
+  "prior_placements": 48,
+  "new_placements": 528,
+  "placed": 576,
+  "stored_types_added": 33,
+  "operations": [
+    "SCALE",
+    "SCALE with bias",
+    "CLAMP",
+    "LEAKY_RELU"
+  ],
+  "logical_outputs_compared": 540672,
+  "full_oracle_stream_sha256": "aeb87e6797327fdc92c965b60802c289e82207299a7904ec8019a73cc9d8e1c5",
+  "recurring_graphs": 132,
+  "recurring_values": 135168,
+  "comparison": "Original GGML CPU decode, F32 transform and storage encoder, with SoftFloat for integer and binary64 conversion. Compare the complete stored rows, source bytes and view guards. F64 accepts absolute error up to 1e-6 times max(1, abs(reference)). All other storage types compare byte for byte.",
+  "negative_control": "The prior provider refused the first stored transform. Swapping the two parameters at the Verdant call failed the stored output check.",
+  "non_prism_lines": 12530
+}

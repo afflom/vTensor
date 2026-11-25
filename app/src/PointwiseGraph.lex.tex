@@ -982,15 +982,30 @@ definition{
 }
 
 definition{
+  name: canonicalUnaryRow,
+  parameters: [width : Nat],
+  result: TensorDescriptor,
+  body: (let span : Nat := (prim multiply width 4 : Nat);
+    (record TensorDescriptor {ty := 0, n0 := width, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := span, s2 := span, s3 := span, span := span, address := 0})),
+  executable: true
+}
+
+definition{
   name: planTransform,
-  parameters: [
-    operation : Nat,
-    options : OperationParameters,
-    left : TensorDescriptor,
-    output : TensorDescriptor
-  ],
+  parameters: [operation : Nat, options : OperationParameters, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (if ((((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30)) && ((project left ty) =? (project output ty))) && (((sameShape left output) && ((project options p0) <? 4294967296)) && ((project options p1) <? 4294967296))) then (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if ((project left ty) =? 0) then 4 else 2) (indexContext left 1) (indexContext output 1) (ctor CopyMode.transformed (if (operation =? 31) then 0 else (if (operation =? 47) then 1 else 2)) (project left ty) (project options p0) (project options p1))) else (ctor PointwiseDecision.invalidShape)),
+  body: (let ty : Nat := (project left ty);
+    (let kind : Nat := (if (operation =? 31) then 0 else (if (operation =? 47) then 1 else 2));
+    (let a : Nat := (project options p0); (let b : Nat := (project options p1);
+    (if ((((ty =? (project output ty)) && (sameShape left output)) && (a <? 4294967296)) && (b <? 4294967296)) then
+      (if (((ty =? 0) || (ty =? 1)) || (ty =? 30)) then
+        (ctor PointwiseDecision.copyBlocks (blockCount output 1) (if (ty =? 0) then 4 else 2)
+          (indexContext left 1) (indexContext output 1) (ctor CopyMode.transformed kind ty a b))
+       else (match (TensorTypes::tensorTypeStorage ty)
+         | TensorTypes::TypeStorageDecision.unknownType => (ctor PointwiseDecision.invalidShape)
+         | TensorTypes::TypeStorageDecision.knownType spec => (let width : Nat := (project left n0);
+           (ctor PointwiseDecision.storedUnary width (indexContext (canonicalUnaryRow width) 1) (ctor CopyMode.transformed kind 0 a b)))))
+     else (ctor PointwiseDecision.invalidShape)))))),
   executable: true
 }
 
@@ -1061,10 +1076,8 @@ definition{
   body: (if ((((project left ty) =? 0) || ((project left ty) =? 1)) || ((project left ty) =? 30))
     then (planUnaryWords kind options left output) else
     (if ((((project left ty) =? (project output ty)) && (sameShape left output)) && (unaryProjectionAdmitted kind (project left ty))) then
-      (let width : Nat := (project left n0);
-      (let span : Nat := (prim multiply width 4 : Nat);
-      (let row : TensorDescriptor := (record TensorDescriptor {ty := 0, n0 := width, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := span, s2 := span, s3 := span, span := span, address := 0});
-      (ctor PointwiseDecision.storedUnary (unarySteps kind row) (indexContext row 1) (unaryMode kind options row row)))))
+      (let row : TensorDescriptor := (canonicalUnaryRow (project left n0));
+        (ctor PointwiseDecision.storedUnary (unarySteps kind row) (indexContext row 1) (unaryMode kind options row row)))
     else (ctor PointwiseDecision.invalidShape))),
   executable: true
 }
@@ -5193,6 +5206,13 @@ theorem{
   name: vectorUnaryRestartsAtEachRow,
   parameters: [],
   statement: ((vectorUnaryLane 21 7 7) = true),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: transformRowHasFourByteLanes,
+  parameters: [],
+  statement: ((project (canonicalUnaryRow 256) span) = 1024),
   proof: reflexivity{}
 }
 

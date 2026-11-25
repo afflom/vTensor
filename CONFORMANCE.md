@@ -290,6 +290,7 @@ model does not sanction.
 | `VT-200` | `build` | Certified unary operation and storage pairs project rows through binary32 and reproduce the original GGML CPU result after storage conversion |
 | `VT-201` | `build` | Packed SiLU and quick GELU reproduce GGML CPU row activation and encoding through the certified vector instruction schedule |
 | `VT-202` | `build` | GLU constructors execute certified split or concatenated gate rows over registered storage and reproduce independently encoded GGML CPU results |
+| `VT-204` | `build` | Scale, scale with bias, clamp and leaky ReLU project stored rows through certified binary32 transforms and reproduce GGML CPU storage |
 
 ## normalization-graphs
 

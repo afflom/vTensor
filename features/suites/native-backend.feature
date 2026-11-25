@@ -878,3 +878,9 @@ Feature: native-backend
     Given a copied GLU graph with separate or concatenated inputs in either order
     When the sole provider computes the graph with default or explicit gate parameters
     Then the stored output agrees with the original CPU decoder, gate operation and encoder and both inputs retain their original bytes
+
+  @VT-204 @build
+  Scenario: Apply a parameterized transform to stored rows
+    Given independently encoded source rows with offset padding
+    When vTensor scales, shifts, clamps or applies leaky ReLU to copied and in-place views
+    Then each transformed row matches the original GGML CPU operation and encoder and preserves all guards

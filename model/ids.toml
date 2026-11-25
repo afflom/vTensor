@@ -1284,3 +1284,9 @@ id = "VT-202"
 level = "build"
 suite = "native-backend"
 statement = "GLU constructors execute certified split or concatenated gate rows over registered storage and reproduce independently encoded GGML CPU results"
+
+[[id]]
+id = "VT-204"
+level = "build"
+suite = "native-backend"
+statement = "Scale, scale with bias, clamp and leaky ReLU project stored rows through certified binary32 transforms and reproduce GGML CPU storage"

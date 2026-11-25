@@ -6,15 +6,16 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Place and oracle-check the remaining 540 packed nonlinear unary descriptors. [Unary placements](verification/ggml-unary-provider-placements.json)
 - [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining 10 measured packed nonlinear pairs (40 layouts) above the GGML error limit. [Packed outputs](verification/unary-quantization-boundaries.json) · [CPU arithmetic before encoding](verification/packed-unary-scalar-boundaries.json)
-- [ ] Place and oracle-check the remaining 528 SCALE, SCALE with bias, CLAMP and LEAKY_RELU descriptors. All 48 directly executable GGML CPU graphs already place. [Transform survey](verification/ggml-parameterized-transform-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,984 non-Prism lines** (12,533 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,981 non-Prism lines** (12,530 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Adopt the Verdant release containing Q8 decoding and wide-word arithmetic. [Combined patch](https://github.com/afflom/verdant-engine/pull/67)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all **576** scale, scale-with-bias, clamp and leaky-ReLU descriptors. The final 528 matched 540,672 GGML oracle values across dense, padded, copied and in-place graphs. [VT-204](verification/supplemental-stored-transforms-vt204.json) · [Placements](verification/ggml-parameterized-transform-placements.json)
 
 - [x] Place all **1,794** surveyed GLU descriptors. The final 1,518 graphs matched the original GGML storage and operation oracle across 2,162,688 output values, including all eight quick GEGLU counterexamples. [VT-202](verification/supplemental-stored-glu-vt202.json) · [Placements](verification/ggml-glu-provider-placements.json)
 

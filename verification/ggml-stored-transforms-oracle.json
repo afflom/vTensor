@@ -1,0 +1,21 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "softfloat": {
+    "repository": "https://github.com/ucb-bar/berkeley-softfloat-3",
+    "commit": "07ebd29db0cfb55723a79fbbffe99103ef38e305",
+    "archive_sha256": "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34",
+    "format": "git-archive-tar-gzip",
+    "prefix": "softfloat/",
+    "specialization": "8086-SSE",
+    "rounding": "softfloat_round_near_even"
+  },
+  "softfloat_library_sha256": "72130c9f797fe79ba878c368bcf62dfc6e4e3e057103717da09db150dd2df48f",
+  "cpu_kernel_source_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "cpu_library_sha256": "03dd6e67d861f04190104c5ea7849262ce379ffc0bbdc4fee42c4d1cfedd865c",
+  "base_library_sha256": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+  "compression": "gzip",
+  "words_sha256": "7b4d0cc617a421c9effd2f47f631fc01ccab47eb2c18fa69260194b715377cd4",
+  "graphs": 132,
+  "logical_output_values": 135168,
+  "reference": "Original generic GGML CPU source decoder, parameterized F32 graph and destination encoder over four rows. The recurring cases cover all 33 additional storage types and all four operations. The complete survey runs each type with every operation dense and padded, copied and in place."
+}

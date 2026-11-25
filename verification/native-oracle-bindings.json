@@ -479,7 +479,8 @@
     "ggml-index-fixtures-row-gather-oracle": "449e1eec4b113ed92e909c6ba8383d7e171c70c0b5734c9d90a74d051e7a2a83",
     "ggml-index-fixtures-indexed-add-oracle": "7863655e6fda3efd353fb83f29fff29b580d168230b348bc96a7f46fe3d49791",
     "ggml-index-fixtures-row-gradient-oracle": "82821e5460f96df0ea4567c63b72f525ba8c012c354650048f53b897d8800d07",
-    "ggml-index-fixtures-row-gradient-bf16-oracle": "b8fc54b4dacbe2e36297cde64386908a7ad57360cfa9b3d4e4d2a6093e2cbe2d"
+    "ggml-index-fixtures-row-gradient-bf16-oracle": "b8fc54b4dacbe2e36297cde64386908a7ad57360cfa9b3d4e4d2a6093e2cbe2d",
+    "ggml-stored-transforms-oracle": "8d13300443334ee583a077ff1198f8077bdfd5031a8a02cd22f7542d79c3506d"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -709,7 +710,8 @@
     "row-gather": "ggml-index-fixtures-row-gather",
     "indexed-add": "ggml-index-fixtures-indexed-add",
     "row-gradient": "ggml-index-fixtures-row-gradient",
-    "row-gradient-bf16": "ggml-index-fixtures-row-gradient-bf16"
+    "row-gradient-bf16": "ggml-index-fixtures-row-gradient-bf16",
+    "stored-transforms": "ggml-stored-transforms"
   },
   "drivers": {
     "binary-widths": "scalar-casts",

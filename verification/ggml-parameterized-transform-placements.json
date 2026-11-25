@@ -1,7 +1,6 @@
 {
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_revision": "097a95f6f012eb3463a69d191fb4349a0d28e0f8",
-  "provider_sha256": "fa77af8aa1e93a9db5781374a41850b09653a418a1ce630af8476857e47abc5d",
+  "provider_sha256": "acddbafb8198a78b9e4a27073d66c615898fc4435ffdd986da2e06e95c60cbd3",
   "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
@@ -23,13 +22,14 @@
     "negative_slope": 0.1875
   },
   "descriptors": 576,
-  "placed": 48,
-  "unplaced": 528,
+  "placed": 576,
+  "unplaced": 0,
   "direct_cpu_graphs": 48,
   "output_values_compared": 49152,
   "maximum_direct_nmse": 4.72493208134e-17,
-  "reference": "Invoke each public constructor before allocation, run a single-device GGML scheduler on admitted descriptors, reset source and output, and compare F32, F16 and BF16 logical values with the CPU. Negative placement entries mark admission refusals.",
+  "reference": "Invoke every public constructor before allocation and split the graph on a sole-device GGML scheduler. For the 48 directly executable CPU descriptors, compare the provider result with the original CPU graph. The separate stored-transform oracle checks the 528 remaining graphs against independent decode, F32 operation and encoding.",
   "table": "ggml-parameterized-transform-placements.tsv.gz",
-  "table_sha256": "04224034f3fa627c159b82e915b7a8c10eadef6b869b6d9e51084e56141d7519",
-  "uncompressed_sha256": "9a9dced6ff423dce4ba9db60079262d2d5b851bb300b1d4c17a8aa90090a77f2"
+  "table_sha256": "4ef6278721a1f7f202c3539ad115a631f59157532b61005c679d601e8afacca6",
+  "uncompressed_sha256": "972cccbc19951cb7e7f72681986ebbfdda32d5cdde0af5c53b5a3fbbe29e12fe",
+  "execution": "supplemental-stored-transforms-vt204.json"
 }
