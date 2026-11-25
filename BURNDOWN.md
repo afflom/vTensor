@@ -11,10 +11,12 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
 - [ ] Recover **1,975 non-Prism lines** (12,524 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
-- [ ] Adopt a Verdant release containing Q8 decoding, wide-word arithmetic and the reference logarithm. [Merged arithmetic](https://github.com/afflom/verdant-engine/commit/7167ed29e80ed0297a593eef01fc403249a0a674) · [Logarithm patch](https://github.com/afflom/verdant-engine/pull/68)
+- [ ] Adopt the Verdant release containing the reference logarithm. v2.22.1 released the Q8 decoding and wide-word arithmetic. [Merged arithmetic](https://github.com/afflom/verdant-engine/commit/7167ed29e80ed0297a593eef01fc403249a0a674) · [Logarithm patch](https://github.com/afflom/verdant-engine/pull/68)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Pin the logarithm to Verdant’s unified quotient certificate. VT-02 and VT-45 share one verification of the installed source and proof. [Upstream patch](https://github.com/afflom/verdant-engine/commit/69e23221ccbb85e4178ce883589a07f1fc066eeb)
 
 - [x] Place signed **SUM and SUM_ROWS** for I8, I16, I32 and I64. All 40 outputs matched the imported OpenVINO reference, including overflow. Another 24 graphs covered empty and multi-plane tensors. [VT-206](verification/supplemental-signed-sums-vt206.json)
 

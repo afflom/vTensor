@@ -108,15 +108,10 @@ verdant-quotient-check image:
     set -euo pipefail
     docker run --rm -i --network none --entrypoint sh --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp -w /tmp {{quote(image)}} -ec '
       tar -xzf -
-      printf "{"
-      for scope in quotient reference-log; do
-        project="app/$scope.lexlean.toml"
-        lexlean --project "$project" lock --check >&2
-        printf "\"%s\":" "$scope"
-        lexlean --project "$project" --diagnostic-format json check
-        case "$scope" in quotient) directory=tensor-quotient; printf "," ;; *) directory=$scope ;; esac
-        lexlean production verify-artifact "generated/$directory" >&2
-      done
+      lexlean --project app/quotient.lexlean.toml lock --check >&2
+      lexlean production verify-artifact generated/tensor-quotient >&2
+      printf "{\"quotient\":"
+      lexlean --project app/quotient.lexlean.toml --diagnostic-format json check
       printf "}\n"
     ' < vendor/verdant-quotient.tar.gz
 

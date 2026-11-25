@@ -599,21 +599,17 @@
     ]
   ],
   "verdant_quotient": {
-    "archive_sha256": "b1aba191f5628059b9b1b5d2bcb183a08ccc87332a00c800d6707a0e91798524",
+    "archive_sha256": "d7006e52d2af284c399728da89ab9985ebc1716740d6ee64b93e47bbe068545b",
     "sdk": "ghcr.io/uor-foundation/lexlean@sha256:d391bfedd4eb97dc25c218628f94cd081436589c348797ebf13c47ab13d4ef30",
     "sha256": {
-      "app/quotient-production.json": "9eb5285e804ab9eaf2a20779e0b5cb8ed42b31b55397dc7a1a4ed29bfe092eb6",
-      "app/quotient.lexlean.lock": "e75936c9fe696c45b03cff856aa44ff321dc2a449051f5550dbb6710f6cead2f",
-      "generated/tensor-quotient/result.json": "371cf2e06fa635d729344b0fcbb7cfcdb13ec1398644f94aac344e1a3b7ddd4d",
-      "quotient-kernel.lock": "b88b8a7391780e749520541aea4524283f66f2166ffd5f6936e41fd916b6340d",
-      "app/reference-log-production.json": "068c2ac59287b15ce499aec72550d03e244aff60230c6797aedbe6e096089f1d",
-      "app/reference-log.lexlean.lock": "25c3f485fd2ea0c6cfba68ded4c6e186351e3e6ab1c76e3aead557d5cdfd646f",
-      "generated/reference-log/result.json": "605173c3a921be21ec402bdcfc28f43282dac71be2bce9f4008bb1bdc665b243"
+      "app/quotient-production.json": "01d6f0bab6c57163d6ecc278e684a23785127c87f625609fb19fc3022cee132a",
+      "app/quotient.lexlean.lock": "91b05fa3ecc99029c966faa54ea7210d62319b6f99892f2b874190a1db6b47b5",
+      "generated/tensor-quotient/result.json": "82f095fc844ef9133a54057731a9f60a1f6b3b259dde364a326d38907f1709e6",
+      "quotient-kernel.lock": "894e9adef6a3022029eb98800c6381373fd750da760750bff9981ebee4956fe3"
     },
-    "upstream_revision": "ecdaef6c3875afedd47ac0ebad84d9c22d2197a9",
+    "upstream_revision": "69e23221ccbb85e4178ce883589a07f1fc066eeb",
     "projects": {
-      "quotient": "tensor-quotient",
-      "reference-log": "reference-log"
+      "quotient": "tensor-quotient"
     }
   },
   "atomic_store_types": {
