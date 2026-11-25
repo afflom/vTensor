@@ -4,15 +4,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Implement and oracle-check the remaining 1,082 public CAST pairs. A sole vTensor scheduler places 214 of 1,296 pairs. [CAST placements](verification/ggml-cast-provider-placements.json)
+- [ ] Place and oracle-check the remaining 16 SET_ROWS and six GET_ROWS storage tuples. [Row survey](verification/ggml-row-type-verified.tsv)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,991 non-Prism lines** (12,540 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Recover **1,990 non-Prism lines** (12,539 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
 - [ ] Adopt the Verdant release containing Q8 decoding and wide-word arithmetic. [Combined patch](https://github.com/afflom/verdant-engine/pull/67)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all **1,296** dense public CAST pairs. The 1,082 newly implemented pairs matched all 619,776 stored bytes across 553,984 values. [VT-193](verification/supplemental-storage-cast-vt193.json)
 
 - [x] Place all **47,952** surveyed binary descriptors. The final 12 matched all 6,144 I64 and F64 words against OpenVINO and SoftFloat. The combined upstream Verdant pin passed VT-02 and retained all 124 top tokens in stock llama-perplexity. [VT-192](verification/supplemental-native-wide-vt192.json) · [Descriptor map](verification/ggml-binary-type-descriptors.json)
 

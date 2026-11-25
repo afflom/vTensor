@@ -280,6 +280,7 @@ model does not sanction.
 | `VT-190` | `build` | Signed I8 I16 and I32 left operands follow GGML binary row arithmetic |
 | `VT-191` | `build` | Wide mixed binary operands and wide division follow GGML binary32 promotion |
 | `VT-192` | `build` | Matching I64 and F64 binary operands retain native precision in sums differences and products |
+| `VT-193` | `build` | The provider places every public GGML CAST storage pair and preserves the original conversion words |
 
 ## normalization-graphs
 

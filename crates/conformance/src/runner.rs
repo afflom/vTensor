@@ -937,12 +937,7 @@ fn decode_block(
     stride: usize,
 ) -> Result<(), BackendError> {
     let value = match kind {
-        0 | 1 | 30 | 43 => {
-            // SAFETY: scalar_word reads exactly the supplied slice length and checks its width.
-            let bits =
-                unsafe { scalar_word(source.as_ptr().cast_mut(), source.len() as u64, None)? };
-            decode_float(kind, bits)?
-        }
+        0 | 1 | 30 | 43 => decode_float(kind, load_word(source)?)?,
         26 => linear::signed_word_f32(i32::from_ne_bytes(
             source.try_into().map_err(BackendError::invalid)?,
         ))?,
@@ -1263,6 +1258,11 @@ unsafe fn scalar_word(
     })
 }
 
+fn load_word(source: &[u8]) -> Result<u64, BackendError> {
+    // SAFETY: scalar_word reads exactly this slice length or rejects the width.
+    unsafe { scalar_word(source.as_ptr().cast_mut(), source.len() as u64, None) }
+}
+
 fn store_word(destination: &mut [u8], value: u64) -> Result<(), BackendError> {
     let width = destination.len() as u64;
     // SAFETY: scalar_word writes exactly this slice length or rejects the width.
@@ -1492,7 +1492,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
         .map(TensorInput::new)
         .transpose()?;
     for input in [&mut source, &mut right].into_iter().flatten() {
-        if *row_arithmetic && (24..=28).contains(&input.ty) {
+        if (24..=28).contains(&input.ty) {
             input.scalar_read = Some(ScalarCast::new(input.ty, 0)?);
         }
     }
@@ -2386,11 +2386,7 @@ mod attention {
                 }
                 let encoded = self.region(at, self.block_bytes)?;
                 if let Some(cast) = &self.scalar_read {
-                    // SAFETY: the checked scalar slice contains one full stored word.
-                    let raw = unsafe {
-                        super::scalar_word(encoded.as_ptr().cast_mut(), encoded.len() as u64, None)?
-                    };
-                    block[0] = f32::from_bits(cast.apply(raw)? as u32);
+                    block[0] = f32::from_bits(cast.apply(super::load_word(encoded)?)? as u32);
                 } else {
                     decode_block(
                         self.ty as u64,

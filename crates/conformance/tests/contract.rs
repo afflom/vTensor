@@ -68,6 +68,7 @@ ggml_batches! {
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
     fn wide_native_binary_vt_192() { "wide-native-binary", 12, ["typed", "pointwise"] }
+    fn staged_storage_cast_vt_193() { "storage-cast", 1082, ["typed", "pointwise"] }
     fn wide_mixed_binary_vt_191() { "wide-mixed-binary", 584, ["typed", "pointwise"] }
     fn narrow_left_binary_vt_190() { "narrow-left-binary", 880, ["typed", "pointwise"] }
     fn q8_activation_binary_vt_188() { "q8-activation-binary", 1166, ["typed"] }
@@ -1282,7 +1283,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "97f048139487aab5c2e7fe0ef61e3ffb99a3123398a48197fe9168b648b5f63b",
+            "2f72409970e418c4489b7d7059a6b322ae3ed1f39eaace8b5958680a51ee10a8",
         )
     });
 
@@ -2273,10 +2274,11 @@ int main(int argc, char **argv) {
     const bool cast_add=!strcmp(argv[3],"codebook-add") || !strcmp(argv[3],"half-add");
     const bool views=!strcmp(argv[3],"row-repeat");
     const bool row_binary=views || !strcmp(argv[3],"scalar-binary") || !strcmp(argv[3],"packed-binary");
+    const bool storage_cast=!strcmp(argv[3],"storage-cast");
     const bool numeric_results=!strcmp(argv[3],"numeric-results");
     const bool mixed_cast=numeric_results || !strcmp(argv[3],"mixed-cast");
     const bool paired=row_binary || mixed_cast;
-    if (paired || cast_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
+    if (storage_cast || paired || cast_add || broadcast_add || !strcmp(argv[3],"packed-add")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> sources;
         int n=0; CHECK(scanf("%d",&n)==1 && n>0);
         for (int i=0;i<n;++i) {
@@ -2299,7 +2301,7 @@ int main(int argc, char **argv) {
             for (int period_index=0;period_index<(lane_repeat?2:1);++period_index) {
                 const int period=periods[period_index];
                 const int first=broadcast_add?-1:0;
-                for (int inplace=first;inplace<=(from==to);++inplace) {
+                for (int inplace=first;inplace<=(!storage_cast && from==to);++inplace) {
                     const bool oracle=inplace<0;
                     auto selected=oracle?reference:backend;
                     graph_fixture ctx(12); CHECK(ctx);
@@ -2309,10 +2311,11 @@ int main(int argc, char **argv) {
                         return ggml_view_4d(ctx,backing,n0,n1,n2,n3,backing->nb[1],backing->nb[2],backing->nb[3],ggml_type_size(ty));
                     };
                     auto x=make(ggml_type(from),columns,rows,planes,batches);
-                    auto y=make(ggml_type(right_type),period,2,broadcast_add?2:1,1);
+                    auto y=storage_cast?nullptr:make(ggml_type(right_type),period,2,broadcast_add?2:1,1);
                     auto rhs=oracle?ggml_repeat_4d(ctx,y,width,rows,planes,batches):y;
-                    auto out=row_binary || inplace>0 || lane_repeat?binary_nodes[kind][inplace>0](ctx,x,rhs):ggml_add_cast(ctx,x,rhs,ggml_type(to));
-                    if (!inplace && !kind && from==to && !lane_repeat && !views && (ggml_is_quantized(ggml_type(from)) || from==GGML_TYPE_F16 || from==GGML_TYPE_BF16)) {
+                    auto out=storage_cast?ggml_cast(ctx,x,ggml_type(to)):
+                        row_binary || inplace>0 || lane_repeat?binary_nodes[kind][inplace>0](ctx,x,rhs):ggml_add_cast(ctx,x,rhs,ggml_type(to));
+                    if (!storage_cast && !inplace && !kind && from==to && !lane_repeat && !views && (ggml_is_quantized(ggml_type(from)) || from==GGML_TYPE_F16 || from==GGML_TYPE_BF16)) {
                         auto ordinary=row_binary?ggml_add_cast(ctx,x,y,ggml_type(to)):ggml_add(ctx,x,y);
                         CHECK(ordinary->op==out->op && ordinary->type==out->type && ggml_are_same_shape(ordinary,out) && ggml_are_same_stride(ordinary,out));
                         CHECK(std::equal(std::begin(out->src),std::end(out->src),ordinary->src) && !memcmp(ordinary->op_params,out->op_params,sizeof(out->op_params)) && ordinary->flags==out->flags && !ordinary->view_src && !out->view_src);
@@ -2331,7 +2334,7 @@ int main(int argc, char **argv) {
                         const auto &right=sources.at({right_type,width});
                         auto stride=right.size()/2;
                         for (size_t row=0;row<2;++row) ggml_backend_tensor_set(y,right.data()+(1-row)*stride,row_at(y,row),stride);
-                    } else for (int i=0;i<ggml_nelements(y);++i) ggml_set_f32_1d(y,i,(float((13*i+7)%29)-14.f)/32.f);
+                    } else if (y) for (int i=0;i<ggml_nelements(y);++i) ggml_set_f32_1d(y,i,(float((13*i+7)%29)-14.f)/32.f);
                     std::vector<unsigned char> left_backing,right_backing;
                     if (views) {
                         left_backing=tensor_bytes(x->view_src); right_backing=tensor_bytes(y->view_src);

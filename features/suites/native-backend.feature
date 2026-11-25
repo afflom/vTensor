@@ -818,3 +818,9 @@ Feature: native-backend
     Given I64 and F64 operands with low-word carries and binary64 rounding boundaries
     When a sole provider executes ADD SUB and MUL on copied and aliased outputs
     Then every stored word matches the pinned OpenVINO and SoftFloat arithmetic oracles
+
+  @VT-193 @build
+  Scenario: CAST converts between all registered storage encodings
+    Given a source row from each live GGML storage type
+    When a sole provider casts the rows to every remaining destination type
+    Then the result matches the imported numerical decoders and destination encoders

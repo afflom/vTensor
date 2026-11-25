@@ -1224,3 +1224,9 @@ id = "VT-192"
 level = "build"
 suite = "native-backend"
 statement = "Matching I64 and F64 binary operands retain native precision in sums differences and products"
+
+[[id]]
+id = "VT-193"
+level = "build"
+suite = "native-backend"
+statement = "The provider places every public GGML CAST storage pair and preserves the original conversion words"

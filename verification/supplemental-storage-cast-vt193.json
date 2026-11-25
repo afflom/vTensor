@@ -1,0 +1,17 @@
+{
+  "requirement": "VT-193",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-staged-storage-cast-oracle.json",
+  "provider_sha256": "3f2c3f3633096a14215a7e78e250366f003f805fd1460c919b226008d01448de",
+  "typed_attestation": "10cf6d6210f751eb807ed216f0182b5cf7faaa5d65d5e430dd7c4cf83f07cfd9",
+  "pointwise_attestation": "ed17e3bfede1eae141e7fb42cc29591ed53ced8030aa56331e2b3590c630ab39",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "new_graphs": 1082,
+  "logical_values_compared": 553984,
+  "stored_bytes_compared": 619776,
+  "placed_descriptors": 1296,
+  "placement_table": "ggml-cast-provider-placements.tsv.gz",
+  "previous_placement_revision": "4de6d3a",
+  "negative_control": "The previous provider refused admission. Replacing decoded F64 values with zero failed the first F64-to-packed comparison. The restored provider passed all pairs.",
+  "non_prism_lines": 12539
+}

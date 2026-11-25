@@ -465,7 +465,8 @@
     "ggml-vector-swiglu-oracle": "e7e9535d141d27d086a1072cc63049d9c7f0d55068d7b004eefc1e224dca4a35",
     "ggml-narrow-left-binary-oracle": "15bc5514fffccc3c08d0b628bc7532791bdfd02876c4a06fa4a0c0028550aab3",
     "ggml-wide-mixed-binary-oracle": "24b0e9c2298354bae7a43c12370c70dfe2421511ff68b8ca3c606b08f67d63bd",
-    "ggml-wide-native-binary-oracle": "a03e4848be37bcd595902f0e7037df5a7bdff22d24fe58b4046ff1d7f9918807"
+    "ggml-wide-native-binary-oracle": "a03e4848be37bcd595902f0e7037df5a7bdff22d24fe58b4046ff1d7f9918807",
+    "ggml-staged-storage-cast-oracle": "cd18528f651f44b0938b257269e9017bda96e3fb8c61c6a64a616357e24493b1"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -681,7 +682,8 @@
     "vector-swiglu": "ggml-vector-swiglu",
     "narrow-left-binary": "ggml-narrow-left-binary",
     "wide-mixed-binary": "ggml-wide-mixed-binary",
-    "wide-native-binary": "ggml-wide-native-binary"
+    "wide-native-binary": "ggml-wide-native-binary",
+    "storage-cast": "ggml-staged-storage-cast"
   },
   "drivers": {
     "binary-widths": "scalar-casts",

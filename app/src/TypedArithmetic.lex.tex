@@ -521,14 +521,47 @@ definition{
 }
 
 definition{
+  name: rowScalarOutput,
+  parameters: [ty : Nat],
+  result: Bool,
+  body: ((0 <? (binaryWordBytes ty)) || ((24 <=? ty) && (ty <=? 28))),
+  executable: true
+}
+
+definition{
+  name: rowResultWidth,
+  parameters: [ty : Nat],
+  result: Nat,
+  body: (if ((24 <=? ty) && (ty <=? 28)) then (match (TensorTypes::tensorTypeStorage ty)
+    | TensorTypes::TypeStorageDecision.knownType spec => (project spec typeSize)
+    | TensorTypes::TypeStorageDecision.unknownType => 0) else (rowTargetWidth ty)),
+  executable: true
+}
+
+definition{
+  name: castRowWidth,
+  parameters: [left : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
+  result: Nat,
+  body: (let from : Nat := (project left ty);
+    (let to : Nat := (project output ty);
+    (if (((NormPlan::sameShape left output) && ((packedTarget from) || (packedTarget to))) &&
+      ((((packedTarget from) || (rowScalarOutput from)) && ((packedTarget to) || (rowScalarOutput to))) &&
+       (((prim remainder (project left n0) (storeBlockLanes from) 1 : Nat) =? 0) && ((prim remainder (project output n0) (storeBlockLanes to) 1 : Nat) =? 0))))
+    then (if ((project left n0) =? 0) then (storeBlockLanes to) else (project left n0)) else
+    (if (((packedTarget to) && (0 <? (bytes from))) &&
+      (((prim remainder (project left n0) (storeBlockLanes to) 1 : Nat) =? 0) && ((prim remainder (project output n0) (storeBlockLanes to) 1 : Nat) =? 0)))
+    then (storeBlockLanes to) else 0)))),
+  executable: true
+}
+
+definition{
   name: blockCopyPlan,
-  parameters: [
-    left : NormPlan::TensorDescriptor,
-    base : NormPlan::TensorDescriptor,
-    output : NormPlan::TensorDescriptor
-  ],
+  parameters: [left : NormPlan::TensorDescriptor, base : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
   result: Response,
-  body: (let lanes : Nat := (storeBlockLanes (project output ty)); (if (((((((packedTarget (project output ty)) && (destinationView base output)) && (0 <? (bytes (project left ty)))) && ((project left s0) =? (bytes (project left ty)))) && (((prim remainder (project left n0) lanes 1 : Nat) =? 0) && ((prim remainder (project output n0) lanes 1 : Nat) =? 0))) && ((project output s0) =? (rowTargetWidth (project output ty)))) && ((elements left) =? (elements output))) then (ctor Response.planned (record Plan {steps := (prim quotient (elements left) lanes 0 : Nat), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := 33, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := base, output := output, rowArithmetic := false, stagedWidth := lanes})) else (ctor Response.invalid))),
+  body: (let width : Nat := (castRowWidth left output);
+    (if (((((destinationView base output) && (0 <? width)) && ((project left s0) =? (rowResultWidth (project left ty)))) && ((project output s0) =? (rowResultWidth (project output ty)))) && ((elements left) =? (elements output)))
+    then (ctor Response.planned (record Plan {steps := (prim quotient (elements left) width 0 : Nat), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := 33, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := base, output := output, rowArithmetic := false, stagedWidth := width}))
+    else (ctor Response.invalid))),
   executable: true
 }
 
@@ -536,7 +569,15 @@ definition{
   name: blockCopyStep,
   parameters: [index : Nat, execution : Plan],
   result: Response,
-  body: (if (index <? (project execution steps)) then (let output : NormPlan::TensorDescriptor := (project execution output); (let lanes : Nat := (storeBlockLanes (project output ty)); (let width : Nat := (prim quotient (project output n0) lanes 0 : Nat); (let row : Nat := (prim quotient index width 0 : Nat); (let batch : Nat := (prim quotient row (project output n1) 0 : Nat); (ctor Response.encodeBlock (offset (prim multiply index lanes : Nat) (project execution left)) (TensorIndex::elementOffset (prim remainder index width 0 : Nat) (prim remainder row (project output n1) 0 : Nat) (prim remainder batch (project output n2) 0 : Nat) (prim quotient batch (project output n2) 0 : Nat) (project output s0) (project output s1) (project output s2) (project output s3)))))))) else (ctor Response.invalid)),
+  body: (if (index <? (project execution steps)) then
+    (let output : NormPlan::TensorDescriptor := (project execution output);
+    (let start : Nat := (prim multiply index (project execution stagedWidth) : Nat);
+    (let row : Nat := (prim quotient start (project output n0) 0 : Nat);
+    (let batch : Nat := (prim quotient row (project output n1) 0 : Nat);
+    (let block : Nat := (prim quotient (prim remainder start (project output n0) 0 : Nat) (storeBlockLanes (project output ty)) 0 : Nat);
+    (ctor Response.encodeBlock (offset start (project execution left))
+      (TensorIndex::elementOffset block (prim remainder row (project output n1) 0 : Nat) (prim remainder batch (project output n2) 0 : Nat) (prim quotient batch (project output n2) 0 : Nat) (project output s0) (project output s1) (project output s2) (project output s3))))))))
+    else (ctor Response.invalid)),
   executable: true
 }
 
@@ -651,24 +692,6 @@ definition{
   parameters: [ordinal : Nat, execution : Plan],
   result: Response,
   body: (let left : NormPlan::TensorDescriptor := (project execution left); (let output : NormPlan::TensorDescriptor := (project execution output); (if (ordinal <? (project execution steps)) then (ctor Response.rankRow (prim multiply ordinal (project left s1) : Nat) (prim multiply ordinal (project output s1) : Nat) (project left n0) (project output n0) ((project execution gateVariant) =? 1)) else (ctor Response.invalid)))),
-  executable: true
-}
-
-definition{
-  name: rowScalarOutput,
-  parameters: [ty : Nat],
-  result: Bool,
-  body: ((0 <? (binaryWordBytes ty)) || ((24 <=? ty) && (ty <=? 28))),
-  executable: true
-}
-
-definition{
-  name: rowResultWidth,
-  parameters: [ty : Nat],
-  result: Nat,
-  body: (if ((24 <=? ty) && (ty <=? 28)) then (match (TensorTypes::tensorTypeStorage ty)
-    | TensorTypes::TypeStorageDecision.knownType spec => (project spec typeSize)
-    | TensorTypes::TypeStorageDecision.unknownType => 0) else (rowTargetWidth ty)),
   executable: true
 }
 
@@ -1146,6 +1169,27 @@ theorem{
   name: signedWideDifferenceUsesOneInstruction,
   parameters: [],
   statement: ((widePhases 1 27) = 1),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: packedToWideStagesOneLogicalRow,
+  parameters: [],
+  statement: ((castRowWidth (record NormPlan::TensorDescriptor {ty := 2, n0 := 256, n1 := 2, n2 := 1, n3 := 1, s0 := 18, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0}) (record NormPlan::TensorDescriptor {ty := 28, n0 := 256, n1 := 2, n2 := 1, n3 := 1, s0 := 8, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0})) = 256),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: wideToPackedStagesOneLogicalRow,
+  parameters: [],
+  statement: ((castRowWidth (record NormPlan::TensorDescriptor {ty := 27, n0 := 256, n1 := 2, n2 := 1, n3 := 1, s0 := 8, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0}) (record NormPlan::TensorDescriptor {ty := 15, n0 := 256, n1 := 2, n2 := 1, n3 := 1, s0 := 292, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0})) = 256),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptyPackedCastHasNoDivisionByZero,
+  parameters: [],
+  statement: ((castRowWidth (record NormPlan::TensorDescriptor {ty := 2, n0 := 0, n1 := 2, n2 := 1, n3 := 1, s0 := 18, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0}) (record NormPlan::TensorDescriptor {ty := 28, n0 := 0, n1 := 2, n2 := 1, n3 := 1, s0 := 8, s1 := 1024, s2 := 2048, s3 := 2048, span := 2048, address := 0})) = 1),
   proof: reflexivity{}
 }
 
