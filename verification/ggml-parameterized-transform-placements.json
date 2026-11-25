@@ -1,0 +1,35 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_revision": "097a95f6f012eb3463a69d191fb4349a0d28e0f8",
+  "provider_sha256": "fa77af8aa1e93a9db5781374a41850b09653a418a1ce630af8476857e47abc5d",
+  "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "operations": [
+    "SCALE",
+    "SCALE with bias",
+    "CLAMP",
+    "LEAKY_RELU"
+  ],
+  "types": 36,
+  "layouts": "[256,2,2,1], dense and offset views with padded rows, each copied and in place.",
+  "parameters": {
+    "scale": -1.25,
+    "bias": 0.375,
+    "clamp": [
+      -0.8125,
+      1.1875
+    ],
+    "negative_slope": 0.1875
+  },
+  "descriptors": 576,
+  "placed": 48,
+  "unplaced": 528,
+  "direct_cpu_graphs": 48,
+  "output_values_compared": 49152,
+  "maximum_direct_nmse": 4.72493208134e-17,
+  "reference": "Invoke each public constructor before allocation, run a single-device GGML scheduler on admitted descriptors, reset source and output, and compare F32, F16 and BF16 logical values with the CPU. Negative placement entries mark admission refusals.",
+  "table": "ggml-parameterized-transform-placements.tsv.gz",
+  "table_sha256": "04224034f3fa627c159b82e915b7a8c10eadef6b869b6d9e51084e56141d7519",
+  "uncompressed_sha256": "9a9dced6ff423dce4ba9db60079262d2d5b851bb300b1d4c17a8aa90090a77f2"
+}
