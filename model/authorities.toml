@@ -77,7 +77,7 @@ citation = "https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf
 checksum = "3b4054ff759bac7531fa6d2d64ffdae078d7461fb146469cbcef0c2f29765adb"
 artifact = "vendor/openvino-reduce-sum.tar.gz"
 statement = "OpenVINO ReduceSum selects integral addition or compensated floating-point accumulation over the axes supplied by its caller."
-realized_by = ["VT-206", "VT-209", "VT-210"]
+realized_by = ["VT-206", "VT-209", "VT-210", "VT-212"]
 
 [[authority]]
 id = "OPENVINO-REDUCE-SUM-OPERATOR"

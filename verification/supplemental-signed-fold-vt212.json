@@ -1,0 +1,20 @@
+{
+  "requirement": "VT-212",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_release": "2.22.3",
+  "provider_sha256": "6526505cdc1ce54f8d5697c1e5a34677c82df26294edafc33906bed55657b954",
+  "pointwise_attestation": "b3954092d562023fe2d4d1f95b5c5c3a4a11c8d21bedaef680abd9ad7a7eb419",
+  "semantic_id": "f0a3cc46bacf21eaa14a620f10836fb36ae56f102e504090a3d65ddc7e8e7a5c",
+  "oracle": "ggml-signed-fold-oracle.json",
+  "placements": "ggml-repeat-back-placements.json",
+  "new_placements": 40,
+  "placed": 50,
+  "unplaced": 310,
+  "oracle_words": 20480,
+  "full_reference_sha256": "11b03ffab924c5d8a3495ff2e646a2ee82ed94c182d150b67278ab91084f1fb7",
+  "sweep_log_sha256": "f62d3e6f7f3cad9c5d89bff67fbd2031a3c598b5e4976daabbdacf7bde44f219",
+  "recurring_graphs": 8,
+  "recurring_words": 128,
+  "comparison": "Exact stored OpenVINO integer sums over each individual repeat axis and all four together for I8, I16, I32 and I64. Every source byte and padding guard remained intact.",
+  "negative_control": "The original provider refused the signed fold. Substituting modular subtraction for addition failed the frozen stored output. Restoring addition passed."
+}

@@ -1,0 +1,32 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "openvino_repository": "https://github.com/openvinotoolkit/openvino",
+  "openvino_source": "e213a14725769a6a2bf86fc86650aa78a9c05d3e",
+  "openvino": {
+    "version": "2026.4.1.22982.07f9c262b05",
+    "package": "openvino-2026.4.1-22982-cp312-cp312-manylinux_2_28_x86_64.whl",
+    "archive_sha256": "6b4375c17ddcac83a5180349e2e2bb811185c261066e2a920659892d58ef0e3b",
+    "library_sha256": "9b9a80ac1f18e07b13ed54459d9a865bcfe9dc170dbf8fe740c2974b85ecedc1",
+    "translator_sources_sha256": {
+      "ggml/src/ggml-openvino/openvino/op/sum.cpp": "b4de79c31b351560fee5a2f65679c0510b79a4312656c9fcd300c7156509cec5",
+      "ggml/src/ggml-openvino/openvino/op/sum_rows.cpp": "86cd5b84a15388ba7dfb9e62b2e0e7d27c7989af561284b384a61067786560af"
+    }
+  },
+  "compression": "gzip",
+  "words_sha256": "51fe113d539be310b285141980b2bc8bac4119276f2039f1a414d4217c494631",
+  "graphs": 8,
+  "logical_outputs": 128,
+  "reference": "Run the original OpenVINO signed ReduceSum<T> on interleaved repeat and destination dimensions [r3,d3,r2,d2,r1,d1,r0,d0] and reduce axes 0,2,4,6. The recurring fixture doubles all four axes of a [16,1,1,1] target and includes modular overflow.",
+  "source_archive": "vendor/openvino-reduce-sum.tar.gz",
+  "source_archive_sha256": "3b4054ff759bac7531fa6d2d64ffdae078d7461fb146469cbcef0c2f29765adb",
+  "upstream_git_blobs": {
+    "src/core/reference/src/utils/coordinate_index.cpp": "efd0c79b2984c7c329486da5f909ca7353e44063",
+    "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+    "src/core/reference/src/utils/coordinate_transform.cpp": "7769a2ffe9b09a9736d3a09b1b5d70d03df6ceb3",
+    "src/core/reference/include/openvino/reference/reduce_sum.hpp": "2f38faf1a3b1358892760e71eb6d37474e4f0d6d",
+    "src/core/dev_api/openvino/core/shape_util.hpp": "8ad0c779b36737101ab0a2a5aad4e50e1cab971e",
+    "src/core/reference/include/openvino/reference/utils/coordinate_index.hpp": "94daa714c96f2098b4793f50a287e23223c990d3",
+    "src/core/reference/include/openvino/reference/utils/type_util.hpp": "84eabe06cf0ff8cdb105626bd511f836e04747eb",
+    "src/core/reference/include/openvino/reference/utils/coordinate_transform.hpp": "a3d45dab0950f25ae0f6a41373f294dc3448743d"
+  }
+}

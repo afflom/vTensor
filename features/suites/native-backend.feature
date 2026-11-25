@@ -926,3 +926,9 @@ Feature: native-backend
     Given the original OpenVINO half-precision ReduceSum operator and GGML storage and F32 reduction kernels
     When GGML requests an F16 or BF16 row sum or an E4M3 scalar or row sum
     Then dense and padded output words match their upstream references including cancellation
+
+  @VT-212 @build
+  Scenario: Fold repeated signed integer tensors across four axes
+    Given signed integer storage, overflowing sums and the original OpenVINO ReduceSum reference
+    When a GGML consumer requests REPEAT_BACK on dense or padded repeated axes
+    Then the stored integer sums and the read-only input bytes match the external reference

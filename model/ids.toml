@@ -1332,3 +1332,9 @@ id = "VT-210"
 level = "build"
 suite = "native-backend"
 statement = "F16 and BF16 row sums reproduce the OpenVINO operator and E4M3 reductions reproduce the original GGML storage conversions and CPU sums"
+
+[[id]]
+id = "VT-212"
+level = "build"
+suite = "native-backend"
+statement = "Integer repeat-back accumulates residues over four repeated axes and matches the original OpenVINO signed reduction across widths"

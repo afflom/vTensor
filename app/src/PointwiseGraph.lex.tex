@@ -171,7 +171,8 @@ inductive{
     {name: bicubic, fields: [Bool, Nat, Nat]},
     {name: antialias, fields: [Bool, Nat, Nat]},
     {name: wideEquality, fields: [Nat, Nat, Nat, Nat]},
-    {name: compensatedSum, fields: [Nat, Nat]}
+    {name: compensatedSum, fields: [Nat, Nat]},
+    {name: integerFold, fields: [Nat, Nat]}
   ]
 }
 
@@ -779,14 +780,6 @@ definition{
 }
 
 definition{
-  name: planFold,
-  parameters: [left : TensorDescriptor, output : TensorDescriptor],
-  result: PointwiseDecision,
-  body: (if ((((project left ty) =? 0) && ((project output ty) =? 0)) && (repeatValid (project left n0) (project left n1) (project left n2) (project left n3) (project output n0) (project output n1) (project output n2) (project output n3))) then (let initial : Nat := (blockCount output 1); (ctor PointwiseDecision.copyBlocks (initial + (blockCount left 1)) 4 (indexContext left 1) (indexContext output 1) (ctor CopyMode.folded initial))) else (ctor PointwiseDecision.invalidShape)),
-  executable: true
-}
-
-definition{
   name: foldedOffsets,
   parameters: [index : Nat, source : IndexContext, destination : IndexContext, initial : Nat],
   result: GraphResponse,
@@ -843,6 +836,33 @@ definition{
   parameters: [storage : Nat],
   result: Bool,
   body: ((24 <=? storage) && (storage <=? 27)),
+  executable: true
+}
+
+definition{
+  name: planFold,
+  parameters: [left : TensorDescriptor, output : TensorDescriptor],
+  result: PointwiseDecision,
+  body: (let storage : Nat := (project left ty);
+    (if (((storage =? (project output ty)) && ((storage =? 0) || ((signedSumStorage storage) && (separateTensors left output)))) &&
+          (repeatValid (project left n0) (project left n1) (project left n2) (project left n3) (project output n0) (project output n1) (project output n2) (project output n3))) then
+      (let initial : Nat := (blockCount output 1);
+       (let bytes : Nat := (wordBytes storage);
+        (ctor PointwiseDecision.copyBlocks (initial + (blockCount left 1)) bytes (indexContext left 1) (indexContext output 1)
+          (if (storage =? 0) then (ctor CopyMode.folded initial) else (ctor CopyMode.integerFold initial bytes)))))
+     else (ctor PointwiseDecision.invalidShape))),
+  executable: true
+}
+
+definition{
+  name: integerFoldStep,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, initial : Nat, bytes : Nat],
+  result: GraphResponse,
+  body: (if (index <? initial) then
+    (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset index destination)) bytes bytes)
+   else (let step : Nat := (prim subtract index initial : Nat);
+    (let target : Nat := (repeatedBlockOffset step destination source);
+     (ctor GraphResponse.instruction (ctor WordOperation.wide 15) (ctor WordOperand.output target) (ctor WordOperand.source 0 (blockOffset step source)) (ctor WordTarget.output target) bytes bytes)))),
   executable: true
 }
 
@@ -2738,6 +2758,7 @@ definition{
     | CopyMode.reflected left => (reflectedOffsets index source destination left)
     | CopyMode.rolled p0 p1 p2 p3 => (paddedOffsets index source destination p0 p1 p2 p3 true)
     | CopyMode.updated initial base adding => (updatedOffsets index source destination initial base adding)
+    | CopyMode.integerFold initial foldBytes => (integerFoldStep index source destination initial foldBytes)
     | CopyMode.folded initial => (foldedOffsets index source destination initial)
     | CopyMode.selected kind => (selectionOffsets kind index source destination)
     | CopyMode.constant kind bits => (ctor GraphResponse.offsets true 0 (blockOffset index destination))
@@ -3311,6 +3332,7 @@ definition{
     | CopyMode.reflected left => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.rolled p0 p1 p2 p3 => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.updated initial base adding => (ctor GraphResponse.bindings 3 0 0 false 3)
+    | CopyMode.integerFold initial foldBytes => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.folded initial => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.selected kind => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.constant kind bits => (ctor GraphResponse.bindings 0 kind bits true 3)
@@ -3375,6 +3397,7 @@ definition{
     | CopyMode.reflected left => 0
     | CopyMode.rolled p0 p1 p2 p3 => 0
     | CopyMode.updated initial base adding => 0
+    | CopyMode.integerFold initial foldBytes => 0
     | CopyMode.folded initial => 0
     | CopyMode.selected kind => 0
     | CopyMode.constant kind bits => 0
@@ -3491,6 +3514,7 @@ definition{
     | CopyMode.reflected left => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.rolled p0 p1 p2 p3 => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.updated initial base adding => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.integerFold initial foldBytes => (ctor WordOperation.invalid)
     | CopyMode.folded initial => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.selected kind => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.constant kind bits => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -3553,6 +3577,7 @@ definition{
     | CopyMode.reflected left => 0
     | CopyMode.rolled p0 p1 p2 p3 => 0
     | CopyMode.updated initial base adding => 0
+    | CopyMode.integerFold initial foldBytes => 0
     | CopyMode.folded initial => 0
     | CopyMode.selected kind => 0
     | CopyMode.constant kind bits => 0
@@ -3985,6 +4010,7 @@ definition{
     | CopyMode.reflected left => (copyOffsets index source destination mode)
     | CopyMode.rolled p0 p1 p2 p3 => (copyOffsets index source destination mode)
     | CopyMode.updated initial base adding => (copyOffsets index source destination mode)
+    | CopyMode.integerFold initial foldBytes => (integerFoldStep index source destination initial foldBytes)
     | CopyMode.folded initial => (copyOffsets index source destination mode)
     | CopyMode.selected kind => (copyOffsets index source destination mode)
     | CopyMode.constant kind bits => (copyOffsets index source destination mode)
@@ -5678,6 +5704,13 @@ theorem{
   name: byteSumEncodesTheRow,
   parameters: [],
   statement: ((byteSumStore 9) = (ctor GraphResponse.instruction (ctor WordOperation.smallFloat 4) (ctor WordOperand.scratch 2) (ctor WordOperand.immediate 0) (ctor WordTarget.output 9) 4 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: integerFoldZerosDestination,
+  parameters: [source : IndexContext, destination : IndexContext],
+  statement: ((integerFoldStep 0 source destination 1 8) = (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset 0 destination)) 8 8)),
   proof: reflexivity{}
 }
 

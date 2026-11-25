@@ -99,6 +99,7 @@ ggml_batches! {
     fn stored_equality_vt_207() { "stored-equality", 132, ["pointwise"] }
     fn double_sums_vt_209() { "double-sums", 12, ["pointwise"] }
     fn small_sums_vt_210() { "small-sums", 32, ["pointwise"] }
+    fn signed_fold_vt_212() { "signed-fold", 8, ["pointwise"] }
     fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
@@ -455,17 +456,16 @@ fn native_fixture_baselines_vt_40() {
     assert_eq!(modes.len(), 16);
     for row in modes {
         let name = row["name"].as_str().unwrap();
-        let cases = row["cases"].as_u64().unwrap();
+        let count = |key: &str| row[key].as_u64().unwrap();
+        let cases = count("cases");
         let mut registered = GGML_BATCHES.iter().filter(|(mode, _)| *mode == name);
         assert_eq!(registered.next(), Some(&(name, cases as usize)));
         assert_eq!(registered.next(), None, "duplicate frozen batch {name}");
-        assert!(row["bytes"].as_u64().unwrap() > 0);
+        assert!(count("bytes") > 0);
         assert_eq!(row["sha256"].as_str().unwrap().len(), 64);
         assert_eq!(row["record"].as_array().unwrap().len() as u64, cases);
-        assert_eq!(
-            row["positive_cases"].as_u64().unwrap() + row["constructed_refusals"].as_u64().unwrap(),
-            cases
-        );
+        let total = count("positive_cases") + count("constructed_refusals");
+        assert_eq!(total, cases);
     }
 }
 
@@ -1285,7 +1285,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "350512d9ccc10d0c9f4e64b64059a8ba455816ff2df056879db407a512d05ec8",
+            "a61f11cec06edae415ce41221400efceb0e31eed507f3ca3f4e6c69b9fa16bcf",
         )
     });
 
@@ -1372,13 +1372,13 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 
     build_recipe! { OBJECT_RECIPE;
     fn checked_build(output: &Path, build: impl FnOnce(&Path)) {
-        if !output.exists() {
-            std::fs::create_dir_all(output.parent().unwrap()).unwrap();
-            let pending = output.with_extension("new");
-            build(&pending);
-            super::ggml_oracle::publish_file(&pending, output);
+        if output.exists() {
+            return verify_file(output);
         }
-        verify_file(output);
+        std::fs::create_dir_all(output.parent().unwrap()).unwrap();
+        let pending = output.with_extension("new");
+        build(&pending);
+        super::ggml_oracle::publish_file(&pending, output);
     }
 
     }
@@ -1519,12 +1519,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             }
         }
         if matches!(mode, "matrix" | "elementwise") {
-            let path = trace(&format!("{mode}-fixtures"));
-            let bound = std::fs::read(&path).expect("native execution emitted its bound fixtures");
-            assert!(
-                bound == input[32..],
-                "{mode} tensor bindings differ from the frozen fixture input"
-            );
+            let bound = super::ggml_oracle::read_bytes(&trace(&format!("{mode}-fixtures")));
+            assert!(bound == input[32..], "{mode} fixture bindings changed");
         }
         std::fs::remove_dir_all(scratch).unwrap();
     }
@@ -2281,17 +2277,19 @@ int main(int argc, char **argv) {
         int first,second;
         while(scanf("%d%d",&first,&second)==2){
             auto type=repeat_e4?GGML_TYPE_F8_E4M3:ggml_type(first);
+            const bool fold=reductions && second==4;
             int form=0;if(glu)CHECK(scanf("%d",&form)==1 && form>=0 && form<=3 && second>=0 && second<GGML_GLU_OP_COUNT);
-            int width=scalar_diag?second:repeat_e4?16:glu?512:256,rows=scalar_diag?6:repeat_e4?32:4;
+            int width=fold?32:scalar_diag?second:repeat_e4?16:glu?512:256,rows=fold?8:scalar_diag?6:repeat_e4?32:4;
             size_t row=ggml_row_size(type,width),block=ggml_type_size(type);
             auto input=read_hex_bytes(rows*row),rhs=glu && form>=2?read_hex_bytes(rows*row):repeat_e4?read_hex_bytes((first+2*second)*4*sizeof(float)):std::vector<unsigned char>{};
-            const int output_rows=reductions && second==2?1:rows;
-            auto expected=read_hex_bytes(reductions?output_rows*(second>=2?block:sizeof(uint32_t)):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
+            const int output_rows=fold || (reductions && second==2)?1:rows;
+            auto expected=read_hex_bytes(fold?16*block:reductions?output_rows*(second>=2?block:sizeof(uint32_t)):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
             for(int pad=0;pad<=!repeat_e4;++pad)for(int ip=0;ip<=(!scalar_diag && !glu && !reductions);++ip){
-                graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:(reductions||repeat_e4)?4:2,reductions?1:repeat_e4?4:2,scalar_diag?3:repeat_e4?2:1);
+                graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:fold?2:(reductions||repeat_e4)?4:2,fold?2:reductions?1:repeat_e4?4:2,scalar_diag?3:(fold||repeat_e4)?2:1);
                 auto src=pad?ggml_view_4d(ctx,base,width,base->ne[1],base->ne[2],base->ne[3],base->nb[1],base->nb[2],base->nb[3],block):base;
                 ggml_tensor *out,*right=nullptr;
-                if(reductions){static constexpr decltype(&ggml_mean) ops[]={ggml_mean,ggml_argmax,ggml_sum,ggml_sum_rows};CHECK(second>=0 && size_t(second)<std::size(ops));out=ops[second](ctx,src);}
+                if(fold)out=ggml_repeat_back(ctx,src,ggml_new_tensor_1d(ctx,type,16));
+                else if(reductions){static constexpr decltype(&ggml_mean) ops[]={ggml_mean,ggml_argmax,ggml_sum,ggml_sum_rows};CHECK(second>=0 && size_t(second)<std::size(ops));out=ops[second](ctx,src);}
                 else if(stored_transforms){CHECK(second>=0 && second<4);out=transform(ctx,src,second,ip,second<2?-1.25f:second==2?-0.8125f:0.1875f,second==2?1.1875f:0.375f);}
                 else if(scalar_diag)out=ggml_diag(ctx,src);
                 else if(repeat_e4){
