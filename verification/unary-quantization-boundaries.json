@@ -1,0 +1,22 @@
+{
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "source_revision": "3ab868cb8cc528b06d7526824cdd444c5bd9b591",
+  "scope": "Diagnostic run on an experimental stored-unary provider. Each row contains four 256-value input rows and the stored result of the original CPU decoder, F32 unary graph and CPU encoder. NMSE compares the independently decoded stored results. Operation numbers use the 22 GGML_UNARY_OP variants followed by SQR, SQRT, LOG, SIN and COS.",
+  "experimental_provider_sha256": "257a064e4a5097e8db75d0fe58e2c43f30c3df4f2221ddef442a506244e3af2e",
+  "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "base_library_sha256": "8c2e4cecb13beb0435a7edb794bf26cb57db08cee736bcb241ee1cfaaf0ad81e",
+  "softfloat_commit": "07ebd29db0cfb55723a79fbbffe99103ef38e305",
+  "softfloat_library_sha256": "72130c9f797fe79ba878c368bcf62dfc6e4e3e057103717da09db150dd2df48f",
+  "unary_operation_storage_pairs": 891,
+  "layouts_per_pair": 4,
+  "output_values_per_graph": 1024,
+  "direct_storage_byte_mismatches": 26,
+  "outside_decoded_nmse_limit": 19,
+  "affected_layouts": 76,
+  "nmse_limit": 1e-07,
+  "maximum_projected_f32_nmse": 1.89021469217e-12,
+  "maximum_decoded_storage_nmse": 0.00727212445046,
+  "table": "unary-quantization-boundaries.tsv.gz",
+  "table_sha256": "5ffe099ee3a6699814bf577b3df1ed98353812710863759c901ba92cf20d15f8",
+  "uncompressed_sha256": "05b4a06cbc35a3b9d189862c50c3f93d67c44874077cd69026c085692b5577bf"
+}

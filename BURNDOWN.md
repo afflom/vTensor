@@ -5,6 +5,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 ## Remaining work
 
 - [ ] Place and oracle-check the remaining 3,564 unary and 1,518 GLU descriptors. [Unary survey](verification/ggml-unary-type-descriptors.json) · [GLU survey](verification/ggml-glu-type-descriptors.json)
+- [ ] Match the CPU decoder, unary operation and encoder end to end for the 19 measured packed nonlinear pairs (76 layouts) above the GGML error limit. [Failing inputs and CPU outputs](verification/unary-quantization-boundaries.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
