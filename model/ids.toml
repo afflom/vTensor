@@ -1248,3 +1248,9 @@ id = "VT-196"
 level = "build"
 suite = "native-backend"
 statement = "Reshaped GGML copies preserve logical values and untouched backing storage across differing source and destination block widths"
+
+[[id]]
+id = "VT-197"
+level = "build"
+suite = "native-backend"
+statement = "Outer products place and contract both operands across all registered GGML storage types"

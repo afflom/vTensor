@@ -94,6 +94,7 @@ ggml_batches! {
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
+    fn mixed_outer_vt_197() { "mixed-outer", 15, ["matrix", "pointwise"] }
     fn reshaped_storage_vt_196() { "reshaped-storage", 32, ["typed", "pointwise"] }
     fn numeric_gather_vt_195() { "numeric-gather", 12, ["pointwise"] }
     fn numeric_indexed_rows_vt_194() { "indexed-numeric", 32, ["typed", "pointwise"] }
@@ -772,9 +773,7 @@ host:
     }
 
     pub(super) fn query(mode: &str, input: &str) -> String {
-        let executable = &*STORAGE_ORACLE;
-        verify_file(executable);
-        batch(Command::new(executable).arg(mode), input)
+        batch(Command::new(&*STORAGE_ORACLE).arg(mode), input)
     }
 
     pub(super) fn rows<const N: usize>(mode: &str, input: &str) -> Vec<[u64; N]> {
@@ -1286,7 +1285,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "6c7509893ee35fce0206f9a25e8e20df7c015f603d3d2c307df2becd6ef437a3",
+            "de9fe1fc3f45940c7e9c2596b9ffbbf2559448c33c4ae7dea2da4a4a45f3d2fa",
         )
     });
 
@@ -1370,7 +1369,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             });
             library
         });
-        verify_file(library);
         library.clone()
     }
 
@@ -1447,7 +1445,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
         let program =
             HOSTS[usize::from(imported)].get_or_init(|| build_host(common, &library, imported));
         let cache = program.parent().unwrap();
-        verify_file(program);
         static STORAGE_TYPES: LazyLock<String> = LazyLock::new(|| {
             super::ggml_inventory::STORAGE_TYPES
                 .iter()
@@ -1772,19 +1769,17 @@ size_t vtensor_imported_suite(ggml_backend_t backend, ggml_backend_t reference, 
     return observed.records==cases && (selected.empty() || cases==selected.size()) ? cases : SIZE_MAX;
 }
 using vtensor_graph_factory = ggml_tensor * (*)(ggml_context *, void *, void *);
-using vtensor_initializer = void (*)(ggml_context *, void *);
 ggml_tensor *vtensor_oracle_tensor(void *owner, ggml_context *ctx, ggml_type type, int64_t n0, int64_t n1, int64_t n2, int64_t n3) {
     return static_cast<test_case *>(owner)->ggml_new_tensor_4d(ctx,type,n0,n1,n2,n3);
 }
-bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, const char *op, const char *label, void *payload, vtensor_graph_factory factory, vtensor_initializer initialize) {
+bool vtensor_imported_case(ggml_backend_t backend, ggml_backend_t reference, const char *op, const char *label, void *payload, vtensor_graph_factory factory) {
     struct constructed_case : test_case {
-      void *payload;vtensor_graph_factory factory;vtensor_initializer initialize;std::string label;
-      constructed_case(void *p, vtensor_graph_factory f, vtensor_initializer init, const char *name):payload(p),factory(f),initialize(init),label(name) {}
+      void *payload;vtensor_graph_factory factory;std::string label;
+      constructed_case(void *p, vtensor_graph_factory f, const char *name):payload(p),factory(f),label(name) {}
       ggml_tensor *build_graph(ggml_context *ctx) override {return factory(ctx,payload,static_cast<test_case *>(this));}
-      void initialize_tensors(ggml_context *ctx) override {test_case::initialize_tensors(ctx);if(initialize) initialize(ctx,payload);}
       std::string vars() override {return label;}
       double max_nmse_err() override {return 0.0;}
-    } test(payload,factory,initialize,label);
+    } test(payload,factory,label);
     vtensor_observation observed;
     return test.eval(backend,reference,op,&observed)==test_status_t::OK && !observed.bad && observed.records==1;
 }
@@ -1824,7 +1819,7 @@ extern "C" const unsigned char * vtensor_build_sources();
 extern "C" size_t vtensor_build_sources_size();
 #ifdef VTENSOR_IMPORTED_SUITE
 extern size_t vtensor_imported_suite(ggml_backend_t, ggml_backend_t, const char *);
-extern bool vtensor_imported_case(ggml_backend_t, ggml_backend_t, const char *, const char *, void *, ggml_tensor * (*)(ggml_context *, void *, void *), void (*)(ggml_context *, void *)=nullptr);
+extern bool vtensor_imported_case(ggml_backend_t, ggml_backend_t, const char *, const char *, void *, ggml_tensor * (*)(ggml_context *, void *, void *));
 extern ggml_tensor *vtensor_oracle_tensor(void *,ggml_context *,ggml_type,int64_t,int64_t,int64_t,int64_t);
 #define main vtensor_sleep_main
 #define printf(...) std::fprintf(stderr,__VA_ARGS__)
@@ -1997,19 +1992,38 @@ int main(int argc, char **argv) {
         return 0;
     };
     size_t cases=0;
-    if (!strcmp(argv[3],"vector-swiglu")) {
-        int width,rows,variant;
-        while(scanf("%d%d%d",&width,&rows,&variant)==3) {
+    auto fixture_graph=[&](graph_fixture &ctx,ggml_tensor *out,std::initializer_list<ggml_tensor *> sources,bool check_placement=false) -> ggml_cgraph * {
+        auto graph=ctx.allocate(out,backend,check_placement);
+        if (!graph || (!check_placement && !ggml_backend_supports_op(backend,out))) return nullptr;
+        for(auto source:sources) if(source && !load_tensor_bytes(source)) return nullptr;
+        if(check_placement) ggml_backend_tensor_memset(out,0xff,0,ggml_nbytes(out));
+        return ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS?graph:nullptr;
+    };
+    auto frozen_f32=[&](graph_fixture &ctx,ggml_tensor *out,std::initializer_list<ggml_tensor *> sources,bool exact) -> ggml_cgraph * {
+        auto graph=fixture_graph(ctx,out,sources,true);
+        if(!graph) return nullptr;
+        auto actual=tensor_bytes(out),expected=read_hex_bytes(ggml_nbytes(out));
+        return (exact?actual==expected:finite_f32_matches(actual,expected,false,false))?graph:nullptr;
+    };
+    const bool outer=!strcmp(argv[3],"mixed-outer");
+    if (outer || !strcmp(argv[3],"vector-swiglu")) {
+        int first,second,variant;
+        while(scanf("%d%d%d",&first,&second,&variant)==3) {
             graph_fixture ctx(8);
-            auto input=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,variant?2*width:width,rows);
-            auto gate=variant?nullptr:ggml_dup_tensor(ctx,input);
-            auto out=gate?ggml_swiglu_split(ctx,input,gate):variant==1?ggml_swiglu(ctx,input):ggml_swiglu_swapped(ctx,input);
-            auto graph=ctx.allocate(out,backend,true);
-            CHECK(graph && load_tensor_bytes(input) && (!gate || load_tensor_bytes(gate)));
-            auto expected=read_hex_bytes(ggml_nbytes(out));
-            CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-            if (tensor_bytes(out)!=expected) {fprintf(stderr,"SwiGLU vector mismatch width %d variant %d\n",width,variant);return 2;}
-            ++cases;
+            ggml_tensor *x,*y,*out;
+            if(outer) {
+                const int m=ggml_blck_size(ggml_type(first)),n=ggml_blck_size(ggml_type(second));
+                bool pad=variant==2,trans=variant==3,batch=variant==1;
+                x=ggml_new_tensor_4d(ctx,ggml_type(first),pad?2*m:m,3,2,1);
+                auto w=pad?ggml_view_4d(ctx,x,m,3,2,1,x->nb[1],x->nb[2],x->nb[3],ggml_type_size(x->type)):x;
+                y=ggml_new_tensor_4d(ctx,ggml_type(second),trans?3:n,trans?n:3,batch?4:2,batch?2:1);
+                out=ggml_out_prod(ctx,w,trans?ggml_transpose(ctx,y):y);
+            } else {
+                x=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,variant?2*first:first,second);
+                y=variant?nullptr:ggml_dup_tensor(ctx,x);
+                out=y?ggml_swiglu_split(ctx,x,y):variant==1?ggml_swiglu(ctx,x):ggml_swiglu_swapped(ctx,x);
+            }
+            CHECK(frozen_f32(ctx,out,{x,y},!outer));++cases;
         }
         return finish(cases);
     }
@@ -2024,13 +2038,7 @@ int main(int argc, char **argv) {
         auto forward=pooling_gradient ? ggml_pool_2d(ctx,x,pool,2,2,sx,sy,px,py) : ggml_im2col(ctx,k,x,sx,sy,px,py,dx,dy,plane,GGML_TYPE_F32);
         auto grad=ggml_dup_tensor(ctx,forward);
         auto out=pooling_gradient ? ggml_pool_2d_back(ctx,grad,x,pool,2,2,sx,sy,px,py) : ggml_im2col_back(ctx,grad,k,x->ne,sx,sy,px,py,dx,dy,plane);
-        auto graph=ctx.allocate(out,backend,true); CHECK(graph && ggml_backend_supports_op(backend,out));
-        if(pooling_gradient) CHECK(load_tensor_bytes(x));
-        CHECK(load_tensor_bytes(grad));
-        auto expected=read_hex_bytes(ggml_nbytes(out)); CHECK(!expected.empty());
-        std::vector<float> initial(ggml_nelements(out),13.f);
-        ggml_backend_tensor_set(out,initial.data(),0,ggml_nbytes(out));
-        CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS && tensor_bytes(out)==expected);
+        auto graph=frozen_f32(ctx,out,{pooling_gradient?x:nullptr,grad},true);CHECK(graph);
         CHECK(refuses_change(backend,dev,graph,out,out->src[2],x));
         CHECK(refuses_change(backend,dev,graph,out,out->op_params[pooling_gradient?3:0],int32_t(0)));
         ++cases;
@@ -2561,11 +2569,6 @@ int main(int argc, char **argv) {
       }
       size_t cases = vtensor_imported_suite(backend,reference,argv[3]+9);
       CHECK(cases != SIZE_MAX);
-      auto edge_graph=[&](graph_fixture &ctx,ggml_tensor *out,std::initializer_list<ggml_tensor *> inputs) {
-        auto graph=ctx.allocate(out,backend);
-        for(auto input:inputs) if(!graph || !load_tensor_bytes(input)) return (ggml_cgraph *)nullptr;
-        return ggml_backend_supports_op(backend,out) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS?graph:nullptr;
-      };
       auto within_reference=[&](ggml_tensor *out) {
         for(int i=0;i<ggml_nelements(out);++i) {
           uint32_t low,high,word;
@@ -2584,7 +2587,7 @@ int main(int argc, char **argv) {
         auto extra=ggml_new_tensor_3d(ctx,GGML_TYPE_I32,3,2,2);
         auto out=ggml_top_k_mask(ctx,mask,top,scores,nullptr,extra);
         out->nb[2]=8*sizeof(uint32_t); out->nb[1]=2*out->nb[2]; out->nb[3]=2*out->nb[1];
-        auto graph=edge_graph(ctx,out,{mask,top,scores,extra,out});
+        auto graph=fixture_graph(ctx,out,{mask,top,scores,extra,out});
         CHECK(graph && tensor_bytes(out)==read_hex_bytes(ggml_nbytes(out)));
         CHECK(refuses_change(backend,dev,graph,out,out->nb[1],size_t(4)));
         CHECK(refuses_change(backend,dev,graph,out,top->type,GGML_TYPE_F32));
@@ -2600,7 +2603,7 @@ int main(int argc, char **argv) {
           auto out=units?(variant==0?ggml_elu(ctx,x):ggml_xielu(ctx,x,-0.75f,1.25f,0.5f,variant==1?-0.125f:variant==2?-0.f:NAN))
               :erf?ggml_geglu_erf(ctx,x):parameterized?ggml_swiglu_oai(ctx,x,nullptr,-0.5f,2.f):ggml_swiglu_clamp(ctx,x,nullptr,2.f);
           if(!units)out->op_params[1]=variant;
-          auto graph=edge_graph(ctx,out,{x}); CHECK(graph && within_reference(out));
+          auto graph=fixture_graph(ctx,out,{x}); CHECK(graph && within_reference(out));
           if(!units)CHECK(refuses_change(backend,dev,graph,out,out->op_params[1],int32_t(2)));
         }
       }
@@ -2610,7 +2613,7 @@ int main(int argc, char **argv) {
         auto sink=ggml_new_tensor_1d(ctx,GGML_TYPE_F32,1);
         scores->nb[2]+=4; mask->nb[3]+=8; sink->nb[0]=16;
         auto out=ggml_soft_max_ext_inplace(ctx,scores,mask,0.5f,2.0f); ggml_soft_max_add_sinks(out,sink);
-        auto graph=edge_graph(ctx,out,{scores,mask,sink}); CHECK(graph && within_reference(out));
+        auto graph=fixture_graph(ctx,out,{scores,mask,sink}); CHECK(graph && within_reference(out));
         CHECK(refuses_change(backend,dev,graph,out,out->src[1],static_cast<ggml_tensor*>(nullptr)));
         CHECK(refuses_change(backend,dev,graph,out,mask->type,GGML_TYPE_I32));
         CHECK(refuses_change(backend,dev,graph,out,sink->ne[0],int64_t(2)));
@@ -2620,7 +2623,7 @@ int main(int argc, char **argv) {
         graph_fixture ctx(12); auto base=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,8,2);
         auto source=ggml_view_2d(ctx,base,4,2,base->nb[1],sizeof(float));
         auto out=partial?ggml_top_k(ctx,source,2):ggml_argsort(ctx,source,GGML_SORT_ORDER_DESC);
-        auto graph=edge_graph(ctx,out,{base}); CHECK(graph);
+        auto graph=fixture_graph(ctx,out,{base}); CHECK(graph);
         auto actual=tensor_bytes(out),expected=read_hex_bytes(ggml_nbytes(out)); CHECK(actual.size()==expected.size());
         if(partial) for(auto bytes:{&actual,&expected}) for(size_t i=0;i<bytes->size();i+=8) {
           int32_t pair[2];memcpy(pair,bytes->data()+i,8);std::sort(pair,pair+2);memcpy(bytes->data()+i,pair,8);

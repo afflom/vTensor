@@ -284,6 +284,7 @@ model does not sanction.
 | `VT-194` | `build` | All GGML indexed row store types place on the provider and preserve selected rows and guard bytes |
 | `VT-195` | `build` | All registered GGML row gather storage types execute against the original selection and conversion oracles |
 | `VT-196` | `build` | Reshaped GGML copies preserve logical values and untouched backing storage across differing source and destination block widths |
+| `VT-197` | `build` | Outer products place and contract both operands across all registered GGML storage types |
 
 ## normalization-graphs
 

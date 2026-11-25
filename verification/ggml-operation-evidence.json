@@ -14,7 +14,7 @@
     "unary-ops.cpp": "57a73a81b91473945040054a03bd921f1f77656d217e205cf8fd7f1e0acae7ad"
   },
   "table": "ggml-operation-evidence.tsv",
-  "table_sha256": "cb499e5e2efa0f6306499a7a25a8c85004c286f599a0a1a7bfe9d505ca833694",
+  "table_sha256": "879de212ad2c4bff95a99f9a369ad1a5e3d7e59a670970e11c44850dc62f2c38",
   "inputs": {
     "ggml-constructor-contracts.json": "514d075f7e4e1cbf9e978ce2c79d5e6db3125705b7765f4fdc33ad330015b620",
     "ggml-factory-signatures.json": "c79d118eca52e070db92ea1cdaa1f8dadaca7fe8d89efb734872dc21792a3d84",

@@ -776,16 +776,11 @@ fn rounded_dot<'a>(
 fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     use vtensor_matrix_execution::{Adt0 as Strides, Adt1 as Instruction};
     tensor_fields!(GraphPlan::C3(m, k, n, b2, b3, r2, r3, left_count, right_count, _) = plan);
-    // SAFETY: plan_operation admitted both retained source descriptors.
-    let (left, right) = unsafe { (&*tensor.src[0], &*tensor.src[1]) };
-    let weights = TensorInput::new(left)?;
-    let pointers = [
-        weights.bytes.as_ptr().cast_mut(),
-        graph_tensor_data(right)?,
-        graph_tensor_data(tensor)?,
-    ];
-    let [left_stride, right_stride, output_stride] = [left, right, tensor].map(|t| {
-        let [s0, s1, s2, s3] = t.nb.map(|s| s as u64);
+    tensor_fields!([Some(left), Some(right)] = tensor.inputs()?);
+    let output = graph_tensor_data(tensor)?;
+    let inputs = [(&left, left_count), (&right, left_count + right_count)];
+    let [left_stride, right_stride, output_stride] = [left.nb, right.nb, tensor.nb].map(|nb| {
+        let [s0, s1, s2, s3] = nb.map(|s| s as u64);
         Strides::C0(s0, s1, s2, s3)
     });
     let step = |index| {
@@ -815,28 +810,28 @@ fn execute_matrix(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> 
         let instruction = step(index)?;
         index += 1;
         match instruction {
-            // SAFETY: Prism bounds the private workspace slot, foreign pointer
-            // slot and byte offset. Native F32 words may be unaligned; byte
-            // transfers preserve all encodings without creating foreign borrows.
-            Instruction::C1(writing, slot, at, offset) => unsafe {
-                let external = pointers[slot as usize].add(offset as usize).cast::<f32>();
-                let word = &mut values[at as usize];
+            Instruction::C1(writing, slot, at, offset) => {
+                let value = &mut values[at as usize];
                 if writing {
-                    external.write_unaligned(*word);
+                    // SAFETY: the certified output offset spans one potentially unaligned F32 word.
+                    unsafe {
+                        output
+                            .add(offset as usize)
+                            .cast::<f32>()
+                            .write_unaligned(*value)
+                    };
                 } else {
-                    *word = external.read_unaligned();
+                    *value = f32::from_ne_bytes(inputs[slot as usize].0.word(offset)?);
                 }
-            },
+            }
             Instruction::C4(slot, at, offset, source, dot_type, width) => {
-                // SAFETY: the certified load carries the encoded width and bounded offset.
-                let word = unsafe {
-                    scalar_word(pointers[slot as usize].add(offset as usize), width, None)?
-                };
+                let word = load_word(inputs[slot as usize].0.region(offset, width as usize)?)?;
                 values[at as usize] = prepare_float(source, dot_type, word)?;
             }
-            Instruction::C5(at, from, kind, bytes, stride, skip) => {
-                let block = weights.region(from, bytes as usize)?;
-                let dst = &mut values[at as usize..left_count as usize];
+            Instruction::C5(slot, at, from, kind, bytes, stride, skip) => {
+                let (input, end) = inputs[slot as usize];
+                let block = input.region(from, bytes as usize)?;
+                let dst = &mut values[at as usize..end as usize];
                 decode_block(kind, block, float_bytes(dst), stride as usize)?;
                 index = index.checked_add(skip).ok_or(BackendError::Overflow)?;
             }
@@ -1071,9 +1066,7 @@ packed_formats! {
 }
 
 fn block_field<const N: usize>(bytes: &mut &[u8]) -> Result<[u8; N], BackendError> {
-    let (field, tail) = bytes
-        .split_first_chunk()
-        .ok_or(BackendError::InvalidTensor)?;
+    tensor_fields!(Some((field, tail)) = bytes.split_first_chunk());
     *bytes = tail;
     Ok(*field)
 }

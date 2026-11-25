@@ -842,3 +842,9 @@ Feature: native-backend
     Given dense or offset source and destination views with different row widths
     When GGML copies mixed scalar and packed storage
     Then every physical destination byte matches the external conversion and the source is preserved
+
+  @VT-197 @build
+  Scenario: Contract mixed storage operands on their second axis
+    Given mixed scalar or packed operands with broadcast batches, offset weights or transposed scalar inputs
+    When the sole provider computes the GGML outer product
+    Then all result words agree with the pinned CPU outer product on independently decoded operands

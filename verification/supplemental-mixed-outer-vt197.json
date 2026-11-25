@@ -1,0 +1,25 @@
+{
+  "requirement": "VT-197",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-mixed-outer-oracle.json",
+  "provider_sha256": "876d8ca308bf8847787b87e5e2388df7bd970af0e1e7696bcd721f22b6af0dc1",
+  "attestations": {
+    "matrix": "b63e899ae0e03ffe360ebffb925617ae8a1ffab00218941af044135f32682d84",
+    "pointwise": "0df6b51cc74ffacc4b6421f6f7f3a7a26a5750dedb3d551829b771468e68768b",
+    "attention": "95b5cc8fdfe9d51e7a3ad8df7d2e003825daaad2cd1c290dbcbb8c8f57260e9c"
+  },
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "previous_measurement_revision": "1c7bd0f",
+  "previous_placements": 224,
+  "placed_descriptors": 4212,
+  "previously_unplaced_graphs_compared": 3988,
+  "decoded_cpu_output_words": 1023049320,
+  "max_nmse": 4.42316972625e-15,
+  "ggml_nmse_limit": 0.0005,
+  "original_direct_cpu_graphs_replayed": 85,
+  "direct_cpu_output_words": 103784,
+  "recurring_graphs": 15,
+  "recurring_words": 378256,
+  "negative_control": "The baseline rejected admission on the first Q8_1/Q8_K case. Reading every right operand block from offset zero produced NMSE 0.875015219505 on the same graph. Restoring certified offsets passed the direct and decoded CPU comparisons.",
+  "non_prism_lines": 12538
+}
