@@ -1,0 +1,22 @@
+{
+  "operation": "GGML_OP_REPEAT_BACK",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "provider_sha256": "75a6c98ba35bc2312beeb037427f016e25d501cd412b8b5a97fceaabdf5f1da6",
+  "pointwise_attestation": "3af76c6ebe1712202ee5e03122eb3f6aa50013cba1f6e34880a6d9c046206fc6",
+  "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
+  "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
+  "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "original_driver_sha256": "90ed90ac9bc58a18873a429004e8511c7a45f09d14b030ce52b87dfd7a83a2f3",
+  "scope": "Call the original GGML constructor and query the backend before allocation. Split each admitted graph on a vTensor-only scheduler. Each of 36 storage types has a dense and block-offset, padded source for doubling each axis alone or all four axes together. The target extents are [256,2,1,1].",
+  "descriptors": 360,
+  "placed": 10,
+  "unplaced": 350,
+  "direct_cpu_graphs": 10,
+  "direct_cpu_words": 5120,
+  "direct_cpu": "The pinned GGML CPU implementation dispatches REPEAT_BACK only for F32. Each of its ten outputs matched vTensor byte for byte.",
+  "requirement": "VT-20",
+  "prism": "PointwiseGraph.foldedOffsets",
+  "table": "ggml-repeat-back-placements.tsv.gz",
+  "table_sha256": "49c53daaac68cc231a2ba0c8fb8c22b5d76b8da38c7be7826045c1e35f7863da",
+  "uncompressed_sha256": "6eda63a7804d048d2a8002f557ab890b7006dc831b3720387d3b2082a8aee5c3"
+}
