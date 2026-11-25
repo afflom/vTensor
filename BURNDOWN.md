@@ -15,7 +15,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Establish coverage and unblock release
 
-- [x] Complete all **5,366 surveyed reduction and comparison descriptors**. The final eight placements matched 104 original OpenVINO and GGML results, including cancellation in F16 and BF16. [VT-210](verification/supplemental-small-sums-vt210.json)
+- [x] Complete all **5,366 surveyed reduction and comparison descriptors**. The final eight placements matched 104 original OpenVINO and GGML results, including cancellation in F16 and BF16. Another 16 graphs matched on empty, two-plane and four-dimensional inputs. [VT-210](verification/supplemental-small-sums-vt210.json)
 
 - [x] Place F64 **SUM and SUM_ROWS**. All 30 outputs matched the original OpenVINO reference. Six additional graphs covered empty axes and multi-plane inputs. [VT-209](verification/supplemental-double-sums-vt209.json)
 
