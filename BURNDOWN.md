@@ -4,7 +4,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Verify the remaining 1,440 binary descriptors with I8, I16, I32, I64 or F64 left operands. Cover all 36 right types and all eight ordinary and in-place constructors. [Descriptor map](verification/ggml-binary-type-descriptors.json)
+- [ ] Verify the remaining 576 binary descriptors with I64 or F64 left operands. Cover all 36 right types and all eight ordinary and in-place constructors. [Descriptor map](verification/ggml-binary-type-descriptors.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -13,6 +13,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all 864 binary descriptors with I8, I16 or I32 left operands. All 442,928 stored values matched the GGML CPU and SYCL arithmetic oracles. [VT-190](verification/supplemental-narrow-left-vt190.json)
 
 - [x] Match all 4,986 GGML F32 SwiGLU words. Stock llama-perplexity on mixed Stories15M now matches generic CPU self-replay at all 124 top tokens, perplexity 79.158440 and mean KL −0.000002. [VT-189](verification/supplemental-vector-swiglu-vt189.json) · [Consumer replay](verification/llama-perplexity-four-chunks.json)
 

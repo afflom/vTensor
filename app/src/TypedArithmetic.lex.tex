@@ -623,11 +623,19 @@ definition{
 }
 
 definition{
+  name: binaryLeftWord,
+  parameters: [ty : Nat],
+  result: Bool,
+  body: ((0 <? (binaryWordBytes ty)) || ((24 <=? ty) && (ty <=? 26))),
+  executable: true
+}
+
+definition{
   name: rowSourceStorage,
   parameters: [source : Nat, destination : Nat],
   result: Bool,
   body: (if (packedTarget source) then true
-    else (((source =? destination) && (0 <? (binaryWordBytes source))) || (((bytes source) =? 2) && ((packedTarget destination) || (rowScalarOutput destination))))),
+    else (((source =? destination) && (binaryLeftWord source)) || (((bytes source) =? 2) && ((packedTarget destination) || (rowScalarOutput destination))))),
   executable: true
 }
 
@@ -649,7 +657,7 @@ definition{
   result: Bool,
   body: (if ((packedTarget left) || (packedTarget output)) then true else
     (if ((storageTuple left rhs output) || (((left =? 43) && (kind =? 0)) && (rhs =? 0))) then false else
-      (((left =? output) && (0 <? (binaryWordBytes left))) ||
+      (((left =? output) && (binaryLeftWord left)) ||
         (((kind =? 0) && ((bytes left) =? 2)) && (rowScalarOutput output))))),
   executable: true
 }
@@ -658,7 +666,7 @@ definition{
   name: rowArithmeticPlan,
   parameters: [kind : Nat, left : NormPlan::TensorDescriptor, rhs : NormPlan::TensorDescriptor, output : NormPlan::TensorDescriptor],
   result: Response,
-  body: (if (((((((((((((((project left n0) =? (project rhs n0)) || ((project left ty) =? (project output ty))) && (repeatValid left rhs)) && (NormPlan::sameShape left output)) && (rightRowAdmitted kind (project left ty) rhs (project output ty))) && (rowSourceStorage (project left ty) (project output ty))) && (0 <? (rowResultWidth (project output ty)))) && ((project left s0) =? (rowTargetWidth (project left ty)))) && ((project output s0) =? (rowResultWidth (project output ty)))) && ((prim remainder (project left n0) (storeBlockLanes (project left ty)) 1 : Nat) =? 0)) && ((prim remainder (project output n0) (storeBlockLanes (project output ty)) 1 : Nat) =? 0)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) && (RmsNormalization::nestedRows (prim multiply (prim quotient (project output n0) (storeBlockLanes (project output ty)) 0 : Nat) (project output s0) : Nat) (project output n1) (project output n2) (project output n3) (project output s1) (project output s2) (project output s3))) then
+  body: (if (((((((((((((((project left n0) =? (project rhs n0)) || ((project left ty) =? (project output ty))) && (repeatValid left rhs)) && (NormPlan::sameShape left output)) && (rightRowAdmitted kind (project left ty) rhs (project output ty))) && (rowSourceStorage (project left ty) (project output ty))) && (0 <? (rowResultWidth (project output ty)))) && ((project left s0) =? (rowResultWidth (project left ty)))) && ((project output s0) =? (rowResultWidth (project output ty)))) && ((prim remainder (project left n0) (storeBlockLanes (project left ty)) 1 : Nat) =? 0)) && ((prim remainder (project output n0) (storeBlockLanes (project output ty)) 1 : Nat) =? 0)) && (aliasAdmitted left output)) && (aliasAdmitted rhs output)) && (RmsNormalization::nestedRows (prim multiply (prim quotient (project output n0) (storeBlockLanes (project output ty)) 0 : Nat) (project output s0) : Nat) (project output n1) (project output n2) (project output n3) (project output s1) (project output s2) (project output s3))) then
     (ctor Response.planned (record Plan {steps := (if (empty left) then 0 else (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat)), capacity := 3, uniformImportance := (writeImportance (project output ty)), operation := kind, gateVariant := 0, gateAlpha := 0, gateLimit := 0, left := left, rhs := rhs, output := output, rowArithmetic := true, stagedWidth := (project left n0)}))
     else (ctor Response.invalid)),
   executable: true
@@ -1039,6 +1047,13 @@ theorem{
   name: vectorUnitExponent,
   parameters: [],
   statement: ((vectorExponent 1262485504 0) = 1065353216),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: signedLeftArithmeticKeepsStorage,
+  parameters: [],
+  statement: ((rowSourceStorage 25 25) = true),
   proof: reflexivity{}
 }
 

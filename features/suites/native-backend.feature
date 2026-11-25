@@ -800,3 +800,9 @@ Feature: native-backend
     Given F32 gates in separate or concatenated rows of varying lengths
     When complete vectors and scalar tails are evaluated
     Then the stored results match the original generic GGML CPU words
+
+  @VT-190 @build
+  Scenario: Signed I8 I16 and I32 left operands follow GGML binary row arithmetic
+    Given ordinary and in-place graphs with signed narrow left operands
+    When the scheduler executes all four operators and all supported right types
+    Then both placements match original GGML and the signed boundary words match its SYCL kernel

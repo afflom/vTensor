@@ -5,17 +5,17 @@
   "casts": 37584,
   "direct_cpu_descriptors_placed": 709,
   "composed_codebook_descriptors_placed": 189,
-  "all_provider_placements": 46512,
+  "all_provider_placements": 47376,
   "compared_scalar_graphs": 48,
   "compared_scalar_words": 24576,
   "reused_packed_results": 661,
-  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results and VT-179 for half and bfloat inputs with packed outputs. VT-180 compares the newly placed packed binary forms to original GGML row decoding, F32 graphs and row encoding. VT-181 checks each newly placed mixed cast graph against original decoded F32 arithmetic and destination storage. VT-182 checks each newly placed scalar binary graph against original decoded F32 arithmetic and destination storage. VT-184 compares signed integer and binary64 destinations against original GGML storage and Berkeley SoftFloat. VT-187 checks signed integer and binary64 right operands against original GGML and SoftFloat. VT-188 replays both activation formats using original GGML lane values and destination encoders. Unclassified denotes no identified direct or composed oracle in this survey.",
+  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results and VT-179 for half and bfloat inputs with packed outputs. VT-180 compares the newly placed packed binary forms to original GGML row decoding, F32 graphs and row encoding. VT-181 checks each newly placed mixed cast graph against original decoded F32 arithmetic and destination storage. VT-182 checks each newly placed scalar binary graph against original decoded F32 arithmetic and destination storage. VT-184 compares signed integer and binary64 destinations against original GGML storage and Berkeley SoftFloat. VT-187 checks signed integer and binary64 right operands against original GGML and SoftFloat. VT-188 replays both activation formats using original GGML lane values and destination encoders. VT-190 compares I8, I16 and I32 left operands with GGML CPU and exercises the original SYCL binary kernel on signed boundary values. Unclassified denotes no identified direct or composed oracle in this survey.",
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "63cc725932a5f2406a5f4a2dabb84f8c81ec9ed14be5306429eceeb8d41a6f20",
+  "provider_sha256": "c703aa30c91968b59837e4bef9d39b7f0949d682929509dcbdafcf498159f0ae",
   "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "table": "ggml-binary-type-descriptors.tsv.gz",
-  "table_sha256": "4df5f6dab222574df4291927c98fd3b68f98d4799966137635f1ac1814120f8a",
-  "uncompressed_sha256": "2391f077a7480d5d8fc822228a39937bc3670c44ba0f87df4dee5458ae7e531b",
+  "table_sha256": "5215bf2e7421b95a3ca3c683842c6aaea8403983e1a1c4fb160068e5f4a3c31b",
+  "uncompressed_sha256": "3c44d3ae5f00e5c23ca09c6e706e2a371454425d7d789fee731647cbf6c59d01",
   "constructor_source_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
   "composed_half_input_descriptors_placed": 54,
@@ -55,5 +55,10 @@
       "i64": 288,
       "f64": 288
     }
+  },
+  "composed_narrow_left_descriptors_placed": 864,
+  "remaining_by_left_type": {
+    "i64": 288,
+    "f64": 288
   }
 }

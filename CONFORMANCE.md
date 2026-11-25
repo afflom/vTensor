@@ -277,6 +277,7 @@ model does not sanction.
 | `VT-187` | `build` | Signed and binary64 right operands participate in decoded GGML row arithmetic |
 | `VT-188` | `build` | Q8 activation rows participate in binary arithmetic and explicit result casts |
 | `VT-189` | `build` | Complete F32 SwiGLU vectors follow the original GGML rounded exponential profile |
+| `VT-190` | `build` | Signed I8 I16 and I32 left operands follow GGML binary row arithmetic |
 
 ## normalization-graphs
 

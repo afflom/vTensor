@@ -67,6 +67,7 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn narrow_left_binary_vt_190() { "narrow-left-binary", 880, ["typed", "pointwise"] }
     fn q8_activation_binary_vt_188() { "q8-activation-binary", 1166, ["typed"] }
     fn q8_activation_cast_vt_188() { "q8-activation-cast", 4410, ["typed"] }
     fn numeric_input_binary_vt_187() { "numeric-input-binary", 1319, ["typed", "pointwise"] }
@@ -1279,7 +1280,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "20047780f4c860055a8089649e40a19a3478e748b931e332b580447df530f98b",
+            "376db71189d0c943d27951c16ee50242cf0a1800e4a54b25702853b29bad3109",
         )
     });
 

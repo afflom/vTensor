@@ -1263,6 +1263,12 @@ unsafe fn scalar_word(
     })
 }
 
+fn store_word(destination: &mut [u8], value: u64) -> Result<(), BackendError> {
+    let width = destination.len() as u64;
+    // SAFETY: scalar_word writes exactly this slice length or rejects the width.
+    unsafe { scalar_word(destination.as_mut_ptr(), width, Some(value)) }.map(|_| ())
+}
+
 fn convert(from: u64, to: u64, word: u64) -> Result<u64, BackendError> {
     match (from, to) {
         (0, 43) => linear::evaluate_small_float(4, word).map_err(BackendError::overflow)?,
@@ -1480,13 +1486,15 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
     use linear::RowRankingF32;
     // Word instructions can update their input in place. Only staged row conversion
     // retains an immutable input slice throughout the instruction loop.
-    let source = (*width != 0).then(|| TensorInput::new(left)).transpose()?;
+    let mut source = (*width != 0).then(|| TensorInput::new(left)).transpose()?;
     let mut right = secondary
         .filter(|_| *row_arithmetic)
         .map(TensorInput::new)
         .transpose()?;
-    if let Some(input) = right.as_mut().filter(|input| (24..=28).contains(&input.ty)) {
-        input.scalar_read = Some(ScalarCast::new(input.ty, 0)?);
+    for input in [&mut source, &mut right].into_iter().flatten() {
+        if *row_arithmetic && (24..=28).contains(&input.ty) {
+            input.scalar_read = Some(ScalarCast::new(input.ty, 0)?);
+        }
     }
     let pointer = |tensor, input: Option<&TensorInput>| match input {
         Some(input) => Ok(input.bytes.as_ptr().cast_mut()),
@@ -1552,14 +1560,7 @@ fn execute_typed(tensor: &Tensor, plan: vtensor_typed::Adt2) -> Result<(), Backe
                         (_, Some(cast)) => {
                             let word = cast.apply(block_values[0].to_bits().into())?;
                             encoded.resize(start + block_bytes, 0);
-                            // SAFETY: the appended scratch block contains exactly block_bytes bytes.
-                            unsafe {
-                                scalar_word(
-                                    encoded[start..].as_mut_ptr(),
-                                    block_bytes as u64,
-                                    Some(word),
-                                )?
-                            };
+                            store_word(&mut encoded[start..], word)?;
                         }
                         _ => {
                             let kind = kind.ok_or(InvalidTensor)?;
@@ -1634,10 +1635,10 @@ fn execute_copy(tensor: &Tensor, plan: GraphPlan) -> Result<(), BackendError> {
     let mut literal = [0_u8; 8];
     if constant {
         let value = convert(0, literal_type, bits)?;
-        // SAFETY: scalar_word accepts widths of at most eight bytes; literal owns all eight.
-        unsafe {
-            scalar_word(literal.as_mut_ptr(), bytes, Some(value))?;
-        }
+        store_word(
+            literal.get_mut(..bytes as usize).ok_or(InvalidTensor)?,
+            value,
+        )?;
     }
     let mut pointers = tensor.src.map(|_| literal.as_mut_ptr());
     if mask >> pointers.len() != 0 {
@@ -2167,13 +2168,10 @@ mod attention {
             return Ok(());
         }
         let mut template = workspace(row_bytes, 0_u8)?;
-        let mut word = [0; size_of::<u32>()];
-        // SAFETY: the certified mask plan selects a two- or four-byte native word.
-        unsafe {
-            super::scalar_word(word.as_mut_ptr(), width, Some(excluded))?;
-        }
-        for cell in template.chunks_exact_mut(width as usize) {
-            cell.copy_from_slice(&word[..width as usize]);
+        let (word, remaining) = template.split_at_mut(width as usize);
+        super::store_word(word, excluded)?;
+        for cell in remaining.chunks_exact_mut(word.len()) {
+            cell.copy_from_slice(word);
         }
         let offset =
             |role, index, lane| match request(Request::C6(plan.clone(), role, index, lane))? {

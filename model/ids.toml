@@ -1206,3 +1206,9 @@ id = "VT-189"
 level = "build"
 suite = "native-backend"
 statement = "Complete F32 SwiGLU vectors follow the original GGML rounded exponential profile"
+
+[[id]]
+id = "VT-190"
+level = "build"
+suite = "native-backend"
+statement = "Signed I8 I16 and I32 left operands follow GGML binary row arithmetic"

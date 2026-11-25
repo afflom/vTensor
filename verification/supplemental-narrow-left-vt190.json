@@ -1,0 +1,23 @@
+{
+  "requirement": "VT-190",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-narrow-left-binary-oracle.json",
+  "provider_sha256": "c703aa30c91968b59837e4bef9d39b7f0949d682929509dcbdafcf498159f0ae",
+  "typed_attestation": "9e2cbcf0c4b3bebdc81b87b1cc5a4bb50fa1bd457e21ce3f8bcfce34d7aa0723",
+  "new_placements_by_constructor": {
+    "add": 108,
+    "add_inplace": 108,
+    "sub": 108,
+    "sub_inplace": 108,
+    "mul": 108,
+    "mul_inplace": 108,
+    "div": 108,
+    "div_inplace": 108
+  },
+  "scheduled_ordinary_and_in_place_graphs": 880,
+  "stored_values_compared": 442928,
+  "cpu_reference_graphs": 432,
+  "sycl_boundary_cases": 8,
+  "negative_control": "Omitting I16 decoding failed scheduled execution. Restoring the scalar conversion passed the full fixture, including the original SYCL boundary words.",
+  "non_prism_lines": 12541
+}
