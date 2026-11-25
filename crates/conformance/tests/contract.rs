@@ -94,6 +94,7 @@ ggml_batches! {
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
+    fn mixed_attention_vt_199() { "mixed-flash", 61, ["attention"] }
     fn mixed_matrix_vt_198() { "mixed-matrix", 86, ["matrix", "pointwise"] }
     fn mixed_outer_vt_197() { "mixed-outer", 15, ["matrix", "pointwise"] }
     fn reshaped_storage_vt_196() { "reshaped-storage", 32, ["typed", "pointwise"] }
@@ -1286,7 +1287,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "c79bf9534eaf33cb51b96aaa0d71ce5b1807ae10ec6e9b6a8476ee7aa0f4d3ec",
+            "c361046893de45b868ed818fa4f75b214ad2cea48e1f5a2dcb1caa95f969beca",
         )
     });
 
@@ -2204,18 +2205,18 @@ int main(int argc, char **argv) {
         return finish(cases);
     }
     const bool flash_precision=!strcmp(argv[3],"flash-precision");
+    const bool frozen_flash=!strcmp(argv[3],"mixed-flash");
     const bool rounded=!strcmp(argv[3],"flash-rounding");
-    if (rounded || flash_precision || !strcmp(argv[3],"flash-storage")) {
+    if (frozen_flash || rounded || flash_precision || !strcmp(argv[3],"flash-storage")) {
         std::map<std::pair<int,int>,std::vector<unsigned char>> samples;
-        int count; CHECK(scanf("%d",&count)==1 && count==(rounded?8:59));
+        int count; CHECK(scanf("%d",&count)==1 && count==(frozen_flash?134:rounded?8:59));
         for(int i=0;i<count;++i) {
             int slot,kind; size_t size; CHECK(scanf("%d%d%zu",&slot,&kind,&size)==3);
             auto bytes=read_hex_bytes(size); CHECK(!bytes.empty() && samples.emplace(std::make_pair(slot,kind),std::move(bytes)).second);
         }
-        int key_type,value_type;
         std::set<std::pair<int,int>> pairs;
-        while(scanf("%d%d",&key_type,&value_type)==2) CHECK(pairs.emplace(key_type,value_type).second);
-        CHECK(feof(stdin) && pairs.size()==(rounded?3:697));
+        for(int key,value;scanf("%d%d",&key,&value)==2;) CHECK(pairs.emplace(key,value).second);
+        CHECK(feof(stdin) && pairs.size()==(frozen_flash?61:rounded?3:697));
         if (flash_precision) {
             for(const auto &k:samples) if(k.first.first==1)
                 for(const auto &v:samples) if(v.first.first==2) pairs.emplace(k.first.second,v.first.second);
@@ -2234,15 +2235,14 @@ int main(int argc, char **argv) {
                 CHECK(ggml_backend_supports_op(backend,out)==legal);
                 if(legal) CHECK(ctx.placed(graph,backend));
             }
-            CHECK(ggml_prec_set_acc(out,flash_precision?GGML_PREC_F32:GGML_PREC_UNDEFINED));
             ctx.storage.reset(ggml_backend_alloc_ctx_tensors(ctx,backend)); CHECK(ctx.storage);
             int slot=0;
             for(auto t:{q,k,v}) {
                 const auto &bytes=samples.at({slot++,t->type}); CHECK(bytes.size()==ggml_nbytes(t));
                 ggml_backend_tensor_set(t,bytes.data(),0,bytes.size());
             }
-            if (!rounded) CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
-            const auto expected=rounded?samples.at({3,key_type}):tensor_bytes(out); CHECK(expected.size()==512*sizeof(float));
+            if (!frozen_flash && !rounded) CHECK(ggml_prec_set_acc(out,flash_precision?GGML_PREC_F32:GGML_PREC_UNDEFINED) && ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+            const auto expected=frozen_flash?samples.at({4+key_type,value_type}):rounded?samples.at({3,key_type}):tensor_bytes(out); CHECK(expected.size()==512*sizeof(float));
             for(auto prec:modes) {
                 ggml_backend_tensor_memset(out,0xff,0,expected.size());
                 CHECK(ggml_prec_set_acc(out,prec));
@@ -2251,7 +2251,7 @@ int main(int argc, char **argv) {
                     ++cases; continue;
                 }
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-                if(!finite_f32_matches(tensor_bytes(out),expected,rounded,true)) {fprintf(stderr,"flash attention differs for %d / %d\n",key_type,value_type);return 2;}
+                if(!finite_f32_matches(tensor_bytes(out),expected,rounded,true,frozen_flash?1e-7:5e-4)) {fprintf(stderr,"flash attention differs for %d / %d\n",key_type,value_type);return 2;}
                 ++cases;
             }
         }

@@ -241,6 +241,17 @@ definition{
 }
 
 definition{
+  name: storedAttentionRow,
+  parameters: [kind : Nat, lanes : Nat, stride : Nat],
+  result: Bool,
+  body: (match (TensorTypes::tensorTypeStorage kind)
+    | TensorTypes::TypeStorageDecision.unknownType => false
+    | TensorTypes::TypeStorageDecision.knownType storage =>
+      ((stride =? (project storage typeSize)) && (multiple lanes (project storage blockSize)))),
+  executable: true
+}
+
+definition{
   name: rowStorage,
   parameters: [kind : Nat, lanes : Nat, stride : Nat],
   result: Bool,
@@ -272,7 +283,7 @@ definition{
     o : NormPlan::TensorDescriptor
   ],
   result: Bool,
-  body: ((((rowStorage (project t ty) (project t n0) (project t s0)) && (multiple (project q n2) (project t n2))) && (multiple (project q n3) (project t n3))) && (NormPlan::separateTensors t o)),
+  body: ((((storedAttentionRow (project t ty) (project t n0) (project t s0)) && (multiple (project q n2) (project t n2))) && (multiple (project q n3) (project t n3))) && (NormPlan::separateTensors t o)),
   executable: true
 }
 
@@ -739,9 +750,12 @@ definition{
   name: scalarScoreArithmetic,
   parameters: [key : Nat],
   result: Response,
-  body: (match (ScalarDotStorage::scalarProductArithmetic key)
-      | ScalarDotStorage::ProductArithmetic.rounded product widen add narrow => (ctor Response.scoreArithmetic product widen add narrow)
-      | ScalarDotStorage::ProductArithmetic.other => (ctor Response.invalid)),
+  body: (match (TensorTypes::tensorTypeStorage key)
+    | TensorTypes::TypeStorageDecision.unknownType => (ctor Response.invalid)
+    | TensorTypes::TypeStorageDecision.knownType storage => (if (QuantizedMatrix::rowProductType key) then (ctor Response.invalid) else
+      (match (ScalarDotStorage::scalarProductArithmetic 0)
+        | ScalarDotStorage::ProductArithmetic.rounded product widen add narrow => (ctor Response.scoreArithmetic product widen add narrow)
+        | ScalarDotStorage::ProductArithmetic.other => (ctor Response.invalid)))),
   executable: true
 }
 

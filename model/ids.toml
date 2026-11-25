@@ -1260,3 +1260,9 @@ id = "VT-198"
 level = "build"
 suite = "native-backend"
 statement = "Ordinary and indexed GGML matrix products contract independently decoded rows across remaining registered storage pairs"
+
+[[id]]
+id = "VT-199"
+level = "build"
+suite = "native-backend"
+statement = "Flash attention accepts all registered GGML key and value storage combinations and matches the original CPU attention operation"

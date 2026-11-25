@@ -471,7 +471,8 @@
     "ggml-numeric-gather-oracle": "b2944cbc33a18ed2a8850f99c25d24d54d4c50104cfe6fba596ba4f164d3dfd9",
     "ggml-reshaped-storage-oracle": "c6692804ae8146ab11be1b3035de1d62bbcc8125ad0c038fe43d37831be3ddcb",
     "ggml-mixed-outer-oracle": "fe3ed6fe49c1ceb3cab0d674fa29e3ed3b4b822e64e1205b7f8eab8f08b0acd1",
-    "ggml-mixed-matrix-oracle": "2f9c8231532bd962e042dc91933f326ef66ed93b8c20b5fcb6044d39da6300a8"
+    "ggml-mixed-matrix-oracle": "2f9c8231532bd962e042dc91933f326ef66ed93b8c20b5fcb6044d39da6300a8",
+    "ggml-mixed-attention-oracle": "790801ac1e99ec5951d787b2834e929146ea738c4cb82a63cea09a7e20198501"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -693,7 +694,8 @@
     "numeric-gather": "ggml-numeric-gather",
     "reshaped-storage": "ggml-reshaped-storage",
     "mixed-outer": "ggml-mixed-outer",
-    "mixed-matrix": "ggml-mixed-matrix"
+    "mixed-matrix": "ggml-mixed-matrix",
+    "mixed-flash": "ggml-mixed-attention"
   },
   "drivers": {
     "binary-widths": "scalar-casts",

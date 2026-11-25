@@ -286,6 +286,7 @@ model does not sanction.
 | `VT-196` | `build` | Reshaped GGML copies preserve logical values and untouched backing storage across differing source and destination block widths |
 | `VT-197` | `build` | Outer products place and contract both operands across all registered GGML storage types |
 | `VT-198` | `build` | Ordinary and indexed GGML matrix products contract independently decoded rows across remaining registered storage pairs |
+| `VT-199` | `build` | Flash attention accepts all registered GGML key and value storage combinations and matches the original CPU attention operation |
 
 ## normalization-graphs
 

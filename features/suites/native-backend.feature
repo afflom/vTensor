@@ -854,3 +854,9 @@ Feature: native-backend
     Given registered source types without a matching native GGML dot kernel
     When vTensor executes ordinary or indexed matrix products on the sole scheduler
     Then every output matches the original GGML matrix product on independently decoded rows
+
+  @VT-199 @build
+  Scenario: Attend over independently encoded keys and values
+    Given GGML activation blocks or signed and binary64 storage in either cache
+    When the sole provider executes flash attention
+    Then all scores and value reductions agree at the output with the pinned CPU attention oracle

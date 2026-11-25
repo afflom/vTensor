@@ -1,0 +1,20 @@
+{
+  "requirement": "VT-199",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-mixed-attention-oracle.json",
+  "provider_sha256": "1780a75ea2ec5b819d14075252a520158117e38879440512c8e26b78154841f2",
+  "attention_attestation": "de992b61c55cca1873e3045832ce2a68cf297629a3c7edc3f9290860293e37eb",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "previous_placement_revision": "53e43f1",
+  "previous_placements": 841,
+  "placements": 1296,
+  "new_graphs": 455,
+  "output_words_compared": 232960,
+  "maximum_nmse": 9.37700777319e-15,
+  "nmse_limit": 1e-07,
+  "whole_oracle_stream_sha256": "428846d2ce4f19d4a8a44810843ad599f131d45bb3758d8aa9e2ff6bac0c2201",
+  "recurring_graphs": 61,
+  "recurring_output_words": 31232,
+  "negative_control": "The prior provider refused admission. Reading every value row at the first row offset failed comparison against the original GGML CPU output.",
+  "non_prism_lines": 12538
+}

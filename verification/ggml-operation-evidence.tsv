@@ -70,7 +70,7 @@ opcode	operation	constructor_count	cpu_dispatch_line	cpu_entry	cpu_definition	fa
 68	GGML_OP_LEAKY_RELU	1	2025	ggml_compute_forward_leaky_relu	ops.cpp:2764	10	VT-26	10	9	3	VT-26	-	-	graph
 69	GGML_OP_TRI	1	2029	ggml_compute_forward_tri	ops.cpp:2292	16	standalone	16	16	3	standalone	-	-	graph
 70	GGML_OP_FILL	2	2033	ggml_compute_forward_fill	ops.cpp:2222	7	VT-23	167	12	2	VT-23,VT-86-compositions,VT-87-compositions,VT-89-compositions	-	-	graph
-71	GGML_OP_FLASH_ATTN_EXT	2	2041	ggml_compute_forward_flash_attn_ext	ops.cpp:9554	5775	VT-58,VT-63,VT-64/67/68-compositions,VT-66,VT-68,VT-78,VT-94,VT-95,VT-96,VT-97,standalone	5775	5773	59	VT-58,VT-63,VT-64/67/68-compositions,VT-66,VT-68,VT-78,VT-94,VT-95,VT-96,VT-97,standalone	-	-,verification/supplemental-scalar-score-vt185.json	attention
+71	GGML_OP_FLASH_ATTN_EXT	2	2041	ggml_compute_forward_flash_attn_ext	ops.cpp:9554	5775	VT-58,VT-63,VT-64/67/68-compositions,VT-66,VT-68,VT-78,VT-94,VT-95,VT-96,VT-97,standalone	5775	5773	59	VT-58,VT-63,VT-64/67/68-compositions,VT-66,VT-68,VT-78,VT-94,VT-95,VT-96,VT-97,standalone	-	-,verification/supplemental-scalar-score-vt185.json,verification/supplemental-mixed-attention-vt199.json	attention
 72	GGML_OP_FLASH_ATTN_BACK	1	2045	ggml_compute_forward_flash_attn_back	ops.cpp:9889	0	-	0	0	0	-	-	verification/ggml-flash-back-constructor.json	graph
 73	GGML_OP_SSM_CONV	1	2052	ggml_compute_forward_ssm_conv	ops.cpp:9963	75	VT-81	195	75	1	VT-81	-	-	graph
 74	GGML_OP_SSM_SCAN	1	2056	ggml_compute_forward_ssm_scan	ops.cpp:10203	17	VT-150	28	32	1	VT-150	-	-	attention
