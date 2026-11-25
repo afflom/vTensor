@@ -2,4 +2,4 @@
 xtask = "run --package xtask --"
 
 [registries.verdant]
-index = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/0d9f6bc8c44c6a6f1d3316195f30538687dd8059/v2.22.0/crates/index/"
+index = "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/12f1f91bc84d6960254ba97cfcb757e840ca9a2e/v2.22.3/crates/index/"

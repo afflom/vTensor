@@ -11,10 +11,11 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
 - [ ] Recover **1,970 non-Prism lines** (12,519 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
-- [ ] Switch to the Verdant release containing exact mixed-word equality. Version 2.22.2 includes the logarithm. [Equality patch](https://github.com/afflom/verdant-engine/pull/69) · [Released logarithm](https://github.com/afflom/verdant-engine/releases/tag/v2.22.2)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Adopt **Verdant 2.22.3** for exact mixed-word equality. All 116 resolved registry archives matched the release manifest. [VT-02 registry evidence](verification/verdant-versioned-registry.json)
 
 - [x] Complete all **5,366 surveyed reduction and comparison descriptors**. The final eight placements matched 104 original OpenVINO and GGML results, including cancellation in F16 and BF16. Another 16 graphs matched on empty, two-plane and four-dimensional inputs. [VT-210](verification/supplemental-small-sums-vt210.json)
 

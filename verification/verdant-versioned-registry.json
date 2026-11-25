@@ -130,5 +130,16 @@
       "verdant_signed64_conversion": "2.21.8",
       "verdant_wide_narrowing": "2.21.8"
     }
+  },
+  "published_v2_22_3": {
+    "release": "https://github.com/afflom/verdant-engine/releases/tag/v2.22.3",
+    "release_revision": "6349c7d9f6f803311803aa2a3df310dd0f0782eb",
+    "superseded_patch": "595cb612ebd80eaa1dbfd52fe52b64a54c50b5f7",
+    "registry": "sparse+https://raw.githubusercontent.com/afflom/verdant-engine/12f1f91bc84d6960254ba97cfcb757e840ca9a2e/v2.22.3/crates/index/",
+    "manifest_sha256": "8839e19a5678e74c64488e17bcb36ccc0db82ac4b40db44e90fe5357cd9f32a3",
+    "resolved_registry_archives": 116,
+    "verdant_archives": 111,
+    "git_packages": 0,
+    "checks": "VT-02 checked each installed upstream registry archive against the released size and checksum. The shared producer certificate and exact equality count passed VT-45 and VT-208."
   }
 }

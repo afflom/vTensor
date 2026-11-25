@@ -37,10 +37,10 @@ realized_by = []
 [[authority]]
 id = "VERDANT-ENGINE-TENSOR"
 name = "Verdant Engine tensor API"
-citation = "https://github.com/afflom/verdant-engine/tree/595cb612ebd80eaa1dbfd52fe52b64a54c50b5f7"
-checksum = "ceaf03574c47469d5e0e47c4837f7545a3bd96d3714ae86a4b916553f90890be"
-artifact = "model/verdant-development.json"
-statement = "The production Verdant API and certified upstream storage, logarithm and wide-word arithmetic kernels."
+citation = "https://github.com/afflom/verdant-engine/releases/tag/v2.22.3"
+checksum = "8839e19a5678e74c64488e17bcb36ccc0db82ac4b40db44e90fe5357cd9f32a3"
+artifact = "vendor/verdant-crates-manifest.json"
+statement = "The published Verdant tensor crate supplies the numerical API. The release manifest binds the resolved registry archives."
 realized_by = ["VT-02"]
 
 [[authority]]
