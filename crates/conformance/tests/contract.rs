@@ -95,6 +95,7 @@ ggml_batches! {
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
+    fn wide_equality_vt_208() { "wide-equality", 56, ["pointwise"] }
     fn stored_equality_vt_207() { "stored-equality", 132, ["pointwise"] }
     fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
@@ -1282,15 +1283,12 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "0a1df075764d57fc161191347c98d145a0fb7ca8f3b65f1ba408babffa709f4c",
+            "9423f5dd8bcb9a60a94f4e1e5925263c8b9fd72c0434bbda8b3618fcabaeafff",
         )
     });
 
     fn fixture_record(name: &str) -> serde_json::Value {
-        let digest = ORACLE_BINDINGS["fixture_digests"][name]
-            .as_str()
-            .expect("fixture digest");
-        frozen_json(name, digest)
+        frozen_json(name, binding(&["fixture_digests", name]))
     }
     pub(super) static NATIVE_FIXTURES: LazyLock<serde_json::Value> =
         LazyLock::new(|| fixture_record("native-fixture-baseline"));
@@ -2002,7 +2000,7 @@ int main(int argc, char **argv) {
     return true;
 };
 
-    const bool equality=!strcmp(argv[3],"stored-equality");
+    const bool equality=!strcmp(argv[3],"stored-equality") || !strcmp(argv[3],"wide-equality");
     auto fixture_graph=[&](graph_fixture &ctx,ggml_tensor *out,std::initializer_list<ggml_tensor *> sources,bool check_placement=false) -> ggml_cgraph * {
         auto graph=ctx.allocate(out,backend,check_placement);
         if (!graph || (!check_placement && !ggml_backend_supports_op(backend,out))) return nullptr;
@@ -3133,6 +3131,14 @@ CHECK(refuses_change(backend,dev,graph,result,result->data,(char *)input->data+b
           if(relative) CHECK(probe_fields("relative_position",graph,{result,input}));
           if(windowing) {CHECK(refuses_change(backend,dev,graph,result,result->op_params[operation?0:2],int32_t(0)));CHECK(refuses_change(backend,dev,graph,result,result->op_params[operation?0:2],int32_t(-1)));CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_F16));if(!operation)CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(0)));}
           if(unarying) {CHECK(refuses_change(backend,dev,graph,result,result->type,type==GGML_TYPE_F32?GGML_TYPE_F16:type==GGML_TYPE_F16?GGML_TYPE_BF16:GGML_TYPE_F16));if(result->op==GGML_OP_UNARY) {CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(GGML_UNARY_OP_COUNT)));CHECK(refuses_change(backend,dev,graph,result,result->op_params[0],int32_t(-1)));}}
+          auto count_retyped=[&](ggml_tensor *operand){
+            const auto saved=tensor_bytes(result);
+            const std::array<int32_t,2> frozen={0x3f800000,0x40000000};
+            for(auto t:{input,right})if(tensor_bytes(t).size()!=sizeof(frozen) || memcmp(t->data,frozen.data(),sizeof(frozen)))return false;
+            operand->type=GGML_TYPE_F32;recipe_state(1);
+            const bool ok=ggml_backend_dev_supports_op(dev,result) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS && tensor_bytes(result)==std::vector<uint8_t>(sizeof(int64_t),0);
+            operand->type=GGML_TYPE_I32;ggml_backend_tensor_set(result,saved.data(),0,saved.size());++converted_descriptors;return ok;
+          };
           if(wordwise) {
             if(result->op==GGML_OP_MEAN || result->op==GGML_OP_ARGMAX) {
               const auto saved=tensor_bytes(result);input->type=GGML_TYPE_I32;recipe_state(1);
@@ -3145,9 +3151,9 @@ CHECK(refuses_change(backend,dev,graph,result,result->data,(char *)input->data+b
               CHECK(ggml_backend_dev_supports_op(dev,result) && ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
               CHECK(compare_result(result,reference_out,saved,0));++converted_descriptors;
               input->type=type;ggml_backend_tensor_set(result,saved.data(),0,saved.size());
-            } else CHECK(refuses_change(backend,dev,graph,result,input->type,selecting && operation?GGML_TYPE_F32:GGML_TYPE_I32));
+            } else if(selecting && operation) {CHECK(count_retyped(input));} else CHECK(refuses_change(backend,dev,graph,result,input->type,GGML_TYPE_I32));
             CHECK(refuses_change(backend,dev,graph,result,result->type,selecting?GGML_TYPE_F32:GGML_TYPE_I32));CHECK(refuses_change(backend,dev,graph,result,input->data,nullptr,false));}
-          if(selecting) {CHECK(refuses_change(backend,dev,graph,result,input->ne[2],int64_t(3)));if(operation) {CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));CHECK(refuses_change(backend,dev,graph,result,right->type,GGML_TYPE_F32));}else {CHECK(refuses_change(backend,dev,graph,result,input->ne[3],int64_t(2)));CHECK(refuses_change(backend,dev,graph,result,input->ne[0],int64_t(INT32_MAX)+1));}}
+          if(selecting) {CHECK(refuses_change(backend,dev,graph,result,input->ne[2],int64_t(3)));if(operation) {CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));CHECK(count_retyped(right));}else {CHECK(refuses_change(backend,dev,graph,result,input->ne[3],int64_t(2)));CHECK(refuses_change(backend,dev,graph,result,input->ne[0],int64_t(INT32_MAX)+1));}}
           if (casting) {
             CHECK(refuses_change(backend,dev,graph,result,result->src[1],nullptr));
             auto before=tensor_bytes(result);

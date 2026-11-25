@@ -1,0 +1,37 @@
+{
+  "requirement": "VT-208",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "595cb612ebd80eaa1dbfd52fe52b64a54c50b5f7",
+  "provider_sha256": "13e110c4394edc406728e166753957ee0213ca73587f819b35893a4ff73717e8",
+  "pointwise_attestation": "59cbbc73ae910261f7ed56f2dc4f821d812c12de034b8b4c8b24d0c6575b4647",
+  "semantic_id": "7087d01a6fe8ba1b32392d1656c353b869cd8f293dd0d8dc1b42d14584fe20a0",
+  "oracle": "ggml-wide-equality-oracle.json",
+  "placements": "ggml-reduction-placements.json",
+  "prior_placements": 4530,
+  "new_placements": 824,
+  "placed": 5354,
+  "unplaced": 12,
+  "total_count_equal_placements": 5184,
+  "storage_pairs": 206,
+  "layouts_per_pair": 4,
+  "logical_element_pairs": 843776,
+  "additional_i32_control_graphs": 4,
+  "recurring_graphs": 56,
+  "full_oracle": {
+    "base": "ggml-stored-equality-full.tsv.gz",
+    "delta": "ggml-wide-equality-delta.tsv.gz",
+    "delta_sha256": "1643538ab0cd43501c494c84de3f15a3448fb190b23786eaded60dd4717eb8d4",
+    "description": "The base provides 33 narrow source encodings per side and their counts. Append the six new source records and 207 expected counts from the delta, including I32/I32. Each V record gives side, type and four 256-lane rows of logical storage. Each P record gives left type, right type and the expected I64 count."
+  },
+  "comparison": "The loaded provider matched the extended SoftFloat comparison and original GGML CPU tally, including adjacent I64 integers beyond exact binary64 precision, NaNs, signed zeros and subnormals. The 828 completed graphs preserved both padded input buffers.",
+  "prior_refusal_probes": "Under either input retyping, SoftFloat returns unequal for both frozen binary32 words 0x3f800000 and 0x40000000 compared with their raw signed integers. VT-30 replays each previously refused descriptor as a successful zero count.",
+  "negative_control": "Swapping the representation flags passed to the certified Verdant operation failed the frozen outputs. Restoring the flags passed.",
+  "stock_llama_perplexity": {
+    "fixture": "llama-perplexity-four-chunks.json",
+    "positions": 124,
+    "same_top_percent": 100,
+    "maximum_kld": 2.6e-05,
+    "log_sha256": "f3b9c6365ef54e601789dbfab9e95dd0b1cd9835aaa1f3dbfb4bb5380e8854f5"
+  },
+  "non_prism_lines": 12521
+}

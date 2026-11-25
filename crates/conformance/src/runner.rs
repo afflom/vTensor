@@ -1423,6 +1423,9 @@ fn word_value(operation: WordOperation, a: u64, b: u64) -> Result<u64, BackendEr
             let value = linear::signed_word_f32(word as i32)?;
             Some(convert(0, destination, u64::from(value.to_bits()))?)
         }
+        WordOperation::C13(left, right) => Some(u64::from(
+            linear::equal_numeric_words(left, right, a, b).map_err(BackendError::overflow)?,
+        )),
         WordOperation::C6 => return Err(InvalidTensor),
         WordOperation::C7(kind, source, destination) => {
             let input = decode_float(source, a)?;
@@ -1710,33 +1713,31 @@ fn execute_stored_reduction(tensor: &Tensor, plan: GraphPlan) -> Result<(), Back
     );
     tensor_fields!([Some(left), right] = tensor.inputs()?);
     let pair = right.is_some();
+    let (direct_left, direct_right) = match mode {
+        CopyMode::C52(lhs, rhs, ..) => (lhs != 0, rhs != 0),
+        _ => (false, false),
+    };
     let outer = GraphPlan::C4(rows, 4, source, target, CopyMode::C0);
     let inner = GraphPlan::C4(steps, 4, row.clone(), row, mode);
     let output = graph_tensor_data(tensor)?;
     let lanes = if rows == 0 { 0 } else { width };
-    let mut values = workspace(lanes, 0.0_f32)?;
-    let mut rhs = workspace(if pair { lanes } else { 0 }, 0.0_f32)?;
-    let pointers = [values.as_mut_ptr().cast(), rhs.as_mut_ptr().cast()];
-    let count = if pair { 1 } else { rows };
-    let mut results = workspace(count, (0_u64, [0_u8; 8]))?;
-    let mut staged = results.iter_mut();
-    let mut total = [0_u8; 8];
+    let mut values = workspace(if direct_left { 0 } else { lanes }, 0.0_f32)?;
+    let mut rhs = workspace(if pair && !direct_right { lanes } else { 0 }, 0.0_f32)?;
+    let mut results = workspace(if pair { 1 } else { rows }, (0_u64, [0_u8; 8]))?;
+    let mut row = 0;
     copy_steps(&outer, [0; 4], &mut [0; 3], |step, _| {
         tensor_fields!(GraphResponse::C1(false, from, to) = step);
-        left.decode(from, &mut values)?;
-        let word = if let Some(input) = &right {
-            input.decode(to, &mut rhs)?;
-            &mut total
+        let (offset, word) = results.get_mut(row).ok_or(InvalidTensor)?;
+        let a = left.reduction_row(from, direct_left, &mut values)?;
+        let b = if let Some(input) = &right {
+            input.reduction_row(to, direct_right, &mut rhs)?
         } else {
-            let (offset, word) = staged.next().ok_or(InvalidTensor)?;
             *offset = to;
-            word
+            row += 1;
+            ptr::null_mut()
         };
-        project_words(&inner, &pointers, word.as_mut_ptr())
+        project_words(&inner, &[a, b], word.as_mut_ptr())
     })?;
-    if pair {
-        results[0].1 = total;
-    }
     for (to, word) in results {
         let encoded = if pair { &word[..] } else { &word[..4] };
         // SAFETY: all inputs have been read and Prism bounds the scalar or per-row result.
@@ -2492,6 +2493,23 @@ mod attention {
 
         pub(super) fn blocks(&self, offset: u64, lanes: usize) -> Result<&[u8], BackendError> {
             self.region(offset, self.block_stride(lanes)?)
+        }
+
+        pub(super) fn reduction_row(
+            &self,
+            offset: u64,
+            direct: bool,
+            scratch: &mut [f32],
+        ) -> Result<*mut u8, BackendError> {
+            if direct {
+                Ok(self
+                    .region(offset, usize::from(self.ne[0] > 0))?
+                    .as_ptr()
+                    .cast_mut())
+            } else {
+                self.decode(offset, scratch)?;
+                Ok(scratch.as_mut_ptr().cast())
+            }
         }
 
         pub(super) fn decode(&self, offset: u64, out: &mut [f32]) -> Result<(), BackendError> {

@@ -908,3 +908,9 @@ Feature: native-backend
     Given original GGML row decoders and the Berkeley SoftFloat equality oracle
     When two independently padded tensors encode signed zeros, infinities, NaNs and repeated values
     Then COUNT_EQUAL matches the original GGML tally and preserves both input buffers
+
+  @VT-208 @build
+  Scenario: Count equal values without losing integer or binary64 precision
+    Given the pinned SoftFloat extended-precision equality and original GGML integer tally
+    When either tensor stores signed I32, signed I64 or binary64 on dense or padded rows
+    Then all 64-bit counts match the reference including adjacent integers above two to the fifty-third power

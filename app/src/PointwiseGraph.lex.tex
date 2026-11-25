@@ -169,7 +169,8 @@ inductive{
     {name: nearest, fields: [Bool, Nat, Nat]},
     {name: bilinear, fields: [Bool, Nat, Nat]},
     {name: bicubic, fields: [Bool, Nat, Nat]},
-    {name: antialias, fields: [Bool, Nat, Nat]}
+    {name: antialias, fields: [Bool, Nat, Nat]},
+    {name: wideEquality, fields: [Nat, Nat, Nat, Nat]}
   ]
 }
 
@@ -369,7 +370,8 @@ inductive{
     {name: signedTruncation, fields: []},
     {name: signedField, fields: [Nat, Nat, Nat]},
     {name: floatToSigned, fields: [Nat, Nat]},
-    {name: signedToFloat, fields: [Nat, Nat, Nat]}
+    {name: signedToFloat, fields: [Nat, Nat, Nat]},
+    {name: numericEquality, fields: [Bool, Bool]}
   ]
 }
 
@@ -950,6 +952,56 @@ definition{
 }
 
 definition{
+  name: equalityStorage,
+  parameters: [kind : Nat],
+  result: Nat,
+  body: (if ((26 <=? kind) && (kind <=? 28)) then kind else 0),
+  executable: true
+}
+
+definition{
+  name: equalityStride,
+  parameters: [operand : TensorDescriptor],
+  result: Nat,
+  body: (if ((equalityStorage (project operand ty)) =? 0) then 4 else (project operand s0)),
+  executable: true
+}
+
+definition{
+  name: signedEqualityOperand,
+  parameters: [kind : Nat],
+  result: Bool,
+  body: ((kind =? 26) || (kind =? 27)),
+  executable: true
+}
+
+definition{
+  name: equalityOperandStep,
+  parameters: [slot : Nat, lane : Nat, kind : Nat, stride : Nat],
+  result: GraphResponse,
+  body: (let prepare : WordOperation := (if (kind =? 0) then (ctor WordOperation.wide 1) else (if (kind =? 26) then (ctor WordOperation.signedField 2147483648 18446744069414584320 18446744073709551615) else (ctor WordOperation.encoded 3)));
+    (ctor GraphResponse.instruction prepare (ctor WordOperand.source slot (prim multiply lane stride : Nat)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch (slot + 1)) (if ((kind =? 27) || (kind =? 28)) then 8 else 4) 8)),
+  executable: true
+}
+
+definition{
+  name: wideEqualityInstruction,
+  parameters: [index : Nat, source : IndexContext, left : Nat, right : Nat, leftStride : Nat, rightStride : Nat],
+  result: GraphResponse,
+  body: (let width : Nat := (project source u0);
+    (if (index =? 0) then (equalRowInstruction 0 source) else
+     (if (index =? (1 + (prim multiply 4 width : Nat))) then (equalRowInstruction (1 + (prim multiply 3 width : Nat)) source) else
+      (let step : Nat := (prim subtract index 1 : Nat);
+       (let lane : Nat := (prim quotient step 4 0 : Nat);
+        (let phase : Nat := (prim remainder step 4 0 : Nat);
+         (if (phase =? 0) then (equalityOperandStep 0 lane left leftStride) else
+          (if (phase =? 1) then (equalityOperandStep 1 lane right rightStride) else
+           (if (phase =? 2) then (ctor GraphResponse.instruction (ctor WordOperation.numericEquality (signedEqualityOperand left) (signedEqualityOperand right)) (ctor WordOperand.scratch 1) (ctor WordOperand.scratch 2) (ctor WordTarget.scratch 1) 8 8)
+             else (ctor GraphResponse.instruction (ctor WordOperation.encoded 2) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 0) 8 8)))))))))),
+  executable: true
+}
+
+definition{
   name: reducedOffsets,
   parameters: [
     index : Nat,
@@ -1006,12 +1058,12 @@ definition{
 
 
 definition{
-  name: losslessBinary32Storage,
+  name: knownEqualityStorage,
   parameters: [storage : Nat],
   result: Bool,
   body: (match (TensorTypes::tensorTypeStorage storage)
     | TensorTypes::TypeStorageDecision.unknownType => false
-    | TensorTypes::TypeStorageDecision.knownType spec => (if ((26 <=? storage) && (storage <=? 28)) then false else true)),
+    | TensorTypes::TypeStorageDecision.knownType spec => true),
   executable: true
 }
 
@@ -1024,13 +1076,17 @@ definition{
     | Option.some other =>
       (let integers : Bool := (((project left ty) =? 26) && ((project other ty) =? 26));
       (let elements : Nat := (sourceElements (indexContext left 1));
-      (if (((project output ty) =? 27) && (integers || ((losslessBinary32Storage (project left ty)) && (losslessBinary32Storage (project other ty))))) then
+      (if (((project output ty) =? 27) && ((knownEqualityStorage (project left ty)) && (knownEqualityStorage (project other ty)))) then
         (if ((((((sameShape left other) && ((project output n0) =? 1)) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) && (elements <? 9223372036854775808)) then
           (if integers then (ctor PointwiseDecision.copyBlocks (2 + (prim multiply elements 2 : Nat)) 8 (indexContext left 1) (indexContext output 1) (ctor CopyMode.counted elements (indexContext other 1)))
            else (let width : Nat := (project left n0);
             (let rows : Nat := (prim multiply (project left n1) (prim multiply (project left n2) (project left n3) : Nat) : Nat);
-             (ctor PointwiseDecision.storedEquality rows width (indexContext left width) (indexContext other width)
-               (2 + (prim multiply 3 width : Nat)) (indexContext (canonicalUnaryRow width) 1) (ctor CopyMode.reduced 18 0)))))
+             (let lhs : Nat := (equalityStorage (project left ty));
+              (let rhs : Nat := (equalityStorage (project other ty));
+               (let wide : Bool := ((0 <? lhs) || (0 <? rhs));
+                (ctor PointwiseDecision.storedEquality rows width (indexContext left width) (indexContext other width)
+                  (2 + (prim multiply (if wide then 4 else 3) width : Nat)) (indexContext (canonicalUnaryRow width) 1)
+                  (if wide then (ctor CopyMode.wideEquality lhs rhs (equalityStride left) (equalityStride other)) else (ctor CopyMode.reduced 18 0)))))))))
          else (ctor PointwiseDecision.invalidShape))
        else (ctor PointwiseDecision.unsupported))))),
   executable: true
@@ -2534,6 +2590,7 @@ definition{
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.converted storage storage (blockOffset index source) (blockOffset index destination))
     | CopyMode.unaryWord kind sourceType destinationType => (if (kind =? 23) then (exponentialDifferenceStep index source destination sourceType destinationType) else (ctor GraphResponse.converted sourceType destinationType (blockOffset index source) (blockOffset index destination)))
     | CopyMode.scanned => (scannedOffsets index source destination)
+    | CopyMode.wideEquality lhs rhs lstride rstride => (wideEqualityInstruction index source lhs rhs lstride rstride)
     | CopyMode.reduced operation storage => (reducedOffsets index source destination operation storage)
     | CopyMode.argmaxRow => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | CopyMode.counted elements right => (countEqualOffsets index source right elements)
@@ -3107,6 +3164,7 @@ definition{
     | CopyMode.transformed kind storage a b => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.unaryWord kind sourceType destinationType => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.scanned => (ctor GraphResponse.bindings 1 0 0 false 3)
+    | CopyMode.wideEquality lhs rhs lstride rstride => (ctor GraphResponse.bindings 3 0 0 false 3)
     | CopyMode.reduced operation storage => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.argmaxRow => (ctor GraphResponse.bindings 1 0 0 false 3)
     | CopyMode.counted elements right => (ctor GraphResponse.bindings 3 0 0 false 3)
@@ -3167,6 +3225,7 @@ definition{
     | CopyMode.transformed kind storage a b => 0
     | CopyMode.unaryWord kind sourceType destinationType => 0
     | CopyMode.scanned => 0
+    | CopyMode.wideEquality lhs rhs lstride rstride => 0
     | CopyMode.reduced operation storage => storage
     | CopyMode.argmaxRow => 0
     | CopyMode.counted elements right => 0
@@ -3281,6 +3340,7 @@ definition{
     | CopyMode.transformed kind storage a b => (ctor WordOperation.transformed kind storage a b)
     | CopyMode.unaryWord kind sourceType destinationType => (if (13 <=? kind) then (ctor WordOperation.elementary kind sourceStorage destinationStorage) else (ctor WordOperation.unary sourceStorage destinationStorage true))
     | CopyMode.scanned => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.wideEquality lhs rhs lstride rstride => (ctor WordOperation.invalid)
     | CopyMode.reduced operation storage => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.argmaxRow => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.counted elements right => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -3341,6 +3401,7 @@ definition{
     | CopyMode.transformed kind storage a b => 0
     | CopyMode.unaryWord kind sourceType destinationType => kind
     | CopyMode.scanned => 0
+    | CopyMode.wideEquality lhs rhs lstride rstride => 0
     | CopyMode.reduced operation storage => 0
     | CopyMode.argmaxRow => 0
     | CopyMode.counted elements right => 0
@@ -3774,6 +3835,7 @@ definition{
         (typedWord (ctor WordOperation.elementary (if (kind =? 18) then 27 else 28) 0 0) 0 0 0 (blockOffset index source) 2 0 3 (blockOffset index destination))
       else (copyOffsets index source destination mode))
     | CopyMode.scanned => (copyOffsets index source destination mode)
+    | CopyMode.wideEquality lhs rhs lstride rstride => (copyOffsets index source destination mode)
     | CopyMode.reduced operation storage => (copyOffsets index source destination mode)
     | CopyMode.argmaxRow => (argmaxOffsets index source destination flag)
     | CopyMode.counted elements right => (copyOffsets index source destination mode)
@@ -5383,6 +5445,20 @@ theorem{
   name: equalityFinishesAnEmptyRowWithItsStartingCount,
   parameters: [],
   statement: (let source : IndexContext := (indexContext (canonicalUnaryRow 0) 1); ((equalRowInstruction 1 source) = (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output 0) 8 8))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: wideEqualityReadsIndependentStrides,
+  parameters: [],
+  statement: (let row : IndexContext := (indexContext (canonicalUnaryRow 2) 1); ((wideEqualityInstruction 6 row 26 28 12 24) = (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.source 1 24) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 2) 8 8))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: wideEqualityKeepsIntegerPrecision,
+  parameters: [],
+  statement: (let row : IndexContext := (indexContext (canonicalUnaryRow 1) 1); ((wideEqualityInstruction 3 row 27 28 8 8) = (ctor GraphResponse.instruction (ctor WordOperation.numericEquality true false) (ctor WordOperand.scratch 1) (ctor WordOperand.scratch 2) (ctor WordTarget.scratch 1) 8 8))),
   proof: reflexivity{}
 }
 

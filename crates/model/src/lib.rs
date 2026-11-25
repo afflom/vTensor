@@ -17,6 +17,7 @@ pub mod registry;
 
 pub use registry::{Authorities, AuthorityRow, Claim, DeclaredFailure, IdRow, Ids, Ledger, Level};
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 /// Everything `model/*.toml` says, parsed and cross-checked.
@@ -74,9 +75,7 @@ impl Model {
     /// authority that exists (`CM-01` .. `CM-03`, R2).
     pub fn check(&self) -> Result<(), ModelError> {
         self.ledger.check()?;
-        self.check_ids()?;
-        self.check_authorities()?;
-        Ok(())
+        self.check_authorities(&self.check_ids()?)
     }
 
     /// `CM-02`: every registered ID is well formed.
@@ -86,37 +85,32 @@ impl Model {
     /// `some-true` --- belong to the repository that has those classes, and they
     /// belong to the repository that has those classes. A repository adding one adds
     /// its rule here, in the same commit that adds the first ID in it.
-    fn check_ids(&self) -> Result<(), ModelError> {
-        let bad = |m: String| ModelError::Inconsistent(m);
-        let mut seen = std::collections::BTreeSet::new();
+    fn check_ids(&self) -> Result<BTreeSet<&String>, ModelError> {
+        let mut seen = BTreeSet::new();
         for row in &self.ids.id {
-            if !seen.insert(&row.id) {
-                return Err(bad(format!("{}: registered twice", row.id)));
-            }
-
-            if row.statement.trim().is_empty() {
-                return Err(bad(format!(
-                    "{}: an untagged claim does not ship (R2)",
-                    row.id
-                )));
-            }
-            if row.suite.trim().is_empty() {
-                return Err(bad(format!(
-                    "{}: every ID names the Gherkin suite its scenario lives in (R3)",
-                    row.id
-                )));
-            }
+            let id = &row.id;
+            let error = if !seen.insert(id) {
+                "registered twice"
+            } else if row.statement.trim().is_empty() {
+                "an untagged claim does not ship (R2)"
+            } else if row.suite.trim().is_empty() {
+                "every ID names the Gherkin suite its scenario lives in (R3)"
+            } else {
+                continue;
+            };
+            return Err(ModelError::Inconsistent(format!("{id}: {error}")));
         }
         // The declared failure types are part of the register, so a malformed
         // declaration is a malformed register (R5).
         self.ids.declared_failures()?;
-        Ok(())
+        Ok(seen)
     }
 
     /// `CM-03`: every `some-true` claim has a row in `model/authorities.toml`
     /// with a citation, and every authority names IDs that exist.
-    fn check_authorities(&self) -> Result<(), ModelError> {
-        let bad = |m: String| ModelError::Inconsistent(m);
+    fn check_authorities(&self, registered: &BTreeSet<&String>) -> Result<(), ModelError> {
+        let authorities: BTreeSet<_> = self.authorities.authority.iter().map(|a| &a.id).collect();
+        let bad = ModelError::Inconsistent;
         for a in &self.authorities.authority {
             if a.citation.trim().is_empty() {
                 return Err(bad(format!("{}: an authority with no citation", a.id)));
@@ -164,27 +158,21 @@ impl Model {
                 )));
             }
             for id in &a.realized_by {
-                if self.ids.get(id).is_none() {
+                if !registered.contains(id) {
                     return Err(bad(format!("{}: realized_by names unknown ID {id}", a.id)));
                 }
             }
         }
         // Every some-true claim in the ledger names a known authority.
-        for c in &self.ledger.claim {
-            if c.level != Level::SomeTrue {
-                continue;
-            }
-            let Some(name) = &c.authority else {
-                return Err(bad(format!(
-                    "{}: a some-true claim must name an authority",
-                    c.id
-                )));
-            };
-            if !self.authorities.authority.iter().any(|a| &a.id == name) {
-                return Err(bad(format!(
-                    "{}: cites {name}, which has no row in model/authorities.toml (CM-03)",
-                    c.id
-                )));
+        for claim in &self.ledger.claim {
+            // Ledger::check enforces which claim levels can supply an authority.
+            if let Some(name) = &claim.authority {
+                if !authorities.contains(name) {
+                    return Err(bad(format!(
+                        "{}: cites {name}, which has no row in model/authorities.toml (CM-03)",
+                        claim.id
+                    )));
+                }
             }
         }
         Ok(())
@@ -225,21 +213,13 @@ mod tests {
     /// CM-02: every registered ID is unique and well formed.
     #[test]
     fn the_id_register_is_well_formed_cm_02() {
-        eprintln!(
-            "CM-02: {} registered IDs, each unique and tagged",
-            MODEL.ids.id.len()
-        );
+        std::sync::LazyLock::force(&MODEL);
     }
 
     /// CM-03: every `some-true` claim cites an authority that exists.
     #[test]
     fn every_some_true_claim_cites_an_authority_cm_03() {
-        let listed = |id: &String| MODEL.authorities.authority.iter().any(|row| &row.id == id);
-        for claim in &MODEL.ledger.claim {
-            if claim.level == Level::SomeTrue {
-                assert!(claim.authority.as_ref().is_some_and(listed), "{}", claim.id);
-            }
-        }
+        std::sync::LazyLock::force(&MODEL);
     }
 
     /// Prose with its comment markers removed and its lines joined.
@@ -251,7 +231,6 @@ mod tests {
                     .iter()
                     .find_map(|m| line.strip_prefix(m))
                     .unwrap_or(line)
-                    .trim()
             })
             .flat_map(str::split_whitespace)
             .collect::<Vec<_>>()
@@ -266,22 +245,18 @@ mod tests {
     fn the_authority_rule_is_one_rule() {
         let rule = words(registry::AUTHORITY_RULE, &[]);
         let root = repo_root();
-        let doc = words(include_str!("registry.rs"), &["///"]);
-        assert!(
-            doc.contains(&rule),
-            "the doc comment of `AuthorityRow` must state AUTHORITY_RULE"
-        );
-        let header = std::fs::read_to_string(root.join("model/authorities.toml"))
-            .expect("authorities.toml reads");
-        assert!(
-            words(&header, &["# ", "#"]).contains(&rule),
-            "the header of model/authorities.toml must state AUTHORITY_RULE"
-        );
+        let header = std::fs::read_to_string(root.join("model/authorities.toml")).unwrap();
         let generated = codegen::render_conformance(&MODEL);
-        assert!(
-            words(&generated, &[]).contains(&rule),
-            "CONFORMANCE.md is generated from AUTHORITY_RULE"
-        );
+        for (source, text, markers) in [
+            ("AuthorityRow", include_str!("registry.rs"), &["///"][..]),
+            ("model/authorities.toml", header.as_str(), &["#"][..]),
+            ("CONFORMANCE.md", generated.as_str(), &[][..]),
+        ] {
+            assert!(
+                words(text, markers).contains(&rule),
+                "{source} must state AUTHORITY_RULE"
+            );
+        }
     }
 }
 

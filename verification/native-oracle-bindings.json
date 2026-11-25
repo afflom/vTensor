@@ -482,6 +482,7 @@
     "ggml-index-fixtures-row-gradient-bf16-oracle": "b8fc54b4dacbe2e36297cde64386908a7ad57360cfa9b3d4e4d2a6093e2cbe2d",
     "ggml-stored-transforms-oracle": "8d13300443334ee583a077ff1198f8077bdfd5031a8a02cd22f7542d79c3506d",
     "ggml-packed-log-oracle": "9f9503f322a0955d65a1d0208c51fc4c69ee51da07119dab69333412de3858d0",
+    "ggml-wide-equality-oracle": "f04f162fe00271280b1eb77c8c37e9cf6c96653cc7c7b93d90415da69165d4ad",
     "ggml-stored-equality-oracle": "9981c81295e10c10f611b9dc16e4b92b435d63eda5b729c85c769cdc6279af68",
     "ggml-signed-sums-oracle": "477dafc506d93aa644d5ff4bd43378519b55fa9b505cfda94dc30b571a816314",
     "ggml-stored-reductions-oracle": "b02abeea20d6971a5e8adb36cc6e8a2a620cee3340e8818d0fa025ebea50d533"
@@ -600,15 +601,15 @@
     ]
   ],
   "verdant_quotient": {
-    "archive_sha256": "d7006e52d2af284c399728da89ab9985ebc1716740d6ee64b93e47bbe068545b",
+    "archive_sha256": "1da735061b7d2e986d9e2672739d9d5880f9bda42a710804b791cad86eac31e3",
     "sdk": "ghcr.io/uor-foundation/lexlean@sha256:d391bfedd4eb97dc25c218628f94cd081436589c348797ebf13c47ab13d4ef30",
     "sha256": {
-      "app/quotient-production.json": "01d6f0bab6c57163d6ecc278e684a23785127c87f625609fb19fc3022cee132a",
+      "app/quotient-production.json": "5e05ec23fe2f481b78040aac6226f08c5326812c8df794aa0a7c98dccfcaa9b5",
       "app/quotient.lexlean.lock": "91b05fa3ecc99029c966faa54ea7210d62319b6f99892f2b874190a1db6b47b5",
-      "generated/tensor-quotient/result.json": "82f095fc844ef9133a54057731a9f60a1f6b3b259dde364a326d38907f1709e6",
-      "quotient-kernel.lock": "894e9adef6a3022029eb98800c6381373fd750da760750bff9981ebee4956fe3"
+      "generated/tensor-quotient/result.json": "1f64100b581388dd6e6872fe79f132a6b16d628b53e92097be054f8768f90eba",
+      "quotient-kernel.lock": "abf170b103334dcf58f1e8a7a56a8c364c98a7a7f81a5c3a4f960cc8c15b3702"
     },
-    "upstream_revision": "69e23221ccbb85e4178ce883589a07f1fc066eeb",
+    "upstream_revision": "595cb612ebd80eaa1dbfd52fe52b64a54c50b5f7",
     "projects": {
       "quotient": "tensor-quotient"
     }
@@ -720,6 +721,7 @@
     "row-gradient-bf16": "ggml-index-fixtures-row-gradient-bf16",
     "stored-transforms": "ggml-stored-transforms",
     "packed-log": "ggml-packed-log",
+    "wide-equality": "ggml-wide-equality",
     "stored-equality": "ggml-stored-equality",
     "signed-sums": "ggml-signed-sums",
     "stored-reductions": "ggml-stored-reductions"

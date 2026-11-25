@@ -6,15 +6,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Place and oracle-check the remaining 432 packed nonlinear unary descriptors. [Unary placements](verification/ggml-unary-provider-placements.json)
 - [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining nine measured packed nonlinear pairs (36 layouts) above the GGML error limit. [Packed outputs](verification/unary-quantization-boundaries.json) · [CPU arithmetic before encoding](verification/packed-unary-scalar-boundaries.json)
-- [ ] Place and oracle-check 836 remaining reduction and comparison descriptors (4 SUM, 8 SUM_ROWS and 824 COUNT_EQUAL). [Reduction survey](verification/ggml-reduction-placements.json)
+- [ ] Place and oracle-check 12 remaining reduction descriptors (4 SUM and 8 SUM_ROWS). [Reduction survey](verification/ggml-reduction-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
-- [ ] Recover **1,974 non-Prism lines** (12,523 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
-- [ ] Adopt the Verdant release containing the reference logarithm. v2.22.1 released the Q8 decoding and wide-word arithmetic. [Merged arithmetic](https://github.com/afflom/verdant-engine/commit/7167ed29e80ed0297a593eef01fc403249a0a674) · [Logarithm patch](https://github.com/afflom/verdant-engine/pull/68)
+- [ ] Recover **1,972 non-Prism lines** (12,521 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Switch to the Verdant release containing exact mixed-word equality. The logarithm has merged upstream. [Equality patch](https://github.com/afflom/verdant-engine/pull/69) · [Merged logarithm](https://github.com/afflom/verdant-engine/pull/68)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Complete **COUNT_EQUAL** placement across all 5,184 surveyed descriptors. The final 824 matched exact SoftFloat and GGML counts, including adjacent integers above 2⁵³. [VT-208](verification/supplemental-wide-equality-vt208.json)
 
 - [x] Place mixed-storage **COUNT_EQUAL** across 33 types and four layouts. All 4,356 graphs matched the imported oracle across 4,460,544 element pairs. Keep 132 graphs in the recurring suite. [VT-207](verification/supplemental-stored-equality-vt207.json)
 

@@ -1314,3 +1314,9 @@ id = "VT-207"
 level = "build"
 suite = "native-backend"
 statement = "COUNT_EQUAL compares independently stored tensors with lossless binary32 operands and counts equal lanes using the imported GGML and SoftFloat oracles"
+
+[[id]]
+id = "VT-208"
+level = "build"
+suite = "native-backend"
+statement = "COUNT_EQUAL preserves signed integer and binary64 precision across mixed GGML storage and independent row layouts"
