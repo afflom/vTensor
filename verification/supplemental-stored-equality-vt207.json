@@ -26,5 +26,7 @@
     "maximum_kld": 2.6e-05,
     "log_sha256": "49c995cb468d105db37cca1028bdb2ff3fb987ccc5dbf29684bf6e441c7ded98"
   },
-  "non_prism_lines": 12523
+  "non_prism_lines": 12523,
+  "full_table": "ggml-stored-equality-full.tsv.gz",
+  "full_archive_sha256": "02d6276a098e6aa89f6cdb655092a0c0deb420536fd5e0f50cbe9b15e27b8147"
 }

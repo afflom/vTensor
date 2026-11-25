@@ -23,7 +23,5 @@
   "cross_check": "SoftFloat extF80M_eq, after exact operand widening, reproduced every binary32 result.",
   "full_table_sha256": "43d736c39b82f7d9b48f6bc4797e447177eaa4c518b395c555568d0567716f22",
   "full_graphs": 4356,
-  "recurring": "Pair the ordered 33 types in a cycle. Each input type occurs on both sides in all four layout combinations. The full sweep uses all 1,089 pairs.",
-  "full_table": "ggml-stored-equality-full.tsv.gz",
-  "full_archive_sha256": "02d6276a098e6aa89f6cdb655092a0c0deb420536fd5e0f50cbe9b15e27b8147"
+  "recurring": "Pair the ordered 33 types in a cycle. Each input type occurs on both sides in all four layout combinations. The full sweep uses all 1,089 pairs."
 }
