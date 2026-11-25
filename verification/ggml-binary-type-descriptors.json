@@ -5,17 +5,17 @@
   "casts": 37584,
   "direct_cpu_descriptors_placed": 709,
   "composed_codebook_descriptors_placed": 189,
-  "all_provider_placements": 40936,
+  "all_provider_placements": 46512,
   "compared_scalar_graphs": 48,
   "compared_scalar_words": 24576,
   "reused_packed_results": 661,
-  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results and VT-179 for half and bfloat inputs with packed outputs. VT-180 compares the newly placed packed binary forms to original GGML row decoding, F32 graphs and row encoding. VT-181 checks each newly placed mixed cast graph against original decoded F32 arithmetic and destination storage. VT-182 checks each newly placed scalar binary graph against original decoded F32 arithmetic and destination storage. VT-184 compares signed integer and binary64 destinations against original GGML storage and Berkeley SoftFloat. VT-187 checks signed integer and binary64 right operands against original GGML and SoftFloat. Unclassified denotes no identified direct or composed oracle in this survey.",
+  "probe": "Create equal-shaped [256,2] GGML tensors for all 36 live types and all nine public ADD, SUB, MUL, DIV and ADD_CAST constructors allowed by their source guards. Query both devices before allocation and inspect each admitted node after a sole-provider scheduler split. Execute the 48 scalar and E4M3 graphs on both backends with finite nonzero divisors, restore the inputs before in-place runs and poison copied outputs. Reuse VT-169 for the direct packed results and VT-176 for composed codebook results and VT-179 for half and bfloat inputs with packed outputs. VT-180 compares the newly placed packed binary forms to original GGML row decoding, F32 graphs and row encoding. VT-181 checks each newly placed mixed cast graph against original decoded F32 arithmetic and destination storage. VT-182 checks each newly placed scalar binary graph against original decoded F32 arithmetic and destination storage. VT-184 compares signed integer and binary64 destinations against original GGML storage and Berkeley SoftFloat. VT-187 checks signed integer and binary64 right operands against original GGML and SoftFloat. VT-188 replays both activation formats using original GGML lane values and destination encoders. Unclassified denotes no identified direct or composed oracle in this survey.",
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "e336d112ee0d5fe6385d6970eca26ff42e214186152ee4e143401783bd2b6134",
+  "provider_sha256": "63cc725932a5f2406a5f4a2dabb84f8c81ec9ed14be5306429eceeb8d41a6f20",
   "cpu_plugin_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "table": "ggml-binary-type-descriptors.tsv.gz",
-  "table_sha256": "07e0f93bfe8d32cab670b8eefad04565adb9990dae830f14634d4b898910eb7e",
-  "uncompressed_sha256": "b865c47465c4ada59f41cbf8773b7084a15795da077aa97f476e9a318b63f1b0",
+  "table_sha256": "4df5f6dab222574df4291927c98fd3b68f98d4799966137635f1ac1814120f8a",
+  "uncompressed_sha256": "2391f077a7480d5d8fc822228a39937bc3670c44ba0f87df4dee5458ae7e531b",
   "constructor_source_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
   "composed_half_input_descriptors_placed": 54,
@@ -39,5 +39,21 @@
     "constructor_legal_add_cast_left_types": 27,
     "all_destination_types": 36,
     "add_cast_descriptors_placed": 33048
+  },
+  "composed_q8_activation_descriptors_placed": 5576,
+  "verified_activation_domain": {
+    "floating_or_packed_left_types": 31,
+    "right_operand_types": 36,
+    "normal_and_in_place_descriptors_placed": 8928,
+    "constructor_legal_add_cast_left_types": 29,
+    "all_destination_types": 36,
+    "add_cast_descriptors_placed": 37584,
+    "remaining_by_left_type": {
+      "i8": 288,
+      "i16": 288,
+      "i32": 288,
+      "i64": 288,
+      "f64": 288
+    }
   }
 }

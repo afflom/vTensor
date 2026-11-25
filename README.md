@@ -15,7 +15,7 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 
 At llama.cpp `9a080f44`, vTensor passes all 27,755 GGML factory cases. The stock scheduler assigns all 86,647 factory nodes to vTensor when it is the sole provider. The checklist tracks legal variants outside the factory and final release acceptance. [Factory verdicts](verification/ggml-factory-inventory.json) · [Scheduler evidence](verification/shared-host-storage-vt156.json) · [Provider burndown](BURNDOWN.md)
 
-Cargo pins Verdant v2.22.0 from its immutable release index. VT-02 verifies the numerical dependencies against the upstream manifest and certified output. [Published release](https://github.com/afflom/verdant-engine/releases/tag/v2.22.0) · [Registry pin](model/verdant-development.json)
+Cargo pins Verdant at `00d8893ff2a4` for certified Q8 activation reads pending an upstream release. VT-02 verifies the resolved packages and quotient output. [Upstream patch](https://github.com/afflom/verdant-engine/pull/65) · [Dependency record](model/verdant-development.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940
@@ -308,7 +308,7 @@ Full acceptance remains open.
 The normative repository gate is `just vv`, run using the SDK image pinned in
 [`prismpm.lock`](prismpm.lock). Focused checks include:
 
-Cargo resolves the published crates from the pinned Verdant registry. Use `just verdant-prepare` to prefetch
+Cargo resolves the Q8 decoder patch from the upstream commit in the dependency record. Use `just verdant-prepare` to prefetch
 locked dependencies for offline work.
 
 ```sh
@@ -320,7 +320,7 @@ The machine-readable oracle pin is
 [`vendor/llama.cpp-oracle/upstream.toml`](vendor/llama.cpp-oracle/upstream.toml).
 The source snapshot retains llama.cpp's MIT license.
 
-The workspace manifest pins the exact Verdant release. The release supplies the uor-matmul crates from the same registry.
+The workspace manifest pins the upstream Verdant patch. Cargo.lock also fixes its transitive uor-matmul revision.
 
 ## Historical typed unary checkpoint
 

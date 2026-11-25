@@ -788,3 +788,9 @@ Feature: native-backend
     Given a floating or packed left operand and a signed or binary64 right operand
     When the scheduler places ordinary, in-place and ADD_CAST graphs
     Then every stored row matches the original GGML and SoftFloat conversion and arithmetic oracles
+
+  @VT-188 @build
+  Scenario: Q8 activation rows participate in binary arithmetic and explicit result casts
+    Given signed scaled Q8 activation blocks in the left or right operand
+    When the scheduler places ordinary, in-place and ADD_CAST graphs
+    Then all encoded rows match the original GGML arithmetic, dot, decoder and destination oracles

@@ -536,7 +536,7 @@ definition{
   name: rowSourceStorage,
   parameters: [source : Nat, destination : Nat],
   result: Bool,
-  body: (if (packedTarget source) then (if ((source =? 9) || (source =? 15)) then false else true)
+  body: (if (packedTarget source) then true
     else (((source =? destination) && (0 <? (binaryWordBytes source))) || (((bytes source) =? 2) && ((packedTarget destination) || (rowScalarOutput destination))))),
   executable: true
 }
@@ -547,7 +547,7 @@ definition{
   result: Bool,
   body: (let ty : Nat := (project rhs ty);
     (if ((left =? output) || ((kind =? 0) && (((ty =? 0) || (packedTarget output)) || (rowScalarOutput output)))) then
-      ((((rowScalarOutput ty) || ((packedTarget ty) && (if ((ty =? 9) || (ty =? 15)) then false else true))) &&
+      ((((rowScalarOutput ty) || (packedTarget ty)) &&
         ((project rhs s0) =? (rowResultWidth ty))) && ((prim remainder (project rhs n0) (storeBlockLanes ty) 1 : Nat) =? 0))
       else false)),
   executable: true

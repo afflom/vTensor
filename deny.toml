@@ -36,6 +36,7 @@ deny = []
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+allow-git = ["https://github.com/afflom/verdant-engine", "https://github.com/UOR-Foundation/uor-matmul"]
 allow-registry = ["https://github.com/rust-lang/crates.io-index", "https://raw.githubusercontent.com/afflom/verdant-engine/0d9f6bc8c44c6a6f1d3316195f30538687dd8059/v2.22.0/crates/index/"]
 
 # The certified renderer omits package licensing metadata. The repository
@@ -255,9 +256,9 @@ license-files = [{ path = "src/lib.rs", hash = 0x6bb35d53 }]
 
 [[licenses.clarify]]
 name = "verdant_storage_block"
-version = "=2.9.0"
+version = "=2.10.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0xf77d0560 }]
+license-files = [{ path = "src/lib.rs", hash = 0xef4b926f }]
 
 [[licenses.clarify]]
 name = "vtensor_arithmetic"
@@ -370,7 +371,7 @@ license-files = [{ path = "src/lib.rs", hash = 0xc85b0788 }]
 name = "vtensor_typed"
 version = "=0.1.0"
 expression = "MIT OR Apache-2.0"
-license-files = [{ path = "src/lib.rs", hash = 0x77782e98 }]
+license-files = [{ path = "src/lib.rs", hash = 0xa015f4fc }]
 
 [[licenses.clarify]]
 name = "vtensor_typedfixtures"

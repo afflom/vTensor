@@ -275,6 +275,7 @@ model does not sanction.
 | `VT-185` | `build` | Scalar flash attention rounds each product to binary32 and accumulates in binary64 order |
 | `VT-186` | `build` | Scalar matrix and expert products follow GGML multiplication and accumulation rounding |
 | `VT-187` | `build` | Signed and binary64 right operands participate in decoded GGML row arithmetic |
+| `VT-188` | `build` | Q8 activation rows participate in binary arithmetic and explicit result casts |
 
 ## normalization-graphs
 
@@ -398,7 +399,7 @@ An authority is cited, never re-derived, and never gated on: what it states is n
 | Authority | Citation | Evidence here |
 | --- | --- | --- |
 | `LLAMA-CPP-GGML-BACKEND` | https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5 | -- |
-| `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/releases/tag/v2.22.0 | `VT-02` |
+| `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/tree/00d8893ff2a443b91171421ef2df5aa4876a78b8 | `VT-02` |
 | `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
 | `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161`, `VT-164`, `VT-165`, `VT-166` |
 | `LEAN-SIGNED-MACHINE-INTEGERS` | https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/Init/Data/SInt/Basic.lean | `VT-163` |

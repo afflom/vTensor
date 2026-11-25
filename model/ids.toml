@@ -1194,3 +1194,9 @@ id = "VT-187"
 level = "build"
 suite = "native-backend"
 statement = "Signed and binary64 right operands participate in decoded GGML row arithmetic"
+
+[[id]]
+id = "VT-188"
+level = "build"
+suite = "native-backend"
+statement = "Q8 activation rows participate in binary arithmetic and explicit result casts"

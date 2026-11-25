@@ -5,14 +5,17 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 ## Remaining work
 
 - [ ] Match the pinned generic GGML F32 SwiGLU vector arithmetic and rerun stock llama-perplexity. Restoring only its original SwiGLU outputs in a diagnostic replay reduced mean KL divergence from 0.000179 to the CPU self-replay value of −0.000002. [Four-chunk replay](verification/llama-perplexity-four-chunks.json)
-- [ ] Cover the remaining 7,016 binary descriptors. Verify the 2,408 with a floating or packed left operand and a Q8 activation right operand, then the 4,608 with signed, F64 or Q8 activation left operands. [Descriptor map](verification/ggml-binary-type-descriptors.json)
+- [ ] Verify the remaining 1,440 binary descriptors with I8, I16, I32, I64 or F64 left operands. Cover all 36 right types and all eight ordinary and in-place constructors. [Descriptor map](verification/ggml-binary-type-descriptors.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
 - [ ] Recover **1,992 non-Prism lines** (12,541 → at most 10,549). Move repeated native fixture construction and runner dispatch into shared Prism recipes. Preserve frozen inputs, refusal probes and CPU comparisons. [Original ceiling and VT-51 measurement](verification/typed-arithmetic-authoring.json)
+- [ ] Replace the temporary Q8 decoder pin when its Verdant release is available. [Verdant PR #65](https://github.com/afflom/verdant-engine/pull/65)
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place 5,576 Q8 activation descriptors. All 2,790,400 stored values matched the external oracles. All 37,584 public ADD_CAST descriptors in the survey now place. [VT-188](verification/supplemental-activation-binary-vt188.json)
 
 - [x] Place 6,020 binary descriptors with signed or F64 right operands. All 3,014,656 stored values matched the original GGML and SoftFloat oracles. [VT-187](verification/supplemental-numeric-inputs-vt187.json)
 

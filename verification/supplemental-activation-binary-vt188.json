@@ -1,0 +1,34 @@
+{
+  "requirement": "VT-188",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracles": [
+    "ggml-q8-activation-binary-oracle.json",
+    "ggml-q8-activation-cast-oracle.json"
+  ],
+  "typed_attestation": "870b44bd8a4c1a69ff1e01ad40722ca667ce239e8bd1a4b5a27905d3bbe26095",
+  "verdant_commit": "00d8893ff2a443b91171421ef2df5aa4876a78b8",
+  "verdant_pull_request": "https://github.com/afflom/verdant-engine/pull/65",
+  "provider_sha256": "63cc725932a5f2406a5f4a2dabb84f8c81ec9ed14be5306429eceeb8d41a6f20",
+  "new_placements_by_constructor": {
+    "add": 130,
+    "add_inplace": 130,
+    "sub": 130,
+    "sub_inplace": 130,
+    "mul": 130,
+    "mul_inplace": 130,
+    "div": 130,
+    "div_inplace": 130,
+    "add_cast": 4536
+  },
+  "new_placements_by_operand": {
+    "right_activation_only": 2408,
+    "left_activation": 3168
+  },
+  "unique_original_cpu_arithmetic_graphs": 520,
+  "ordinary_and_in_place_scheduled_graphs": 1040,
+  "distinct_cast_graphs": 4410,
+  "identical_add_cast_descriptors": 126,
+  "stored_values_compared": 2790400,
+  "negative_control": "The previous provider refused the ordinary and cast fixtures before allocation. Swapping the first two Q8_1 lanes failed the byte comparison. Restoring the decoder reproduced the passing plugin digest.",
+  "non_prism_lines": 12541
+}

@@ -67,6 +67,8 @@ ggml_batches! {
     fn fold_graphs_vt_20() { "fold", 672, [] }
     /// `VT-21`: Prism defines batched DIAG placement and Verdant preserves diagonal encodings and positive-zero off-diagonal values for every type supported by the imported GGML CPU oracle
     fn diagonal_graphs_vt_21() { "diagonal", 384, [] }
+    fn q8_activation_binary_vt_188() { "q8-activation-binary", 1166, ["typed"] }
+    fn q8_activation_cast_vt_188() { "q8-activation-cast", 4410, ["typed"] }
     fn numeric_input_binary_vt_187() { "numeric-input-binary", 1319, ["typed", "pointwise"] }
     fn numeric_input_cast_vt_187() { "numeric-input-cast", 4725, ["typed", "pointwise"] }
     fn scalar_matrix_rounding_vt_186() { "matrix-rounding", 8, ["matrix"] }
@@ -1276,7 +1278,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "59e15e032d08cc80198f4254da7906e198b7f87c913a02603eae83af1843cca5",
+            "14a44c1c9b8e4ee58c3ec372b0dc4e7c0cf8d2b4b22032377cfa54f18b7a5701",
         )
     });
 
@@ -1893,9 +1895,7 @@ size_t block_address(const ggml_tensor *tensor, size_t ordinal) {
 static std::vector<unsigned char> read_hex_bytes(size_t count) {
     std::vector<unsigned char> bytes(count);
     for (auto &byte:bytes) {
-        unsigned value;
-        if (scanf("%2x",&value)!=1) return {};
-        byte=static_cast<unsigned char>(value);
+        if (scanf("%2hhx",&byte)!=1) return {};
     }
     return bytes;
 }
