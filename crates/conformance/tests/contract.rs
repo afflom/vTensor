@@ -94,6 +94,7 @@ ggml_batches! {
     fn packed_lane_repeats_vt_174() { "packed-lanes", 72, ["typed"] }
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
+    fn numeric_gather_vt_195() { "numeric-gather", 12, ["pointwise"] }
     fn numeric_indexed_rows_vt_194() { "indexed-numeric", 32, ["typed", "pointwise"] }
     fn signed_indexed_rows_vt_168() { "integer-rows", 8, ["typed"] }
     fn activation_q8_stores_vt_167() { "activation-q8", 20, ["typed"] }
@@ -1284,7 +1285,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "c386d2052685e0674d6d7db7f065bff9851683fcd7c6dfcc067ace805b72a0c4",
+            "268b9f3d7a6c764efb0004b98f509e63b639889f5ba3b5946c2ef29c518b3fe0",
         )
     });
 
@@ -1389,10 +1390,8 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 
     build_recipe! { HOST_RECIPE;
     fn build_host(common: &Path, library: &Path, imported: bool) -> std::path::PathBuf {
-        let mut driver = String::from(HEADER);
-        if imported {
-            driver.insert_str(0, "#define VTENSOR_IMPORTED_SUITE\n");
-        }
+        let mut driver = String::from(if imported { "#define VTENSOR_IMPORTED_SUITE\n" } else { "" });
+        driver.push_str(HEADER);
         for (key, value) in vtensor_backend::abi_layout() {
             let (ty, field) = key.rsplit_once('.').unwrap();
             let expression = match field {
@@ -1419,8 +1418,7 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             std::fs::write(&input, &driver).unwrap();
             let cpu = common.join("ggml-oracle-cpu.o");
             checked_build(&cpu, |out| build(common, "cpu", out, &[]));
-            let core = common.join("ggml-oracle-core.o");
-            verify_file(&core);
+            verify_file(&common.join("ggml-oracle-core.o"));
             let suite = common.join("imported-suite").join(sha256_hex(UPSTREAM_SUITE.as_bytes())).join("suite.o");
             let mut variables = vec![("VT_INPUT", input.as_path()), ("VT_LIBRARY", library), ("VT_LIBDIR", library.parent().unwrap())];
             if imported {
@@ -2358,27 +2356,29 @@ int main(int argc, char **argv) {
         return finish(cases);
     }
     const bool integer_rows=!strcmp(argv[3],"integer-rows") || !strcmp(argv[3],"indexed-numeric");
-    if (integer_rows || !strcmp(argv[3],"activation-q8")) {
+    const bool gather=!strcmp(argv[3],"numeric-gather");
+    if (gather || integer_rows || !strcmp(argv[3],"activation-q8")) {
         size_t cases=0; int from,to,width,variant;
         while(scanf("%d%d%d%d",&from,&to,&width,&variant)==4) {
-            const bool padded=variant==1 || variant>=4;
+            const bool padded=variant==1 || variant==4 || variant==5 || variant==7;
             graph_fixture ctx(12); CHECK(ctx);
-            auto src=ggml_new_tensor_2d(ctx,ggml_type(from),width,2);
-            auto dst=ggml_new_tensor_2d(ctx,ggml_type(to),padded?2*width:width,3);
-            auto view=ggml_view_2d(ctx,dst,width,variant>=4?3:2,dst->nb[1],padded?ggml_type_size(ggml_type(to)):0);
-            auto idx=ggml_new_tensor_1d(ctx,variant%2?GGML_TYPE_I64:GGML_TYPE_I32,2);
-            auto out=variant>=2?ggml_set_rows(ctx,variant>=4?view:dst,src,idx):variant==1?ggml_cpy(ctx,src,view):ggml_cast(ctx,src,ggml_type(to));
+            const auto storage_type=ggml_type(gather?from:to);
+            auto dst=ggml_new_tensor_2d(ctx,storage_type,padded?2*width:width,gather?2:3);
+            auto view=ggml_view_2d(ctx,dst,width,!gather && variant>=4?3:2,dst->nb[1],padded?ggml_type_size(storage_type):0);
+            auto src=gather?view:ggml_new_tensor_2d(ctx,ggml_type(from),width,2);
+            auto idx=ggml_new_tensor_1d(ctx,!gather && variant%2?GGML_TYPE_I64:GGML_TYPE_I32,gather?4:2);
+            auto out=gather?ggml_get_rows(ctx,src,idx):variant>=2?ggml_set_rows(ctx,variant>=4?view:dst,src,idx):variant==1?ggml_cpy(ctx,src,view):ggml_cast(ctx,src,ggml_type(to));
             auto graph=ctx.allocate(out,backend,true); CHECK(graph);
             ggml_backend_buffer_clear(ctx.storage.get(),0xa5);
-            CHECK(load_tensor_bytes(src) && load_tensor_bytes(idx));
-            auto storage=variant==0?out:dst; auto expected=read_hex_bytes(ggml_nbytes(storage)); CHECK(!expected.empty());
+            CHECK(load_tensor_bytes(gather?dst:src) && load_tensor_bytes(idx));
+            auto storage=gather || variant==0?out:dst; auto expected=read_hex_bytes(ggml_nbytes(storage)); CHECK(!expected.empty());
             CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS && tensor_bytes(storage)==expected);
-            if (integer_rows) {
-                set_scalar_word(idx,1,3);
+            if (gather || integer_rows) {
+                set_scalar_word(idx,ggml_nelements(idx)-1,3);
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_FAILED && tensor_bytes(storage)==expected);
                 set_scalar_word(idx,1,0);
             }
-            if (to!=GGML_TYPE_F64) {
+            if (!gather && to!=GGML_TYPE_F64) {
                 ggml_set_f32_1d(src,2*width-1,NAN);
                 CHECK(refuses_poisoned_output(backend,graph,storage));
             }

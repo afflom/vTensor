@@ -1237,7 +1237,10 @@ definition{
     | TensorTypes::TypeStorageDecision.unknownType => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
     | TensorTypes::TypeStorageDecision.knownType storage => (let column : Nat := (prim multiply block (project storage blockSize) : Nat); (match (RowGather::sourceBlockAddress kind column flag row (project indices u0) (project indices n1) (project indices n2) (prim multiply (project source u0) (project storage blockSize) : Nat) (project source n1) (project source s0) (project source s1) (project source s2) (project source s3))
       | Option.none => (ctor GraphResponse.planned (ctor PointwiseDecision.invalidShape))
-      | Option.some from => (if ((kind =? 0) || (kind =? 26)) then (ctor GraphResponse.offsets false from (blockOffset ((prim multiply row (project destination u0) : Nat) + column) destination)) else (ctor GraphResponse.decoded kind from (project storage typeSize) (blockOffset ((prim multiply row (project destination u0) : Nat) + column) destination) ((prim multiply (prim subtract (project storage blockSize) 1 : Nat) (project destination s0) : Nat) + 4) (project destination s0)))))),
+      | Option.some from => (let to : Nat := (blockOffset ((prim multiply row (project destination u0) : Nat) + column) destination);
+        (if ((kind =? 0) || (kind =? 26)) then (ctor GraphResponse.offsets false from to) else
+          (if ((24 <=? kind) && (kind <=? 28)) then (ctor GraphResponse.converted kind 0 from to) else
+            (ctor GraphResponse.decoded kind from (project storage typeSize) to ((prim multiply (prim subtract (project storage blockSize) 1 : Nat) (project destination s0) : Nat) + 4) (project destination s0)))))))),
   executable: true
 }
 
@@ -3028,6 +3031,36 @@ definition{
 }
 
 definition{
+  name: signedFieldModulus,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (if (storage =? 24) then 256 else (if (storage =? 25) then 65536 else 4294967296)),
+  executable: true
+}
+
+definition{
+  name: signed64WidthOperation,
+  parameters: [source : Nat, destination : Nat],
+  result: WordOperation,
+  body: (if (destination =? 28) then (ctor WordOperation.wide 7) else
+    (if (source =? 28) then (ctor WordOperation.wide 8) else
+    (if (destination =? 0) then (ctor WordOperation.wide 9) else
+    (if (source =? 27) then (ctor WordOperation.signedField 1 0 (signedFieldModulus destination)) else
+    (let modulus : Nat := (signedFieldModulus source);
+      (let extension : Nat := (prim subtract 18446744073709551615 (prim subtract modulus 1 : Nat) : Nat);
+        (ctor WordOperation.signedField (prim quotient modulus 2 0 : Nat) extension 18446744073709551615))))))),
+  executable: true
+}
+
+definition{
+  name: signedCopyOperation,
+  parameters: [source : Nat, destination : Nat],
+  result: WordOperation,
+  body: (if ((source =? 27) || (destination =? 27)) then (signed64WidthOperation source destination) else (if (source =? 28) then (ctor WordOperation.wide 2) else (if (destination =? 28) then (ctor WordOperation.wide 1) else (if ((source =? 0) && (destination =? 26)) then (ctor WordOperation.signedTruncation) else (if (copyFloatType source) then (ctor WordOperation.floatToSigned source (signedFieldModulus destination)) else (let sourceLimit : Nat := (signedFieldModulus source); (let signBit : Nat := (prim quotient sourceLimit 2 0 : Nat); (if (copyFloatType destination) then (ctor WordOperation.signedToFloat signBit (prim subtract 4294967296 sourceLimit : Nat) destination) else (let destinationLimit : Nat := (signedFieldModulus destination); (ctor WordOperation.signedField signBit (prim subtract destinationLimit sourceLimit : Nat) destinationLimit)))))))))),
+  executable: true
+}
+
+definition{
   name: convertedOperation,
   parameters: [mode : CopyMode, sourceStorage : Nat, destinationStorage : Nat],
   result: WordOperation,
@@ -3073,7 +3106,7 @@ definition{
     | CopyMode.argmaxRow => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.counted elements right => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.scattered storage indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
-    | CopyMode.gathered storage indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
+    | CopyMode.gathered storage indices => (signedCopyOperation sourceStorage destinationStorage)
     | CopyMode.relativePosition => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.indexedAdd table indices => (ctor WordOperation.storage sourceStorage destinationStorage true)
     | CopyMode.relativeAdd initial width biases => (ctor WordOperation.storage sourceStorage destinationStorage true)
@@ -3313,36 +3346,6 @@ definition{
     | Option.some sx => (match (columnCoordinate y (project image n1) (decodedCoordinate element destination 1) ky)
       | Option.none => (ctor GraphResponse.instruction (ctor WordOperation.storage 0 0 false) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) 4 4)
       | Option.some sy => (if (part =? 0) then (ctor GraphResponse.instruction (ctor WordOperation.storage storage 0 false) (ctor WordOperand.source 0 (offsetCoordinates kernel kx ky 0 channel)) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 1) (wordBytes storage) 4) else (if (part =? 1) then (ctor GraphResponse.instruction (ctor WordOperation.scalar 2) (ctor WordOperand.scratch 1) (ctor WordOperand.source 1 (offsetCoordinates image sx sy channel (decodedCoordinate element destination 3))) (ctor WordTarget.scratch 1) 4 4) else (ctor GraphResponse.instruction (ctor WordOperation.scalar 0) (ctor WordOperand.scratch 0) (ctor WordOperand.scratch 1) (ctor WordTarget.scratch 0) 4 4)))))))))))))))),
-  executable: true
-}
-
-definition{
-  name: signedFieldModulus,
-  parameters: [storage : Nat],
-  result: Nat,
-  body: (if (storage =? 24) then 256 else (if (storage =? 25) then 65536 else 4294967296)),
-  executable: true
-}
-
-definition{
-  name: signed64WidthOperation,
-  parameters: [source : Nat, destination : Nat],
-  result: WordOperation,
-  body: (if (destination =? 28) then (ctor WordOperation.wide 7) else
-    (if (source =? 28) then (ctor WordOperation.wide 8) else
-    (if (destination =? 0) then (ctor WordOperation.wide 9) else
-    (if (source =? 27) then (ctor WordOperation.signedField 1 0 (signedFieldModulus destination)) else
-    (let modulus : Nat := (signedFieldModulus source);
-      (let extension : Nat := (prim subtract 18446744073709551615 (prim subtract modulus 1 : Nat) : Nat);
-        (ctor WordOperation.signedField (prim quotient modulus 2 0 : Nat) extension 18446744073709551615))))))),
-  executable: true
-}
-
-definition{
-  name: signedCopyOperation,
-  parameters: [source : Nat, destination : Nat],
-  result: WordOperation,
-  body: (if ((source =? 27) || (destination =? 27)) then (signed64WidthOperation source destination) else (if (source =? 28) then (ctor WordOperation.wide 2) else (if (destination =? 28) then (ctor WordOperation.wide 1) else (if ((source =? 0) && (destination =? 26)) then (ctor WordOperation.signedTruncation) else (if (copyFloatType source) then (ctor WordOperation.floatToSigned source (signedFieldModulus destination)) else (let sourceLimit : Nat := (signedFieldModulus source); (let signBit : Nat := (prim quotient sourceLimit 2 0 : Nat); (if (copyFloatType destination) then (ctor WordOperation.signedToFloat signBit (prim subtract 4294967296 sourceLimit : Nat) destination) else (let destinationLimit : Nat := (signedFieldModulus destination); (ctor WordOperation.signedField signBit (prim subtract destinationLimit sourceLimit : Nat) destinationLimit)))))))))),
   executable: true
 }
 

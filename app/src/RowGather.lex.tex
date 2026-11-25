@@ -34,7 +34,7 @@ definition{
   name: sourceDomain,
   parameters: [kind : Nat, width : Nat, i0 : Nat, i1 : Nat, i2 : Nat],
   result: Bool,
-  body: (if (emptyOutput width i0 i1 i2) then (knownStorage kind) else (cpuSource kind)),
+  body: (knownStorage kind),
   executable: true
 }
 
@@ -184,7 +184,7 @@ definition{
   result: (Option Nat),
   body: (match (TensorTypes::tensorTypeStorage kind)
     | TensorTypes::TypeStorageDecision.unknownType => (ctor Option.none [Nat])
-    | TensorTypes::TypeStorageDecision.knownType storage => (if (((((cpuSource kind) && (column <? width)) && (validIndex rows row)) && (ordinal <? (indexCount i0 i1 i2))) && ((prim remainder width (project storage blockSize) 0 : Nat) =? 0)) then (ctor Option.some [Nat] ((((prim multiply (prim quotient column (project storage blockSize) 0 : Nat) stride0 : Nat) + (prim multiply row stride1 : Nat)) + (prim multiply (prim remainder (prim quotient ordinal i0 0 : Nat) i1 0 : Nat) stride2 : Nat)) + (prim multiply (prim quotient (prim quotient ordinal i0 0 : Nat) i1 0 : Nat) stride3 : Nat))) else (ctor Option.none [Nat]))),
+    | TensorTypes::TypeStorageDecision.knownType storage => (if ((((column <? width) && (validIndex rows row)) && (ordinal <? (indexCount i0 i1 i2))) && ((prim remainder width (project storage blockSize) 0 : Nat) =? 0)) then (ctor Option.some [Nat] ((((prim multiply (prim quotient column (project storage blockSize) 0 : Nat) stride0 : Nat) + (prim multiply row stride1 : Nat)) + (prim multiply (prim remainder (prim quotient ordinal i0 0 : Nat) i1 0 : Nat) stride2 : Nat)) + (prim multiply (prim quotient (prim quotient ordinal i0 0 : Nat) i1 0 : Nat) stride3 : Nat))) else (ctor Option.none [Nat]))),
   executable: true
 }
 
@@ -217,6 +217,13 @@ theorem{
   name: emptySourceDomainKeepsEveryKnownStorage,
   parameters: [kind : Nat, i0 : Nat, i1 : Nat, i2 : Nat],
   statement: ((sourceDomain kind 0 i0 i1 i2) = (knownStorage kind)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: everyLiveStorageCanSupplyANonemptyGather,
+  parameters: [kind : Nat, width : Nat, i0 : Nat, i1 : Nat, i2 : Nat],
+  statement: ((sourceDomain kind width i0 i1 i2) = (knownStorage kind)),
   proof: reflexivity{}
 }
 

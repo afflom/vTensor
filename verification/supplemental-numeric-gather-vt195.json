@@ -1,0 +1,25 @@
+{
+  "requirement": "VT-195",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "oracle": "ggml-numeric-gather-oracle.json",
+  "provider_sha256": "774553da1a9481a1b670c724bf372fbe5ee0d82e34b019abac113c48be751eed",
+  "pointwise_attestation": "f4da89236011a92858f75de747196ac8cd094f8e6fec658ac938f176f3ddadf8",
+  "verdant_commit": "603a50866eaf31aabdc95612657d3e900ef0c0a8",
+  "placement_table": "ggml-row-complete-placements.tsv",
+  "placement_sha256": "f00962bda92e1f58c5766352a6e2779c37296547f2d18d5f7f2986206fe414a8",
+  "get_rows_placements": 36,
+  "set_rows_placements": 144,
+  "new_source_types": [
+    "Q8_1",
+    "Q8_K",
+    "I8",
+    "I16",
+    "I64",
+    "F64"
+  ],
+  "positive_graphs": 12,
+  "f32_words_compared": 12288,
+  "late_index_refusals": 12,
+  "negative_control": "The preceding provider refused before allocation. Forcing binary64-to-binary32 conversion to return zero failed the oracle comparison. Restoring the numerical operation passed.",
+  "non_prism_lines": 12539
+}

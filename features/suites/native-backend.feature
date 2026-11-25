@@ -830,3 +830,9 @@ Feature: native-backend
     Given I32 or I64 indices into dense storage or an offset padded view
     When GGML scatters rows into signed or binary64 storage
     Then the complete backing storage matches the imported scatter and conversion oracles
+
+  @VT-195 @build
+  Scenario: Gather reads all registered storage types
+    Given dense or offset padded Q8, narrow signed, I64 and F64 source rows
+    When GGML gathers repeated and permuted indices
+    Then every floating output word matches the external oracle and an invalid late index preserves all output

@@ -4,7 +4,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Place and oracle-check the remaining six GET_ROWS storage types. [Row survey](verification/ggml-row-provider-placements.tsv)
+- [ ] Place the remaining 2,351 reshaped CPY descriptors and verify cross-row conversions and view guards. [Reshaped copies](verification/ggml-reshaped-copy-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -13,6 +13,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all **36** GET_ROWS source types and all **180** indexed read/write tuples. The final six source types matched 12,288 gathered words across dense and padded views, including repeated indices. [VT-195](verification/supplemental-numeric-gather-vt195.json)
 
 - [x] Place all **144** public SET_ROWS tuples. The final 16 matched 5,472 bytes under dense and offset writes. All 32 late invalid indices and 24 invalid integer conversions preserved storage. [VT-194](verification/supplemental-indexed-numeric-vt194.json)
 
