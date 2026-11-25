@@ -1065,7 +1065,7 @@ definition{
     | TensorTypes::TypeStorageDecision.unknownType => false
     | TensorTypes::TypeStorageDecision.knownType spec =>
       (if ((project spec blockSize) =? 1) then true else
-        (if (((((kind =? 13) || (kind =? 14)) || (kind =? 19)) || (kind =? 22)) || (kind =? 25)) then false else true))),
+        (if ((((kind =? 14) || (kind =? 19)) || (kind =? 22)) || (kind =? 25)) then false else true))),
   executable: true
 }
 
@@ -5213,6 +5213,13 @@ theorem{
   name: transformRowHasFourByteLanes,
   parameters: [],
   statement: ((project (canonicalUnaryRow 256) span) = 1024),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: packedLogarithmUsesRowProjection,
+  parameters: [],
+  statement: ((unaryProjectionAdmitted 13 19) = true),
   proof: reflexivity{}
 }
 

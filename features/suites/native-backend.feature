@@ -884,3 +884,9 @@ Feature: native-backend
     Given independently encoded source rows with offset padding
     When vTensor scales, shifts, clamps or applies leaky ReLU to copied and in-place views
     Then each transformed row matches the original GGML CPU operation and encoder and preserves all guards
+
+  @VT-203 @build
+  Scenario: Packed logarithm preserves the CPU encoder decision
+    Given positive values decoded independently from packed GGML rows
+    When the provider computes LOG on dense and padded views
+    Then copied and in-place outputs match the original CPU logarithm and storage encoder

@@ -480,7 +480,8 @@
     "ggml-index-fixtures-indexed-add-oracle": "7863655e6fda3efd353fb83f29fff29b580d168230b348bc96a7f46fe3d49791",
     "ggml-index-fixtures-row-gradient-oracle": "82821e5460f96df0ea4567c63b72f525ba8c012c354650048f53b897d8800d07",
     "ggml-index-fixtures-row-gradient-bf16-oracle": "b8fc54b4dacbe2e36297cde64386908a7ad57360cfa9b3d4e4d2a6093e2cbe2d",
-    "ggml-stored-transforms-oracle": "8d13300443334ee583a077ff1198f8077bdfd5031a8a02cd22f7542d79c3506d"
+    "ggml-stored-transforms-oracle": "8d13300443334ee583a077ff1198f8077bdfd5031a8a02cd22f7542d79c3506d",
+    "ggml-packed-log-oracle": "9f9503f322a0955d65a1d0208c51fc4c69ee51da07119dab69333412de3858d0"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -596,15 +597,22 @@
     ]
   ],
   "verdant_quotient": {
-    "archive_sha256": "dea35b95148f1d596e43988c5641c7c7b24d63ada4f406598ed5c0a882a45c56",
+    "archive_sha256": "b1aba191f5628059b9b1b5d2bcb183a08ccc87332a00c800d6707a0e91798524",
     "sdk": "ghcr.io/uor-foundation/lexlean@sha256:d391bfedd4eb97dc25c218628f94cd081436589c348797ebf13c47ab13d4ef30",
     "sha256": {
       "app/quotient-production.json": "9eb5285e804ab9eaf2a20779e0b5cb8ed42b31b55397dc7a1a4ed29bfe092eb6",
       "app/quotient.lexlean.lock": "e75936c9fe696c45b03cff856aa44ff321dc2a449051f5550dbb6710f6cead2f",
       "generated/tensor-quotient/result.json": "371cf2e06fa635d729344b0fcbb7cfcdb13ec1398644f94aac344e1a3b7ddd4d",
-      "quotient-kernel.lock": "b88b8a7391780e749520541aea4524283f66f2166ffd5f6936e41fd916b6340d"
+      "quotient-kernel.lock": "b88b8a7391780e749520541aea4524283f66f2166ffd5f6936e41fd916b6340d",
+      "app/reference-log-production.json": "068c2ac59287b15ce499aec72550d03e244aff60230c6797aedbe6e096089f1d",
+      "app/reference-log.lexlean.lock": "25c3f485fd2ea0c6cfba68ded4c6e186351e3e6ab1c76e3aead557d5cdfd646f",
+      "generated/reference-log/result.json": "605173c3a921be21ec402bdcfc28f43282dac71be2bce9f4008bb1bdc665b243"
     },
-    "upstream_revision": "603a50866eaf31aabdc95612657d3e900ef0c0a8"
+    "upstream_revision": "ecdaef6c3875afedd47ac0ebad84d9c22d2197a9",
+    "projects": {
+      "quotient": "tensor-quotient",
+      "reference-log": "reference-log"
+    }
   },
   "atomic_store_types": {
     "SET_ROWS_SCALAR": [
@@ -711,7 +719,8 @@
     "indexed-add": "ggml-index-fixtures-indexed-add",
     "row-gradient": "ggml-index-fixtures-row-gradient",
     "row-gradient-bf16": "ggml-index-fixtures-row-gradient-bf16",
-    "stored-transforms": "ggml-stored-transforms"
+    "stored-transforms": "ggml-stored-transforms",
+    "packed-log": "ggml-packed-log"
   },
   "drivers": {
     "binary-widths": "scalar-casts",
@@ -729,6 +738,7 @@
     "narrow-left-binary": "scalar-binary",
     "wide-mixed-binary": "scalar-binary",
     "wide-native-binary": "scalar-binary",
-    "vector-unary": "stored-unary"
+    "vector-unary": "stored-unary",
+    "packed-log": "stored-unary"
   }
 }

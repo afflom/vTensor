@@ -37,10 +37,10 @@ realized_by = []
 [[authority]]
 id = "VERDANT-ENGINE-TENSOR"
 name = "Verdant Engine tensor API"
-citation = "https://github.com/afflom/verdant-engine/tree/603a50866eaf31aabdc95612657d3e900ef0c0a8"
-checksum = "b2a71e7efef966084815997a3caf1ca77335c41736f5ff40f1303543cc4c75c5"
+citation = "https://github.com/afflom/verdant-engine/tree/ecdaef6c3875afedd47ac0ebad84d9c22d2197a9"
+checksum = "e34a592432bc63a71c448cdc89adb8465aec28047d4b879721efbbee9fabfba5"
 artifact = "model/verdant-development.json"
-statement = "The production Verdant API and certified upstream storage and wide-word arithmetic kernels."
+statement = "The production Verdant API and certified upstream storage, logarithm and wide-word arithmetic kernels."
 realized_by = ["VT-02"]
 
 [[authority]]

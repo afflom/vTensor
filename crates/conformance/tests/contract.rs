@@ -97,6 +97,7 @@ ggml_batches! {
     fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
     fn stored_glu_vt_202() { "stored-glu", 82, ["pointwise", "typed"] }
+    fn packed_logarithm_vt_203() { "packed-log", 4, ["pointwise", "typed"] }
     fn stored_unary_vt_200() { "stored-unary", 156, ["pointwise", "typed"] }
     fn mixed_attention_vt_199() { "mixed-flash", 61, ["attention"] }
     fn mixed_matrix_vt_198() { "mixed-matrix", 86, ["matrix", "pointwise"] }
@@ -536,7 +537,7 @@ fixture_query_tests! {
 #[test]
 fn normalization_arithmetic_vt_45() {
     use verdant_tensor::linear::evaluate_wide;
-    verdant_api::verify_quotient();
+    std::sync::LazyLock::force(&verdant_api::SOURCE);
     let divide = |a, b| evaluate_wide(4, a, b).unwrap().unwrap();
     let widen = |a| evaluate_wide(5, a, 0).unwrap().unwrap();
     assert_eq!(divide(1.0f64.to_bits(), 2.0f64.to_bits()), 0.5f64.to_bits());
@@ -1186,15 +1187,8 @@ mod verdant_api {
 
     use std::sync::LazyLock;
 
-    static SOURCE: LazyLock<serde_json::Value> =
+    pub(super) static SOURCE: LazyLock<serde_json::Value> =
         LazyLock::new(|| tool_json(&super::root(), "just", &["verdant-source-check"]));
-
-    pub(super) fn verify_quotient() {
-        let binding = &super::native_backend_oracle::ORACLE_BINDINGS["verdant_quotient"];
-        let image = binding["sdk"].as_str().expect("pinned Verdant compiler");
-        let check = tool_json(&super::root(), "just", &["verdant-quotient-check", image]);
-        super::assert_model_identity("Verdant quotient", &check, &SOURCE);
-    }
 
     /// `VT-02`: The backend resolves the pinned Verdant API with fifteen ordered kernel descriptors and imports only GGML host services
     #[test]
@@ -1291,7 +1285,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "b23f04ab6c1db76b2370b358cd2c6f3d803a81a3c1f059c59aca28cf696b3d2f",
+            "ed2010581ef9eb08bca27e4690aa7a4f2b2aaa1050d46f0bf6b34a3e1a42e776",
         )
     });
 

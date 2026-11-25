@@ -1,0 +1,22 @@
+{
+  "requirement": "VT-203",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "ecdaef6c3875afedd47ac0ebad84d9c22d2197a9",
+  "verdant_pr": "https://github.com/afflom/verdant-engine/pull/68",
+  "arm_math_revision": "90f7e628875789235c1d97c3e2a738b9448c5424",
+  "verdant_reference_attestation": "blake3:298662b320503f406ce454df3a91ea97aacc8c2d47466f8c72fc98532644ce37",
+  "pointwise_attestation": "d217906b8a766220c4e9e35a543ea7b7c5b07f81aaf20570a8dd3a2a232deabf",
+  "provider_sha256": "7dd5ec935d1a45ca674f00825b8b049eff2f2ff542e7ca951d192c123b44b19b",
+  "oracle": "ggml-packed-log-oracle.json",
+  "new_placements": 108,
+  "packed_types": 27,
+  "layouts_per_type": 4,
+  "logical_outputs_compared": 110592,
+  "stored_comparison": "Exact encoded bytes, including IQ1_S, preserved sources and view padding.",
+  "full_oracle_stream_sha256": "efca227089f5219185fe0be47fe1d9e8e3c45a82fbb6983649f14291aa12eaf0",
+  "recurring_graphs": 4,
+  "original_arm_reference_words": 16477,
+  "negative_control": "Previous admission refused packed LOG. Enabling it with the previous logarithm failed on IQ1_S. Replacing the corrected logarithm with its input failed the recurring stored result comparison.",
+  "stock_replay": "llama-perplexity-four-chunks.json",
+  "non_prism_lines": 12525
+}

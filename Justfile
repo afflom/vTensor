@@ -86,24 +86,38 @@ verdant-source-check:
         for name, expected in binding["sha256"].items():
             require(digest(contents(name)), expected, name)
         require(json.loads(contents(".devcontainer/devcontainer.json"))["image"], binding["sdk"], "producer SDK")
-        result = json.loads(contents("generated/tensor-quotient/result.json"))
-        for root in result["roots"]:
-            for output in root["outputs"]:
-                name = output["package"]["name"]
-                package = packages[name]
-                installed = Path(package["manifest_path"]).parent / "src/lib.rs"
-                certified = contents(f"generated/tensor-quotient/packages/rust-core/{name}/src/lib.rs")
-                require(digest(installed.read_bytes()), digest(certified), installed)
-        print(json.dumps(result["source"]))
+        sources = {}
+        for project, directory in binding["projects"].items():
+            result = json.loads(contents(f"generated/{directory}/result.json"))
+            sources[project] = result["source"]
+            for root in result["roots"]:
+                for output in root["outputs"]:
+                    name = output["package"]["name"]
+                    installed = Path(packages[name]["manifest_path"]).parent / "src/lib.rs"
+                    certified = contents(f"generated/{directory}/packages/rust-core/{name}/src/lib.rs")
+                    require(digest(installed.read_bytes()), digest(certified), installed)
+    checked = json.loads(subprocess.check_output(["just", "--quiet", "verdant-quotient-check", binding["sdk"]]))
+    require(set(checked), set(sources), "certified Verdant projects")
+    for scope, source in sources.items():
+        for key in ["source_id", "semantic_id"]:
+            require(checked[scope][key], source[key], f"Verdant {scope} {key}")
+    print(json.dumps(sources))
 
 verdant-quotient-check image:
     #!/usr/bin/env bash
     set -euo pipefail
     docker run --rm -i --network none --entrypoint sh --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp -w /tmp {{quote(image)}} -ec '
       tar -xzf -
-      lexlean --project app/quotient.lexlean.toml lock --check >&2
-      lexlean --project app/quotient.lexlean.toml --diagnostic-format json check
-      lexlean production verify-artifact generated/tensor-quotient >&2
+      printf "{"
+      for scope in quotient reference-log; do
+        project="app/$scope.lexlean.toml"
+        lexlean --project "$project" lock --check >&2
+        printf "\"%s\":" "$scope"
+        lexlean --project "$project" --diagnostic-format json check
+        case "$scope" in quotient) directory=tensor-quotient; printf "," ;; *) directory=$scope ;; esac
+        lexlean production verify-artifact "generated/$directory" >&2
+      done
+      printf "}\n"
     ' < vendor/verdant-quotient.tar.gz
 
 # The SDK's own checks of the contract and both locks. `template check` also
