@@ -100,11 +100,13 @@ ggml_batches! {
     fn double_sums_vt_209() { "double-sums", 12, ["pointwise"] }
     fn small_sums_vt_210() { "small-sums", 32, ["pointwise"] }
     fn stored_fold_vt_213() { "stored-fold", 12, ["typed"] }
+    fn double_fold_vt_214() { "double-fold", 2, ["pointwise"] }
     fn signed_fold_vt_212() { "signed-fold", 8, ["pointwise"] }
     fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
     fn stored_glu_vt_202() { "stored-glu", 82, ["pointwise", "typed"] }
+    fn packed_sine_vt_211() { "packed-sine", 4, ["pointwise", "typed"] }
     fn packed_logarithm_vt_203() { "packed-log", 4, ["pointwise", "typed"] }
     fn stored_unary_vt_200() { "stored-unary", 156, ["pointwise", "typed"] }
     fn mixed_attention_vt_199() { "mixed-flash", 61, ["attention"] }
@@ -1286,7 +1288,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "2c850c97e1b9ec741999b3c54003e83e600c4a622ab536345807098d8a610c3a",
+            "e6e2a9970b89bed475b269fb5b262680a2149618776437b29db72bfbd67ea84e",
         )
     });
 

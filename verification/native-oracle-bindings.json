@@ -489,7 +489,9 @@
     "ggml-signed-sums-oracle": "477dafc506d93aa644d5ff4bd43378519b55fa9b505cfda94dc30b571a816314",
     "ggml-stored-reductions-oracle": "b02abeea20d6971a5e8adb36cc6e8a2a620cee3340e8818d0fa025ebea50d533",
     "ggml-signed-fold-oracle": "ada43d8ba1190205de808cd71db1f11394c15fd0219c1dea3d745961a684394c",
-    "ggml-stored-fold-oracle": "46e359d68dbce02c9755884d045417f52ac7401915c9c6c995ff917eebaaa139"
+    "ggml-stored-fold-oracle": "46e359d68dbce02c9755884d045417f52ac7401915c9c6c995ff917eebaaa139",
+    "ggml-packed-sine-oracle": "881be8507f7e672dae0beddf251ccacccfffd4390a855188db80db7a70ff87d1",
+    "ggml-double-fold-oracle": "3d65fa117144df29631bafe71575269992f2e9f9030f98e9b617a4cfa55d9e90"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -605,15 +607,16 @@
     ]
   ],
   "verdant_quotient": {
-    "archive_sha256": "1da735061b7d2e986d9e2672739d9d5880f9bda42a710804b791cad86eac31e3",
+    "archive_sha256": "437e82aadd1f5d6e3ae54e53b9db2abffe7f33bdb6efe968df82c5c90ab2a40b",
     "sdk": "ghcr.io/uor-foundation/lexlean@sha256:d391bfedd4eb97dc25c218628f94cd081436589c348797ebf13c47ab13d4ef30",
     "sha256": {
-      "app/quotient-production.json": "5e05ec23fe2f481b78040aac6226f08c5326812c8df794aa0a7c98dccfcaa9b5",
-      "app/quotient.lexlean.lock": "91b05fa3ecc99029c966faa54ea7210d62319b6f99892f2b874190a1db6b47b5",
-      "generated/tensor-quotient/result.json": "1f64100b581388dd6e6872fe79f132a6b16d628b53e92097be054f8768f90eba",
-      "quotient-kernel.lock": "abf170b103334dcf58f1e8a7a56a8c364c98a7a7f81a5c3a4f960cc8c15b3702"
+      "app/quotient-production.json": "f7a85cb7eb9b0342736b32ab441931eec51fdb012995be22e65f6d0d131ffc5e",
+      "app/quotient.lexlean.lock": "70a57a9e4eccd7f46380af24cf906d929fb2f1f0beb15bf7b63bd4178da0cf5a",
+      "generated/tensor-quotient/result.json": "694c957004622dac49728fcdcea30cdfa53a13ebebb48a277708a4dae580bc29",
+      "quotient-kernel.lock": "fc19577c800ea0951f7a9a76ceede880c86a5a544800256488d187218a53b018",
+      "app/src/ReferenceSine.lex.tex": "2cc77c7dfd927a857aa8077ef8720c03fee25e47482835df57d61bccbc31430f"
     },
-    "upstream_revision": "595cb612ebd80eaa1dbfd52fe52b64a54c50b5f7",
+    "upstream_revision": "eea54271d9b26f3e54d0531f0539a97a81cae12a",
     "projects": {
       "quotient": "tensor-quotient"
     }
@@ -732,7 +735,9 @@
     "signed-sums": "ggml-signed-sums",
     "stored-reductions": "ggml-stored-reductions",
     "signed-fold": "ggml-signed-fold",
-    "stored-fold": "ggml-stored-fold"
+    "stored-fold": "ggml-stored-fold",
+    "packed-sine": "ggml-packed-sine",
+    "double-fold": "ggml-double-fold"
   },
   "drivers": {
     "double-sums": "stored-reductions",
@@ -756,7 +761,9 @@
     "vector-unary": "stored-unary",
     "packed-log": "stored-unary",
     "signed-fold": "stored-reductions",
-    "stored-fold": "stored-reductions"
+    "stored-fold": "stored-reductions",
+    "packed-sine": "stored-unary",
+    "double-fold": "stored-reductions"
   },
   "refusal_field_columns": [
     "field",

@@ -1431,7 +1431,10 @@ fn word_value(operation: WordOperation, a: u64, b: u64) -> Result<u64, BackendEr
             let input = decode_float(source, a)?;
             let result = match kind {
                 13 => linear::natural_log_f32(input),
-                14 => linear::sin_cos_f32(input).map(|pair| pair.0),
+                14 => {
+                    let bits = linear::evaluate_float_unary(kind, 0, 0, input.to_bits().into())?;
+                    return convert(0, destination, bits.ok_or(InvalidTensor)?);
+                }
                 15 => linear::sin_cos_f32(input).map(|pair| pair.1),
                 16 => linear::exponential_f32(input),
                 17 => linear::sigmoid_f32(input),
@@ -1905,6 +1908,7 @@ unsafe extern "C" fn graph_compute(backend: BackendPtr, graph: Graph) -> c_int {
 }
 
 fn execute_graph(backend: BackendPtr, nodes: &[TensorPtr]) -> Result<(), BackendError> {
+    use ExecutionPlan::*;
     let mut plans = Vec::new();
     let mut has_callbacks = false;
     // SAFETY: GGML retains this graph and all descriptors for the synchronous
@@ -1917,7 +1921,7 @@ fn execute_graph(backend: BackendPtr, nodes: &[TensorPtr]) -> Result<(), Backend
             }
             if let Some(plan) = plan_operation(&*tensor)? {
                 plans.try_reserve(1)?;
-                has_callbacks |= matches!(plan, ExecutionPlan::Callback(_));
+                has_callbacks |= matches!(plan, Callback(_));
                 plans.push((tensor, plan));
             }
         }
@@ -1936,22 +1940,18 @@ fn execute_graph(backend: BackendPtr, nodes: &[TensorPtr]) -> Result<(), Backend
         }
         for (tensor, plan) in plans {
             match plan {
-                ExecutionPlan::Callback(callback) => {
-                    callback.invoke(tensor, callback_width, &execution)
-                }
-                ExecutionPlan::Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
-                ExecutionPlan::Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
-                ExecutionPlan::Standard(plan @ (GraphPlan::C10(..) | GraphPlan::C11(..))) => {
+                Callback(callback) => callback.invoke(tensor, callback_width, &execution),
+                Standard(plan @ GraphPlan::C3(..)) => execute_matrix(&*tensor, plan),
+                Standard(plan @ GraphPlan::C4(..)) => execute_copy(&*tensor, plan),
+                Standard(plan @ (GraphPlan::C10(..) | GraphPlan::C11(..))) => {
                     execute_stored_reduction(&*tensor, plan)
                 }
-                ExecutionPlan::Standard(GraphPlan::C6(geometry)) => {
-                    execute_convolution(&*tensor, geometry)
-                }
-                ExecutionPlan::Delay(duration) => {
+                Standard(GraphPlan::C6(geometry)) => execute_convolution(&*tensor, geometry),
+                Delay(duration) => {
                     std::thread::sleep(duration);
                     Ok(())
                 }
-                ExecutionPlan::Attention(reply) => {
+                Attention(reply) => {
                     use vtensor_attention::Adt7::*;
                     match *reply {
                         C1(plan) => attention::execute(&*tensor, plan),
@@ -1962,11 +1962,9 @@ fn execute_graph(backend: BackendPtr, nodes: &[TensorPtr]) -> Result<(), Backend
                         _ => Err(BackendError::InvalidTensor),
                     }
                 }
-                ExecutionPlan::Rotary(plan) => rotary::execute(&*tensor, plan),
-                ExecutionPlan::Typed(plan, projection) => {
-                    execute_typed(&*tensor, plan, projection.as_deref())
-                }
-                ExecutionPlan::RowProduct(plan) => execute_row_products(&execution, &*tensor, plan),
+                Rotary(plan) => rotary::execute(&*tensor, plan),
+                Typed(plan, projection) => execute_typed(&*tensor, plan, projection.as_deref()),
+                RowProduct(plan) => execute_row_products(&execution, &*tensor, plan),
                 _ => Err(BackendError::InvalidTensor),
             }?;
         }

@@ -938,3 +938,15 @@ Feature: native-backend
     Given original GGML stored inputs, CPU repeat-back sums and encoded outputs
     When a GGML consumer schedules REPEAT_BACK on dense or padded input rows
     Then every output block and every source guard byte matches the external reference
+
+  @VT-211 @build
+  Scenario: Packed sine preserves GGML quantization boundaries
+    Given the original GGML CPU stored inputs and encoded sine outputs
+    When a consumer schedules SIN with quantized storage
+    Then dense, strided, copied and in-place rows match the original output and preserve input and guard bytes
+
+  @VT-214 @build
+  Scenario: Fold binary64 rows without losing significand bits
+    Given binary64 inputs with adjacent values above binary32 precision, cancellation and infinities
+    When a consumer schedules REPEAT_BACK over repeated axes
+    Then every stored output matches the original SoftFloat binary64 addition sequence

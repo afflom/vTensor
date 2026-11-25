@@ -1,0 +1,22 @@
+{
+  "requirement": "VT-211",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "eea54271d9b26f3e54d0531f0539a97a81cae12a",
+  "provider_sha256": "616fe76e77f1a242c3b8b96ac48ce4620c73f2d6d15270ab942e628c29f4b92f",
+  "pointwise_attestation": "5f9f8f40f7ce7f28935fecbb0abcb529072b43b267c2f69be6017238b4890333",
+  "verdant_pr": "https://github.com/afflom/verdant-engine/pull/70",
+  "arm_math_revision": "90f7e628875789235c1d97c3e2a738b9448c5424",
+  "verdant_reference_attestation": "blake3:2109fec51735fda67c26188dc8fbd9bb522d7565d3b75364d1a7ae3e82ae4527",
+  "oracle": "ggml-packed-sine-oracle.json",
+  "new_placements": 108,
+  "packed_types": 27,
+  "layouts_per_type": 4,
+  "logical_outputs_compared": 110592,
+  "comparison": "Original GGML CPU decode, F32 SIN graph and encoded storage bytes, including padded views and in-place outputs.",
+  "full_oracle_stream_sha256": "c256be9636672b51de93a554305de70279b9aec019a575bbfb6e431e2b54266b",
+  "recurring_graphs": 4,
+  "original_arm_reference_words": 16448,
+  "negative_control": "The prior provider refused the graphs. Admission with its previous arithmetic failed the IQ2_S stored comparison. Swapping the Arm polynomial operands failed the original upstream word comparison.",
+  "stock_replay": "llama-perplexity-four-chunks.json",
+  "non_prism_lines": 12515
+}

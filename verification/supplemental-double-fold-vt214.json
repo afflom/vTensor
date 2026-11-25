@@ -1,0 +1,27 @@
+{
+  "requirement": "VT-214",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "eea54271d9b26f3e54d0531f0539a97a81cae12a",
+  "provider_sha256": "616fe76e77f1a242c3b8b96ac48ce4620c73f2d6d15270ab942e628c29f4b92f",
+  "pointwise_attestation": "5f9f8f40f7ce7f28935fecbb0abcb529072b43b267c2f69be6017238b4890333",
+  "oracle": "ggml-double-fold-oracle.json",
+  "placements": "ggml-repeat-back-placements.json",
+  "new_placements": 10,
+  "placed": 360,
+  "unplaced": 0,
+  "oracle_values": 5120,
+  "full_reference_sha256": "6db78137573a401a08864d07529b723173ff3094c05bfc4a0e352cd0b52b8e82",
+  "execution_sha256": "5355833a0b17e6d201bdf6489845465ba4763e1e6ba4f3f3d6eb8b54759e887e",
+  "recurring_graphs": 2,
+  "recurring_values": 32,
+  "comparison": "Berkeley SoftFloat f64_add in GGML traversal order. Each axis and all four axes together, dense and padded inputs.",
+  "negative_control": "Integer addition in the binary64 plan failed the first recurring stored comparison.",
+  "empty_inputs": {
+    "graphs": 28,
+    "storage_types": 7,
+    "logical_outputs": 57344,
+    "driver_sha256": "44f877d1faca3d0fe8e58ac85877cfee101d96981a5455f6afe3d413a06898ba",
+    "execution_sha256": "e252526d78cff2c105706aa0d297e44d11ba6f0b8fb1acfd1f32e4f504a99290",
+    "reference": "Original GGML CPU F32 fold for zero input length along each axis, followed by the original storage conversion or binary64 widening."
+  }
+}

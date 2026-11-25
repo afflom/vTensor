@@ -1344,3 +1344,15 @@ id = "VT-213"
 level = "build"
 suite = "native-backend"
 statement = "Stored repeat-back decodes repeated blocks, folds binary32 rows in GGML order and encodes the resulting tensor with its original storage"
+
+[[id]]
+id = "VT-211"
+level = "build"
+suite = "native-backend"
+statement = "Packed sine decodes GGML rows, evaluates the Verdant reference sine and reproduces the original GGML encoded results"
+
+[[id]]
+id = "VT-214"
+level = "build"
+suite = "native-backend"
+statement = "Binary64 repeat-back accumulates binary64 words in GGML traversal order and reproduces the original SoftFloat sums"

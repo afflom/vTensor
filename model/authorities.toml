@@ -37,10 +37,10 @@ realized_by = []
 [[authority]]
 id = "VERDANT-ENGINE-TENSOR"
 name = "Verdant Engine tensor API"
-citation = "https://github.com/afflom/verdant-engine/releases/tag/v2.22.3"
-checksum = "8839e19a5678e74c64488e17bcb36ccc0db82ac4b40db44e90fe5357cd9f32a3"
-artifact = "vendor/verdant-crates-manifest.json"
-statement = "The published Verdant tensor crate supplies the numerical API. The release manifest binds the resolved registry archives."
+citation = "https://github.com/afflom/verdant-engine/tree/eea54271d9b26f3e54d0531f0539a97a81cae12a"
+checksum = "cc62c0d74b5ebcd9b14bd7005c1fe5605e7b8691276156c25242323194571163"
+artifact = "model/verdant-development.json"
+statement = "The pinned upstream Verdant tensor API supplies its certified arithmetic and Arm reference sine."
 realized_by = ["VT-02"]
 
 [[authority]]
@@ -54,12 +54,12 @@ realized_by = ["FR-01", "FR-02", "FR-03", "FR-04", "FR-05"]
 
 [[authority]]
 id = "BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS"
-name = "Berkeley SoftFloat binary32 and binary64 conversions"
+name = "Berkeley SoftFloat binary conversions and binary64 addition"
 citation = "https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305"
 checksum = "a43936117a4b62b2c942b62144ab903f7d93c5fb313389caecbd6e790d416e34"
 artifact = "vendor/berkeley-softfloat-3e.tar.gz"
-statement = "SoftFloat Release 3e supplies the reference binary32-to-binary64 and binary64-to-binary32 conversions at round-to-nearest-even, signed I64 to binary32 and binary64, and binary64 truncation to signed I64 with the invalid exception flag."
-realized_by = ["VT-161", "VT-164", "VT-165", "VT-166"]
+statement = "SoftFloat Release 3e supplies the reference binary32-to-binary64 and binary64-to-binary32 conversions at round-to-nearest-even, signed I64 to binary32 and binary64, and binary64 truncation to signed I64 with the invalid exception flag. Its f64_add supplies the nearest-even binary64 sum."
+realized_by = ["VT-161", "VT-164", "VT-165", "VT-166", "VT-214"]
 
 [[authority]]
 id = "LEAN-SIGNED-MACHINE-INTEGERS"

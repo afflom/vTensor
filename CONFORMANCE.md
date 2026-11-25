@@ -300,6 +300,8 @@ model does not sanction.
 | `VT-210` | `build` | F16 and BF16 row sums reproduce the OpenVINO operator and E4M3 reductions reproduce the original GGML storage conversions and CPU sums |
 | `VT-212` | `build` | Integer repeat-back accumulates residues over four repeated axes and matches the original OpenVINO signed reduction across widths |
 | `VT-213` | `build` | Stored repeat-back decodes repeated blocks, folds binary32 rows in GGML order and encodes the resulting tensor with its original storage |
+| `VT-211` | `build` | Packed sine decodes GGML rows, evaluates the Verdant reference sine and reproduces the original GGML encoded results |
+| `VT-214` | `build` | Binary64 repeat-back accumulates binary64 words in GGML traversal order and reproduces the original SoftFloat sums |
 
 ## normalization-graphs
 
@@ -423,9 +425,9 @@ An authority is cited, never re-derived, and never gated on: what it states is n
 | Authority | Citation | Evidence here |
 | --- | --- | --- |
 | `LLAMA-CPP-GGML-BACKEND` | https://github.com/ggml-org/llama.cpp/tree/9a080f44b503c64f66c84a6274b9d9ee5d5b09d5 | -- |
-| `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/releases/tag/v2.22.3 | `VT-02` |
+| `VERDANT-ENGINE-TENSOR` | https://github.com/afflom/verdant-engine/tree/eea54271d9b26f3e54d0531f0539a97a81cae12a | `VT-02` |
 | `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
-| `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161`, `VT-164`, `VT-165`, `VT-166` |
+| `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161`, `VT-164`, `VT-165`, `VT-166`, `VT-214` |
 | `LEAN-SIGNED-MACHINE-INTEGERS` | https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/Init/Data/SInt/Basic.lean | `VT-163` |
 | `OPENVINO-REFERENCE-REDUCTION` | https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf86fc86650aa78a9c05d3e/src/core/reference/include/openvino/reference/reduce_sum.hpp | `VT-206`, `VT-209`, `VT-210`, `VT-212` |
 | `OPENVINO-REDUCE-SUM-OPERATOR` | https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf86fc86650aa78a9c05d3e/src/core/src/op/reduce_sum.cpp | `VT-210` |

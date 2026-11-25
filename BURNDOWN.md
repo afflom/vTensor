@@ -4,9 +4,9 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 ## Remaining work
 
-- [ ] Place and oracle-check the remaining 432 packed nonlinear unary descriptors. [Unary placements](verification/ggml-unary-provider-placements.json)
-- [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining nine measured packed nonlinear pairs (36 layouts) above the GGML error limit. [Packed outputs](verification/unary-quantization-boundaries.json) · [CPU arithmetic before encoding](verification/packed-unary-scalar-boundaries.json)
-- [ ] Implement and oracle-check 10 remaining binary64 `REPEAT_BACK` descriptors across all four axes and padded inputs. [Placement survey](verification/ggml-repeat-back-placements.json)
+- [ ] Place and oracle-check the remaining 324 packed nonlinear unary descriptors. [Unary placements](verification/ggml-unary-provider-placements.json)
+- [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining eight measured packed TANH, ELU and SOFTPLUS pairs (32 layouts) above the GGML error limit. [Packed outputs](verification/unary-quantization-boundaries.json) · [CPU arithmetic before encoding](verification/packed-unary-scalar-boundaries.json)
+- [ ] Adopt the Verdant release containing the reference sine. [Pinned patch](https://github.com/afflom/verdant-engine/pull/70)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -14,6 +14,10 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place all **360 surveyed REPEAT_BACK descriptors**. The final ten matched 5,120 SoftFloat binary64 outputs. Another 28 graphs matched GGML on empty inputs. [VT-214](verification/supplemental-double-fold-vt214.json)
+
+- [x] Place **3,564 of 3,888 surveyed unary descriptors**. All 108 packed SIN graphs matched 110,592 GGML outputs byte for byte. Stock llama-perplexity retained all 124 top tokens. [VT-211](verification/supplemental-packed-sine-vt211.json)
 
 - [x] Place 300 stored `REPEAT_BACK` descriptors. All 153,600 outputs matched the original GGML decoder, CPU fold and encoder across 30 types. [VT-213](verification/supplemental-stored-fold-vt213.json)
 

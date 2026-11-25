@@ -33,5 +33,30 @@
   "uncompressed_sha256": "3a2c96fee6b2c09fdd30674299f50ddaab5b28a9eca14f5b81d40f003dee571b",
   "full_rows_sha256": "9a8146c9c79676e47d4853d59370cceebfe33b26caf9fdca8fd04a3b45505df5",
   "table_cases": 10,
-  "format": "Hexadecimal IEEE binary32 words in logical row order, eight digits per word. Variant numbers are the 22 GGML unary variants followed by SQR, SQRT, LOG, SIN and COS."
+  "format": "Hexadecimal IEEE binary32 words in logical row order, eight digits per word. Variant numbers are the 22 GGML unary variants followed by SQR, SQRT, LOG, SIN and COS.",
+  "glibc_scalar_sources": {
+    "commit": "ef321e23c20eebc6d6fb4044425c00e6df27b05f",
+    "repository": "https://github.com/bminor/glibc",
+    "source_directory": "sysdeps/ieee754/flt-32",
+    "source_sha256": {
+      "s_expm1f.c": "b3b864ad6abee543d6661a3f976ee108ed8538ea975b253de7e636082521e6fb",
+      "s_log1pf.c": "401f3bdb821879c71e53e85fd84ecdeea8242c9640163750ac3cb79fa41227a9",
+      "s_tanhf.c": "dacb3c557d21589bc77cf644f4bf08c16d46ded64564757573f9a10d0e6809a3"
+    },
+    "library_sha256": "b2564000d114eb98300b2730c911c3e3fb557b85358e874aa960f6e59289bc4c",
+    "comparison": "Original glibc tanhf, expm1f and log1pf plus the original Arm expf, compared with GGML TANH, ELU and SOFTPLUS before and after encoding.",
+    "operation_storage_pairs": 99,
+    "compared_f32_words": 101376,
+    "different_f32_words": 0,
+    "different_encoded_buffers": 0,
+    "comparison_sha256": "1fb2456ddfac88631b4c7012cf9d88e80ac83c17b0800e852b1b7646a8fda462",
+    "system_libm_grid_words_per_function": 262144,
+    "system_libm_grid_differences": 0,
+    "expm1f_exhaustive_magnitudes": [
+      "0x33000000",
+      "0x42300000"
+    ],
+    "expm1f_exhaustive_words": 509607938,
+    "expm1f_system_libm_differences": 0
+  }
 }

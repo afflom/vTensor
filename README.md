@@ -15,7 +15,7 @@ backend independently for expected results. [Linkage check](VTENSOR-VERIFICATION
 
 At llama.cpp `9a080f44`, vTensor passes all 27,755 GGML factory cases. The stock scheduler assigns all 86,647 factory nodes to vTensor when it is the sole provider. The checklist tracks legal variants outside the factory and final release acceptance. [Factory verdicts](verification/ggml-factory-inventory.json) · [Scheduler evidence](verification/shared-host-storage-vt156.json) · [Provider burndown](BURNDOWN.md)
 
-The workspace pins Verdant 2.22.3 from its immutable release registry. VT-02 verifies the installed archives and the shared certificate for quotient arithmetic, logarithms and exact numeric equality. [Verdant release](https://github.com/afflom/verdant-engine/releases/tag/v2.22.3)
+Cargo pins Verdant at `eea54271d9b2` for its certified Arm reference sine. VT-02 verifies the upstream package sources and quotient certificate against the installed code. [Upstream patch](https://github.com/afflom/verdant-engine/pull/70) · [Pinned revision](model/verdant-development.json)
 
 Verdant Tensor supplies Prism-generated F64 addition, F32 widening and
 narrowing, and unsigned-count conversion for vTensor reductions. All 1,213,940
