@@ -491,7 +491,8 @@
     "ggml-signed-fold-oracle": "ada43d8ba1190205de808cd71db1f11394c15fd0219c1dea3d745961a684394c",
     "ggml-stored-fold-oracle": "46e359d68dbce02c9755884d045417f52ac7401915c9c6c995ff917eebaaa139",
     "ggml-packed-sine-oracle": "881be8507f7e672dae0beddf251ccacccfffd4390a855188db80db7a70ff87d1",
-    "ggml-double-fold-oracle": "3d65fa117144df29631bafe71575269992f2e9f9030f98e9b617a4cfa55d9e90"
+    "ggml-double-fold-oracle": "3d65fa117144df29631bafe71575269992f2e9f9030f98e9b617a4cfa55d9e90",
+    "ggml-stored-ranking-oracle": "fb2d61b974ba1d9b996dcf908f3e180f1f70c03ecd3837425c8fcd6f8fddac01"
   },
   "fixture_libraries": {
     "cast": "arithmetic",
@@ -737,7 +738,8 @@
     "signed-fold": "ggml-signed-fold",
     "stored-fold": "ggml-stored-fold",
     "packed-sine": "ggml-packed-sine",
-    "double-fold": "ggml-double-fold"
+    "double-fold": "ggml-double-fold",
+    "stored-ranking": "ggml-stored-ranking"
   },
   "drivers": {
     "double-sums": "stored-reductions",
@@ -763,7 +765,8 @@
     "signed-fold": "stored-reductions",
     "stored-fold": "stored-reductions",
     "packed-sine": "stored-unary",
-    "double-fold": "stored-reductions"
+    "double-fold": "stored-reductions",
+    "stored-ranking": "stored-reductions"
   },
   "refusal_field_columns": [
     "field",

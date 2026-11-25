@@ -302,6 +302,7 @@ model does not sanction.
 | `VT-213` | `build` | Stored repeat-back decodes repeated blocks, folds binary32 rows in GGML order and encodes the resulting tensor with its original storage |
 | `VT-211` | `build` | Packed sine decodes GGML rows, evaluates the Verdant reference sine and reproduces the original GGML encoded results |
 | `VT-214` | `build` | Binary64 repeat-back accumulates binary64 words in GGML traversal order and reproduces the original SoftFloat sums |
+| `VT-217` | `build` | Row ranking decodes stored GGML keys and selects the original ordering or top-k values across dense and strided rows |
 
 ## normalization-graphs
 

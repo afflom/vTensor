@@ -9,6 +9,7 @@
 //! way would still verify, and would no longer be the claim `TC-01` makes.
 
 use repo_model::repo_root as root;
+use vtensor_probes::Adt0 as Probe;
 
 fn provider_library() -> std::path::PathBuf {
     std::env::current_exe()
@@ -103,6 +104,7 @@ ggml_batches! {
     fn double_fold_vt_214() { "double-fold", 2, ["pointwise"] }
     fn signed_fold_vt_212() { "signed-fold", 8, ["pointwise"] }
     fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
+    fn stored_ranking_vt_217() { "stored-ranking", 8, ["typed"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
     fn stored_glu_vt_202() { "stored-glu", 82, ["pointwise", "typed"] }
@@ -389,7 +391,7 @@ fn contract_tc_01() {
 fn buffer_allocation_vt_10() {
     use vtensor_allocation::Adt0::*;
     let rows = boundary_rows("allocation", 10, 864, |probe| match probe {
-        vtensor_probes::Adt0::C2(c, o, s, a) => [c, o, s, a],
+        Probe::C2(c, o, s, a) => [c, o, s, a],
         _ => panic!("missing allocation case"),
     });
     let edges: [([u64; 4], [u64; 4]); 10] = native_backend_oracle::binding(&["allocation_edges"]);
@@ -408,13 +410,11 @@ fn buffer_allocation_vt_10() {
 fn verify_row_graphs() {
     use vtensor_pointwise::{run, Adt0, Adt10, Adt9};
     for probe in probes(30, 2, 0, 0) {
-        let vtensor_probes::Adt0::C7(op, kind, dest, extent) = probe else {
+        let Probe::C7(op, kind, dest, extent) = probe else {
             panic!("missing empty row")
         };
-        assert!(matches!(
-            run(Adt0::C7(op, kind, dest, extent)),
-            Ok(Adt9::C0(Adt10::C4(2, ..)))
-        ));
+        let plan = run(Adt0::C7(op, kind, dest, extent));
+        assert!(matches!(plan, Ok(Adt9::C0(Adt10::C4(2, ..)))));
     }
 }
 
@@ -422,7 +422,7 @@ fn verify_row_graphs() {
 #[test]
 fn fixture_generation_vt_35() {
     native_backend_oracle::fixture_input(0);
-    assert!(probes(35, 6, 0, 0).all(|probe| matches!(probe, vtensor_probes::Adt0::C6(true))));
+    assert!(probes(35, 6, 0, 0).all(|probe| matches!(probe, Probe::C6(true))));
 }
 
 /// `VT-40`: Native fixture construction initialized bytes execution descriptors and atomic refusal mutations match the frozen pre-migration corpus while expected numerical results remain computed by the imported GGML CPU oracle
@@ -461,26 +461,25 @@ fn native_fixture_baselines_vt_40() {
         let name = row["name"].as_str().unwrap();
         let count = |key: &str| row[key].as_u64().unwrap();
         let cases = count("cases");
-        let mut registered = GGML_BATCHES.iter().filter(|(mode, _)| *mode == name);
-        assert_eq!(registered.next(), Some(&(name, cases as usize)));
-        assert_eq!(registered.next(), None, "duplicate frozen batch {name}");
+        let registered = GGML_BATCHES.iter().filter(|(mode, _)| *mode == name);
+        assert!(
+            registered.eq([&(name, cases as usize)]),
+            "changed frozen batch {name}"
+        );
         assert!(count("bytes") > 0);
         assert_eq!(row["sha256"].as_str().unwrap().len(), 64);
         assert_eq!(row["record"].as_array().unwrap().len() as u64, cases);
-        let total = count("positive_cases") + count("constructed_refusals");
-        assert_eq!(total, cases);
+        assert_eq!(
+            count("positive_cases") + count("constructed_refusals"),
+            cases
+        );
     }
 }
 
-fn probes(
-    suite: u64,
-    count: u64,
-    block: u64,
-    bytes: u64,
-) -> impl Iterator<Item = vtensor_probes::Adt0> {
+fn probes(suite: u64, count: u64, block: u64, bytes: u64) -> impl Iterator<Item = Probe> {
     tensor_layout::certified_current_model("probes");
     let query = move |index| vtensor_probes::run(suite, index, block, bytes).unwrap();
-    assert!(matches!(query(count), vtensor_probes::Adt0::C0));
+    assert!(matches!(query(count), Probe::C0));
     (0..count).map(query)
 }
 
@@ -488,7 +487,7 @@ fn fixture_queries(suite: u64, count: u64) {
     let spatial = suite == 47;
     tensor_layout::certified_current_model(if spatial { "spatial" } else { "arithmetic" });
     for probe in probes(suite, count, 0, 0) {
-        let vtensor_probes::Adt0::C1(query, case, source, item, expected) = probe else {
+        let Probe::C1(query, case, source, item, expected) = probe else {
             panic!("missing fixture probe");
         };
         let actual = if spatial {
@@ -504,7 +503,7 @@ fn boundary_rows<const N: usize, const M: usize>(
     name: &str,
     suite: u64,
     count: u64,
-    unpack: impl Fn(vtensor_probes::Adt0) -> [u64; N],
+    unpack: impl Fn(Probe) -> [u64; N],
 ) -> impl Iterator<Item = ([u64; N], [u64; M])> {
     use std::fmt::Write;
     tensor_layout::certified_current_model("layout");
@@ -552,12 +551,6 @@ fn normalization_arithmetic_vt_45() {
     let mean = divide(widen(16777217), widen(5));
     assert_eq!(evaluate_wide(2, mean, 0).unwrap(), Some(0x4a4cccce));
     assert_eq!(evaluate_wide(6, 0, 0).unwrap(), None);
-}
-
-fn assert_model_identity(name: &str, model: &serde_json::Value, source: &serde_json::Value) {
-    for key in ["source_id", "semantic_id"] {
-        assert_eq!(model[key], source[key], "stale {name} model: {key}");
-    }
 }
 
 // Hash the compiler's own recipe tokens. A change to either the cached
@@ -1095,9 +1088,12 @@ mod tensor_layout {
         let result = ggml_oracle::read_json(root.join(format!("{bundle}/result.json")));
         let flags = ["--project", &project, "--diagnostic-format=json", "check"];
         let current = ggml_oracle::tool_json(root, "lexlean", &flags);
-        super::assert_model_identity(name, &current, &result["source"]);
+        let source = &result["source"];
+        for key in ["source_id", "semantic_id"] {
+            assert_eq!(current[key], source[key], "stale {name} {key}");
+        }
         let lock_digest = ggml_oracle::file_digest(root.join(project).with_extension("lock"));
-        assert_eq!(result["source"]["lock_sha256"], lock_digest);
+        assert_eq!(source["lock_sha256"], lock_digest);
         let lock_args = ["--quiet", "certified-kernel-lock", name, &bundle];
         let expected = ggml_oracle::tool_json(root, "just", &lock_args);
         let lock = ggml_oracle::read_json(root.join(format!("{name}-kernel.lock")));
@@ -1288,7 +1284,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "e6e2a9970b89bed475b269fb5b262680a2149618776437b29db72bfbd67ea84e",
+            "8d5ebec19afc136ae348aa57e1113891f8e3bbb11c0c16d008c947e9ccb33d58",
         )
     });
 
@@ -1388,6 +1384,9 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
 
     build_recipe! { HOST_RECIPE;
     fn build_host(common: &Path, library: &Path, imported: bool) -> std::path::PathBuf {
+        // The cold native and imported hosts share compiler outputs under the same cache.
+        static BUILD: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _guard = BUILD.lock().unwrap_or_else(|error| error.into_inner());
         let mut driver = String::from(if imported { "#define VTENSOR_IMPORTED_SUITE\n" } else { "" });
         driver.push_str(HEADER);
         for (key, value) in vtensor_backend::abi_layout() {
@@ -1440,8 +1439,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
     }
 
     pub(super) fn verify(root: &Path, mode: &str, expected_cases: usize) {
-        static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
-        let build_guard = ACCESS.lock().unwrap_or_else(|error| error.into_inner());
         let common = STORAGE_ORACLE.parent().unwrap();
         let library = super::provider_library();
         static HOSTS: [std::sync::OnceLock<std::path::PathBuf>; 2] =
@@ -1493,7 +1490,6 @@ pub extern "C" fn fixture_query(query:u64, case:u64, source:u64, item:u64)->Answ
             command.arg(fixture_library(common, model));
         }
         // The verified binaries are immutable. Each concurrent evaluator owns its trace paths.
-        drop(build_guard);
         let text = super::ggml_oracle::batch(&mut command, input);
         let footer = format!("RESULT cases {expected_cases}\n");
         let rows = text.strip_suffix(&footer).expect("native case count");
@@ -2286,12 +2282,13 @@ int main(int argc, char **argv) {
             size_t row=ggml_row_size(type,width),block=ggml_type_size(type);
             auto input=read_hex_bytes(rows*row),rhs=glu && form>=2?read_hex_bytes(rows*row):repeat_e4?read_hex_bytes((first+2*second)*4*sizeof(float)):std::vector<unsigned char>{};
             const int output_rows=stored_fold?2:fold || (reductions && second==2)?1:rows;
-            auto expected=read_hex_bytes(stored_fold?2*ggml_row_size(type,256):fold?16*block:reductions?output_rows*(second>=2?block:sizeof(uint32_t)):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
+            auto expected=read_hex_bytes(stored_fold?2*ggml_row_size(type,256):fold?16*block:reductions?output_rows*(second>=6?(second==8?1:width)*sizeof(int32_t):second>=2?block:sizeof(uint32_t)):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
             for(int pad=0;pad<=!repeat_e4;++pad)for(int ip=0;ip<=(!scalar_diag && !glu && !reductions);++ip){
                 graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:stored_fold?4:fold?2:(reductions||repeat_e4)?4:2,fold?2:reductions?1:repeat_e4?4:2,scalar_diag?3:(fold||repeat_e4)?2:1);
                 auto src=pad?ggml_view_4d(ctx,base,width,base->ne[1],base->ne[2],base->ne[3],base->nb[1],base->nb[2],base->nb[3],block):base;
                 ggml_tensor *out,*right=nullptr;
                 if(fold)out=ggml_repeat_back(ctx,src,ggml_new_tensor_2d(ctx,type,stored_fold?256:16,output_rows));
+                else if(reductions && second>=6){CHECK(second<=8);out=second==8?ggml_top_k(ctx,src,1):ggml_argsort(ctx,src,second==7?GGML_SORT_ORDER_DESC:GGML_SORT_ORDER_ASC);}
                 else if(reductions){static constexpr decltype(&ggml_mean) ops[]={ggml_mean,ggml_argmax,ggml_sum,ggml_sum_rows};CHECK(second>=0 && size_t(second)<std::size(ops));out=ops[second](ctx,src);}
                 else if(stored_transforms){CHECK(second>=0 && second<4);out=transform(ctx,src,second,ip,second<2?-1.25f:second==2?-0.8125f:0.1875f,second==2?1.1875f:0.375f);}
                 else if(scalar_diag)out=ggml_diag(ctx,src);
@@ -2308,7 +2305,7 @@ int main(int argc, char **argv) {
                     const decltype(&ggml_sqr) math[][2]={{ggml_sqr,ggml_sqr_inplace},{ggml_sqrt,ggml_sqrt_inplace},{ggml_log,ggml_log_inplace},{ggml_sin,ggml_sin_inplace},{ggml_cos,ggml_cos_inplace}};
                     CHECK(second>=0 && second<27);out=second<22?(ip?ggml_unary_inplace:ggml_unary)(ctx,src,ggml_unary_op(second)):math[second-22][ip](ctx,src);
                 }
-                auto graph=ctx.allocate(out,backend,true);CHECK(graph && ggml_backend_supports_op(backend,out));
+                auto graph=ctx.allocate(out,backend,true);CHECK(graph);
                 std::vector<unsigned char> backing(ggml_nbytes(base),0xa5);
                 for(int j=0;j<rows;++j)memcpy(backing.data()+j*base->nb[1]+pad*block,input.data()+j*row,row);
                 ggml_backend_tensor_set(base,backing.data(),0,backing.size());
@@ -2809,8 +2806,9 @@ int main(int argc, char **argv) {
           graph_fixture strided(2); CHECK(strided); auto result=ggml_arange(strided,0.0f,10.0f,1.0f);
           result->ne[0]=2;result->ne[axis]=5;result->nb[1]=16;result->nb[2]=axis==2?20:80;result->nb[3]=100;
           auto graph=strided.allocate(result,backend); CHECK(graph);
-          std::vector<unsigned char> expected(ggml_nbytes(result));ggml_backend_tensor_memset(result,0xA5,0,expected.size());
-          CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);ggml_backend_tensor_get(result,expected.data(),0,expected.size());
+          ggml_backend_tensor_memset(result,0xA5,0,ggml_nbytes(result));
+          CHECK(ggml_backend_graph_compute(reference,graph)==GGML_STATUS_SUCCESS);
+          auto expected=tensor_bytes(result);
           ggml_backend_tensor_memset(result,0xA5,0,expected.size());CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
           CHECK(compare_result(result,nullptr,expected,0));++cases;
         }

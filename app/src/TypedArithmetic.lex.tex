@@ -731,6 +731,16 @@ definition{
 }
 
 definition{
+  name: rankSourceLayout,
+  parameters: [source : NormPlan::TensorDescriptor],
+  result: Bool,
+  body: (let kind : Nat := (project source ty);
+    (if (kind =? 0) then (rankLayout source) else
+      (((kind <? 26) || (28 <? kind)) && (castStorageLayout source)))),
+  executable: true
+}
+
+definition{
   name: rankPlan,
   parameters: [
     operation : Nat,
@@ -739,7 +749,7 @@ definition{
     output : NormPlan::TensorDescriptor
   ],
   result: Response,
-  body: (if ((((((((((((project left ty) =? 0) && ((project output ty) =? 26)) && ((project left n0) <=? 2147483647)) && ((project output n0) <=? (project left n0))) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((operation =? 67) || ((order <=? 1) && ((project output n0) =? (project left n0))))) && (rankLayout left)) && (rankLayout output)) && (NormPlan::separateTensors left output)) then (ctor Response.planned (record Plan {steps := (prim multiply (project output n1) (prim multiply (project output n2) (project output n3) : Nat) : Nat), capacity := 3, uniformImportance := (ctor Option.none [Nat]), operation := operation, gateVariant := (if (operation =? 67) then 1 else order), gateAlpha := 0, gateLimit := 0, left := left, rhs := left, output := output, rowArithmetic := false, stagedWidth := 0})) else (ctor Response.invalid)),
+  body: (if ((((((((((rankSourceLayout left) && ((project output ty) =? 26)) && ((project left n0) <=? 2147483647)) && ((project output n0) <=? (project left n0))) && ((project left n1) =? (project output n1))) && ((project left n2) =? (project output n2))) && ((project left n3) =? (project output n3))) && ((operation =? 67) || ((order <=? 1) && ((project output n0) =? (project left n0))))) && (rankLayout output)) && (NormPlan::separateTensors left output)) then (ctor Response.planned (record Plan {steps := (if ((project output n0) =? 0) then 0 else (prim multiply (project output n1) (prim multiply (project output n2) (project output n3) : Nat) : Nat)), capacity := 3, uniformImportance := (ctor Option.none [Nat]), operation := operation, gateVariant := (if (operation =? 67) then 1 else order), gateAlpha := 0, gateLimit := 0, left := left, rhs := left, output := output, rowArithmetic := false, stagedWidth := (if ((project left ty) =? 0) then 0 else (project left n0))})) else (ctor Response.invalid)),
   executable: true
 }
 
@@ -747,7 +757,7 @@ definition{
   name: rankStep,
   parameters: [ordinal : Nat, execution : Plan],
   result: Response,
-  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let output : NormPlan::TensorDescriptor := (project execution output); (if (ordinal <? (project execution steps)) then (ctor Response.rankRow (prim multiply ordinal (project left s1) : Nat) (prim multiply ordinal (project output s1) : Nat) (project left n0) (project output n0) ((project execution gateVariant) =? 1)) else (ctor Response.invalid)))),
+  body: (let left : NormPlan::TensorDescriptor := (project execution left); (let output : NormPlan::TensorDescriptor := (project execution output); (if (ordinal <? (project execution steps)) then (ctor Response.rankRow (storedOffset (prim multiply ordinal (project left n0) : Nat) left) (prim multiply ordinal (project output s1) : Nat) (project left n0) (project output n0) ((project execution gateVariant) =? 1)) else (ctor Response.invalid)))),
   executable: true
 }
 

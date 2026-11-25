@@ -1684,9 +1684,13 @@ fn execute_typed(
                     .get_or_insert_with(|| RowRankingF32::new(width, count, descending))
                     .as_mut()
                     .map_err(BackendError::invalid)?;
-                // SAFETY: Prism admits aligned binary32 lanes, disjoint output storage and the full row spans.
-                let input =
-                    unsafe { std::slice::from_raw_parts(primary.add(from as usize).cast(), width) };
+                let input = if values.is_empty() {
+                    // SAFETY: the direct F32 plan checks alignment and the entire input row span.
+                    unsafe { std::slice::from_raw_parts(primary.add(from as usize).cast(), width) }
+                } else {
+                    decode(from, values)?;
+                    values
+                };
                 let indices = rank.select(input)?;
                 // SAFETY: the selected prefix fits this certified contiguous GGML I32 row.
                 unsafe { write_row(output.add(to as usize), indices) };
@@ -2502,10 +2506,8 @@ mod attention {
             scratch: &mut [f32],
         ) -> Result<*mut u8, BackendError> {
             if direct {
-                Ok(self
-                    .region(offset, usize::from(self.ne[0] > 0))?
-                    .as_ptr()
-                    .cast_mut())
+                let region = self.region(offset, usize::from(self.ne[0] > 0))?;
+                Ok(region.as_ptr().cast_mut())
             } else {
                 self.decode(offset, scratch)?;
                 Ok(scratch.as_mut_ptr().cast())

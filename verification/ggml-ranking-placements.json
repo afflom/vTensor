@@ -1,6 +1,6 @@
 {
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "616fe76e77f1a242c3b8b96ac48ce4620c73f2d6d15270ab942e628c29f4b92f",
+  "provider_sha256": "eecdcfbbb526ef5336debcce49560e9f7534e087d6d64984fbef7d258411e422",
   "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
   "cpu_library_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
@@ -12,15 +12,16 @@
   ],
   "scope": "36 live storage types. Each [256,2,2,1] source uses dense and block-offset padded rows. Exercise both ARGSORT directions, TOP_K with k=1,17,256 and the descending ARGSORT view with k=17.",
   "descriptors": 432,
-  "placed": 12,
-  "unplaced": 420,
+  "placed": 396,
+  "unplaced": 36,
   "direct_cpu_graphs": 12,
   "compared_indices": 6424,
   "comparison": "Compare original GGML F32 CPU rows in order for ARGSORT and its prefix view. TOP_K selects an unordered set by contract. Compare its selected indices per row after sorting. The four source rows have distinct values within each row.",
   "placement": "Query original public descriptors before allocation and inspect every graph node on a vTensor-only scheduler.",
-  "typed_attestation": "419ecdde55e3d9b66d0da70f6f501bb3467dc6ef48f8f6a61682fdb2a3fc0617",
+  "typed_attestation": "a2cc8e91664467132069b7a312c0492651dee12e0b94627c2147970857a74d04",
   "driver_sha256": "8dd409b31e16e3b18388a9d053e8a3f1e401c382e2800886653fe64e84729f64",
   "table": "ggml-ranking-placements.tsv.gz",
-  "table_sha256": "0a6814d1cb2978355a847f4c5183aed23ae1ad2f794fc623efed15a0adce1c7f",
-  "uncompressed_sha256": "eb54e6227ef6cc23a9361a38d3c44f011ebbd800fcab402f3020175f110bc0fb"
+  "table_sha256": "9f736e3e729122e8c365173aef4d0c0d501e0543e786846f5dc3ce36381285a7",
+  "uncompressed_sha256": "78de88c6b9a73180ee2c768a213c66e3a19c699caf262ba570a1edee89be3b52",
+  "stored_ranking": "supplemental-stored-ranking-vt217.json"
 }

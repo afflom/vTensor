@@ -950,3 +950,9 @@ Feature: native-backend
     Given binary64 inputs with adjacent values above binary32 precision, cancellation and infinities
     When a consumer schedules REPEAT_BACK over repeated axes
     Then every stored output matches the original SoftFloat binary64 addition sequence
+
+  @VT-217 @build
+  Scenario: Stored rows select the original GGML ranking
+    Given original GGML decoded keys and CPU ranking outputs
+    When a consumer requests ascending or descending ARGSORT or a TOP_K prefix
+    Then vTensor places the graph and preserves the selected keys and source padding

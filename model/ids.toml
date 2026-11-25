@@ -1356,3 +1356,9 @@ id = "VT-214"
 level = "build"
 suite = "native-backend"
 statement = "Binary64 repeat-back accumulates binary64 words in GGML traversal order and reproduces the original SoftFloat sums"
+
+[[id]]
+id = "VT-217"
+level = "build"
+suite = "native-backend"
+statement = "Row ranking decodes stored GGML keys and selects the original ordering or top-k values across dense and strided rows"

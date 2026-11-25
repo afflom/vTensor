@@ -1,0 +1,36 @@
+{
+  "requirement": "VT-217",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "eea54271d9b26f3e54d0531f0539a97a81cae12a",
+  "provider_sha256": "eecdcfbbb526ef5336debcce49560e9f7534e087d6d64984fbef7d258411e422",
+  "typed_attestation": "a2cc8e91664467132069b7a312c0492651dee12e0b94627c2147970857a74d04",
+  "oracle": "ggml-stored-ranking-oracle.json",
+  "placements": "ggml-ranking-placements.json",
+  "storage_types": 32,
+  "new_placements": 384,
+  "compared_indices": 205568,
+  "reference_sha256": "a0950b6091147ef6be512f43a2f135437e93e5a89b93f3a57eba6d90e91032e1",
+  "reference_driver_sha256": "6ed8c738dd5f79bdf736b27b3671a7c526ddfdc3f5b4f87c8da1e266c1eb3174",
+  "cpu_reference_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
+  "generic_cpu_reference_sha256": "03dd6e67d861f04190104c5ea7849262ce379ffc0bbdc4fee42c4d1cfedd865c",
+  "both_cpu_transcripts_identical": true,
+  "execution_sha256": "aa9ed5d0f052d8ecfa09d1e74c47ba2eae8209dfb004a43aaa17095b81233d5b",
+  "execution_driver_sha256": "6f7ce63a6c0922e7b43fa4f02c09b9ab616b068a75af27d8226a8f11338599eb",
+  "comparison": "Original GGML F32 CPU ranks the original decoded keys. Require distinct, in-range output indices, the same ordered key sequence for ARGSORT and prefix views, and the same multiset for unordered TOP_K. All input bytes and padding must survive execution.",
+  "empty": {
+    "graphs": 99,
+    "storage_types": 33,
+    "forms": [
+      "nonempty input and zero k",
+      "zero-width input and zero k",
+      "zero-width ARGSORT"
+    ],
+    "driver_sha256": "2570198b5c86c2817a8b224100563eddc75959efcc875ebb5d7ef695036e0252",
+    "execution_sha256": "f84c80bae5d73a02d5f811b2a386c19e0b0594539e1cf2379c30919b6a11de19",
+    "comparison": "On each empty result compare with the original CPU execution status, zero output span and intact source bytes."
+  },
+  "recurring_graphs": 8,
+  "recurring_indices": 4112,
+  "negative_control": "The prior plan refused the first stored graph. Inverting the ranking direction failed its stored output comparison. Restoring the modeled direction passed.",
+  "non_prism_lines": 12515
+}
