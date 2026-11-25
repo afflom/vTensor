@@ -293,6 +293,7 @@ model does not sanction.
 | `VT-204` | `build` | Scale, scale with bias, clamp and leaky ReLU project stored rows through certified binary32 transforms and reproduce GGML CPU storage |
 | `VT-203` | `build` | Packed LOG executes through certified row projection and matches original GGML CPU logarithm and quantization |
 | `VT-205` | `build` | Stored MEAN and ARGMAX reduce independently decoded rows with the original GGML mean and last-maximum semantics |
+| `VT-206` | `build` | Signed integer SUM and SUM_ROWS preserve the declared storage width and match the original OpenVINO reduction selected by GGML |
 
 ## normalization-graphs
 
@@ -420,6 +421,7 @@ An authority is cited, never re-derived, and never gated on: what it states is n
 | `PRISM-TEMPLATE-FRAME` | https://github.com/UOR-Foundation/template/tree/b64cc73c94773ed5bcc9d0549b1ae2c836fa1e0b | `FR-01`, `FR-02`, `FR-03`, `FR-04`, `FR-05` |
 | `BERKELEY-SOFTFLOAT-BINARY-CONVERSIONS` | https://github.com/ucb-bar/berkeley-softfloat-3/tree/07ebd29db0cfb55723a79fbbffe99103ef38e305 | `VT-161`, `VT-164`, `VT-165`, `VT-166` |
 | `LEAN-SIGNED-MACHINE-INTEGERS` | https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/Init/Data/SInt/Basic.lean | `VT-163` |
+| `OPENVINO-REFERENCE-REDUCTION` | https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf86fc86650aa78a9c05d3e/src/core/reference/include/openvino/reference/reduce_sum.hpp | `VT-206` |
 
 ## Claims that are not conformance IDs
 

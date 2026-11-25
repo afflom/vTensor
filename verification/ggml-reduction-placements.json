@@ -1,6 +1,6 @@
 {
   "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
-  "provider_sha256": "eac7d32318d48c57987febe046ccd78a0cedd99e45b6d8106ad835d654f28925",
+  "provider_sha256": "e1cb6ca64269db31f05ae61c331f712d39c7d095db23023e7462382d69aacdf4",
   "cpu_sha256": "6caa3d0a9cb64c0beb492142e5d0133df95374278bfdc8ef9dfdb7bb41373d4c",
   "constructor_sha256": "b7c58b608f00a5650030ccee5eaa8eaa32fe5d0b1a40b517aaf546d9ea4558b1",
   "cpu_ops_sha256": "f393063d450165e2a07145c55900e23cc0381bf5b15ad7c16270b0aff1c093e2",
@@ -9,13 +9,13 @@
   "operator_counts": {
     "SUM": {
       "descriptors": 18,
-      "placed": 6,
+      "placed": 14,
       "direct_cpu": 6,
       "output_values_compared": 6
     },
     "SUM_ROWS": {
       "descriptors": 18,
-      "placed": 2,
+      "placed": 10,
       "direct_cpu": 2,
       "output_values_compared": 8
     },
@@ -45,13 +45,14 @@
     }
   },
   "descriptors": 5366,
-  "placed": 158,
-  "unplaced": 5208,
+  "placed": 174,
+  "unplaced": 5192,
   "output_values_compared": 2082,
   "reference": "Call each original GGML constructor before allocation. Query both devices and split supported graphs using a vTensor-only GGML scheduler. For shapes and types supported by the original CPU kernel, compare all output bytes after execution on each backend.",
   "table": "ggml-reduction-placements.tsv.gz",
-  "table_sha256": "2a59842bfefbcbfeb0913e73a42fc69fb49326d4669541d12fc8e804469b2e90",
-  "uncompressed_sha256": "e9fda19dda2c9714cf630a07b79acfc782240a5af820a2848eea57b8aa9b2919",
-  "provider_pointwise_attestation": "f4ea0ba74e18042574227a85c0251a8ae13ba2d53603bcf4cdddd205363d610b",
-  "stored_outputs": "supplemental-stored-reductions-vt205.json"
+  "table_sha256": "9cb544e77c1fad0058e351cd99936403bfc9f193b8d0f3f4d1efe89a60221c7a",
+  "uncompressed_sha256": "a84ef2ddae384a17f8847ea19388f15be15062fef3041ef7133b40762c38e587",
+  "provider_pointwise_attestation": "1162418c956af19d24b356cf5c67455a05785c6c66851a2f07f08d764b788c63",
+  "stored_outputs": "supplemental-stored-reductions-vt205.json",
+  "signed_sums": "supplemental-signed-sums-vt206.json"
 }

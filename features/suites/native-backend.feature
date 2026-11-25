@@ -896,3 +896,9 @@ Feature: native-backend
     Given original GGML encoded rows with multiple equal maxima
     When a provider computes the mean or maximum index on dense and offset inputs
     Then the output matches the original CPU operation and the input guards retain their bytes
+
+  @VT-206 @build
+  Scenario: Sum signed integer tensors in their declared storage
+    Given the original OpenVINO ReduceSum for GGML's all-axis and row-axis translations
+    When signed integer values cross their storage-width boundary in dense or padded views
+    Then the sum matches the reference bytes and the input storage and padding are preserved

@@ -1302,3 +1302,9 @@ id = "VT-205"
 level = "build"
 suite = "native-backend"
 statement = "Stored MEAN and ARGMAX reduce independently decoded rows with the original GGML mean and last-maximum semantics"
+
+[[id]]
+id = "VT-206"
+level = "build"
+suite = "native-backend"
+statement = "Signed integer SUM and SUM_ROWS preserve the declared storage width and match the original OpenVINO reduction selected by GGML"

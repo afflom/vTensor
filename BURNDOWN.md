@@ -6,7 +6,7 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 
 - [ ] Place and oracle-check the remaining 432 packed nonlinear unary descriptors. [Unary placements](verification/ggml-unary-provider-placements.json)
 - [ ] Match the CPU decoder, unary operation and encoder end to end for the remaining nine measured packed nonlinear pairs (36 layouts) above the GGML error limit. [Packed outputs](verification/unary-quantization-boundaries.json) · [CPU arithmetic before encoding](verification/packed-unary-scalar-boundaries.json)
-- [ ] Place and oracle-check 5,208 remaining reduction and comparison descriptors (12 SUM, 16 SUM_ROWS and 5,180 COUNT_EQUAL). [Reduction survey](verification/ggml-reduction-placements.json)
+- [ ] Place and oracle-check 5,192 remaining reduction and comparison descriptors (4 SUM, 8 SUM_ROWS and 5,180 COUNT_EQUAL). [Reduction survey](verification/ggml-reduction-placements.json)
 - [ ] Map legal type tuples, flags, views and in-place forms to VT IDs, Prism roots, Verdant entry points and oracle evidence. Extend the mapped variants for opcodes and storage types absent from factory graphs. [Declared API](model/ggml-declarations.toml)
 - [ ] Implement residual reachable variants from VT-01–51 and outside the factory. Compare strides, empty axes, broadcasts, overlapping views, precision and typed refusals against a pinned external oracle.
 - [ ] Verify preallocation admission and scheduler placement across the remaining legal graph variants. [Backend contract](vendor/llama.cpp-oracle/ggml/src/ggml-backend-impl.h)
@@ -15,6 +15,8 @@ Target the complete backend contract at llama.cpp `9a080f44`. Close each box wit
 - [ ] Refresh the installed-plugin evidence and full `just vv` at the final implementation revision.
 
 ## Establish coverage and unblock release
+
+- [x] Place signed **SUM and SUM_ROWS** for I8, I16, I32 and I64. All 40 outputs matched the imported OpenVINO reference, including overflow. Another 24 graphs covered empty and multi-plane tensors. [VT-206](verification/supplemental-signed-sums-vt206.json)
 
 - [x] Place all **72 MEAN and 72 ARGMAX** descriptors. The 140 newly admitted graphs matched all 560 oracle words. Empty-row and empty-column behavior also matched across all 36 storage types. [VT-205](verification/supplemental-stored-reductions-vt205.json)
 

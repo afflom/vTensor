@@ -1,0 +1,25 @@
+{
+  "requirement": "VT-206",
+  "ggml_revision": "9a080f44b503c64f66c84a6274b9d9ee5d5b09d5",
+  "verdant_commit": "ecdaef6c3875afedd47ac0ebad84d9c22d2197a9",
+  "provider_sha256": "e1cb6ca64269db31f05ae61c331f712d39c7d095db23023e7462382d69aacdf4",
+  "pointwise_attestation": "1162418c956af19d24b356cf5c67455a05785c6c66851a2f07f08d764b788c63",
+  "semantic_id": "1844b3424eb5231f77ff07fbca02f65e44d741768044b34911580b7e2f5e1b10",
+  "oracle": "ggml-signed-sums-oracle.json",
+  "placements": "ggml-reduction-placements.json",
+  "prior_placements": 158,
+  "new_placements": 16,
+  "placed": 174,
+  "unplaced": 5192,
+  "recurring_graphs": 16,
+  "logical_outputs_compared": 40,
+  "comparison": "Exact signed storage bytes for SUM and SUM_ROWS across I8, I16, I32 and I64, including modular overflow, padded rows and preserved input storage.",
+  "additional_axes": {
+    "graphs": 24,
+    "output_values": 60,
+    "table_sha256": "4e16878284650f074b24daf424bf3f4d9e16335e15bbbe1902aef4f6d0a154bb",
+    "comparison": "Original OpenVINO ReduceSum versus the loaded GGML provider on two-plane tensors with seven columns, empty columns or empty rows."
+  },
+  "negative_control": "The previous provider refused the first signed SUM descriptor. Replacing the Verdant modular-add operation with subtraction failed the byte comparison. Restoring addition passed.",
+  "non_prism_lines": 12524
+}

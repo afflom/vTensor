@@ -95,6 +95,7 @@ ggml_batches! {
     fn broadcast_packed_addition_vt_173() { "packed-broadcast", 661, ["typed"] }
     fn packed_addition_vt_169() { "packed-add", 661, ["typed"] }
     fn packed_vector_unary_vt_201() { "vector-unary", 36, ["pointwise", "typed"] }
+    fn signed_sums_vt_206() { "signed-sums", 16, ["pointwise"] }
     fn stored_reductions_vt_205() { "stored-reductions", 140, ["pointwise"] }
     fn stored_transforms_vt_204() { "stored-transforms", 132, ["pointwise", "typed"] }
     fn stored_glu_vt_202() { "stored-glu", 82, ["pointwise", "typed"] }
@@ -1052,17 +1053,15 @@ mod oracle_import {
             "only exact pinned oracle source may be excluded from local implementation accounting"
         );
 
-        let model = Model::load(&root.join("model")).expect("the project model loads");
-        model
-            .check_artifacts(&root)
-            .expect("the authority snapshot is pinned");
-        let authority = model
-            .authorities
+        let authorities = Model::load(&root.join("model")).unwrap().authorities;
+        let row = authorities
             .authority
             .iter()
             .find(|row| row.id == "LLAMA-CPP-GGML-BACKEND")
-            .expect("the imported oracle is registered as an authority");
-        assert_eq!(authority.artifact.as_deref(), Some(directory));
+            .expect("registered GGML oracle");
+        assert_eq!(row.artifact.as_deref(), Some(directory));
+        let digest = repo_model::artifact::artifact_checksum(&root, &row.id, directory).unwrap();
+        assert_eq!(row.checksum, digest, "{directory}");
     }
 }
 
@@ -1284,7 +1283,7 @@ mod native_backend_oracle {
     pub(super) static ORACLE_BINDINGS: LazyLock<serde_json::Value> = LazyLock::new(|| {
         frozen_json(
             "native-oracle-bindings",
-            "718160bdcd89573b761363463b199c93b4472cd4c1d98d13526b1dc906e0c361",
+            "11884110447096c6d029764ccdafaff9d3d0bec508ad4665e3d8542731e2d066",
         )
     });
 
@@ -2278,12 +2277,13 @@ int main(int argc, char **argv) {
             int width=scalar_diag?second:repeat_e4?16:glu?512:256,rows=scalar_diag?6:repeat_e4?32:4;
             size_t row=ggml_row_size(type,width),block=ggml_type_size(type);
             auto input=read_hex_bytes(rows*row),rhs=glu && form>=2?read_hex_bytes(rows*row):repeat_e4?read_hex_bytes((first+2*second)*4*sizeof(float)):std::vector<unsigned char>{};
-            auto expected=read_hex_bytes(reductions?rows*sizeof(uint32_t):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
+            const int output_rows=reductions && second==2?1:rows;
+            auto expected=read_hex_bytes(reductions?output_rows*(second>=2?block:sizeof(uint32_t)):rows*row*(scalar_diag?width:1)/(glu && form<2?2:1));CHECK(!input.empty() && !expected.empty() && (!(repeat_e4 || (glu && form>=2)) || !rhs.empty()));
             for(int pad=0;pad<=!repeat_e4;++pad)for(int ip=0;ip<=(!scalar_diag && !glu && !reductions);++ip){
                 graph_fixture ctx(8);auto base=ggml_new_tensor_4d(ctx,type,width+2*pad*ggml_blck_size(type),scalar_diag?1:(reductions||repeat_e4)?4:2,reductions?1:repeat_e4?4:2,scalar_diag?3:repeat_e4?2:1);
                 auto src=pad?ggml_view_4d(ctx,base,width,base->ne[1],base->ne[2],base->ne[3],base->nb[1],base->nb[2],base->nb[3],block):base;
                 ggml_tensor *out,*right=nullptr;
-                if(reductions){CHECK(second==0 || second==1);out=second?ggml_argmax(ctx,src):ggml_mean(ctx,src);}
+                if(reductions){static constexpr decltype(&ggml_mean) ops[]={ggml_mean,ggml_argmax,ggml_sum,ggml_sum_rows};CHECK(second>=0 && size_t(second)<std::size(ops));out=ops[second](ctx,src);}
                 else if(stored_transforms){CHECK(second>=0 && second<4);out=transform(ctx,src,second,ip,second<2?-1.25f:second==2?-0.8125f:0.1875f,second==2?1.1875f:0.375f);}
                 else if(scalar_diag)out=ggml_diag(ctx,src);
                 else if(repeat_e4){
@@ -2308,8 +2308,8 @@ int main(int argc, char **argv) {
                 if(right)ggml_backend_tensor_set(right,gate_backing.data(),0,gate_backing.size());
                 if(!ip)ggml_backend_tensor_memset(out,0xff,0,ggml_nbytes(out));
                 CHECK(ggml_backend_graph_compute(backend,graph)==GGML_STATUS_SUCCESS);
-                auto actual=tensor_bytes(out);const auto bytes=expected.size()/rows;
-                for(int j=0;j<rows;++j){
+                auto actual=tensor_bytes(out);const auto bytes=expected.size()/output_rows;
+                for(int j=0;j<output_rows;++j){
                     auto got=actual.data()+j*(ip?base->nb[1]:bytes),want=expected.data()+j*bytes;
                     if((stored_unary || stored_transforms || glu) && type==GGML_TYPE_F64)for(size_t i=0;i<bytes;i+=8){
                         double value,ref;memcpy(&value,got+i,8);memcpy(&ref,want+i,8);

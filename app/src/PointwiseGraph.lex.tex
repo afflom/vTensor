@@ -815,10 +815,56 @@ definition{
 }
 
 definition{
+  name: wordBytes,
+  parameters: [storage : Nat],
+  result: Nat,
+  body: (match (TensorTypes::tensorTypeStorage storage)
+    | TensorTypes::TypeStorageDecision.unknownType => 0
+    | TensorTypes::TypeStorageDecision.knownType spec => (if (((project spec blockSize) =? 1) && (((((project spec typeSize) =? 1) || ((project spec typeSize) =? 2)) || ((project spec typeSize) =? 4)) || ((project spec typeSize) =? 8))) then (project spec typeSize) else 0)),
+  executable: true
+}
+
+
+definition{
+  name: separateTensors,
+  parameters: [a : TensorDescriptor, b : TensorDescriptor],
+  result: Bool,
+  body: (if ((project a span) =? 0) then true else (if ((project b span) =? 0) then true else (if ((project a address) =? 0) then true else (if ((project b address) =? 0) then true else ((((project a address) + (project a span)) <=? (project b address)) || (((project b address) + (project b span)) <=? (project a address))))))),
+  executable: true
+}
+
+
+definition{
+  name: signedSumStorage,
+  parameters: [storage : Nat],
+  result: Bool,
+  body: ((24 <=? storage) && (storage <=? 27)),
+  executable: true
+}
+
+definition{
+  name: signedSumWidth,
+  parameters: [operation : Nat, source : IndexContext],
+  result: Nat,
+  body: (if (operation =? 13) then (sourceElements source) else (project source u0)),
+  executable: true
+}
+
+definition{
+  name: signedSumSteps,
+  parameters: [operation : Nat, source : IndexContext],
+  result: Nat,
+  body: (let width : Nat := (signedSumWidth operation source);
+    (let rows : Nat := (if (operation =? 13) then 1 else (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat));
+      (prim multiply rows (width + 2) : Nat))),
+  executable: true
+}
+
+definition{
   name: reductionSteps,
   parameters: [source : IndexContext, operation : Nat, storage : Nat],
   result: Nat,
-  body: (if ((operation =? 13) && (empty (project source u0) (project source n1) (project source n2) (project source n3))) then 2 else (let rows : Nat := (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat); (if (operation =? 13) then (2 + (if (reductionGrouped source storage) then (prim multiply rows (reductionRowSteps (project source u0) false) : Nat) else (prim multiply rows (prim multiply (project source u0) 2 : Nat) : Nat))) else (prim multiply rows (reductionRowSteps (project source u0) (operation =? 16)) : Nat)))),
+  body: (if ((operation =? 13) && (empty (project source u0) (project source n1) (project source n2) (project source n3))) then 2 else (if (signedSumStorage storage) then (signedSumSteps operation source) else (let rows : Nat := (prim multiply (project source n1) (prim multiply (project source n2) (project source n3) : Nat) : Nat); (if (operation =? 13) then (2 + (if (reductionGrouped source storage) then (prim multiply rows (reductionRowSteps (project source u0) false) : Nat) else (prim multiply rows (prim multiply (project source u0) 2 : Nat) : Nat))) else (prim multiply rows (reductionRowSteps (project source u0) (operation =? 16)) : Nat))))),
   executable: true
 }
 
@@ -834,7 +880,7 @@ definition{
   name: planReduction,
   parameters: [operation : Nat, left : TensorDescriptor, output : TensorDescriptor],
   result: PointwiseDecision,
-  body: (let storage : Nat := (project left ty); (if ((storage =? 0) || ((operation =? 13) && ((storage =? 1) || (storage =? 30)))) then (if ((storage =? (project output ty)) && (if (operation =? 13) then (((((project output n0) =? 1) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) else (rowReductionShape left output))) then (let source : IndexContext := (indexContext left 1); (ctor PointwiseDecision.copyBlocks (reductionSteps source operation storage) (if (storage =? 0) then 4 else 2) source (indexContext output 1) (ctor CopyMode.reduced operation storage))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported))),
+  body: (let storage : Nat := (project left ty); (if (((storage =? 0) || ((operation =? 13) && ((storage =? 1) || (storage =? 30)))) || (((signedSumStorage storage) && ((operation =? 13) || (operation =? 14))) && (separateTensors left output))) then (if ((storage =? (project output ty)) && (if (operation =? 13) then (((((project output n0) =? 1) && ((project output n1) =? 1)) && ((project output n2) =? 1)) && ((project output n3) =? 1)) else (rowReductionShape left output))) then (let source : IndexContext := (indexContext left 1); (ctor PointwiseDecision.copyBlocks (reductionSteps source operation storage) (wordBytes storage) source (indexContext output 1) (ctor CopyMode.reduced operation storage))) else (ctor PointwiseDecision.invalidShape)) else (ctor PointwiseDecision.unsupported))),
   executable: true
 }
 
@@ -871,6 +917,23 @@ definition{
 }
 
 definition{
+  name: signedSumInstruction,
+  parameters: [index : Nat, source : IndexContext, destination : IndexContext, operation : Nat, storage : Nat],
+  result: GraphResponse,
+  body: (let width : Nat := (signedSumWidth operation source);
+    (let row : Nat := (prim quotient index (width + 2) 0 : Nat);
+    (let phase : Nat := (prim remainder index (width + 2) 0 : Nat);
+    (let bytes : Nat := (wordBytes storage);
+      (if (phase =? 0) then
+        (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.immediate 0) (ctor WordOperand.immediate 0) (ctor WordTarget.scratch 0) bytes bytes)
+       else (if (phase =? (width + 1)) then
+        (ctor GraphResponse.instruction (ctor WordOperation.encoded 3) (ctor WordOperand.scratch 0) (ctor WordOperand.immediate 0) (ctor WordTarget.output (blockOffset row destination)) bytes bytes)
+       else (let item : Nat := ((prim multiply row width : Nat) + (prim subtract phase 1 : Nat));
+        (ctor GraphResponse.instruction (ctor WordOperation.wide 15) (ctor WordOperand.scratch 0) (ctor WordOperand.source 0 (blockOffset item source)) (ctor WordTarget.scratch 0) bytes bytes)))))))),
+  executable: true
+}
+
+definition{
   name: reducedOffsets,
   parameters: [
     index : Nat,
@@ -880,7 +943,7 @@ definition{
     storage : Nat
   ],
   result: GraphResponse,
-  body: (if (operation =? 13) then (sumOffsets index source storage) else (let stride : Nat := (reductionRowSteps (project source u0) (operation =? 16)); (let row : Nat := (prim quotient index stride 0 : Nat); (let phase : Nat := (prim remainder index stride 0 : Nat); (let end : Nat := (1 + (prim multiply (project source u0) 2 : Nat)); (if (phase <? end) then (reductionRowInstruction phase row source 0) else (let target : Nat := (blockOffset row destination); (if (operation =? 14) then (ctor GraphResponse.word 2 1 1 2 0 3 target) else (if (phase =? end) then (ctor GraphResponse.word 2 1 1 2 0 1 1) else (if (phase =? (end + 1)) then (ctor GraphResponse.word 3 2 (project source u0) 2 0 1 2) else (ctor GraphResponse.word 5 1 1 1 2 3 target))))))))))),
+  body: (if (signedSumStorage storage) then (signedSumInstruction index source destination operation storage) else (if (operation =? 13) then (sumOffsets index source storage) else (let stride : Nat := (reductionRowSteps (project source u0) (operation =? 16)); (let row : Nat := (prim quotient index stride 0 : Nat); (let phase : Nat := (prim remainder index stride 0 : Nat); (let end : Nat := (1 + (prim multiply (project source u0) 2 : Nat)); (if (phase <? end) then (reductionRowInstruction phase row source 0) else (let target : Nat := (blockOffset row destination); (if (operation =? 14) then (ctor GraphResponse.word 2 1 1 2 0 3 target) else (if (phase =? end) then (ctor GraphResponse.word 2 1 1 2 0 1 1) else (if (phase =? (end + 1)) then (ctor GraphResponse.word 3 2 (project source u0) 2 0 1 2) else (ctor GraphResponse.word 5 1 1 1 2 3 target)))))))))))),
   executable: true
 }
 
@@ -1220,14 +1283,6 @@ definition{
   ],
   result: GraphResponse,
   body: (let channel : Nat := (prim remainder index (project destination u0) 0 : Nat); (let q0 : Nat := (prim quotient index (project destination u0) 0 : Nat); (let x : Nat := (prim remainder q0 (project destination n1) 0 : Nat); (let q1 : Nat := (prim quotient q0 (project destination n1) 0 : Nat); (let y : Nat := (prim remainder q1 (project destination n2) 0 : Nat); (let window : Nat := (prim quotient q1 (project destination n2) 0 : Nat); (let target : Nat := (blockOffset index destination); (if reverse then (let tile : Nat := ((prim multiply (prim quotient y size 0 : Nat) nx : Nat) + (prim quotient x size 0 : Nat)); (let ordinal : Nat := (channel + (prim multiply (project source u0) ((prim remainder x size 0 : Nat) + (prim multiply (project source n1) ((prim remainder y size 0 : Nat) + (prim multiply (project source n2) tile : Nat)) : Nat)) : Nat)); (ctor GraphResponse.offsets false (blockOffset ordinal source) target))) else (let ix : Nat := ((prim multiply (prim remainder window nx 0 : Nat) size : Nat) + x); (let iy : Nat := ((prim multiply (prim quotient window nx 0 : Nat) size : Nat) + y); (if ((ix <? (project source n1)) && (iy <? (project source n2))) then (ctor GraphResponse.offsets false (blockOffset (channel + (prim multiply (project source u0) (ix + (prim multiply (project source n1) iy : Nat)) : Nat)) source) target) else (ctor GraphResponse.offsets true 0 target)))))))))))),
-  executable: true
-}
-
-definition{
-  name: separateTensors,
-  parameters: [a : TensorDescriptor, b : TensorDescriptor],
-  result: Bool,
-  body: (if ((project a span) =? 0) then true else (if ((project b span) =? 0) then true else (if ((project a address) =? 0) then true else (if ((project b address) =? 0) then true else ((((project a address) + (project a span)) <=? (project b address)) || (((project b address) + (project b span)) <=? (project a address))))))),
   executable: true
 }
 
@@ -1873,16 +1928,6 @@ definition{
   parameters: [kind : Nat],
   result: Bool,
   body: ((RowGather::cpuSource kind) && (if (copyFloatType kind) then false else true)),
-  executable: true
-}
-
-definition{
-  name: wordBytes,
-  parameters: [storage : Nat],
-  result: Nat,
-  body: (match (TensorTypes::tensorTypeStorage storage)
-    | TensorTypes::TypeStorageDecision.unknownType => 0
-    | TensorTypes::TypeStorageDecision.knownType spec => (if (((project spec blockSize) =? 1) && (((((project spec typeSize) =? 1) || ((project spec typeSize) =? 2)) || ((project spec typeSize) =? 4)) || ((project spec typeSize) =? 8))) then (project spec typeSize) else 0)),
   executable: true
 }
 
@@ -5274,6 +5319,20 @@ theorem{
   name: storedMaximumIndexUsesTheLastMaximum,
   parameters: [],
   statement: (let left : TensorDescriptor := (record TensorDescriptor {ty := 1, n0 := 256, n1 := 4, n2 := 1, n3 := 1, s0 := 2, s1 := 520, s2 := 2072, s3 := 2072, span := 2072, address := 0}); (let output : TensorDescriptor := (record TensorDescriptor {ty := 26, n0 := 4, n1 := 1, n2 := 1, n3 := 1, s0 := 4, s1 := 16, s2 := 16, s3 := 16, span := 16, address := 0}); (let row : IndexContext := (indexContext (canonicalUnaryRow 256) 1); ((planStoredReduction 17 left output) = (ctor PointwiseDecision.storedReduction 4 256 (indexContext left 256) (indexContext output 1) (argmaxStride 256) row (ctor CopyMode.argmaxRow)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: signedRowSumUsesModularAddition,
+  parameters: [],
+  statement: (let row : IndexContext := (indexContext (canonicalUnaryRow 2) 1); ((signedSumInstruction 2 row row 14 26) = (ctor GraphResponse.instruction (ctor WordOperation.wide 15) (ctor WordOperand.scratch 0) (ctor WordOperand.source 0 4) (ctor WordTarget.scratch 0) 4 4))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: emptySignedSumStillStoresZero,
+  parameters: [],
+  statement: (let row : IndexContext := (indexContext (canonicalUnaryRow 0) 1); ((signedSumSteps 13 row) = 2)),
   proof: reflexivity{}
 }
 

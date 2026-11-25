@@ -482,6 +482,7 @@
     "ggml-index-fixtures-row-gradient-bf16-oracle": "b8fc54b4dacbe2e36297cde64386908a7ad57360cfa9b3d4e4d2a6093e2cbe2d",
     "ggml-stored-transforms-oracle": "8d13300443334ee583a077ff1198f8077bdfd5031a8a02cd22f7542d79c3506d",
     "ggml-packed-log-oracle": "9f9503f322a0955d65a1d0208c51fc4c69ee51da07119dab69333412de3858d0",
+    "ggml-signed-sums-oracle": "477dafc506d93aa644d5ff4bd43378519b55fa9b505cfda94dc30b571a816314",
     "ggml-stored-reductions-oracle": "b02abeea20d6971a5e8adb36cc6e8a2a620cee3340e8818d0fa025ebea50d533"
   },
   "fixture_libraries": {
@@ -722,9 +723,11 @@
     "row-gradient-bf16": "ggml-index-fixtures-row-gradient-bf16",
     "stored-transforms": "ggml-stored-transforms",
     "packed-log": "ggml-packed-log",
+    "signed-sums": "ggml-signed-sums",
     "stored-reductions": "ggml-stored-reductions"
   },
   "drivers": {
+    "signed-sums": "stored-reductions",
     "binary-widths": "scalar-casts",
     "signed64-widths": "scalar-casts",
     "signed64-floats": "scalar-casts",

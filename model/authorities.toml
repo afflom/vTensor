@@ -69,3 +69,12 @@ checksum = "07020cfead4950eee5967b37eb785a345d12c65319fba3545dbe85884a86a58e"
 artifact = "vendor/lean-sint-basic.lean.gz"
 statement = "Lean 4.32.1 defines sign extension and truncation for Int8, Int16, Int32 and Int64 through the signed machine integer interface."
 realized_by = ["VT-163"]
+
+[[authority]]
+id = "OPENVINO-REFERENCE-REDUCTION"
+name = "OpenVINO reference ReduceSum"
+citation = "https://github.com/openvinotoolkit/openvino/blob/e213a14725769a6a2bf86fc86650aa78a9c05d3e/src/core/reference/include/openvino/reference/reduce_sum.hpp"
+checksum = "3b4054ff759bac7531fa6d2d64ffdae078d7461fb146469cbcef0c2f29765adb"
+artifact = "vendor/openvino-reduce-sum.tar.gz"
+statement = "OpenVINO ReduceSum selects integral addition or compensated floating-point accumulation over the axes supplied by its caller."
+realized_by = ["VT-206"]
